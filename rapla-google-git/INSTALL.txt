@@ -9,6 +9,8 @@ For more information read README-BUILD.txt.
 
 Requirements:
 
+bla
+
 You need JAVA: JRE 1.5 at least (1.6 recommended). 
 You can download it from java.sun.com
 
