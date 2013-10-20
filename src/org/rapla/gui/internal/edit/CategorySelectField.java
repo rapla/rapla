@@ -1,0 +1,394 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.gui.internal.edit;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeSelectionModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+
+import org.rapla.components.util.Tools;
+import org.rapla.entities.Category;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.gui.TreeFactory;
+import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.gui.toolkit.RaplaTree.TreeIterator;
+
+
+public class CategorySelectField extends AbstractEditField implements MultiEditField, SetGetField<Category>, SetGetCollectionField<Category>
+{
+    private RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
+    JPanel panel = new JPanel();
+    JLabel selectText = new JLabel();
+    private Collection<Category> selectedCategories = new ArrayList<Category>();
+    Category rootCategory;
+    Category defaultCategory;
+
+    private boolean useDefaultCategory = true;
+    private boolean useNullCategory = true;
+	
+    boolean multipleValues = false;
+    
+    boolean multipleSelectionPossible = false;
+  
+    public RaplaButton getButton() {
+        return selectButton;
+    }
+
+    public CategorySelectField(RaplaContext sm,String fieldName,Category rootCategory){
+       this( sm, fieldName, rootCategory, null);
+    }
+    
+    public CategorySelectField(RaplaContext sm,String fieldName,Category rootCategory, Category defaultCategory) {
+        super( sm);
+        useDefaultCategory = defaultCategory != null;
+        setFieldName( fieldName );
+        this.rootCategory = rootCategory;
+        selectButton.setAction(new SelectionAction());
+        selectButton.setHorizontalAlignment(RaplaButton.LEFT);
+        selectButton.setText(getString("select"));
+        selectButton.setIcon(getIcon("icon.tree"));
+        this.defaultCategory = defaultCategory;
+        panel.setLayout( new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.add( selectButton);
+        panel.add( Box.createHorizontalStrut(10));
+        panel.add( selectText);
+    }
+    
+   
+    public boolean isUseNullCategory() 
+    {
+        return useNullCategory;
+    }
+
+    public void setUseNullCategory(boolean useNullCategory) 
+    {
+        this.useNullCategory = useNullCategory;
+    }
+
+    public boolean isMultipleSelectionPossible() {
+        return multipleSelectionPossible;
+    }
+
+    public void setMultipleSelectionPossible(boolean multipleSelectionPossible) {
+        this.multipleSelectionPossible = multipleSelectionPossible;
+    }
+    
+    public class SelectionAction extends AbstractAction 
+    {
+        private static final long serialVersionUID = 1L;
+
+        public void actionPerformed(ActionEvent evt) {
+            try {
+                showDialog(selectButton);
+            } catch (RaplaException ex) {
+                showException(ex,selectButton);
+            }
+        }
+    }
+
+    public Category getValue() 
+    {
+    	Collection<Category> values = getValues();
+    	if ( values.size() == 0)
+    	{
+    	    return null;
+    	}
+    	else
+    	{
+    	    Category first = values.iterator().next();
+            return first;
+    	}
+    }
+    
+    public Collection<Category> getValues() 
+    {
+        return selectedCategories;
+    }
+    
+    public void setValue(Category object) 
+    {
+        List<Category> list;
+        if ( object == null)
+        {
+            list = Collections.emptyList();
+        }
+        else
+        {
+            list = Collections.singletonList(object);
+        }
+        setValues(list);
+    }
+
+    final private TreeFactory getTreeFactory() 
+    {
+        return getService(TreeFactory.class);
+    }
+
+    public void setValues(Collection<Category> values) 
+    {
+        selectedCategories = new ArrayList<Category>();
+        if ( values !=null)
+        {
+            selectedCategories.addAll(values);
+        }
+        String text;
+        if (selectedCategories.size() > 0) 
+        {
+        	text="";
+        	Category selectedCategory = selectedCategories.iterator().next();
+        	{
+        		
+        		text +=selectedCategory.getPath(rootCategory,getI18n().getLocale());
+        	}
+        	if ( selectedCategories.size() > 1)
+            {
+                text+= ", ...";
+            }
+        } 
+        else 
+        {
+            text = getString("nothing_selected");
+        }
+        selectText.setText(text);
+    }
+   
+    @SuppressWarnings("serial")
+	public void showDialog(JComponent parent) throws RaplaException {
+        final DialogUI dialog;
+        final JTree tree;
+        if ( multipleSelectionPossible)
+        {
+	        tree = new JTree()
+	        {
+		        public void setSelectionPath(TreePath path) {
+		        	addSelectionPath(path);
+		        }
+	
+			    public void setSelectionPaths(TreePath[] paths) {
+			    	addSelectionPaths(paths);
+			    }
+	
+			    public void setSelectionRow(int row) {
+		        	addSelectionRow(row);
+		        }
+		
+		        public void setSelectionRows(int[] rows) {
+		        	addSelectionRows(rows);
+		        }
+	        };
+	        TreeSelectionModel model = new DefaultTreeSelectionModel()
+	        {
+				public void addSelectionPaths(TreePath[] paths) {
+	        		if(paths != null) {
+	        			for(TreePath path : paths) {
+	        				TreePath[] toAdd = new TreePath[1];
+	        				toAdd[0] = path;
+
+	        				if (isPathSelected(path)) {
+	        					// If path has been previously selected REMOVE THE SELECTION.
+	        					super.removeSelectionPaths(toAdd);
+	        				} else {
+	        					// Else we really want to add the selection...
+	        					super.addSelectionPaths(toAdd);
+	        				}
+	        			}
+	        		}
+	        	}
+	        };
+	        model.setSelectionMode( TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION );
+	        tree.setSelectionModel(model );
+        }
+        else
+        {
+        	tree = new JTree();
+        	tree.getSelectionModel().setSelectionMode( TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION );
+        }
+        tree.setCellRenderer(getTreeFactory().createRenderer());
+        //tree.setVisibleRowCount(15);
+        tree.setRootVisible( false );
+        tree.setShowsRootHandles(true);
+        tree.setModel(getTreeFactory().createModel(rootCategory));
+        selectCategory(tree,selectedCategories);
+        JPanel panel = new JPanel();
+        panel.setLayout( new BorderLayout());
+        JScrollPane scrollPane = new JScrollPane(tree);
+        scrollPane.setMinimumSize(new Dimension(300, 200));
+        scrollPane.setPreferredSize(new Dimension(400, 260));
+        panel.add(scrollPane, BorderLayout.PAGE_START);
+        
+        if (useDefaultCategory)
+        {
+            JButton defaultButton = new JButton(getString("defaultselection"));
+            panel.add( defaultButton,  BorderLayout.CENTER);
+            defaultButton.setPreferredSize(new Dimension(100, 20));
+            defaultButton.addActionListener( new ActionListener() {
+                public void actionPerformed(ActionEvent arg0) 
+                {
+                    selectCategory( tree, Collections.singletonList(defaultCategory));
+                }
+            });
+        }
+        
+        if (useNullCategory)
+        {
+            JButton emptyButton = new JButton(getString("nothing_selected"));
+            panel.add( emptyButton, BorderLayout.PAGE_END);
+            emptyButton.setPreferredSize(new Dimension(100, 20));
+            emptyButton.addActionListener( new ActionListener() {
+                public void actionPerformed(ActionEvent arg0) 
+                {
+                    List<Category> emptyList = Collections.emptyList();
+					selectCategory(tree, emptyList );
+                }
+            });
+        }
+
+        dialog = DialogUI.create(getContext()
+        		                 ,parent
+                                 ,true
+                                 ,panel
+                                 ,new String[] { getString("apply"),getString("cancel")});
+        
+        tree.addMouseListener(new MouseAdapter() {
+            // End dialog when a leaf is double clicked
+            public void mousePressed(MouseEvent e) {
+                TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
+                if (selPath != null && e.getClickCount() == 2) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode)selPath.getLastPathComponent();
+                    if (node.isLeaf()) {
+                        dialog.getButton(0).doClick();
+                    }
+                }
+            }
+        });
+        dialog.setTitle(getString("select"));
+        dialog.start();
+        if (dialog.getSelectedIndex() == 0) {
+            TreePath[] paths = tree.getSelectionPaths();
+            Collection<Category> newValues = new ArrayList<Category>();
+            if ( paths != null)
+            {
+	            for (TreePath path:paths) 
+	            {
+	            	Object newValue = ((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+	            	newValues.add((Category)newValue);
+	            }
+            }
+            if ( !newValues.equals(selectedCategories)) 
+            {
+                setValues( newValues );
+                fireContentChanged();
+            }
+        }
+    }
+
+    private void selectCategory(JTree tree, Collection<Category> categories) {
+        select(tree, categories);
+        //RecursiveNode.selectUserObjects(tree,path.toArray());
+    }
+    
+    public void select(JTree jTree,Collection<?> selectedObjects) {
+        Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
+        
+        Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
+        while (it.hasNext()) {
+            TreeNode node = it.next();
+            if (node != null && selectedObjects.contains( getObject(node) ))
+                selectedNodes.add(node);
+        }
+        it = selectedNodes.iterator();
+        TreePath[] path = new TreePath[selectedNodes.size()];
+        int i=0;
+        while (it.hasNext()) {
+            path[i] = getPath(it.next());
+            jTree.expandPath(path[i]);
+            i++;
+        }
+        jTree.getSelectionModel().clearSelection();
+        jTree.setSelectionPaths(path);
+    }
+    
+    private static Object getObject(Object treeNode) {
+        try {
+            if (treeNode == null)
+                return null;
+            if (treeNode instanceof DefaultMutableTreeNode)
+                return ((DefaultMutableTreeNode) treeNode).getUserObject();
+            
+            return treeNode.getClass().getMethod("getUserObject",Tools.EMPTY_CLASS_ARRAY).invoke(treeNode, Tools.EMPTY_ARRAY);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+   
+    private TreePath getPath(TreeNode node) {
+        if (node.getParent() == null)
+            return new TreePath(node);
+        else
+            return getPath(node.getParent()).pathByAddingChild(node);
+    }
+    
+    public Category getRootCategory() 
+    {
+        return rootCategory;
+    }
+
+    public void setRootCategory(Category rootCategory) 
+    {
+        this.rootCategory = rootCategory;
+    }
+
+    public JComponent getComponent() {
+        return panel;
+    }
+    
+ // implementation for interface MultiEditField
+ 	public boolean hasMultipleValues() {
+ 		return multipleValues;
+ 	}
+
+ 	// implementation for interface MultiEditField
+ 	public void setFieldForMultipleValues() {
+ 		multipleValues = true;
+ 		// sets place holder for different values
+ 		selectText.setText(TextField.getOutputForMultipleValues());
+ 	}
+
+}
+
+

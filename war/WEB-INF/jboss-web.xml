@@ -1,0 +1,30 @@
+<jboss-web>
+<!-- you can set context root and virtual host here if you want
+  <context-root>/</context-root>
+  <virtual-host>rapla</virtual-host>
+  -->
+    <env-entry>
+	  <env-entry-name>rapladatasource</env-entry-name>
+	  <env-entry-value>rapladb</env-entry-value>
+	  <env-entry-type>java.lang.String</env-entry-type>
+    </env-entry>
+    <env-entry>
+        <env-entry-name>raplafile</env-entry-name>
+        <!-- resolving the data dir only works since jboss AS 7.1.2 or EAP 6.1 -->
+        <env-entry-value>${jboss.server.data.dir}/rapla/data.xml</env-entry-value>
+        <env-entry-type>java.lang.String</env-entry-type>
+    </env-entry>
+    <resource-ref>
+        <res-ref-name>jdbc/rapladb</res-ref-name>
+        <res-type>javax.sql.DataSource</res-type>
+        <jndi-name>java:/jboss/datasources/rapladb</jndi-name>
+        <res-auth>Container</res-auth>
+    </resource-ref>
+    <resource-ref>
+       <description>Rapla mail service</description>
+        <res-ref-name>mail/Session</res-ref-name>
+        <res-type>javax.mail.Session</res-type>
+        <jndi-name>java:/jboss/mail/Default</jndi-name>
+        <res-auth>Container</res-auth>
+    </resource-ref>
+</jboss-web>

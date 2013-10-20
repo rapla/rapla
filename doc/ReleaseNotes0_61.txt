@@ -1,0 +1,30 @@
+Rapla Version 0.61 released on 9.9.2001
+
+Changes and new Features
+
+- printing-preview with editable title.
+- the selected semester will be remembered during the session.
+- info dialog.
+- Some new tests. 
+  Example: There is an target test-cvs to test the current-version,
+   in cvs after a commit.
+- Allocations with no resources are shown in the reservation-overview,
+  but not in the resource-overview.
+- Ant version changed to 1.4
+- New version of crimson: jaxp.jar and xml-apis.jar are obsolete
+- Some smaller changes in the gui. (other gifs, text changes)
+- data.xml: xml-header and encoding added (0.6 versions are still supported)
+- convertXML2SQL.sh removed:
+  conversion from xmlFile to db and the other way round is now possible with
+  start.sh xml2sql 
+  start.sh sql2xml
+    
+Bugfixes:
+
+- bug in XML-Date-Time-Parsing fixed
+- there is no exception on an invalid login
+- language-change-error with JDK 1.2.2
+- build possible with JDK 1.2.2
+
+
+

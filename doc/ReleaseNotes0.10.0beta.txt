@@ -1,0 +1,40 @@
+Changes:
+
+- DynamicTypes are now mandatory for reservations, persons and resources.
+
+- Refresh button moved to options. Disabled when used with remote-operator.
+
+
+New:
+
+- Integration of org.rapla.calendarview in the main panel.
+
+- Resource and reservation selection panel in the org.rapla.calendarview.
+
+- Show periods in org.rapla.calendarview and in the date chooser.
+
+- Names don't need to be strings. You can combine names freely out of 
+  the dynamic-type attributes (even categories).
+
+- Filters can be stored.
+
+- Selecting over multiple columns is possible in the org.rapla.calendarview.
+
+- Tooltips and Contextmenus on menu components (especially the trees)
+
+- Date possible as attribute
+
+- Export plugin for storing the print-views for later update.
+
+- Experimantal Support for storing in a database. More information
+  will be soon available on the wiki.
+
+- Admins can switch to any user
+
+- Java version will be displayed in Info-dialog ;)
+
+... and many many more
+
+Bugfixes:
+
+Too many to list here.

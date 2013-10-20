@@ -1,0 +1,22 @@
+Rapla Version 0.81 has been released on 4.9.2002
+
+Changes:
+- Date will show next to day-of-week in weekview
+- Blocks that allocate the same resources or persons are grouped in one column.
+- SansSerif font in wizard-help and Reservation/Resource/Person -info for better
+  readability.
+- Text HTMLViews selectable
+- Adding a new resource will now update an open reservation-edit-window. 
+
+Bugfixes:
+- Period-edit org.rapla.calendarview-drop-down under windows.
+- The selected objects are selected in the filter-dialog.
+- Repeating-end is not decreased by one after editing.
+- No org.rapla.calendarview popup on doubleclicking a type-node in the resource-tree
+- HTMLViews have correct sizes
+- The add and remove Buttons are enabled if the selected resource is in the first row
+- Restrictions (a resource or person is restricted if its connected to
+  one or more appointments instead the whole reservation) are correctly
+  displayed in weekview and in the reservation-html-view.
+
+

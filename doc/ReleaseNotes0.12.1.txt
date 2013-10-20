@@ -1,0 +1,26 @@
+Bugfixes since 0.12.1beta2:
+* AM-PM Time is correct in Weekview.
+* Bug when removing user.
+* Period-Chooser now visible if you switch back from repeat-forever.
+* Conversion from Data stored in relation-db works.
+* Update from user and periods are displayed in the left view
+
+New Features since 0.11.3:
+* The new org.rapla.calendarview-view "week compact" groups many resources on a smaller space for 
+  a better overview.
+* You can now specify the size of the text-fields with string attributes
+* Attributes (especialy the long description fields) can be moved to a second input-screen. They won't show up in tooltips.
+* Print the detail-view for an appointment or a resource (right click and view).
+* The Starttime shows in the tooltip.
+
+Changes since 0.11.3:
+* You can't click on "create appointment" when you have only read access to the resource
+
+Bugfixes since 0.11.3:
+* !!!You can now store the user preferences and create html-exports!!!
+* You aren't allowed to create conflicts in the past ( if conflict-creation is disabled)
+* The categroy user-groups is created on import, when not already present.
+* The header shows the right date in HTML-View.
+* HTML-Report only shows the blocks visible in the Calendarview
+* many more...
+

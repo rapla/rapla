@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<!DOCTYPE resources SYSTEM "../../components/xmlbundle/resources.dtd">
+<resources default="en"> 
+    <entry key="changeowner">
+    	<text lang="en">Change owner</text>
+    	<text lang="de">Besitzer ändern</text>
+    	<text lang="fr">changer le propriétaire</text>
+    	<text lang="es">Cambiar el propietario</text>
+    	<text lang="cs">změní majitele</text>
+    	<text lang="nl">Wijzig eigenaar</text>
+    	<text lang="pl">Zmiana właściciela</text>
+    </entry>
+    <entry key="changeownerto">
+    	<text lang="en">Select the new owner:</text>
+    	<text lang="de">Neuer Besitzer:</text>
+    	<text lang="fr">Changer le propriétaire:</text>
+    	<text lang="es">Cambiar el propietario:</text>
+    	<text lang="cs">Změna vlastníka:</text>
+    	<text lang="nl">Wijzig eigenaar:</text>
+    	<text lang="pl">Zmiana właściciela:</text>
+    </entry>
+</resources>

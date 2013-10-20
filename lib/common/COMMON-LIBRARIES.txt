@@ -1,0 +1,1 @@
+Place in this folder all jars that should be used by the client and the server application.

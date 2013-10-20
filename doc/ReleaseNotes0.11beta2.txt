@@ -1,0 +1,62 @@
+New Features since 0.11beta1:
+- Month and Day views available
+- Different access-levels for resources and persons: 
+  denied: User can't read allocation of the resource
+  read: User can only read allocation of the resource
+  allocate: User can allocate the resource
+  allocate with conflicts: User can create conflicts
+  admin: User can modify resource, set permissions, and manipulate
+  all reservations-entries that allocate the resource.
+- non-admin users can be allowed to create resources and person. When 
+  such a user creates a resource it automatically adds a permission with 
+  admin-access for the user.
+- More reservation-information available in tooltip
+- Users can be autocreated with LDAPAuthentication 
+
+New Features since 0.10.2:
+
+- You can assign groups to users: Create a new main-category with key "user-groups".
+- You can set access-permissions to resources and persons by user/group.
+- You can specify absolute and relative booking-timeframes for each resource
+per user/group. By setting the relative start-time to 0 you can prevent modifing appointments in the past.
+- create- and last-changed- times are available for reservations. Right-click and choose
+  "view"
+- You can disable conflict-creation on a per user/group basis for each resource.
+- Easy hsqldb Database available (see wiki)
+- LDAP Authentication. See wiki.
+- Old reservations will only be transfered to the client if needed .
+
+Changes since 0.10.2:
+
+- raplaclient.jsp mapped to raplaclient.jnlp to avoid problems with Internet Explorer.
+
+Changes since 0.11beta1:
+
+- new format of data.xml of allocation assignment and create-conflict permisson.
+  New Version is 0.6
+- New LDAP-Configuration (see wiki)
+- If you edit (right-click) one Appointment in the weekview, that appointment will be selected in the event-edit window. 
+
+Bugfixes:
+
+- saxon-aelfred parser is used per default to overcome xml-parser shortcuts in suns jdk
+- ClassCastException during org.rapla.calendarview export
+- appointment-ids are assigned correctly when storing into the sql-database. No more
+mysterious appointment doubles.
+- NullPointerException in Email-Notification fixed
+- Redraw Problem of weekview
+- Problem when assigning 2 appointments to 2 different resoures. Sometimes
+  the second assignment was silently dropped.
+- Broken HTML-Weekview, when appointments span 2 or more days.
+- Bug in the weekview that displayed appointments, starting on 0:00 of the first day of week, also in the previous week.
+- Error storing filters with no selected category
+- Webstart Error with java 1.4.1_05 (see http://sourceforge.net/tracker/index.php?func=detail&aid=844423&group_id=7274&atid=107274)
+- Email notification: Two different appointments with a dedicated resource 
+  for each lists 4 instead of the correct 2 allocations.
+- Many others
+
+Bugfixes since 0.11beta1:
+
+- Deadlock in client/server AFAIK appeared only in TestCase.
+- Converting from old version fails with aelfred parser
+- Failed to change ReservationFilter or ResourceFilter after a save.

@@ -1,0 +1,41 @@
+Rapla Version 0.6 released on 26.8.2001
+
+
+Changes and new Features
+
+- Changing the name of a reservation is possible.
+- Reservation names are now unique according to their semester.
+- It is now possible to select start- and end-time in a ComboBox.
+- A warning-dialog appears if you want to close the edit-window and there are non-saved changes.
+- Printing is now supported (only tested under Windows). The class org.rapla.PrintTools can be used to
+  print any AWT or Swing component. The component will be printed in
+  high-resolution.
+- On saving of the XML-file there should be a backup of the
+  old data in data.xml.old
+- Added some JUnit-tests. The test-cases are located in the test-src directory.
+  To run all test cases (expect the DB-Ones) type
+     build test-all (Windows)
+     build.sh test-all (Unix)
+   A test-build can be run before every commit to make the cvs version
+   more stable.
+- For convinience the ok-button is allways left and the abort-button allways right.
+
+
+enhanced i18n support:
+
+- The timezone of Rapla is set to GMT+00:00, by default. In future versions different 
+  timezones will be supported, but for that we have to deal with some SQL-time-conversion problems.
+- The data.xml file is now in english with language-sensitive resource-metadata.
+- localization of times in the weekview ( 9 pm instead of 21:00)
+
+
+Bugfixes (only some of them are listed here)
+
+- 9:00 - 10:00 and 10:00 - 11:00 never create a conflict
+- There is always a default-semester
+- Title of warnings are localized
+- language-change is possible before second login.
+- refresh is possible after first logout.
+- 5-10 typos corrected (thanks to Magnus)
+
+

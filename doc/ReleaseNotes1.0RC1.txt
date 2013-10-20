@@ -1,0 +1,65 @@
+Big Changes since 0.12.4
+
+
+The calendar stays on top
+--------------------------
+
+The left bar is no more. It is replaced by a context-sensitive Menubar.
+Every click in the left tree affects the displayed events in the right pane
+
+A click on the users shows reservations of the user
+A click on the resource shows all reservations of the resource
+A click on an event-type shows all reservations of an event-type
+
+You can combine them. Clicking on a user, an event-type and a resource to show only
+the reservations of the selected event-type, that are reserved by the selected user and allocate
+the selected resource.
+
+Sytem and User Configuration with menu
+--------------------------------------
+
+Configuration is possible through the menu. You can configure the
+plugins and most  of the Rapla System through the following menus:
+option or admin/option.
+
+NEW Plugin API!
+----------------
+
+New powerfull plugin API. See the plugins in the source-distribution
+and MyRapla module in CVS. Find an overview of all currently allowed extension points of the Rapla API at
+
+http://rapla.sourceforge.net/doc/javadocs/org/rapla/plugin/RaplaExtensionPoints.html
+
+A plugin HOWTO will soon be available in the wiki
+
+New Views
+------------
+- new period-view (Swing and HTML)
+- new table-view (replaces event view)
+
+SQL Mapping
+-----------
+
+A real SQL mapping of the Rapla data
+
+Other new features
+------------------
+- You can now store your view settings (view/save)
+- French translation of the plugins (even the period wizard)
+- Custom Event and Resource coloring
+- New plugin "Copy Periods" to copy the allocations from one period to another
+- Reservations from other users will be hidden (if the user is not in the group "can see reservations from others"
+- read-only account (If the user can't allocate anything)
+
+Other Changes
+----------------
+
+- The HTML report is removed. It will soon be replaced by a new view.
+- Stable API
+- Jetty Upgrade
+- Changed from JSP to Servlets, that better fits in the plugin concept of Rapla
+- Edit allocation menu is obsolete. Resource admins can now use edit, but aren't allowed to change the appointments
+
+And lots of bugfixing
+
+

@@ -1,0 +1,84 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.components.xmlbundle;
+
+import java.net.URL;
+import java.text.MessageFormat;
+import java.util.Locale;
+import java.util.MissingResourceException;
+
+import javax.swing.ImageIcon;
+/** Allows the combination of two resource-bundles.
+    First the inner bundle will be searched.
+    If the requested resource was not found the
+    outer bundle will be searched.
+ */
+public class CompoundI18n implements I18nBundle {
+    I18nBundle inner;
+    I18nBundle outer;
+    public CompoundI18n(I18nBundle inner,I18nBundle outer) {
+        this.inner = inner;
+        this.outer = outer;
+    }
+
+    public String format(String key,Object obj1) {
+    	Object[] array1 = new Object[1];
+    	array1[0] = obj1;
+    	return format(key,array1);
+    }
+
+    public String format(String key,Object obj1,Object obj2) {
+    	Object[] array2 = new Object[2];
+    	array2[0] = obj1;
+    	array2[1] = obj2;
+    	return format(key,array2);
+    }
+
+    public String format(String key,Object[] obj) {
+    	MessageFormat msg = new MessageFormat(getString(key));
+    	return msg.format(obj);
+    }
+
+    public ImageIcon getIcon(String key) {
+    	try {
+    	    return inner.getIcon(key);
+    	} catch (MissingResourceException ex) {
+    	    return outer.getIcon(key);
+    	}
+    }
+
+    public String getString(String key) {
+    	try {
+    	    return inner.getString(key);
+    	} catch (MissingResourceException ex) {
+    	    return outer.getString(key);
+    	}
+    }
+
+
+    public URL getResource(String key) {
+        try {
+            return inner.getResource(key);
+        } catch (MissingResourceException ex) {
+            return outer.getResource(key);
+        }
+    }
+
+    public String getLang() {
+        return inner.getLang();
+    }
+
+    public Locale getLocale() {
+        return inner.getLocale();
+    }
+} 

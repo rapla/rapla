@@ -1,0 +1,52 @@
+Version 0.12.4 Released on 11/20/2004
+
+New Features since 0.12.3:
+* You can configure the timescale (rows-per-hour) in the rapla*.xconf locale section
+* Attributes can be made invisible, so you can only edit but not view them (usefull for attributes like color, see next feature)
+* you can assign colors for the resources. To do this add a new attribute with
+  the KEY "color" (use Advanced settings) and enter the RGB Hex value
+  for each resource ( i.e. #A2A3FE)
+
+Changes since 0.12.3:
+* In the week-compact view: An event with two resources now appears in both resource-rows.
+* The HTML-Calendar now uses 100% width of the page
+
+Bugfixes since 0.12.3:
+* Fixed Nullpointer Exception with java 1.5 when showing the reservation info dialog
+* Fixed Unreadable Timescale with java 1.5
+* [Bug 1006389] is fixed, and you can now create daily repeatings 
+* [data.xml] repeating end dates on the end of month are correctly
+  stored as 31.1.2004 instead of 0.2.2004
+----------------------------------------
+New Features since 0.12.2: 
+
+* French translation
+* You can directly create a weekly event from the weekview
+* API new method getReservations() for resource array
+
+Bugfixes since 0.12.2:
+
+* ssl support now works
+* You can't remove the user-groups category
+* The update bug when entering new Period is no more
+* In the event-edit window: If you only change to the detail view the save button state won't change.
+* Cateroy attributes are now safly converted and removed, when changing or 
+removing an attribute
+----------------------------------------
+New Features since 0.12.1: 
+
+* The Exception-Dates are shown in the detail view of a reservation
+* To add a new appointment to an existing event in the org.rapla.calendarview, first
+open the event in the event-edit window, then switch back to the main
+org.rapla.calendarview-window and select the proper slot and finaly right click in
+the selection to add the new appointment to the open event.
+* The total number of occurrances of an event is calculated and displayed 
+  in the reservation-edit window.
+* A button to copy the info text into the system-clipboard
+
+Bugfixes since 0.12.1:
+* org.rapla.calendarview.css now looks the same under IE and Netscape
+* Fixed the empty page printing problem.
+* The resource-names are now printed correctly
+
+

@@ -1,0 +1,5 @@
+This component depends on the following packages (including subpackages):
+java.*
+javax.jnlp.* (For the WebstartPrinter)
+javax.print.* (For the saving in postscript-format)
+org.apache.avalon.framework.* 

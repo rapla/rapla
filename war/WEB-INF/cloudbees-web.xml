@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<cloudbees-web-app xmlns="http:~/~/www.stax.net/xml/webapp/1">
+  <context-param>
+   <param-name>rapladatasource</param-name>
+   <param-value>${rapladatasource}</param-value>
+ </context-param>
+ <context-param>
+   <param-name>mail/Session</param-name>
+   <param-value>mail/SendGrid</param-value>
+ </context-param>     
+</cloudbees-web-app>

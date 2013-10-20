@@ -1,0 +1,58 @@
+/* Use this file to customize the Rapla HTML Pages to your style */
+body {
+	font:12px/18px "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
+	color: #333333;
+}
+
+/* Button Appearance */
+
+.button {
+	border:none;
+	cursor:pointer;
+	display:inline-block;
+	overflow:visible;
+	padding:0;
+	margin:0;
+	height:29px;
+	background:url("images/button.gif") right top;
+}
+
+.button a, .button input {
+	font-size: 13px;
+    font-weight: bold;
+    font-family: Arial,Helvetica,Helvetica Neue,Verdana,sans-serif;
+	text-decoration:none;
+	color: #FFFFFF !important;
+	cursor:pointer;
+	outline:none;
+	overflow:visible;
+	white-space:nowrap;
+	
+	border:none;
+	display:inline-block;
+	padding: 0 18px;
+	margin:0 !important;
+	
+	line-height:29px;
+	height:29px;
+	width:auto;
+	
+	background:url("images/button.gif") no-repeat left top;
+}
+
+/* Browser fixes */
+.button input::-moz-focus-inner {
+	padding: 0;
+	border: none;
+}
+
+.menuEntry
+{
+   padding-top:5px;
+   padding-bottom:5px;
+}
+/* You can also customize the calendar
+.month_table {
+	background-color: #FFFFAA;
+}
+*/

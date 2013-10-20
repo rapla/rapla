@@ -1,0 +1,49 @@
+This is the INSTALLING-GUIDE for the Rapla-BINARY-DISTRIBUTION, 
+
+You will find more information on our documentation pages on
+http://code.google.com/p/rapla/
+
+if you have downloaded the SOURCE-DISTRIBUTION you have to
+!!! BUILD A BINARY-DISTRIBUTION first !!!
+For more information read README-BUILD.txt.
+
+Requirements:
+
+You need JAVA: JRE 1.6 at least (1.7 recommended). 
+You can download it from java.sun.com
+
+* The SDK works for the binary and source distribution but is very
+  large 
+
+* The JRE will only work for the binary distribution (Compiler
+  missing) but is much smaller
+
+
+STARTING RAPLA:
+
+Start rapla.exe (rapla.sh under Unix).
+
+To start Rapla from the command-line, you have to set the java command
+in your PATH-Variable (if its not already there),
+
+Example:
+setenv PATH $PATH:/usr/local/java/bin  (Unix)
+set PATH=%PATH%:c:\Programme\Java\jre\bin  (Windows) 
+
+Then type:
+
+rapla.sh (Unix) 
+rapla.bat (XP/Vista/7/8). 
+call rapla.bat (win NT/2000)
+
+
+For more information visit the documentation pages on
+
+http://code.google.com/p/rapla/
+
+
+Acknowledgment
+---------------
+
+Rapla includes free software developed from other organizations and third parties.
+For a complete list of all external libraries, take a look at legal/readme.txt

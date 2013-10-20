@@ -1,0 +1,149 @@
+0.5 from 6/2001 rapla.jar 310 kb
+---------------------------------
+
+Architectural:
+entities, facade, resource-type and multiple storage concept
+UseCase Driven GUI (multiple views)
+
+Features:
+weekly events in periods
+2 languages
+save in xml file or database
+calendar
+resources, resource-types and periods must be defined in XML File
+
+
+
+0.6 from 9/2001 rapla.jar 330 kb
+--------------------------------
+
+Architectural:
+Testing with Junit,
+memento pattern
+First IoC principle from avalon ( config and context object)
+
+Features:
+Printing
+
+
+
+0.7 from 4/2002 rapla.jar 530 kb
+---------------------------------
+
+Architectural:
+seperation of interface and implementation in the entity package.
+Different interfaces of the facade object
+
+Features:
+Admin functionality, can create and edit resource-type, periods and resources.
+New language resource system
+first datepicker component (for period edit) (one class only)
+
+
+0.8  from 9/2002 rapla.jar 950 kb
+----------------------------------
+
+Architectural:
+Client-, Server Design
+inclusion of fortress container (IoC priciple, XML Config files)
+split into several packages: components, service, plugin, gui/view, gui/edit, gui/toolkit
+Component system, calendar component, rpc component, layout component, ...
+new xml structure (including upgrade mechanism)
+
+Features:
+Real client server mode
+event-types
+reservation wizard
+first filter concept (only for reservations)
+creation of single, dayly  and weekly appointments possible
+allocation assignment dialog
+
+
+
+0.9 from 12/2002 rapla.jar 1000 kb
+-----------------------------------
+
+Architectural:
+none
+
+Features:
+categories
+new appointment editor
+attribute filters
+
+
+0.10.2 from 6/2003 rapla.jar 1111 kb
+--------------------------------------
+
+Architectural:
+- first real plugins autoexport and notification, exposing of services
+- concept for storing xml in a database
+- new webapp-distribution
+- new library concept: different directories: server/client/common Just copy jar file into the appropriate lib dir to
+make it available on the classpath
+
+Features:
+Visible Kalendar on start ( with left selection pane)
+Filters can be stored
+html export
+email notification
+includes the jetty servlert-server for out-of-the box run.
+simplified client/server installation
+
+
+0.11.2 from 2/2004 rapla.jar 1200 kb
+------------------------------------
+
+Architectural:
+none
+
+Features:
+Permission System
+Month and Day View
+
+
+0.12.4 from 11/2004 rapla.jar 1240 kb
+-------------------------------------
+
+Architectural:
+none
+
+Features:
+French Translation
+Compact View
+
+
+1.0RC1  from 11/2005 rapla.jar 1480 kb
+--------------------------------------
+
+Architectural:
+Fortress exchanged with Pico concept (own implementation, constructor injection)
+Plugin concept via classpath
+extracted many plugins
+Extension Point concept of eclipse
+API package refactoring
+API Stability (Exposed API)
+CalendarView Concept
+Standard Uniformed Application GUI (only one view, editor like)
+
+Features:
+Menu System
+SQL Mapping
+New Period View, New Table View
+Configuration through menus
+
+1.1
+---
+
+Features:
+Spanish Translation
+Nicer GUI
+
+1.2
+---
+
+Architectural:
+
+Custom Commication layer changed with webservice communication (soap like)
+
+

@@ -1,0 +1,13 @@
+Rapla Version 0.8 has been released on 29.08.2002
+
+Changes:
+
+Bugfixes:
+
+- !!If you use DBOperator and delete a reservation, you will not delete
+  the link for other reservations!! (This was a serious bug in 0.71)
+- DB import and export now work from the start script.
+- Dragging-Bug while creating a new appointment in the weekview.
+- Now works with older mysql versions.
+- You can use the '&' character for resource and reservation names with the XMLOperator.
+- Copy and Paste works as expected.

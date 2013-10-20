@@ -1,0 +1,30 @@
+New features in Release 1.2.2
+
+* Added paste as functionality
+* Added Data Source (use datasource tag instead of driver, username and password to enable datasource)
+* New plugable Main menu when you go on the first site of the web version
+* You can now enable a list of all exported calendars in the main menu of the web version
+* Show Navigation bar is now a parameter when exporting calendars to html
+* You can now start rapla under windows with rapla.exe
+* New service wrapper for starting rapla as a server under unix, osx and windows (load rapla_as_service.zip)
+* There is a raplabootstrap.jar for starting rapla with a double click on most systems
+
+Changes
+
+* New icon for "new weekly event"
+* In source version data.xml and config files are moved to webapp folder
+* New jetty is used
+* If jndi doesnt work. Authe
+
+Bugfixes
+
+* You can now export filename with characters that need to be url encoded
+* Fixed Bug with special characters during load under tomcat or jetty
+* It is now possible to have working times with a higher start hour than end hour e.g. 20:00 - 04:00
+* [ 1593336 ] even though restricted, user can create conflict by dragging
+* Workaround for bug in 1.6 that doesnt render the print dialog correctly when displayed for the first time
+* [ 1571870 ] Display Japanese Characters 
+* [ 1555022 ] TimeField can't instantiate for "CH" locale
+* Notification mail handles removes correctly
+* You can use Japanese Characters in html
+* If an authentication store (e.g. jndi) doesnt work Rapla will still remain usable with the original logins. But not for the jndi users

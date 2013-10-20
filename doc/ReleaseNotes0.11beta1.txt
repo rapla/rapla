@@ -1,0 +1,36 @@
+New Features since 0.10.2:
+
+- You can assign groups to users: Create a new main-category with key "user-groups".
+- You can set access-permissions to resources and persons by user/group.
+- You can specify absolute and relative booking-timeframes for each resource
+per user/group. By setting the relative start-time to 0 you can prevent modifing appointments in the past.
+- create- and last-changed- times are available for reservations. Right-click and choose
+  "view"
+- You can disable conflict-creation on a per user/group basis for each resource.
+- Easy hsqldb Database available (see wiki)
+- LDAP Authentication. See wiki.
+- Old reservations will only be transfered to the client if needed .
+
+
+Changes:
+
+- raplaclient.jsp mapped to raplaclient.jnlp to avoid problems with Internet Explorer.
+
+Bugfixes:
+
+- saxon-aelfred parser is used per default to overcome xml-parser shortcuts in suns jdk
+- ClassCastException during calendar export
+- appointment-ids are assigned correctly when storing into the sql-database. No more
+mysterious appointment doubles.
+- NullPointerException in Email-Notification fixed
+- Redraw Problem of weekview
+- Problem when assigning 2 appointments to 2 different resoures. Sometimes
+  the second assignment was silently dropped.
+- Broken HTML-Weekview, when appointments span 2 or more days.
+- Bug in the weekview that displayed appointments, starting on 0:00 of the first day of week, also in the previous week.
+- Error storing filters with no selected category
+- Webstart Error with java 1.4.1_05 (see http://sourceforge.net/tracker/index.php?func=detail&aid=844423&group_id=7274&atid=107274)
+- Email notification: Two different appointments with a dedicated resource 
+  for each lists 4 instead of the correct 2 allocations.
+- Many others
+

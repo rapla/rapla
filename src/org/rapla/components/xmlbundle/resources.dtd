@@ -1,0 +1,28 @@
+<!ENTITY % text "#PCDATA">
+<!ENTITY % special "br">
+<!ENTITY % markup "p|b|i|strong|em|h1|h2|h3">
+<!ENTITY % links "a">
+<!ENTITY % link-content.mix "%text;|%markup;|%special;">
+<!ENTITY % content.mix "%link-content.mix;|%links;">
+
+<!ELEMENT resources (entry*)>
+    <!ATTLIST resources default CDATA #REQUIRED> 
+    <!ATTLIST resources parent CDATA #IMPLIED> 
+<!ELEMENT entry ((text|icon)+)>
+    <!ATTLIST entry key CDATA #REQUIRED> 
+<!ELEMENT text (%content.mix;)*>
+    <!ATTLIST text lang CDATA #IMPLIED> 
+<!ELEMENT icon EMPTY>
+    <!ATTLIST icon lang CDATA #IMPLIED> 
+    <!ATTLIST icon src CDATA #REQUIRED> 
+<!ELEMENT br EMPTY>
+<!ELEMENT p (%content.mix;)*>
+<!ELEMENT b (%content.mix;)*>
+<!ELEMENT i (%content.mix;)*>
+<!ELEMENT strong (%content.mix;)*>
+<!ELEMENT em (%content.mix;)*>
+<!ELEMENT h1 (%content.mix;)*>
+<!ELEMENT h2 (%content.mix;)*>
+<!ELEMENT h3 (%content.mix;)*>
+<!ELEMENT a (%link-content.mix;)*>
+    <!ATTLIST a href CDATA #REQUIRED>

@@ -1,0 +1,20 @@
+# You can modify this settings to configure the build
+
+#Set the target that will be run by default
+target=dist-bin
+#set this if you want to enforce a clean on every build
+#clean.everytime=true
+
+#The base folder where all plugin source projects are located 
+plugin.base=${main.dir}/..
+#You can choose plugin directories to include in the build 
+#plugin.includes=demo_plugin,periodwizard_plugin
+#plugin.includes=nothing_plugin
+plugin.includes=*_plugin
+
+#Class for testing rapla when using the "test" target
+#test.class=org.rapla.entities.PreferencesTest
+
+#Path and password to the keystore used for signing
+#keystore.file=testkeystore
+#keystore.password=secret
