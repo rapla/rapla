@@ -13,6 +13,7 @@
 
 package org.rapla.entities.domain.internal;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
@@ -121,7 +122,11 @@ public class PermissionImpl
     
     
     public int getUserEffect(User user) {
-        User pUser = getUser();
+        return getUserEffect(user, null);
+    }
+    
+	public int getUserEffect(User user, Collection<Category> groups) {
+	    User pUser = getUser();
         Category pGroup = getGroup();
         if ( pUser == null  && pGroup == null ) 
         {
@@ -133,13 +138,23 @@ public class PermissionImpl
         } 
         else if ( pGroup != null ) 
         {
-        	if ( user.belongsTo( pGroup))
+        	if ( groups == null)
         	{
-                return GROUP_PERMISSION;	
+        		if ( user.belongsTo( pGroup))
+        		{
+        			return GROUP_PERMISSION;	
+        		}
+        	}
+        	else
+        	{
+        		if ( groups.contains(pGroup))
+        		{
+        			return GROUP_PERMISSION;
+        		}
         	}
         }
         return NO_PERMISSION;
-    }
+	}
 
     public void setAccessLevel(int accessLevel) 
     {
@@ -347,5 +362,7 @@ public class PermissionImpl
     	}
     	return buf.toString();
     }
+
+
 
 }
