@@ -12,8 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -23,6 +26,7 @@ import java.util.Set;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
@@ -141,9 +145,28 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
       
         int maxAccessLevel = 0;
         int maxEffectLevel = Permission.NO_PERMISSION;
+        Category[] originalGroups = user.getGroups();
+		Collection<Category> groups = new HashSet<Category>( Arrays.asList( originalGroups));
+        for ( Category group: originalGroups)
+        {
+        	Category parent = group.getParent();
+        	while ( parent != null)
+        	{
+        		if ( ! groups.contains( parent))
+        		{
+        			groups.add( parent);
+        		}
+        		if ( parent == group)
+        		{
+        			throw new IllegalStateException("Parent added to own child");
+        		}
+        		parent = parent.getParent();
+        	}
+        }
         for ( int i = 0; i < permissions.length; i++ ) {
             Permission p = permissions[i];
-            int effectLevel = p.getUserEffect(user);
+            int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+
             if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION)
             {
             	if ( p.hasTimeLimits() && accessLevel >= Permission.ALLOCATE && today!= null)
