@@ -108,7 +108,7 @@ final public class RaplaMainContainer extends ContainerImpl
     
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context) throws Exception
     {
-    	this(  env,context,createRaplaLogger(env));
+    	this(  env,context,createRaplaLogger());
     }
     
     CommandScheduler commandQueue;
@@ -138,7 +138,7 @@ final public class RaplaMainContainer extends ContainerImpl
         
     }
 
-    private static Logger createRaplaLogger( StartupEnvironment env ) throws RaplaException
+    private static Logger createRaplaLogger() throws RaplaException
     {
     	Logger logger;
     	try {
@@ -153,23 +153,6 @@ final public class RaplaMainContainer extends ContainerImpl
 			logger.info("Logging via java.util.logging API. " + e1.toString());
 		}
 
-        final Logger loggerToUse = logger;
-        int startupMode = env.getStartupMode();
-		if ( startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
-        {
-			try
-			{
-	        	Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-	        		public void uncaughtException(Thread t, Throwable e) {
-	        			loggerToUse.error("uncaught exception", e);
-	        		}
-	        	});
-			}
-			catch (Throwable ex)
-			{
-				logger.error("Can't set default exception handler-", ex);
-			}
-        }
         return logger;
     }
 

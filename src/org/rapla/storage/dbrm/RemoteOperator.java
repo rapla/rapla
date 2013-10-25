@@ -814,18 +814,9 @@ public class RemoteOperator
                 	{
                 		updater.setStatus( Status.BUSY );
                 	}
-                	Map<String, String> argMap = remoteMethodSerialization.serializeArguments(method, args);
-                    String methodName = method.getName();
-                    if ( service != null)
-                    {
-                        methodName = service.getName() +"/" + methodName; 
-                    }
-                    String stream =connector.call( methodName, argMap );
-                    Object result = remoteMethodSerialization.deserializeReturnValue(method, stream);
+                    Object result =connector.call( service, method , args,remoteMethodSerialization);
                     return result;
                 } catch (IOException ex) {
-                    throw new RaplaException(ex);
-                } catch (ParseException ex) {
                     throw new RaplaException(ex);
                 }  catch ( RaplaException ex) {
                     if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))

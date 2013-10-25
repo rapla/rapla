@@ -3,14 +3,15 @@ package org.rapla.storage.dbrm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -123,8 +124,15 @@ public class HTTPConnector extends RaplaComponent implements Connector
 //	    }
 //    }
     
-    public String call(String methodName, Map<String,String> args) throws IOException, RaplaException
-    {
+	public Object call(Class<?> service, Method method, Object[] args,	RemoteMethodSerialization remoteMethodSerialization)  throws IOException, RaplaException 
+	{
+		String methodName = method.getName();
+	    if ( service != null)
+	    {
+	        methodName = service.getName() +"/" + methodName; 
+	    }
+	    Map<String, String> argMap = remoteMethodSerialization.serializeArguments(method, args);
+    	
         URL methodURL = new URL(server,"rapla/rpc/" + methodName );
         //System.err.println("Calling " + methodURL.toExternalForm() );
         methodURL = addSessionId( methodURL );
@@ -148,7 +156,7 @@ public class HTTPConnector extends RaplaComponent implements Connector
         try
         {
 	        wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-	        addParams( wr, args);
+	        addParams( wr, argMap);
 	        wr.flush();
         }
         finally
@@ -164,32 +172,27 @@ public class HTTPConnector extends RaplaComponent implements Connector
         	String cookie = conn.getHeaderField("Set-Cookie");
         	updateSession ( cookie);
         	
-        	String entry = conn.getHeaderField("X-Error-Stacktrace");
-            if ( entry != null)
+        	String message = conn.getHeaderField("X-Error-Stacktrace");
+            if ( message != null)
             {
-            	 inputStream = conn.getInputStream();
-                 Throwable e;
-                 ObjectInputStream in = null;
-                 try
-                 {
-                	 in = new ObjectInputStream( inputStream );
-                	 e = (Throwable)in.readObject();
-                 }
-                 catch (Exception e1)
-                 {
-                     throw new RaplaException( e1);
-                 }
-                 if ( e instanceof  RaplaException)
-                 {
-                	 throw (RaplaException) e;
-                 }
-                 throw new RaplaException( e);
+            	String classname = conn.getHeaderField("X-Error-Classname");
+            	String param = conn.getHeaderField("X-Error-Param");
+            	RaplaException ex = remoteMethodSerialization.deserializeException( classname, message, param);
+            	throw ex;
             }
             inputStream = conn.getInputStream();
-            String result = readResultToString( inputStream);
+            String resultString = readResultToString( inputStream);
             inputStream.close();
-            return result;
+
+    	    Object result;
+    	    result = remoteMethodSerialization.deserializeResult(method, resultString);
+    		
+    	    return result;
         } 
+        catch (ParseException e) 
+        {
+        	throw new RaplaException( e);
+        }
         catch (ConnectException ex)
         {   
             throw new RaplaConnectException(getConnectError(ex));

@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.rapla.framework.RaplaException;
@@ -19,9 +20,9 @@ public class DependencyException extends RaplaException {
     private static final long serialVersionUID = 1L;
     
     Collection<String> dependentObjects;
-    public DependencyException(String message,Collection<String> dependentObjectsNames)  {
+    public DependencyException(String message,String[] dependentObjectsNames)  {
         super(message);
-        this.dependentObjects =  dependentObjectsNames;
+        this.dependentObjects =  Arrays.asList(dependentObjectsNames);
     }
 
     public Collection<String> getDependencies() {

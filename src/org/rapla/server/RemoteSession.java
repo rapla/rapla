@@ -25,4 +25,5 @@ public interface RemoteSession
 	User getUser() throws RaplaException;
 	Logger getLogger();
 	void logout() throws RaplaException;
+	void setUser(User user);
 }

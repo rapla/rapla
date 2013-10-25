@@ -51,7 +51,6 @@ import javax.swing.event.ListSelectionListener;
 
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -85,6 +84,7 @@ import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaSeparator;
 import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class RaplaMenuBar extends RaplaGUIComponent
 {
@@ -221,7 +221,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         {
-            SaveableToggleAction action = new SaveableToggleAction( context, "show_tips",RaplaClientServiceImpl.SHOW_TOOLTIP_CONFIG_ENTRY);
+            SaveableToggleAction action = new SaveableToggleAction( context, "show_tips",RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY);
         	RaplaMenuItem menu = action.createMenuItem();
             viewMenu.insertBeforeId( menu, "view_save" );
         }

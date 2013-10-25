@@ -202,6 +202,10 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         	Category parent = cat.getParent();
         	result.addFirst( parent.getKey());
         	cat = parent;
+        	if ( parent == this)
+        	{
+        		throw new IllegalStateException("Parent added as own child");
+        	}
         }
         result.add( getKey());
         return result;

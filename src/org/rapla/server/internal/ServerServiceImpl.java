@@ -528,11 +528,13 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                  }
              }
             
-             public void login( String username, String password, String connectAs ) throws RaplaException
+             public String login( String username, String password, String connectAs ) throws RaplaException
              {
+            	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
             	 if ( standaloneSession == null)
             	 {
 	            	 Logger logger = getLogger().getChildLogger("login");
+	            	 logger.info( "User '" + username + "' is requesting login."  );
 	            	 if ( authenticationStore != null )
 	                 {
 	                	 logger.info("Checking external authentifiction for user " + username);
@@ -557,14 +559,14 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		                     try
 		                     {
 		                         Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
-		                		 logger.info("Looking for update for rapla user " + username + " from external source.");
+		                		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
 		                         initUser = authenticationStore.initUser( user.cast(), username, password, groupCategory );
 		                     } catch (RaplaSecurityException ex){
 		                         throw new RaplaSecurityException(i18n.getString("error.login"));
 		                     }
 		                     if ( initUser )
 		                     {
-		                		 logger.info("Udating rapla user " + username + " from external source.");
+		                		 logger.info("Udating rapla user '" + username + "' from external source.");
 		                    	 List<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>(1);
 		                         storeList.add( user);
 		                         List<RefEntity<?>> removeList = Collections.emptyList();
@@ -573,12 +575,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		                     }
 		                     else
 		                     {
-		                		 logger.info("User " + username  + " already up to date");
+		                		 logger.info("User '" + username  + "' already up to date");
 		                     }
 		                 }
 	                	 else
 	                	 {
-	                		 logger.info("Now trying to authenticate with local store " + username);
+	                		 logger.info("Now trying to authenticate with local store '" + username + "'");
 	                		 operator.authenticate( username, password );
 	                	 }
 	                	 // do nothing
@@ -587,15 +589,27 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	                 {
 	                	 logger.info("Check password for " + username);
 	                	 operator.authenticate( username, password );
-	                	 logger.info("Successfull login for " + username);
 	                 }
+	            	 
+	            	 if ( connectAs != null && connectAs.length() > 0)
+	            	 {
+	            		 logger.info("Successfull login for '" + username  +"' acts as user '" + connectAs + "'");
+	            	 }
+	            	 else
+	            	 {
+	            		 logger.info("Successfull login for '" + username + "'");
+	            	 }
+	            	 User user = operator.getUser(toConnect);
+	            	 if ( user == null)
+	            	 {
+	            		 throw new RaplaException("User with username '" + toConnect + "' not found");
+	            	 }
+	            	 session.setUser( user);
             	 }
             	 else
                  {
             		 // don't check passwords in standalone version
-                	 RaplaContext context = getContext();
-                	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-                	 User user = context.lookup(StorageOperator.class).getUser( toConnect);
+                	 User user = operator.getUser( toConnect);
                 	 if ( user == null)
                 	 {
                 		 throw new RaplaSecurityException(i18n.getString("error.login"));
@@ -609,6 +623,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                          throw new SecurityException("Non admin user is requesting change user permission!");
                      }
                  }
+                 return "Login successful";
              }
 
             
@@ -622,7 +637,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 
                 String serverVersion = i18n.getString( "rapla.version" );
                 //if ( !serverVersion.equals( clientVersion ) )
-                if (clientVersion.contains("1.7.3") || clientVersion.contains("1.7.2") ||  clientVersion.contains("1.7.1") || clientVersion.contains("1.6") || clientVersion.contains("1.5") || clientVersion.contains("1.4"))
+                if (clientVersion.contains("1.7.4RC1") || clientVersion.contains("1.7.3") || clientVersion.contains("1.7.2") ||  clientVersion.contains("1.7.1") || clientVersion.contains("1.6") || clientVersion.contains("1.5") || clientVersion.contains("1.4"))
                 {
                     throw new RaplaException( "Incompatible client/server versions. Please change your client to version "
                             + serverVersion

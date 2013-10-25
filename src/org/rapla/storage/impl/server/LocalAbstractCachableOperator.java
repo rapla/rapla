@@ -650,6 +650,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			Set<RefEntity<?>> dependencies = getDependencies(entity);
 			for (RefEntity<?> dependency : dependencies) {
 				if (!storeObjects.contains(dependency)) {
+					// only add the first 21 dependencies;
+					if (dep.size() > MAX_DEPENDENCY )
+					{
+						break;
+					}
 					dep.add(dependency);
 				}
 			}
@@ -681,7 +686,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				String string = getDependentName(obj);
 				names.add(string);
 			}
-			throw new DependencyException(getString("error.dependencies"),names);
+			throw new DependencyException(getString("error.dependencies"),names.toArray( new String[] {}));
 		}
 		// Count dynamic-types to ensure that there is least one dynamic type
 		// for resources, for persons and for reservations

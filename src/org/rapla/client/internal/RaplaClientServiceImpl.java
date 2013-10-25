@@ -70,7 +70,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.ComponentInfo;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
@@ -104,6 +103,7 @@ import org.rapla.gui.toolkit.RaplaFrame;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenubar;
 import org.rapla.gui.toolkit.RaplaSeparator;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.RestartServer;
@@ -124,9 +124,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
 	
-    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
-
-	static boolean lookAndFeelSet;
+    static boolean lookAndFeelSet;
 	private CommandScheduler commandQueue;
 	
 
@@ -172,7 +170,24 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     
     protected void init() throws RaplaException {
     	advanceLoading(false);
-    	
+    	StartupEnvironment env = getContext().lookup(StartupEnvironment.class);
+        int startupMode = env.getStartupMode();
+        final Logger logger = getLogger();
+ 		if ( startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
+         {
+ 			try
+ 			{
+ 	        	Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+ 	        		public void uncaughtException(Thread t, Throwable e) {
+ 	        			logger.error("uncaught exception", e);
+ 	        		}
+ 	        	});
+ 			}
+ 			catch (Throwable ex)
+ 			{
+ 				logger.error("Can't set default exception handler-", ex);
+ 			}
+         }
     	setLookandFeel();
     	defaultLanguageChoosen = true;
     	getLogger().info("Starting gui ");
@@ -441,7 +456,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         }
         started = true;
         User user = model.getUser();
-        boolean showToolTips = facade.getPreferences( user ).getEntryAsBoolean( SHOW_TOOLTIP_CONFIG_ENTRY, true);
+        boolean showToolTips = facade.getPreferences( user ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         javax.swing.ToolTipManager.sharedInstance().setEnabled(showToolTips);
         //javax.swing.ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         javax.swing.ToolTipManager.sharedInstance().setInitialDelay( 1000 );

@@ -22,9 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.util.DateTools;
 
 public class HTMLCompactWeekView extends AbstractHTMLView {
@@ -155,7 +155,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         blockCalendar.setTime(getStartDate());
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
-            headerNames.add (SwingWeekView.formatDayOfWeekDateMonth
+            headerNames.add (AbstractCalendar.formatDayOfWeekDateMonth
                 (blockCalendar.getTime()
                  ,locale
                  ,timeZone

@@ -31,6 +31,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
@@ -207,7 +208,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         Dimension dim;
         if (column != null ) {
         	Date date = getDateFromColumn(column);
-            jLabel.setText(formatDayOfWeekDateMonth(date,locale,getTimeZone()));
+            jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale,getTimeZone()));
             jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
          	dim = new Dimension(this.slotSize,20);
         }

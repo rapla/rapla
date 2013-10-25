@@ -23,9 +23,9 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.swing.SwingWeekView;
 
 public class HTMLWeekView extends AbstractHTMLView {
     private int endMinutes;
@@ -144,7 +144,7 @@ public class HTMLWeekView extends AbstractHTMLView {
         }
         result.append("\n</tr>");
         result.append("<tr></tr>");
-        boolean useAM_PM = org.rapla.components.calendarview.swing.TimeScale.isAmPmFormat( locale );
+        boolean useAM_PM = org.rapla.components.calendarview.AbstractCalendar.isAmPmFormat( locale );
         int firstEventMarkerId = 7;
         boolean firstEventMarkerSet = false;
  
@@ -323,7 +323,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 	protected String createColumnHeader(int i) {
 		blockCalendar.setTime(getStartDate());
 		blockCalendar.add(Calendar.DATE, i);
-		String headerName = SwingWeekView.formatDayOfWeekDateMonth
+		String headerName = AbstractCalendar.formatDayOfWeekDateMonth
 		    (blockCalendar.getTime()
 		     ,locale
 		     ,timeZone

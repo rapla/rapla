@@ -31,7 +31,6 @@ import java.util.Map;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
@@ -62,6 +61,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.toolkit.RaplaColorList;
 
@@ -98,6 +98,7 @@ public abstract class RaplaBuilder extends RaplaComponent
 
     List<AppointmentBlock> preparedBlocks = null;
     private Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+	public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
 
     public RaplaBuilder(RaplaContext sm) {
         super(sm);
@@ -602,7 +603,7 @@ public abstract class RaplaBuilder extends RaplaComponent
             this.isResourceColoring = builder.isResourceColoring;
             this.isEventColoring = builder.isEventColoring;
             try {
-                this.showTooltips = builder.getClientFacade().getPreferences(user).getEntryAsBoolean(RaplaClientServiceImpl.SHOW_TOOLTIP_CONFIG_ENTRY, true);
+                this.showTooltips = builder.getClientFacade().getPreferences(user).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
             } catch (RaplaException e) {
                 this.showTooltips = true;
                 getLogger().error(e.getMessage(), e);

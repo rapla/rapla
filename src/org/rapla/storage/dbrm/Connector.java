@@ -1,7 +1,7 @@
 package org.rapla.storage.dbrm;
 
 import java.io.IOException;
-import java.util.Map;
+import java.lang.reflect.Method;
 
 import org.rapla.framework.RaplaException;
 
@@ -9,6 +9,6 @@ public interface Connector
 {
     String getInfo();
 
-    String call( String methodName, Map<String,String> args) throws IOException, RaplaException;
+	Object call(Class<?> service, Method method, Object[] args,	RemoteMethodSerialization remoteMethodSerialization) throws IOException, RaplaException;
     
 }

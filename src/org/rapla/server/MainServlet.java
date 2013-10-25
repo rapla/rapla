@@ -12,16 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -65,7 +61,7 @@ import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.dbrm.RemoteMethodSerialization;
 public class MainServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
@@ -617,7 +613,7 @@ public class MainServlet extends HttpServlet {
         
     }
     
-    private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) throws IOException
+    private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
     {
     	
     	int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
@@ -627,49 +623,28 @@ public class MainServlet extends HttpServlet {
         final HttpSession session = request.getSession( true );
         String sessionId = session.getId();
         response.addCookie(new Cookie("JSESSIONID", sessionId));
-
       
         try
         {
 			Map<String,String[]> originalMap = request.getParameterMap();
 			Map<String,String> parameterMap = makeSingles(originalMap);
             ServerServiceContainer serverContainer = getServer();
-            RemoteMethodFactory<RemoteServer> server= serverContainer.getWebservice( RemoteServer.class);
-            RemoteSession  remoteSession = new RemoteSessionImpl(serverContainer.getContext(), session.getId()){
+            RaplaContext context = serverContainer.getContext();
+			RemoteSession  remoteSession = new RemoteSessionImpl(context, session.getId()){
 
                 public void logout() throws RaplaException {
                     session.removeAttribute("userid");
                 }
-            };
-            if ( methodName.equals(RemoteServer.class.getName() + "/login"))
-            {
-            	List<String> arg = new ArrayList<String>(parameterMap.values());
-            	String username = arg.get(0);
-            	String password = arg.get( 1);
-                String connectAs = arg.get( 2);
-                //parameterMap.get("password");
-				Logger childLogger = getLogger().getChildLogger("server").getChildLogger(session.getId()).getChildLogger("login");
-                childLogger.info( "User '" + username + "' is requesting login from session " + sessionId );
-            	server.createService(remoteSession).login( username, password, connectAs);
-            	if ( connectAs != null && connectAs.length() > 0)
-            	{
-            	    username = connectAs;
-            	}
-            	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
-                User user = operator.getUser(username);
-                if ( user == null)
-                {
-                	throw new RaplaException("User with username " + username + " not found");
+                
+                @Override
+                public void setUser(User user) {
+                	super.setUser(user);
+                    session.setAttribute("userid", ((RefEntity<?>)user).getId());
                 }
-                session.setAttribute("userid", ((RefEntity<?>)user).getId());
-                session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
-				childLogger.info("Login " + username);
-				byte[] out = "Login successfull".getBytes();
-		    	response.getOutputStream().write( out);
-            }
-            else if ( methodName.equals("org.rapla.server.RemoteServer/checkServerVersion"))
+            };
+            if ( methodName.equals("org.rapla.server.RemoteServer/checkServerVersion"))
             {
-            	 I18nBundle i18n = serverContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+            	 I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
             	 String serverVersion = i18n.getString( "rapla.version" );
                  //if ( !serverVersion.equals( clientVersion ) )
             	 String string = request.getRequestURL().toString().replaceAll( "rpc/"+methodName, "");
@@ -682,17 +657,25 @@ public class MainServlet extends HttpServlet {
                 final Object userId = session.getAttribute("userid");
                 if ( userId != null)
                 {
-                	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
+                	StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
                 	User user = (User) ((CachableStorageOperator)operator).resolveId( userId); 
                     ((RemoteSessionImpl)remoteSession).setUser( user);
                 }
                 Long sessionstart = (Long)session.getAttribute("serverstarttime");
-                // We have to reset the client because the server restarted
-                if ( sessionstart != null && sessionstart < serverStartTime)
+                if ( sessionstart != null)
                 {
-                    ((RemoteSessionImpl)remoteSession).setUser( null);
-                }    
-                RemoteServiceDispatcher serviceDispater= serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
+	                // We have to reset the client because the server restarted
+	                if ( sessionstart < serverStartTime)
+	                {
+	                    ((RemoteSessionImpl)remoteSession).setUser( null);
+	                }
+                }
+                else
+                {
+                    session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
+                }
+                	
+                RemoteServiceDispatcher serviceDispater= context.lookup( RemoteServiceDispatcher.class);
                 byte[] out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
                 //String test = new String( out);
                 response.setContentType( "text/html; charset=utf-8");
@@ -713,27 +696,43 @@ public class MainServlet extends HttpServlet {
         }
         catch (Exception e)
         {
-            String message = e.getMessage();
-            if ( message == null )
-            {
-                message = e.getClass().getName();
-            }
-            response.addHeader("X-Error-Stacktrace", message);
-            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-            ObjectOutputStream exout = new ObjectOutputStream( outStream);
-            exout.writeObject( e);
-            exout.flush();
-            byte[] out = outStream.toByteArray();
-            try
+        	try
         	{
-        		ServletOutputStream outputStream = response.getOutputStream();
-				outputStream.write( out );
-				outputStream.close();
-        	}
-        	catch (Exception ex)
-            {
-            	getLogger().error( " Error writing exception back to client " + ex.getMessage());
-            }
+        		String message = e.getMessage();
+	            String name = e.getClass().getName();
+	            if ( message == null )
+	            {
+					message = name;
+	            }
+	            response.addHeader("X-Error-Stacktrace", message );
+	            response.addHeader("X-Error-Classname",  name);
+	            String param = RemoteMethodSerialization.serializeExceptionParam( e);
+	            if ( param != null)
+	            {
+	            	response.addHeader("X-Error-Param",  param);
+	            }
+	            response.setStatus( 500);
+	        }
+	        catch (Exception ex)
+	        {
+	        	getLogger().error( " Error writing exception back to client " + e.getMessage(), ex);
+	        }
+        
+//            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+//            ObjectOutputStream exout = new ObjectOutputStream( outStream);
+//            exout.writeObject( e);
+//            exout.flush();
+//            byte[] out = outStream.toByteArray();
+//            try
+//        	{
+//        		ServletOutputStream outputStream = response.getOutputStream();
+//				outputStream.write( out );
+//				outputStream.close();
+//        	}
+//        	catch (Exception ex)
+//            {
+//            	getLogger().error( " Error writing exception back to client " + ex.getMessage());
+//            }
         }
 
     }

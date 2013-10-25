@@ -321,12 +321,12 @@ public class RaplaComponent
     	{
     		return false;
     	}
+    	if ( cat.size() == 1 && cat.iterator().next() == dummyCategory)
+    	{
+    		return true;
+    	}
     	for (Category c: cat)
     	{
-    		if ( c == dummyCategory)
-    		{
-    			return true;
-    		}
     		if (user.belongsTo( c) )
     		{
     			return true;

@@ -19,9 +19,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.text.DateFormat;
-import java.text.FieldPosition;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
@@ -294,44 +291,6 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         for (int i=0;i<listeners.length;i++) {
             listeners[i].blockEdit(block,p);
         }
-    }
-
-    /** formats the date and month in the selected locale and timeZone*/
-    public static String formatDateMonth(Date date, Locale locale, TimeZone timeZone) {
-        FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
-        StringBuffer buf = new StringBuffer();
-        DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale);
-        format.setTimeZone( timeZone );
-        buf = format.format(date,
-                           buf,
-                           fieldPosition
-                           );
-        if ( fieldPosition.getEndIndex()<buf.length() ) {
-            buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex()+1 );
-        } else if ( (fieldPosition.getBeginIndex()>=0) ) {
-            buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex() );
-        }
-        char lastChar = buf.charAt(buf.length()-1);
-		if (lastChar == '/' || lastChar == '-' )
-            return buf.substring(0,buf.length()-1);
-        else
-            return buf.toString();
-    }
-
-    /** formats the day of week, date and month in the selected locale and timeZone*/
-    public static String formatDayOfWeekDateMonth(Date date, Locale locale, TimeZone timeZone) {
-        SimpleDateFormat format =  new SimpleDateFormat("EEE", locale);
-        format.setTimeZone(timeZone);
-        String datePart = format.format(date);
-		String dateOfMonthPart = formatDateMonth( date,locale,timeZone );
-		return datePart + " " + dateOfMonthPart ;
-    }
-
-    /** returns the name of the weekday */
-    String formatDayOfWeek(Date date) {
-        SimpleDateFormat format =  new SimpleDateFormat("EEEEE", locale);
-        format.setTimeZone(getTimeZone());
-        return format.format(date);
     }
 
     abstract int getDayCount();

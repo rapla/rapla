@@ -580,7 +580,10 @@ public class ContainerImpl implements Container
 					command.execute();
 				} catch (Exception e) {
 					getLogger().error( e.getMessage(), e);
-				}					
+				} catch (Error e) {
+					getLogger().error( e.getMessage(), e);
+					throw e;
+				}
 			}
 		};
 		return timerTask;
@@ -588,6 +591,7 @@ public class ContainerImpl implements Container
 
     
     protected CommandScheduler createCommandQueue() {
+    	
     	final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5,new ThreadFactory() {
 			
 			public Thread newThread(Runnable r) {
@@ -605,6 +609,8 @@ public class ContainerImpl implements Container
 				TimeUnit unit = TimeUnit.MILLISECONDS;
 				ScheduledFuture<?> schedule = executor.schedule(task, delay, unit);
 				return createCancable( schedule);
+//				task.run();
+//				return createCancable();
 			}
 
 			private Cancelable createCancable(final ScheduledFuture<?> schedule) {
@@ -615,11 +621,20 @@ public class ContainerImpl implements Container
 				};
 			}
 
+//			private Cancelable createCancable() {
+//				return new Cancelable() {
+//					public void cancel() {
+//					}
+//				};
+//			}
+
 			public Cancelable schedule(Command command, long delay, long period) {
 				Runnable task = createTask(command);
 				TimeUnit unit = TimeUnit.MILLISECONDS;
 				ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
 				return createCancable( schedule);
+//				task.run();
+//				return createCancable();
 			}
 			
 			public void cancel() {

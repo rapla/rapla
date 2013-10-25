@@ -15,7 +15,7 @@ package org.rapla.storage.dbrm;
 import org.rapla.framework.RaplaException;
 
 public interface RemoteServer  {
-    void login(String username,String password, String connectAs) throws RaplaException;
+    String login(String username,String password, String connectAs) throws RaplaException;
     void checkServerVersion(String clientVersion) throws RaplaException;
 	void logout() throws RaplaException;
 }

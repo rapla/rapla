@@ -1,5 +1,7 @@
 package org.rapla.components.calendarview;
 
+import java.text.DateFormat;
+import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -187,6 +189,45 @@ public abstract class  AbstractCalendar {
     public void removeBuilder(Builder b) {
         builders.remove(b);
     }
+
+	/** formats the date and month in the selected locale and timeZone*/
+	public static String formatDateMonth(Date date, Locale locale, TimeZone timeZone) {
+	    FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
+	    StringBuffer buf = new StringBuffer();
+	    DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale);
+	    format.setTimeZone( timeZone );
+	    buf = format.format(date,
+	                       buf,
+	                       fieldPosition
+	                       );
+	    if ( fieldPosition.getEndIndex()<buf.length() ) {
+	        buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex()+1 );
+	    } else if ( (fieldPosition.getBeginIndex()>=0) ) {
+	        buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex() );
+	    }
+	    char lastChar = buf.charAt(buf.length()-1);
+		if (lastChar == '/' || lastChar == '-' )
+	        return buf.substring(0,buf.length()-1);
+	    else
+	        return buf.toString();
+	}
+
+	/** formats the day of week, date and month in the selected locale and timeZone*/
+	public static String formatDayOfWeekDateMonth(Date date, Locale locale, TimeZone timeZone) {
+	    SimpleDateFormat format =  new SimpleDateFormat("EEE", locale);
+	    format.setTimeZone(timeZone);
+	    String datePart = format.format(date);
+		String dateOfMonthPart = formatDateMonth( date,locale,timeZone );
+		return datePart + " " + dateOfMonthPart ;
+	}
+
+	public static boolean isAmPmFormat(Locale locale) {
+	    // Determines if am-pm-format should be used.
+	    DateFormat format= DateFormat.getTimeInstance(DateFormat.SHORT, locale);
+	    FieldPosition amPmPos = new FieldPosition(DateFormat.AM_PM_FIELD);
+	    format.format(new Date(), new StringBuffer(),amPmPos);
+	    return (amPmPos.getEndIndex()>0);
+	}
     
 
 	 

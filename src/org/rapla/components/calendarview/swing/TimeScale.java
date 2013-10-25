@@ -18,14 +18,13 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Rectangle;
-import java.text.DateFormat;
-import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 import javax.swing.JComponent;
+
+import org.rapla.components.calendarview.AbstractCalendar;
 
 /** A vertical scale displaying the hours of day. Uses am/pm notation
  * in the appropriate locale.
@@ -50,27 +49,17 @@ public class TimeScale extends JComponent
 
     
     public TimeScale() {
-        useAM_PM = isAmPmFormat(Locale.getDefault());
+        useAM_PM = AbstractCalendar.isAmPmFormat(Locale.getDefault());
         createHours(Locale.getDefault());
     }
     
     public void setLocale(Locale locale) {
         if (locale == null)
             return;
-        useAM_PM = isAmPmFormat(locale);
+        useAM_PM = AbstractCalendar.isAmPmFormat(locale);
         createHours(locale);
     }
 
-    public static boolean isAmPmFormat(Locale locale) {
-        // Determines if am-pm-format should be used.
-        DateFormat format= DateFormat.getTimeInstance(DateFormat.SHORT, locale);
-        FieldPosition amPmPos = new FieldPosition(DateFormat.AM_PM_FIELD);
-        format.format(new Date(), new StringBuffer(),amPmPos);
-        return (amPmPos.getEndIndex()>0);
-    }
-
-    
-    
     /**
        mintime und maxtime definieren das zeitintevall in vollen stunden.
        die skalen-einteilung wird um vgap pixel nach unten verschoben

@@ -30,6 +30,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.scaling.IRowScale;
@@ -337,7 +338,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
         Date date = getDateFromColumn(column);
-        jLabel.setText(formatDayOfWeekDateMonth(date,locale,getTimeZone()));
+        jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale,getTimeZone()));
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
         jLabel.setOpaque(false);

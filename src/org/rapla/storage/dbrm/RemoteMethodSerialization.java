@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.DependencyException;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -47,6 +49,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.IdTable;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.RaplaConfigurationWriter;
@@ -61,6 +64,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 {
     Provider<EntityStore> storeProvider;
     LocalCache cache;
+	static private char escapeChar='\\';
     
     class EmptyIdTable extends IdTable
     {
@@ -97,7 +101,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         return argMap;
     }
 
-    public Object deserializeReturnValue(Method method, String  stream) throws RaplaException,  ParseException {
+    public Object deserializeResult(Method method, String  stream) throws RaplaException,  ParseException {
         Class<?> returnType = method.getReturnType();
         if ( returnType.isAssignableFrom( EntityList.class))
         {
@@ -171,6 +175,8 @@ public class RemoteMethodSerialization extends RaplaComponent
         return new EntityList(list,store.getRepositoryVersion());
     }
 
+    
+    
 	protected void readXML(String stream, RaplaMainReader contentHandler)
 			throws RaplaException {
 		RaplaNonValidatedInput xmlAdapter = new RaplaNonValidatedInput( getLogger().getChildLogger("reading"));
@@ -179,53 +185,6 @@ public class RemoteMethodSerialization extends RaplaComponent
             final StringReader bufin = new StringReader( stream);
             xmlAdapter.read( bufin, contentHandler);
             bufin.close();
-//            final PipedOutputStream out = new PipedOutputStream();
-//            final Writer bufout = new OutputStreamWriter(  out,"UTF-8");
-//            final Logger logger = getLogger().getChildLogger("xml-communication");
-//            new Thread()
-//            {
-//                public void run() {
-//                    try
-//                    {
-//                        int i=0;
-//                        while (true  )
-//                        {
-//                                String line = bufin.readLine() ; 
-//                                if ( line == null)
-//                                    break;
-//                                bufout.write( line);
-//                                bufout.write("\n");
-//                                if (logger.isDebugEnabled())
-//                                {
-//                                    String lineInfo = (10000 + i)+ ":" + line;
-//                                    logger.debug( lineInfo);
-//                                    //System.out.println(lineInfo);
-//                                }
-//                                i++;
-//                        }
-//                        bufout.flush();
-//                    }
-//                    catch ( IOException ex)
-//                    {
-//                    }
-//                    finally
-//                    {
-//                        try {
-//                            bufout.close();
-//                        } catch (IOException e) {
-//                        }
-//                    }
-//                }
-//            }.start();
-//            {
-//                PipedInputStream inPipe= new PipedInputStream( out );
-//                InputStreamReader xml = new InputStreamReader(inPipe, "UTF-8");
-//            	final BufferedReader bufin2 = new BufferedReader( xml);
-//                xmlAdapter.read( bufin2, contentHandler);
-//                bufin.close();
-//                xml.close();
-//                out.close();
-//            }
         }
         catch (IOException e)
         {
@@ -233,8 +192,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         }
 	}
 
-	
-    public Object convertFromString(Class<?> type, String string)	throws ParseException, RaplaException
+	public Object convertFromString(Class<?> type, String string)	throws ParseException, RaplaException
 	{
 		if ( string == null)
 		{
@@ -291,57 +249,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 	  		}
 	  		else
 	  		{
-		  		Collection<Object> col = new ArrayList<Object>();
-			  	int length = string.length();
-				if (length> 0)
-		  		{
-			  		int currentPos = 0;
-			  		int lastPos = 1;
-			  		int opBrackets = 0;
-			  		char[] coded = new char[] {'{','}',','};
-			  		while ( true)
-			  		{
-				  		int firstPos = length;
-				  		char firstChar = 0;
-				  		for ( char c: coded)
-				  		{
-				  			int nextIndex =string.indexOf(c, currentPos);
-				  			if (nextIndex >= 0 && nextIndex <= firstPos)
-				  			{
-				  				firstPos = nextIndex;
-				  				firstChar = c;
-				  			}
-				  		}
-				  		if ( firstChar == '{')
-				  		{
-				  			opBrackets++;
-				  		}
-				  		else
-				  		{
-				  			if ( firstChar == '}')
-				  			{
-				  				opBrackets--;
-				  			}
-				  			if ( opBrackets <= 1)
-				  			{
-				  				String id = string.substring( lastPos, firstPos + ((firstChar == '}' && opBrackets > 0) ? 1:0));
-				  				if ( id.length() > 0 || (firstChar == ',' && string.charAt( lastPos-1) != '}'))
-				  				{
-				  					Object converted = convertFromString(componentType, id);
-				  					col.add( converted);
-				  				}
-				  				lastPos = firstPos + 1;
-				  			}
-				  		}
-				  		currentPos = firstPos + 1;
-				  		if ( currentPos >= string.length())
-				  		{
-				  			break;
-				  		}
-			  		}
-		  		}
-		  		Object[] emptyArray = (Object[])Array.newInstance(componentType, 0);
-		  		return col.toArray(emptyArray);
+		  		return parseArray(string, componentType);
 	  		}
 		}
 
@@ -375,8 +283,8 @@ public class RemoteMethodSerialization extends RaplaComponent
 
 		return string;
 	}
-
-	private void write(RaplaContext ioContext,BufferedWriter outWriter,Object value) throws RaplaException, IOException
+	
+	static private void write(RaplaContext ioContext,BufferedWriter outWriter,Object value) throws RaplaException, IOException
     {
         if ( value == null)
         {
@@ -427,10 +335,11 @@ public class RemoteMethodSerialization extends RaplaComponent
         		if ( object instanceof String)
         		{
         			String string = object.toString();
-					if (string.contains(",") || string.contains("{") || string.contains("}"))
-					{
-						throw new IllegalArgumentException("Serialized array strings cannot contain '{','}' or ',' characters");
-					}
+        			object = escape( string);
+//					if (string.contains(",") || string.contains("{") || string.contains("}"))
+//					{
+//						throw new IllegalArgumentException("Serialized array strings cannot contain '{','}' or ',' characters");
+//					}
         		}
         		if ( first)
         		{
@@ -546,8 +455,220 @@ public class RemoteMethodSerialization extends RaplaComponent
        
         return event;
     }
+
+	public RaplaException deserializeException(String classname, String message, String param) throws RaplaException, ParseException 
+	{
+    	if ( classname != null)
+    	{
+    		if ( classname.equals( RaplaSecurityException.class.getName()))
+    		{
+    			return new RaplaSecurityException( message);
+    		}
+    		if ( classname.equals( EntityNotFoundException.class.getName()))
+    		{
+    			if ( param != null)
+    			{
+    				Comparable id;
+    				try {
+    					id = (SimpleIdentifier)convertFromString( SimpleIdentifier.class, param);
+    				}
+    				catch (ParseException ex)
+    				{
+    					id = (String)convertFromString( String.class, param);
+    				}
+    				return new EntityNotFoundException( message, id);
+    			}
+    			return new EntityNotFoundException( message);
+    		}
+    		else if ( classname.equals( DependencyException.class.getName()))
+    		{
+    			if ( param != null)
+    			{
+    				String[] list = (String[])convertFromString( String[].class, param);
+    				return new DependencyException( message,list);
+    			}
+    			//Collection<String> depList = Collections.emptyList();
+    			return new DependencyException( message, new String[] {});
+    		}
+    		message += classname;
+    	}
+    	return new RaplaException( message);
+
+	}
+
+	static public String serializeExceptionParam(Exception e) throws RaplaException, IOException 
+	{
+		final Object paramObject;
+		if ( e instanceof EntityNotFoundException)
+		{
+			paramObject = ((EntityNotFoundException)e).getId();
+		}
+		else if ( e instanceof DependencyException)
+		{
+			String[] array = ((DependencyException)e).getDependencies().toArray( new String[] {});
+			paramObject = array;
+		}
+		else
+		{
+			paramObject = null;
+		}
+		
+		if ( paramObject != null)
+		{
+			StringWriter writer = new StringWriter();
+			BufferedWriter buf = new BufferedWriter( writer);
+			write(null, buf,paramObject);
+			buf.flush();
+			String result = writer.toString();
+			return result;
+		}
+
+		return null;
+	}
+
 	
-   
+
+	private Object parseArray(String string, Class<?> componentType)
+			throws ParseException, RaplaException {
+		Collection<Object> col = new ArrayList<Object>();
+		int length = string.length();
+		if (length> 0)
+		{
+			int currentPos = 0;
+			int lastPos = 1;
+			int opBrackets = 0;
+			char[] coded = new char[] {'{','}',','};
+			while ( true)
+			{
+		  		int firstPos = length;
+		  		char firstChar = 0;
+		  		for ( char c: coded)
+		  		{
+		  			int nextIndex =string.indexOf(c, currentPos);
+		  			while (nextIndex >= 0 && nextIndex <= firstPos )
+		  			{
+		  				if (isEscaped(string,nextIndex))
+		  				{
+		  					nextIndex = string.indexOf(c, nextIndex + 1);
+		  					continue;
+		  				}
+		  				else
+		  				{
+		  					firstPos = nextIndex;
+		  					firstChar = c;
+		  					break;
+		  				}
+		  			}
+		  		}
+		  		
+		  		if ( firstChar == '{')
+		  		{
+		  			opBrackets++;
+		  		}
+		  		else
+		  		{
+		  			if ( firstChar == '}')
+		  			{
+		  				opBrackets--;
+		  			}
+		  			if ( opBrackets <= 1)
+		  			{
+		  				String elementString = string.substring( lastPos, firstPos + ((firstChar == '}' && opBrackets > 0) ? 1:0));
+		  				if ( elementString.length() > 0 || ((firstChar == ',' && !isEscaped(string, firstPos)) && (string.charAt( lastPos-1) != '}' || isEscaped(string,lastPos-1))))
+		  				{
+		  					Object converted = convertFromString(componentType, elementString);
+		  					if ( converted instanceof String)
+		  					{
+		  						converted = unescape(converted.toString());
+		  					}
+		  					col.add( converted);
+		  				}
+		  				lastPos = firstPos + 1;
+		  			}
+		  		}
+		  		currentPos = firstPos + 1;
+		  		if ( currentPos >= string.length())
+		  		{
+		  			break;
+		  		}
+			}
+		}
+		Object[] emptyArray = (Object[])Array.newInstance(componentType, 0);
+		return col.toArray(emptyArray);
+	}
+
+	public static String unescape(String escapedString) {
+		int indexOf = escapedString.indexOf( escapeChar);
+		int lastBla = 0;
+		if ( indexOf >= 0)
+		{
+			StringBuilder result = new StringBuilder();
+			while ( true)
+			{
+				if ( indexOf > 0)
+				{
+					result.append(escapedString.substring(lastBla, indexOf));
+				}											
+				if (indexOf <escapedString.length() - 1 )
+				{
+					char toEscape = escapedString.charAt( indexOf +1);
+					result.append( toEscape);
+				}
+				else
+				{
+					//throw new IllegalArgumentException("Error parsing escaped string '" + escapedString + "'");
+				   //there is an error
+					break;
+				}
+				lastBla = indexOf + 2;
+				if ( lastBla >= escapedString.length() )
+				{
+					break;
+				}
+				indexOf = escapedString.indexOf( escapeChar, lastBla  );
+				if ( indexOf < 1)
+				{
+					result.append( escapedString.substring(lastBla));
+					break;
+				}
+			}
+			// result is the unescaped string
+			String toString = result.toString();
+			return toString;
+		}
+		return escapedString;
+	}
+
+	private boolean isEscaped(String string, int pos) 
+	{
+		if ( pos <1)
+		{
+			return false;
+		}
+		int count = 0;
+		while ( pos >0 )
+		{
+			char c = string.charAt( pos -1);
+			if ( c == escapeChar)
+			{
+				count++;
+				pos--;
+			}
+			else
+			{
+				break;
+			}
+		}
+		boolean result = count %2 !=0;
+		return result;
+	}
+	
+	public static String escape(String string)
+	{
+		String result = string.replaceAll("(,|\\\\|\\{|\\})", "\\\\$1");
+		return result;
+	}
+
 
 }
 

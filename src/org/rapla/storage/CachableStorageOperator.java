@@ -19,6 +19,7 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 
 public interface CachableStorageOperator extends StorageOperator {
+	public static final int MAX_DEPENDENCY = 20;
     LocalCache getCache();
     void dispatch(UpdateEvent evt) throws RaplaException;
     void authenticate(String username,String password) throws RaplaException;

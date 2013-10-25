@@ -11,12 +11,14 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
+import java.util.Collection;
 import java.util.Locale;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.entities.DependencyException;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.storage.CachableStorageOperator;
@@ -58,17 +60,60 @@ public class RemoteMethodSerializationTest extends RaplaTestCase {
 		Class<? extends Integer[][]> class1 = array.getClass();
 		Integer[][] result = (Integer[][]) serialization.convertFromString(class1, string);
 		Integer[][] expected = new Integer[][]{{},{0}};
+		equals(result, expected);		
+    }
+
+	private void equals(Object[][] result, Object[][] expected) {
 		assertEquals(expected.length,result.length);
 		for ( int i=0;i<result.length;i++)
 		{
-			Integer[] exp = expected[i];
-			Integer[] res = result[i];
+			Object[] exp = expected[i];
+			Object[] res = result[i];
 			assertEquals(exp.length,res.length);
 			for ( int j=0;j<res.length;j++)
 			{
 				assertEquals(exp[j],res[j]);
 			}
-		}		
+		}
+	}
+    
+    public void testEscape() throws Exception {
+    	assertEquals( "\\23",RemoteMethodSerialization.unescape("\\\\23"));
+		CachableStorageOperator operator = (CachableStorageOperator) getFacade().getOperator();
+		final LocalCache cache = operator.getCache();
+
+		Provider<EntityStore> storeProvider = new Provider<EntityStore>() {
+			public EntityStore get()  {
+				return new EntityStore( cache, cache.getSuperCategory());
+			}
+    		
+		};
+		RemoteMethodSerialization serialization = new RemoteMethodSerialization(getContext(), storeProvider, cache);
+
+		final String unescaped = "{b,,,}aa\\";
+		
+		//String unescaped = "}";
+		String escaped = RemoteMethodSerialization.escape(unescaped);
+		
+		assertEquals("\\{b\\,\\,\\,\\}aa\\\\", escaped);
+		String toCompare = RemoteMethodSerialization.unescape( escaped);
+		assertEquals(unescaped, toCompare);
+		String[][] array = new String[][]{};
+		String string = "{{},{"+ escaped +"}}";
+		Class<? extends String[][]> class1 = array.getClass();
+		String[][] result = (String[][]) serialization.convertFromString(class1, string);
+		String[][] expected = new String[][]{{},{unescaped}};
+		
+		equals( result,expected );
+		
+		
+		String[] test = new String[] {"Veranstaltung: sadf \\{\\,\\\\\\} 23.10.13 (Reservation_2)"};
+		DependencyException ex = new DependencyException("Bla",test);
+		String serializeExceptionParam = RemoteMethodSerialization.serializeExceptionParam( ex);
+		DependencyException ex2 = (DependencyException) serialization.deserializeException(DependencyException.class.getName(), "Bla", serializeExceptionParam);
+		Collection<String> dependenciesBefore = ex.getDependencies();
+		Collection<String> dependenciesAfter = ex2.getDependencies();
+		assertEquals( dependenciesBefore, dependenciesAfter);
     }
 }
 
