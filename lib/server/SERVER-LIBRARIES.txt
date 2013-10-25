@@ -1,0 +1,1 @@
+Place in this folder all jars that should only be used by the server application.

@@ -1,0 +1,29 @@
+Rapla Version 0.7 released on 9.9.2001
+
+Changes and new Features
+
+- ADMIN-Functionality
+- PostgreSQL Support
+- new language-resource system. It's very easy to add a new or modify
+  an existing language-resource. Take a look at
+  src/org/rapla/languages/resources.xml
+
+- Modified db-schema and xml-file. Nevertheless Version 0.7 can still
+  read and write the schema from 0.61.
+
+- Associated persons will be displayed in weekview.
+- Weekview Configuration in rapla.propeterties
+- Disable-Color-Button in print-preview-dialog
+
+    
+Bugfixes:
+
+- Slightly better line-breaks in weekview.
+- Color-chosing-bug. The weekview is not dazzling anymore.
+- <, & will be encoded in XML.
+- The weekview-popup now works under linux.
+- Calendar Component. When changing from december to january the
+  year will increase.
+- Many many more.
+
+

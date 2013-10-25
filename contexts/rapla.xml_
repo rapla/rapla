@@ -1,0 +1,84 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <!-- Note that many rapla installation can point to the same rapla.war -->
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/rapla.war</Set>
+  <Set name="contextPath">/</Set>
+  
+  
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg></Arg>
+	<Arg>raplafile</Arg>
+	<Arg type="java.lang.String"><SystemProperty name="jetty.home" default="." />/data/data.xml</Arg>
+	<Arg type="boolean">true</Arg>
+  </New>
+  
+    <!-- if you want to use a database instead of the data.xml file storage uncomment and configure a database bellow and set rapladatasource to rapladb-->
+  <New id="rapladb" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg>jdbc/rapladb</Arg>
+	<Arg>
+	<!--  HSQLDB is provided with the jetty bundled with rapla	-->
+	<!--
+	-->
+       <New class="org.hsqldb.jdbc.JDBCDataSource">
+         <Set name="Url">jdbc:hsqldb:<SystemProperty name="jetty.home" default="." />/data/rapla-hsqldb</Set>
+         <Set name="User">db_user</Set>
+         <Set name="Password">your_pwd</Set>
+	   </New>
+
+  <!-- Mysql Database -->
+  <!--
+	   <New class="com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource">
+         <Set name="Url">jdbc:mysql://localhost/your_db_name</Set>
+         <Set name="User">db_user</Set>
+         <Set name="Password">your_pwd</Set>
+	   </New>
+  -->
+	   
+   <!-- A Postgres database-->
+   <!--   
+	   <New class="org.postgresql.ds.PGConnectionPoolDataSource">
+           <Set name="User">db_user</Set>
+           <Set name="Password">your_pwd</Set>
+           <Set name="DatabaseName">your_db_name</Set>
+           <Set name="ServerName">localhost</Set>
+           <Set name="PortNumber">5432</Set>
+       </New>
+    -->
+    </Arg>
+  </New>
+   
+ <New id="rapladatasource" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg></Arg>
+	<Arg>rapladatasource</Arg>
+	<!--  change to rapladb if you want to use a database as datasource -->
+	<Arg type="java.lang.String">raplafile</Arg>
+	<Arg type="boolean">true</Arg>
+ </New>
+
+  <!-- Normaly you don't have to modify the settings below -->
+
+<!-- You can manualy select a  storage option here.  If not specified , a database will be used if configured above or the file if no database is configured.-->
+ 	 
+  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml</Set>
+  <!--  this is important for large data sets to submit -->
+  <Set name="maxFormContentSize">10000000</Set>
+  <Set name="extractWAR">true</Set>
+  <Set name="LogUrlOnStart">true</Set>
+  <Set name="copyWebDir">true</Set>
+  <Set name="parentLoaderPriority">false</Set>
+ 
+  <Set name="configurationClasses">
+    <Array type="java.lang.String">
+      <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+    </Array>
+  </Set>
+
+</Configure>

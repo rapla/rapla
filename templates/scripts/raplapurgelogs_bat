@@ -1,0 +1,7 @@
+@echo off
+set _PROG_DIR=%~dp0
+set _DAYS=30
+echo PROG_DIR %_PROG_DIR% #DAYS %_DAYS%
+cd %_PROG_DIR%
+@forfiles -p "%_PROG_DIR%Logs" -s -m "rapla_*.log" -d -%_DAYS% -c "cmd /C del /F @FILE"
+pause

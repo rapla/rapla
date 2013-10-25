@@ -1,0 +1,7 @@
+This component depends on the following packages (including subpackages):
+java.*
+javax.xml.*
+javax.swing.Icon
+org.xml.sax.*
+org.rapla.components.util.*
+org.apache.avalon.framework.*

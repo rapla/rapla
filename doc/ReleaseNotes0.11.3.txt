@@ -1,0 +1,14 @@
+Changes since 0.11.2:
+*Events won't show for users if the users can't see the allocatables
+*Allocatables won't show in weekview if the user can't see them
+*Now works and compiles with new JDK 1.5.0beta
+
+Bugfixes since 0.11.2:
+* 890095 NO MORE CLIENT DISCONNECT ON UPDATE
+* Delete selection will show the proper names of the objects to remove.
+* You can't resize blocks that span more than one day in the weekview. 
+* 890418 Appointments with 0 duration are forbidden
+* Client and Server-Versions are compared before each login,
+to avoid the Serialization-Error
+* Fixed Calendar-Bug with new JDK 1.5.0beta
+* Can now edit category after an unsuccessful delete (caused by an existing dependency) 

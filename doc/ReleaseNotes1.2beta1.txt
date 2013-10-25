@@ -1,0 +1,27 @@
+New features in Release 1.2beta1
+
+* Rapla runs completely over http. So you don't need to configure any port other than the servlet containers.
+* You now can run multiple Rapla installations on one server by just creating more webapp-folders
+* You can configure the column size of a text field
+* GUI Pollishing. Replaced some icons. 
+* There is a new plugin called archive. But at the moment you can only autodelete old events
+* The reservation-attribute panel in the event edit window resizes with the number of fields displayed
+
+Changes
+
+* Custom Communication layer was replaced with http protocol and xml communication.
+  It is more robust and will causes less overhead on the server side.
+* You can set a refresh interval for receiving the changes from other clients (Use a higher value if you have many concurrent access).
+* Now we use piccolo as xml parser. Its a lot faster than aelfred
+* Upgraded to new jetty version 5.11
+* There is no more webapp version. The webapp is now part of the binary distribution
+* You need a new version of nt-service for this version
+
+Bugfix 
+
+Some bugs regarding the change of dynamic types
+DB should be more fault tolerant
+[ 1421294 ] Searching free appointments in "Weekly period wizard"
+[ 1423818 ] repeating events not properly handeled with MySQL backend
+[ 1423814 ] Problem with table view date selection
+[ 1471848 ] LDAP plugin settings not saving/sticking

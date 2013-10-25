@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema not up to date preferences missing -->
+<grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+         xmlns="http://relaxng.org/ns/structure/1.0"
+         xmlns:rapla="http://rapla.sourceforge.net/rapla"
+	     xmlns:doc="http://rapla.sourceforge.net/annotation"
+         xmlns:relax="http://relaxng.org/ns/structure/1.0"
+>
+  <!-- include the relax-schema for the dynanmic-schemas.-->
+  <include href="relax.rng"/>
+  <start>
+    <element name="rapla:data">
+      <attribute name="version"/>
+      <element name="rapla:categories">
+        <zeroOrMore>
+          <ref name="annotation"/>
+        </zeroOrMore>
+        <zeroOrMore>
+          <ref name="category"/>
+        </zeroOrMore>
+      </element>
+  
+      <ref name="pattern"/>
+       <optional>
+	<element name="rapla:users">
+	  <zeroOrMore>
+	    <choice>
+	      <ref name="user"/>
+	    </choice>
+	  </zeroOrMore>
+	</element>
+       </optional>
+       <optional>
+	<element name="rapla:resources">
+	  <zeroOrMore>
+	    <choice>
+	      <ref name="person"/>
+	      <ref name="resource"/>
+	    </choice>
+	  </zeroOrMore>
+	</element>
+       </optional>
+       <optional>
+         <element name="rapla:periods">
+           <zeroOrMore>
+             <ref name="period"/>
+           </zeroOrMore>
+         </element>
+       </optional>
+       <optional>
+         <element name="rapla:reservations">
+           <zeroOrMore>
+             <ref name="reservation"/>
+           </zeroOrMore>
+         </element>
+       </optional>
+    </element>
+  </start>
+  <define name="id">
+    <attribute name="id"><data type="ID"/></attribute>
+  </define>
+  <define name="date.att">
+    <group>
+      <attribute name="date"><data type="date"/></attribute>
+      <optional>
+	<attribute name="time"><data type="time"/></attribute>
+      </optional>
+    </group>
+  </define>
+
+  <define name="category">
+     <element name="rapla:category">
+       <attribute name="key"/>
+       <zeroOrMore>
+         <ref name="annotation"/>
+       </zeroOrMore>
+       <zeroOrMore>
+         <ref name="category"/>
+       </zeroOrMore>
+     </element> 
+ </define>
+
+  <define name="annotation">
+     <element name="doc:name">
+       <attribute name="lang"/>
+       <text/>
+     </element> 
+   </define>
+
+  <define name="user">
+    <element name="rapla:user">
+      <choice>
+        <attribute name="idref"/>
+        <group>
+          <attribute name="id"/>
+	  <attribute name="username"/>
+	  <attribute name="password"/>
+          <optional>
+    	    <attribute name="name"/>
+          </optional>
+          <optional>
+    	    <attribute name="email"/>
+          </optional>
+          <optional>
+	        <zeroOrMore>
+              <element name="rapla:role">
+    	        <attribute name="name"/>
+                <text/>
+              </element>
+	         </zeroOrMore>
+          </optional>
+          <optional>
+            <element name="rapla:preferences">
+  	      <zeroOrMore>
+	        <ref name="anyElement"/>
+ 	      </zeroOrMore>
+            </element>
+          </optional>
+        </group>
+      </choice>
+    </element>
+  </define>
+
+  <define name="anyElement">
+    <element>
+      <anyName/>
+      <zeroOrMore>
+	<choice>
+	  <attribute>
+	    <anyName/>
+	  </attribute>
+	  <text/>
+	  <ref name="anyElement"/>
+	</choice>
+      </zeroOrMore>
+    </element>
+  </define>
+
+  <!-- Elements of the rapla-dynamictype namespace will be ignore by -->
+  <!-- this schema. They will be validated against the dynamic schemas.--> 
+  <define name="dynamic.type">
+     <element>
+       <choice>
+         <nsName ns="http://rapla.sourceforge.net/dynamictype"/>
+         <nsName ns="http://rapla.sourceforge.net/annotation"/>
+       </choice>
+       <zeroOrMore>
+	 <attribute>
+	   <anyName/>
+	 </attribute>
+       </zeroOrMore>
+       <choice>
+         <zeroOrMore>
+	   <ref name="dynamic.type"/>
+         </zeroOrMore>
+	 <text/>
+       </choice>
+     </element>
+  </define>
+
+  <define name="person">
+    <element name="rapla:person">
+      <choice>
+         <attribute name="idref"><data type="IDREF"/></attribute>
+         <group>
+           <ref name="id"/>
+           <ref name="dynamic.type"/>
+           <optional>
+             <attribute name="holdbackconflicts"/>
+           </optional>
+           <zeroOrMore>
+  	     <ref name="permission"/>
+           </zeroOrMore>
+         </group>
+      </choice>
+    </element>
+  </define>
+
+  <define name="resource">
+    <element name="rapla:resource">
+      <choice>
+         <attribute name="idref"><data type="IDREF"/></attribute>
+         <group>
+           <ref name="id"/>
+           <ref name="dynamic.type"/>
+           <optional>
+             <attribute name="holdbackconflicts"/>
+           </optional>
+           <zeroOrMore>
+  	     <ref name="permission"/>
+           </zeroOrMore>
+         </group>
+      </choice>
+    </element>
+  </define>
+
+  <define name="permission">
+    <element name="rapla:permission">
+      <group>
+        <optional>
+          <attribute name="user"/>
+        </optional>
+        <optional>
+          <attribute name="group"/>
+        </optional>
+        <optional>
+          <attribute name="start-date"/>
+        </optional>
+        <optional>
+          <attribute name="end-date"/>
+        </optional>
+        <optional>
+          <attribute name="min-advance"/>
+        </optional>
+        <optional>
+          <attribute name="max-advance"/>
+        </optional>
+        <optional>
+          <attribute name="create-conlicts"/>
+        </optional>
+      </group>
+    </element>
+  </define>
+
+  <define name="period">
+    <element name="rapla:period">
+      <choice>
+	<attribute name="idref"><data type="IDREF"/></attribute>
+	<group>
+          <ref name="id"/>
+          <attribute name="name"/>
+	  <attribute name="start"/>
+	  <attribute name="end"/>
+	</group>
+      </choice>
+    </element>
+  </define>
+  <define name="exception">
+    <element name="rapla:exception">
+      <zeroOrMore>
+	<choice>
+	  <ref name="period"/>
+	  <ref name="date"/>
+	</choice>
+      </zeroOrMore>
+    </element>
+  </define>
+
+  <define name="reservation">
+    <element name="rapla:reservation">
+      <choice>
+         <attribute name="idref"><data type="IDREF"/></attribute>
+         <group>
+           <ref name="id"/>
+           <attribute name="owner"/>
+           <optional>
+             <attribute name="created-at"/>
+             <attribute name="last-changed"/>
+           </optional>
+           <ref name="dynamic.type"/>
+	   <zeroOrMore>
+	     <ref name="appointment"/>
+	   </zeroOrMore>
+	   <zeroOrMore>
+	     <ref name="allocate"/>
+	   </zeroOrMore>
+         </group>
+      </choice>
+    </element>
+  </define>
+
+  <define name="reservationfilter">
+    <element name="rapla:reservationfilter">
+      <choice>
+         <attribute name="idref"><data type="IDREF"/></attribute>
+         <group>
+           <ref name="id"/>
+           <attribute name="owner"/>
+	   <optional>
+             <attribute name="name"/>
+	   </optional>
+	   <optional>
+	     <choice>
+	       <ref name="period"/>	
+	       <element name="rapla:defaultPeriod">
+		 <empty/>
+	       </element>
+	       <element name="rapla:customizedPeriod">
+		 <attribute name="start"/>
+		 <attribute name="end"/>
+		 <empty/>
+	       </element>
+	     </choice>
+	   </optional>
+	   <optional>
+	     <ref name="user"/>	
+	   </optional>
+	   <zeroOrMore>
+	     <ref name="classificationfilter"/>
+	   </zeroOrMore>
+         </group>
+       </choice>
+    </element>
+  </define>
+
+  <define name="allocatablefilter">
+    <element name="rapla:allocatablefilter">
+      <choice>
+         <attribute name="idref"><data type="IDREF"/></attribute>
+         <group>
+           <ref name="id"/>
+           <attribute name="owner"/>
+           <optional>
+             <attribute name="name"/>
+	   </optional>
+           <zeroOrMore>
+	     <ref name="classificationfilter"/>
+           </zeroOrMore>
+         </group>
+      </choice>
+    </element>
+  </define>
+
+  <define name="classificationfilter">
+    <element name="rapla:classificationfilter">
+      <zeroOrMore>
+	<element name="rapla:rule">
+          <zeroOrMore>
+      	    <element name="rapla:orCond">
+               <attribute name="operator"/>
+               <text/>
+            </element>
+          </zeroOrMore>
+          <attribute name="attribute"/>
+        </element>
+      </zeroOrMore>
+      <attribute name="dynamictype"/>
+    </element>
+  </define>
+
+  <define name="appointment">
+    <element name="rapla:appointment">
+      <choice>
+	<attribute name="idref"/>
+	<group>
+      	  <optional>
+   	    <attribute name="id"/>
+	  </optional>
+	  <choice>
+            <group>
+  	      <attribute name="start-date"/>
+	      <attribute name="start-time"/>
+	      <optional>
+    	         <attribute name="end-date"/>
+	      </optional>
+  	      <attribute name="end-time"/>
+            </group>
+            <group>
+  	      <attribute name="start-date"/>
+	      <optional>
+	          <attribute name="end-date"/>
+	      </optional>
+            </group>
+	  </choice>
+	</group>
+      </choice>
+      <optional>
+        <ref name="repeating"/>
+      </optional>
+    </element>
+  </define>
+
+  <define name="repeating">
+    <element name="rapla:repeating">
+      <attribute name="type"/>
+      <optional>
+        <attribute name="interval"/>
+      </optional>
+      <optional>
+        <choice>
+          <attribute name="end-date"/>
+          <attribute name="number"/>
+        </choice>
+      </optional>
+      <zeroOrMore>
+	<ref name="exception"/>
+      </zeroOrMore>
+    </element>
+  </define>
+
+  <define name="allocate">
+    <element name="rapla:allocate">
+      <attribute name="idref"/>
+      <zeroOrMore>
+        <ref name="appointment"/>
+      </zeroOrMore>
+    </element>
+  </define>
+
+  <define name="date">
+    <element name="rapla:date">
+      <ref name="date.att"/>
+    </element>
+  </define>
+
+</grammar>

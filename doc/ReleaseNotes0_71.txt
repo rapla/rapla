@@ -1,0 +1,19 @@
+Rapla Version 0.71 has been released on 10.12.2001
+
+Changes and new Features
+- You can create, move, copy or paste the allocations directly in the weekview.
+- block-width is configurable in print-preview
+- worktime is configurable in weekview 
+- Better webstart-support
+- Users can change their email and their name
+- If no reservation ( or resource) is selected, the weekview will
+  display all reservations ( or resources).
+  
+Bugfixes:
+- Resource-Details will be show in the weekview.
+- The semester-editing-org.rapla.calendarview displays the correct weekdays.
+- The sorting-order of resourcetypes will change on language-change.
+- allocationDeleted throws no more ConcurrentModificationException
+- Many many more.
+
+

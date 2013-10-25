@@ -1,0 +1,101 @@
+<?xml version="1.0"  encoding="utf-8"?>
+<!-- Configuration file for the raplaserver -->
+<rapla-config>
+  <locale>	   
+    <!-- If languages default attribute is not set, the system default will be used. Language code in lower case-->
+     <languages default="">
+       <language>de</language>
+       <language>en</language>
+       <language>fr</language>
+       <language>es</language>
+       <language>zh</language>
+       <language>cs</language>
+       <language>nl</language>
+       <language>pl</language>
+       <language>pt</language>
+     </languages>
+     <!-- Country code in UPPER-CASE. If not set, the system default will be used. Example: US -->
+    <country></country>
+    <!-- charset for non UTF outputs or inputs like HTML. Try to replace with utf-8 for newer browsers if your characters don't work-->
+    <charset>utf-8</charset>
+    <!--
+    <charset>iso-8859-15</charset>
+ -->
+  </locale>
+  
+  <rapla-server id="server">
+    <!-- Choose between :
+         - raplafile, to store the data in an XML-File (see file-storage entry)
+         - rapladb, to store the data in SQL RDMS (see sql-storage entry)
+         - rapladatasource, to let the servlet container decide which storage should be used
+-->
+    <facade id="serverfacade">
+       <store>${env.rapladatasource}</store>
+    </facade>
+  </rapla-server>
+  
+  <rapla-client id="client">
+	  <facade id="facade">
+	    <store>remotestore</store>
+	  </facade>
+  </rapla-client>
+  
+  <file-storage id="raplafile">
+    <!--Only utf-8 is tested yet-->
+    <encoding>utf-8</encoding>
+    <!-- The path of the data-file absolute or relative to configuration (this file) -->
+    <!--
+    <file>data/data.xml</file>
+    -->
+    <datasource>${env.raplafile}</datasource>
+    <validate>no</validate>
+    <includeIds>no</includeIds>
+  </file-storage>
+
+ <db-storage id="rapladb">
+    <datasource>${env.rapladb}</datasource>
+    <!-- backup filename, taken after shutdown, will be replaced with plugin solution
+    <backup>${context-root}\backup\${timestamp}-data.xml</backup>
+     -->
+     
+     <!-- The old settings directly in raplaserver.xconf should still work 
+    <user>db_user</user>
+    <password>your_pwd</password>
+     -->
+     <!-- HSQLDB Settings
+    <driver>org.hsqldb.jdbcDriver</driver>
+    <url>jdbc:hsqldb:${context-root}/rapla-hsqldb</url>
+    <hsqldb-shutdown>true</hsqldb-shutdown>
+     -->
+    
+    <!-- Postgres Settings 
+    <driver>org.postgresql.Driver</driver>
+    <url>jdbc:postgresql://localhost/your_db_name</url>
+    -->
+
+    <!-- Mysql Settings
+    <driver>org.gjt.mm.mysql.Driver</driver>
+    <url>jdbc:mysql://localhost/your_db_name</url>
+    -->
+    
+    <!-- MS Access Settings
+    <driver>sun.jdbc.odbc.JdbcOdbcDriver</driver>
+    <url>jdbc:odbc:rapla</url>
+     -->
+     <!-- Oracle Settings 
+    <driver> org.oracle.Driver </driver>
+    <url>jdbc:oracle://localhost/your_db_name</url>
+-->
+  </db-storage>
+  
+  <remote-storage id="remotestore">
+    <server>${download-url}</server>
+  </remote-storage>
+  
+  <importexport id="importexport"> 
+    <source>raplafile</source>
+    <dest>rapladb</dest>
+  </importexport>
+
+</rapla-config>
+

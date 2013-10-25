@@ -1,0 +1,309 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.gui.internal;
+
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.util.Calendar;
+import java.util.Locale;
+
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+
+import org.rapla.components.calendar.DateChangeEvent;
+import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.calendar.RaplaTime;
+import org.rapla.components.calendarview.WeekdayMapper;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.internal.CalendarOptionsImpl;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.gui.OptionPanel;
+import org.rapla.gui.RaplaGUIComponent;
+public class CalendarOption extends RaplaGUIComponent implements OptionPanel, DateChangeListener
+{
+    JPanel panel = new JPanel();
+    JCheckBox showExceptionsField = new JCheckBox();
+    //@SuppressWarnings({ "rawtypes", "unchecked" })
+    JComboBox colorBlocks = new JComboBox( new String[] {
+    		 CalendarOptionsImpl.COLOR_NONE	
+    		,CalendarOptionsImpl.COLOR_RESOURCES
+    		, CalendarOptionsImpl.COLOR_EVENTS
+    		, CalendarOptionsImpl.COLOR_EVENTS_AND_RESOURCES
+    }
+    													);
+    RaplaNumber rowsPerHourField = new RaplaNumber(new Double(1),new Double(1),new Double(12), false);
+    Preferences preferences;
+    CalendarOptions options;
+    RaplaTime worktimeStart;
+    RaplaTime worktimeEnd;
+    JPanel excludeDaysPanel =  new JPanel();
+    JCheckBox[] box = new JCheckBox[7];
+    WeekdayMapper mapper;
+    RaplaNumber nTimesField = new RaplaNumber(new Double(1),new Double(1),new Double(365), false);
+
+    //@SuppressWarnings({ "rawtypes", "unchecked" })
+    JComboBox nonFilteredEvents = new JComboBox( new String[]
+            {
+                CalendarOptionsImpl.NON_FILTERED_EVENTS_TRANSPARENT,
+                CalendarOptionsImpl.NON_FILTERED_EVENTS_HIDDEN
+            }
+            );
+    JLabel worktimeEndError;
+    
+    //@SuppressWarnings({ "rawtypes", "unchecked" })
+    JComboBox minBlockWidth = new JComboBox( new Integer[] {0,50,100,200});
+    //@SuppressWarnings("rawtypes")
+    JComboBox firstDayOfWeek;
+    RaplaNumber daysInWeekview;
+
+    //@SuppressWarnings({ "unchecked", "rawtypes" })
+    public CalendarOption(RaplaContext sm) {
+        super( sm);
+        daysInWeekview = new RaplaNumber(7, 3, 35, false);
+        mapper = new WeekdayMapper(getLocale());
+        worktimeStart = createRaplaTime();
+        worktimeStart.setRowsPerHour( 1 );
+        worktimeEnd = createRaplaTime();
+        worktimeEnd.setRowsPerHour( 1 );
+        double pre = TableLayout.PREFERRED;
+        double fill = TableLayout.FILL;
+        // rows = 8 columns = 4
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre, 5 , pre, 5, pre}, {pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,fill}}));
+
+        panel.add( new JLabel(getString("rows_per_hour")),"0,0"  );
+        panel.add( rowsPerHourField,"2,0");
+        panel.add( new JLabel(getString("start_time")),"0,2"  );
+        JPanel worktimeStartPanel = new JPanel();
+        worktimeStartPanel.add( worktimeStart);
+        panel.add( worktimeStartPanel, "2,2,l");
+        panel.add( new JLabel(getString("end_time")),"0,4"  );
+        worktimeStart.addDateChangeListener(this);
+        JPanel worktimeEndPanel = new JPanel();
+        panel.add( worktimeEndPanel,"2,4,l");
+        worktimeEndPanel.add( worktimeEnd);
+        worktimeEndError =  new JLabel(getString("appointment.next_day"));
+        worktimeEndPanel.add( worktimeEndError);
+        worktimeEnd.addDateChangeListener(this);
+        panel.add( new JLabel(getString("color")),"0,6"  );
+        panel.add( colorBlocks,"2,6");
+
+        ListRenderer listRenderer = new ListRenderer();
+        colorBlocks.setRenderer( listRenderer );
+        showExceptionsField.setText("");        
+        panel.add( new JLabel(getString("display_exceptions")),"0,8");
+        panel.add( showExceptionsField,"2,8");
+        
+        panel.add( new JLabel(getString("events_not_matched_by_filter")),"0,10");
+        panel.add( nonFilteredEvents,"2,10");
+        nonFilteredEvents.setRenderer( listRenderer );
+        
+        firstDayOfWeek = new JComboBox(mapper.getNames());
+        panel.add( new JLabel(getString("day1week")),"0,12");
+        panel.add( firstDayOfWeek,"2,12");
+
+        panel.add( new JLabel(getString("daysInWeekview")),"0,14");
+        panel.add( daysInWeekview,"2,14");
+        
+        panel.add( new JLabel(getString("minimumBlockWidth")),"0,16");
+        JPanel minWidthContainer = new JPanel();
+        minWidthContainer.setLayout( new FlowLayout(FlowLayout.LEFT));
+        minWidthContainer.add(minBlockWidth);
+        minWidthContainer.add(new JLabel("%"));
+        
+        panel.add( minWidthContainer,"2,16");
+
+        panel.add( new JLabel(getString("exclude_days")),"0,22,l,t");
+        panel.add( excludeDaysPanel,"2,22");
+        excludeDaysPanel.setLayout( new BoxLayout( excludeDaysPanel,BoxLayout.Y_AXIS));
+        for ( int i=0;i<box.length;i++) {
+            int weekday = mapper.dayForIndex( i);
+            box[i] = new JCheckBox(mapper.getName(weekday));
+            excludeDaysPanel.add( box[i]);
+            
+        }
+    }
+
+    public JComponent getComponent() {
+        return panel;
+    }
+    public String getName(Locale locale) {
+        return getString("calendar");
+    }
+
+    public void setPreferences( Preferences preferences) {
+        this.preferences = preferences;
+    }
+
+    public void show() throws RaplaException {
+    	// get the options 
+        RaplaConfiguration config = preferences.getEntry( CalendarOptionsImpl.CALENDAR_OPTIONS);
+        if ( config != null) {
+            options = new CalendarOptionsImpl( config );
+        } else {
+            options = getCalendarOptions();
+        }
+
+        if ( options.isEventColoring() && options.isResourceColoring())
+        {
+        	colorBlocks.setSelectedItem(  CalendarOptionsImpl.COLOR_EVENTS_AND_RESOURCES);
+        }
+        else if ( options.isEventColoring() )
+        {
+        	colorBlocks.setSelectedItem(  CalendarOptionsImpl.COLOR_EVENTS);
+        }
+        else if (  options.isResourceColoring())
+        {
+        	colorBlocks.setSelectedItem(  CalendarOptionsImpl.COLOR_RESOURCES);
+        }
+        else
+        {
+          	colorBlocks.setSelectedItem(  CalendarOptionsImpl.COLOR_NONE);
+        } 
+        
+        showExceptionsField.setSelected( options.isExceptionsVisible());
+        
+        rowsPerHourField.setNumber( new Long(options.getRowsPerHour()));
+        
+        Calendar calendar = getRaplaLocale().createCalendar();
+        int workTime = options.getWorktimeStartMinutes();
+        calendar.set( Calendar.HOUR_OF_DAY, workTime / 60);
+        calendar.set( Calendar.MINUTE, workTime % 60);
+        worktimeStart.setTime( calendar.getTime() );
+        workTime = options.getWorktimeEndMinutes();
+        calendar.set( Calendar.HOUR_OF_DAY, workTime / 60);
+        calendar.set( Calendar.MINUTE, workTime % 60);
+        worktimeEnd.setTime( calendar.getTime() );
+        
+        for ( int i=0;i<box.length;i++) {
+            int weekday = mapper.dayForIndex( i);
+            box[i].setSelected( options.getExcludeDays().contains( new Integer( weekday)));
+        }
+        int firstDayOfWeek2 = options.getFirstDayOfWeek();
+        firstDayOfWeek.setSelectedIndex( mapper.indexForDay( firstDayOfWeek2));
+        
+        daysInWeekview.setNumber( options.getDaysInWeekview());
+        minBlockWidth.setSelectedItem( new Integer(options.getMinBlockWidth()));
+        nonFilteredEvents.setSelectedItem( options.isNonFilteredEventsVisible() ? CalendarOptionsImpl.NON_FILTERED_EVENTS_TRANSPARENT : CalendarOptionsImpl.NON_FILTERED_EVENTS_HIDDEN);
+    }
+
+    public void commit() {
+    	// Save the options
+    	RaplaConfiguration calendarOptions = new RaplaConfiguration("calendar-options");
+        DefaultConfiguration worktime = new DefaultConfiguration(CalendarOptionsImpl.WORKTIME);
+        DefaultConfiguration excludeDays = new DefaultConfiguration(CalendarOptionsImpl.EXCLUDE_DAYS);
+        DefaultConfiguration rowsPerHour = new DefaultConfiguration(CalendarOptionsImpl.ROWS_PER_HOUR);
+        DefaultConfiguration exceptionsVisible = new DefaultConfiguration(CalendarOptionsImpl.EXCEPTIONS_VISIBLE);
+        
+        DefaultConfiguration daysInWeekview = new DefaultConfiguration(CalendarOptionsImpl.DAYS_IN_WEEKVIEW);
+        DefaultConfiguration firstDayOfWeek = new DefaultConfiguration(CalendarOptionsImpl.FIRST_DAY_OF_WEEK);
+        DefaultConfiguration minBlockWidth = new DefaultConfiguration(CalendarOptionsImpl.MIN_BLOCK_WIDTH);
+        
+        daysInWeekview.setValue( this.daysInWeekview.getNumber().intValue());
+        int selectedIndex = this.firstDayOfWeek.getSelectedIndex();
+		int weekday = mapper.dayForIndex(selectedIndex);
+        firstDayOfWeek.setValue( weekday);
+        DefaultConfiguration colorBlocks = new DefaultConfiguration(CalendarOptionsImpl.COLOR_BLOCKS);
+        String colorValue = (String) this.colorBlocks.getSelectedItem();
+        if ( colorValue != null )
+        {
+            colorBlocks.setValue(  colorValue );
+        }
+        calendarOptions.addChild( colorBlocks );
+        
+        Calendar calendar = getRaplaLocale().createCalendar();
+        calendar.setTime( worktimeStart.getTime());
+        int worktimeStartHour = calendar.get(Calendar.HOUR_OF_DAY) ;
+        int worktimeStartMinute = calendar.get(Calendar.MINUTE);
+        calendar.setTime( worktimeEnd.getTime());
+        int worktimeEndHour = calendar.get(Calendar.HOUR_OF_DAY) ;
+        int worktimeEndMinute = calendar.get(Calendar.MINUTE);
+        if ( worktimeStartMinute > 0 || worktimeEndMinute > 0)
+        {
+        	worktime.setValue(  worktimeStartHour + ":" + worktimeStartMinute + "-" + worktimeEndHour + ":" + worktimeEndMinute );
+        }
+        else
+        {
+          	worktime.setValue(  worktimeStartHour + "-" + worktimeEndHour );
+                  	
+        }
+        calendarOptions.addChild( worktime);
+
+        exceptionsVisible.setValue( showExceptionsField.isSelected() );
+        calendarOptions.addChild( exceptionsVisible);
+
+        rowsPerHour.setValue( rowsPerHourField.getNumber().intValue());
+        StringBuffer days = new StringBuffer();
+        for ( int i=0;i<box.length;i++) {
+            if (box[i].isSelected()) {
+                if ( days.length() > 0)
+                    days.append(",");
+                days.append( mapper.dayForIndex( i ));
+            }
+        }
+        calendarOptions.addChild( rowsPerHour);
+        excludeDays.setValue( days.toString());
+        calendarOptions.addChild( excludeDays);
+        calendarOptions.addChild(daysInWeekview);
+        calendarOptions.addChild(firstDayOfWeek);
+        Object selectedItem = this.minBlockWidth.getSelectedItem();
+        if ( selectedItem != null)
+        {
+        	minBlockWidth.setValue( (Integer) selectedItem);
+        	calendarOptions.addChild(minBlockWidth);
+            
+        }
+        
+        DefaultConfiguration nonFilteredEventsConfig = new DefaultConfiguration(CalendarOptionsImpl.NON_FILTERED_EVENTS);
+        nonFilteredEventsConfig.setValue( nonFilteredEvents.getSelectedItem().toString());
+        calendarOptions.addChild( nonFilteredEventsConfig);
+        
+        preferences.putEntry( CalendarOptionsImpl.CALENDAR_OPTIONS, calendarOptions);
+	}
+
+	public void dateChanged(DateChangeEvent evt) {
+        Calendar calendar = getRaplaLocale().createCalendar();
+        calendar.setTime( worktimeStart.getTime());
+        int worktimeS = calendar.get(Calendar.HOUR_OF_DAY)*60  + calendar.get(Calendar.MINUTE);
+        calendar.setTime( worktimeEnd.getTime());
+        int worktimeE = calendar.get(Calendar.HOUR_OF_DAY)*60  + calendar.get(Calendar.MINUTE);
+        worktimeE = (worktimeE == 0)?24*60:worktimeE;
+        boolean overnight = worktimeS >= worktimeE|| worktimeE == 24*60;
+		worktimeEndError.setVisible( overnight);
+	}
+
+	private class ListRenderer extends DefaultListCellRenderer  {
+		private static final long serialVersionUID = 1L;
+		
+		public Component getListCellRendererComponent(
+		        //@SuppressWarnings("rawtypes") 
+		        JList list
+		        ,Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            if ( value != null) {
+                setText(getString(  value.toString()));
+            }
+            return this;
+        }
+	}	
+}

@@ -1,0 +1,7 @@
+All classes except the XMLUtil depend on the java.* packages.
+
+The classes in the xml package depend on:
+
+java.*
+javax.xml.*
+org.xml.sax.*

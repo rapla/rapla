@@ -1,0 +1,31 @@
+Rapla Version 0.9 has been released on 22.11.2002
+
+Changes:
+- Filtering of resources, persons and reservations is possible in all
+  lists and in the weekview.
+- Appointment editing has been rebuild. (Usability increased) 
+- PeriodWizard is now non modal.
+- DropDown Symbols are visible on period-button and in allocation-table.
+
+Option-Usecase splitted:
+- Period-list and reservationtype edit moved to reservation usecase.
+- person and reservationtype edit moved to resource/person usecase.
+- category-list has moved to a new usecase
+- user-list has moved to a new usecase
+- person and resource lists have been merged.
+
+Bugfixes:
+
+- Appointments which overlap midnight are correctly displayed in weekview
+- Correct Redraw of weekview when saturday and sunday are displayed.
+- NullPointerException in NumberField fixed
+- DynamicTypes will be converted correctly
+- "raplaserver.sh stop" works with secure-sockets
+- User without admin priviliges can change their password
+- PeriodPlugin works after restarting the applet
+- No ArrayIndexOutOfBoundException when new period was created
+- Workaround for problem with secure-connections in applet or webstart-mode under jdk 1.4.0 
+- ...
+
+Internal:
+new saxon.jar and fortress.jar

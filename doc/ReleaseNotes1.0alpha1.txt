@@ -1,0 +1,5 @@
+Bugfixes since 0.12.4:
+* NullPointerException when trying to remove a resource that has reservations, that were not transfered to the client before the remove command.
+
+
+

@@ -1,0 +1,25 @@
+Changes in 1.4.Trunk
+
+- User Import Plugin integrated
+- A Login window close problem has been resolved.
+- Rapla SQL database support incorrectly loaded the repeating.ntimes instead of repeating.until.
+
+GUI changes:
+- Phonenumber added to User profile. ( LDAP plugin to modify)
+  Migration:  
+  How to add the phonenumber to the Rapla SQL database?
+  Use MySql Workbench 5.2 or
+  MySql Command mode:
+      mysql -hlocalhost -uroot -p
+      Enter password: 
+      use rapla_db;
+      mysql> ALTER TABLE `rapla_db`.`rapla_user` ADD COLUMN `PHONE` VARCHAR(30) NULL  AFTER `EMAIL` ;
+      quit
+  For other SQL database the same process should be executed with their repective database management tools.
+  
+- Reset to null button added to Category selection panel to Null for Dynamic types ( Resource Type)  or resource instances. 
+- Admin tab is the default tab for administrators
+- None Visible fields in a large scrollable resource edit panel will become visible when tab to the next field 
+- After a password failure the password will be reset to null for security reasons
+- The Client OS userid will be set as default set for Rapla single user mode i.e. for rapala.exe or Rapla.bat
+

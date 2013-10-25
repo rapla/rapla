@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!--  Redirect logging output to h --> 
+    <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+    <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
+    
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <Set name="ThreadPool">
+      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+        <Set name="minThreads">2</Set>
+        <Set name="maxThreads">50</Set>
+      </New>
+    </Set>
+    
+    <!-- =========================================================== -->
+    <!-- Set connectors                                              -->
+    <!-- =========================================================== -->
+    <!-- One of each type!                                           -->
+    <!-- =========================================================== -->
+
+    <!-- Use this connector for many frequently idle connections
+         and for threadless continuations.
+    -->    
+    <Call name="addConnector">
+      <Arg>
+         <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+            <Set name="port"><SystemProperty name="jetty.port" default="8051"/></Set>
+            <Set name="maxIdleTime">30000</Set>
+            <Set name="Acceptors">2</Set>
+            <Set name="confidentialPort">8443</Set>
+            <Set name="reuseAddress">false</Set>
+          </New>
+      </Arg>
+    </Call>
+    
+    
+
+<!-- Example configuration for ssl connector
+	 <Call name="addConnector">
+	     <Arg>
+	       <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+	         <Arg>
+	           <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
+	             <Set name="keyStore"><SystemProperty name="jetty.home" default="." />/.keystore</Set>
+	             <Set name="keyStorePassword">secret</Set>
+	             <Set name="certAlias">rapla</Set>
+	           </New>
+	         </Arg>
+	         <Set name="port">8443</Set>
+	         <Set name="maxIdleTime">30000</Set>
+	       </New>
+	     </Arg>
+	   </Call>
+	  -->
+   
+    
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            --> 
+    <!-- =========================================================== -->
+   <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+            <!-- add a RequestLogHandler -->
+           <Item>
+              <New id="RequestLogHandler" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+   </Set>
+    
+   <Ref id="RequestLogHandler">
+      <Set name="requestLog">
+        <New id="requestLogImpl" class="ch.qos.logback.access.jetty.RequestLogImpl">
+           <Set name="fileName"><SystemProperty name="jetty.home"/>/resources/logback-access.xml</Set>
+        </New>
+      </Set>
+   </Ref>
+  
+   <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref id="contexts"/>
+        </Set>
+        <Call name="addAppProvider">
+            <Arg>
+              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+                <Set name="monitoredDirName"><Property name="jetty.home" default="." />/contexts</Set>
+                <Set name="scanInterval">1</Set>
+              </New>
+            </Arg>
+          </Call>
+      </New>
+    </Arg>
+   </Call>
+   
+   <!-- =========================================================== -->
+   <!-- extra options                                               -->
+   <!-- =========================================================== -->
+   <Set name="stopAtShutdown">true</Set>
+   <!-- ensure/prevent Server: header being sent to browsers        -->
+   <Set name="sendServerVersion">true</Set>
+    
+</Configure>

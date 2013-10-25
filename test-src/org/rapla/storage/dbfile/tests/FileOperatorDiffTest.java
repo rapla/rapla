@@ -1,0 +1,107 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.storage.dbfile.tests;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
+import org.rapla.RaplaTestCase;
+import org.rapla.entities.User;
+import org.rapla.entities.storage.RefEntity;
+import org.rapla.framework.RaplaException;
+import org.rapla.storage.CachableStorageOperator;
+
+
+public class FileOperatorDiffTest extends RaplaTestCase {
+    CachableStorageOperator operator;
+
+    public FileOperatorDiffTest(String name) {
+        super(name);
+    }
+
+    public boolean differ(String file1, String file2) throws IOException {
+        BufferedReader in1 = null;
+        BufferedReader in2 = null;
+        boolean bDiffer = false;
+        try {
+            in1 = new BufferedReader(new FileReader(file1));
+            in2 = new BufferedReader(new FileReader(file2));
+            int line=0;
+            while (true) {
+                String b1 = in1.readLine();
+                String b2 = in2.readLine();
+                if ( b1 == null || b2 == null)
+                {
+                    if (b1 != b2)
+                    {
+                        System.out.println("Different sizes");
+                        bDiffer = true;
+                    }   
+                    break;
+                }
+                line ++;
+                if (!b1.equals(b2)) {
+                    System.out.println("Different contents in line " + line );
+                    System.out.println("File1: '" +b1 + "'");
+                    System.out.println("File2: '" +b2 + "'");
+                    bDiffer = true;
+                    break;
+                }
+            }
+            return bDiffer;
+        }
+        finally {
+            if (in1 != null)
+              in1.close();
+            if (in2 != null)
+              in2.close();
+        }
+    }
+
+    public static Test suite() {
+        return new TestSuite(FileOperatorDiffTest.class);
+    }
+
+    public void setUp() throws Exception {
+        super.setUp();
+        operator = raplaContainer.lookup(CachableStorageOperator.class,"raplafile");
+    }
+
+    public void testSave() throws RaplaException,IOException  {
+        String testFile = "test-src/testdefault.xml";
+        assertTrue(differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false);
+        operator.connect();
+        RefEntity<?> obj = (RefEntity<?>)operator.getObjects( User.class).iterator().next();
+        RefEntity<?> clone = operator.editObjects(Collections.singleton(obj), null).iterator().next();
+        
+        Collection<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>(1);
+        storeList.add( clone);
+		Collection<RefEntity<?>> removeList = Collections.emptyList();
+		operator.storeAndRemove(storeList, removeList, null);
+        assertTrue("stored version differs from orginal " + testFile
+                   , differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false );
+    }
+
+}
+
+
+
+
+

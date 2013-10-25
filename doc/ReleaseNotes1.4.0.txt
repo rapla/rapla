@@ -1,0 +1,18 @@
+Changes in 1.4.0
+
+- ICal Export Plugin integrated
+- New occupation Plugin for planning dayly occupation (e.g. beds)
+- Permission can be given to edit reservations to other users (add an category/boolean attribute with the key permission to the event type)
+- Flag for whole-day-events
+- Default attribute values can be set.
+- You can store/and load many calendar-settings. Fast access via a drop down menu.
+- Performance improvements with many reservations
+- Tooltips and Conflicts can be hidden
+- Split repeating into single events button
+- Updated the README-Server and INSTALL.txt
+GUI changes:
+- New Icons and colors and an improved Webcalendar
+- New Screen Layout. Splitted the big Tree into Resources, Admin and Conflict sections.
+- The Filter-Dialog  is replaced with a drop-down popup and allows an instant search feedback (You can use that for finding events by name)   
+- Replaced the old html/ical export with a new fast ical/html publishing, directly linked to the recallable calendar list 
+ 

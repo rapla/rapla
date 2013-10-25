@@ -1,0 +1,60 @@
+New features in Release 1.2
+* Added new Mail Client that uses java mail api for sending 
+to install just copy the javamail libs to lib/server in the Source or WEB-INF/lib in the Binary Version
+* Dutch Version (not complete yet)
+
+New features in Release 1.2beta2
+
+* Czech version
+* Performance improvements when dealing with many events
+* resource sql table renamed to rapla_resource to remove conflicts with oracle (old name still works)
+* You can now change the language in the options menu. Language change will be saved.
+* Server starts with 512 mb max memory instead of 64 mb.
+* Rapla starts with 128 mb max memory instead of 64 mb.
+* Visual today indicator in calendar (today is highlighted)
+* Added monthly repeatings 
+* Added yearly repeatings 
+
+New features in Release 1.2beta1
+
+* Spanish version
+* Rapla runs completely over http. So you don't need to configure any port other than the servlet containers.
+* You now can run multiple Rapla installations on one server by just creating more webapp-folders
+* You can configure the column size of a text field
+* GUI Pollishing. Replaced some icons. 
+* There is a new plugin called archive. But at the moment you can only autodelete old events
+* The reservation-attribute panel in the event edit window resizes with the number of fields displayed
+
+Changes
+
+* Custom communication layer was replaced with http protocol and xml communication.
+  It is more robust and will causes less overhead on the server side.
+* You can set a refresh interval for receiving the changes from other clients (Use a higher value if you have many concurrent access).
+* Now we use piccolo as xml parser. Its a lot faster than aelfred
+* Upgraded to new jetty version 5.11
+* There is no more webapp version. The webapp is now part of the binary distribution
+* You need a new version of nt-service for this version
+
+Bugfix in 1.2
+
+* Mozilla Weekview now shows the lines all time
+* Fix for bug [ 1552105 ]. URL is not part of copy string in autoexport view.
+* MailPlugin now works again
+* Resizing of Attribute Panel now works for lager Textfields with more rows.
+* You can now right click in the table view to create new reservations even when there is no event in the table
+
+Bugfix in 1.2beta2
+
+* Ordering now works for categories when using database storage
+* raplaserver import and raplaserver export now work again
+* Fix for bug 1543370 
+* Fix for NullPointerException in RaplaSQL
+
+Bugfix in 1.2beta1
+
+Some bugs regarding the change of dynamic types
+DB should be more fault tolerant
+[ 1421294 ] Searching free appointments in "Weekly period wizard"
+[ 1423818 ] repeating events not properly handeled with MySQL backend
+[ 1423814 ] Problem with table view date selection
+[ 1471848 ] LDAP plugin settings not saving/sticking

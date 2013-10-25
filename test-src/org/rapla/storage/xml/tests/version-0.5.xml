@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ version="0.5">
+   <rapla:categories>
+      <doc:name lang="de">Kategorien</doc:name>
+      <doc:name lang="en">categories</doc:name>
+      <rapla:category key="department">
+         <doc:name lang="de">Verwaltungseinheit</doc:name>
+         <doc:name lang="en">Administrative entity</doc:name>
+         <rapla:category key="Paedagogik">
+            <doc:name lang="de">Paedagogik</doc:name>
+         </rapla:category>
+         <rapla:category key="MathNat">
+            <doc:name lang="de">MathNat</doc:name>
+            <rapla:category key="Informatik">
+               <doc:name lang="de">Informatik</doc:name>
+               <rapla:category key="a3">
+                  <doc:name lang="de">Abteilung 3</doc:name>
+               </rapla:category>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category key="c2">
+         <doc:name lang="de">Veranstaltungen</doc:name>
+         <rapla:category key="c1">
+            <doc:name lang="de">Studienabschnitt</doc:name>
+            <rapla:category key="grundstudium">
+               <doc:name lang="de">Grundstudium</doc:name>
+            </rapla:category>
+            <rapla:category key="haupstudium">
+               <doc:name lang="de">Hauptstudium</doc:name>
+            </rapla:category>
+         </rapla:category>
+         <rapla:category key="c2">
+            <doc:name lang="de">Bereich</doc:name>
+            <rapla:category key="c1">
+               <doc:name lang="de">Theoretisch</doc:name>
+            </rapla:category>
+            <rapla:category key="c2">
+               <doc:name lang="de">Praktisch</doc:name>
+            </rapla:category>
+            <rapla:category key="c3">
+               <doc:name lang="de">Theo/Prak</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category key="c4">
+         <doc:name lang="de">Raum</doc:name>
+         <rapla:category key="c1">
+            <doc:name lang="de">Raumtyp</doc:name>
+            <rapla:category key="hoersaal">
+               <doc:name lang="de">Hörsaal</doc:name>
+            </rapla:category>
+            <rapla:category key="seminarraum">
+               <doc:name lang="de">Seminarraum</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category key="c5">
+         <doc:name lang="de">Gebäude</doc:name>
+         <doc:name lang="en">Building</doc:name>
+         <rapla:category key="c1">
+            <doc:name lang="de">Komplex</doc:name>
+            <rapla:category key="c1">
+               <doc:name lang="de">AVZ III</doc:name>
+            </rapla:category>
+            <rapla:category key="c2">
+               <doc:name lang="de">Hauptgebäude</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="resource1">
+         <relax:element name="dynatt:resource1" rapla:type="resource">
+            <doc:name lang="de">Raum</doc:name>
+            <doc:name lang="en">room</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+            </doc:annotations>
+            <relax:element name="name">
+               <doc:name lang="de">Name</doc:name>
+               <doc:name lang="en">name</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="seats">
+               <doc:name lang="de">Plätze</doc:name>
+               <doc:name lang="en">seats</doc:name>
+               <relax:data type="int"/>
+            </relax:element>
+            <relax:element name="misc">
+               <doc:name lang="de">Sonstiges</doc:name>
+               <doc:name lang="en">misc.</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="blackboard">
+               <doc:name lang="de">Tafel</doc:name>
+               <doc:name lang="en">blackboard</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:optional>
+               <relax:element name="belongsto" rapla:category="category[key='department']">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:attribute name="select">
+                     <relax:data type="string"/>
+                  </relax:attribute>
+                  <relax:empty/>
+               </relax:element>
+            </relax:optional>
+            <relax:element name="type" rapla:category="category[key='c4']/category[key='c1']">
+               <doc:name lang="de">Raumtyp</doc:name>
+               <relax:attribute name="select">
+                  <relax:data type="string"/>
+               </relax:attribute>
+               <relax:empty/>
+            </relax:element>
+         </relax:element>
+      </relax:define>
+
+      <!-- All available dynamicTypes for person -->
+      <relax:define name="lecturer">
+         <relax:element name="dynatt:lecturer" rapla:type="person">
+            <doc:name lang="de">Dozent</doc:name>
+            <doc:name lang="en">lecturer</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname}, {forename}</rapla:annotation>
+            </doc:annotations>
+            <relax:element name="title">
+               <doc:name lang="de">Titel</doc:name>
+               <doc:name lang="en">title</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="surname">
+               <doc:name lang="de">Nachname</doc:name>
+               <doc:name lang="en">surname</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="forename">
+               <doc:name lang="de">Vorname</doc:name>
+               <doc:name lang="en">forename</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="email">
+               <doc:name lang="de">email</doc:name>
+               <doc:name lang="en">email</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:optional>
+               <relax:element name="worksfor" rapla:category="category[key='department']">
+                  <doc:name lang="de">arbeitet für</doc:name>
+                  <doc:name lang="en">works for</doc:name>
+                  <relax:attribute name="select">
+                     <relax:data type="string"/>
+                  </relax:attribute>
+                  <relax:empty/>
+               </relax:element>
+            </relax:optional>
+         </relax:element>
+      </relax:define>
+
+      <!-- All available dynamicTypes for reservation -->
+      <relax:define name="vorlesung">
+         <relax:element name="dynatt:vorlesung" rapla:type="reservation">
+            <doc:name lang="de">Vorlesungen</doc:name>
+            <doc:name lang="en">lecture</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+            </doc:annotations>
+            <relax:element name="name">
+               <doc:name lang="de">Name</doc:name>
+               <doc:name lang="en">name</doc:name>
+               <relax:data type="string"/>
+            </relax:element>
+            <relax:element name="institut" rapla:category="category[key='department']">
+               <doc:name lang="de">Studiengang/Institut</doc:name>
+               <relax:attribute name="select">
+                  <relax:data type="string"/>
+               </relax:attribute>
+               <relax:empty/>
+            </relax:element>
+            <relax:element name="abschnitt" rapla:category="category[key='c2']/category[key='c1']">
+               <doc:name lang="de">Studienabschnitt</doc:name>
+               <relax:attribute name="select">
+                  <relax:data type="string"/>
+               </relax:attribute>
+               <relax:empty/>
+            </relax:element>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="resource1"/>
+            <relax:ref name="lecturer"/>
+            <relax:ref name="vorlesung"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="user_4" username="homer" password="duffs" name="Christiane Kühn" email="kuehn@informatik.uni-bonn.de">
+         <rapla:role name="admin"/>
+         <rapla:preferences>
+            <rapla:config role="org.rapla.default-reservationfilter">
+               <rapla:reservationfilter idref="reservationfilter_4"/>
+            </rapla:config>
+            <rapla:config role="org.rapla.default-allocatablefilter">
+               <rapla:allocatablefilter idref="allocatablefilter_11"/>
+            </rapla:config>
+            <rapla:config role="org.rapla.plugin.autoexport">
+               <export filename="Hoersaalbelegung_AVZ_III">
+                  <weekview column-size="120" start-date="2003-10-13" title="Hörsaalbelegung: AVZ III">
+                     <rapla:allocatablefilter idref="allocatablefilter_62"/>
+                     <selected>
+                        <rapla:dynamictype keyref="resource1"/>
+                     </selected>
+                  </weekview>
+                  <pageFormat orientation="landscape"/>
+               </export>
+               <export filename="Informatik_Grundstudium">
+                  <weekview column-size="120" start-date="2003-10-13" title="Informatik Grundstudium">
+                     <rapla:reservationfilter idref="reservationfilter_8"/>
+                     <selected>
+                        <rapla:dynamictype keyref="vorlesung"/>
+                     </selected>
+                  </weekview>
+                  <pageFormat orientation="landscape"/>
+               </export>
+            </rapla:config>
+         </rapla:preferences>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:filters>
+      <rapla:allocatablefilter id="allocatablefilter_11" owner="user_4" name="Standard">
+         <rapla:classificationfilter dynamictype="resource1">
+            <rapla:rule attribute="type">
+               <rapla:orCond operator="is">category[key='hoersaal']</rapla:orCond>
+            </rapla:rule>
+         </rapla:classificationfilter>
+         <rapla:classificationfilter dynamictype="lecturer">
+         </rapla:classificationfilter>
+      </rapla:allocatablefilter>
+      <rapla:allocatablefilter id="allocatablefilter_62" owner="user_4" name="Autoexport.Hoersaalbelegung_AVZ_III">
+         <rapla:classificationfilter dynamictype="resource1">
+         </rapla:classificationfilter>
+         <rapla:classificationfilter dynamictype="lecturer">
+         </rapla:classificationfilter>
+      </rapla:allocatablefilter>
+      <!-- reservation-filters -->
+      <rapla:reservationfilter id="reservationfilter_8" owner="user_4" name="Autoexport.Informatik_Grundstudium">
+         <rapla:user idref="user_4"/>
+         <rapla:classificationfilter dynamictype="vorlesung">
+            <rapla:rule attribute="abschnitt">
+               <rapla:orCond operator="is">category[key='grundstudium']</rapla:orCond>
+            </rapla:rule>
+         </rapla:classificationfilter>
+      </rapla:reservationfilter>
+      <rapla:reservationfilter id="reservationfilter_4" owner="user_4" name="Standard">
+         <rapla:period idref="period_8"/>
+         <rapla:user idref="user_4"/>
+         <rapla:classificationfilter dynamictype="vorlesung">
+         </rapla:classificationfilter>
+      </rapla:reservationfilter>
+
+   </rapla:filters>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:resource id="resource_38">
+         <dynatt:resource1>
+            <dynatt:name>A207</dynatt:name>
+            <dynatt:seats>80</dynatt:seats>
+            <dynatt:misc>Baemer</dynatt:misc>
+            <dynatt:blackboard>Doppeltafel</dynatt:blackboard>
+            <dynatt:belongsto>category[key='MathNat']/category[key='Informatik']/category[key='a3']</dynatt:belongsto>
+            <dynatt:type>category[key='hoersaal']</dynatt:type>
+         </dynatt:resource1>
+      </rapla:resource>
+      <rapla:resource id="resource_17">
+         <dynatt:resource1>
+            <dynatt:name>H A</dynatt:name>
+            <dynatt:seats>220</dynatt:seats>
+            <dynatt:misc>Overheadprojektor</dynatt:misc>
+            <dynatt:blackboard>Doppeltafel</dynatt:blackboard>
+            <dynatt:belongsto>category[key='MathNat']</dynatt:belongsto>
+            <dynatt:type>category[key='hoersaal']</dynatt:type>
+         </dynatt:resource1>
+      </rapla:resource>
+   </rapla:resources>
+
+   <rapla:reservations>
+      <!-- All periods -->
+      <rapla:period id="period_3" name="WS 2001/2002" start="2001-10-15" end="2002-02-15"/>
+      <rapla:period id="period_4" name="SS 2002" start="2002-04-15" end="2002-07-19"/>
+      <rapla:period id="period_5" name="WS 2002/2003" start="2002-10-14" end="2003-02-14"/>
+      <rapla:period id="period_6" name="SS 2003" start="2003-04-22" end="2003-08-01"/>
+      <rapla:period id="period_8" name="WS 2003/2004" start="2003-10-13" end="2004-02-06"/>
+      <rapla:period id="period_7" name="Vorgaben" start="3000-04-07" end="3000-08-08"/>
+
+      <!-- All reservations -->
+      <rapla:reservation id="reservation_293" owner="user_4">
+         <dynatt:vorlesung>
+            <dynatt:name>Dipl. IDB (*)</dynatt:name>
+            <dynatt:institut>category[key='MathNat']/category[key='Informatik']/category[key='a3']</dynatt:institut>
+            <dynatt:abschnitt>category[key='haupstudium']</dynatt:abschnitt>
+         </dynatt:vorlesung>
+         <rapla:appointment id="1" start-date="2003-04-24" start-time="15:00:00" end-date="2003-04-24" end-time="17:00:00">
+            <rapla:repeating type="weekly" end-date="2003-08-01">
+               <rapla:exception>
+                  <rapla:date date="2003-04-24"/>
+               </rapla:exception>
+               <rapla:exception>
+                  <rapla:date date="2003-06-12"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocation>
+            <rapla:resource idref="resource_17"/>
+         </rapla:allocation>
+      </rapla:reservation>
+      <rapla:reservation id="reservation_262" owner="user_4">
+         <dynatt:vorlesung>
+            <dynatt:name>Online-Algorithmen</dynatt:name>
+            <dynatt:institut>category[key='MathNat']/category[key='Informatik']/category[key='a3']</dynatt:institut>
+         </dynatt:vorlesung>
+         <rapla:appointment id="1" start-date="2003-04-23" start-time="15:00:00" end-date="2003-04-23" end-time="18:00:00">
+            <rapla:repeating type="weekly" end-date="2003-08-01"/>
+         </rapla:appointment>
+         <rapla:allocation>
+            <rapla:resource idref="resource_38"/>
+            <rapla:allocate>
+               <rapla:appointment idref="1"/>
+            </rapla:allocate>
+         </rapla:allocation>
+         <rapla:allocation>
+            <rapla:person idref="resource_17"/>
+         </rapla:allocation>
+      </rapla:reservation>
+   </rapla:reservations>
+
+</rapla:data>

@@ -1,0 +1,98 @@
+<?xml version="1.0"  encoding="utf-8"?>
+<!-- Configuration file for the rapla-client -->
+<rapla-config>
+  <locale>
+     <country>DE</country>
+     <languages default="de">
+       <language>de</language>
+       <language>en</language>
+     </languages>
+     <worktime>8-18</worktime>
+     <exclude-days>1,7</exclude-days>
+  </locale>
+
+  <resource-bundle id="org.rapla.RaplaResources">
+  </resource-bundle>
+
+  <rapla-client id="rapla" activation="request">
+    <facade>local-facade</facade>
+  </rapla-client>
+
+  <rapla-server id="storage-file" activation="request">
+    <store>raplafile</store>
+  </rapla-server>
+
+  <rapla-server id="storage-sql" activation="request">
+    <store>rapladb</store>
+  </rapla-server>
+
+  <facade id="local-facade" activation="request">
+    <store>raplafile</store>
+  </facade>
+
+  <facade id="local-facade2" activation="request">
+    <store>raplafile</store>
+  </facade>
+
+  <facade id="sql-facade" activation="request">
+    <store>rapladb</store>
+  </facade>
+  
+  <facade id="remote-facade" activation="request">
+    <store>remote</store>
+  </facade>
+
+  <facade id="remote-facade-2" activation="request">
+    <store>remote-2</store>
+  </facade>
+  
+  <facade id="remote-facade-3" activation="request">
+    <store>web</store>
+  </facade>
+
+  <file-storage id="raplafile" activation="request">
+    <encoding>utf-8</encoding>
+    <file>test.xml</file>
+  </file-storage>
+
+  <db-storage id="rapladb" activation="request">
+    <!-- HSQLDB Settings 
+     -->
+    <driver>org.hsqldb.jdbcDriver</driver>
+    <url>jdbc:hsqldb:${context-root}/rapla-hsqldb</url>
+    <hsqldb-shutdown>true</hsqldb-shutdown>
+    
+    <!-- Postgres Settings 
+    <driver>org.postgresql.Driver</driver>
+    <url>jdbc:postgresql://localhost/your_db_name</url>
+    -->
+
+    <!-- Mysql Settings
+    <driver>org.gjt.mm.mysql.Driver</driver>
+    <url>jdbc:mysql://localhost/Rapla</url>
+    -->
+    
+    <user>db_user</user>
+    <password>your_pwd</password>
+    
+  </db-storage>
+
+  <importexport id="importexport" activation="request"> 
+    <source>raplafile</source>
+    <dest>rapladb</dest>
+  </importexport>
+
+  <remote-storage id="remote" activation="request">
+    <server>http://localhost:8052/</server>
+  </remote-storage>
+
+  <remote-storage id="remote-2" activation="request">
+    <server>http://localhost:8052/</server>
+  </remote-storage>
+  
+  <remote-storage id="web" activation="request">
+    <server>http://localhost:8052/</server>
+  </remote-storage>
+ 
+
+</rapla-config>

@@ -1,0 +1,35 @@
+New Features since 0.12.1: 
+
+* The Exception-Dates are shown in the detail view of a reservation
+* To add a new appointment to an existing event in the calendar, first
+open the event in the event-edit window, then switch back to the main
+calendar-window and select the proper slot and finaly right click in
+the selection to add the new appointment to the open event.
+* The total number of occurrances of an event is calculated and displayed 
+  in the reservation-edit window.
+* A button to copy the info text into the system-clipboard
+
+Bugfixes since 0.12.1:
+* calendar.css now looks the same under IE and Netscape
+* Fixed the empty page printing problem.
+* The resource-names are now printed correctly
+
+New Features since 0.11.3:
+* The new calendar-view "week compact" groups many resources on a smaller space for 
+  a better overview.
+* You can now specify the size of the text-fields with string attributes
+* Attributes (especialy the long description fields) can be moved to a second input-screen. They won't show up in tooltips.
+* Print the detail-view for an appointment or a resource (right click and view).
+* The Starttime shows in the tooltip.
+
+Changes since 0.11.3:
+* You can't click on "create appointment" when you have only read access to the resource
+
+Bugfixes since 0.11.3:
+* !!!You can now store the user preferences and create html-exports!!!
+* You aren't allowed to create conflicts in the past ( if conflict-creation is disabled)
+* The categroy user-groups is created on import, when not already present.
+* The header shows the right date in HTML-View.
+* HTML-Report only shows the blocks visible in the Calendarview
+* many more...
+

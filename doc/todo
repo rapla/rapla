@@ -1,0 +1,115 @@
+Doku:
+- Indexseite für alle exportierten Seiten.
+- Rapla Plugin Development
+- SSL HOWTO
+- Anleitung zum BugReporting mit StackTrace
+25% Doku der Funktionen
+- Eine Note schreiben, dass man die default.css jetzt anpassen kann
+
+Ideen:
+- Reservierungs-Filter soll dieselbe möglichkeit wie Permissionfilter haben.
+- Zusaetzliche Moeglichkeit bei String-Filter: Enthaelt nicht
+- Moeglichkeit eines Requests. Zuordung ist solange request, bis sie
+  von einem Admin abgehakt wurden.
+  Bei einer Veraenderung der Reservierung muessen die Zuordnungen erneut abgehakt werden.
+- Zusätzlich auch exclusions zu restrictions für einen einfacheren Austausch von einer Person oder Ressource an einem Tag.
+- Ressource-Admin darf Reservierungen bearbeiten, wenn er Admin fuer
+  alle Personen und Ressourcen ist.
+- Persönliche Mitteilung in Konfliktanzeige, als Extension-Point von ReservationController
+- Kommentare zu Ausnahmen
+- Category auch Classifiable machen (Vermengung von Schema und Daten)
+- Admin Flag bei Attributen, dass diese nur vom Admin bearbeitbar sind, damit kann man
+zusammen mit dem event-coloring temptative bookings moeglich machen. Allerdings muss
+mann dann die events dann read-only machen. Eigentlich brauch man noch ein Plugin dafuer.
+
+Todo:
+- Sichtbarkeiten klaeren
+- BlockRendererInterface
+- Schriftgroessen austauschbar machen
+- SwingTable nach HTML
+- Fragen: Können user mit admin-access für eine Ressource, diese Ressource beliebigen Veranstaltungen zuordnen? Ja.
+- FAQ-Entry. Was ist wenn der Server nicht funktioniert (in die Logs Dateien schauen)
+- Icon im Weekview für Einzeltermine die Teil eines größeren Termins sind
+- Label.for benutzen
+- Toolkit.copy() paste() und cut() überschreiben, damit Webstart funktioniert.
+- Wenn man eine Ressource hinzufügt, erst einmal nur die freien Termine belegen (Nachfrage).
+- Vor dem Speichern noch mal ueberpruefen, da ja ein falscher Client das Zeichen uebermittelt haben kann.
+- MultiLanguageName auch als Attribut und fuer Reservierungsnamen
+- Reihenfolge von DynamicType veraenderbar
+- WeeklyWizard muss in der Kalendaransicht auch Navigationsknöpfe für nächste Woche und
+  vorherige Woche im Zeitraum haben. So kann auch in Zeiträumen die nicht Montags beginnen
+  korrekt geplant werden. Gut wäre, wenn Veranstaltungen die erst in der 2. Woche (oder später)
+  beginnen schon in der ersten Woche in einer anderen Farbe angezeigt sind (allerdings nur wenn
+  an diesem Termin nicht schon eine andere Veranstaltung stattfindet).
+- Feiertage (oder Dies-Academicus) im RaplaCalendar anzeigen
+50% Ausnahmen und Ferien beruecksichtigen
+50% evtl. Dialoge auch mit Tastatur bedienbar machen. (Focus Traversal Policy)
+
+(Nicht) Trigger auch als Vorbedingungen möglich
+(Nicht) StorageOperator,QueryModule, ... als zusätzliche services in service.list eintragen.
+(Nicht) Classification soll bei Attribut-Aenderung benachrichtigt werden.
+
+(Nicht) Entsprechende Warnungen bei Benutzung der Admin- Funktionalitaet im
+  Mulit-User Mode.
+(Nicht) Seiteneffektfreiheit des Temp-Verzeichnises. Target site behält noch das temp Verzeichnis
+	Site wird in Zukunft nicht mehr im Hauptrepsitory sein, sondern ein extra Projekt.
+(Nicht) Seite braucht zuviel Platz in der Print-Ausgabe. Man kann die Seitenränder
+	beim Postscript export nicht verändern
+(Nicht) Kommandozeilenstart mit resourcename und anzuzeigendem Datum.
+      Es wird sowieso der Kalender mit den voreingestellten Ressourcen gestartet
+(Nicht) Hierachien bei der Planung vorsehen. Profs zuerst dann die
+  Vorlesungen und dann erst die Uebrigen.
+  Kann ueber Rechte geregelt werden.
+(Nicht) TimeZone Informationen berücksichtigen
+(Nicht) Nur ein rapla.properties file, client soll sich die properties von Server holen.
+(Nicht) Auswahl verschiedener Wochenansichten:
+  Alle Belegungen der Reservierung anzeigen.
+  Nur Ressourcen.
+  Nur Personen.
+  Nur ausgewaehlte Objekte.
+  Nur Titel.
+(Nicht) Freie Termine für ausgewählte Ressourcen/Personen in der Bearbeitungsansicht suchen
+(Nicht, zu spät) Hinweis, dass alle User Admin-Status erhalten, wenn von 0.5 oder 0.6 aufgeruestet wird.
+(Nicht, zu spät) Hinweis, dass beim Import von alten Daten die Eigenschaft aus default.language berücksichtigt wird.
+(Nicht) Option: Fuer jede Ressource eine Spalte. Frage: Was passiert, wenn mehrere
+  Ressourcen an einem Termin belegt wurden.
+(Nicht) Datum in der Print-Ausgabe anzeigen.
+
+O.K. Einfuegen als neue Reservierung.
+O.K. FAQ entry. Server als Dienst unter windows starten und herunterfahren.
+O.K. HTTPS auch mit Webstart ?
+O.K. Farben für Resourcen einstellbar
+O.K. Serialisierung-IDS in entities speichern.
+O.K. PeriodChooser im Tableview soll nicht immer einen Zeitraum anzeigen
+O.K. Serialisierung von einzelnen Entities als XML einfach nur Übertragung
+  der XML Schnippsel
+O.K. Rapla als Menüapplikation
+O.K. Typen/Kategorien/Benutzer/Semester unter Admin-Tasks zusammenfassen.
+O.K. Gute Print ansicht fuer die Tabellenansicht
+O.K. LoginDialog: "zuletzt ausgewaehlte Sprache" zur Sprachauswahl hinzufuegen und als standard-auswahl
+  setzen.
+O.K. Zeitrahmenstrategie umsetzen
+     Nur PeriodChooser, die beiden dateChooser in der TableView und eine Period auswahl im Baum aendern den Zeitrahmen.
+	 Alle anderen erweitern immer nur Zeitrahmen ( wenn er nicht auf die Ansicht passt), z.B. dateChooser und conflict select
+O.K. Was passiert mit der Versionsnummer wenn der cache neu geladen wird?
+    Clients muessen neu starten
+O.K. Versionsüberprüfung bei jeder client Server Verbindung
+O.K. Entities readonly flag
+O.K. Reservierungen werden nur bei Bedarf gelesen
+O.K. Bearbeitungsansicht für Permsission, Kategorien und Dynamische Typen
+     vereinheitlicht.
+O.K. Passwörter verschlüsseln
+O.K. Der Reservation-Report kann als eine andere Wochenansicht gefasst werden.
+O.K. Context Menue plugable machen
+
+O.K. Verschiedene User fuer verschiedene Export-Ansichten. In den Reservierungen
+  werden nur die fuer den User sichtbaren Ressourcen und Personen angezeigt.
+  Eine Reservierung wird nicht angezeigt, wenn sie keine sichtbaren Ressourcen
+  enthaelt. Wenn eine Export-Ansicht zu viele Informationen enthaelt, dann
+  sollte sie von einem User mit weniger Lese-Rechten angelegt werden (z.B. keine Laptops).
+
+Bugfix:
+
+- Webstart Printing Problem
+(Nicht) Applikation beendet nicht unter Linux wenn PrinterJob.pageDialog oder PringerJob.print Dialog aufgerufen wird (Problem tritt nur im build-script auf)
+

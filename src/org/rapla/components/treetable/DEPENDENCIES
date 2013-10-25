@@ -1,0 +1,4 @@
+This component depends on the following packages (including subpackages):
+
+java.* 
+javax.swing.*

@@ -1,0 +1,23 @@
+New features in Release 1.1
+
+* New Icons
+* Attribute fields in reservation-edit-window align
+* An active filter is now indicated with an icon left to the tree folder
+* Edit Dialogs are not modal any more. So you can have multiple edit dialogs
+* You can copy from the edit dialogs to the clipboard even in webstart mode
+* You can copy the url from the autoexport
+* Print preview now shows the page borders, and how the page will be look when printed (will save a lot of paper)
+* Better print support for TableView
+* [ 1348082 ] Feedback which events belong together on cursor move
+* Events that are filtered out are displayed transparently with their text if they reserve a selected resource
+* It is now possible to select the resources root (Same as if all resources were selected)
+
+Changes
+
+org.rapla.components.print package renamed to org.rapla.components.iolayer
+Save and load file is possible through the iolayer
+
+Bugfix 
+
+[ 1410063 ] PB with rollover in html view with Mozilla browsers 
+[ 1392039 ] rapla1.0 webapp problem w/MYSQL
