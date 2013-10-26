@@ -35,8 +35,8 @@ import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.gui.toolkit.AWTColorUtil;
 import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.gui.toolkit.RaplaColorList;
 import org.rapla.gui.toolkit.RaplaWidget;
 
 final public class RaplaListEdit<T> implements
@@ -253,9 +253,9 @@ final public class RaplaListEdit<T> implements
             int index = getSelectedIndex();
             next.setEnabled((index + 1)<list.getModel().getSize());
             prev.setEnabled(index>0);
-            Color color = RaplaColorList.getAppointmentColor(0);
+            Color color = AWTColorUtil.getAppointmentColor(0);
             if ( isColoredBackgroundEnabled() ) {
-                color = RaplaColorList.getAppointmentColor(index);
+                color = AWTColorUtil.getAppointmentColor(index);
             }
             identifierPanel.setBackground(color);
             identifier.setText(String.valueOf(index + 1));

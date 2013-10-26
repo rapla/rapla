@@ -28,9 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
@@ -277,7 +274,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         	color = getColorForClassifiable( allocatable );
             if ( color == null && annotation.equals(DynamicTypeAnnotations.COLORS_AUTOMATED))
             {
-            	color = RaplaColorList.getHexForColor( RaplaColorList.getResourceColor(i++));
+            	color = RaplaColorList.getResourceColor(i++);
             }
             else if (  annotation.equals(DynamicTypeAnnotations.COLORS_DISABLED))
             {
@@ -618,20 +615,9 @@ public abstract class RaplaBuilder extends RaplaComponent
             return serviceManager;
         }
 
-        public Icon getRepeatingIcon() {
-            return i18n.getIcon("icon.repeating");
-        }
-
-        public Icon getSingleIcon() {
-            return i18n.getIcon("icon.single");
-        }
         public List<Block> getBlocks()
         {
         	return blocks;
-        }
-
-        public ImageIcon getExceptionBackgroundIcon() {
-            return i18n.getIcon("icon.exceptionBackground");
         }
         
         public I18nBundle getI18n() {

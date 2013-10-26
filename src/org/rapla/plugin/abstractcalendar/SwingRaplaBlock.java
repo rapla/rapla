@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.event.MouseInputListener;
 
@@ -45,19 +47,27 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.gui.InfoFactory;
-import org.rapla.gui.toolkit.RaplaColorList;
+import org.rapla.gui.toolkit.AWTColorUtil;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
 {
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
 
+    public Icon getRepeatingIcon() {
+        return getI18n().getIcon("icon.repeating");
+    }
+
+    public ImageIcon getExceptionBackgroundIcon() {
+        return getI18n().getIcon("icon.exceptionBackground");
+    }
+
     private BufferedImage getExceptionImage()
     {
         if ( exceptionImage != null )
             return exceptionImage;
 
-        Image image = getContext().getBuildContext().getExceptionBackgroundIcon().getImage();
+        Image image = getExceptionBackgroundIcon().getImage();
         MediaTracker m = new MediaTracker( m_view );
         m.addImage( image, 0 );
         try
@@ -101,7 +111,7 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
     static Font FONT_INVISIBLE = new Font( "SansSerif", Font.PLAIN, 10 );
     static Font FONT_RESOURCE = new Font( "SansSerif", Font.PLAIN, 12 );
     static Font FONT_PERSON = new Font( "SansSerif", Font.ITALIC, 12 );
-    static String FOREGROUND_COLOR = RaplaColorList.getHexForColor( Color.black );
+    static String FOREGROUND_COLOR = AWTColorUtil.getHexForColor( Color.black );
 
     static Map<Integer,Map<String,Color>> alphaMap = new HashMap<Integer, Map<String,Color>>();
 
@@ -112,6 +122,8 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
     // The Linecolor is not static because it can be changed depending on the mouse move
     private Color linecolor = LINECOLOR_INACTIVE;
 
+    
+    
     class RaplaBlockView extends JComponent implements MouseInputListener
     {
         private static final long serialVersionUID = 1L;
@@ -166,11 +178,11 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
                 Color or;
                 try
                 {
-                    or = RaplaColorList.getColorForHex( org );
+                    or = AWTColorUtil.getColorForHex( org );
                 }
                 catch ( NumberFormatException nf )
                 {
-                    or = RaplaColorList.getColorForHex( "#FFFFFF" );
+                    or = AWTColorUtil.getColorForHex( "#FFFFFF" );
                 }
                 color = new Color( or.getRed(), or.getGreen(), or.getBlue(), alpha );
                 colorMap.put( org, color );
@@ -184,6 +196,7 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
             Dimension dim = getSize();
             paint( g, dim.width, dim.height );
         }
+        
 
         public void paint( Graphics g, int width, int height )
         {
@@ -211,7 +224,7 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
             {
                 if ( !getContext().isAnonymous() && getContext().isBlockSelected() && !isException() )
                 {
-                    getBuildContext().getRepeatingIcon().paintIcon( this, g, width - 17, 0 );
+                	getRepeatingIcon().paintIcon( this, g, width - 17, 0 );
                 }
                 /*
                  if ( getBuildContext().isTimeVisible() )

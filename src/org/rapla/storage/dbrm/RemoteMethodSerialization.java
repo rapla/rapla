@@ -458,6 +458,11 @@ public class RemoteMethodSerialization extends RaplaComponent
 
 	public RaplaException deserializeException(String classname, String message, String param) throws RaplaException, ParseException 
 	{
+		String error = "";
+		if ( message != null)
+		{
+			error+=message;
+		}
     	if ( classname != null)
     	{
     		if ( classname.equals( RaplaWrongVersionException.class.getName()))
@@ -498,9 +503,13 @@ public class RemoteMethodSerialization extends RaplaComponent
     			//Collection<String> depList = Collections.emptyList();
     			return new DependencyException( message, new String[] {});
     		}
-    		message += classname;
+    		else
+    		{
+    			error = classname + " " + error;
+    		}
     	}
-    	return new RaplaException( message);
+    	
+    	return new RaplaException( error);
 
 	}
 

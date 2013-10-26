@@ -12,14 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.toolkit;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
 /** WARNING: This class is about to change its API. Dont use it */
 final public class RaplaColorList {
-	public final static Color[] COLORS=
+	private final static String[] COLORS=
     {
 		
 		/* 
@@ -33,29 +32,20 @@ final public class RaplaColorList {
 		 * 
 		 */
 				
-		getColorForHex("#a3ddff"),		// light blue
-		getColorForHex("#b5e97e"),		// light green
-		getColorForHex("#ffb85e"),		// orange
-		getColorForHex("#b099dc"),		// violet
-		getColorForHex("#cccccc"),		// light grey
-		getColorForHex("#fef49d"),		// yellow
-		getColorForHex("#fc9992"),		// red
+		"#a3ddff",		// light blue
+		"#b5e97e",		// light green
+		"#ffb85e",		// orange
+		"#b099dc",		// violet
+		"#cccccc",		// light grey
+		"#fef49d",		// yellow
+		"#fc9992",		// red
     	
     };
 
-    public final static Color[] APPOINTMENT_COLORS=
-    {
-    	new Color(0xee, 0xee, 0xcc),
-    	new Color(0xcc, 0x99, 0xcc),
-    	new Color(0xad, 0xac, 0xa2),
-    	new Color(0xcc, 0xaa, 0x66),
-    	new Color(0xcc, 0xff, 0x88),
-    };
-    public final static String DEFAULT_COLOR_AS_STRING = getHexForColor( COLORS[0]);
+    public final static String DEFAULT_COLOR_AS_STRING =  COLORS[0];
 
 
-    private static ArrayList<Color> colors = new ArrayList<Color>(Arrays.asList(COLORS));
-    private static ArrayList<Color> appointmentColors = new ArrayList<Color>(Arrays.asList(APPOINTMENT_COLORS));
+    private static ArrayList<String> colors = new ArrayList<String>(Arrays.asList(COLORS));
     private static Random randomA = null;
     private static Random randomB = null;
 
@@ -67,60 +57,65 @@ final public class RaplaColorList {
     }
 
 
-    static private float rndB()
+    static float rndB()
     {
     	if (randomB == null)
     	    randomB = new Random(5513);
     	return (float) (0.4 + randomB.nextFloat()/2.0);
     }
 
-    final static public Color getResourceColor(int nr)
+    final static public String getResourceColor(int nr)
     {
-    	if (colors.size()<=nr) {
+    	if (colors.size()<=nr) 
+    	{
     	    int fillSize = nr - colors.size() + 1;
-    	    for (int i=0;i<fillSize;i++) {
-    		colors.add(new Color( (float) (rndA()/1.2)
-    				      ,rndA()
-    				      ,rndA()
-    				      )
-    			   );
+    	    for (int i=0;i<fillSize;i++) 
+    	    {
+    	    	int r = (int) (float) (0.1 + rndA() /1.1) * 255;
+    	    	int g = (int) rndA() * 255;
+    	    	int b = (int) rndA() * 255;
+    	    	String color = getHex( r , g, b);
+    	    	colors.add ( color);
     	    }
     	}
     	return colors.get(nr);
     }
-
-    final static public Color getAppointmentColor(int nr)
+    
+    private final static String[] APPOINTMENT_COLORS=
     {
-    	if (appointmentColors.size()<=nr) {
-    	    int fillSize = nr - appointmentColors.size() + 1;
-    	    for (int i=0;i<fillSize;i++) {
-    		appointmentColors.add(new Color( (float) (0.1 + rndB() /1.1)
-    						 ,rndB()
-    						 ,rndB()
-    						 )
-    				      );
-    	    }
-    	}
-    	return appointmentColors.get(nr);
-    }
+    	"#eeeecc",
+    	"#cc99cc",
+    	"#adaca2",
+    	"#ccaa66",
+    	"#ccff88"
+    };
 
+    static ArrayList<String> appointmentColors = new ArrayList<String>(Arrays.asList(APPOINTMENT_COLORS));
 
+	final static public String getAppointmentColor(int nr)
+	{
+		if (appointmentColors.size()<=nr) {
+		    int fillSize = nr - appointmentColors.size() + 1;
+		    for (int i=0;i<fillSize;i++) 
+		    {
+    	    	int r = (int) (float) (0.1 + rndB() /1.1) * 255;
+    	    	int g = (int) rndB() * 255;
+    	    	int b = (int) rndB() * 255;
+    	    	String color = getHex( r , g, b);
+	    		appointmentColors.add( color );
+		    }
+		}
+		return appointmentColors.get(nr);
+	}
 
-    public static String getHexForColor(Color color) {
-        if ( color == null)
-            return "";
-
-        int r = color.getRed();
-        int g = color.getGreen();
-        int b = color.getBlue();
-
-        StringBuffer buf = new StringBuffer();
+    public static String getHex(int r, int g, int b) {
+		StringBuffer buf = new StringBuffer();
         buf.append("#");
         printHex( buf, r, 2 );
         printHex( buf, g, 2 );
         printHex( buf, b, 2 );
         return buf.toString();
-    }
+	}
 
     /** Converts int to hex string. If the resulting string is smaller than size,
      * it will be filled with leading zeros. Example:
@@ -136,7 +131,7 @@ final public class RaplaColorList {
 
     }
 
-    private static int decode(String value) {
+    static int decode(String value) {
         int result = 0;
         int basis = 1;
         for ( int i=value.length()-1;i>=0;i --) {
@@ -153,36 +148,6 @@ final public class RaplaColorList {
             basis = basis * 16;
         }
         return result;
-    }
-
-    public static Color getColorForHexOrNull(String hexString)  {
-        if ( hexString != null ) {
-            try {
-                return RaplaColorList.getColorForHex(hexString );
-            } catch ( NumberFormatException ex ) {
-            }
-        }
-        return null;
-    }
-
-    public static Color getColorForHex(String hexString) throws NumberFormatException {
-        if ( hexString == null || hexString.indexOf('#') != 0 || hexString.length()!= 7 )
-            throw new NumberFormatException("Can't parse HexValue " + hexString);
-        String rString = hexString.substring(1,3).toUpperCase();
-        String gString = hexString.substring(3,5).toUpperCase();
-        String bString = hexString.substring(5,7).toUpperCase();
-        int r = decode( rString);
-        int g = decode( gString);
-        int b = decode( bString);
-        return new Color(r, g, b);
-    }
-
-
-    public static Color darken(Color color, int i) {
-        int newBlue = Math.max(  color.getBlue() - i, 0);
-        int newRed = Math.max(  color.getRed() - i, 0);
-        int newGreen = Math.max(  color.getGreen() - i, 0);
-        return new Color( newRed, newGreen,newBlue,  color.getAlpha());
     }
 
 }

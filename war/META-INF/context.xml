@@ -16,10 +16,11 @@ auth="Container" type="javax.sql.DataSource"
               driverClassName="com.mysql.jdbc.Driver"
               maxActive="20" maxIdle="10"/>
    -->
-  <Environment name="raplafile" value="${catalina.home}/data/data.xml" type="java.lang.String" override="true"/>
+  <Environment name="raplafile" value="${catalina.home}/data/data.xml" type="java.lang.String" override="false"/>
   <!-- change this variable to rapladb if you want to use a database instead of the file -->
+  <!-- 
   <Environment name="rapladatasource" value="raplafile" type="java.lang.String" override="false"/>
-  
+   -->
   <!-- You can also add a mail config if its provided by tomcat
   <Resource name="mail/Session" auth="Container"
             type="javax.mail.Session"

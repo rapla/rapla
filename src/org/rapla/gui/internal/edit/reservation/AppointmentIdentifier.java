@@ -18,11 +18,11 @@ import java.awt.Insets;
 
 import javax.swing.JLabel;
 
-import org.rapla.gui.toolkit.RaplaColorList;
+import org.rapla.gui.toolkit.AWTColorUtil;
 
 /** A label with a background-color corresponding to the index
     of the appointment.
-    @see RaplaColorList#getAppointmentColor
+    @see AWTColorUtil#getAppointmentColor
  */
 public class AppointmentIdentifier extends JLabel {
     private static final long serialVersionUID = 1L;
@@ -43,7 +43,7 @@ public class AppointmentIdentifier extends JLabel {
 	String s = text;
 	int width = fm.stringWidth(s);
 	int x = 1;
-	g.setColor(RaplaColorList.getAppointmentColor(index));
+	g.setColor(AWTColorUtil.getAppointmentColor(index));
 	g.fillRoundRect(x
 			,insets.top
 			,width +1

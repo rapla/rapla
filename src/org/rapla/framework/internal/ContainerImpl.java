@@ -371,7 +371,16 @@ public class ContainerImpl implements Container
     protected final class DefaultScheduler implements CommandScheduler {
 		private final ScheduledExecutorService executor;
 
-		private DefaultScheduler(ScheduledExecutorService executor) {
+		private DefaultScheduler() {
+			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5,new ThreadFactory() {
+				
+				public Thread newThread(Runnable r) {
+					Thread thread = new Thread(r);
+					thread.setName("raplascheduler");
+					thread.setDaemon(true);
+					return thread;
+				}
+			});
 			this.executor = executor;
 		}
 
@@ -403,6 +412,7 @@ public class ContainerImpl implements Container
 
 		public void cancel() {
 			try{
+				getLogger().info("Scheduler thread terminated.");
 				executor.shutdownNow();
 			}
 			catch ( Throwable ex)
@@ -646,16 +656,7 @@ public class ContainerImpl implements Container
     
     protected CommandScheduler createCommandQueue() {
     	
-    	final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5,new ThreadFactory() {
-			
-			public Thread newThread(Runnable r) {
-				Thread thread = new Thread(r);
-				thread.setName("raplascheduler");
-				thread.setDaemon(true);
-				return thread;
-			}
-		});
-    	CommandScheduler commandQueue = new DefaultScheduler(executor);
+    	CommandScheduler commandQueue = new DefaultScheduler();
 		return commandQueue;
 	}
 
