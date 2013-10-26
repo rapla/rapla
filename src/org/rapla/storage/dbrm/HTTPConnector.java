@@ -26,9 +26,10 @@ import org.rapla.framework.internal.ConfigTools;
 
 public class HTTPConnector extends RaplaComponent implements Connector
 {
-	  String sessionId;
-	  URL server;
-	  I18nBundle i18n;
+	String sessionId;
+	URL server;
+	I18nBundle i18n;
+	String clientVersion;
     
     public HTTPConnector(RaplaContext context, Configuration config) throws RaplaException{
         super(context);
@@ -38,6 +39,7 @@ public class HTTPConnector extends RaplaComponent implements Connector
             String configEntry = config.getChild("server").getValue();
             String serverURL = ConfigTools.resolveContext(configEntry, context );
             server = new URL(serverURL);
+            clientVersion = i18n.getString("rapla.version");
         }
         catch (MalformedURLException e)
         {
@@ -156,7 +158,7 @@ public class HTTPConnector extends RaplaComponent implements Connector
         try
         {
 	        wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-	        addParams( wr, argMap);
+			addParams( wr, argMap);
 	        wr.flush();
         }
         finally
@@ -248,13 +250,10 @@ public class HTTPConnector extends RaplaComponent implements Connector
     
     private void addParams(Writer writer, Map<String,String> args ) throws IOException
     {
-        boolean appendAdd = false;
+    	writer.write( "v="+URLEncoder.encode(clientVersion,"utf-8"));
         for (Iterator<String> it = args.keySet().iterator();it.hasNext();)
         {
-            if ( appendAdd)
-            {
-                writer.write( "&");
-            }
+            writer.write( "&");
             String key = it.next();
             String value= args.get( key);
             {
@@ -264,13 +263,7 @@ public class HTTPConnector extends RaplaComponent implements Connector
                 {
                 	writer.write("="+ URLEncoder.encode(value,"utf-8"));
                 }
-                appendAdd = true;
-            }
-//            else
-//            {
-//                appendAdd = false;
-//            }
-           
+            }           
         }
     }
 

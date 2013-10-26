@@ -625,25 +625,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                  }
                  return "Login successful";
              }
-
             
-            public void checkServerVersion( String clientVersion ) throws RaplaException
-            {
-                if ( clientVersion == null || clientVersion.equals("@doc.version@"))
-                {
-                    return;
-                }
-                // No check on server until correct versioning schema released.
-                
-                String serverVersion = i18n.getString( "rapla.version" );
-                //if ( !serverVersion.equals( clientVersion ) )
-                if (clientVersion.contains("1.7.4RC1") || clientVersion.contains("1.7.3") || clientVersion.contains("1.7.2") ||  clientVersion.contains("1.7.1") || clientVersion.contains("1.6") || clientVersion.contains("1.5") || clientVersion.contains("1.4"))
-                {
-                    throw new RaplaException( "Incompatible client/server versions. Please change your client to version "
-                            + serverVersion
-                            + ". If you are using java-webstart a simple reload and restart could do that!" );
-                }
-            }
+
         };
     }
     
