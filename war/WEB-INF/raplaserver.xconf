@@ -48,8 +48,9 @@
     <file>data/data.xml</file>
     -->
     <datasource>${env.raplafile}</datasource>
-    <validate>no</validate>
-    <includeIds>no</includeIds>
+    <validate>false</validate>
+    <!-- when set also serializes appoinment and category ids when used as backup cache. If you use the file-storage in backup and restore from db, then this is automatically set to true --> 
+    <includeIds>false</includeIds>
   </file-storage>
 
  <db-storage id="rapladb">
