@@ -51,8 +51,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	ClassificationEditUI editUI;
 
 	DynamicType oldDynamicType;
-	List<Classification> classifications; // enhancement to array, for storing
-										// multiple classifications
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
 
@@ -72,7 +70,8 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	}
 
 	public void mapTo(List<T> list) throws RaplaException {
-	    for (int i = 0; i < list.size(); i++) 
+		List<Classification> classifications = editUI.getObjects();
+		for (int i = 0; i < list.size(); i++) 
 	    {
 	        Classification classification = classifications.get( i );
 	        Classifiable x = list.get(i);
@@ -85,7 +84,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.removeAll();
 		List<Classifiable> classifiables = new ArrayList<Classifiable>();
 		// read out Classifications from Classifiable
-		classifications = new ArrayList<Classification>();
+		List<Classification> classifications = new ArrayList<Classification>();
 		for (Classifiable classifiable:list)
 		{
 			classifiables.add( classifiable);
@@ -195,6 +194,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 					else {
 						// no: set new Classifications
 						List<Classification> newClassifications = new ArrayList<Classification>();
+						List<Classification> classifications = editUI.getObjects();
 						for (int i = 0; i < classifications.size(); i++) {
 							Classification classification = classifications.get(i);
                             // checks if Classification hast already the new
