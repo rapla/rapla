@@ -957,7 +957,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			
 		try
 		{
-			notifyQueue.cancel();
 			// now we can add it again
 			this.workingUser = null;
 			// we need to remove the storage update listener, because the disconnect

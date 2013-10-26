@@ -22,8 +22,6 @@ public interface CommandScheduler
 {
 	public Cancelable schedule(Command object, long delay);
 	public Cancelable schedule(Command object, long delay, long period);
-	public void cancel();
-	
 }
 
 

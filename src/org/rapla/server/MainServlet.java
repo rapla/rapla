@@ -42,6 +42,7 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
@@ -63,8 +64,10 @@ import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteMethodStub;
+import org.rapla.storage.xml.WrongVersionException;
 public class MainServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
@@ -613,7 +616,7 @@ public class MainServlet extends HttpServlet {
         try
         {
 			Map<String,String[]> originalMap = request.getParameterMap();
-			Map<String,String> parameterMap = makeSingles(originalMap);
+			Map<String,String> parameterMap = makeSinglesAndRemoveVersion(originalMap);
             ServerServiceContainer serverContainer = getServer();
             RemoteSession  remoteSession = new RemoteSessionImpl(serverContainer.getContext(), session.getId()){
 
@@ -627,13 +630,13 @@ public class MainServlet extends HttpServlet {
                     session.setAttribute("userid", ((RefEntity<?>)user).getId());
                 }
             };
-            String clientVersion = parameterMap.get("v");
+            String clientVersion = request.getParameter("v");
             if ( clientVersion != null )
             {
             	if ( !isClientVersionSupported(clientVersion))
                 {
                 	String message = getVersionErrorText(request, methodName);
-                	response.addHeader("X-Error-Classname",  "version");
+                	response.addHeader("X-Error-Classname",  WrongVersionException.class.getName());
                 	response.addHeader("X-Error-Stacktrace", message );
                 	response.setStatus( 500);
                 	return;
@@ -663,12 +666,28 @@ public class MainServlet extends HttpServlet {
                  response.setStatus( 500);
                  return;
             }
-            final Object userId = session.getAttribute("userid");
+            final Comparable userId = (Comparable) session.getAttribute("userid");
             if ( userId != null)
             {
             	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
-            	User user = (User) ((CachableStorageOperator)operator).resolveId((Comparable<?>) userId); 
-                ((RemoteSessionImpl)remoteSession).setUser( user);
+            	if ( operator.isConnected())
+            	{
+	            	try 
+	            	{
+		            	User user = (User) ((CachableStorageOperator)operator).resolveId( userId); 
+		                ((RemoteSessionImpl)remoteSession).setUser( user);
+	            	}
+	            	catch (EntityNotFoundException ex)
+	            	{
+	            		throw ex;
+	            	}
+            	}
+            	else
+            	{
+            	    response.addHeader("X-Error-Classname",  RaplaConnectException.class.getName());
+                  	response.addHeader("X-Error-Stacktrace", "RaplaServer is shutting down" );
+                    response.setStatus( 500);
+            	}
             }
             Long sessionstart = (Long)session.getAttribute("serverstarttime");
             if ( sessionstart != null)
@@ -747,12 +766,16 @@ public class MainServlet extends HttpServlet {
     	return raplaContainer.lookup( ServerServiceContainer.class, hint);
     }
 
-    private Map<String,String> makeSingles( Map<String, String[]> parameterMap )
+    private Map<String,String> makeSinglesAndRemoveVersion( Map<String, String[]> parameterMap )
     {
         TreeMap<String,String> singlesMap = new TreeMap<String,String>();
         for (Iterator<String> it = parameterMap.keySet().iterator();it.hasNext();)
         {
-            String key = it.next();
+        	String key = it.next();
+        	if ( key.toLowerCase().equals("v"))
+        	{
+        		continue;
+        	}
             String[] values =  parameterMap.get( key);
             if ( values != null && values.length > 0 )
             {

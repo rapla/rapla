@@ -636,7 +636,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         stop();
         if ( commandQueue != null)
         {
-        	commandQueue.cancel();
+        	((DefaultScheduler)commandQueue).cancel();
         }
         super.dispose();
         getLogger().debug("RaplaClient disposed");

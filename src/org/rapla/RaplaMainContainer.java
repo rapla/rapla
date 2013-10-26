@@ -268,7 +268,7 @@ final public class RaplaMainContainer extends ContainerImpl
         getLogger().info("Shutting down rapla-container");
         if ( commandQueue != null)
         {
-        	commandQueue.cancel();
+        	((DefaultScheduler)commandQueue).cancel();
         }
         super.dispose();
     }

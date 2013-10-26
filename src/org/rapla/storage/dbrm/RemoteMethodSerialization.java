@@ -519,6 +519,10 @@ public class RemoteMethodSerialization extends RaplaComponent
     		{
     			return new RaplaSecurityException( message);
     		}
+    		else if ( classname.equals( RaplaConnectException.class.getName()))
+    		{
+    			return new RaplaConnectException( message);
+    		}
     		else if ( classname.equals( EntityNotFoundException.class.getName()))
     		{
     			if ( param != null)
