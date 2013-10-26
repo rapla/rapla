@@ -338,7 +338,7 @@ a:hover{
 }
 
 @page {
-  size: landscape;
+  size: auto;
 }
 
 @media print {
