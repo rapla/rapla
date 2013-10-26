@@ -303,7 +303,14 @@ public class RemoteOperator
         if ( wasConnected)
         {
             RemoteServer serv1 = getRemoteMethod( RemoteServer.class);
-            serv1.logout();
+            try 
+            {
+            	serv1.logout();
+            }
+            catch (RaplaConnectException ex)
+            {
+            	getLogger().warn( ex.getMessage());
+            }
         	fireStorageDisconnected(message);
         }
     }

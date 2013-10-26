@@ -368,7 +368,61 @@ public class ContainerImpl implements Container
         return null;
     }
 
-    class RoleEntry {
+    protected final class DefaultScheduler implements CommandScheduler {
+		private final ScheduledExecutorService executor;
+
+		private DefaultScheduler(ScheduledExecutorService executor) {
+			this.executor = executor;
+		}
+
+		public Cancelable schedule(Command command, long delay) {
+			Runnable task = createTask(command);
+			TimeUnit unit = TimeUnit.MILLISECONDS;
+			ScheduledFuture<?> schedule = executor.schedule(task, delay, unit);
+			return createCancable( schedule);
+//				task.run();
+//				return createCancable();
+		}
+
+		private Cancelable createCancable(final ScheduledFuture<?> schedule) {
+			return new Cancelable() {
+				public void cancel() {
+					schedule.cancel(true);
+				}
+			};
+		}
+
+		public Cancelable schedule(Command command, long delay, long period) {
+			Runnable task = createTask(command);
+			TimeUnit unit = TimeUnit.MILLISECONDS;
+			ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
+			return createCancable( schedule);
+//				task.run();
+//				return createCancable();
+		}
+
+		public void cancel() {
+			try{
+				executor.shutdownNow();
+			}
+			catch ( Throwable ex)
+			{
+				getLogger().warn(ex.getMessage());
+			}
+			// we give the update threads some time to execute
+			try
+			{
+				Thread.sleep( 50);
+			}
+			catch (InterruptedException e) 
+			{
+			}
+
+		}
+	}
+
+
+	class RoleEntry {
         Map<String,ComponentHandler> componentMap = new LinkedHashMap<String,ComponentHandler>();
         ComponentHandler firstEntry;
         int generatedHintCounter = 0;
@@ -601,61 +655,7 @@ public class ContainerImpl implements Container
 				return thread;
 			}
 		});
-    	CommandScheduler commandQueue = new CommandScheduler() {
-	        
-
-			public Cancelable schedule(Command command, long delay) {
-				Runnable task = createTask(command);
-				TimeUnit unit = TimeUnit.MILLISECONDS;
-				ScheduledFuture<?> schedule = executor.schedule(task, delay, unit);
-				return createCancable( schedule);
-//				task.run();
-//				return createCancable();
-			}
-
-			private Cancelable createCancable(final ScheduledFuture<?> schedule) {
-				return new Cancelable() {
-					public void cancel() {
-						schedule.cancel(true);
-					}
-				};
-			}
-
-//			private Cancelable createCancable() {
-//				return new Cancelable() {
-//					public void cancel() {
-//					}
-//				};
-//			}
-
-			public Cancelable schedule(Command command, long delay, long period) {
-				Runnable task = createTask(command);
-				TimeUnit unit = TimeUnit.MILLISECONDS;
-				ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
-				return createCancable( schedule);
-//				task.run();
-//				return createCancable();
-			}
-			
-			public void cancel() {
-				try{
-					executor.shutdownNow();
-				}
-				catch ( Throwable ex)
-				{
-					getLogger().warn(ex.getMessage());
-				}
-				// we give the update threads some time to execute
-				try
-				{
-					Thread.sleep( 50);
-				}
-				catch (InterruptedException e) 
-				{
-				}
-
-			}
-		};
+    	CommandScheduler commandQueue = new DefaultScheduler(executor);
 		return commandQueue;
 	}
 

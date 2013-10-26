@@ -276,7 +276,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					users.add( newUser);
 				}
-				
 			}
 			if ( newObject.getRaplaType().is( Reservation.TYPE))
 			{
