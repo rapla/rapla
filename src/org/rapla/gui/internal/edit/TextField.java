@@ -35,6 +35,7 @@ import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
 import org.rapla.framework.RaplaContext;
+import org.rapla.gui.toolkit.AWTColorUtil;
 import org.rapla.gui.toolkit.RaplaColorList;
 
 public class TextField extends AbstractEditField implements ActionListener,FocusListener,KeyListener, MultiEditField, SetGetField<String> {
@@ -101,7 +102,7 @@ public class TextField extends AbstractEditField implements ActionListener,Focus
                               currentColor);
                     color.setBackground( currentColor );
                     if ( currentColor != null) {
-                    	field.setText( RaplaColorList.getHexForColor( currentColor ));
+                    	field.setText( AWTColorUtil.getHexForColor( currentColor ));
                     }
                     fireContentChanged();
         		}
@@ -125,7 +126,7 @@ public class TextField extends AbstractEditField implements ActionListener,Focus
         if ( colorPanel != null) {
         	try
         	{
-        		currentColor =  RaplaColorList.getColorForHex( string);
+        		currentColor =  AWTColorUtil.getColorForHex( string);
         	}
         	catch (NumberFormatException ex)
         	{

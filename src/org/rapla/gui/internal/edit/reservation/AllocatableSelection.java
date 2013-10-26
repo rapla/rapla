@@ -108,10 +108,10 @@ import org.rapla.gui.internal.FilterEditButton;
 import org.rapla.gui.internal.MenuFactoryImpl;
 import org.rapla.gui.internal.common.CalendarAction;
 import org.rapla.gui.internal.edit.ClassifiableFilterEdit;
+import org.rapla.gui.toolkit.AWTColorUtil;
 import org.rapla.gui.toolkit.PopupEvent;
 import org.rapla.gui.toolkit.PopupListener;
 import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.gui.toolkit.RaplaColorList;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaPopupMenu;
 import org.rapla.gui.toolkit.RaplaSeparator;
@@ -219,7 +219,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		JScrollPane leftScrollpane = new JScrollPane(completeTable);
 		leftScrollpane.getViewport().setBackground(tableBackground);
 		leftPanel.add(leftScrollpane, "0,1,5,1,f,f");
-		completeTable.setGridColor(RaplaColorList.darken(tableBackground, 20));
+		completeTable.setGridColor(darken(tableBackground, 20));
 		completeTable.setToolTipRenderer(new RaplaToolTipRenderer());
 		completeTable.getSelectionModel().addListSelectionListener(listener);
 		completeTable.setDefaultRenderer(Allocatable.class, new AllocationCellRenderer());
@@ -233,7 +233,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		rightPanel.add(rightScrollpane, "0,1,5,1,f,f");
 		selectedTable.setToolTipRenderer(new RaplaToolTipRenderer());
 		selectedTable.getSelectionModel().addListSelectionListener(listener);
-		selectedTable.setGridColor(RaplaColorList.darken(tableBackground, 20));
+		selectedTable.setGridColor(darken(tableBackground, 20));
 		selectedTable.setDefaultRenderer(Appointment[].class, new RestrictionCellRenderer());
 		AppointmentCellEditor appointmentCellEditor = new AppointmentCellEditor(new RestrictionTextField());
 		selectedTable.setDefaultEditor(Appointment[].class, appointmentCellEditor);
@@ -1195,7 +1195,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		int yborder = 1;
 		int width = fm.stringWidth(appointmentIndexStrings[index]);
 		x += xborder;
-		g.setColor(RaplaColorList.getAppointmentColor(index));
+		g.setColor(AWTColorUtil.getAppointmentColor(index));
 		g.fillRoundRect(x, insets.top, width, c.getHeight() - insets.top - insets.bottom - yborder * 2, 4, 4);
 		g.setColor(c.getForeground());
 		g.drawRoundRect(x - 1, insets.top, width + 1, c.getHeight() - insets.top - insets.bottom - yborder * 2, 4, 4);
@@ -1448,7 +1448,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 					item.setText((i + 1) + ": " + appointmentSummary);
 				}
 				appointmentList.put(i, item);
-				item.setBackground(RaplaColorList.getAppointmentColor(i));
+				item.setBackground(AWTColorUtil.getAppointmentColor(i));
 				item.setActionCommand(String.valueOf(i));
 				item.addActionListener(this);
 				menu.add(item);
@@ -1707,7 +1707,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     {
                         item.setText((i + 1) + ": " + appointmentSummary);
                     }
-                    item.setBackground(RaplaColorList.getAppointmentColor(i));
+                    item.setBackground(AWTColorUtil.getAppointmentColor(i));
                     menu.add(item);
                 }
             }
@@ -1987,6 +1987,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	{
 		Collection<Allocatable> elements = getSelectedAllocatables( treeTable.getTree());
 		return new AllocatableChange(command, elements);
+	}
+	
+	public static Color darken(Color color, int i) {
+	    int newBlue = Math.max(  color.getBlue() - i, 0);
+	    int newRed = Math.max(  color.getRed() - i, 0);
+	    int newGreen = Math.max(  color.getGreen() - i, 0);
+	    return new Color( newRed, newGreen,newBlue,  color.getAlpha());
 	}
 
 	/**
