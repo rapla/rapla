@@ -91,7 +91,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private final String encoding;
     protected boolean isConnected = false;
-    final boolean includeIds ;
+    final Boolean includeIds ;
     /** Warning use this only for development purpose. Versions are temporary and will be lost during import/export */  
     private final boolean includeVersions;
     private final boolean validate;
@@ -243,7 +243,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             if ( xmlAdapter.wasConverted() )
             {
                 getLogger().info( "Storing the converted file" );
-                saveData(cache);
+                saveData(cache, includeIds);
             }
         }
         catch ( FileNotFoundException ex )
@@ -273,12 +273,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
         // call of update must be first to update the cache.
         // then saveData() saves all the data in the cache
         UpdateResult result = update( evt);
-        saveData(cache);
+        saveData(cache, includeIds);
         fireStorageUpdated( result );
     }
 
-
     synchronized final public void saveData(LocalCache cache) throws RaplaException
+    {
+    	saveData( cache, true);
+    }
+
+    synchronized final private void saveData(LocalCache cache, boolean includeIds) throws RaplaException
     {
         try
         {
@@ -287,7 +291,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 return;
             }
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            writeData( buffer,cache );
+            writeData( buffer,cache, includeIds );
             byte[] data = buffer.toByteArray();
             buffer.close();
             File parentFile = storageFile.getParentFile();
@@ -308,7 +312,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    private void writeData( OutputStream out, LocalCache cache ) throws IOException, RaplaException
+    private void writeData( OutputStream out, LocalCache cache, boolean includeIds ) throws IOException, RaplaException
     {
         RaplaContext outputContext = new IOContext().createOutputContext( context, cache, includeIds, includeVersions );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext );
