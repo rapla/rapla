@@ -51,8 +51,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	ClassificationEditUI editUI;
 
 	DynamicType oldDynamicType;
-	List<Classification> classifications; // enhancement to array, for storing
-										// multiple classifications
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
 
@@ -72,9 +70,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	}
 
 	public void mapTo(List<T> list) throws RaplaException {
+        List<Classification> classifications = editUI.getObjects();
 	    for (int i = 0; i < list.size(); i++) 
 	    {
-	        Classification classification = classifications.get( i );
+			Classification classification = classifications.get( i );
 	        Classifiable x = list.get(i);
 	        x.setClassification(classification);
 	    }
@@ -85,7 +84,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.removeAll();
 		List<Classifiable> classifiables = new ArrayList<Classifiable>();
 		// read out Classifications from Classifiable
-		classifications = new ArrayList<Classification>();
+		List<Classification> classifications = new ArrayList<Classification>();
 		for (Classifiable classifiable:list)
 		{
 			classifiables.add( classifiable);
@@ -186,15 +185,18 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 				if (typeSelector.getSelectedItem() instanceof DynamicType) {
 					// delete place holder for the several values
 					typeSelector.removeItem(multipleValues);
-					DynamicType dynamicType = (DynamicType) typeSelector
-							.getSelectedItem();
+					DynamicType dynamicType = (DynamicType) typeSelector.getSelectedItem();
 					// checks if no new DynmicType has been selected
 					if (dynamicType.equals(oldDynamicType))
+					{
 						// yes: set last Classifications again
 						editUI.setObjects(oldClassifications);
-					else {
+					}
+					else 
+					{
 						// no: set new Classifications
 						List<Classification> newClassifications = new ArrayList<Classification>();
+						List<Classification> classifications = editUI.getObjects();
 						for (int i = 0; i < classifications.size(); i++) {
 							Classification classification = classifications.get(i);
                             // checks if Classification hast already the new
