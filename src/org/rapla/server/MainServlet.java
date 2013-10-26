@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +42,6 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
@@ -81,6 +83,7 @@ public class MainServlet extends HttpServlet {
    	private Object env_rapladb;
    	private Object env_raplamail;
    	private String downloadUrl;
+   	private String serverVersion;
    	
    	// the following variables are only for non server startup
 	Runnable shutdownCommand;
@@ -411,6 +414,7 @@ public class MainServlet extends HttpServlet {
 				{
 					// We start the standalone server before the client to prevent jndi lookup failures 
 					ServerServiceImpl server = (ServerServiceImpl)getServer();
+					serverVersion = server.getContext().lookup(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");
 					raplaContainer.addContainerProvidedComponentInstance(RemoteMethodStub.class, server);
 					RemoteSessionImpl standaloneSession = new RemoteSessionImpl(server.getContext(), "session") {
 						public void logout() throws RaplaException {
@@ -623,50 +627,71 @@ public class MainServlet extends HttpServlet {
                     session.setAttribute("userid", ((RefEntity<?>)user).getId());
                 }
             };
-            if ( methodName.equals("org.rapla.server.RemoteServer/checkServerVersion"))
+            String clientVersion = parameterMap.get("v");
+            if ( clientVersion != null )
             {
-            	 I18nBundle i18n = serverContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
-            	 String serverVersion = i18n.getString( "rapla.version" );
-                 //if ( !serverVersion.equals( clientVersion ) )
-            	 String string = request.getRequestURL().toString().replaceAll( "rpc/"+methodName, "");
-            	 throw new RaplaException( "Incompatible client/server versions. Please change your client to version "
-                             + serverVersion
-                             + ". If you are using java-webstart open " + string + " in your browser and click on the JNLP link." );   
+            	if ( !isClientVersionSupported(clientVersion))
+                {
+                	String message = getVersionErrorText(request, methodName);
+                	response.addHeader("X-Error-Classname",  "version");
+                	response.addHeader("X-Error-Stacktrace", message );
+                	response.setStatus( 500);
+                	return;
+                }
             }
             else
             {
-                final Object userId = session.getAttribute("userid");
-                if ( userId != null)
-                {
-                	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
-                	User user = (User) ((CachableStorageOperator)operator).resolveId((Comparable<?>) userId); 
-                    ((RemoteSessionImpl)remoteSession).setUser( user);
-                }
-                Long sessionstart = (Long)session.getAttribute("serverstarttime");
-                if ( sessionstart != null)
-                {
-	                // We have to reset the client because the server restarted
-	                if ( sessionstart < serverStartTime)
-	                {
-	                    ((RemoteSessionImpl)remoteSession).setUser( null);
-	                }
-                }
-                else
-                {
-                    session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
-                }
-    
-                RemoteServiceDispatcher serviceDispater= serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
-                byte[] out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
-                //String test = new String( out);
-                response.setContentType( "text/html; charset=utf-8");
-                //response.setContentType( "text/xml; charset=utf-8");
-                
-                //response.setCharacterEncoding( "utf-8" );
-                response.getOutputStream().write( out );
+            	//if ( !serverVersion.equals( clientVersion ) )
+	             String message = getVersionErrorText(request, methodName);
+	           	 response.addHeader("X-Error-Stacktrace", message );
+	             RaplaException e1= new RaplaException( message );   
+	           	 ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+	           	 ObjectOutputStream exout = new ObjectOutputStream( outStream);
+	           	 exout.writeObject( e1);
+	           	 exout.flush();
+	           	 byte[] out = outStream.toByteArray();
+	           	 try
+	           	 {
+	           		 ServletOutputStream outputStream = response.getOutputStream();
+	           		 outputStream.write( out );
+	           		 outputStream.close();
+	           	 }
+	           	 catch (Exception ex)
+	           	 {
+	           		 getLogger().error( " Error writing exception back to client " + ex.getMessage());
+	           	 }
+                 response.setStatus( 500);
+                 return;
             }
-         //   response.getOutputStream().close();
-                //  response.getWriter().println("There are currently " + reservations + " reservations");
+            final Object userId = session.getAttribute("userid");
+            if ( userId != null)
+            {
+            	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
+            	User user = (User) ((CachableStorageOperator)operator).resolveId((Comparable<?>) userId); 
+                ((RemoteSessionImpl)remoteSession).setUser( user);
+            }
+            Long sessionstart = (Long)session.getAttribute("serverstarttime");
+            if ( sessionstart != null)
+            {
+                // We have to reset the client because the server restarted
+                if ( sessionstart < serverStartTime)
+                {
+                    ((RemoteSessionImpl)remoteSession).setUser( null);
+                }
+            }
+            else
+            {
+                session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
+            }
+
+            RemoteServiceDispatcher serviceDispater= serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
+            byte[] out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
+            //String test = new String( out);
+            response.setContentType( "text/html; charset=utf-8");
+            //response.setContentType( "text/xml; charset=utf-8");
+            
+            //response.setCharacterEncoding( "utf-8" );
+            response.getOutputStream().write( out );
         }
         catch (Exception e)
         {
@@ -693,6 +718,23 @@ public class MainServlet extends HttpServlet {
 	        }
         }
     }
+    
+    private boolean isClientVersionSupported(String clientVersion) {
+		// add/remove supported client versions here 
+		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")  || clientVersion == "1.7.4RC2"  || clientVersion == "1.7.4";
+	}
+
+	private String getVersionErrorText(HttpServletRequest request, String methodName) 
+	{
+		String requestUrl = request.getRequestURL().toString();
+		int indexOf = requestUrl.indexOf( "rpc/"+methodName);
+		if (indexOf>=0 ) 
+		{
+			requestUrl = requestUrl.substring( 0, indexOf) ;
+		}
+		String message = "Incompatible client/server versions. Open " + requestUrl + " in your browser and click on the webstart or applet link to update your client.";
+		return message;
+	}
     
     public static String serverContainerHint = null;
 	protected ServerServiceContainer getServer() throws RaplaContextException {

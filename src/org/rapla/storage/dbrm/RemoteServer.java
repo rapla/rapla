@@ -19,6 +19,5 @@ import org.rapla.framework.RaplaException;
 @WebService
 public interface RemoteServer  {
     String login(String username,String password, String connectAs) throws RaplaException;
-    void checkServerVersion(String clientVersion) throws RaplaException;
 	void logout() throws RaplaException;
 }

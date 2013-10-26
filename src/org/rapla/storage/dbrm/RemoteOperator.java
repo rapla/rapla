@@ -132,9 +132,7 @@ public class RemoteOperator
         String password = new String( connectInfo.getPassword());
         String username = connectInfo.getUsername();
 		try {
-            String clientVersion= i18n.getString("rapla.version") ;
             RemoteServer serv1 = getRemoteServer();
-            serv1.checkServerVersion( clientVersion);
             serv1.login(username,password, connectAs);
             bSessionActive = true;
     		// today should be the date of the server

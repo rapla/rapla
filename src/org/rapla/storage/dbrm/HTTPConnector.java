@@ -22,10 +22,12 @@ public class HTTPConnector  implements Connector
     String sessionId;
     URL server;
     I18nBundle i18n;
+    String clientVersion;
     
     public HTTPConnector(I18nBundle i18n,URL server) {
     	this.i18n = i18n;
     	this.server = server;
+        clientVersion = i18n.getString("rapla.version");
     }
     
     private String readResultToString( InputStream input) throws IOException
@@ -156,30 +158,22 @@ public class HTTPConnector  implements Connector
         }
     }
     
-    private void addParams(Writer writer, Map<String,String> args ) throws IOException
+    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
     {
-        boolean appendAdd = false;
+    	writer.append( "v="+URLEncoder.encode(clientVersion,"utf-8"));
         for (Iterator<String> it = args.keySet().iterator();it.hasNext();)
         {
-            if ( appendAdd)
-            {
-                writer.write( "&");
-            }
+        	writer.append( "&");
             String key = it.next();
             String value= args.get( key);
             {
                 String pair = key;
-                writer.write( pair);
+                writer.append( pair);
                 if ( value != null)
                 {
-                	writer.write("="+ URLEncoder.encode(value,"utf-8"));
+                	writer.append("="+ URLEncoder.encode(value,"utf-8"));
                 }
-                appendAdd = true;
             }
-//            else
-//            {
-//                appendAdd = false;
-//            }
            
         }
     }
