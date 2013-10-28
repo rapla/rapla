@@ -633,11 +633,11 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     public void dispose() {
         if (frameControllerList != null)
             frameControllerList.closeAll();
-        stop();
         if ( commandQueue != null)
         {
         	((DefaultScheduler)commandQueue).cancel();
         }
+        stop();
         super.dispose();
         getLogger().debug("RaplaClient disposed");
     }
