@@ -48,7 +48,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.gui.InfoFactory;
 import org.rapla.gui.toolkit.AWTColorUtil;
-import org.rapla.gui.toolkit.RaplaColorList;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
 {
