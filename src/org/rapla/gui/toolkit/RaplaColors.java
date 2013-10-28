@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 /** WARNING: This class is about to change its API. Dont use it */
-final public class RaplaColorList {
+final public class RaplaColors {
 	private final static String[] COLORS=
     {
 		
