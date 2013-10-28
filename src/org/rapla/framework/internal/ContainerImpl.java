@@ -449,8 +449,10 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 
 		public void cancel() {
 			try{
-				getLogger().info("Scheduler thread terminated.");
-				executor.shutdownNow();
+				getLogger().info("Stopping scheduler thread.");
+				executor.shutdown();
+				executor.awaitTermination(3000, TimeUnit.MILLISECONDS);
+				getLogger().info("Stopped scheduler thread.");
 			}
 			catch ( Throwable ex)
 			{
