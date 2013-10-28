@@ -46,9 +46,9 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
+import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.Mutex;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.User;
@@ -126,7 +126,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     ConnectInfo reconnectInfo;
 	
     static boolean lookAndFeelSet;
-	private CommandScheduler commandQueue;
+	private CommandScheduler commandQueueWrapper;
 	
 
 	public RaplaClientServiceImpl(RaplaContext parentContext,Configuration config,Logger logger) throws RaplaException {
@@ -201,8 +201,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
         
         // overwrite commandqueue because we need to synchronize with swing
-        commandQueue = createCommandQueue();
-		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
+        commandQueueWrapper = new AWTWrapper((DefaultScheduler)getContext().lookup(CommandScheduler.class));
+		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueueWrapper);
 
             
         addContainerProvidedComponent( RaplaClipboard.class, RaplaClipboard.class );
@@ -275,6 +275,32 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 			}
 		};
 		return timerTask;
+	}
+	
+	class AWTWrapper implements CommandScheduler
+	{
+		DefaultScheduler parent;
+		
+		public AWTWrapper(DefaultScheduler parent) {
+			this.parent = parent;
+		}
+
+		@Override
+		public Cancelable schedule(Command command, long delay) {
+			Runnable task = createTask(command);
+			return parent.schedule(task, delay);		
+		}
+
+		@Override
+		public Cancelable schedule(Command command, long delay, long period) {
+			Runnable task = createTask(command);
+			return parent.schedule(task, delay, period);
+		}
+		
+		public String toString()
+		{
+			return parent.toString();
+		}
 	}
 
     public ClientFacade getFacade() throws RaplaContextException {
@@ -648,10 +674,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     public void dispose() {
         if (frameControllerList != null)
             frameControllerList.closeAll();
-        if ( commandQueue != null)
-        {
-        	((DefaultScheduler)commandQueue).cancel();
-        }
         stop();
         super.dispose();
         getLogger().debug("RaplaClient disposed");
@@ -665,7 +687,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                 startLoginInThread();
 			}
     	};
-		commandQueue.schedule( object, 0);
+		commandQueueWrapper.schedule( object, 0);
     }
 
     private void startLoginInThread()  {

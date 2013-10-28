@@ -384,15 +384,20 @@ public class ContainerImpl implements Container
 			this.executor = executor;
 		}
 
-		public Cancelable schedule(Command command, long delay) {
+		public Cancelable schedule(Command command, long delay) 
+		{
+			Runnable task = createTask(command);
+			return schedule(task, delay);
+		}
+		
+		public Cancelable schedule(Runnable task, long delay) {
 			if (executor.isShutdown())
 			{
-				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + command.toString());
+				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + task.toString());
 				getLogger().error(ex.getMessage(), ex);
 				return createCancable( null);
 			}
 	  
-			Runnable task = createTask(command);
 			TimeUnit unit = TimeUnit.MILLISECONDS;
 			ScheduledFuture<?> schedule = executor.schedule(task, delay, unit);
 			return createCancable( schedule);
@@ -409,18 +414,24 @@ public class ContainerImpl implements Container
 			};
 		}
 
-		public Cancelable schedule(Command command, long delay, long period) {
+		public Cancelable schedule(Runnable task, long delay, long period) {
 			if (executor.isShutdown())
 			{
-				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + command.toString());
+				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + task.toString());
 				getLogger().error(ex.getMessage(), ex);
 				return createCancable( null);
 			}
-			Runnable task = createTask(command);
 			TimeUnit unit = TimeUnit.MILLISECONDS;
 			ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
 			return createCancable( schedule);
 		}
+		
+		public Cancelable schedule(Command command, long delay, long period) 
+		{
+			Runnable task = createTask(command);
+			return schedule(task, delay, period);
+		}
+
 
 		public void cancel() {
 			try{
