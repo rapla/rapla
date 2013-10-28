@@ -68,6 +68,12 @@ detected.
  </New>
 
   <!-- Normaly you don't have to modify the settings below -->
+
+  <!-- As we load classes from eclispe not the webapp class loader, stopThreads would cause some exceptions -->
+  <Call name="setInitParameter">
+      <Arg>ClassLoaderLeakPreventor.stopThreads</Arg>
+      <Arg>false</Arg>
+  </Call>
  	 
  <!--  this is important for large data sets to submit -->
  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml</Set>

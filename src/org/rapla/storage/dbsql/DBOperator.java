@@ -167,19 +167,41 @@ Disposable
 //        	{
 //        		source = lookup;
 //        	}
+        	
         	if ( source != null)
         	{
+        		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         		try
         		{
-        			DataSource ds = (DataSource) source;
-        			connection = ds.getConnection();	 
-        		 }
-        		 catch (ClassCastException ex)
-        		 {
-        			String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
-        			getLogger().error( text);
-					throw new RaplaDBException(text);
-        		 }
+        			try
+        			{
+        				Thread.currentThread().setContextClassLoader(source.getClass().getClassLoader());
+        			}
+        			catch (Exception ex)
+        			{
+        			}
+	    			try
+	        		{
+	        			DataSource ds = (DataSource) source;
+	        			connection = ds.getConnection();	 
+	        		}
+	        		catch (ClassCastException ex)
+	        		{
+	        			String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
+	        			getLogger().error( text);
+						throw new RaplaDBException(text);
+	        		}
+        		}
+        		finally
+        		{
+        			try
+        			{
+        				Thread.currentThread().setContextClassLoader(contextClassLoader);
+        			}
+        			catch (Exception ex)
+        			{
+        			}
+        		}
         	 }
         	 // or driver initialization
         	 else

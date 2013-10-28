@@ -353,25 +353,33 @@ public class MainServlet extends HttpServlet {
         {
             if ( startupMode.equals("standalone") || startupMode.equals("client"))
             {
-            	 ClientServiceContainer clientContainer = raplaContainer.getContext().lookup(ClientServiceContainer.class );
-                 ClientService client =  clientContainer.getContext().lookup( ClientService.class);
-                 client.addRaplaClientListener(new RaplaClientListenerAdapter() {
-                         public void clientClosed(ConnectInfo reconnect) {
-                             MainServlet.this.reconnect = reconnect;
-                             if ( reconnect != null) {
-                                mutex.release();
-                             } else {
-                                 exit();
-                             }
-                         }
-                        
-						public void clientAborted()
-						{
-						
-							exit();
-						}
-                     });
-				clientContainer.start(connectInfo);
+            	ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+             	try
+             	{
+             		Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
+ 	            	ClientServiceContainer clientContainer = raplaContainer.lookup(ClientServiceContainer.class, startupMode );
+ 	            	ClientService client = clientContainer.getContext().lookup( ClientService.class);
+ 	            	client.addRaplaClientListener(new RaplaClientListenerAdapter() {
+ 	                         public void clientClosed(ConnectInfo reconnect) {
+ 	                             MainServlet.this.reconnect = reconnect;
+ 	                             if ( reconnect != null) {
+ 	                                mutex.release();
+ 	                             } else {
+ 	                                 exit();
+ 	                             }
+ 	                         }
+ 	                        
+ 							public void clientAborted()
+ 							{
+ 								exit();
+ 							}
+ 	                     });
+ 					clientContainer.start(connectInfo);
+             	}
+             	finally
+             	{
+             		Thread.currentThread().setContextClassLoader( contextClassLoader);
+             	} 
             } 
             else if (!startupMode.equals("server"))
             {

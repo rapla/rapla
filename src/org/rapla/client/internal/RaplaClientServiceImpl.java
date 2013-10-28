@@ -644,13 +644,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 
 
     private void startLogin()  throws Exception {
-        Thread loginThread = new Thread() {
-            public void run() {
+    	Command object = new Command()
+    	{
+			public void execute() throws Exception {
                 startLoginInThread();
-            }
-        };
-        loginThread.setDaemon( false );
-        loginThread.start();
+			}
+    	};
+		commandQueue.schedule( object, 0);
     }
 
     private void startLoginInThread()  {
