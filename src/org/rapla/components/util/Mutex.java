@@ -13,7 +13,8 @@
 package org.rapla.components.util;
 
 
-/** Mutex-lock for synchronization in multithreaded enviroments.*/
+/** Mutex-lock for synchronization in multithreaded enviroments. Will be removed in 1.8
+ * @deprecated replaced with semaphore*/
 public class Mutex  {
     boolean locked = false;
     boolean debugging = false;

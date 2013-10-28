@@ -60,7 +60,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.toolkit.RaplaColorList;
+import org.rapla.gui.toolkit.RaplaColors;
 
 public abstract class RaplaBuilder extends RaplaComponent
     implements
@@ -274,7 +274,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         	color = getColorForClassifiable( allocatable );
             if ( color == null && annotation.equals(DynamicTypeAnnotations.COLORS_AUTOMATED))
             {
-            	color = RaplaColorList.getResourceColor(i++);
+            	color = RaplaColors.getResourceColor(i++);
             }
             else if (  annotation.equals(DynamicTypeAnnotations.COLORS_DISABLED))
             {
@@ -641,7 +641,7 @@ public abstract class RaplaBuilder extends RaplaComponent
 
         public String lookupColorString(Allocatable allocatable) {
             if (allocatable == null)
-                return RaplaColorList.DEFAULT_COLOR_AS_STRING;
+                return RaplaColors.DEFAULT_COLOR_AS_STRING;
             return colors.get(allocatable);
         }
 

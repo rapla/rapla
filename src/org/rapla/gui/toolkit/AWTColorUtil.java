@@ -6,7 +6,7 @@ public class AWTColorUtil {
 
  	final static public Color getAppointmentColor(int nr)
 	{
- 		String string = RaplaColorList.getAppointmentColor(nr);
+ 		String string = RaplaColors.getAppointmentColor(nr);
  		Color color = getColorForHex(string);
  		return color;
 	}
@@ -17,9 +17,9 @@ public class AWTColorUtil {
 	    String rString = hexString.substring(1,3).toUpperCase();
 	    String gString = hexString.substring(3,5).toUpperCase();
 	    String bString = hexString.substring(5,7).toUpperCase();
-	    int r = RaplaColorList.decode( rString);
-	    int g = RaplaColorList.decode( gString);
-	    int b = RaplaColorList.decode( bString);
+	    int r = RaplaColors.decode( rString);
+	    int g = RaplaColors.decode( gString);
+	    int b = RaplaColors.decode( bString);
 	    return new Color(r, g, b);
 	}
 
@@ -31,7 +31,7 @@ public class AWTColorUtil {
 	    int g = color.getGreen();
 	    int b = color.getBlue();
 	
-	    return RaplaColorList.getHex(r, g, b);
+	    return RaplaColors.getHex(r, g, b);
 	}
 
 }
