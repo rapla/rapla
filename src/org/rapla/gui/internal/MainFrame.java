@@ -28,6 +28,7 @@ import javax.swing.JPanel;
 
 import org.rapla.RaplaMainContainer;
 import org.rapla.client.ClientService;
+import org.rapla.components.util.Command;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -128,13 +129,15 @@ public class MainFrame extends RaplaGUIComponent
     private void setStatus() {
         statusBar.setMaximumSize( new Dimension(400,20));
         final StatusFader runnable = new StatusFader(statusBar);
-        final Thread fadeThread = new Thread(runnable);
+        //getService(CommandScheduler.class).schedule( runnable, 0);
+        Thread fadeThread = new Thread(runnable);
+        fadeThread.setName("Login fader");
         fadeThread.setDaemon( true);
         fadeThread.start();
     
     }
     
-    class StatusFader implements Runnable{
+    class StatusFader implements Command, Runnable{
         JLabel label;
 
         StatusFader(JLabel label)
@@ -145,38 +148,41 @@ public class MainFrame extends RaplaGUIComponent
         public void run() {
             try {
                 
-                
-                {
-                    User  user = getUser();
-                    final boolean admin = user.isAdmin();
-                    String name = user.getName();
-                    if ( name == null ||  name.length() == 0 )
-                    {
-                        name = user.getUsername();
-                    }
-                    String message = getI18n().format("rapla.welcome",name);
-                    if ( admin)
-                    {
-                        message = message + " " + getString("admin.login");
-                    }
-                    
-                    statusBar.setText(message);
-                    fadeIn( statusBar );
-                }
-                Thread.sleep(2000);
-                {
-                    fadeOut( statusBar);
-                    if (getUserModule().isSessionActive())
-                    {
-                    	updateStatus();
-                    }
-                    fadeIn( statusBar );
-                }
+                execute();
             } catch (InterruptedException ex) {
                 //Logger.getLogger(Fader.class.getName()).log(Level.SEVERE, null, ex);
             } catch (RaplaException e) {
             }
         }
+
+		public void execute() throws RaplaException, InterruptedException {
+			{
+			    User  user = getUser();
+			    final boolean admin = user.isAdmin();
+			    String name = user.getName();
+			    if ( name == null ||  name.length() == 0 )
+			    {
+			        name = user.getUsername();
+			    }
+			    String message = getI18n().format("rapla.welcome",name);
+			    if ( admin)
+			    {
+			        message = message + " " + getString("admin.login");
+			    }
+			    
+			    statusBar.setText(message);
+			    fadeIn( statusBar );
+			}
+			Thread.sleep(2000);
+			{
+			    fadeOut( statusBar);
+			    if (getUserModule().isSessionActive())
+			    {
+			    	updateStatus();
+			    }
+			    fadeIn( statusBar );
+			}
+		}
 
         public void updateStatus() throws RaplaException {
             User  user = getUser();

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.Semaphore;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -658,17 +659,17 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 
 
     private void startLogin()  throws Exception {
-        Thread loginThread = new Thread() {
-            public void run() {
+    	Command object = new Command()
+    	{
+			public void execute() throws Exception {
                 startLoginInThread();
-            }
-        };
-        loginThread.setDaemon( false );
-        loginThread.start();
+			}
+    	};
+		commandQueue.schedule( object, 0);
     }
 
     private void startLoginInThread()  {
-        final Mutex loginMutex = new Mutex();
+        final Semaphore loginMutex = new Semaphore(1);
         try {
             final LanguageChooser languageChooser = new LanguageChooser( getLogger(), getContext());
             
@@ -755,7 +756,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             FrameControllerList.centerWindowOnScreen( dlg) ;
             dlg.setVisible( true );
 
-            loginMutex.aquire();
+            loginMutex.acquire();
         } catch (Exception ex) {
             getLogger().error("Error during Login ", ex);
             stop();

@@ -231,11 +231,16 @@ public class RemoteOperator
             message = getI18n().getString("restart_server");
         }
         isRestarting = false;
-        new Thread() {
-            public void run() {
-                fireStorageDisconnected(message);
-            }
-        }.start();
+        commandQueue.schedule( new Command() {
+			
+			public void execute() throws Exception {
+			    fireStorageDisconnected(message);
+				
+			}
+		}
+        
+        , 0);
+
     }
 
     public String getConnectionName() {

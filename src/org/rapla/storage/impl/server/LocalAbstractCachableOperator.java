@@ -786,7 +786,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				return;
 	
 			}
-			getLogger().error("Login failed for " + username);
+			getLogger().warn("Login failed for " + username);
 			throw new RaplaSecurityException(i18n.getString("error.login"));
 		}
 		finally

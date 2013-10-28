@@ -5,6 +5,7 @@ Library:----------from:----------------License------Get the source from:
 ant               Apache Foundation   Apache 2.0      ant.apache.org
 avalon-jars       Apache Foundation   Apache 2.0      avalon.apache.org
 commons-jars      Apache Foundation   Apache 2.0      commons.apache.org
+cl-leak-prevent   mjiderhamn          Apache 2.0      https://github.com/mjiderhamn/classloader-leak-prevention
 itext             iText Software      LGPL 2.0        github.com/ymasory/  
 ical4j            Micronode           ical4j (BSD)    build.mnode.org/projects/ical4j/
 jetty             Eclipse Foundation  Apache 2.0      www.eclipse.org/jetty/
@@ -15,7 +16,7 @@ service wrapper   tanukisoftware      GPL 2.0         wrapper.tanukisoftware.com
 
 Most icons were taken from the eclipse project (www.eclipse.org) which are licensed under
 the eclipse public license 1.1
-Some icons were taken from
+Some icons were taken from 
 - wm-icons.sourceforge.net (GPL LICENSE)
 
 Look for the full license texts in the legal folder of the rapla distribution.
