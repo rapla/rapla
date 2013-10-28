@@ -37,7 +37,7 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 	public static final int DEFAULT_lastModifiedIntervall = 5;
     public static final String DEFAULT_attendee_resource_attribute = "email";
     public static final String DEFAULT_attendee_participation_status= "TENTATIVE";
-    public static final String GENERATOR = "iCal";
+    public static final String GENERATOR = "ical";
 
 	public static final boolean ENABLE_BY_DEFAULT = true;
     public static final boolean DEFAULT_exportAttendees = false;
@@ -52,7 +52,7 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 
 		container.addContainerProvidedComponent(RESOURCE_FILE, I18nBundleImpl.class, I18nBundleImpl.createConfig(RESOURCE_FILE.getId()));
 	    container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, IcalPublicExtensionFactory.class);
-	    
+	   
 	    final int startupMode = container.getStartupEnvironment().getStartupMode();
         if ( startupMode != StartupEnvironment.APPLET)
         {
