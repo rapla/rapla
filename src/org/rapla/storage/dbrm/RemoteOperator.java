@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,6 +66,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaSecurityException;
@@ -105,11 +107,11 @@ public class RemoteOperator
 		
     public RemoteOperator(RaplaContext context, Logger logger,Configuration config) throws RaplaException {
         super( context, logger );
-        Container container = context.lookup( Container.class); 
-        String stub = config.getChild("stub").getValue(null);
-		if (stub != null)
+        URL downloadURL = context.lookup(StartupEnvironment.class).getDownloadURL();
+        String test = downloadURL != null  ? downloadURL.toString():"";
+		if ( context.has( RemoteMethodStub.class) && test.startsWith("file"))
         {
-        	server =  container.lookup(RemoteMethodStub.class,stub);
+        	server =  context.lookup(RemoteMethodStub.class);
     	}
         else
         {

@@ -167,7 +167,7 @@ public class MainServlet extends HttpServlet {
     			}
     			else
     			{
-    				getLogger().warn("Neither file nor database setup configured. ");
+    				getLogger().warn("Neither file nor database setup configured.");
     			}
     		}
     		
@@ -355,8 +355,8 @@ public class MainServlet extends HttpServlet {
             	try
             	{
             		Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
-	            	ClientServiceContainer clientContainer = raplaContainer.lookup(ClientServiceContainer.class, startupMode );
-	            	ClientService client = clientContainer.getContext().lookup( ClientService.class);
+            		ClientServiceContainer clientContainer = raplaContainer.getContext().lookup(ClientServiceContainer.class );
+            		ClientService client =  clientContainer.getContext().lookup( ClientService.class);
 	            	client.addRaplaClientListener(new RaplaClientListenerAdapter() {
 	                         public void clientClosed(ConnectInfo reconnect) {
 	                             MainServlet.this.reconnect = reconnect;
@@ -583,8 +583,7 @@ public class MainServlet extends HttpServlet {
 	        if ( page == null || page.trim().length() == 0) {
 	            page = "index";
 	        }
-	        
-
+	
             servletPage = getServer().getWebpage( page);
             if ( servletPage == null)
             {
@@ -706,6 +705,7 @@ public class MainServlet extends HttpServlet {
             }
             Object attribute = session.getAttribute("userid");
 			final Comparable userId = attribute != null ? LocalCache.getId(User.TYPE,(String) attribute) : null;
+
             if ( userId != null)
             {
             	StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
@@ -821,7 +821,8 @@ public class MainServlet extends HttpServlet {
     	String hint = serverContainerHint;
     	if  (hint == null)
     	{
-    		hint = startupMode;
+    		//hint = startupMode;
+    		return raplaContainer.getContext().lookup( ServerServiceContainer.class);
     	}
     	return raplaContainer.lookup( ServerServiceContainer.class, hint);
     }

@@ -34,32 +34,12 @@
     </facade>
   </rapla-server>
   
-  <!-- if you want to configure a different embedded server for the standalone client --> 
-  <rapla-server id="standalone">
-    <!-- Choose between :
-         - raplafile, to store the data in an XML-File (see file-storage entry)
-         - rapladb, to store the data in SQL RDMS (see sql-storage entry)
-         - rapladatasource, to let the servlet container decide which storage should be used
--->
-    <facade id="serverfacade">
-      <store>${env.rapladatasource}</store>
-    </facade>
-  </rapla-server>
-
   <rapla-client id="client">
 	  <facade id="facade">
 	    <store>remotestore</store>
 	  </facade>
   </rapla-client>
   
-  <!-- the single user standalone mode is now configured inside the raplaserver.xconf
-  But you should'nt have to change it. -->
-  <rapla-client id="standalone">
-	  <facade id="facade">
-	    <store>remotestub</store>
-	  </facade>
-  </rapla-client>
-
   <file-storage id="raplafile">
     <!--Only utf-8 is tested yet-->
     <encoding>utf-8</encoding>
@@ -111,10 +91,6 @@
   
   <remote-storage id="remotestore">
     <server>${download-url}</server>
-  </remote-storage>
-  
-  <remote-storage id="remotestub">
-    <stub>standalone</stub>
   </remote-storage>
   
   <importexport id="importexport"> 

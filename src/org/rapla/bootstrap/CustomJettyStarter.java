@@ -82,7 +82,8 @@ public class CustomJettyStarter
        // Investigate the passed arguments
        for ( int i = 0; i < args.length; i++ )
        {
-           if ( args[i].toLowerCase().equals( "-c" ) )
+           String arg = args[i].toLowerCase();
+           if ( arg.equals( "-c" ) )
            {
                if ( i + 1 == args.length )
                {
@@ -92,19 +93,19 @@ public class CustomJettyStarter
                config = args[++i];
                continue;
            }
-           if ( args[i].toLowerCase().equals( "-?" ) )
+           if ( arg.equals( "-?" ) )
            {
                bInvalid = true;
                break;
            }
-           if ( args[i].toLowerCase().substring( 0, 1 ).equals( "-" ) )
+           if ( arg.substring( 0, 1 ).equals( "-" ) )
            {
                bInvalid = true;
                break;
            }
            if (action == null)
            {
-        	   action = args[i].toLowerCase();
+        	   action = arg;
            }
        }
 
