@@ -385,29 +385,41 @@ public class ContainerImpl implements Container
 		}
 
 		public Cancelable schedule(Command command, long delay) {
+			if (executor.isShutdown())
+			{
+				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + command.toString());
+				getLogger().error(ex.getMessage(), ex);
+				return createCancable( null);
+			}
+	  
 			Runnable task = createTask(command);
 			TimeUnit unit = TimeUnit.MILLISECONDS;
 			ScheduledFuture<?> schedule = executor.schedule(task, delay, unit);
 			return createCancable( schedule);
-//				task.run();
-//				return createCancable();
 		}
 
 		private Cancelable createCancable(final ScheduledFuture<?> schedule) {
 			return new Cancelable() {
 				public void cancel() {
-					schedule.cancel(true);
+					if ( schedule != null)
+					{
+						schedule.cancel(true);
+					}
 				}
 			};
 		}
 
 		public Cancelable schedule(Command command, long delay, long period) {
+			if (executor.isShutdown())
+			{
+				RaplaException ex = new RaplaException("Can't schedule command because executer is already shutdown " + command.toString());
+				getLogger().error(ex.getMessage(), ex);
+				return createCancable( null);
+			}
 			Runnable task = createTask(command);
 			TimeUnit unit = TimeUnit.MILLISECONDS;
 			ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
 			return createCancable( schedule);
-//				task.run();
-//				return createCancable();
 		}
 
 		public void cancel() {
