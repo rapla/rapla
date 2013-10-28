@@ -24,10 +24,10 @@
 	<classpathentry kind="lib" path="lib/common/iText-4.2.0-com.itextpdf.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/common/super-csv-2.0.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/server/ical4j-1.0.4.jar"/>
-	<classpathentry kind="lib" path="lib/ext/hsqldb-2.3.0.jar">
+	<classpathentry kind="lib" path="lib/ext/hsqldb-2.3.1.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
-		</accessrules> 
+		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/server/commons-logging-1.1.2.jar">
 		<accessrules>
@@ -44,7 +44,7 @@
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-		<classpathentry kind="lib" path="lib/logging/logback-classic-1.0.13.jar">
+	<classpathentry kind="lib" path="lib/logging/logback-classic-1.0.13.jar">
 		<accessrules>
 			<accessrule kind="accessible" pattern="ch/qos/logback/classic/Logger"/>
 			<accessrule kind="accessible" pattern="ch/qos/logback/classic/LoggerContext"/>
@@ -65,17 +65,17 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/logback-access-1.0.13.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/commons-compiler-2.7.0.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/janino-2.7.0.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
