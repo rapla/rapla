@@ -71,9 +71,9 @@ final public class RaplaColors {
     	    int fillSize = nr - colors.size() + 1;
     	    for (int i=0;i<fillSize;i++) 
     	    {
-    	    	int r = (int) (float) (0.1 + rndA() /1.1) * 255;
-    	    	int g = (int) rndA() * 255;
-    	    	int b = (int) rndA() * 255;
+    	    	int r = (int) ((float) (0.1 + rndA() /1.1) * 255);
+    	    	int g = (int) (rndA() * 255);
+    	    	int b = (int) (rndA() * 255);
     	    	String color = getHex( r , g, b);
     	    	colors.add ( color);
     	    }
