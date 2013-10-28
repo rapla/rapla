@@ -45,6 +45,7 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
@@ -63,6 +64,7 @@ import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.LocalCache;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
@@ -94,7 +96,7 @@ public class MainServlet extends HttpServlet {
 	{
     	
 	}
-	ConnectInfo reconnect;
+	private ConnectInfo reconnect;
 
     private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
         String configName = getServletConfig().getInitParameter(entryName);
@@ -529,16 +531,12 @@ public class MainServlet extends HttpServlet {
 		
 	 }
 
-    /**
-     * Pass all servlet requests through to container to be handled.
-     */
-    public void service( HttpServletRequest request, HttpServletResponse response )
-        throws IOException, ServletException
+    
+    public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
-    	 RaplaPageGenerator  servletPage;
-         try {
-        
-	    	RaplaContext context = getServer().getContext();
+        RaplaPageGenerator  servletPage;
+        try {
+        	RaplaContext context = getServer().getContext();
 			Collection<ServletRequestPreprocessor> processors = getServer().lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
 		    for (ServletRequestPreprocessor preprocessor: processors)
 			{
@@ -548,8 +546,7 @@ public class MainServlet extends HttpServlet {
 	            if (response.isCommitted())
 	            	return;
 			}
-	
-	
+
 	        String page =  request.getParameter("page");
 	        String requestURI =request.getRequestURI();
 	        if ( page == null)
@@ -592,22 +589,44 @@ public class MainServlet extends HttpServlet {
     			out.close();
     			return;
             }
+            ServletContext servletContext = getServletContext();
+            servletPage.generatePage( servletContext, request, response);
         } 
         catch (RaplaException e) 
         {
-        	response.setStatus( 500 );
-          	java.io.PrintWriter out = response.getWriter();
-        	out.println(IOUtil.getStackTraceAsString( e));
-        	out.close();
+        	try
+        	{
+	        	response.setStatus( 500 );
+	        	
+	          	java.io.PrintWriter out = response.getWriter();
+	        	out.println(IOUtil.getStackTraceAsString( e));
+	        	out.close();
+        	}
+        	catch (Exception ex)
+        	{
+        		getLogger().error("Error writing exception back to client " + e.getMessage());
+        	}
             return;
-        } 
-        ServletContext servletContext = getServletContext();
-        servletPage.generatePage( servletContext, request, response);
+        }
+        finally
+        {
+        	try
+        	{
+        		ServletOutputStream outputStream = response.getOutputStream();
+				outputStream.close();
+        	}
+        	catch (Exception ex)
+        	{
+        		
+        	}
+        }
+        
     }
     
-    private void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI )
+    private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
     {
-        int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
+    	
+    	int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
         int sessionParamIndex = requestURI.indexOf(";");
         int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 
         String methodName = requestURI.substring(rpcIndex + "/rapla/rpc/".length(),endIndex);
@@ -615,31 +634,32 @@ public class MainServlet extends HttpServlet {
         String sessionId = session.getId();
         response.addCookie(new Cookie("JSESSIONID", sessionId));
         boolean dispatcherExceptionThrown = false;
-
         try
         {
 			final Map<String,String[]> originalMap = request.getParameterMap();
 			final Map<String,String> parameterMap = makeSinglesAndRemoveVersion(originalMap);
             final ServerServiceContainer serverContainer = getServer();
-            RemoteSession  remoteSession = new RemoteSessionImpl(serverContainer.getContext(), session.getId()){
+            final RaplaContext context = serverContainer.getContext();
+			final RemoteSession  remoteSession = new RemoteSessionImpl(context, session.getId()){
 
-            	 public void logout() throws RaplaException {
-                     setUser( null ); 
-                 }
-                 
-                 @Override
-                 public void setUser(User user) {
-                 	super.setUser(user);
-                 	if (user == null )
-                 	{
-                         session.removeAttribute("userid");
-                 	}
-                 	else
-                 	{
-                 		session.setAttribute("userid", ((RefEntity<?>)user).getId());
-                 	}
-                 }
+                public void logout() throws RaplaException {
+                    setUser( null ); 
+                }
+                
+                @Override
+                public void setUser(User user) {
+                	super.setUser(user);
+                	if (user == null )
+                	{
+                        session.removeAttribute("userid");
+                	}
+                	else
+                	{
+                		session.setAttribute("userid", "" + ((SimpleIdentifier)((RefEntity<?>)user).getId()).getKey());
+                	}
+                }
             };
+           
             String clientVersion = request.getParameter("v");
             if ( clientVersion != null )
             {
@@ -655,7 +675,7 @@ public class MainServlet extends HttpServlet {
             else
             {
             	//if ( !serverVersion.equals( clientVersion ) )
-	             String message = getVersionErrorText(request, methodName,"");
+	             String message = getVersionErrorText(request, methodName, "");
 	           	 response.addHeader("X-Error-Stacktrace", message );
 	             RaplaException e1= new RaplaException( message );   
 	           	 ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -677,10 +697,12 @@ public class MainServlet extends HttpServlet {
                  response.setStatus( 500);
                  return;
             }
-            final Comparable userId = (Comparable) session.getAttribute("userid");
+            Object attribute = session.getAttribute("userid");
+			final Comparable userId = attribute != null ? LocalCache.getId(User.TYPE,(String) attribute) : null;
+
             if ( userId != null)
             {
-            	StorageOperator operator= serverContainer.getContext().lookup( ServerService.class).getFacade().getOperator();
+            	StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
             	if ( operator.isConnected())
             	{
 	            	try 
@@ -714,8 +736,9 @@ public class MainServlet extends HttpServlet {
             {
                 session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
             }
-            
-            RemoteServiceDispatcher serviceDispater= serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
+            	
+        	
+        	RemoteServiceDispatcher serviceDispater= context.lookup( RemoteServiceDispatcher.class);
             byte[] out;
             try
             {
@@ -728,10 +751,16 @@ public class MainServlet extends HttpServlet {
             }
             //String test = new String( out);
             response.setContentType( "text/html; charset=utf-8");
-            //response.setContentType( "text/xml; charset=utf-8");
-            
-            //response.setCharacterEncoding( "utf-8" );
-            response.getOutputStream().write( out );
+            try
+        	{
+            	response.getOutputStream().write( out);
+            	response.flushBuffer();
+            	response.getOutputStream().close();
+            }
+        	catch (Exception ex)
+            {
+            	getLogger().error( " Error writing exception back to client " + ex.getMessage());
+            }	
         }
         catch (Exception e)
         {
@@ -761,6 +790,7 @@ public class MainServlet extends HttpServlet {
 	        	getLogger().error( " Error writing exception back to client " + e.getMessage(), ex);
 	        }
         }
+
     }
     
     private boolean isClientVersionSupported(String clientVersion) {
@@ -796,11 +826,11 @@ public class MainServlet extends HttpServlet {
         TreeMap<String,String> singlesMap = new TreeMap<String,String>();
         for (Iterator<String> it = parameterMap.keySet().iterator();it.hasNext();)
         {
-        	String key = it.next();
-        	if ( key.toLowerCase().equals("v"))
-        	{
-        		continue;
-        	}
+            String key = it.next();
+            if ( key.toLowerCase().equals("v"))
+            {
+            	continue;
+            }
             String[] values =  parameterMap.get( key);
             if ( values != null && values.length > 0 )
             {

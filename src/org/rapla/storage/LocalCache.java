@@ -430,7 +430,7 @@ public class LocalCache implements EntityResolver
         passwords.put(userId,password);
     }
 
-    public void putAll( Collection<? extends RefEntity<?>> list )
+    synchronized public void putAll( Collection<? extends RefEntity<?>> list )
     {
     	for ( RefEntity<?> entity: list)
     	{
@@ -438,7 +438,7 @@ public class LocalCache implements EntityResolver
     	}
     }
 
-	public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
+	synchronized public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
     {
 		Set<? extends RefEntity<?>> entities = entityMap.get(Allocatable.TYPE);
     	for (RefEntity<?> entity: entities)

@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import java.io.Serializable;
-
 import org.rapla.entities.RaplaType;
 
 
@@ -39,9 +37,8 @@ Two conditions should hold for all identifiers:
   if we want to serialize data to an XML-File.</li>
 </ol>
 */
-public class SimpleIdentifier implements Comparable<SimpleIdentifier>, Serializable
+public class SimpleIdentifier implements Comparable<SimpleIdentifier>
 {
-	private static final long serialVersionUID = 1L;
 	String type = null;
     int key;
     
