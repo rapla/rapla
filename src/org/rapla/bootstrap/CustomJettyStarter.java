@@ -149,6 +149,7 @@ public class CustomJettyStarter
 			startupMode = "standalone";
 		}
 		startupUser =System.getProperty("org.rapla.startupUser");
+
 		boolean isServer = startupMode.equals("server");
 		final boolean removeConnectors = !isServer;
 		if ( isServer)

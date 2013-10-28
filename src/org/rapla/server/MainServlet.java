@@ -132,10 +132,10 @@ public class MainServlet extends HttpServlet {
      *
      * @exception ServletException if an error occurs
      */
-    public void init()
+    synchronized public void init()
         throws ServletException
     {
-    	
+    	getLogger().info("Init RaplaServlet");
     	Collection<String> instanceCounter = null;
     	String selectedContextPath = null;
     	Context env;
@@ -155,7 +155,7 @@ public class MainServlet extends HttpServlet {
     		env_raplafile = lookupEnvVariable(env,"raplafile", true);
     		env_rapladb =   lookupResource(env, "jdbc/rapladb", true);
     		getLogger().info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb="+env_rapladb + " env_raplafile="+ env_raplafile);
-       		
+   		
     		if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
     		{
     			if ( env_rapladb != null)
@@ -182,13 +182,12 @@ public class MainServlet extends HttpServlet {
     		
     		selectedContextPath = lookupEnvVariable(env,"rapla_startup_context", false);
     		startupUser = lookupEnvVariable( env, "rapla_startup_user", false);
-    		shutdownCommand = (Runnable) lookup(env,"rapla_shutdown_command", false);
+			shutdownCommand = (Runnable) lookup(env,"rapla_shutdown_command", false);
 			port = (Integer) lookup(env,"rapla_startup_port", false);
 			downloadUrl = (String) lookup(env,"rapla_download_url", false);
 
     	}
-		
-		if ( startupMode == null)
+    	if ( startupMode == null)
 		{
 			startupMode = "server";
 		}
@@ -353,33 +352,33 @@ public class MainServlet extends HttpServlet {
         {
             if ( startupMode.equals("standalone") || startupMode.equals("client"))
             {
-            	ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-             	try
-             	{
-             		Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
- 	            	ClientServiceContainer clientContainer = raplaContainer.lookup(ClientServiceContainer.class, startupMode );
- 	            	ClientService client = clientContainer.getContext().lookup( ClientService.class);
- 	            	client.addRaplaClientListener(new RaplaClientListenerAdapter() {
- 	                         public void clientClosed(ConnectInfo reconnect) {
- 	                             MainServlet.this.reconnect = reconnect;
- 	                             if ( reconnect != null) {
- 	                                mutex.release();
- 	                             } else {
- 	                                 exit();
- 	                             }
- 	                         }
- 	                        
- 							public void clientAborted()
- 							{
- 								exit();
- 							}
- 	                     });
- 					clientContainer.start(connectInfo);
-             	}
-             	finally
-             	{
-             		Thread.currentThread().setContextClassLoader( contextClassLoader);
-             	} 
+                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            	try
+            	{
+            		Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
+            		ClientServiceContainer clientContainer = raplaContainer.getContext().lookup(ClientServiceContainer.class );
+            		ClientService client =  clientContainer.getContext().lookup( ClientService.class);
+	            	client.addRaplaClientListener(new RaplaClientListenerAdapter() {
+	                         public void clientClosed(ConnectInfo reconnect) {
+	                             MainServlet.this.reconnect = reconnect;
+	                             if ( reconnect != null) {
+	                                mutex.release();
+	                             } else {
+	                                 exit();
+	                             }
+	                         }
+	                        
+							public void clientAborted()
+							{
+								exit();
+							}
+	                     });
+					clientContainer.start(connectInfo);
+            	}
+            	finally
+            	{
+            		Thread.currentThread().setContextClassLoader( contextClassLoader);
+            	}
             } 
             else if (!startupMode.equals("server"))
             {
@@ -442,7 +441,8 @@ public class MainServlet extends HttpServlet {
         }
         catch( Exception e )
         {
-    		String message = "Error during initialization see logs for details: " + e.getMessage();
+    		getLogger().error(e.getMessage(), e);
+        	String message = "Error during initialization see logs for details: " + e.getMessage();
     		if ( raplaContainer != null)
         	{
         		raplaContainer.dispose();
@@ -504,7 +504,7 @@ public class MainServlet extends HttpServlet {
 		}
          // env.setContextRootURL( contextRootURL );
 		//env.setLogConfigURL( logConfigURL );
-
+    	
 		RaplaDefaultContext context = new RaplaDefaultContext();
 		if ( env_rapladatasource != null)
 		{
