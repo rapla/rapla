@@ -281,13 +281,15 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
 	public <T extends RaplaPageGenerator> void addWebpage(String pagename,
 			Class<T> pageClass, Configuration configuration) {
-		 addContainerProvidedComponent(SERVLET_PAGE_EXTENSION,pageClass, pagename, configuration);
+		 String lowerCase = pagename.toLowerCase();
+		 addContainerProvidedComponent(SERVLET_PAGE_EXTENSION,pageClass, lowerCase, configuration);
 	}
 	
 	public RaplaPageGenerator getWebpage(String page) throws RaplaContextException {
 		try
 		{
-			RaplaPageGenerator factory = lookup( SERVLET_PAGE_EXTENSION ,page);
+			String lowerCase = page.toLowerCase();
+			RaplaPageGenerator factory = lookup( SERVLET_PAGE_EXTENSION ,lowerCase);
 			return factory;
 		} catch (RaplaContextException ex)
 		{

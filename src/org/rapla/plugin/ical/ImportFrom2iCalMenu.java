@@ -63,7 +63,7 @@ import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 public class ImportFrom2iCalMenu extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener {
 
 	JMenuItem item;
-	String id = "iCal";
+	String id = "ical";
 	ICalImport importService;	
 	public ImportFrom2iCalMenu(RaplaContext context,ICalImport importService)
 	{
