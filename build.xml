@@ -230,6 +230,7 @@ Definition as published by the Open Source Initiative (OSI).
         	<exclude name="**/storage/dbfile/**" />
         	<exclude name="**/storage/dbsql/**" />
         	<exclude name="**/servletpages/**" />
+            <exclude name="se/jiderhamn/**"/>
     		<include name="**" />
         </javac>
 
@@ -397,6 +398,9 @@ Definition as published by the Open Source Initiative (OSI).
 	         	<exclude name="**/*.class" />
 	         	<exclude name="**/server" />
 	         	<exclude name="**/server/**" />
+	         	<exclude name="se"/>
+	         	<exclude name="se/jiderhamn"/>
+	         	<exclude name="se/jiderhamn/**"/>
 	            <exclude name="org/rapla/storage/dbfile"/>
             	<exclude name="org/rapla/storage/dbfile/**" />
 	         	<exclude name="org/rapla/storage/dbsql"/>
