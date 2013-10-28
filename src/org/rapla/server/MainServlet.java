@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -91,10 +93,12 @@ public class MainServlet extends HttpServlet {
    	
    	// the following variables are only for non server startup
 	Runnable shutdownCommand;
-	Semaphore mutex = new Semaphore(1);
-	{
-    	
-	}
+	
+	Semaphore guiMutex = new Semaphore(1);
+	
+	int maxRequests = 30;
+	Semaphore requestCount = new Semaphore(maxRequests);
+	
 	private ConnectInfo reconnect;
 
     private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
@@ -215,7 +219,7 @@ public class MainServlet extends HttpServlet {
 		if ( startupMode.equals("standalone") || startupMode.equals("client"))
 		{
 			try {
-	    		mutex.acquire();
+	    		guiMutex.acquire();
 	    	} catch (InterruptedException e) {
 			}
 			startGUI(startupMode);
@@ -294,7 +298,7 @@ public class MainServlet extends HttpServlet {
 		if ( startupMode.equals("standalone") ||  startupMode.equals("client"))
         {
         	try {
-				mutex.acquire();
+				guiMutex.acquire();
 				while ( reconnect != null )
 				{
 					
@@ -318,7 +322,7 @@ public class MainServlet extends HttpServlet {
 	 						}
 	 					 }
 	                     startGUI(startupMode, reconnect);
-	                     mutex.acquire();
+	                     guiMutex.acquire();
 	                 } catch (Exception ex) {
 	                     getLogger().error("Error restarting client",ex);
 	                     exit();
@@ -361,7 +365,7 @@ public class MainServlet extends HttpServlet {
 	                         public void clientClosed(ConnectInfo reconnect) {
 	                             MainServlet.this.reconnect = reconnect;
 	                             if ( reconnect != null) {
-	                                mutex.release();
+	                                guiMutex.release();
 	                             } else {
 	                                 exit();
 	                             }
@@ -399,10 +403,9 @@ public class MainServlet extends HttpServlet {
 
 	protected void startServer(final String startupMode)
 			throws ServletException {
-
         try
         {
-        	initContainer(startupMode);
+    		initContainer(startupMode);
 			if ( startupMode.equals("import"))
 			{
 				ImportExportManager manager = raplaContainer.getContext().lookup(ImportExportManager.class);
@@ -452,8 +455,8 @@ public class MainServlet extends HttpServlet {
         	
         	throw new ServletException( message,e);
         }
+       
 	}
-	
 	protected void startServer_(final String startupMode)
 			throws RaplaContextException {
 		final Logger logger = getLogger();
@@ -461,17 +464,30 @@ public class MainServlet extends HttpServlet {
 		ServerServiceImpl server = (ServerServiceImpl)getServer();
 		server.setShutdownService( new ShutdownService() {
 		        public void shutdown(final boolean restart) {
-		       	 	logger.info( "Stopping  Server");
-		       	 	stopServer();
-		       	 	if ( restart)
-		       	 	{
-		       	 		try {
-		       	 			logger.info( "Restarting Server");
-		       	 			MainServlet.this.startServer(startupMode);
-		       	 		} catch (Exception e) {
-		       	 			logger.error( "Error while restarting Server", e );
-		       	 		}
-		       	 	}
+		        	try
+		        	{
+			        	requestCount.acquire( maxRequests -1);
+			       	 	logger.info( "Stopping  Server");
+			       	 	stopServer();
+			       	 	if ( restart)
+			       	 	{
+			       	 		try {
+			       	 			logger.info( "Restarting Server");
+			       	 			MainServlet.this.startServer(startupMode);
+			       	 		} catch (Exception e) {
+			       	 			logger.error( "Error while restarting Server", e );
+			       	 		}
+			       	 	}
+		        	}
+		        	catch (InterruptedException ex)
+		        	{ 
+		        		getLogger().error("Can't restart server " + ex.getMessage());
+		        	}
+		        	finally
+		        	{
+		        		requestCount.release( maxRequests -1);
+		            }
+		        	
 		        }
 		    });
 	}
@@ -529,7 +545,7 @@ public class MainServlet extends HttpServlet {
 	
 	 private void exit() {
 		MainServlet.this.reconnect = null;
-		 mutex.release();
+		 guiMutex.release();
 		 if ( shutdownCommand != null)
 		 {
 			 shutdownCommand.run();
@@ -541,8 +557,18 @@ public class MainServlet extends HttpServlet {
     public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
         RaplaPageGenerator  servletPage;
-        try {
-        	RaplaContext context = getServer().getContext();
+     	try {
+    		requestCount.acquire();
+    	}
+		catch (InterruptedException ex)
+        {
+			getLogger().error("Maximum number of requests reached " + maxRequests);
+			response.sendError( 500);
+			return;
+        }
+    	try
+    	{
+    		RaplaContext context = getServer().getContext();
 			Collection<ServletRequestPreprocessor> processors = getServer().lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
 		    for (ServletRequestPreprocessor preprocessor: processors)
 			{
@@ -616,6 +642,7 @@ public class MainServlet extends HttpServlet {
         }
         finally
         {
+        	requestCount.release();
         	try
         	{
         		ServletOutputStream outputStream = response.getOutputStream();

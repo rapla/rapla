@@ -245,7 +245,7 @@ Disposable
         }
     }
 
-    public void connect(ConnectInfo connectInfo) throws RaplaException {
+    synchronized public void connect(ConnectInfo connectInfo) throws RaplaException {
         if (isConnected())
         {
             return;
@@ -349,6 +349,10 @@ Disposable
 			{
     		    getLogger().warn("No content in database! Creating new database");
     		    CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
+    		    if ( sourceOperator == this)
+    		    {
+    		    	throw new RaplaException("Can't import, because db is configured as source.");
+    		    }
     		    sourceOperator.connect();
     		    saveData(c,sourceOperator.getCache());
     		    close( c);
