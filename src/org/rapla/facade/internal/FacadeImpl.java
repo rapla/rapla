@@ -247,10 +247,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public void refresh() throws RaplaException {
-		synchronized (getLock()) {
-			if (operator.supportsActiveMonitoring()) {
-				operator.refresh();
-			}
+		if (operator.supportsActiveMonitoring()) {
+			operator.refresh();
 		}
 	}
 	
@@ -467,11 +465,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 ******************************/
 	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
 		Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
-		synchronized (getLock()) {
-			Collection<Allocatable> objects = operator.getObjects(Allocatable.class);
-			// we copy all allocatables to a separate list because the original could be modified in another thread
-			allocatables.addAll(objects);
-		}
+		Collection<Allocatable> objects = operator.getObjects(Allocatable.class);
+		allocatables.addAll(objects);
+
 		Iterator<Allocatable> it = allocatables.iterator();
 		while (it.hasNext()) {
 			Allocatable allocatable = it.next();
@@ -501,25 +497,20 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 		}
 		Collection<Reservation> reservations = new ArrayList<Reservation>();
-		synchronized (getLock()) {
-			List<Allocatable> allocList;
-			if (allocatables != null)
+		List<Allocatable> allocList;
+		if (allocatables != null)
+		{
+			if ( allocatables.length == 0 )
 			{
-				if ( allocatables.length == 0 )
-				{
-					return Collections.emptyList();
-				}
-				allocList = Arrays.asList( allocatables);
+				return Collections.emptyList();
 			}
-			else
-			{
-				allocList = Collections.emptyList();
-			}
-			synchronized (operator.getLock()) {
-				List<Reservation> reservationsFromOperator = operator.getReservations(user,allocList, start, end);
-				reservations.addAll(reservationsFromOperator);
-			}
+			allocList = Arrays.asList( allocatables);
 		}
+		else
+		{
+			allocList = Collections.emptyList();
+		}
+		reservations.addAll(operator.getReservations(user,allocList, start, end));
 		removeFilteredClassifications(reservations, reservationFilters);
 		Iterator<Reservation> it =reservations.iterator();
 		while (it.hasNext()) {
@@ -583,9 +574,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Preferences getPreferences(User user) throws RaplaException {
-		synchronized (getLock()) {
-			return operator.getPreferences(user);
-		}
+		return operator.getPreferences(user);
 	}
 
 	public Category getSuperCategory() {
@@ -603,9 +592,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public Map<String, Template> getTemplateMap() throws RaplaException
 	{
-		synchronized (getLock()) {
-			return operator.getTemplateMap();
-		}
+		return operator.getTemplateMap();
 	}
 	
 	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {
@@ -660,11 +647,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Period[] getPeriods() throws RaplaException {
-		synchronized (getLock()) {
-			Period[] result = operator.getObjects(Period.class).toArray(
-					Period.PERIOD_ARRAY);
-			return result;
-		}
+		Period[] result = operator.getObjects(Period.class).toArray(Period.PERIOD_ARRAY);
+		return result;
 	}
 
 	public PeriodModel getPeriodModel() throws RaplaException {
@@ -677,52 +661,41 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
 		if (classificationType == null) {
-			synchronized (getLock()) {
-				return operator.getObjects(DynamicType.class).toArray(DynamicType.DYNAMICTYPE_ARRAY);
-			}
+			return operator.getObjects(DynamicType.class).toArray(DynamicType.DYNAMICTYPE_ARRAY);
 		}
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
-		synchronized (getLock()) {
-			Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
-			for (Iterator<DynamicType> it = collection.iterator(); it.hasNext();) {
-				DynamicType type = it.next();
-				if (classificationType.equals(type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))) {
-					result.add(type);
-				}
+		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
+		for (DynamicType type: collection) {
+			if (classificationType.equals(type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))) {
+				result.add(type);
 			}
 		}
 		return result.toArray(DynamicType.DYNAMICTYPE_ARRAY);
 	}
 
 	public DynamicType getDynamicType(String elementKey) throws RaplaException {
-		synchronized (getLock()) {
-			Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
-			for (Iterator<DynamicType> it = collection.iterator(); it.hasNext();) {
-				DynamicType type = it.next();
-				if (type.getElementKey().equals(elementKey))
-					return type;
-			}
+		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
+		for (Iterator<DynamicType> it = collection.iterator(); it.hasNext();) {
+			DynamicType type = it.next();
+			if (type.getElementKey().equals(elementKey))
+				return type;
 		}
 		throw new EntityNotFoundException("No dynamictype with elementKey "
 				+ elementKey);
 	}
 
 	public User[] getUsers() throws RaplaException {
-		synchronized (getLock()) {
-			Set<User> users = new TreeSet<User>();
-			users.addAll(operator.getObjects(User.class));
-			User[] result = users.toArray(User.USER_ARRAY);
-			return result;
-		}
+		Set<User> users = new TreeSet<User>();
+		users.addAll(operator.getObjects(User.class));
+		User[] result = users.toArray(User.USER_ARRAY);
+		return result;
 	}
 
 	public User getUser(String username) throws RaplaException {
-		synchronized (getLock()) {
-			User user = operator.getUser(username);
-			if (user == null)
-				throw new EntityNotFoundException("No User with username " + username);
-			return user;
-		}
+		User user = operator.getUser(username);
+		if (user == null)
+			throw new EntityNotFoundException("No User with username " + username);
+		return user;
 	}
 
 	  public Conflict[] getConflicts(Reservation reservation) throws RaplaException {
@@ -731,35 +704,34 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    	{
 	    		return Conflict.CONFLICT_ARRAY;
 	    	}
-	    	synchronized (operator.getLock()) {
-	            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
-	            Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
-	            Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
-				Collection<Reservation> ignoreList = Collections.singleton( reservation );
-				Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
-				for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
+	    	Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
+            Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
+            Collection<Reservation> ignoreList = Collections.singleton( reservation );
+            Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
+            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
+            for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
+			{
+				Allocatable allocatable= entry.getKey();
+				Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
+				for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry: appointmentMap.entrySet())
 				{
-					Allocatable allocatable= entry.getKey();
-					Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
-					for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry: appointmentMap.entrySet())
+					Appointment appointment = appointmentEntry.getKey();
+					if ( reservation.hasAllocated( allocatable, appointment))
 					{
-						Appointment appointment = appointmentEntry.getKey();
-						if ( reservation.hasAllocated( allocatable, appointment))
+						Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
+						if ( conflictionAppointments != null)
 						{
-							Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
-							if ( conflictionAppointments != null)
+							for ( Appointment conflictingAppointment: conflictionAppointments)
 							{
-								for ( Appointment conflictingAppointment: conflictionAppointments)
-								{
-									ConflictImpl.addConflicts(conflictList,appointment,conflictingAppointment,allocatable, today);
-								}
+								ConflictImpl.addConflicts(conflictList,appointment,conflictingAppointment,allocatable, today);
 							}
 						}
 					}
 				}
-	            return conflictList.toArray(Conflict.CONFLICT_ARRAY);
-	        }
-	    }
+			}
+            return conflictList.toArray(Conflict.CONFLICT_ARRAY);
+
+	  }
 
 	public Conflict[] getConflicts() throws RaplaException {
 		final User user;
@@ -771,15 +743,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			user = null;
 		}
-		synchronized (operator.getLock()) {
-			Collection<Conflict> conflicts = operator.getConflicts(  user);
-			if (getLogger().isDebugEnabled())
-			{
-				getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
-			}
-		
-			return conflicts.toArray(new Conflict[] {});
+		Collection<Conflict> conflicts = operator.getConflicts(  user);
+		if (getLogger().isDebugEnabled())
+		{
+			getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
 		}
+	
+		return conflicts.toArray(new Conflict[] {});
 	}
 	
 	public static boolean hasPermissionToAllocate( User user, Appointment appointment,Allocatable allocatable, Reservation original, Date today) {
@@ -848,7 +818,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         }
         return false;
     }
-	
+
 	public boolean canEditTemplats(User user) {
 		return hasGroupRights(user, Permission.GROUP_CAN_EDIT_TEMPLATES);
 	}
@@ -899,23 +869,21 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
 
 	}
-
+	
 	public Map<Allocatable,Collection<Appointment>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments) throws RaplaException {
-		synchronized (operator.getLock()) {
-			Collection<Reservation> ignoreList = new HashSet<Reservation>();
-			if ( appointments != null)
+		Collection<Reservation> ignoreList = new HashSet<Reservation>();
+		if ( appointments != null)
+		{
+			for (Appointment app: appointments)
 			{
-				for (Appointment app: appointments)
+				Reservation r = app.getReservation();
+				if ( r != null)
 				{
-					Reservation r = app.getReservation();
-					if ( r != null)
-					{
-						ignoreList.add( r );
-					}
+					ignoreList.add( r );
 				}
 			}
-			return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
 		}
+		return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
 	}
 
 	/******************************
@@ -924,10 +892,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public User getUser() throws RaplaException {
         if ( autoLogin != null && !operator.isConnected() )
         {
-            synchronized (operator.getLock()) {
-                if (!login(autoLogin))
-                    throw new RaplaException(i18n.getString("error.login") );                
-            }
+            if (!login(autoLogin))
+                throw new RaplaException(i18n.getString("error.login") );                
         }
 		if (this.workingUser == null) {
 			throw new RaplaException("no user loged in");
@@ -942,39 +908,35 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
    
    public boolean login(ConnectInfo connectInfo)
 			throws RaplaException {
-		synchronized (operator.getLock()) {
-			try {
-				if (!operator.isConnected()) {
-					operator.connect( connectInfo);
-				}
-			} catch (RaplaSecurityException ex) {
-				return false;
-			} finally {
-				// Clear password
+		try {
+			if (!operator.isConnected()) {
+				operator.connect( connectInfo);
+			}
+		} catch (RaplaSecurityException ex) {
+			return false;
+		} finally {
+			// Clear password
 //				for (int i = 0; i < password.length; i++)
 //					password[i] = 0;
-			}
-			String username = connectInfo.getUsername();
-			if  ( connectInfo.getConnectAs() != null)
-			{
-			    username = connectInfo.getConnectAs();
-			}
-			User user = operator.getUser(username);
-			if (user != null) {
-				this.workingUser = user;
-				getLogger().info("Login " + user.getUsername());
-				return true;
-			} else {
-			    return false;
-			}
+		}
+		String username = connectInfo.getUsername();
+		if  ( connectInfo.getConnectAs() != null)
+		{
+		    username = connectInfo.getConnectAs();
+		}
+		User user = operator.getUser(username);
+		if (user != null) {
+			this.workingUser = user;
+			getLogger().info("Login " + user.getUsername());
+			return true;
+		} else {
+		    return false;
 		}
 	}
 
 	public boolean canChangePassword() {
 		try {
-            synchronized (getLock()) {
-            	return operator.canChangePassword();
-            }
+			return operator.canChangePassword();
         } catch (RaplaException e) {
             return false;
         }
@@ -994,16 +956,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			
 		try
 		{
-			//notifyQueue.cancel();
 			// now we can add it again
 			this.workingUser = null;
 			// we need to remove the storage update listener, because the disconnect
-			// would trigger a restart otherwist
-			synchronized ( operator.getLock()) {
-				operator.removeStorageUpdateListener(this);
-				operator.disconnect();
-				operator.addStorageUpdateListener(this);
-			}
+			// would trigger a restart otherwise
+			operator.removeStorageUpdateListener(this);
+			operator.disconnect();
+			operator.addStorageUpdateListener(this);
 		} 
 		finally
 		{
@@ -1018,9 +977,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	@SuppressWarnings("unchecked")
 	public void changePassword(User user, char[] oldPassword, char[] newPassword)
 			throws RaplaException {
-		synchronized (getLock()) {
-			operator.changePassword((RefEntity<User>) user, oldPassword, newPassword);
-		}
+		operator.changePassword((RefEntity<User>) user, oldPassword, newPassword);
 	}
 
 	/******************************
@@ -1256,11 +1213,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
-		Comparable[] ids;
-		synchronized (getLock()) {
-			ids = operator.createIdentifier(raplaType, entities.size());
-		}
-		
+		Comparable[] ids = operator.createIdentifier(raplaType, entities.size());
 		int i = 0;
 		for ( T uncasted: entities)
 		{
@@ -1300,20 +1253,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public <T extends Entity<T>> Collection<Entity<T>> edit(Collection<Entity<T>> list) throws RaplaException
 	{
-		synchronized (getLock()) {
-			List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
-			for ( Entity<T> entity:list)
-			{
-				castedList.add( (RefEntity<T>) entity);
-			}
-			Collection<RefEntity<T>> result = operator.editObjects(castedList,	workingUser);
-			List<Entity<T>> castedResult = new ArrayList<Entity<T>>();
-			for ( Entity<T> entity:result)
-			{
-				castedResult.add(  entity);
-			}
-			return castedResult;
+		List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
+		for ( Entity<T> entity:list)
+		{
+			castedList.add( (RefEntity<T>) entity);
 		}
+		Collection<RefEntity<T>> result = operator.editObjects(castedList,	workingUser);
+		List<Entity<T>> castedResult = new ArrayList<Entity<T>>();
+		for ( Entity<T> entity:result)
+		{
+			castedResult.add(  entity);
+		}
+		return castedResult;
 	}
 
 
@@ -1346,13 +1297,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throw new NullPointerException("Can't clone null objects");
 
 		T result;
-		if (obj.getRaplaType().equals( Appointment.TYPE) ){
+		RaplaType<T> raplaType = obj.getRaplaType();
+		if (raplaType ==  Appointment.TYPE ){
 			T _clone = _clone(obj);
 			// Hack for 1.6 compiler compatibility
 			Object temp = _clone;
 			((AppointmentImpl) temp).setParent(null);
 			result = _clone;
-		} else if (obj.getRaplaType().equals(Reservation.TYPE)) {
+		} else if (raplaType == Reservation.TYPE) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = obj;
 			Entity<Reservation> clonedReservation = cloneReservation((Entity<Reservation>) temp);
@@ -1447,20 +1399,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	public <T> Map<Entity<T>,T> getPersistant(Collection<Entity<T>> list) throws RaplaException {
-		synchronized (getLock()) {
-			List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
-			for ( Entity<T> entity:list)
-			{
-				castedList.add( (RefEntity<T>) entity);
-			}
-			Map<RefEntity<T>, T> result = operator.getPersistant(castedList);
-			LinkedHashMap<Entity<T>, T> castedResult = new LinkedHashMap<Entity<T>, T>();
-			for ( Map.Entry<RefEntity<T>, T> entry: result.entrySet())
-			{
-				castedResult.put( entry.getKey(), entry.getValue());
-			}
-			return castedResult;
+		List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
+		for ( Entity<T> entity:list)
+		{
+			castedList.add( (RefEntity<T>) entity);
 		}
+		Map<RefEntity<T>, T> result = operator.getPersistant(castedList);
+		LinkedHashMap<Entity<T>, T> castedResult = new LinkedHashMap<Entity<T>, T>();
+		for ( Map.Entry<RefEntity<T>, T> entry: result.entrySet())
+		{
+			castedResult.put( entry.getKey(), entry.getValue());
+		}
+		return castedResult;
 	}
 
 	public void store(Entity<?> obj) throws RaplaException {
@@ -1492,7 +1442,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			if (storeObjects[i] == null) {
 				throw new RaplaException("Stored Objects cant be null");
 			}
-			if (storeObjects[i].getRaplaType().equals(Reservation.TYPE)) {
+			if (storeObjects[i].getRaplaType() == Reservation.TYPE) {
 				checkReservation((Reservation) storeObjects[i]);
 			}
 		}
@@ -1503,34 +1453,21 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 		}
 
-		synchronized (getLock()) {
-			ArrayList<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>();
-			ArrayList<RefEntity<?>> removeList = new ArrayList<RefEntity<?>>();
-			for (Entity<?> toStore : storeObjects) {
-				storeList.add((RefEntity<?>) toStore);
-			}
-			for (Entity<?> toRemove : removedObjects) {
-				removeList.add((RefEntity<?>) toRemove);
-			}
-			operator.storeAndRemove(storeList, removeList, (RefEntity<User>) workingUser);
+		ArrayList<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>();
+		ArrayList<RefEntity<?>> removeList = new ArrayList<RefEntity<?>>();
+		for (Entity<?> toStore : storeObjects) {
+			storeList.add((RefEntity<?>) toStore);
 		}
+		for (Entity<?> toRemove : removedObjects) {
+			removeList.add((RefEntity<?>) toRemove);
+		}
+		operator.storeAndRemove(storeList, removeList, (RefEntity<User>) workingUser);
+	
 		if (getLogger().isDebugEnabled())
 			getLogger().debug("Storing took " + (System.currentTimeMillis() - time)	+ " ms.");
 	}
 
-	private Object getLock() throws RaplaException 
-	{
-	    synchronized (operator.getLock()) {
-	        if ( autoLogin != null && !operator.isConnected() )
-	        {
-	            if (!login(autoLogin))
-	                throw new RaplaException(i18n.getString("error.login") );
-	        }
-        }
-	    return operator.getLock();
-    }
-
-    public CommandHistory getCommandHistory() 
+	public CommandHistory getCommandHistory() 
 	{
 		return commandHistory;
 	}
@@ -1554,5 +1491,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		RefEntity<User> user = (RefEntity<User>)getUser();
 		getOperator().confirmEmail(user, newEmail);
 	}
+
+	
 
 }

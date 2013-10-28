@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import java.io.IOException;
-
 import org.rapla.entities.RaplaType;
 
 
@@ -39,20 +37,11 @@ Two conditions should hold for all identifiers:
   if we want to serialize data to an XML-File.</li>
 </ol>
 */
-public class SimpleIdentifier implements java.io.Serializable, Comparable<SimpleIdentifier>
+public class SimpleIdentifier implements Comparable<SimpleIdentifier>
 {
-    // Don't forget to increase the serialVersionUID when you change the fields
-    private static final long serialVersionUID = 1;
     
     String type = null;
     int key;
-    transient String name;
-
-    private void readObject(java.io.ObjectInputStream in)
-    throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        type = type.intern();
-    }
     
     public SimpleIdentifier(RaplaType type,int key) {
         this.type = type.toString().intern();
@@ -95,9 +84,7 @@ public class SimpleIdentifier implements java.io.Serializable, Comparable<Simple
     }
 
     public String toString() {
-        if (name == null)
-            name = type + "_" + key;
-        return name;
+        return type + "_" + key;
     }
 
 	public int compareTo(SimpleIdentifier id2) {

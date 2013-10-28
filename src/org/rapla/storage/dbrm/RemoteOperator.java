@@ -127,8 +127,16 @@ public class RemoteOperator
         if (isConnected())
             return;
         getLogger().info("Connecting to server and starting login..");
-        loginAndLoadData(connectInfo);
-        initRefresh();
+    	lock.writeLock().lock();
+    	try
+    	{
+    		loginAndLoadData(connectInfo);
+    		initRefresh();
+    	}
+    	finally
+    	{
+    		lock.writeLock().unlock();
+    	}
     }
     
 	long lastSyncedTimeLocal;
@@ -650,14 +658,15 @@ public class RemoteOperator
    
     long clientRepositoryVersion = 0;
 
-    private void refresh(UpdateEvent evt) throws RaplaException
+    synchronized private void refresh(UpdateEvent evt) throws RaplaException
     {
     	if ( evt.isNeedResourcesRefresh())
     	{
     		refreshAll();
     		return;
     	}
-        synchronized (getLock()) 
+		lock.writeLock().lock();
+		try
         {
             Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
             Collection<RefEntity<?>> removeObjects = evt.getRemoveObjects();
@@ -713,45 +722,58 @@ public class RemoteOperator
                 fireStorageUpdated(result);
             }
         }
+		finally
+		{
+			lock.writeLock().unlock();
+		}
     }
 
 	protected void refreshAll() throws RaplaException,
 			EntityNotFoundException {
-		Set<RefEntity<?>> oldEntities = new HashSet<RefEntity<?>>();
+		UpdateResult result;
+		try
 		{
-			Iterator<RefEntity<?>> it = cache.getAllEntities();
-			while ( it.hasNext())
+			lock.writeLock().lock();
+			Set<RefEntity<?>> oldEntities = new HashSet<RefEntity<?>>();
 			{
-				oldEntities.add(it.next());
+				Iterator<RefEntity<?>> it = cache.getAllEntities();
+				while ( it.hasNext())
+				{
+					oldEntities.add(it.next());
+				}
 			}
+			loadData(null);
+			Set<RefEntity<?>> newEntities = new HashSet<RefEntity<?>>();
+			{
+				Iterator<RefEntity<?>> it = cache.getAllEntities();
+				while ( it.hasNext())
+				{
+					newEntities.add(it.next());
+				}
+			}
+			HashSet<RefEntity<?>> updated = new HashSet<RefEntity<?>>(newEntities);
+			Set<RefEntity<?>> toRemove = new HashSet<RefEntity<?>>(oldEntities);
+			Set<RefEntity<?>> toUpdate = new HashSet<RefEntity<?>>(oldEntities);
+			toRemove.removeAll(newEntities);
+			updated.removeAll( toRemove);
+			toUpdate.retainAll(newEntities);
+			
+			HashMap<RefEntity<?>, RefEntity<?>> oldEntityMap = new HashMap<RefEntity<?>, RefEntity<?>>();
+			for ( RefEntity<?> update: toUpdate)
+			{
+				RefEntity<?> newEntity = cache.get( update.getId());
+				if ( newEntity != null)
+				{
+					oldEntityMap.put( newEntity, update);
+				}
+			}
+			TimeInterval invalidateInterval = new TimeInterval( null,null);
+			result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
 		}
-		loadData(null);
-		Set<RefEntity<?>> newEntities = new HashSet<RefEntity<?>>();
+		finally
 		{
-			Iterator<RefEntity<?>> it = cache.getAllEntities();
-			while ( it.hasNext())
-			{
-				newEntities.add(it.next());
-			}
+			lock.writeLock().unlock();
 		}
-		HashSet<RefEntity<?>> updated = new HashSet<RefEntity<?>>(newEntities);
-		Set<RefEntity<?>> toRemove = new HashSet<RefEntity<?>>(oldEntities);
-		Set<RefEntity<?>> toUpdate = new HashSet<RefEntity<?>>(oldEntities);
-		toRemove.removeAll(newEntities);
-		updated.removeAll( toRemove);
-		toUpdate.retainAll(newEntities);
-		
-		HashMap<RefEntity<?>, RefEntity<?>> oldEntityMap = new HashMap<RefEntity<?>, RefEntity<?>>();
-		for ( RefEntity<?> update: toUpdate)
-		{
-			RefEntity<?> newEntity = cache.get( update.getId());
-			if ( newEntity != null)
-			{
-				oldEntityMap.put( newEntity, update);
-			}
-		}
-		TimeInterval invalidateInterval = new TimeInterval( null,null);
-		UpdateResult result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
 		fireStorageUpdated(result);
 	}
     
@@ -883,15 +905,21 @@ public class RemoteOperator
     	Appointment[] appointmentArray = appointments.toArray( Appointment.EMPTY_ARRAY);
 		EntityList list = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds);
 	    EntityResolver entityResolver = createEntityStore( list,  cache  );
-        synchronized (cache) {
-        	resolveEntities( list.iterator(), entityResolver );
+	    lock.readLock().lock();
+	    try
+	    {
+	    	resolveEntities( list.iterator(), entityResolver );
         }
+	    finally
+	    {
+	    	lock.readLock().unlock();
+	    }
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
         Iterator<RefEntity<?>> it = list.iterator();
         while ( it.hasNext())
         {
         	RefEntity<?> entity = it.next();
-        	if ( entity.getRaplaType().equals( Appointment.TYPE))
+        	if ( entity.getRaplaType() == Appointment.TYPE)
         	{
         		allAppointments.add( (Appointment) entity);
         	}
@@ -939,9 +967,15 @@ public class RemoteOperator
 //    		}
 //    	}
     	EntityResolver entityResolver = createEntityStore( list,  cache  );
-        synchronized (cache) {
-        	resolveEntities( list.iterator(), entityResolver );
+        lock.readLock().lock();
+	    try
+	    {
+	    	resolveEntities( list.iterator(), entityResolver );
         }
+	    finally
+	    {
+	    	lock.readLock().unlock();
+	    }
         List<Conflict> result = new ArrayList<Conflict>();
         Iterator it = list.iterator();
         while ( it.hasNext())

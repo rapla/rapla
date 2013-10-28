@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.Semaphore;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -41,10 +42,10 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
-import org.rapla.components.util.Mutex;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
@@ -52,6 +53,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaJDKLoggingAdapter;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.RemoteServiceDispatcher;
@@ -62,6 +64,7 @@ import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.LocalCache;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
@@ -70,7 +73,7 @@ public class MainServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     /** The default config filename is raplaserver.xconf*/
-    private Container raplaContainer;
+    private ContainerImpl raplaContainer;
     public final static String DEFAULT_CONFIG_NAME = "raplaserver.xconf";
 
     private long serverStartTime;
@@ -87,13 +90,12 @@ public class MainServlet extends HttpServlet {
    	private String serverVersion;
    	
    	// the following variables are only for non server startup
-   	private Runnable shutdownCommand;
-	Mutex mutex = new Mutex();
+	Runnable shutdownCommand;
+	Semaphore mutex = new Semaphore(1);
 	{
     	
 	}
 	private ConnectInfo reconnect;
-
 
     private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
         String configName = getServletConfig().getInitParameter(entryName);
@@ -129,10 +131,10 @@ public class MainServlet extends HttpServlet {
      *
      * @exception ServletException if an error occurs
      */
-    public void init()
+    synchronized public void init()
         throws ServletException
     {
-    	
+    	getLogger().info("Init RaplaServlet");
     	Collection<String> instanceCounter = null;
     	String selectedContextPath = null;
     	Context env;
@@ -184,8 +186,7 @@ public class MainServlet extends HttpServlet {
 			downloadUrl = (String) lookup(env,"rapla_download_url", false);
 
     	}
-		
-		if ( startupMode == null)
+    	if ( startupMode == null)
 		{
 			startupMode = "server";
 		}
@@ -214,7 +215,7 @@ public class MainServlet extends HttpServlet {
 		if ( startupMode.equals("standalone") || startupMode.equals("client"))
 		{
 			try {
-	    		mutex.aquire();
+	    		mutex.acquire();
 	    	} catch (InterruptedException e) {
 			}
 			startGUI(startupMode);
@@ -293,7 +294,7 @@ public class MainServlet extends HttpServlet {
 		if ( startupMode.equals("standalone") ||  startupMode.equals("client"))
         {
         	try {
-				mutex.aquire();
+				mutex.acquire();
 				while ( reconnect != null )
 				{
 					
@@ -317,7 +318,7 @@ public class MainServlet extends HttpServlet {
 	 						}
 	 					 }
 	                     startGUI(startupMode, reconnect);
-	                     mutex.aquire();
+	                     mutex.acquire();
 	                 } catch (Exception ex) {
 	                     getLogger().error("Error restarting client",ex);
 	                     exit();
@@ -430,7 +431,8 @@ public class MainServlet extends HttpServlet {
         }
         catch( Exception e )
         {
-    		String message = "Error during initialization see logs for details: " + e.getMessage();
+    		getLogger().error(e.getMessage(), e);
+        	String message = "Error during initialization see logs for details: " + e.getMessage();
     		if ( raplaContainer != null)
         	{
         		raplaContainer.dispose();
@@ -443,7 +445,7 @@ public class MainServlet extends HttpServlet {
         	throw new ServletException( message,e);
         }
 	}
-
+	
 	protected void startServer_(final String startupMode)
 			throws RaplaContextException {
 		final Logger logger = getLogger();
@@ -492,7 +494,7 @@ public class MainServlet extends HttpServlet {
 		}
          // env.setContextRootURL( contextRootURL );
 		//env.setLogConfigURL( logConfigURL );
-
+    	
 		RaplaDefaultContext context = new RaplaDefaultContext();
 		if ( env_rapladatasource != null)
 		{
@@ -528,8 +530,7 @@ public class MainServlet extends HttpServlet {
 	 }
 
     
-    public void service( HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException
+    public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
         RaplaPageGenerator  servletPage;
         try {
@@ -543,7 +544,6 @@ public class MainServlet extends HttpServlet {
 	            if (response.isCommitted())
 	            	return;
 			}
-            //logger.error("Error using preprocessor servlet", e);
 
 	        String page =  request.getParameter("page");
 	        String requestURI =request.getRequestURI();
@@ -575,6 +575,7 @@ public class MainServlet extends HttpServlet {
 	        if ( page == null || page.trim().length() == 0) {
 	            page = "index";
 	        }
+	        
 
             servletPage = getServer().getWebpage( page);
             if ( servletPage == null)
@@ -653,7 +654,7 @@ public class MainServlet extends HttpServlet {
                 	}
                 	else
                 	{
-                		session.setAttribute("userid", ((RefEntity<?>)user).getId());
+                		session.setAttribute("userid", "" + ((SimpleIdentifier)((RefEntity<?>)user).getId()).getKey());
                 	}
                 }
             };
@@ -680,6 +681,7 @@ public class MainServlet extends HttpServlet {
 	           	 ObjectOutputStream exout = new ObjectOutputStream( outStream);
 	           	 exout.writeObject( e1);
 	           	 exout.flush();
+	           	 exout.close();
 	           	 byte[] out = outStream.toByteArray();
 	           	 try
 	           	 {
@@ -694,8 +696,8 @@ public class MainServlet extends HttpServlet {
                  response.setStatus( 500);
                  return;
             }
-            
-            final Object userId = session.getAttribute("userid");
+            Object attribute = session.getAttribute("userid");
+			final Comparable userId = attribute != null ? LocalCache.getId(User.TYPE,(String) attribute) : null;
             if ( userId != null)
             {
             	StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
@@ -716,7 +718,6 @@ public class MainServlet extends HttpServlet {
             	    response.addHeader("X-Error-Classname",  RaplaConnectException.class.getName());
                   	response.addHeader("X-Error-Stacktrace", "RaplaServer is shutting down" );
                     response.setStatus( 500);
-                  	
             	}
             }
             Long sessionstart = (Long)session.getAttribute("serverstarttime");
@@ -729,7 +730,7 @@ public class MainServlet extends HttpServlet {
                     ((RemoteSessionImpl)remoteSession).setUser( null);
                 }
             }
-        	if ( methodName.endsWith("login"))
+            if ( methodName.endsWith("login"))
             {
                 session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
             }

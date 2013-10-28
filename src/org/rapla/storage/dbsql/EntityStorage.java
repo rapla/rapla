@@ -324,7 +324,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         for (String createSQL : getCreateSQL())
 		{
 			Statement stmt = con.createStatement();
-			stmt.execute(createSQL );
+			try
+			{
+				stmt.execute(createSQL );
+			}
+			finally
+			{
+				stmt.close();
+			}
 			con.commit();
 		}
         schema.put( tablename, new TableDef(tablename,columns.values()));
@@ -350,14 +357,31 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             {
             	String sql = "ALTER TABLE " + tableName + " ADD COLUMN ";
                 sql += getColumnCreateStatemet( col, true, true);
-            	con.createStatement().execute(sql);
+    			Statement stmt = con.createStatement();
+    			try
+    			{
+    				stmt.execute( sql);
+    			}
+    			finally
+    			{
+    				stmt.close();
+    			}
+            	
             	con.commit();
             }
 			if ( col.isKey() && !col.isPrimary())
 			{
 				String sql = createKeySQL(tableName, name);
 	            getLogger().info("Adding index for " + name);
-	            con.createStatement().execute(sql);
+	            Statement stmt = con.createStatement();
+    			try
+    			{
+    				stmt.execute( sql);
+    			}
+    			finally
+    			{
+    				stmt.close();
+    			}
 	            con.commit();
 			}
         }
@@ -424,7 +448,15 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			sql+= columnSql;
             	
         }
-        con.createStatement().execute(sql);
+		Statement stmt = con.createStatement();
+		try
+		{
+			stmt.execute( sql);
+		}
+		finally
+		{
+			stmt.close();
+		}
 		con.commit();
         tableDef.removeColumn( oldColumnName);
         tableDef.addColumn( newCol);
@@ -528,7 +560,15 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	    {
 	    	getLogger().warn("Table " + tableName + " not found. Patching Database : Renaming " + oldTableName + " to "+ tableName);
 	    	String sql = "ALTER TABLE " + oldTableName + " RENAME TO " + tableName + "";
-			con.createStatement().execute( sql);
+	    	Statement stmt = con.createStatement();
+			try
+			{
+				stmt.execute( sql);
+			}
+			finally
+			{
+				stmt.close();
+			}
 			con.commit();
 			tableMap.put( tableName, tableMap.get( oldTableName));
 			tableMap.remove( oldTableName);
@@ -544,17 +584,20 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     public Collection<Storage<T>> getSubStores() {
 		return subStores;
 	}
-    
-    public void setConnection(Connection con) throws SQLException {
+
+    final public void setConnection(Connection con) throws SQLException {
 		this.con= con;
 		for (Storage<T> subStore: subStores) {
 		    subStore.setConnection(con);
 		}
-		String databaseProductName = con.getMetaData().getDatabaseProductName();
-		if ( databaseProductName != null)
+		if ( con != null)
 		{
-			Locale locale = Locale.ENGLISH;
-			dbProductName = databaseProductName.toLowerCase(locale);
+			String databaseProductName = con.getMetaData().getDatabaseProductName();
+			if ( databaseProductName != null)
+			{
+				Locale locale = Locale.ENGLISH;
+				dbProductName = databaseProductName.toLowerCase(locale);
+			}
 		}
     }
 
@@ -606,9 +649,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         Statement stmt = null;
         try {
 		    stmt = con.createStatement();
-		    StringTokenizer tokenizer = new StringTokenizer(sql,";");
-		    while (tokenizer.hasMoreTokens())
-		        stmt.executeUpdate(tokenizer.nextToken());
+	    	StringTokenizer tokenizer = new StringTokenizer(sql,";");
+	    	while (tokenizer.hasMoreTokens())
+	    		stmt.executeUpdate(tokenizer.nextToken());
         } finally {
             if (stmt!=null)
                 stmt.close();
@@ -636,8 +679,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             if (stmt!=null)
                 stmt.close();
         }
-        for (Storage it: subStores) {
-            it.loadAll();
+        for (Storage storage: subStores) {
+            storage.loadAll();
         }
     }
 

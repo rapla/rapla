@@ -181,7 +181,7 @@ public class LocalCache implements EntityResolver
                 return false;
 
 
-            if ( Appointment.TYPE.equals( raplaType )) {
+            if ( Appointment.TYPE == raplaType ) {
                 removeAppointment(entity);
             }
 
@@ -204,7 +204,7 @@ public class LocalCache implements EntityResolver
 		Set<RefEntity<?>> entitySet =  (Set<RefEntity<?>>) entityMap.get(raplaType);
         if (entitySet != null) {
 
-            if (Appointment.TYPE.equals( raplaType )) {
+            if (Appointment.TYPE == raplaType ) {
                 removeAppointment(entity);
                 Appointment appointment = (Appointment)entity;
 				appointmentsStart.add(appointment);

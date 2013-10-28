@@ -96,8 +96,6 @@ public interface StorageOperator {
     void addStorageUpdateListener(StorageUpdateListener updateListener);
     void removeStorageUpdateListener(StorageUpdateListener updateListener);
 
-    Object getLock();
-
     /** returns the beginning of the current day. Server time will be used if in client/server mode. */
     Date today();
 

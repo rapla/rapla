@@ -115,7 +115,14 @@ class RaplaSQL {
     {
 		for (RaplaTypeStorage storage: stores) {
 		    storage.setConnection(con);
-		    storage.insertAll();
+		    try
+		    {
+		    	storage.insertAll();
+		    }
+            finally
+            {
+            	storage.setConnection( null);
+            }
 		}
     }
 
@@ -126,16 +133,29 @@ class RaplaSQL {
         while (listIt.hasPrevious()) {
             Storage storage =  listIt.previous();
             storage.setConnection(con);
-            storage.deleteAll();
+            try
+            {
+            	storage.deleteAll();
+            }
+            finally
+            {
+            	storage.setConnection( null);
+            }
         }
     }
 
     synchronized public void loadAll(Connection con) throws SQLException,RaplaException {
-		Iterator<RaplaTypeStorage> it = stores.iterator();
-		while (it.hasNext()) {
-		    Storage storage = it.next();
+		for (Storage storage:stores)
+		{
 		    storage.setConnection(con);
-		    storage.loadAll();
+		    try
+		    {
+		    	storage.loadAll();
+		    }
+            finally
+            {
+            	storage.setConnection( null);
+            }
 		}
     }
 
@@ -146,9 +166,16 @@ class RaplaSQL {
 		for (RaplaTypeStorage storage:stores) {
 		    if (storage.canStore(entity)) {
 		    	storage.setConnection(con);
-		    	List<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
-		    	list.add( entity);
-                storage.delete(list);
+		    	try
+		    	{
+			    	List<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
+			    	list.add( entity);
+	                storage.delete(list);
+		    	}
+	            finally
+	            {
+	            	storage.setConnection( null);
+	            }
 		    	return;
 		    }
 		}
@@ -185,8 +212,15 @@ class RaplaSQL {
         for ( Storage storage: store.keySet())
         {
             storage.setConnection(con);
-            List<RefEntity<?>> list = store.get( storage);
-            storage.save(list);
+            try
+            {
+            	List<RefEntity<?>> list = store.get( storage);
+            	storage.save(list);
+            }
+            finally
+            {
+            	storage.setConnection( null);
+            }
         }
     }
 
@@ -196,7 +230,14 @@ class RaplaSQL {
     	for (Storage<?> storage:getStoresWithChildren())
 		{
     		storage.setConnection(con);
-    		storage.createOrUpdateIfNecessary( schema);
+    		try
+    		{
+    			storage.createOrUpdateIfNecessary( schema);
+    		}
+            finally
+            {
+            	storage.setConnection( null);
+            }
 		}
 	}
 }
