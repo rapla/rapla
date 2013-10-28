@@ -55,7 +55,10 @@ public class ConsoleLogger extends AbstractLogger {
         if ( message != null)
         {
             buf.append( message);
-            buf.append( ": " );
+            if ( cause != null)
+            {
+            	buf.append( ": " );
+            }
         }
         while( cause!= null)
         {
