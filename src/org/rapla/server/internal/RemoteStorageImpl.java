@@ -583,7 +583,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             {
              //   LocalCache cache = operator.getCache();
              //   UpdateEvent event = createUpdateEvent( context,xml, cache );
-                dispatch_( event);
+            	User sessionUser = getSessionUser();
+				getLogger().info("Dispatching change for user " + sessionUser);
+            	dispatch_( event);
+                getLogger().info("Change for user " + sessionUser + " dispatched.");
                 UpdateEvent result = createUpdateEvent(Long.valueOf( event.getRepositoryVersion()).longValue());
                 return result;
             }
@@ -697,12 +700,21 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             public void authenticate(String username, String password) throws RaplaException
             {
                 getSessionUser(); //check if authenified
-                if ( authenticationStore != null && authenticationStore.authenticate( username, password ) )
+                Logger logger = getLogger().getChildLogger("passwordcheck");
+				if ( authenticationStore != null  )
                 {
+                	logger.info("Checking external authentifiction for user " + username);
+                	if (authenticationStore.authenticate( username, password ))
+                	{
+                		return;
+                	}
+                	logger.info("Now trying to authenticate with local store" + username);
+                    operator.authenticate( username, password );
                     // do nothing
                 } // if the authenticationStore can't authenticate the user is checked against the local database
                 else
                 {
+                	logger.info("Check password for " + username);
                     operator.authenticate( username, password );
                 }
             }

@@ -21,6 +21,7 @@ import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -33,10 +34,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
-import javax.sql.PooledConnection;
-import javax.sql.XADataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -156,30 +154,31 @@ Disposable
         return createConnection(withTransactionSupport);
     }
     public Connection createConnection(boolean withTransactionSupport) throws RaplaException {
+    	Connection connection = null;
         try {
-        	 Connection connection;
         	 //datasource lookup 
-        	 if ( lookup != null)
-        	 {
-        		 if ( lookup instanceof ConnectionPoolDataSource)
-        		 {
-        			 ConnectionPoolDataSource ds = (ConnectionPoolDataSource) lookup;
-	        		 PooledConnection pooledConnection = ds.getPooledConnection();
-	        		 connection = pooledConnection.getConnection();
+        	Object source = lookup;
+//        	if ( lookup instanceof String)
+//        	{
+//        		InitialContext ctx = new InitialContext();
+//        		source  = ctx.lookup("java:comp/env/"+ lookup);
+//        	}
+//        	else
+//        	{
+//        		source = lookup;
+//        	}
+        	if ( source != null)
+        	{
+        		try
+        		{
+        			DataSource ds = (DataSource) source;
+        			connection = ds.getConnection();	 
         		 }
-        		 else if ( lookup instanceof DataSource)
+        		 catch (ClassCastException ex)
         		 {
-	        		 DataSource ds = (DataSource) lookup;
-	        		 connection = ds.getConnection();	        			 
-        		 }
-        		 else if ( lookup instanceof XADataSource)
-        		 {
-        			 XADataSource ds = (XADataSource) lookup;
-	        		 connection = ds.getXAConnection().getConnection();
-        		 }
-        		 else
-        		 {
-        			 throw new RaplaDBException("Datasource object " + lookup.getClass() + " does not implement a datasource interface.");
+        			String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
+        			getLogger().error( text);
+					throw new RaplaDBException(text);
         		 }
         	 }
         	 // or driver initialization
@@ -212,6 +211,10 @@ Disposable
 // 		     connection.commit();
              return connection;
         } catch (Throwable ex) {
+        	 if ( connection != null)
+        	 {
+        		 close(connection);
+        	 }
              if ( ex instanceof RaplaDBException)
              {
                  throw (RaplaDBException) ex;
@@ -270,6 +273,7 @@ Disposable
                 Connection connection = createConnection();
                 Statement statement = connection.createStatement();
                 statement.execute(sql);
+                statement.close();
             } 
             catch (SQLException ex) 
             {
@@ -298,19 +302,41 @@ Disposable
     		Map<String, TableDef> schema = loadDBSchema(c);
     		RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
     		raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
-    		ResultSet set = c.prepareStatement("select * from DYNAMIC_TYPE").executeQuery();
-    		if ( !set.next() ) {
+    		PreparedStatement prepareStatement = null;
+			ResultSet set = null;
+			boolean empty;
+    		try
+    		{
+    			prepareStatement = c.prepareStatement("select * from DYNAMIC_TYPE");
+    			set = prepareStatement.executeQuery();
+    			empty = !set.next();
+    		}
+    		finally
+    		{
+    			if ( set != null)
+    			{
+    				set.close();
+    			}
+    			if ( prepareStatement != null)
+    			{
+    				prepareStatement.close();
+    			}
+    		}
+			if ( empty	 ) 
+			{
     		    getLogger().warn("No content in database! Creating new database");
     		    CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
     		    sourceOperator.connect();
     		    saveData(c,sourceOperator.getCache());
     		    close( c);
+    		    c = null;
     		    c = createConnection();
     		}
   	        cache.clearAll();
   	        idTable.setCache(cache);
   	        readEverythingIntoCache( c );
   	        idTable.setCache(cache);
+  	        
   	        if ( getLogger().isDebugEnabled())
   	        	getLogger().debug("Entities contextualized");
 	
@@ -327,18 +353,9 @@ Disposable
         } 
         finally 
         {
-            try
-            {
-            	if ( c != null)
-            	{
-            		close ( c );
-            	}
-            }
-            catch (RaplaException ex)
-            {
-                getLogger().error( ex.getMessage());
-            }
-            lock.writeLock().unlock();
+        	close ( c );
+        	c = null;
+        	lock.writeLock().unlock();
         }
     }
     
@@ -349,24 +366,38 @@ Disposable
 		DatabaseMetaData metaData = c.getMetaData();
 		{
 			ResultSet set = metaData.getCatalogs();
-			while (set.next())
+			try
 			{
-				String name = set.getString("TABLE_CAT");
-				catalogList.add( name);
+				while (set.next())
+				{
+					String name = set.getString("TABLE_CAT");
+					catalogList.add( name);
+				}
+			}
+			finally
+			{
+				set.close();
 			}
 		}
 		List<String> schemaList = new ArrayList<String>();
 		{
 			ResultSet set = metaData.getSchemas();
-			while (set.next())
+			try
 			{
-				String name = set.getString("TABLE_SCHEM");
-				String cat = set.getString("TABLE_CATALOG");
-				schemaList.add( name);
-				if ( cat != null)
+				while (set.next())
 				{
-					catalogList.add( name);
+					String name = set.getString("TABLE_SCHEM");
+					String cat = set.getString("TABLE_CATALOG");
+					schemaList.add( name);
+					if ( cat != null)
+					{
+						catalogList.add( name);
+					}
 				}
+			}
+			finally
+			{
+				set.close();
 			}
 		}
 		
@@ -382,10 +413,17 @@ Disposable
 			tables.put( cat, tableSet);
 			{
 				ResultSet set = metaData.getTables(cat, null, null, types);
-				while (set.next())
+				try
 				{
-					String name = set.getString("TABLE_NAME");
-					tableSet.add( name);
+					while (set.next())
+					{
+						String name = set.getString("TABLE_NAME");
+						tableSet.add( name);
+					}
+				}
+				finally
+				{
+					set.close();
 				}
 			}
 		}
@@ -395,19 +433,25 @@ Disposable
 			for ( String tableName: tableNameSet )
 			{
 				ResultSet set = metaData.getColumns(null, null,tableName, null);
-				while (set.next())
+				try
 				{
-					String table = set.getString("TABLE_NAME").toUpperCase(Locale.ENGLISH);
-					TableDef tableDef = tableMap.get( table);
-					if ( tableDef == null )
+					while (set.next())
 					{
-						tableDef = new TableDef(table);
-						tableMap.put( table,tableDef );
+						String table = set.getString("TABLE_NAME").toUpperCase(Locale.ENGLISH);
+						TableDef tableDef = tableMap.get( table);
+						if ( tableDef == null )
+						{
+							tableDef = new TableDef(table);
+							tableMap.put( table,tableDef );
+						}
+						ColumnDef columnDef = new ColumnDef( set);
+						tableDef.addColumn( columnDef);
 					}
-					ColumnDef columnDef = new ColumnDef( set);
-					tableDef.addColumn( columnDef);
-				} 
-				set.close();
+				}
+				finally
+				{
+					set.close();
+				}
 			}
 		}
 		return tableMap;
@@ -471,8 +515,6 @@ Disposable
     public void removeAll() throws RaplaException {
         Connection connection = createConnection();
         try {
-             if (!isConnected())
-                 createConnection();
              RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
              raplaSQLOutput.removeAll( connection );
              connection.commit();
@@ -489,10 +531,9 @@ Disposable
         }
     }
     
-    public void saveData(LocalCache cache) throws RaplaException {
-    	Connection connection = null;
+    public synchronized void saveData(LocalCache cache) throws RaplaException {
+    	Connection connection = createConnection();
     	try {
-    		connection = createConnection();
     		Map<String, TableDef> schema = loadDBSchema(connection);
     		RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
     		raplaSQLOutput.createOrUpdateIfNecessary( connection, schema);
@@ -504,17 +545,7 @@ Disposable
         }
         finally
         {
-            try
-            {
-            	if ( connection != null)
-            	{
-            		close( connection );
-            	}
-            }
-            catch (Exception ex)
-            {
-                getLogger().error( ex.getMessage());
-            }
+        	close( connection );
         }
     }
 
@@ -535,15 +566,21 @@ Disposable
 		getLogger().info("Import complete for " + connectionName);
 	}
 
-    static private void close(Connection connection) throws RaplaException 
+	private void close(Connection connection)
     {
+		
+    	if ( connection == null)
+    	{
+    		return;
+    	}
         try 
         {
-            connection.close();
+        	getLogger().info("Closing "  + connection);
+        	connection.close();
         } 
         catch (SQLException e) 
         {
-            throw new RaplaException("Can't close connection to database ", e);
+            getLogger().error( "Can't close connection to database ", e);
         }
     }
 

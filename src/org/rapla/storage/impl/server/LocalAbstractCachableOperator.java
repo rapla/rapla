@@ -34,6 +34,7 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
+import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -46,13 +47,19 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.RefEntity;
@@ -74,6 +81,7 @@ import org.rapla.storage.ReferenceNotFoundException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
+import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.ConflictFinder.AllocationChange;
 
 
@@ -853,8 +861,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Collection<RefEntity<?>> storeObjects = arrayList;
 		Collection<RefEntity<?>> removeObjects = Collections.emptySet();
 		storeObjects.add(editableUser);
-		editableUser.cast().setEmail(newEmail);
-		if (personReference != null) {
+		if (personReference == null) {
+			editableUser.cast().setEmail(newEmail);
+		} else {
 			RefEntity<Allocatable> editablePerson = editObject(personReference,	null);
 			Classification classification = editablePerson.cast().getClassification();
 			classification.setValue("email", newEmail);
@@ -945,7 +954,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		lock.readLock().lock();
 		try
 		{
-	    	return conflictFinder.getAllocatableBindings( allocatables, appointments, ignoreList, false);
+			checkAbandonedAppointments(allocatables);
+			return conflictFinder.getAllocatableBindings( allocatables, appointments, ignoreList, false);
 	   	}
 		finally
 		{
@@ -953,6 +963,89 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
     }
     
+	private void checkAbandonedAppointments(Collection<Allocatable> allocatables) {
+		
+		Logger logger = getLogger().getChildLogger("appointmentcheck");
+		try
+		{
+			for ( Allocatable allocatable:allocatables)
+			{
+				SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable);
+				if ( appointmentSet == null)
+				{
+					continue;
+				}
+				for (Appointment app:appointmentSet)
+				{
+					Reservation reservation = app.getReservation();
+					if (reservation == null)
+					{
+						logger.error("Appointment without a reservation stored in cache " + app );
+						return;
+					}
+					else if (!reservation.hasAllocated( allocatable, app))
+					{
+						logger.error("Allocation is not stored correctly for " + reservation + " " + app + " "  + allocatable + " removing from cache!");
+						return;
+					}
+					else
+					{
+						{
+							RefEntity<?> original = (RefEntity<?>)reservation;
+							Comparable id = original.getId();
+							if ( id == null )
+							{
+								logger.error( "Empty id  for " + original);
+								return;
+							}
+							RefEntity<?> persistant = getCache().get( id );
+							if ( persistant != null )
+							{
+								if (persistant.getVersion() != original.getVersion())
+								{
+									logger.error( "Reservation stored in cache is not the same as in allocation store " + original );
+									return;
+								}
+							}
+							else
+							{
+								logger.error( "Reservation not stored in cache " + original );
+								return;
+							}
+						}
+						{
+							RefEntity<?> original = (RefEntity<?>)app;
+							Comparable id = original.getId();
+							if ( id == null )
+							{
+								logger.error( "Empty id  for " + original);
+								return;
+							}
+							RefEntity<?> persistant = getCache().get( id );
+							if ( persistant != null )
+							{
+								if (persistant.getVersion() != original.getVersion())
+								{
+									logger.error( "appointment stored in cache is not the same as in allocation store " + original );
+									return;
+								}
+							}
+							else
+							{
+								logger.error( "appointment not stored in cache " + original );
+								return;
+							}
+						}
+						
+					}
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.error(ex.getMessage(), ex);
+		}
+	}
     
     @Override
     public Date getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment,Collection<Reservation> ignoreList,Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException {
@@ -1048,5 +1141,131 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			lock.readLock().unlock();
 		}			
     }
+    
+    
+    protected void createDefaultSystem(LocalCache cache) throws RaplaException
+	{
+    	EntityStore list = new EntityStore( null, cache.getSuperCategory() );
+        
+    	DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,"resource");
+		setName(resourceType.getName(), "resource");
+		add(list, resourceType);
+		
+		DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,"person");
+		setName(personType.getName(), "person");
+		add(list, personType);
+		
+		DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event");
+		setName(eventType.getName(), "event");
+		add(list, eventType);
+		
+		String[] userGroups = new String[] {Permission.GROUP_REGISTERER_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
+		CategoryImpl groupsCategory = new CategoryImpl();
+		groupsCategory.setKey("user-groups");
+		setName( groupsCategory.getName(), groupsCategory.getKey());
+		setNew( groupsCategory);
+		list.put( groupsCategory);
+		for ( String catName: userGroups)
+		{
+			CategoryImpl group = new CategoryImpl();
+			group.setKey( catName);
+			setNew(group);
+			setName( group.getName(), group.getKey());
+			groupsCategory.addCategory( group);
+			list.put( group);
+		}
+		cache.getSuperCategory().addCategory( groupsCategory);
+		UserImpl admin = new UserImpl();
+		admin.setUsername("admin");
+		admin.setAdmin( true);
+		setNew(admin);
+		list.put( admin);
+	
+	    resolveEntities( list.getList(), list );
+	    cache.putAll( list.getList() );
+	    
+    	UserImpl user = cache.getUser("admin");
+    	String password ="";
+		cache.putPassword( user.getId(), password );
+		cache.getSuperCategory().setReadOnly(true);
+	
+        Date now = getCurrentTimestamp();
+		AllocatableImpl allocatable = new AllocatableImpl(now, now);
+	    allocatable.addPermission(allocatable.newPermission());
+        Classification classification = cache.getDynamicType("resource").newClassification();
+        allocatable.setClassification(classification);
+        setNew(allocatable);
+        classification.setValue("name", getString("test_resource"));
+        allocatable.setOwner( user);
+        cache.put( allocatable);
+	}
+    
+    private void add(EntityStore list, DynamicTypeImpl type) {
+    	list.put( type);
+    	for (Attribute att:type.getAttributes())
+    	{
+    		list.put((RefEntity<?>) att);
+    	}
+	}
+
+	private Attribute createStringAttribute(String key, String name) throws RaplaException {
+		Attribute attribute = newAttribute(AttributeType.STRING);
+		attribute.setKey(key);
+		setName(attribute.getName(), name);
+		return attribute;
+	}
+
+	private DynamicTypeImpl newDynamicType(String classificationType, String key) throws RaplaException {
+		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
+		dynamicType.setAnnotation("classification-type", classificationType);
+		dynamicType.setElementKey(key);
+		setNew(dynamicType);
+		if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)) {
+			dynamicType.addAttribute(createStringAttribute("name", "name"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
+		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
+			dynamicType.addAttribute(createStringAttribute("name","eventname"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
+			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
+			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
+			dynamicType.addAttribute(createStringAttribute("email", "email"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+		}
+		return dynamicType;
+	}
+
+	private Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
+		AttributeImpl attribute = new AttributeImpl(attributeType);
+		setNew(attribute);
+		return attribute;
+	}
+	
+	private <T extends RefEntity<?>> void setNew(T entity)
+			throws RaplaException {
+
+		RaplaType raplaType = entity.getRaplaType();
+		entity.setId(createIdentifier(raplaType,1)[0]);
+		entity.setVersion(0);
+	}
+	
+	
+	private void setName(MultiLanguageName name, String to)
+	{
+		String currentLang = i18n.getLang();
+		name.setName("en", to);
+		try
+		{
+			String translation = i18n.getString( to);
+			name.setName(currentLang, translation);
+		}
+		catch (Exception ex)
+		{
+			
+		}
+	}
 
 }

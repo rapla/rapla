@@ -735,10 +735,10 @@ public class RemoteOperator
 
 	protected void refreshAll() throws RaplaException,
 			EntityNotFoundException {
-		lock.writeLock().lock();
 		UpdateResult result;
 		try
 		{
+			lock.writeLock().lock();
 			Set<RefEntity<?>> oldEntities = cache.getAllEntities();
 			loadData(null);
 			Set<RefEntity<?>> newEntities = cache.getAllEntities();
