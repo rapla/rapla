@@ -390,7 +390,12 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 				
 				public Thread newThread(Runnable r) {
 					Thread thread = new Thread(r);
-					thread.setName("raplascheduler");
+					String name = thread.getName();
+					if ( name == null)
+					{
+						name = "";
+					}
+					thread.setName("raplascheduler-" + name.toLowerCase().replaceAll("thread", "").replaceAll("-|\\[|\\]", ""));
 					thread.setDaemon(true);
 					return thread;
 				}
