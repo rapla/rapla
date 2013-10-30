@@ -558,10 +558,6 @@ Disposable
     }
     
     public synchronized void saveData(LocalCache cache) throws RaplaException {
-    	if (!isConnected())
-    	{
-    		throw new RaplaException("Storage is already disconnected");
-    	}
     	Connection connection = createConnection();
     	try {
     		Map<String, TableDef> schema = loadDBSchema(connection);
