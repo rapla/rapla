@@ -451,12 +451,23 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 			return schedule(task, delay, period);
 		}
 
-
 		public void cancel() {
 			try{
 				getLogger().info("Stopping scheduler thread.");
-				executor.shutdown();
-				executor.awaitTermination(3000, TimeUnit.MILLISECONDS);
+				List<Runnable> shutdownNow = executor.shutdownNow();
+				for ( Runnable task: shutdownNow)
+				{
+					long delay = -1;
+					if ( task instanceof ScheduledFuture)
+					{
+						ScheduledFuture scheduledFuture = (ScheduledFuture) task;
+						delay = scheduledFuture.getDelay( TimeUnit.SECONDS);
+					}
+					if ( delay <=0)
+					{
+						getLogger().warn("Interrupted active task " + task );
+					}
+				}
 				getLogger().info("Stopped scheduler thread.");
 			}
 			catch ( Throwable ex)
@@ -733,6 +744,10 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 				} catch (Exception e) {
 					getLogger().error( e.getMessage(), e);
 				}					
+			}
+			public String toString()
+			{
+				return command.toString();
 			}
 		};
 		return timerTask;

@@ -270,6 +270,10 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 				Runnable runnable = RaplaClientServiceImpl.super.createTask( command);
 				javax.swing.SwingUtilities.invokeLater(runnable);
 			}
+			public String toString()
+			{
+				return command.toString();
+			}
 		};
 		return timerTask;
 	}
