@@ -9,7 +9,6 @@
   <priority>normal</priority>
   <downloadUrl>http://java.com/download</downloadUrl>
   <supportUrl></supportUrl>
-  <customProcName>true</customProcName>
   <stayAlive>false</stayAlive>
   <manifest></manifest>
   <icon>..\war\images\rapla_128x128.ico</icon>
@@ -19,8 +18,9 @@
   </classPath>
   <jre>
     <path></path>
+    <bundledJre64Bit>false</bundledJre64Bit>
     <minVersion>1.6.0_00</minVersion>
     <maxVersion></maxVersion>
-    <jdkPreference>preferJre</jdkPreference>
+    <jdkPreference>preferJdk</jdkPreference>
   </jre>
 </launch4jConfig>
