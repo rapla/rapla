@@ -167,13 +167,15 @@ Definition as published by the Open Source Initiative (OSI).
         <property name="webapp.dir" value="${build.dir}/war" />
         <property name="keystore.file" value="${main.dir}/testkeystore" />
        	<property name="keystore.password" value="secret" />
-
+        <property name="application.name" value="Rapla" />
         <property name="main.lib" value="rapla-${doc.version}.jar" />
     	<property name="main.client.lib" value="raplaclient.jar" /> 	       
         <property name="target" value="dist-bin" />
         <available file="${keystore.file}" property="keystore.present" />
-      
-    	
+        <condition property="permissions.client" value="all-permissions" else="sandbox">
+            <available file="${keystore.file}"/>
+        </condition>
+        
         <!-- filters will replace tokens in source files with the values in doc.properties -->
         <filterset id="docfilter">
             <filter token="doc.name" value="${doc.name}" />
@@ -230,7 +232,7 @@ Definition as published by the Open Source Initiative (OSI).
         	<exclude name="**/storage/dbfile/**" />
         	<exclude name="**/storage/dbsql/**" />
         	<exclude name="**/servletpages/**" />
-        	<exclude name="se/jiderhamn/**"/>
+            <exclude name="se/jiderhamn/**"/>
     		<include name="**" />
         </javac>
 
@@ -389,6 +391,9 @@ Definition as published by the Open Source Initiative (OSI).
                     <attribute name="Implementation-Title" value="common" />
                     <attribute name="Implementation-Version" value="${doc.version} ${TODAY}" />
                 	<attribute name="url" value="${doc.homepage}"/>
+                	<attribute name="Codebase" value="*"/>
+                	<attribute name="Application-Name" value ="${application.name}"/>
+                	<attribute name="Permissions" value="all-permissions"/>
                 	<attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
                 </section>
             </manifest>
@@ -412,8 +417,8 @@ Definition as published by the Open Source Initiative (OSI).
     	
         <jar jarfile="${build.dir}/${main.client.lib}">
         	 <fileset dir="${build.dest.client}">
-	            </fileset>
-                <manifest>
+	          </fileset>
+              <manifest>
                     <attribute name="Created-By" value="${user.name}" />
                     <section name="common">
                         <attribute name="Implementation-Title" value="common" />
@@ -421,7 +426,10 @@ Definition as published by the Open Source Initiative (OSI).
                     	<attribute name="url" value="${doc.homepage}"/>
                     	<attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
                     </section>
-                </manifest>
+                  	<attribute name="Application-Name" value ="${application.name}"/>
+                   	<attribute name="Codebase" value="*"/>
+    	           	<attribute name="Permissions" value="${permissions.client}"/>
+    	      </manifest>
         </jar>
     
     	<jar jarfile="${build.dir}/raplabootstrap.jar">
@@ -436,14 +444,46 @@ Definition as published by the Open Source Initiative (OSI).
 	                	<attribute name="url" value="${doc.homepage}"/>
 	                	<attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
                     </section>
+	              	<attribute name="Application-Name" value ="${application.name}"/>
+                    <attribute name="Codebase" value="*"/>
+                	<attribute name="Permissions" value="all-permissions"/>
              </manifest>
         </jar>
+        
+    	<jar jarfile="${webapp.dir}/webclient/iText-4.2.0-com.itextpdf.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
+	    <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
     </target>
 	
 	<target name="build-plugins" depends="compile">
 		 <subant target="build" genericantfile="buildplugin.xml">
             <dirset dir="${plugin.base}" includes="${plugin.includes}" excludes="${plugin.excludes}"/>
 		 	<property name="rapla.dir" value="${main.dir}"/>
+		 	<property name="plugin.base" value="${plugin.base}"/>
+	 	    <property name="permissions.client" value="${permissions.client}"/>
+	 	    <property name="application.name" value="${application.name}"/>
+         </subant>
+    </target>
+    
+	<target name="build-plugins-sub" depends="prepare">
+	    <subant target="compile" genericantfile="${main.dir}/buildplugin.xml" inheritAll="false">
+            <dirset dir="${plugin.base}" includes="${plugin.dependencies.sub}" />
+		 	<property name="rapla.dir" value="${main.dir}"/>
+		 	<property name="plugin.base" value="${plugin.base}"/>
+	 	    <property name="permissions.client" value="${permissions.client}"/>
+	 	    <property name="plugin.dependencies.includes.skip" value="true"/>
+	 	    <property name="application.name" value="${application.name}"/>
          </subant>
     </target>
 
@@ -472,6 +512,9 @@ Definition as published by the Open Source Initiative (OSI).
             <dirset dir="${plugin.base}" includes="${plugin.includes}" excludes="${plugin.excludes}"/>
 		 	<property name="rapla.dir" value="${main.dir}"/>
 	 	    <property name="webapp.dir" value="${webapp.dir}"/>
+	 	    <property name="plugin.base" value="${plugin.base}"/>
+	 	    <property name="permissions.client" value="${permissions.client}"/>
+	 	    <property name="application.name" value="${application.name}"/>
         </subant>
         
         <copy todir="${webapp.dir}">
@@ -614,6 +657,7 @@ Definition as published by the Open Source Initiative (OSI).
 		<copy todir="${dist-bin.dir}/resources">
             <fileset dir="${main.dir}/resources" >
                 <include name="logback.xml" />
+                <include name="logback-access.xml" />
             </fileset>
         </copy>
 		

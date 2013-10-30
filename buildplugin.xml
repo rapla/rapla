@@ -2,10 +2,8 @@
 <!-- file build.xml in your project root directory -->
 <project name="project" default="build" basedir=".">
 
-    <property name="main.dir" value="${basedir}" />
-
-    <target name="properties" if="eclipse.running">
-	  <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+	<target name="properties" if="eclipse.running">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
 	</target>
 
     <target name="init" depends="properties">
@@ -13,19 +11,18 @@
       <property name="raplalib.dir" value="${rapla.dir}/lib"/>
       <property name="rapla.build.dest.main" value="${rapla.dir}/build/classes" />
       <property name="rapla.build.dest.client" value="${rapla.dir}/build/clientclasses" />
-      <property file="${main.dir}/build.number"/>
-      <property file="${main.dir}/build.properties"/>
-      <basename property="project.name" file="${main.dir}"/>
+      <property file="${basedir}/build.number"/>
+      <property file="${basedir}/build.properties"/>
+      <property name="plugin.dependencies.includes" value="nothing_plugin" />
+      <basename property="project.name" file="${basedir}"/>
       <property name="doc.version" value="0.1"/>
-      <property name="main.lib" value="rapla-${project.name}-${doc.version}.jar"/>
+      <property name="main.lib" value="rapla_${project.name}-${doc.version}.jar"/>
       <property name="mainclient.lib" value="raplaclient_${project.name}.jar"/>
-      <property name="lib.dir" value="${main.dir}/lib"/>
-      <property name="war.dir" value="${main.dir}/war"/>
-      <property name="war.images.dir" value="${main.dir}/war/images"/>
+      <property name="lib.dir" value="${basedir}/lib"/>
+      <property name="war.dir" value="${basedir}/war"/>
+      <property name="war.images.dir" value="${basedir}/war/images"/>
       <available file="${war.dir}" type="dir"  property="war.present" />
       <available file="${war.images.dir}" type="dir" property="war.images.present" />
-
-
 
         <!-- Information about the compiler -->
 	  <!-- property name="build.compiler" value="javac1.3"/-->
@@ -36,9 +33,9 @@
 	  <property name="verbose"        value="no"/>
 	  <property name="packages"       value="org.*"/>
       <!-- The rapla-directories -->
-	  <property name="src.dir" value="${main.dir}/src" />
-	  <property name="temp.dir" value="${main.dir}/temp" />
-	  <property name="build.dir" value="${main.dir}/build" />
+	  <property name="src.dir" value="${basedir}/src" />
+	  <property name="temp.dir" value="${basedir}/temp" />
+	  <property name="build.dir" value="${basedir}/build" />
 	  <property name="generated.dir" value="${build.dir}/generated-src"/>
 	  <property name="build.dest" value="${build.dir}/classes" />
     </target>
@@ -58,10 +55,25 @@
 	<delete dir="${build.dir}" />
   </target>
 
-  <target name="compile" depends="prepare">
+  <target name="build-dependencies" depends="prepare" unless="plugin.dependencies.includes.skip">
+	 <ant antfile="${rapla.dir}/build.xml" dir="${rapla.dir}" target="build-plugins-sub" inheritAll="false">
+	    <property name="plugin.dependencies.sub" value="${plugin.dependencies.includes}"/>
+	    <property name="basedir" value="${rapla.dir}"/>
+     </ant>
+  </target>
+ 
+  <target name="compile" depends="prepare,build-dependencies">
+    <echo message="${basedir} dependencies ${plugin.dependencies.includes}" level="verbose"/>
+    <property name="plugin.base.absolute" location="${plugin.base}"/>
+    <pathconvert dirsep="/" pathsep="," property="plugin.dependencies.build">
+       <map from="${plugin.base.absolute}/" to="" /><!-- This is the trick. Remove slash to make path absolute. -->
+       <regexpmapper from="(.*)" to="\1/build/classes" handledirsep="yes"/>
+       <dirset id="plugin.dependencies" dir="${plugin.base}" includes="${plugin.dependencies.includes}"/>
+    </pathconvert>
+    
     <!-- Compile the java code from ${src} into ${build.dir} -->
   	<!-- first the client only code -->
-    <javac srcdir="${src.dir}"
+  	<javac srcdir="${src.dir}"
            destdir="${build.dest}"
            debug="${debug}"
     	   sourcepath=""
@@ -79,7 +91,10 @@
            <fileset dir="${raplalib.dir}">
            	 <include name="common/**"/>
            </fileset>
+	       <dirset dir="${plugin.base}" includes="${plugin.dependencies.build}"/>
+
            <pathelement path="${rapla.build.dest.client}"/>
+
          </classpath>
          <exclude name="**/server/**"/>
     </javac>
@@ -105,6 +120,7 @@
         	<include name="server/**"/>
             <include name="servlet-api-*.jar" />
           </fileset>
+          <dirset dir="${plugin.base}" includes="${plugin.dependencies.build}"/>
           <pathelement path="${rapla.build.dest.main}"/>
         </classpath>
     </javac>
@@ -187,8 +203,11 @@
   	           <attribute name="Implementation-Title" value="common"/>
                <attribute name="Implementation-Version" value="${doc.version} ${TODAY}" />
                <attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
-  	       </section>
-         </manifest>
+           </section>
+           <attribute name="Codebase" value="*"/>
+  	   	   <attribute name="Application-Name" value ="${application.name}"/>
+           <attribute name="Permissions" value="all-permissions"/>
+       </manifest>
     </jar>
   </target>
 
@@ -199,9 +218,13 @@
             <include name="*.jar" />
         </fileset>
     </copy>
-
-  	<copy file="${build.dir}/${main.lib}" tofile="${webapp.dir}/webclient/${mainclient.lib}"/>
   	
+  	<copy file="${build.dir}/${main.lib}" tofile="${webapp.dir}/webclient/${mainclient.lib}"/>
+  	<jar jarfile="${webapp.dir}/webclient/${mainclient.lib}" update="true">
+  	  <manifest>
+           <attribute name="Permissions" value="${permissions.client}"/>
+  	  </manifest>
+    </jar>
     <copy todir="${webapp.dir}/WEB-INF/lib" >
         <fileset dir="${lib.dir}/common">
             <include name="*.jar" />
@@ -220,10 +243,16 @@
     <target name="copywar" if="war.present">
         <copy todir="${webapp.dir}" >
             <fileset dir="${war.dir}">
-            	<exclude name="WEB-INF"  />
-            	<exclude name="WEB-INF/**"  />
+                <include name="*.*"  />
             </fileset>
         </copy>
+
+        <copy todir="${webapp.dir}/images" >
+            <fileset dir="${war.images.dir}">
+                <include name="*.*"/>
+            </fileset>
+        </copy>
+
     </target>
 	
 </project>
