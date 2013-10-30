@@ -268,21 +268,22 @@ final public class FileOperator extends LocalAbstractCachableOperator
         
     public void dispatch( UpdateEvent evt ) throws RaplaException
     {
-    	lock.writeLock().lock();
-        try
+    	UpdateResult result;
+    	try
         {
+    		lock.writeLock().lock();
 	    	evt = createClosure( evt );
 	        check( evt );
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
-	        UpdateResult result = update( evt);
+	        result = update( evt);
 	        saveData(cache, includeIds);
-	        fireStorageUpdated( result );
         }
         finally
         {
         	lock.writeLock().unlock();
         }
+        fireStorageUpdated( result );
     }
 
     synchronized final public void saveData(LocalCache cache) throws RaplaException

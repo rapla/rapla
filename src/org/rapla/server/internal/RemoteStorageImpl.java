@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.Cancelable;
@@ -185,197 +186,206 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     private Map<User,Long> needResourceRefresh = new HashMap<User,Long>();
     private Map<RefEntity<?>,Long> removeMap = new HashMap<RefEntity<?>,Long>();
     private SortedMap<Long, TimeInterval> invalidateMap = new TreeMap<Long,TimeInterval>();
-
+   
+    ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
  // Implementation of StorageUpdateListener
-    synchronized public void objectsUpdated( UpdateResult evt )
+    public void objectsUpdated( UpdateResult evt )
     {
-        // notify the client for changes
-        repositoryVersion++;
-        TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
-        invalidateMap.put(repositoryVersion, invalidateInterval);
-    	
-        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent( evt );
-        if ( getLogger().isDebugEnabled() )
-            getLogger().debug( "Storage was modified. Calling notify." );
-        for ( Iterator<RefEntity<?>> it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
-        {
-            RefEntity<?> obj = it.next();
-        	RaplaType<?> raplaType = obj.getRaplaType();
-        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
-        	{
-        		continue;
-        	}
-            removeMap.remove( obj );
-            updateMap.remove( obj );
-            updateMap.put( obj, new Long( repositoryVersion ) );
-        }
-        for ( Iterator<RefEntity<?>> it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
-        {
-            RefEntity<?> obj =  it.next();
-        	RaplaType<?> raplaType = obj.getRaplaType();
-        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
-        	{
-        		continue;
-        	}
-            updateMap.remove( obj );
-            removeMap.remove( obj );
-            removeMap.put( obj, new Long( repositoryVersion ) );
-        }
-        
-        // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
-        // someone changes the permissions on one or more resource and that affects  the visibility of that resource to a user, 
-        // so its either pushed to the client or removed from it.
-        //
-        // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
-        // If that is the case we trigger an invalidate of the conflicts for a user
-        Set<User> usersResourceRefresh = new HashSet<User>();
-        Category superCategory = operator.getSuperCategory();
-		Set<Category> groupsConflictRefresh = new HashSet<Category>();
-		Set<User> usersConflictRefresh = new HashSet<User>();
-		Iterator<Change> operations = evt.getOperations(UpdateResult.Change.class);
-        Set<Permission> invalidatePermissions = new HashSet<Permission>();
-        while ( operations.hasNext())
-		{
-			Change operation = operations.next();
-			RaplaObject newObject = operation.getNew();
-			if ( newObject.getRaplaType().is( Allocatable.TYPE))
+    	lock.writeLock().lock();
+    	try
+    	{
+	    	// notify the client for changes
+	        repositoryVersion++;
+	        TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
+	        invalidateMap.put(repositoryVersion, invalidateInterval);
+	    	
+	        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent( evt );
+	        if ( getLogger().isDebugEnabled() )
+	            getLogger().debug( "Storage was modified. Calling notify." );
+	        for ( Iterator<RefEntity<?>> it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
+	        {
+	            RefEntity<?> obj = it.next();
+	        	RaplaType<?> raplaType = obj.getRaplaType();
+	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
+	        	{
+	        		continue;
+	        	}
+	            removeMap.remove( obj );
+	            updateMap.remove( obj );
+	            updateMap.put( obj, new Long( repositoryVersion ) );
+	        }
+	        for ( Iterator<RefEntity<?>> it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
+	        {
+	            RefEntity<?> obj =  it.next();
+	        	RaplaType<?> raplaType = obj.getRaplaType();
+	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
+	        	{
+	        		continue;
+	        	}
+	            updateMap.remove( obj );
+	            removeMap.remove( obj );
+	            removeMap.put( obj, new Long( repositoryVersion ) );
+	        }
+	        
+	        // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
+	        // someone changes the permissions on one or more resource and that affects  the visibility of that resource to a user, 
+	        // so its either pushed to the client or removed from it.
+	        //
+	        // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
+	        // If that is the case we trigger an invalidate of the conflicts for a user
+	        Set<User> usersResourceRefresh = new HashSet<User>();
+	        Category superCategory = operator.getSuperCategory();
+			Set<Category> groupsConflictRefresh = new HashSet<Category>();
+			Set<User> usersConflictRefresh = new HashSet<User>();
+			Iterator<Change> operations = evt.getOperations(UpdateResult.Change.class);
+	        Set<Permission> invalidatePermissions = new HashSet<Permission>();
+	        while ( operations.hasNext())
 			{
-				Allocatable newAlloc = (Allocatable) newObject;
-				Allocatable current = (Allocatable) operation.getOld();
-				Permission[] oldPermissions = current.getPermissions();
-				Permission[] newPermissions = newAlloc.getPermissions();
-				// we leave this condition for a faster equals check
-				if  (oldPermissions.length == newPermissions.length)
+				Change operation = operations.next();
+				RaplaObject newObject = operation.getNew();
+				if ( newObject.getRaplaType().is( Allocatable.TYPE))
 				{
-					for (int i=0;i<oldPermissions.length;i++)
+					Allocatable newAlloc = (Allocatable) newObject;
+					Allocatable current = (Allocatable) operation.getOld();
+					Permission[] oldPermissions = current.getPermissions();
+					Permission[] newPermissions = newAlloc.getPermissions();
+					// we leave this condition for a faster equals check
+					if  (oldPermissions.length == newPermissions.length)
 					{
-						Permission oldPermission = oldPermissions[i];
-						Permission newPermission = newPermissions[i];
-						if (!oldPermission.equals(newPermission))
+						for (int i=0;i<oldPermissions.length;i++)
 						{
-							invalidatePermissions.add( oldPermission);
-							invalidatePermissions.add( newPermission);
+							Permission oldPermission = oldPermissions[i];
+							Permission newPermission = newPermissions[i];
+							if (!oldPermission.equals(newPermission))
+							{
+								invalidatePermissions.add( oldPermission);
+								invalidatePermissions.add( newPermission);
+							}
+						}
+					}
+					else
+					{
+						HashSet<Permission> newSet = new HashSet<Permission>(Arrays.asList(newPermissions));
+						HashSet<Permission> oldSet = new HashSet<Permission>(Arrays.asList(oldPermissions));
+						{
+							HashSet<Permission> changed = new HashSet<Permission>( newSet);
+							changed.removeAll( oldSet);
+							invalidatePermissions.addAll(changed);
+						}
+						{
+							HashSet<Permission> changed = new HashSet<Permission>(oldSet);
+							changed.removeAll( newSet);
+							invalidatePermissions.addAll(changed);
 						}
 					}
 				}
-				else
+				if ( newObject.getRaplaType().is( User.TYPE))
 				{
-					HashSet<Permission> newSet = new HashSet<Permission>(Arrays.asList(newPermissions));
-					HashSet<Permission> oldSet = new HashSet<Permission>(Arrays.asList(oldPermissions));
+					User newUser = (User) newObject;
+					User oldUser = (User) operation.getOld();
+					HashSet<Category> newGroups = new HashSet<Category>(Arrays.asList(newUser.getGroups()));
+					HashSet<Category> oldGroups = new HashSet<Category>(Arrays.asList(oldUser.getGroups()));
+					if ( !newGroups.equals( oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
 					{
-						HashSet<Permission> changed = new HashSet<Permission>( newSet);
-						changed.removeAll( oldSet);
-						invalidatePermissions.addAll(changed);
+						usersResourceRefresh.add( newUser);
 					}
+					
+				}
+				if ( newObject.getRaplaType().is( Reservation.TYPE))
+				{
+					Reservation newEvent = (Reservation) newObject;
+					Reservation oldEvent = (Reservation) operation.getOld();
+					User newOwner = newEvent.getOwner();
+					User oldOwner = oldEvent.getOwner();
+					if ( newOwner != null && oldOwner != null && (newOwner.equals( oldOwner)) )
 					{
-						HashSet<Permission> changed = new HashSet<Permission>(oldSet);
-						changed.removeAll( newSet);
-						invalidatePermissions.addAll(changed);
+						usersConflictRefresh.add( newOwner);
+						usersConflictRefresh.add( oldOwner);
+					}
+					Collection<Category> newGroup = RaplaComponent.getPermissionGroups( newEvent, superCategory);
+					Collection<Category> oldGroup = RaplaComponent.getPermissionGroups( oldEvent, superCategory);
+					if (newGroup != null && (oldGroup == null || !oldGroup.equals(newGroup)))
+					{
+						groupsConflictRefresh.addAll( newGroup);
+					}
+					if (oldGroup != null && (newGroup == null || !oldGroup.equals(newGroup)))
+					{
+						groupsConflictRefresh.addAll( oldGroup);
 					}
 				}
 			}
-			if ( newObject.getRaplaType().is( User.TYPE))
-			{
-				User newUser = (User) newObject;
-				User oldUser = (User) operation.getOld();
-				HashSet<Category> newGroups = new HashSet<Category>(Arrays.asList(newUser.getGroups()));
-				HashSet<Category> oldGroups = new HashSet<Category>(Arrays.asList(oldUser.getGroups()));
-				if ( !newGroups.equals( oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
-				{
-					usersResourceRefresh.add( newUser);
-				}
-				
-			}
-			if ( newObject.getRaplaType().is( Reservation.TYPE))
-			{
-				Reservation newEvent = (Reservation) newObject;
-				Reservation oldEvent = (Reservation) operation.getOld();
-				User newOwner = newEvent.getOwner();
-				User oldOwner = oldEvent.getOwner();
-				if ( newOwner != null && oldOwner != null && (newOwner.equals( oldOwner)) )
-				{
-					usersConflictRefresh.add( newOwner);
-					usersConflictRefresh.add( oldOwner);
-				}
-				Collection<Category> newGroup = RaplaComponent.getPermissionGroups( newEvent, superCategory);
-				Collection<Category> oldGroup = RaplaComponent.getPermissionGroups( oldEvent, superCategory);
-				if (newGroup != null && (oldGroup == null || !oldGroup.equals(newGroup)))
-				{
-					groupsConflictRefresh.addAll( newGroup);
-				}
-				if (oldGroup != null && (newGroup == null || !oldGroup.equals(newGroup)))
-				{
-					groupsConflictRefresh.addAll( oldGroup);
-				}
-			}
-		}
-        boolean addAllUsersToConflictRefresh = groupsConflictRefresh.contains( superCategory);
-        Set<Category> groupsResourceRefrsesh = new HashSet<Category>();
-        try
-        {
-        	if ( !invalidatePermissions.isEmpty() || ! addAllUsersToConflictRefresh || !! groupsConflictRefresh.isEmpty())
-        	{
-	        	Collection<User> allUsers = operator.getObjects( User.class);
-		        for ( Permission permission:invalidatePermissions)
-		        {
-		        	User user = permission.getUser();
-		        	if ( user != null)
-		        	{
-		        		usersResourceRefresh.add( user);
-		        	}
-		        	Category group = permission.getGroup();
-		        	if ( group != null)
-		        	{
-		        		groupsResourceRefrsesh.add( group);
-		        	}
-		        	if ( user == null && group == null)
-		        	{
-		        		usersResourceRefresh.addAll( allUsers);
-		        		break;
-		        	}
-		        }
-		        for ( User user:allUsers)
-		        {
-		        	if ( usersResourceRefresh.contains( user))
-		        	{
-		        		continue;
-		        	}
-		        	for (Category group:user.getGroups())
-		        	{
-		        		if ( groupsResourceRefrsesh.contains( group))
-		        		{
-		        			usersResourceRefresh.add( user);
-		        			break;
-		        		}
-		        		if ( addAllUsersToConflictRefresh || groupsConflictRefresh.contains( group))
-		        		{
-		        			usersConflictRefresh.add( user);
-		        			break;
-		        		}
-		        	}
-		        }
-        	}
-        } 
-        catch ( RaplaException ex) 
-        {
-        	getLogger().error(ex.getMessage(), ex);
-        }
-        for ( User user:usersResourceRefresh)
-        {
-        	if ( !user.isAdmin())
-        	{
-        		needResourceRefresh.put( user, repositoryVersion);
-        		needConflictRefresh.put( user, repositoryVersion);
-        	}
-        }
-        for ( User user:usersConflictRefresh)
-        {
-        	if ( !user.isAdmin())
-        	{
-        		needConflictRefresh.put( user, repositoryVersion);
-        	}
-        }
+	        boolean addAllUsersToConflictRefresh = groupsConflictRefresh.contains( superCategory);
+	        Set<Category> groupsResourceRefrsesh = new HashSet<Category>();
+	        try
+	        {
+	        	if ( !invalidatePermissions.isEmpty() || ! addAllUsersToConflictRefresh || !! groupsConflictRefresh.isEmpty())
+	        	{
+		        	Collection<User> allUsers = operator.getObjects( User.class);
+			        for ( Permission permission:invalidatePermissions)
+			        {
+			        	User user = permission.getUser();
+			        	if ( user != null)
+			        	{
+			        		usersResourceRefresh.add( user);
+			        	}
+			        	Category group = permission.getGroup();
+			        	if ( group != null)
+			        	{
+			        		groupsResourceRefrsesh.add( group);
+			        	}
+			        	if ( user == null && group == null)
+			        	{
+			        		usersResourceRefresh.addAll( allUsers);
+			        		break;
+			        	}
+			        }
+			        for ( User user:allUsers)
+			        {
+			        	if ( usersResourceRefresh.contains( user))
+			        	{
+			        		continue;
+			        	}
+			        	for (Category group:user.getGroups())
+			        	{
+			        		if ( groupsResourceRefrsesh.contains( group))
+			        		{
+			        			usersResourceRefresh.add( user);
+			        			break;
+			        		}
+			        		if ( addAllUsersToConflictRefresh || groupsConflictRefresh.contains( group))
+			        		{
+			        			usersConflictRefresh.add( user);
+			        			break;
+			        		}
+			        	}
+			        }
+	        	}
+	        } 
+	        catch ( RaplaException ex) 
+	        {
+	        	getLogger().error(ex.getMessage(), ex);
+	        }
+	        for ( User user:usersResourceRefresh)
+	        {
+	        	if ( !user.isAdmin())
+	        	{
+	        		needResourceRefresh.put( user, repositoryVersion);
+	        		needConflictRefresh.put( user, repositoryVersion);
+	        	}
+	        }
+	        for ( User user:usersConflictRefresh)
+	        {
+	        	if ( !user.isAdmin())
+	        	{
+	        		needConflictRefresh.put( user, repositoryVersion);
+	        	}
+	        }
+    	}
+    	finally
+    	{
+    		lock.writeLock().unlock();
+    	}
     }
 
     @Override
@@ -397,8 +407,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 initEventCleanup();
             }
         };
+        lock.writeLock().lock();
+        try
         {
-            int delay = 10000;
             {
                 RefEntity<?>[] keys = updateMap.keySet().toArray(new RefEntity[] {});
                 for ( int i=0;i<keys.length;i++)
@@ -429,23 +440,27 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				invalidateMap.remove( toRemove);
 			}
             
-            
             cleanupPointVersion = repositoryVersion;
-            if ( operator.isConnected() )
-            {
-                try
-                {
-                    delay = operator.getPreferences( null ).getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY,  delay );
-                }
-                catch ( RaplaException e )
-                {
-                    getLogger().error( "Error during cleanup.", e );
-                }
-            }
-            long scheduleDelay = Math.max( DateTools.MILLISECONDS_PER_HOUR, delay * 10 );
-            //scheduleDelay = 30000;
-            scheduledCleanup = commandQueue.schedule( cleanupTask,  scheduleDelay);
         }
+        finally
+        {
+        	lock.writeLock().unlock();
+        }
+        int delay = 10000;
+        if ( operator.isConnected() )
+        {
+            try
+            {
+                delay = operator.getPreferences( null ).getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY,  delay );
+            }
+            catch ( RaplaException e )
+            {
+                getLogger().error( "Error during cleanup.", e );
+            }
+        }
+        long scheduleDelay = Math.max( DateTools.MILLISECONDS_PER_HOUR, delay * 10 );
+        //scheduleDelay = 30000;
+        scheduledCleanup = commandQueue.schedule( cleanupTask,  scheduleDelay);
     }
 
     
@@ -584,7 +599,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	SerializableDateTimeFormat serializableFormat = raplaLocale.getSerializableFormat();
             	return serializableFormat.formatTimestamp( raplaTime);
             }
-
 
             public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
             {
@@ -814,53 +828,61 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
             
-            synchronized private UpdateEvent createUpdateEvent( long clientRepositoryVersion ) throws RaplaException
+            private UpdateEvent createUpdateEvent( long clientRepositoryVersion ) throws RaplaException
             {
-                User user = getSessionUser();
-                long currentVersion = repositoryVersion;
-                UpdateEvent safeResultEvent = new UpdateEvent();
-                safeResultEvent.setRepositoryVersion( currentVersion );
-                if ( clientRepositoryVersion < currentVersion )
+                lock.readLock().lock();
+                try
                 {
-                    for ( Iterator<RefEntity<?>> it = updateMap.keySet().iterator(); it.hasNext(); )
-                    {
-                        RefEntity<?> obj = it.next();
-                        Long lastVersion = updateMap.get( obj );
-                        if ( lastVersion.longValue() > clientRepositoryVersion )
-                        {
-                        	processClientReadable( user, safeResultEvent, obj, false);
-                        }
-                    }
-                    for ( Iterator<RefEntity<?>> it = removeMap.keySet().iterator(); it.hasNext(); )
-                    {
-                        RefEntity<?> obj =  it.next();
-                        Long lastVersion = removeMap.get( obj );
-                        if ( lastVersion.longValue() > clientRepositoryVersion )
-                        {
-                        	processClientReadable( user, safeResultEvent, obj, true);
-                        }
-                    }
-                    TimeInterval invalidateInterval;
-                    {
-	                    Long lastVersion = needConflictRefresh.get( user);
-	                    if ( lastVersion != null && lastVersion > clientRepositoryVersion)
+	            	User user = getSessionUser();
+	                long currentVersion = repositoryVersion;
+	                UpdateEvent safeResultEvent = new UpdateEvent();
+	                safeResultEvent.setRepositoryVersion( currentVersion );
+	                if ( clientRepositoryVersion < currentVersion )
+	                {
+	                    for ( Iterator<RefEntity<?>> it = updateMap.keySet().iterator(); it.hasNext(); )
 	                    {
-	                    	invalidateInterval = new TimeInterval( null, null);
+	                        RefEntity<?> obj = it.next();
+	                        Long lastVersion = updateMap.get( obj );
+	                        if ( lastVersion.longValue() > clientRepositoryVersion )
+	                        {
+	                        	processClientReadable( user, safeResultEvent, obj, false);
+	                        }
 	                    }
-	                    else
+	                    for ( Iterator<RefEntity<?>> it = removeMap.keySet().iterator(); it.hasNext(); )
 	                    {
-	                    	invalidateInterval = getInvalidateInterval( clientRepositoryVersion, currentVersion);
+	                        RefEntity<?> obj =  it.next();
+	                        Long lastVersion = removeMap.get( obj );
+	                        if ( lastVersion.longValue() > clientRepositoryVersion )
+	                        {
+	                        	processClientReadable( user, safeResultEvent, obj, true);
+	                        }
 	                    }
-                    }
-                    boolean resourceRefresh;
-                    {
-	                    Long lastVersion = needResourceRefresh.get( user);
-	                    resourceRefresh = ( lastVersion != null && lastVersion > clientRepositoryVersion);
-                    }
-                    safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
-                    safeResultEvent.setInvalidateInterval( invalidateInterval);
+	                    TimeInterval invalidateInterval;
+	                    {
+		                    Long lastVersion = needConflictRefresh.get( user);
+		                    if ( lastVersion != null && lastVersion > clientRepositoryVersion)
+		                    {
+		                    	invalidateInterval = new TimeInterval( null, null);
+		                    }
+		                    else
+		                    {
+		                    	invalidateInterval = getInvalidateInterval( clientRepositoryVersion, currentVersion);
+		                    }
+	                    }
+	                    boolean resourceRefresh;
+	                    {
+		                    Long lastVersion = needResourceRefresh.get( user);
+		                    resourceRefresh = ( lastVersion != null && lastVersion > clientRepositoryVersion);
+	                    }
+	                    safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
+	                    safeResultEvent.setInvalidateInterval( invalidateInterval);
+	                }
+	                return safeResultEvent;
                 }
-                return safeResultEvent;
+                finally
+                {
+                	lock.readLock().unlock();
+                }
             }
             
 			protected void processClientReadable(User user,
@@ -893,7 +915,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				    		// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
 				    		if (!remove)
 				    		{
-				    			
 				    			Set<RefEntity<?>> toAdd = new HashSet<RefEntity<?>>();
 								Appointment appointment1 = conflict.getAppointment1();
 								toAdd.addAll( getDependentObjects(appointment1));
