@@ -203,7 +203,7 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
         return format( key, array2 );
     }
 
-    public String format( String key, Object[] obj )
+    public String format( String key, Object... obj )
     {
         MessageFormat msg = new MessageFormat( getString( key ) );
         return msg.format( obj );
