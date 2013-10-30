@@ -27,6 +27,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
@@ -53,6 +54,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -78,7 +80,7 @@ import org.rapla.storage.impl.EntityStore;
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
  */
-public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, StorageUpdateListener {
+public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, StorageUpdateListener, Disposable {
     CachableStorageOperator operator;
     
     protected SecurityManager security;
@@ -94,6 +96,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     ClientFacade facade;
     CommandScheduler commandQueue;
     RaplaLocale raplaLocale;
+    Cancelable scheduledCleanup;
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
@@ -375,6 +378,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         }
     }
 
+    @Override
+	public void dispose() {
+    	if ( scheduledCleanup != null)
+    	{
+    		scheduledCleanup.cancel();
+    	}
+	}
 	/** regulary removes all old update messages that are older than the updateInterval ( factor 10) and at least 1 hour old */
     private final void initEventCleanup()
     {
@@ -433,7 +443,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             }
             long scheduleDelay = Math.max( DateTools.MILLISECONDS_PER_HOUR, delay * 10 );
             //scheduleDelay = 30000;
-            commandQueue.schedule( cleanupTask,  scheduleDelay);
+            scheduledCleanup = commandQueue.schedule( cleanupTask,  scheduleDelay);
         }
     }
 
