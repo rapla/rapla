@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class CustomJettyStarter 
 {
@@ -36,6 +40,16 @@ public class CustomJettyStarter
 	
 	public static void main(final String[] args) throws Exception
     {
+		String property = System.getProperty("org.rapla.disableHostChecking");
+		if (  Boolean.parseBoolean( property))
+		{
+			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String arg0, SSLSession arg1) {
+					return true;
+				}
+			});
+		}
 		new CustomJettyStarter().start( args);
     }
 	
