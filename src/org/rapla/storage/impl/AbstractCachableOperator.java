@@ -165,15 +165,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			} 
 			evt.putRemove(entity);
 		}
-		try
-		{
-			lock.writeLock().lock();
-			dispatch(evt);
-		}
-		finally
-		{
-			lock.writeLock().unlock();
-		}
+		dispatch(evt);
 	}
 
 	public <T extends RaplaObject> Collection<T> getObjects(Class<T> typeClass)	throws RaplaException {

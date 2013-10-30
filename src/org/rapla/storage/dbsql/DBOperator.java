@@ -484,37 +484,46 @@ Disposable
 	}
     
 	synchronized public void dispatch(UpdateEvent evt) throws RaplaException {
-        evt = createClosure( evt  );
-        check(evt);
-        Connection connection = createConnection();
-        try {
-             executeEvent(connection,evt);
-             if (bSupportsTransactions) {
-                 getLogger().debug("Commiting");
-                 connection.commit();
-             }
-         } catch (Exception ex) {
-             try {
-                 if (bSupportsTransactions) {
-                     connection.rollback();
-                     getLogger().error("Doing rollback for: " + ex.getMessage()); 
-                     throw new RaplaDBException(getI18n().getString("error.rollback"),ex);
-                 } else {
-                     String message = getI18n().getString("error.no_rollback");
-                     getLogger().error(message);
-                     forceDisconnect();
-                     throw new RaplaDBException(message,ex);
-                 }
-             } catch (SQLException sqlEx) {
-                 String message = "Unrecoverable error while storing";
-                 getLogger().error(message, sqlEx);
-                 forceDisconnect();
-                 throw new RaplaDBException(message,sqlEx);
-             }
-        } finally {
-            close( connection );
-        }
-        UpdateResult result = super.update(evt);
+		UpdateResult result;
+		try
+		{
+			lock.writeLock().lock();
+	        evt = createClosure( evt  );
+	        check(evt);
+	        Connection connection = createConnection();
+	        try {
+	             executeEvent(connection,evt);
+	             if (bSupportsTransactions) {
+	                 getLogger().debug("Commiting");
+	                 connection.commit();
+	             }
+	         } catch (Exception ex) {
+	             try {
+	                 if (bSupportsTransactions) {
+	                     connection.rollback();
+	                     getLogger().error("Doing rollback for: " + ex.getMessage()); 
+	                     throw new RaplaDBException(getI18n().getString("error.rollback"),ex);
+	                 } else {
+	                     String message = getI18n().getString("error.no_rollback");
+	                     getLogger().error(message);
+	                     forceDisconnect();
+	                     throw new RaplaDBException(message,ex);
+	                 }
+	             } catch (SQLException sqlEx) {
+	                 String message = "Unrecoverable error while storing";
+	                 getLogger().error(message, sqlEx);
+	                 forceDisconnect();
+	                 throw new RaplaDBException(message,sqlEx);
+	             }
+	        } finally {
+	            close( connection );
+	        }
+	        result = super.update(evt);
+		}
+		finally
+		{
+			lock.writeLock().unlock();
+		}
         fireStorageUpdated(result);
     }
 

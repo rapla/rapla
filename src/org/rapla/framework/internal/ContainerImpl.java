@@ -64,8 +64,8 @@ public class ContainerImpl implements Container, RemoteServiceCaller
     protected RaplaDefaultContext m_context;
     protected Configuration m_config;
 
-    protected List<ComponentHandler> m_componentHandler = new ArrayList<ComponentHandler>();
-    protected LinkedHashMap<String,RoleEntry> m_roleMap = new LinkedHashMap<String,RoleEntry>();
+    protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
+    protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String,RoleEntry>()); 
     Logger logger;
 
     public ContainerImpl(RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException  {
@@ -486,7 +486,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 	}
 
 	class RoleEntry {
-        Map<String,ComponentHandler> componentMap = new LinkedHashMap<String,ComponentHandler>();
+        Map<String,ComponentHandler> componentMap = Collections.synchronizedMap(new LinkedHashMap<String,ComponentHandler>());
         ComponentHandler firstEntry;
         int generatedHintCounter = 0;
         String roleName;
@@ -544,7 +544,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         removeAllComponents();
     }
 
-    protected void removeAllComponents() {
+    synchronized protected void removeAllComponents() {
         Iterator<ComponentHandler> it = new ArrayList<ComponentHandler>(m_componentHandler).iterator();
         while ( it.hasNext() ) {
             it.next().dispose();
