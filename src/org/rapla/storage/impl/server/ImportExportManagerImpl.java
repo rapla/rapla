@@ -78,10 +78,6 @@ public class ImportExportManagerImpl implements ImportExportManager {
 	public CachableStorageOperator getSource() throws RaplaException 
 	{
 		CachableStorageOperator lookup = container.lookup(CachableStorageOperator.class, sourceString);
-		if (!lookup.isConnected())
-		{
-			lookup.connect();
-		}
 		return lookup;
 	}
 
@@ -89,10 +85,6 @@ public class ImportExportManagerImpl implements ImportExportManager {
 	public CachableStorageOperator getDestination() throws RaplaException 
 	{
 		CachableStorageOperator lookup = container.lookup(CachableStorageOperator.class, destString);
-		if (!lookup.isConnected())
-		{
-			lookup.connect();
-		}
 		return lookup;
 	}
 }
