@@ -78,6 +78,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gui.EditController;
 import org.rapla.gui.InfoFactory;
 import org.rapla.gui.MenuFactory;
+import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.images.Images;
@@ -98,7 +99,6 @@ import org.rapla.gui.internal.view.InfoFactoryImpl;
 import org.rapla.gui.internal.view.LicenseInfoUI;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.gui.toolkit.RaplaFrame;
 import org.rapla.gui.toolkit.RaplaMenu;
@@ -679,9 +679,12 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     private void startLoginInThread()  {
         final Semaphore loginMutex = new Semaphore(1);
         try {
-            final LanguageChooser languageChooser = new LanguageChooser( getLogger(), getContext());
+        	final RaplaContext context = getContext();
+			final Logger logger = getLogger();
+			
+            final LanguageChooser languageChooser = new LanguageChooser(logger, context);
             
-            final LoginDialog dlg = LoginDialog.create(getContext(), languageChooser.getComponent());
+            final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent());
             
             Action languageChanged = new AbstractAction()
             {
@@ -698,7 +701,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                         {
                             defaultLanguageChoosen = false;
                             getLogger().debug("Language changing to " + lang );
-                            LocaleSelector localeSelector = getContext().lookup( LocaleSelector.class );
+                            LocaleSelector localeSelector = context.lookup( LocaleSelector.class );
                             localeSelector.setLanguage(lang);
                             getLogger().info("Language changed " + localeSelector.getLanguage() );
                         }
@@ -725,13 +728,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            showWarning(i18n.getString("error.login"), dlg);
+                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg,context,logger);
                         }
                     } 
                     catch (RaplaException ex) 
                     {
                         dlg.resetPassword();
-                        showException(ex,dlg);
+                        RaplaGUIComponent.showException(ex, dlg, context, logger);
                     }
                     if ( success) {
                         dlg.close();
@@ -739,7 +742,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                         try {
                             beginRaplaSession();
                         } catch (Throwable ex) {
-                            showException(ex, null);
+                        	RaplaGUIComponent.showException(ex, null, context, logger);
                             fireClientAborted();
                         }
                     } // end of else
@@ -824,26 +827,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     public void logout()  
     {
         stop(new ConnectInfo(null, "".toCharArray()));    
-    }
-
-    private void showException(Throwable ex,Component component) 
-    {
-        try {
-            ErrorDialog dialog = new ErrorDialog(getContext());
-            dialog.showExceptionDialog(ex,component);
-        } catch (RaplaException ex2) {
-            getLogger().error(ex2.getMessage(),ex2);
-        }
-    }
-
-    private void showWarning(String warning,Component owner) 
-    {
-        try {
-            ErrorDialog dialog = new ErrorDialog(getContext());
-            dialog.showWarningDialog(warning,owner);
-        } catch (RaplaException ex2) {
-            getLogger().error(ex2.getMessage(),ex2);
-        }
     }
 
     private boolean login(ConnectInfo connect) throws RaplaException 

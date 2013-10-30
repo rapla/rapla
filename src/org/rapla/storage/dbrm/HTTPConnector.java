@@ -8,8 +8,10 @@ import java.io.Writer;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -74,9 +76,13 @@ public class HTTPConnector  implements Connector
         {
             conn.connect();
         }
-        catch (ConnectException ex)
+        catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex));
+            throw new RaplaConnectException(getConnectError(ex), ex);
+        }
+        catch (UnknownHostException ex)
+        {   
+            throw new RaplaConnectException(getConnectError(ex), ex);
         }
          
         Writer wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
@@ -105,9 +111,13 @@ public class HTTPConnector  implements Connector
     	    result = remoteMethodSerialization.deserializeReturnValue(returnType, resultString);
     		return result;
         } 
-        catch (ConnectException ex)
+        catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex));
+            throw new RaplaConnectException(getConnectError(ex), ex);
+        }
+        catch (UnknownHostException ex)
+        {   
+            throw new RaplaConnectException(getConnectError(ex), ex);
         }
         catch (IOException ex)
         {
@@ -134,7 +144,7 @@ public class HTTPConnector  implements Connector
 		return methodURL;
 	}
 
-	protected String getConnectError(ConnectException ex2) {
+	protected String getConnectError(Throwable ex2) {
 		try
 		{
 			return i18n.format("error.connect", getConnectURL());

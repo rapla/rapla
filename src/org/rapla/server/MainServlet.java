@@ -42,6 +42,7 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
@@ -69,7 +70,7 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteMethodStub;
-import org.rapla.storage.xml.WrongVersionException;
+import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public class MainServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
@@ -698,7 +699,7 @@ public class MainServlet extends HttpServlet {
             	if ( !isClientVersionSupported(clientVersion))
                 {
                 	String message = getVersionErrorText(request, methodName, clientVersion);
-                	response.addHeader("X-Error-Classname",  WrongVersionException.class.getName());
+                	response.addHeader("X-Error-Classname",  WrongRaplaVersionException.class.getName());
                 	response.addHeader("X-Error-Stacktrace", message );
                 	response.setStatus( 500);
                 	return;
@@ -838,7 +839,13 @@ public class MainServlet extends HttpServlet {
 		{
 			requestUrl = requestUrl.substring( 0, indexOf) ;
 		}
-		String message = "Incompatible client version " + clientVersion + ". Expected " + serverVersion + " Open " + requestUrl + " in your browser and click on the webstart or applet link to update your client.";
+		String message;
+		try {
+			I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+			message = i18n.format("error.wrong_rapla_version", clientVersion, serverVersion, requestUrl);
+		} catch (Exception e) {
+			message = "Update client from " + clientVersion + " to " + serverVersion + " on " + requestUrl + ". Click on the webstart or applet to update.";
+		}
 		return message;
 	}
     

@@ -25,7 +25,7 @@ import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.RaplaMainReader;
-import org.rapla.storage.xml.WrongVersionException;
+import org.rapla.storage.xml.WrongXMLVersionException;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
@@ -88,8 +88,8 @@ public final class RaplaInput {
             while (cause != null && cause.getCause() != null) {
                 cause = cause.getCause();
             }
-            if (cause instanceof WrongVersionException) {
-                convertData( getNewSource(),contentHandler,((WrongVersionException)cause).getVersion());
+            if (cause instanceof WrongXMLVersionException) {
+                convertData( getNewSource(),contentHandler,((WrongXMLVersionException)cause).getVersion());
                 return;
             }
             if (ex instanceof SAXParseException) {

@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
-public class WrongVersionException extends Exception {
+public class WrongXMLVersionException extends Exception {
     private static final long serialVersionUID = 1L;
     
     String version;
-    public WrongVersionException(String version) {
+    public WrongXMLVersionException(String version) {
         super("Wrong Version Exception " + version);
         this.version = version;
     }
