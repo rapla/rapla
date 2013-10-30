@@ -1791,6 +1791,10 @@ See French text.
 		<text lang="pt">O objeto {0} não pode ser modificado. Recentemente foi modificado por alguém.
 		Existe uma versão mais recente armazenada.</text>
     </entry>
+    <entry key="error.wrong_rapla_version">
+       <text lang="de">Aktuallisieren Sie die Rapla-Version {0} auf {1}. Nutzen Sie den Webstart-Link auf {2}</text>
+       <text lang="en">Update your rapla version from {0} to {1}. Use the webstart link on {2}</text>
+    </entry>
     <entry key="error.passwords_dont_match">
         <text lang="en">The passwords don't match!</text>
         <text lang="de">Die Passwörter stimmen nicht überein!</text>
@@ -3134,12 +3138,7 @@ See French text.
     <entry key="appointment.search_free">
 		<text lang="en">free appointment >></text>
 		<text lang="de">Freier termin >></text>
-		<text lang="fr">free appointment >></text>
-		<text lang="es">free appointment >></text>
-		<text lang="cs">free appointment >></text>
 		<text lang="nl">Zoek vrije afspraak >></text>
-		<text lang="pl">free appointment >></text>
-		<text lang="pt">free appointment >></text>
 	</entry>
 	<entry key="appointment.convert">
 		<text lang="en">Convert to single events</text>
