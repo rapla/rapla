@@ -482,7 +482,6 @@ Definition as published by the Open Source Initiative (OSI).
 		 	<property name="rapla.dir" value="${main.dir}"/>
 		 	<property name="plugin.base" value="${plugin.base}"/>
 	 	    <property name="permissions.client" value="${permissions.client}"/>
-	 	    <property name="plugin.dependencies.includes.skip" value="true"/>
 	 	    <property name="application.name" value="${application.name}"/>
          </subant>
     </target>

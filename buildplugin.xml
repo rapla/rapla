@@ -55,7 +55,7 @@
 	<delete dir="${build.dir}" />
   </target>
 
-  <target name="build-dependencies" depends="prepare" unless="plugin.dependencies.includes.skip">
+  <target name="build-dependencies" depends="prepare">
 	 <ant antfile="${rapla.dir}/build.xml" dir="${rapla.dir}" target="build-plugins-sub" inheritAll="false">
 	    <property name="plugin.dependencies.sub" value="${plugin.dependencies.includes}"/>
 	    <property name="basedir" value="${rapla.dir}"/>
