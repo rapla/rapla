@@ -89,7 +89,13 @@ public class RaplaGUIComponent extends RaplaComponent
         {
             String message = ex.getMessage();
             Throwable cause = ex.getCause();
-			logger.warn(message + cause != null ? " " + cause.getClass()  + ":" + cause.getMessage(): "");
+            String additionalInfo = "";
+            if ( cause != null)
+            {
+            	additionalInfo = " " + cause.getClass()  + ":" + cause.getMessage();
+            }
+            	
+			logger.warn(message + additionalInfo);
             if ( ex instanceof RaplaRestartingException)
             {
                 return;

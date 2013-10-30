@@ -51,7 +51,7 @@ final public class XMLReaderAdapter {
             SAXParserFactory spf = getFactory(validating);
 			return spf.newSAXParser().getXMLReader();
         } catch (Exception ex2) {
-            throw new SAXException("Couldn't create XMLReader " + ex2.getMessage());
+            throw new SAXException("Couldn't create XMLReader " + ex2.getMessage(), ex2);
         }
     }
 }
