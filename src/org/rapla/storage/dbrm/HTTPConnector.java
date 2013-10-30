@@ -6,11 +6,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -149,9 +150,13 @@ public class HTTPConnector extends RaplaComponent implements Connector
         {
             conn.connect();
         }
-        catch (ConnectException ex)
+        catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex));
+            throw new RaplaConnectException(getConnectError(ex), ex);
+        }
+        catch (UnknownHostException ex)
+        {   
+            throw new RaplaConnectException(getConnectError(ex), ex);
         }
          
         Writer wr = null;
@@ -195,9 +200,13 @@ public class HTTPConnector extends RaplaComponent implements Connector
         {
         	throw new RaplaException( e);
         }
-        catch (ConnectException ex)
+        catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex));
+            throw new RaplaConnectException(getConnectError(ex), ex);
+        }
+        catch (UnknownHostException ex)
+        {   
+            throw new RaplaConnectException(getConnectError(ex), ex);
         }
         catch (IOException ex)
         {
@@ -224,7 +233,7 @@ public class HTTPConnector extends RaplaComponent implements Connector
 		return methodURL;
 	}
 
-	protected String getConnectError(ConnectException ex2) {
+	protected String getConnectError(Exception ex2) {
 		try
 		{
 			return i18n.format("error.connect", getConnectURL());

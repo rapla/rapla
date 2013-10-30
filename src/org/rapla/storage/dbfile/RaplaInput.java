@@ -23,7 +23,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.RaplaErrorHandler;
 import org.rapla.storage.xml.RaplaMainReader;
-import org.rapla.storage.xml.WrongVersionException;
+import org.rapla.storage.xml.WrongXMLVersionException;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
@@ -95,8 +95,8 @@ public final class RaplaInput {
             if (cause == null) {
                 throw new RaplaException( ex);
             }
-            if (cause instanceof WrongVersionException) {
-                convertData( getNewSource(),contentHandler,((WrongVersionException)cause).getVersion());
+            if (cause instanceof WrongXMLVersionException) {
+                convertData( getNewSource(),contentHandler,((WrongXMLVersionException)cause).getVersion());
                 return;
             }
             if (cause instanceof RaplaException)

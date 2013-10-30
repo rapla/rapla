@@ -46,12 +46,14 @@ import org.rapla.entities.DependencyException;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
+import org.rapla.storage.dbrm.WrongRaplaVersionException;
 
 /**
     Base class for most components in the gui package. Eases
@@ -76,45 +78,53 @@ public class RaplaGUIComponent extends RaplaComponent
         a parent-component will lead to a more appropriate display.
     */
     public void showException(Exception ex,Component owner) {
-        if ( ex instanceof RaplaConnectException)
+        RaplaContext context = getContext();
+		Logger logger = getLogger();
+		showException(ex, owner, context, logger);
+    }
+
+	static public void showException(Throwable ex, Component owner,
+			RaplaContext context, Logger logger) {
+		if ( ex instanceof RaplaConnectException)
         {
             String message = ex.getMessage();
-            getLogger().warn(message);
+            Throwable cause = ex.getCause();
+			logger.warn(message + cause != null ? " " + cause.getClass()  + ":" + cause.getMessage(): "");
             if ( ex instanceof RaplaRestartingException)
             {
                 return;
             }
             try {
-                ErrorDialog dialog = new ErrorDialog(getContext());
+                ErrorDialog dialog = new ErrorDialog(context);
                 dialog.showWarningDialog( message, owner);
             } catch (RaplaException e) {
         	} catch (Throwable e) {
-        		getLogger().error(e.getMessage(), e);
+        		logger.error(e.getMessage(), e);
         	}
             return;
         }
         try {
-            ErrorDialog dialog = new ErrorDialog(getContext());
+            ErrorDialog dialog = new ErrorDialog(context);
             if (ex instanceof DependencyException) {
                 dialog.showWarningDialog( getHTML( (DependencyException)ex ), owner);
             }
-            else if (ex instanceof RaplaNewVersionException  || ex instanceof RaplaSecurityException) {
+            else if (isWarningOnly(ex)) {
                  dialog.showWarningDialog( ex.getMessage(), owner);
             } else {
                 dialog.showExceptionDialog(ex,owner);
             }
         } catch (RaplaException ex2) {
-            getLogger().error(ex2.getMessage(),ex2);
+            logger.error(ex2.getMessage(),ex2);
     	} catch (Throwable ex2) {
-    		getLogger().error(ex2.getMessage(),ex2);
+    		logger.error(ex2.getMessage(),ex2);
     	}
-    }
+	}
 
-    public boolean isInvokedOnAWTEventQueue() {
-        return true;
-    }
+	static public boolean isWarningOnly(Throwable ex) {
+		return ex instanceof RaplaNewVersionException  || ex instanceof RaplaSecurityException || ex instanceof WrongRaplaVersionException || ex instanceof RaplaConnectException;
+	}
 
-    private String getHTML(DependencyException ex){
+	static private String getHTML(DependencyException ex){
         StringBuffer buf = new StringBuffer();
         buf.append(ex.getMessage()+":");
         buf.append("<br><br>");
@@ -139,13 +149,20 @@ public class RaplaGUIComponent extends RaplaComponent
 
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
     public void showWarning(String warning,Component owner) {
-        try {
-            ErrorDialog dialog = new ErrorDialog(getContext());
+        RaplaContext context = getContext();
+    	Logger logger = getLogger();
+		showWarning(warning, owner, context, logger);
+    }
+
+	public static void showWarning(String warning, Component owner,
+			RaplaContext context, Logger logger) {
+		try {
+			ErrorDialog dialog = new ErrorDialog(context);
             dialog.showWarningDialog(warning,owner);
         } catch (RaplaException ex2) {
-            getLogger().error(ex2.getMessage(),ex2);
+        	logger.error(ex2.getMessage(),ex2);
         }
-    }
+	}
 
     public RaplaCalendar createRaplaCalendar() {
         RaplaCalendar cal = new RaplaCalendar( getI18n().getLocale(),getRaplaLocale().getTimeZone());

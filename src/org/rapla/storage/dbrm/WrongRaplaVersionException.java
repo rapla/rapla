@@ -2,11 +2,11 @@ package org.rapla.storage.dbrm;
 
 import org.rapla.framework.RaplaException;
 
-public class RaplaWrongVersionException extends RaplaException {
+public class WrongRaplaVersionException extends RaplaException {
 
 	private static final long serialVersionUID = 1L;
 
-	public RaplaWrongVersionException(String text) {
+	public WrongRaplaVersionException(String text) {
 		super(text);
 	}
 

@@ -30,14 +30,6 @@ public interface ModificationListener extends EventListener {
      *  The {@link ModificationEvent} describes these changes.
      */
     void dataChanged(ModificationEvent evt) throws RaplaException;
-    /**
-     * Return true if you want the notification to
-     * be synchronized with the awt event-queue using {@link
-     * javax.swing.SwingUtilities#invokeLater}. Use this to avaoid
-     * synchronization problems with swing guis.
-     * If you write a server plugin and use this method, then always return false
-     */
-    boolean isInvokedOnAWTEventQueue();
 
 }
 

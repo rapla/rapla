@@ -328,9 +328,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
 			updateTemplateText();
 		}
 
-		public boolean isInvokedOnAWTEventQueue() {
-			return true;
-		}
 	}
 
     private void addPluginExtensions(

@@ -48,9 +48,5 @@ public class DurationColumn extends RaplaComponent implements ModificationListen
 		}
 	}
 
-	public boolean isInvokedOnAWTEventQueue() {
-		return false;
-	}
-
 
 }

@@ -56,11 +56,6 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         m_periods.addAll(Arrays.asList(periodArray));
     }
 
-    /** The PeriodModel listeners may not be thread safe.*/
-    public boolean isInvokedOnAWTEventQueue() {
-        return false;
-    }
-
 	public void dataChanged(ModificationEvent evt) throws RaplaException 
 	{
     	if (evt.isModified(Period.TYPE))

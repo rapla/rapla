@@ -134,7 +134,7 @@ public class RaplaMainReader extends RaplaXMLReader
             if (!version.equals( INPUT_FILE_VERSION ))
             {
                 getLogger().warn( "Warning: Different version detected" );
-                throw new WrongVersionException( version );
+                throw new WrongXMLVersionException( version );
             }
             getLogger().debug( "Found compatible version-number." );
             // We've got the right version. We can proceed.
