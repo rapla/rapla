@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-
 package se.jiderhamn.classloader.leak.prevention;
 
 import java.beans.PropertyEditorManager;
@@ -29,6 +28,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -45,10 +45,12 @@ import javax.management.ObjectName;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 
+
 /**
  * Modified from the original uncommented the following line
  *       //java.awt.Toolkit.getDefaultToolkit(); // Will start a Thread
   *     //javax.imageio.ImageIO.getCacheDirectory(); // Will call sun.awt.AppContext.getAppContext()
+  *     and added the JettyRemover
  */
 /**
  * This class helps prevent classloader leaks.
@@ -183,7 +185,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   protected final Field java_lang_ThreadLocal$ThreadLocalMap_table;
 
   protected Field java_lang_ThreadLocal$ThreadLocalMap$Entry_value;
-
+  
   public ClassLoaderLeakPreventor() {
     // Initialize some reflection variables
     java_lang_Thread_threadLocals = findField(Thread.class, "threadLocals");
@@ -200,11 +202,12 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       error("java.lang.ThreadLocal$ThreadLocalMap.table not found; something is seriously wrong!");
   }
 
+  JettyJMXRemover jettyJMXRemover;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Implement javax.servlet.ServletContextListener 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
   public void contextInitialized(ServletContextEvent servletContextEvent) {
+	  
     final ServletContext servletContext = servletContextEvent.getServletContext();
     stopThreads = ! "false".equals(servletContext.getInitParameter("ClassLoaderLeakPreventor.stopThreads"));
     stopTimerThreads = ! "false".equals(servletContext.getInitParameter("ClassLoaderLeakPreventor.stopTimerThreads"));
@@ -222,6 +225,15 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     
     final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 
+    // If you enable jmx support in jetty 8 or 9  some mbeans (e.g. for the servletholder or sessionmanager) are instanciated in the web application thread 
+    // and a reference to the WebappClassloader is stored in a private ObjectMBean._loader which is unfortunatly not the classloader that loaded the class.
+    // So for unregisterMBeans to work even for the jetty mbeans we need to access the MBeanContainer class of the jetty container.  
+    try {
+		jettyJMXRemover = new JettyJMXRemover(getWebApplicationClassLoader());
+	} catch (Exception ex) {
+		error( ex);
+	}
+    
     try {
       // If package org.jboss is found, we may be running under JBoss
       mayBeJBoss = (contextClassLoader.getResource("org/jboss") != null);
@@ -229,6 +241,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     catch(Exception ex) {
       // Do nothing
     }
+    
     
 
     info("Initializing context by loading some known offenders with system classloader");
@@ -242,7 +255,6 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       
       // Christopher: Uncommented as it will not work on some containers as google app engine  
       //java.awt.Toolkit.getDefaultToolkit(); // Will start a Thread
-      
       java.security.Security.getProviders();
       
       java.sql.DriverManager.getDrivers(); // Load initial drivers using system classloader
@@ -339,6 +351,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
         error(itex);
       }
 
+    
       // Cause oracle.jdbc.driver.OracleTimeoutPollingThread to be started with contextClassLoader = system classloader  
       try {
         Class.forName("oracle.jdbc.driver.OracleTimeoutThreadPerVM");
@@ -354,11 +367,9 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       // Reset original classloader
       Thread.currentThread().setContextClassLoader(contextClassLoader);
     }
-
   }
 
   public void contextDestroyed(ServletContextEvent servletContextEvent) {
-
     final boolean jvmIsShuttingDown = isJvmShuttingDown();
     if(jvmIsShuttingDown) {
       info("JVM is shutting down - skip cleanup");
@@ -509,6 +520,10 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       final Set<ObjectName> allMBeanNames = mBeanServer.queryNames(new ObjectName("*:*"), null);
       for(ObjectName objectName : allMBeanNames) {
         try {
+          if ( jettyJMXRemover != null && jettyJMXRemover.unregisterJettyJMXBean(objectName))
+          {
+        	  continue;
+          }
           final ClassLoader mBeanClassLoader = mBeanServer.getClassLoaderFor(objectName);
           if(isWebAppClassLoaderOrChild(mBeanClassLoader)) { // MBean loaded in web application
             warn("MBean '" + objectName + "' was loaded in web application; unregistering");
@@ -522,6 +537,120 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     }
     catch (Exception e) { // MalformedObjectNameException
       error(e);
+    }
+  }
+
+  /**
+   * removes the ObjectMBean beans created by the jetty MBeanContainer for each webapp context such as
+   * Mbeans for SessionHandler,ServletHandler and ServletMappings  
+   */
+  private class JettyJMXRemover
+  {
+	Object[] objectsWrappedWithMBean;
+	Object beanContainer;
+	private Method findBeanM;
+	private Method removeBeanM;
+	  
+	public JettyJMXRemover(ClassLoader classLoader) throws Exception
+	{
+	  try 
+	  {
+   	    // If package org.eclipse.jetty is found, we may be running under jetty
+	    if (classLoader.getResource("org/eclipse/jetty") == null)
+    	{
+    		return;
+    	}
+	  }
+	  catch(Exception ex) {
+	    	return;
+	  }
+	  // Jetty not started with jmx or webappcontext so an unregister of webappcontext JMX beans is not neccessary.  
+	  try {
+	  	Class.forName("org.eclipse.jetty.jmx.MBeanContainer", false, classLoader.getParent());
+	   	Class.forName("org.eclipse.jetty.webapp.WebAppContext", false, classLoader.getParent());
+	  } 
+	  catch (Exception e1) {
+	    return;
+	  }
+	  
+	  // first we need to access the necessary classes via reflection (are all loaded, because webapplication is already initialized) 
+	  final Class WebAppClassLoaderC = Class.forName("org.eclipse.jetty.webapp.WebAppClassLoader");
+	  final Class WebAppContextC = Class.forName("org.eclipse.jetty.webapp.WebAppContext");
+	  final Class ServerC = Class.forName("org.eclipse.jetty.server.Server");
+	  final Class SessionHandlerC = Class.forName("org.eclipse.jetty.server.session.SessionHandler");
+	  final Class MBeanContainerC = Class.forName("org.eclipse.jetty.jmx.MBeanContainer");
+	  final Class SessionManagerC = Class.forName("org.eclipse.jetty.server.SessionManager");
+	  final Class ServletHandlerC = Class.forName("org.eclipse.jetty.servlet.ServletHandler");
+		
+	  // first we need access to the MBeanContainer to access the beans
+	  //WebAppContext webappContext = (WebAppContext)servletContext;
+	  final Object webappContext = WebAppClassLoaderC.getMethod("getContext").invoke(classLoader);
+	  //Server server = (Server)webappContext.getServer();
+	  final Object server = WebAppContextC.getMethod("getServer").invoke(webappContext);
+	  //MBeanContainer beanContainer = (MBeanContainer)server.getBean( MBeanContainer.class);
+
+	  
+	  beanContainer = ServerC.getMethod("getBean", Class.class).invoke( server, MBeanContainerC);
+	  findBeanM = MBeanContainerC.getMethod("findBean", ObjectName.class);
+	  removeBeanM = MBeanContainerC.getMethod("removeBean", Object.class);
+	  
+	  // now we store all objects that belong to the webapplication and that will be wrapped by mbeans in a list
+	  if ( beanContainer !=null)
+	  {
+		List list = new ArrayList();
+		//SessionHandler sessionHandler =webappContext.getSessionHandler();
+		final Object sessionHandler = WebAppContextC.getMethod("getSessionHandler").invoke( webappContext);
+		list.add( sessionHandler);
+		//SessionManager  sessionManager = sessionHandler.getSessionManager();
+		final Object sessionManager = SessionHandlerC.getMethod("getSessionManager").invoke( sessionHandler);
+		list.add( sessionManager);
+		//SessionIdManager sessionIdManager = sessionManager.getSessionIdManager();
+		final Object sessionIdManager = SessionManagerC.getMethod("getSessionIdManager").invoke( sessionManager);
+		list.add( sessionIdManager);
+		//SecurityHandler securityHandler = webappContext.getSecurityHandler();
+		final Object securityHandler = WebAppContextC.getMethod("getSecurityHandler").invoke( webappContext);
+		list.add( securityHandler);
+		//ServletHandler servletHandler = webappContext.getServletHandler();
+		final Object servletHandler = WebAppContextC.getMethod("getServletHandler").invoke( webappContext);
+		list.add( servletHandler );
+		//Object[] servletMappings = servletHandler.getServletMappings();
+		final Object[] servletMappings = (Object[]) ServletHandlerC.getMethod("getServletMappings").invoke( servletHandler);
+		list.add( Arrays.asList(servletMappings ));
+		//Object[] servlets = servletHandler.getServlets();
+		final Object[] servlets = (Object[]) ServletHandlerC.getMethod("getServlets").invoke( servletHandler);
+		list.add( Arrays.asList(servlets ));
+		this.objectsWrappedWithMBean = list.toArray();
+	  }
+    }
+	  
+	boolean unregisterJettyJMXBean(ObjectName objectName)
+	{
+	  if ( objectsWrappedWithMBean == null || !objectName.getDomain().contains("org.eclipse.jetty"))
+	  {
+		  return false;
+	  }
+	  else
+	  {
+ 	    try
+		{
+		  Object obj = findBeanM.invoke(beanContainer, objectName);
+		  // look if obj is in the suspect list
+		  for ( Object o: objectsWrappedWithMBean)
+		  {
+		     if ( o == obj)
+			 {
+			   warn("MBean '" + objectName + "' is a suspect in causing memory leaks; unregistering");
+			   // and remove it via the MBeanContainer
+			   removeBeanM.invoke(beanContainer, obj);
+			   return true;
+			 }
+		  }
+		}
+		catch (Exception ex)  {
+			  error( ex);
+		}
+		return false;
+	  }
     }
   }
 
@@ -1044,8 +1173,9 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
   protected ClassLoader getWebApplicationClassLoader() {
-    return ClassLoaderLeakPreventor.class.getClassLoader();
-    // Alternative return Thread.currentThread().getContextClassLoader();
+    //return ClassLoaderLeakPreventor.class.getClassLoader();
+	  // Alternative
+	  return Thread.currentThread().getContextClassLoader();
   }
   
   /** Test if provided object is loaded with web application classloader */
