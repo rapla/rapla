@@ -3,7 +3,7 @@
 #Set the target that will be run by default
 target=dist-bin
 #set this if you want to enforce a clean on every build
-#clean.everytime=true
+#clean.everytime
 
 #The base folder where all plugin source projects are located 
 plugin.base=${main.dir}/..
