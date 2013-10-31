@@ -477,7 +477,8 @@ Definition as published by the Open Source Initiative (OSI).
     </target>
     
 	<target name="build-plugins-sub" depends="prepare">
-	    <subant target="compile" genericantfile="${main.dir}/buildplugin.xml" inheritAll="false">
+	    <echo message="Building dependencies ${plugin.dependencies.sub}"/>
+	    <subant target="compile" genericantfile="${main.dir}/buildplugin.xml" inheritAll="false" inheritRefs="false">
             <dirset dir="${plugin.base}" includes="${plugin.dependencies.sub}" />
 		 	<property name="rapla.dir" value="${main.dir}"/>
 		 	<property name="plugin.base" value="${plugin.base}"/>
@@ -507,7 +508,7 @@ Definition as published by the Open Source Initiative (OSI).
     	<mkdir dir="${webapp.dir}/WEB-INF/lib" />
         <mkdir dir="${webapp.dir}/WEB-INF/classes" />
         <!--  this also includes the build of the plugins -->
-    	<subant target="copytowebapp" genericantfile="buildplugin.xml">
+    	<subant target="copytowebapp" genericantfile="buildplugin.xml" inheritAll="false" inheritRefs="false">
             <dirset dir="${plugin.base}" includes="${plugin.includes}" excludes="${plugin.excludes}"/>
 		 	<property name="rapla.dir" value="${main.dir}"/>
 	 	    <property name="webapp.dir" value="${webapp.dir}"/>
