@@ -53,7 +53,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 		cboTimezone = new JComboBox(timeZoneIDs);
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
-		panel.add(new JLabel(getString("only_own_reservations")), "0,4");
+		panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,4");
 		ownReservations = new JCheckBox();
 		panel.add(ownReservations, "2,4");
 		
