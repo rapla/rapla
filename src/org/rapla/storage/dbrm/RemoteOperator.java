@@ -67,6 +67,7 @@ import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaSecurityException;
@@ -107,9 +108,18 @@ public class RemoteOperator
 		
     public RemoteOperator(RaplaContext context, Logger logger,Configuration config) throws RaplaException {
         super( context, logger );
-        URL downloadURL = context.lookup(StartupEnvironment.class).getDownloadURL();
-        String test = downloadURL != null  ? downloadURL.toString():"";
-		if ( context.has( RemoteMethodStub.class) && test.startsWith("file"))
+        StartupEnvironment lookup = context.lookup(StartupEnvironment.class);
+		boolean noUrl = false;
+        if ( config != null)
+        {
+        	String configEntry = config.getChild("server").getValue( null);
+        	if ( configEntry != null)
+        	{
+        		String serverURL = ConfigTools.resolveContext(configEntry, context );
+            	noUrl = serverURL != null && serverURL.toLowerCase().startsWith("file"); 
+        	}
+        }
+		if ( context.has( RemoteMethodStub.class)  && lookup.getStartupMode() == StartupEnvironment.CONSOLE && noUrl)
         {
         	server =  context.lookup(RemoteMethodStub.class);
     	}
@@ -622,6 +632,7 @@ public class RemoteOperator
 							unresolved.setClassification( cache.getUnresolvedAllocatableType().newClassification());
 							return unresolved;
 						}
+						// if the type is not found we test if its an anonymous type (key = 0)
 						if ( typeName.equals(DynamicType.TYPE.toString()))
 						{
 							if ( ((SimpleIdentifier) id).getKey() == 0)

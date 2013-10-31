@@ -465,6 +465,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 ******************************/
 	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
 		Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+		autologin();
 		Collection<Allocatable> objects = operator.getObjects(Allocatable.class);
 		allocatables.addAll(objects);
 
@@ -510,6 +511,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			allocList = Collections.emptyList();
 		}
+
+		autologin();
 		reservations.addAll(operator.getReservations(user,allocList, start, end));
 		removeFilteredClassifications(reservations, reservationFilters);
 		Iterator<Reservation> it =reservations.iterator();
@@ -641,12 +644,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 
 	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
+		autologin();
 		//System.gc();
 		Collection<Reservation> reservations = getVisibleReservations(null,	allocatables,start, end, reservationFilters);
 		return reservations.toArray(Reservation.RESERVATION_ARRAY);
 	}
 
 	public Period[] getPeriods() throws RaplaException {
+		autologin();
 		Period[] result = operator.getObjects(Period.class).toArray(Period.PERIOD_ARRAY);
 		return result;
 	}
@@ -660,6 +665,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
+		autologin();
 		if (classificationType == null) {
 			return operator.getObjects(DynamicType.class).toArray(DynamicType.DYNAMICTYPE_ARRAY);
 		}
@@ -674,6 +680,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public DynamicType getDynamicType(String elementKey) throws RaplaException {
+		autologin();
 		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
 		for (Iterator<DynamicType> it = collection.iterator(); it.hasNext();) {
 			DynamicType type = it.next();
@@ -686,12 +693,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public User[] getUsers() throws RaplaException {
 		Set<User> users = new TreeSet<User>();
+		autologin();
 		users.addAll(operator.getObjects(User.class));
 		User[] result = users.toArray(User.USER_ARRAY);
 		return result;
 	}
 
 	public User getUser(String username) throws RaplaException {
+		autologin();
 		User user = operator.getUser(username);
 		if (user == null)
 			throw new EntityNotFoundException("No User with username " + username);
@@ -699,6 +708,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	  public Conflict[] getConflicts(Reservation reservation) throws RaplaException {
+		  	autologin();
 	    	Date today = operator.today();
 	    	if ( RaplaComponent.isTemplate( reservation))
 	    	{
@@ -734,6 +744,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	  }
 
 	public Conflict[] getConflicts() throws RaplaException {
+		autologin();
 		final User user;
 		if ( workingUser != null && !workingUser.isAdmin())
 		{
@@ -871,6 +882,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	public Map<Allocatable,Collection<Appointment>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments) throws RaplaException {
+		autologin();
 		Collection<Reservation> ignoreList = new HashSet<Reservation>();
 		if ( appointments != null)
 		{
@@ -890,15 +902,19 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * Login - Module *
 	 ******************************/
 	public User getUser() throws RaplaException {
-        if ( autoLogin != null && !operator.isConnected() )
-        {
-            if (!login(autoLogin))
-                throw new RaplaException(i18n.getString("error.login") );                
-        }
+        autologin();
 		if (this.workingUser == null) {
 			throw new RaplaException("no user loged in");
 		}
 		return this.workingUser;
+	}
+
+	public void autologin() throws RaplaException {
+		if ( autoLogin != null  && (!operator.isConnected() || workingUser == null))
+        {
+            if (!login(autoLogin))
+                throw new RaplaException(i18n.getString("error.login") );                
+        }
 	}
 
    public boolean login(String username, char[] password)
@@ -977,6 +993,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	@SuppressWarnings("unchecked")
 	public void changePassword(User user, char[] oldPassword, char[] newPassword)
 			throws RaplaException {
+		autologin();
 		operator.changePassword((RefEntity<User>) user, oldPassword, newPassword);
 	}
 
@@ -1033,6 +1050,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         {
             throw new RaplaException("User not allowed to create events");
         }
+        autologin();
     	Date now = operator.getCurrentTimestamp();
         ReservationImpl reservation = new ReservationImpl(now ,now );
         if ( template != null )
@@ -1050,6 +1068,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
+		autologin();
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.addPermission(allocatable.newPermission());
@@ -1125,6 +1144,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
+		autologin();
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
 		dynamicType.setAnnotation("classification-type", classificationType);
 		dynamicType.setElementKey(createDynamicTypeKey(classificationType));
@@ -1206,7 +1226,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	private <T extends Entity> void setNew(Collection<T> entities, RaplaType raplaType,User user)
 			throws RaplaException {
-
+		autologin();
 		for ( T entity: entities)
 		{
 			if (((RefEntity<?>)entity).getSubEntities().hasNext()) {

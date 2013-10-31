@@ -131,6 +131,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 
         out.println(" <icon kind=\"splash\" href=\""+webstartRoot+ "/webclient/logo.png\"/> ");
 		out.println(" <update check=\"always\" policy=\"always\"/>");
+        //out.println(" <shortcut online=\"true\" install=\"true\">");
         out.println(" <shortcut online=\"true\">");
         out.println("       <desktop/>");
         out.println("       <menu submenu=\"" + menuName +  "\"/>");

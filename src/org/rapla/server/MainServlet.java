@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -463,9 +464,10 @@ public class MainServlet extends HttpServlet {
 		ServerServiceImpl server = (ServerServiceImpl)getServer();
 		server.setShutdownService( new ShutdownService() {
 		        public void shutdown(final boolean restart) {
+		        	boolean acquired =false;
 		        	try
 		        	{
-			        	requestCount.acquire( maxRequests -1);
+			        	acquired = requestCount.tryAcquire(maxRequests -1,10, TimeUnit.SECONDS);
 			       	 	logger.info( "Stopping  Server");
 			       	 	stopServer();
 			       	 	if ( restart)
@@ -484,7 +486,10 @@ public class MainServlet extends HttpServlet {
 		        	}
 		        	finally
 		        	{
-		        		requestCount.release( maxRequests -1);
+		        		if ( acquired)
+		        		{
+		        			requestCount.release( maxRequests -1);
+		        		}
 		            }
 		        	
 		        }
@@ -556,12 +561,16 @@ public class MainServlet extends HttpServlet {
     public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
         RaplaPageGenerator  servletPage;
+        boolean acquired;
      	try {
-    		requestCount.acquire();
+     		acquired = requestCount.tryAcquire( 5, TimeUnit.SECONDS);
     	}
 		catch (InterruptedException ex)
         {
-			getLogger().error("Maximum number of requests reached " + maxRequests);
+			String message = "Maximum number of requests reached " + maxRequests;
+			getLogger().error(message);
+		   	response.addHeader("X-Error-Classname",  RaplaException.class.getName());
+        	response.addHeader("X-Error-Stacktrace", message );
 			response.sendError( 500);
 			return;
         }
@@ -641,7 +650,10 @@ public class MainServlet extends HttpServlet {
         }
         finally
         {
-        	requestCount.release();
+        	if ( acquired )
+        	{
+        		requestCount.release();
+        	}
         	try
         	{
         		ServletOutputStream outputStream = response.getOutputStream();

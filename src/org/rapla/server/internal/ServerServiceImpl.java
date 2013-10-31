@@ -616,7 +616,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	 {
 	            		 throw new RaplaException("User with username '" + toConnect + "' not found");
 	            	 }
-	            	 session.setUser( user);
+	            	 if ( session != null)
+	            	 {
+	            		 session.setUser( user);
+	            	 }
             	 }
             	 else
                  {

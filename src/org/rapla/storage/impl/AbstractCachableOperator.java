@@ -459,132 +459,124 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	/** Writes the UpdateEvent in the cache */
 	@SuppressWarnings("unchecked")
 	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
-		lock.writeLock().lock();
-		try
+		HashMap<RefEntity<?>, RefEntity<?>> oldEntities = new HashMap<RefEntity<?>, RefEntity<?>>();
+		// First make a copy of the old entities
+		Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
+		for (RefEntity<?> entity : storeObjects) 
 		{
-			HashMap<RefEntity<?>, RefEntity<?>> oldEntities = new HashMap<RefEntity<?>, RefEntity<?>>();
-			// First make a copy of the old entities
-			Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
-			for (RefEntity<?> entity : storeObjects) 
+			if (!isStorableInCache( entity))
 			{
-				if (!isStorableInCache( entity))
-				{
-					continue;
-				}
-					
-				RefEntity<?> persistantEntity = findInLocalCache(entity);
-				if ( persistantEntity == null)
-				{
-					continue;
-				}
+				continue;
+			}
 				
-				// do nothing, because the persitantVersion is the same as the
-				// stored
-				if (persistantEntity == entity ) 
-				{
+			RefEntity<?> persistantEntity = findInLocalCache(entity);
+			if ( persistantEntity == null)
+			{
+				continue;
+			}
+			
+			// do nothing, because the persitantVersion is the same as the
+			// stored
+			if (persistantEntity == entity ) 
+			{
+				continue;
+			}
+
+			if (getLogger().isDebugEnabled())
+			{
+				getLogger().debug("Storing old: " + entity);
+			}
+
+			// we need to clone the persistent entity here to keep the old entries because its content will be replaced by the copy mechanism below
+			RefEntity<?> oldEntity = deepClone(persistantEntity);
+			oldEntities.put(persistantEntity, oldEntity);
+		}
+		List<RefEntity<?>> updatedEntities = new ArrayList<RefEntity<?>>();
+		// Then update the new entities
+		for (RefEntity<?> entity : storeObjects) {
+			RefEntity<?> toUpdate = null;
+			boolean storableInCache = isStorableInCache( entity);
+			if ( storableInCache)
+			{
+				increaseVersion(entity);
+				toUpdate = findInLocalCache(entity);
+				// do nothing, because the persitantVersion is always ReadOnly
+				if (toUpdate == entity) {
 					continue;
 				}
-	
-				if (getLogger().isDebugEnabled())
-				{
-					getLogger().debug("Storing old: " + entity);
-				}
-	
-				// we need to clone the persistent entity here to keep the old entries because its content will be replaced by the copy mechanism below
-				RefEntity<?> oldEntity = deepClone(persistantEntity);
-				oldEntities.put(persistantEntity, oldEntity);
-			}
-			List<RefEntity<?>> updatedEntities = new ArrayList<RefEntity<?>>();
-			// Then update the new entities
-			for (RefEntity<?> entity : storeObjects) {
-				RefEntity<?> toUpdate = null;
-				boolean storableInCache = isStorableInCache( entity);
-				if ( storableInCache)
-				{
-					increaseVersion(entity);
-					toUpdate = findInLocalCache(entity);
-					// do nothing, because the persitantVersion is always ReadOnly
-					if (toUpdate == entity) {
-						continue;
+				if (toUpdate != null) {
+					if (getLogger().isDebugEnabled())
+					{
+						getLogger().debug("Changing: " + entity);
 					}
-					if (toUpdate != null) {
-						if (getLogger().isDebugEnabled())
-						{
-							getLogger().debug("Changing: " + entity);
-						}
-						((Mementable<RefEntity<?>>) toUpdate).copy(entity);
-					} else {
-						if (getLogger().isDebugEnabled())
-						{
-							getLogger().debug("Adding entity: " + entity);
-						}
-						// we clone the entity because it could be modified after calling dispatch
-						toUpdate = deepClone(entity);
+					((Mementable<RefEntity<?>>) toUpdate).copy(entity);
+				} else {
+					if (getLogger().isDebugEnabled())
+					{
+						getLogger().debug("Adding entity: " + entity);
 					}
-					cache.put(toUpdate);
+					// we clone the entity because it could be modified after calling dispatch
+					toUpdate = deepClone(entity);
 				}
-				else
-				{
-					toUpdate = entity;
-				}
-				if ( isAddedToUpdateResult ( entity))
-				{
-					updatedEntities.add(toUpdate);	
-				}
+				cache.put(toUpdate);
 			}
-			Collection<RefEntity<?>> removeObjects = evt.getRemoveObjects();
-			Collection<RefEntity<?>> toRemove = new HashSet<RefEntity<?>>();
-			for (RefEntity<?> entity : removeObjects) {
-				RefEntity<?> persistantVersion = null;
-				if ( isStorableInCache(entity))
-				{
-					increaseVersion(entity);
-					persistantVersion = findInLocalCache(entity);
-					if (persistantVersion != null) {
-						cache.remove(persistantVersion);
-						persistantVersion.setReadOnly(true);
-					}
-				}
-				if  ( persistantVersion == null)
-				{
-					persistantVersion = entity;
-				}
-				if  ( isAddedToUpdateResult(entity))
-				{
-					toRemove.add( entity);
-				}
-			}
-	
-	
-			/**
-			 * we need to update every reference in the stored entity. So that the
-			 * references in the persistant entities always point to persistant
-			 * entities and never to local working copies. This is done by a call to resolveEntities
-			 */
-			for (RefEntity<?> toUpdate:updatedEntities) 
+			else
 			{
-				if  ( !toUpdate.isPersistant())
-				{
-					toUpdate.resolveEntities(getCache());
-				}
+				toUpdate = entity;
 			}
-			// it is important to set readonly only after a complete resolval of all entities, because it operates recursiv and could set an unresolved subentity to read only which is forbidden
-			for (RefEntity<?> toUpdate:updatedEntities) 
+			if ( isAddedToUpdateResult ( entity))
 			{
-				if  ( !toUpdate.isPersistant())
-				{
-					toUpdate.setReadOnly( true);
-				}
+				updatedEntities.add(toUpdate);	
 			}
-	
-			TimeInterval invalidateInterval = evt.getInvalidateInterval();
-			Object userId = evt.getUserId();
-			return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		}
-		finally
+		Collection<RefEntity<?>> removeObjects = evt.getRemoveObjects();
+		Collection<RefEntity<?>> toRemove = new HashSet<RefEntity<?>>();
+		for (RefEntity<?> entity : removeObjects) {
+			RefEntity<?> persistantVersion = null;
+			if ( isStorableInCache(entity))
+			{
+				increaseVersion(entity);
+				persistantVersion = findInLocalCache(entity);
+				if (persistantVersion != null) {
+					cache.remove(persistantVersion);
+					persistantVersion.setReadOnly(true);
+				}
+			}
+			if  ( persistantVersion == null)
+			{
+				persistantVersion = entity;
+			}
+			if  ( isAddedToUpdateResult(entity))
+			{
+				toRemove.add( entity);
+			}
+		}
+
+
+		/**
+		 * we need to update every reference in the stored entity. So that the
+		 * references in the persistant entities always point to persistant
+		 * entities and never to local working copies. This is done by a call to resolveEntities
+		 */
+		for (RefEntity<?> toUpdate:updatedEntities) 
 		{
-			lock.writeLock().unlock();
+			if  ( !toUpdate.isPersistant())
+			{
+				toUpdate.resolveEntities(getCache());
+			}
 		}
+		// it is important to set readonly only after a complete resolval of all entities, because it operates recursiv and could set an unresolved subentity to read only which is forbidden
+		for (RefEntity<?> toUpdate:updatedEntities) 
+		{
+			if  ( !toUpdate.isPersistant())
+			{
+				toUpdate.setReadOnly( true);
+			}
+		}
+
+		TimeInterval invalidateInterval = evt.getInvalidateInterval();
+		Object userId = evt.getUserId();
+		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 	}
 
 	protected UpdateResult createUpdateResult(
