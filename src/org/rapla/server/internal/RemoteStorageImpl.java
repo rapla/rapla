@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaMainContainer;
@@ -189,10 +190,31 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
    
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
+	protected Lock writeLock() throws RaplaException {
+		return RaplaComponent.lock( lock.writeLock(), 60);
+	}
+
+	protected Lock readLock() throws RaplaException {
+		return RaplaComponent.lock( lock.readLock(), 10);
+	}
+	
+	protected void unlock(Lock lock) {
+		RaplaComponent.unlock( lock );
+	}
+    
  // Implementation of StorageUpdateListener
     public void objectsUpdated( UpdateResult evt )
     {
-    	lock.writeLock().lock();
+    	Lock writeLock;
+    	try
+    	{
+    		writeLock = writeLock();
+    	}
+    	catch (RaplaException ex)
+    	{
+    		getLogger().error(ex.getMessage(), ex);
+    		return;
+    	}
     	try
     	{
 	        // notify the client for changes
@@ -384,7 +406,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     	}
     	finally
     	{
-    		lock.writeLock().unlock();
+    		unlock(writeLock);
     	}
     }
 
@@ -399,18 +421,27 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	/** regulary removes all old update messages that are older than the updateInterval ( factor 10) and at least 1 hour old */
     private final void initEventCleanup()
     {
-    	
-        Command cleanupTask = new Command()
+    	Lock writeLock;
+    	try
+    	{
+    		writeLock = writeLock();
+    	}
+        catch (RaplaException ex)
+        {
+        	getLogger().error("Can't cleanup due to ", ex);
+        	return;
+        }
+ 
+    	Command cleanupTask = new Command()
         {
             public void execute()
             {
                 initEventCleanup();
             }
         };
-        lock.writeLock().lock();
         try
         {
-            {
+ 	    	{
                 RefEntity<?>[] keys = updateMap.keySet().toArray(new RefEntity[] {});
                 for ( int i=0;i<keys.length;i++)
                 {
@@ -444,7 +475,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         }
         finally
         {
-        	lock.writeLock().unlock();
+        	unlock( writeLock );
         }
         int delay = 10000;
         if ( operator.isConnected() )
@@ -842,7 +873,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             
             private UpdateEvent createUpdateEvent( long clientRepositoryVersion ) throws RaplaException
             {
-                lock.readLock().lock();
+            	Lock readLock = readLock();
                 try
                 {
 	            	User user = getSessionUser();
@@ -893,7 +924,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
                 finally
                 {
-                	lock.readLock().unlock();
+                	unlock( readLock );
                 }
             }
             
