@@ -450,20 +450,7 @@ Definition as published by the Open Source Initiative (OSI).
              </manifest>
         </jar>
         
-    	<jar jarfile="${webapp.dir}/webclient/iText-4.2.0-com.itextpdf.jar" update="true">
-	        <manifest>
-	            <attribute name="Permissions" value="${permissions.client}"/>
-	            <attribute name="Application-Name" value ="${application.name}"/>
-	            <attribute name="Codebase" value="*"/>
-	        </manifest>
-	    </jar>
-	    <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
-	        <manifest>
-	            <attribute name="Permissions" value="${permissions.client}"/>
-	            <attribute name="Application-Name" value ="${application.name}"/>
-	            <attribute name="Codebase" value="*"/>
-	        </manifest>
-	    </jar>
+    	
     </target>
 	
 	<target name="build-plugins" depends="compile">
@@ -534,6 +521,22 @@ Definition as published by the Open Source Initiative (OSI).
    	    	    <include name="${main.client.lib}" />
    	    	</fileset>
         </copy>
+        
+   	    <jar jarfile="${webapp.dir}/webclient/iText-4.2.0-com.itextpdf.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
+	    <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
+	    
         <copy file="${src.dir}/org/rapla/gui/images/tafel.png" tofile="${webapp.dir}/webclient/logo.png" />
       	
         <copy todir="${webapp.dir}/WEB-INF/lib">
