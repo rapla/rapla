@@ -540,7 +540,17 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	 if ( authenticationStore != null )
 	                 {
 	                	 logger.info("Checking external authentifiction for user " + username);
-	                	 if (authenticationStore.authenticate( username, password ))
+	                	 boolean authenticateExternal;
+	                	 try
+	                	 {
+	                		 authenticateExternal = authenticationStore.authenticate( username, password );
+	                	 }
+	                	 catch (RaplaException ex)
+	                	 {
+	                		 authenticateExternal= false;
+	                		 getLogger().error(ex.getMessage(), ex);
+	                	 }
+	                	 if (authenticateExternal)
 	                	 {
 	                		 logger.info("Successfull for " + username);
 		                	 @SuppressWarnings("unchecked")
