@@ -730,9 +730,16 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				if ( authenticationStore != null  )
                 {
                 	logger.info("Checking external authentifiction for user " + username);
-                	if (authenticationStore.authenticate( username, password ))
+                	try
                 	{
-                		return;
+	                	if (authenticationStore.authenticate( username, password ))
+	                	{
+	                		return;
+	                	}
+                	}
+                	catch (Exception ex)
+                	{
+                		getLogger().error("Error with external authentification ", ex);
                 	}
                 	logger.info("Now trying to authenticate with local store" + username);
                     operator.authenticate( username, password );
