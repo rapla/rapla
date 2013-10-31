@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.Cancelable;
@@ -61,7 +61,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.Container;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
@@ -139,7 +138,7 @@ public class RemoteOperator
         if (isConnected())
             return;
         getLogger().info("Connecting to server and starting login..");
-    	lock.writeLock().lock();
+    	Lock writeLock = writeLock();
     	try
     	{
     		loginAndLoadData(connectInfo);
@@ -147,7 +146,7 @@ public class RemoteOperator
     	}
     	finally
     	{
-    		lock.writeLock().unlock();
+    		unlock(writeLock);
     	}
     }
     
@@ -683,7 +682,7 @@ public class RemoteOperator
     		refreshAll();
     		return;
     	}
-		lock.writeLock().lock();
+		Lock writeLock = writeLock();
 		try
         {
             Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
@@ -742,16 +741,16 @@ public class RemoteOperator
         }
 		finally
 		{
-			lock.writeLock().unlock();
+			unlock(writeLock);
 		}
     }
 
 	protected void refreshAll() throws RaplaException,
 			EntityNotFoundException {
 		UpdateResult result;
+		Lock writeLock = writeLock();
 		try
 		{
-			lock.writeLock().lock();
 			Set<RefEntity<?>> oldEntities = new HashSet<RefEntity<?>>();
 			{
 				Iterator<RefEntity<?>> it = cache.getAllEntities();
@@ -790,7 +789,7 @@ public class RemoteOperator
 		}
 		finally
 		{
-			lock.writeLock().unlock();
+			unlock(writeLock);
 		}
 		fireStorageUpdated(result);
 	}
@@ -923,14 +922,14 @@ public class RemoteOperator
     	Appointment[] appointmentArray = appointments.toArray( Appointment.EMPTY_ARRAY);
 		EntityList list = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds);
 	    EntityResolver entityResolver = createEntityStore( list,  cache  );
-	    lock.readLock().lock();
+	    Lock readLock = readLock();
 	    try
 	    {
 	    	resolveEntities( list.iterator(), entityResolver );
         }
 	    finally
 	    {
-	    	lock.readLock().unlock();
+	    	unlock( readLock );
 	    }
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
         Iterator<RefEntity<?>> it = list.iterator();
@@ -985,14 +984,14 @@ public class RemoteOperator
 //    		}
 //    	}
     	EntityResolver entityResolver = createEntityStore( list,  cache  );
-        lock.readLock().lock();
+        Lock readLock = readLock();
 	    try
 	    {
 	    	resolveEntities( list.iterator(), entityResolver );
         }
 	    finally
 	    {
-	    	lock.readLock().unlock();
+	    	unlock( readLock );
 	    }
         List<Conflict> result = new ArrayList<Conflict>();
         Iterator it = list.iterator();

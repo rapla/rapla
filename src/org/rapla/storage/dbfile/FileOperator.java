@@ -20,23 +20,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Date;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.IOUtil;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -269,9 +257,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
     public void dispatch( UpdateEvent evt ) throws RaplaException
     {
     	UpdateResult result;
+    	Lock writeLock = writeLock();
     	try
         {
-    		lock.writeLock().lock();
 	    	evt = createClosure( evt );
 	        check( evt );
 	        // call of update must be first to update the cache.
@@ -281,7 +269,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         finally
         {
-        	lock.writeLock().unlock();
+        	unlock( writeLock );
         }
         fireStorageUpdated( result );
     }

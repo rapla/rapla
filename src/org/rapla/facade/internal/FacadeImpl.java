@@ -577,11 +577,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Preferences getPreferences(User user) throws RaplaException {
+		autologin();
 		return operator.getPreferences(user);
 	}
 
 	public Category getSuperCategory() {
-	    return  operator.getSuperCategory();
+		return  operator.getSuperCategory();
 	}
 
 	public Category getUserGroupsCategory() throws RaplaException {
@@ -595,6 +596,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public Map<String, Template> getTemplateMap() throws RaplaException
 	{
+		autologin();
 		return operator.getTemplateMap();
 	}
 	
@@ -644,8 +646,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 
 	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
-		autologin();
-		//System.gc();
 		Collection<Reservation> reservations = getVisibleReservations(null,	allocatables,start, end, reservationFilters);
 		return reservations.toArray(Reservation.RESERVATION_ARRAY);
 	}
@@ -1273,6 +1273,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public <T extends Entity<T>> Collection<Entity<T>> edit(Collection<Entity<T>> list) throws RaplaException
 	{
+		autologin();
 		List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
 		for ( Entity<T> entity:list)
 		{
@@ -1424,6 +1425,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			castedList.add( (RefEntity<T>) entity);
 		}
+		autologin();
 		Map<RefEntity<T>, T> result = operator.getPersistant(castedList);
 		LinkedHashMap<Entity<T>, T> castedResult = new LinkedHashMap<Entity<T>, T>();
 		for ( Map.Entry<RefEntity<T>, T> entry: result.entrySet())
@@ -1481,6 +1483,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		for (Entity<?> toRemove : removedObjects) {
 			removeList.add((RefEntity<?>) toRemove);
 		}
+		autologin();
 		operator.storeAndRemove(storeList, removeList, (RefEntity<User>) workingUser);
 	
 		if (getLogger().isDebugEnabled())
@@ -1496,6 +1499,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	{
 		@SuppressWarnings("unchecked")
 		RefEntity<User> user = (RefEntity<User>)getUser();
+		autologin();
 		getOperator().changeName(user,title,firstname,surname);
 	}
 
@@ -1509,6 +1513,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public void confirmEmail(String newEmail) throws RaplaException {
 		@SuppressWarnings("unchecked")
 		RefEntity<User> user = (RefEntity<User>)getUser();
+		autologin();
 		getOperator().confirmEmail(user, newEmail);
 	}
 
