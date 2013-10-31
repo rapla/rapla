@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
@@ -132,8 +133,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		conflictFinder = new ConflictFinder(this, today2);
 	}
 	
-	 public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end) {
-		lock.readLock().lock();
+	 public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end) throws RaplaException {
+		Lock readLock = readLock();
 		try
 		{
 			boolean excludeExceptions = false;
@@ -168,7 +169,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	    }
 		finally
 		{
-			lock.readLock().unlock();
+			unlock( readLock);
 		}
 	
     }
@@ -481,7 +482,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * 
 	 * @param entity
 	 */
-	final protected Set<RefEntity<?>> getDependencies(RefEntity<?> entity) {
+	final protected Set<RefEntity<?>> getDependencies(RefEntity<?> entity) throws RaplaException  {
 		HashSet<RefEntity<?>> dependencyList = new HashSet<RefEntity<?>>();
 		RaplaType type = entity.getRaplaType();
 		final Collection<RefEntity<?>> referencingEntities;
@@ -494,12 +495,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return dependencyList;
 	}
 
-	protected List<RefEntity<Reservation>> getReferencingReservations(RefEntity<?> entity)  {
+	protected List<RefEntity<Reservation>> getReferencingReservations(RefEntity<?> entity) throws RaplaException  {
 		ArrayList<RefEntity<Reservation>> result = new ArrayList<RefEntity<Reservation>>();
-		Iterator<Reservation> it = this.getReservations(null,null, null, null).iterator();
-		while (it.hasNext()) {
+		Collection<Reservation> list = this.getReservations(null,null, null, null);
+		for (Reservation reservation:list) {
 			@SuppressWarnings("unchecked")
-			RefEntity<Reservation> referer = (RefEntity<Reservation>) it.next();
+			RefEntity<Reservation> referer = (RefEntity<Reservation>) reservation;
 			if (referer != null && referer.isRefering(entity)) {
 				result.add(referer);
 			}
@@ -507,7 +508,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return result;
 	}
 
-	protected List<RefEntity<?>> getReferencingEntities(RefEntity<?> entity) {
+	protected List<RefEntity<?>> getReferencingEntities(RefEntity<?> entity) throws RaplaException {
 		ArrayList<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
 		// Important to use getReferncingReservations here, because the method
 		// getReservations could be overidden in the subclass,
@@ -777,9 +778,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	public void authenticate(String username, String password)
 			throws RaplaException {
-		lock.readLock().lock();
-		try
-		{
+		Lock readLock = readLock();
+		try {
 			getLogger().info("Check password for User " + username);
 			RefEntity<User> user = cache.getUser(username);
 			if (user != null && checkPassword(user.getId(), password)) {
@@ -791,7 +791,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock( readLock );
 		}
 	}
 
@@ -805,14 +805,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		String password = new String(newPassword);
 		if (encryption != null)
 			password = encrypt(encryption, password);
+		Lock writeLock = writeLock(  );
 		try
 		{
-			lock.writeLock().lock();
 			cache.putPassword(userId, password);
 		}
 		finally
 		{
-			lock.writeLock().unlock();
+			unlock( writeLock );
 		}
 		RefEntity<User> editObject = editObject(user, null);
 		List<RefEntity<?>> editList = new ArrayList<RefEntity<?>>(1);
@@ -898,8 +898,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		} catch (NoSuchAlgorithmException ex) {
 			throw new RaplaException(ex);
 		}
-		synchronized (md) {
-
+		synchronized (md) 
+		{
 			md.reset();
 			md.update(password.getBytes());
 			return encryption + ":" + Tools.convert(md.digest());
@@ -935,7 +935,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 	@Override
 	public Map<Allocatable,Collection<Appointment>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException {
-		lock.readLock().lock();
+		Lock readLock = readLock();
 		Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
 		try
 		{
@@ -943,7 +943,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock( readLock);
 		}
 		Map<Allocatable, Collection<Appointment>> map = new HashMap<Allocatable, Collection<Appointment>>();
 		for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet())
@@ -958,7 +958,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	@Override
     public Map<Allocatable, Map<Appointment,Collection<Appointment>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException
     {
-		lock.readLock().lock();
+		Lock readLock = readLock();
 		try
 		{
 			checkAbandonedAppointments(allocatables);
@@ -966,7 +966,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	   	}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock( readLock );
 		}
     }
     
@@ -1057,14 +1057,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     
     public Collection<Conflict> getConflicts(User user) throws RaplaException
     {
-		lock.readLock().lock();
-		try
+    	Lock readLock = readLock();
+    	try
 		{
 			return conflictFinder.getConflicts( user);
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock( readLock );
 		}			
     }
 
