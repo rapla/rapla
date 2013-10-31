@@ -13,7 +13,6 @@
       <property name="rapla.build.dest.client" value="${rapla.dir}/build/clientclasses" />
       <property file="${basedir}/build.number"/>
       <property file="${basedir}/build.properties"/>
-      <property name="plugin.dependencies.includes" value="nothing_plugin" />
       <basename property="project.name" file="${basedir}"/>
       <property name="doc.version" value="0.1"/>
       <property name="main.lib" value="rapla_${project.name}-${doc.version}.jar"/>
@@ -55,21 +54,26 @@
 	<delete dir="${build.dir}" />
   </target>
 
-  <target name="build-dependencies" depends="prepare">
+  <target name="build-dependencies" depends="prepare" if="plugin.dependencies.includes">
 	 <ant antfile="${rapla.dir}/build.xml" dir="${rapla.dir}" target="build-plugins-sub" inheritAll="false">
 	    <property name="plugin.dependencies.sub" value="${plugin.dependencies.includes}"/>
 	    <property name="basedir" value="${rapla.dir}"/>
+	    <property name="plugin.base" value="${plugin.base}"/>
      </ant>
   </target>
  
   <target name="compile" depends="prepare,build-dependencies">
-    <echo message="${basedir} dependencies ${plugin.dependencies.includes}" level="verbose"/>
     <property name="plugin.base.absolute" location="${plugin.base}"/>
-    <pathconvert dirsep="/" pathsep="," property="plugin.dependencies.build">
+    <pathconvert dirsep="/" pathsep="," property="plugin.dependencies.build.test">
        <map from="${plugin.base.absolute}/" to="" /><!-- This is the trick. Remove slash to make path absolute. -->
        <regexpmapper from="(.*)" to="\1/build/classes" handledirsep="yes"/>
        <dirset id="plugin.dependencies" dir="${plugin.base}" includes="${plugin.dependencies.includes}"/>
     </pathconvert>
+    
+    <condition property="plugin.dependencies.build" value="${plugin.dependencies.build.test}" else="nothing_plugin">
+       <isset property="plugin.dependencies.includes"/>
+    </condition>
+    <echo message="${basedir} dependencies ${plugin.dependencies.build}" level="verbose"/>
     
     <!-- Compile the java code from ${src} into ${build.dir} -->
   	<!-- first the client only code -->
@@ -92,7 +96,6 @@
            	 <include name="common/**"/>
            </fileset>
 	       <dirset dir="${plugin.base}" includes="${plugin.dependencies.build}"/>
-
            <pathelement path="${rapla.build.dest.client}"/>
 
          </classpath>
