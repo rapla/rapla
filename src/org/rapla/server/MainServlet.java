@@ -23,7 +23,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -96,8 +98,7 @@ public class MainServlet extends HttpServlet {
 	
 	Semaphore guiMutex = new Semaphore(1);
 	
-	int maxRequests = 30;
-	Semaphore requestCount = new Semaphore(maxRequests);
+	protected ReadWriteLock restartLock = new ReentrantReadWriteLock();
 	
 	private ConnectInfo reconnect;
 
@@ -452,11 +453,10 @@ public class MainServlet extends HttpServlet {
         	{
         		shutdownCommand.run();
         	}
-        	
         	throw new ServletException( message,e);
         }
-       
 	}
+
 	protected void startServer_(final String startupMode)
 			throws RaplaContextException {
 		final Logger logger = getLogger();
@@ -464,10 +464,27 @@ public class MainServlet extends HttpServlet {
 		ServerServiceImpl server = (ServerServiceImpl)getServer();
 		server.setShutdownService( new ShutdownService() {
 		        public void shutdown(final boolean restart) {
-		        	boolean acquired =false;
+		        	Lock writeLock;
 		        	try
 		        	{
-			        	acquired = requestCount.tryAcquire(maxRequests -1,10, TimeUnit.SECONDS);
+		        		try
+		        		{
+		        			RaplaComponent.unlock( restartLock.readLock());
+		        		}
+		        		catch (IllegalMonitorStateException ex)
+		        		{
+		        			getLogger().error("Error unlocking read for restart " + ex.getMessage());
+		        		}
+		        		writeLock = RaplaComponent.lock( restartLock.writeLock(), 60);
+		        	}
+		        	catch (RaplaException ex)
+		        	{ 
+		        		getLogger().error("Can't restart server " + ex.getMessage());
+		        		return;
+		        	}
+		        	try
+		        	{
+		        		//acquired = requestCount.tryAcquire(maxRequests -1,10, TimeUnit.SECONDS);
 			       	 	logger.info( "Stopping  Server");
 			       	 	stopServer();
 			       	 	if ( restart)
@@ -480,17 +497,10 @@ public class MainServlet extends HttpServlet {
 			       	 		}
 			       	 	}
 		        	}
-		        	catch (InterruptedException ex)
-		        	{ 
-		        		getLogger().error("Can't restart server " + ex.getMessage());
-		        	}
 		        	finally
 		        	{
-		        		if ( acquired)
-		        		{
-		        			requestCount.release( maxRequests -1);
-		        		}
-		            }
+		        		RaplaComponent.unlock(writeLock);
+		        	}
 		        	
 		        }
 		    });
@@ -560,23 +570,12 @@ public class MainServlet extends HttpServlet {
     
     public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
-        RaplaPageGenerator  servletPage;
-        boolean acquired;
-     	try {
-     		acquired = requestCount.tryAcquire( 5, TimeUnit.SECONDS);
-    	}
-		catch (InterruptedException ex)
-        {
-			String message = "Maximum number of requests reached " + maxRequests;
-			getLogger().error(message);
-		   	response.addHeader("X-Error-Classname",  RaplaException.class.getName());
-        	response.addHeader("X-Error-Stacktrace", message );
-			response.sendError( 500);
-			return;
-        }
+    	RaplaPageGenerator  servletPage;
+    	Lock readLock = null;
     	try
     	{
-    		RaplaContext context = getServer().getContext();
+        	readLock = RaplaComponent.lock( restartLock.readLock(), 25);
+        	RaplaContext context = getServer().getContext();
 			Collection<ServletRequestPreprocessor> processors = getServer().lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
 		    for (ServletRequestPreprocessor preprocessor: processors)
 			{
@@ -650,9 +649,13 @@ public class MainServlet extends HttpServlet {
         }
         finally
         {
-        	if ( acquired )
+        	try
         	{
-        		requestCount.release();
+        		RaplaComponent.unlock( readLock );
+        	}
+        	catch (IllegalMonitorStateException ex)
+        	{
+        		// Released by the restarter
         	}
         	try
         	{
@@ -669,7 +672,6 @@ public class MainServlet extends HttpServlet {
     
     private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
     {
-    	
     	int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
         int sessionParamIndex = requestURI.indexOf(";");
         int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 

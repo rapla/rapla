@@ -424,7 +424,7 @@ public class LocalCache implements EntityResolver
 						};
                     }
                     
-                    if (user != null && !user.isAdmin())
+                    if (user != null )
                     {
 	                    if (   Preferences.TYPE.equals( raplaType )  )
 	                    {
@@ -445,11 +445,15 @@ public class LocalCache implements EntityResolver
 	                        }
 	                        return list.iterator();
 	                    }
-	                    if (   Allocatable.TYPE.equals( raplaType )  )
+	                    else if (   Allocatable.TYPE.equals( raplaType )  )
 	                    {
 	                    	return new FilterIterator<RefEntity<?>>(set.iterator()) {
 
 								protected boolean isInIterator(Object obj) {
+									if (user.isAdmin())
+									{
+										return true;
+									}
 									Allocatable alloc = (Allocatable) obj;
 									boolean canRead = alloc.canReadOnlyInformation( user);
 									return canRead;
