@@ -655,7 +655,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                 facade.logout();
             }
         } catch (RaplaException ex) {
-            getLogger().error("Clean logout failed",ex);
+            getLogger().error("Clean logout failed. " + ex.getMessage());
         }
         started = false;
         fireClientClosed(reconnect);

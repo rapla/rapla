@@ -615,6 +615,7 @@ public class RemoteOperator
 							unresolved.setClassification( cache.getUnresolvedAllocatableType().newClassification());
 							return unresolved;
 						}
+						// if the type is not found we test if its an anonymous type (key = 0)
 						if ( typeName.equals(DynamicType.TYPE.toString()))
 						{
 							if ( ((SimpleIdentifier) id).getKey() == 0)
