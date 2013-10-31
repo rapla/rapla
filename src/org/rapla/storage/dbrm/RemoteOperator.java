@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.Cancelable;
@@ -111,7 +112,7 @@ public class RemoteOperator
         if (isConnected())
             return;
         getLogger().info("Connecting to server and starting login..");
-    	lock.writeLock().lock();
+    	Lock writeLock = writeLock();
     	try
     	{
     		loginAndLoadData(connectInfo);
@@ -119,7 +120,7 @@ public class RemoteOperator
     	}
     	finally
     	{
-    		lock.writeLock().unlock();
+    		unlock(writeLock);
     	}
     }
 
@@ -666,7 +667,7 @@ public class RemoteOperator
     		refreshAll();
     		return;
     	}
-		lock.writeLock().lock();
+		Lock writeLock = writeLock();
 		try
         {
             Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
@@ -730,16 +731,16 @@ public class RemoteOperator
         }
 		finally
 		{
-			lock.writeLock().unlock();
+			unlock(writeLock);
 		}
     }
 
 	protected void refreshAll() throws RaplaException,
 			EntityNotFoundException {
 		UpdateResult result;
+		Lock writeLock = writeLock();
 		try
 		{
-			lock.writeLock().lock();
 			Set<RefEntity<?>> oldEntities = cache.getAllEntities();
 			loadData(null);
 			Set<RefEntity<?>> newEntities = cache.getAllEntities();
@@ -764,7 +765,7 @@ public class RemoteOperator
 		}
 		finally
 		{
-			lock.writeLock().unlock();
+			unlock(writeLock);
 		}
 		fireStorageUpdated(result);
 	}
@@ -871,14 +872,14 @@ public class RemoteOperator
 		SimpleIdentifier[] reservationIds = getIdList(ignoreList);
 		EntityList list = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds);
 	    EntityResolver entityResolver = createEntityStore( list,  cache  );
-	    lock.readLock().lock();
+	    Lock readLock = readLock();
 	    try
 	    {
         	resolveEntities( list, entityResolver );
         }
 	    finally
 	    {
-	    	lock.readLock().unlock();
+	    	unlock( readLock );
 	    }
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
         Iterator<RefEntity<?>> it = list.iterator();
@@ -938,14 +939,14 @@ public class RemoteOperator
     	RemoteStorage serv = getRemoteStorage();
     	EntityList list =serv.getConflicts();
         EntityResolver entityResolver = createEntityStore( list,  cache  );
-	    lock.readLock().lock();
+        Lock readLock = readLock();
 	    try
 	    {
         	resolveEntities( list, entityResolver );
         }
 	    finally
 	    {
-	    	lock.readLock().unlock();
+	    	unlock( readLock );
 	    }
         List<Conflict> result = new ArrayList<Conflict>();
         Iterator it = list.iterator();

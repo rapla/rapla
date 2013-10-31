@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.IOUtil;
@@ -254,12 +255,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
         
-    synchronized public void dispatch( UpdateEvent evt ) throws RaplaException
+    public void dispatch( UpdateEvent evt ) throws RaplaException
     {
-        UpdateResult result;
+    	UpdateResult result;
+    	Lock writeLock = writeLock();
     	try
         {
-    		lock.writeLock().lock();
 	    	evt = createClosure( evt );
 	        check( evt );
 	        // call of update must be first to update the cache.
@@ -269,7 +270,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         finally
         {
-        	lock.writeLock().unlock();
+        	unlock( writeLock );
         }
         fireStorageUpdated( result );
     }

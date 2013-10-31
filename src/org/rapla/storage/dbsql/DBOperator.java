@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import javax.sql.DataSource;
 
@@ -315,9 +316,8 @@ Disposable
     
     public final void loadData() throws RaplaException {
     	Connection c = null;
-        try 
-        {
-        	lock.writeLock().lock();
+    	Lock writeLock = writeLock();
+        try {
         	c = createConnection();
         	connectionName = c.getMetaData().getURL();
 			getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() +": " +  connectionName);
@@ -379,9 +379,9 @@ Disposable
         } 
         finally 
         {
+        	unlock(writeLock);
         	close ( c );
         	c = null;
-        	lock.writeLock().unlock();
         }
     }
     
@@ -483,12 +483,12 @@ Disposable
 		return tableMap;
 	}
     
-	synchronized public void dispatch(UpdateEvent evt) throws RaplaException {
-		UpdateResult result;
-		try
-		{
-			lock.writeLock().lock();
-	        evt = createClosure( evt  );
+    public void dispatch(UpdateEvent evt) throws RaplaException {
+    	UpdateResult result;
+    	Lock writeLock = writeLock();
+    	try
+        {
+        	evt = createClosure( evt  );
 	        check(evt);
 	        Connection connection = createConnection();
 	        try {
@@ -519,11 +519,11 @@ Disposable
 	            close( connection );
 	        }
 	        result = super.update(evt);
-		}
-		finally
-		{
-			lock.writeLock().unlock();
-		}
+        } 
+    	finally
+        {
+    		unlock( writeLock );
+        }
         fireStorageUpdated(result);
     }
 

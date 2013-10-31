@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -170,45 +171,58 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 
 	public <T extends RaplaObject> Collection<T> getObjects(Class<T> typeClass)	throws RaplaException {
 		checkConnected();
+		Lock readLock = readLock();
 		try
 		{
-			lock.readLock().lock();
 			Collection<T> collection = cache.getCollection(typeClass);
 			return collection;
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
 	}
 
-	synchronized public Collection<RefEntity<?>> getVisibleEntities(final User user)throws RaplaException {
+	protected void unlock(Lock lock) {
+		RaplaComponent.unlock( lock );
+	}
+
+	public synchronized Collection<RefEntity<?>> getVisibleEntities(final User user)throws RaplaException {
 		checkConnected();
+		Lock readLock = readLock();
 		try
 		{
-			lock.readLock().lock();
 			Collection<RefEntity<?>> list = cache.getVisibleEntities(user);
 			return list;
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
+	}
+
+	protected Lock writeLock() throws RaplaException {
+		return RaplaComponent.lock( lock.writeLock(), 60);
+	}
+
+	protected Lock readLock() throws RaplaException {
+		return RaplaComponent.lock( lock.readLock(), 10);
 	}
 	
 	public Map<String, Template> getTemplateMap() {
         Map<String,Template> templateMap =new LinkedHashMap<String, Template>();
         Collection<Reservation> reservations;
-		try
-		{
-			lock.readLock().lock();
-			reservations = cache.getCollection(Reservation.class);
+    	Lock readLock;
+		try {
+			readLock = readLock();
+		} catch (RaplaException e) {
+			getLogger().error(e.getMessage(), e);
+			return templateMap;
 		}
-		finally
-		{
-			lock.readLock().unlock();
-		}
-    	//Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
+		reservations = cache.getCollection(Reservation.class);
+		unlock(readLock);
+
+		//Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
         
         for ( Reservation r:reservations)
         {
@@ -229,14 +243,14 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	
 	public User getUser(final String username) throws RaplaException {
 		checkConnected();
-		lock.readLock().lock();
+		Lock readLock = readLock();
 		try
 		{
 			return cache.getUser(username);
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
 	}
 
@@ -248,17 +262,17 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			resolveId(((RefEntity<User>) user).getId());
 		}
 		Preferences pref;
-		lock.readLock().lock();
+		Lock readLock = readLock();
 		try
 		{
 			pref = cache.getPreferences(user);
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
 		if (pref == null) {
-			lock.writeLock().lock();
+			Lock writeLock = writeLock();
 			try
 			{
 				PreferencesImpl newPref = new PreferencesImpl();
@@ -270,7 +284,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			}
 			finally
 			{
-				lock.writeLock().unlock();
+				unlock(writeLock);
 			}
 		}
 
@@ -289,7 +303,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		storageUpdateListeners.remove(listener);
 	}
 
-	public StorageUpdateListener[] getStorageUpdateListeners() {
+	public synchronized StorageUpdateListener[] getStorageUpdateListeners() {
 		return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
 	}
 
@@ -340,7 +354,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 
 	public <T> Map<RefEntity<T>, T> getPersistant(Collection<RefEntity<T>> list) throws RaplaException 
 	{
-		lock.readLock().lock();
+    	Lock readLock = readLock();
 		try
 		{
 			Map<RefEntity<T>,T> result = new LinkedHashMap<RefEntity<T>,T>();
@@ -357,7 +371,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
 	}
 	
@@ -435,14 +449,19 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 
 	public RefEntity<?> resolveId(Comparable id) throws EntityNotFoundException {
-		lock.readLock().lock();
+		Lock readLock;
+		try {
+			readLock = readLock();
+		} catch (RaplaException e) {
+			throw new EntityNotFoundException( e.getMessage() + " " +e.getCause());
+		}
 		try
 		{
 			return cache.resolve(id);
 		}
 		finally
 		{
-			lock.readLock().unlock();
+			unlock(readLock);
 		}
 	}
 

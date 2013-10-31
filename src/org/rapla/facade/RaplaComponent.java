@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
@@ -726,6 +728,33 @@ public class RaplaComponent
 		}
 		return r;
 	}
+	
+	public static void unlock(Lock lock)
+	{
+		if ( lock != null)
+		{
+			lock.unlock();
+		}
+	}
+
+	public static Lock lock(Lock lock, int seconds) throws RaplaException {
+		try
+		{
+			if (lock.tryLock(seconds, TimeUnit.SECONDS))
+			{
+				return lock;
+			}
+			else
+			{
+				throw new RaplaException("Can't acquire " + lock);
+			}
+		}
+		catch (InterruptedException ex)
+		{
+			throw new RaplaException( ex);
+		}
+	}
+
 
 	
 }
