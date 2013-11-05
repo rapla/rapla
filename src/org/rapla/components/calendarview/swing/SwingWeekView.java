@@ -232,7 +232,7 @@ public class SwingWeekView extends AbstractSwingCalendar
 
     public void rebuild() {
     	daySlots= new LargeDaySlot[getColumnCount()];
-    	
+    	selectionHandler.clearSelection();
     	
         // clear everything
         jHeader.removeAll();

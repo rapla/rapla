@@ -87,6 +87,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
 
     TableLayout tableLayout;
     public void rebuild() {
+    	selectionHandler.clearSelection();
         rows.clear();
         columnMap.clear();
         for ( int i=0; i<rowNames.length; i++ ) {
