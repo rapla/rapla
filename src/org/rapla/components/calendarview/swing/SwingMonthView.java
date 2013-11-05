@@ -96,6 +96,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     TableLayout tableLayout;
 
     public void rebuild() {
+    	selectionHandler.clearSelection();
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
         Calendar counter = createCalendar(); 
         Iterator<Builder> it= builders.iterator();

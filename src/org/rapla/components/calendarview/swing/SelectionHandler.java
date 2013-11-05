@@ -93,12 +93,23 @@ public class SelectionHandler extends MouseAdapter {
            selectionStrategy = strategy;
     }
     
-    private void clearSelection() {
+    public void clearSelection() {
         for (int i=0;i<m_wv.getDayCount();i++)
+        {
             if (m_wv.getSlot(i) != null)
+            {
                 m_wv.getSlot(i).unselectAll();
+            }
+        }
+        selectionStart = -1;
+        selectionEnd = -1;
+        oldIndex = -1;
+        oldSlotNr = -1;
+        startSlot = -1;
+        endSlot = -1;
+        draggingSlot = -1;
+        draggingIndex = -1;
     }
-
     
 
     public void slotPopup(MouseEvent evt) {
@@ -192,7 +203,7 @@ public class SelectionHandler extends MouseAdapter {
     }
 
     private boolean inCurrentSelection(int slotNr, int selectedIndex) {
-    	 if ( slotNr < startSlot || slotNr > endSlot)
+   	 	 if ( slotNr < startSlot || slotNr > endSlot)
     	 {
     		 return false;
     	 }
