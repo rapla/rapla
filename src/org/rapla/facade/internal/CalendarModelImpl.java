@@ -290,7 +290,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 				User user2 = getUser();
 				if ( user2 != null && evt.isModified( user2))
 				{
-					Set<User> changed = evt.getChanged( Collections.singleton(user2));
+					Set<User> changed = RaplaType.retainObjects(evt.getChanged(), Collections.singleton(user2));
 					if ( changed.size() > 0)
 					{
 						User newUser = changed.iterator().next();

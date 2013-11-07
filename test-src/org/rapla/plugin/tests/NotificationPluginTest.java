@@ -122,6 +122,9 @@ public class NotificationPluginTest extends ServletTestBase
         assertNotNull( mailMock.getMailBody() );
         assertTrue( mailMock.getMailBody().indexOf( reservationName ) >= 0 );
 
+       
+        assertEquals( 2, mailMock.getCallCount() );
+        
         reservationName = "Another name";
         r=facade1.edit( r);
         r.getClassification().setValue( "name", reservationName );

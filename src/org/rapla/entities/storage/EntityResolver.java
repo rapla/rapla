@@ -13,6 +13,7 @@
 package org.rapla.entities.storage;
 
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.dynamictype.DynamicType;
 
 
 /** resolves the id to a proper reference to the object.
@@ -23,7 +24,10 @@ public interface EntityResolver
 {
     public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException;
     public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException;
-    
+    /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
+    public RefEntity<?> tryResolve(Comparable id);
+    public DynamicType getDynamicType(String key);
+
 }
 
 

@@ -29,26 +29,34 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.Template;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.Mementable;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -56,6 +64,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
@@ -84,15 +93,48 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	protected RaplaContext context;
 	Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
-	
 	//protected IdTable idTable = new IdTable();
 	
+	DynamicTypeImpl unresolvedAllocatableType = new DynamicTypeImpl();
+    DynamicTypeImpl anonymousReservationType = new DynamicTypeImpl();
+    {
+    	try
+    	{
+	    	{
+				DynamicTypeImpl unresolved = unresolvedAllocatableType;
+				String key = "unresolved_resource";
+				unresolved.setElementKey(key);
+				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, -1));
+				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+				unresolved.getName().setName("en", "anonymous");
+				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+				unresolved.setReadOnly( true);
+			}
+			{
+				DynamicTypeImpl unresolved = anonymousReservationType;
+				String key = "anonymous";
+				unresolved.setElementKey(key);
+				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, 0));
+				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+				unresolved.getName().setName("en", "anonymous");
+				unresolved.setReadOnly( true);
+			}
+    	}
+    	catch ( IllegalAnnotationException ex)
+    	{
+    		throw new IllegalStateException( ex.getMessage());
+    	}
+    }
+    	
+
 	public AbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
 		this.logger = logger;
 		this.context = context;
 		raplaLocale = context.lookup(RaplaLocale.class);
 		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 
+		Assert.notNull(raplaLocale.getLocale());
 		LocalCache newCache = new LocalCache();
 		setCache(newCache);
 	}
@@ -106,10 +148,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 
 	public abstract Date getCurrentTimestamp();
-	
-	protected I18nBundle getI18n() {
-		return i18n;
-	}
 
 	// Implementation of StorageOperator
 	public <T> RefEntity<T> editObject(RefEntity<T> o, User user)throws RaplaException {
@@ -121,33 +159,40 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	public <T> Collection<RefEntity<T>> editObjects(Collection<RefEntity<T>> list, User user)throws RaplaException {
 		checkConnected();
 		Collection<RefEntity<T>> toEdit = new LinkedHashSet<RefEntity<T>>();
+		// read lock
 		Map<RefEntity<T>, T> persistantMap = getPersistant(list);
-	    for (RefEntity<T> o:list) 
+	    // read unlock 
+		for (RefEntity<T> o:list) 
 	    {
 			RefEntity<T> persistant = (RefEntity<T>) persistantMap.get(o);
-			final T clone;
-			if ( persistant != null)
-			{
-    			clone = persistant.deepClone();
-    		}
-			else
-			{
-    			clone = o.deepClone();
-    		}
-    		RefEntity<T> refEntity = (RefEntity<T>) clone;
-			if (refEntity instanceof ModifiableTimestamp) {
-    			((ModifiableTimestamp) refEntity).setLastChanged(getCurrentTimestamp());
-    			if (user != null) {
-    				((ModifiableTimestamp) refEntity).setLastChangedBy(user);
-    			}
-    		}
-    		refEntity.setReadOnly(false);
+			RefEntity<T> refEntity = (RefEntity<T>) editObject(o, persistant, user);
     		toEdit.add( refEntity);
 	    }
 	    return toEdit;
 	}
 
-	synchronized public void storeAndRemove(final Collection<RefEntity<?>> storeObjects,	final Collection<RefEntity<?>> removeObjects, final RefEntity<User> user) throws RaplaException {
+	protected RefEntity<?> editObject(RefEntity<?> obj, RefEntity<?> persistant, User user) {
+		final RefEntity<?> clone;
+		if ( persistant != null)
+		{
+			clone = (RefEntity<?>)persistant.deepClone();
+		}
+		else
+		{
+			clone = (RefEntity<?>)obj.deepClone();
+		}
+		RefEntity<?> refEntity = clone;
+		if (refEntity instanceof ModifiableTimestamp) {
+			((ModifiableTimestamp) refEntity).setLastChanged(getCurrentTimestamp());
+			if (user != null) {
+				((ModifiableTimestamp) refEntity).setLastChangedBy(user);
+			}
+		}
+		refEntity.setReadOnly(false);
+		return refEntity;
+	}
+
+	public void storeAndRemove(final Collection<RefEntity<?>> storeObjects,	final Collection<RefEntity<?>> removeObjects, final RefEntity<User> user) throws RaplaException {
 		checkConnected();
 
 		UpdateEvent evt = new UpdateEvent();
@@ -174,8 +219,11 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		Lock readLock = readLock();
 		try
 		{
-			Collection<T> collection = cache.getCollection(typeClass);
-			return collection;
+			RaplaType type = RaplaType.find(typeClass.getName());
+			@SuppressWarnings("unchecked")
+			Collection<T> collection = (Collection<T>) cache.getCollection(type);
+			// We return a clone to avoid synchronization Problems
+			return new LinkedHashSet<T>(collection);
 		}
 		finally
 		{
@@ -183,30 +231,20 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
-	protected void unlock(Lock lock) {
-		RaplaComponent.unlock( lock );
-	}
-
-	public synchronized Collection<RefEntity<?>> getVisibleEntities(final User user)throws RaplaException {
+	public List<RefEntity<?>> getVisibleEntities(final User user)throws RaplaException {
 		checkConnected();
 		Lock readLock = readLock();
 		try
 		{
-			Collection<RefEntity<?>> list = cache.getVisibleEntities(user);
+			ArrayList<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
+			Collection<RefEntity<?>> it = cache.getVisibleEntities(user);
+			list.addAll( it );
 			return list;
 		}
 		finally
 		{
 			unlock(readLock);
 		}
-	}
-
-	protected Lock writeLock() throws RaplaException {
-		return RaplaComponent.lock( lock.writeLock(), 60);
-	}
-
-	protected Lock readLock() throws RaplaException {
-		return RaplaComponent.lock( lock.readLock(), 10);
 	}
 	
 	public Map<String, Template> getTemplateMap() {
@@ -259,7 +297,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		checkConnected();
 		// Test if user is already stored
 		if (user != null) {
-			resolveId(((RefEntity<User>) user).getId());
+			resolve(((RefEntity<User>) user).getId());
 		}
 		Preferences pref;
 		Lock readLock = readLock();
@@ -295,6 +333,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		return cache.getSuperCategory();
 	}
 
+	
 	public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {
 		storageUpdateListeners.add(listener);
 	}
@@ -307,6 +346,22 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
 	}
 
+	protected Lock writeLock() throws RaplaException {
+		return RaplaComponent.lock( lock.writeLock(), 60);
+	}
+
+	protected Lock readLock() throws RaplaException {
+		return RaplaComponent.lock( lock.readLock(), 10);
+	}
+	
+	protected void unlock(Lock lock) {
+		RaplaComponent.unlock( lock );
+	}
+	
+	protected I18nBundle getI18n() {
+		return i18n;
+	}
+	
 	protected void fireStorageUpdated(final UpdateResult evt) {
 		StorageUpdateListener[] listeners = getStorageUpdateListeners();
 		for (int i = 0; i < listeners.length; i++) {
@@ -348,8 +403,17 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		this.cache = cache;
 	}
 
-	public LocalCache getCache() {
-		return cache;
+	public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
+	{
+		Lock readLock = readLock();
+		try
+		{
+			cmd.execute( cache );
+		}
+		finally
+		{
+			unlock( readLock);
+		}
 	}
 
 	public <T> Map<RefEntity<T>, T> getPersistant(Collection<RefEntity<T>> list) throws RaplaException 
@@ -361,7 +425,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		    for (RefEntity<T> o:list) 
 		    {
 		    	@SuppressWarnings("unchecked")
-				RefEntity<T> persistant = (RefEntity<T>) cache.get(o.getId());
+				RefEntity<T> persistant = (RefEntity<T>) cache.tryResolve(o.getId());
 		    	if ( persistant != null)
 		    	{
 		    		result.put( o,persistant.cast());
@@ -374,10 +438,10 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			unlock(readLock);
 		}
 	}
-	
+
 	protected void resolveEntities(Collection<RefEntity<?>> entities,	EntityResolver resolver) throws RaplaException {
 		List<RefEntity<?>> readOnlyList = new ArrayList<RefEntity<?>>();
-		for (RefEntity<?> obj:entities) {
+		for (RefEntity<?> obj: entities) {
 			try
 			{
 				obj.resolveEntities(resolver);
@@ -399,14 +463,14 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	 */
 	@SuppressWarnings({ "unused", "unused" })
 	protected void logEntityNotFound(RefEntity<?> obj,  EntityNotFoundException ex) {
-		getLogger().warn(ex.getMessage());
 	}
-	
+
 	/** Check if the objects are consistent, so that they can be safely stored. */
 	protected void checkConsistency(Collection<RefEntity<?>> entities) throws RaplaException {
 		for (RefEntity<?> entity : entities) {
 			for (RefEntity<?> reference:entity.getReferences())
-		    {
+			{
+				
 				if (reference instanceof Preferences
 						|| reference instanceof Conflict
 						|| (reference instanceof Reservation && !( entity instanceof Appointment)) 
@@ -448,7 +512,10 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		return getI18n().getString(key);
 	}
 
-	public RefEntity<?> resolveId(Comparable id) throws EntityNotFoundException {
+		
+	@Override
+	public RefEntity<?> resolveEmail(String emailArg)
+			throws EntityNotFoundException {
 		Lock readLock;
 		try {
 			readLock = readLock();
@@ -457,18 +524,90 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 		try
 		{
-			return cache.resolve(id);
+			Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
+			for (Allocatable entity: allocatables)
+	    	{
+	    		final Classification classification = entity.getClassification();
+	    		final Attribute attribute = classification.getAttribute("email");
+	    		if ( attribute != null)
+	    		{
+	    			final String email = (String)classification.getValue(attribute);
+	    			if ( email != null && email.equals( emailArg))
+	    			{
+	    				return (RefEntity<?>)entity;
+	    			}
+	    		}
+	        }
+	    	throw new EntityNotFoundException("Object for email " + emailArg + " not found");
 		}
 		finally
 		{
 			unlock(readLock);
 		}
 	}
+	
+	public DynamicType getDynamicType(String key) {
+		Lock readLock = null;
+		try {
+			readLock = readLock();
+		} catch (RaplaException e) {
+			// this is not so dangerous 
+			getLogger().warn("Returning type " + key + " without read lock ");
+		}
+		try
+		{
+			return cache.getDynamicType( key);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
+	
+	@Override
+	public RefEntity<?> tryResolve(Comparable id) {
+		Lock readLock = null;
+		try {
+			readLock = readLock();
+		} catch (RaplaException e) {
+			getLogger().warn("Returning object for id  " + id + " without read lock ");
+		}
+		try
+		{
+			return cache.tryResolve( id);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
+	
+	@Override
+	public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
+		Lock readLock;
+		try {
+			readLock = readLock();
+		} catch (RaplaException e) {
+			throw new EntityNotFoundException( e.getMessage() + " " +e.getCause());
+		}
+		try
+		{
+			return resolveIdWithoutSync(id);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
+	
+	protected RefEntity<?> resolveIdWithoutSync(Comparable id)
+			throws EntityNotFoundException {
+		return cache.resolve(id);
+	}
 
 	/** Writes the UpdateEvent in the cache */
 	@SuppressWarnings("unchecked")
-	synchronized protected UpdateResult update(final UpdateEvent evt) throws RaplaException 
-	{
+	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
 		HashMap<RefEntity<?>, RefEntity<?>> oldEntities = new HashMap<RefEntity<?>, RefEntity<?>>();
 		// First make a copy of the old entities
 		Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
@@ -482,7 +621,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			RefEntity<?> persistantEntity = findInLocalCache(entity);
 			if ( persistantEntity == null)
 			{
-				continue; 
+				continue;
 			}
 			
 			// do nothing, because the persitantVersion is the same as the
@@ -497,11 +636,20 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				getLogger().debug("Storing old: " + entity);
 			}
 
-			// we need to clone the persistent entity here to keep the old entries because its content will be replaced by the copy mechanism below
-			RefEntity<?> oldEntity = deepClone(persistantEntity);
-			oldEntities.put(persistantEntity, oldEntity);
+			if ( persistantEntity instanceof Appointment  || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
+			{
+				// we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
+			}
+			else
+			{
+				// we need to clone the persistent entity here to keep the old entries because its content will be replaced by the copy mechanism below
+				RefEntity<?> oldEntity = deepClone(persistantEntity);
+				oldEntities.put(persistantEntity, oldEntity);
+				addSubentities( oldEntities, oldEntity);
+			}
+
 		}
-		Collection<RefEntity<?>> updatedEntities = new ArrayList<RefEntity<?>>();
+		List<RefEntity<?>> updatedEntities = new ArrayList<RefEntity<?>>();
 		// Then update the new entities
 		for (RefEntity<?> entity : storeObjects) {
 			RefEntity<?> toUpdate = null;
@@ -510,7 +658,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			{
 				increaseVersion(entity);
 				toUpdate = findInLocalCache(entity);
-				// do nothing, because the persitantVersion is always ReadOnly
+				// do nothing, because the persitantVersion is always read only
 				if (toUpdate == entity) {
 					continue;
 				}
@@ -519,6 +667,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 					{
 						getLogger().debug("Changing: " + entity);
 					}
+					// FIXME this line is dangerous because it requires synchronisation in the entities e.g. processing the copy method could cause a temporary inconsistant state 
 					((Mementable<RefEntity<?>>) toUpdate).copy(entity);
 				} else {
 					if (getLogger().isDebugEnabled())
@@ -526,8 +675,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 						getLogger().debug("Adding entity: " + entity);
 					}
 					// we clone the entity because it could be modified after calling dispatch
-					// Note: All entities referencing to the entity (e.g. the parent entity) still refer to the orginal .
-					// To update to the new objects resolve Entities is called below
 					toUpdate = deepClone(entity);
 				}
 				cache.put(toUpdate);
@@ -577,7 +724,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				toUpdate.resolveEntities(cache);
 			}
 		}
-		// it is important to set readonly only after a complete resolval of all entities, because it operates recursiv and could set an unresolved subentity to read only which is forbidden
+		// it is important to set readonly only after a complete resolval of all entities, because it operates recursive and could set an unresolved subentity to read only which is forbidden
 		for (RefEntity<?> toUpdate:updatedEntities) 
 		{
 			if  ( !toUpdate.isPersistant())
@@ -591,6 +738,22 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 	}
 
+	private void addSubentities(
+			HashMap<RefEntity<?>, RefEntity<?>> oldEntities,
+			RefEntity<?> oldEntity) {
+		for (RefEntity<?> entity: oldEntity.getSubEntities())
+		{
+			RefEntity<?> persistantEntity = findInLocalCache(entity);
+			if ( persistantEntity == null)
+			{
+				continue;
+			}
+			oldEntities.put( persistantEntity,entity);
+			addSubentities(oldEntities, entity);
+		}
+
+	}
+
 	protected UpdateResult createUpdateResult(
 			Map<RefEntity<?>, RefEntity<?>> oldEntities,
 			Collection<RefEntity<?>> updatedEntities,
@@ -598,7 +761,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			Comparable userId) throws EntityNotFoundException {
 		User user = null;
 		if (userId != null) {
-			user = (User) resolveId(userId);
+			user = (User) resolveIdWithoutSync(userId);
 		}
 
 		UpdateResult result = new UpdateResult(user);
@@ -628,7 +791,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	/** returns null if no persistant version found */
 	protected RefEntity<?> findInLocalCache(RefEntity<?> entity)
 	{
-		return cache.get(entity.getId());
+		return cache.tryResolve(entity.getId());
 	}
 	
 	abstract protected boolean isAddedToUpdateResult(RefEntity<?> entity);
@@ -646,5 +809,14 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		return (RefEntity<?>) entity.deepClone();
 	}
 	
+	public DynamicType getUnresolvedAllocatableType() 
+	{
+		return unresolvedAllocatableType;
+	}
+
+	public DynamicType getAnonymousReservationType() 
+	{
+		return anonymousReservationType;
+	}
 
 }

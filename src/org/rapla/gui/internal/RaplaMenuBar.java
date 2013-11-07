@@ -27,9 +27,10 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Map;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -299,7 +300,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 			{
 				if ( isTemplateEdit())
 				{
-					getModification().setTemplate( null );
+					getModification().setTemplateName( null );
 				}
 				else
 				{
@@ -524,8 +525,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	        addCopyPaste( textField);
 			final DefaultListModel model = new DefaultListModel();
 	        final JList list = new JList(new SortedListModel(model));
-	        Map<String, Template> templateMap = getQuery().getTemplateMap();
-	        fillModel( model, templateMap);
+	        Collection<String> templateNames= getQuery().getTemplateNames();
+	        fillModel( model, templateNames);
 	        final RaplaButton deleteButton = new RaplaButton(RaplaButton.SMALL);
 	        deleteButton.setIcon(getIcon("icon.delete"));
 	        panel.add( new JScrollPane(list), "0,2,2,1");
@@ -542,10 +543,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	
 	            public void valueChanged( ListSelectionEvent e )
 	            {
-	            	Template template =  (Template) list.getSelectedValue();
+	            	String template =  (String) list.getSelectedValue();
 	                if ( template != null) 
 	                {
-	                	textField.setText( template.getName() );
+	                	textField.setText( template );
 	                }
 	                deleteButton.setEnabled( template != null);
 	            }
@@ -558,15 +559,19 @@ public class RaplaMenuBar extends RaplaGUIComponent
 					Object source = e.getSource();
 					if ( source == deleteButton)
 					{
-						Template template =  (Template) list.getSelectedValue();
+						String template =  (String) list.getSelectedValue();
 						if ( template != null)
 						{
-							Collection<Reservation> reservations = template.getReservations();
 							try {
-								DeleteUndo<Reservation> cmd = new DeleteUndo<Reservation>(getContext(), reservations);
-								getModification().getCommandHistory().storeAndExecute( cmd);
-								Map<String, Template> templateMap1 = getQuery().getTemplateMap();
-								fillModel( model, templateMap1);
+								Collection<Template> templates = getQuery().getTemplates( Collections.singleton( template));
+								if ( templates.size() > 0)
+								{
+									Collection<Reservation> reservations = templates.iterator().next().getReservations();
+									DeleteUndo<Reservation> cmd = new DeleteUndo<Reservation>(getContext(), reservations);
+									getModification().getCommandHistory().storeAndExecute( cmd);
+									Collection<String> templateNames= getQuery().getTemplateNames();
+									fillModel( model, templateNames);
+								}
 							} catch (Exception ex) {
 								showException( ex, getMainComponent());
 							}
@@ -594,14 +599,14 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	            		template = "";
 	            	}
 	            	template = template.trim();
-	            	if (  template.length() > 0)
+	            	if ( template.length() > 0)
 	            	{
-	            		Template selectedTemplate = null;
+	            		String selectedTemplate = null;
 	            		Enumeration elements = model.elements();
 	            		while ( elements.hasMoreElements())
 	            		{
-	            			Template test  = (Template)elements.nextElement();
-	            			if ( test.getName().equals( template))
+	            			String test  = (String)elements.nextElement();
+	            			if ( test.equals( template))
 	            			{
 	            				selectedTemplate = test;
 	            				break;
@@ -609,26 +614,44 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	            		}
 	            		if (selectedTemplate == null)
 	            		{
-	            			selectedTemplate = new Template( template);
+	            			selectedTemplate = template;
 	            		}
 	            		Date start = null;
-						for ( Reservation r:selectedTemplate.getReservations())
-						{
-							Date firstDate = r.getFirstDate();
-							if ( start == null || firstDate.before(start ))
-							{
-								start = firstDate;
-							}
-						}
-						if ( start != null)
-						{
-							getService(CalendarSelectionModel.class).setSelectedDate( start);
-						}
-	            		getModification().setTemplate( selectedTemplate);
+	            		
+	            		if ( selectedTemplate != null)
+	            		{
+		            		Set<String> templateNames = Collections.singleton(selectedTemplate);
+		            		try
+		            		{
+								Collection<Template> templates = getQuery().getTemplates(templateNames);
+			            		if ( templates.iterator().hasNext())
+			            		{
+									Template next = templates.iterator().next();
+									Collection<Reservation> reservations = next.getReservations();
+									for ( Reservation r:reservations)
+									{
+										Date firstDate = r.getFirstDate();
+										if ( start == null || firstDate.before(start ))
+										{
+											start = firstDate;
+										}
+									}
+									if ( start != null)
+									{
+										getService(CalendarSelectionModel.class).setSelectedDate( start);
+									}
+			            		}
+		            		}
+		            		catch (RaplaException ex)
+		            		{
+		            			showException( ex, getMainComponent());
+		            		}
+	            		}
+	            		getModification().setTemplateName( selectedTemplate);
 	            	}
 	            	else
 	            	{
-	            		getModification().setTemplate( null);
+	            		getModification().setTemplateName( null);
 	            	}
 	            	dlg.close();
 	            }
@@ -651,10 +674,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
     }
 
-	private void fillModel(DefaultListModel model, Map<String, Template> templateMap)  {
+	private void fillModel(DefaultListModel model,Collection<String> templateNames)  {
 		model.removeAllElements();
 		
-		for ( Template template:templateMap.values())
+		for ( String template:templateNames)
 		{
 			model.addElement( template);
 		}

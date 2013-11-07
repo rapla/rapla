@@ -32,10 +32,6 @@ public interface ModificationEvent
     
     /** returns if any object of the specified type has changed or was removed.*/
     boolean isModified(RaplaType raplaType);
-
-    <T extends RaplaObject> Set<T> getRemoved(Collection<T> col);
-
-    <T extends RaplaObject> Set<T> getChanged(Collection<T> col);
     
     /** returns all removed objects .*/
     Set<RaplaObject> getRemoved();

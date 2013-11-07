@@ -201,11 +201,17 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
 
     public void addAllocatable(Allocatable allocatable) {
         checkWritable();
-        if (getReferenceHandler().isRefering((RefEntity<?>)allocatable))
-            return;
-        allocatables = null;
-        getReferenceHandler().add((RefEntity<?>)allocatable);
+        addAllocatablePrivate(allocatable);
     }
+
+	private void addAllocatablePrivate(Allocatable allocatable) {
+		if (getReferenceHandler().isRefering((RefEntity<?>)allocatable))
+            return;
+		synchronized (this) {
+			allocatables = null;
+			getReferenceHandler().add((RefEntity<?>)allocatable);
+		}
+	}
 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
@@ -231,43 +237,47 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
     }
 
     private void updateAppointmentArray() {
-        if (appointments != null)
+    	if (appointments != null)
             return;
-        Collection<Appointment> appointmentList = new TreeSet<Appointment>(new AppointmentStartComparator());
-        for (RefEntity<?> o:super.getSubEntities())
+        synchronized (this)
         {
-            if (o.getRaplaType() == Appointment.TYPE ) {
-                appointmentList.add((Appointment)o);
-                //              System.out.println("Appointment " + o + " belongs to reservation " + this);
-            }
+    		Collection<Appointment> appointmentList = new TreeSet<Appointment>(new AppointmentStartComparator());
+        	for (RefEntity<?> o:super.getSubEntities())
+       		{
+            	if (o.getRaplaType() == Appointment.TYPE ) {
+                	appointmentList.add((Appointment)o);
+                	//              System.out.println("Appointment " + o + " belongs to reservation " + this);
+            	}
+       		}
+        	appointments = appointmentList.toArray(new Appointment[appointmentList.size()]);
         }
-
-        appointments = appointmentList.toArray(new Appointment[appointmentList.size()]);
-        //notwendig?
-        //Arrays.sort(appointments, new AppointmentStartComparator());
     }
 
     private void updateAllocatableArrays() {
         if (allocatables != null)
             return;
-        Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
-        Collection<Allocatable> resourceList = new ArrayList<Allocatable>();
-        Collection<Allocatable> personList = new ArrayList<Allocatable>();
-        for (RefEntity<?> o: super.getReferences())
+        synchronized (this)
         {
-            if (o.getRaplaType() == Allocatable.TYPE) {
-            	Allocatable alloc = (Allocatable) o;
-            	if (alloc.isPerson()) {
-            		personList.add(alloc);
-            	} else {
-            		resourceList.add(alloc);
+
+	        Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
+    	    Collection<Allocatable> resourceList = new ArrayList<Allocatable>();
+       		Collection<Allocatable> personList = new ArrayList<Allocatable>();
+       		for (RefEntity<?> o: super.getReferences())
+        	{
+            	if (o.getRaplaType() == Allocatable.TYPE) {
+            		Allocatable alloc = (Allocatable) o;
+            		if (alloc.isPerson()) {
+            			personList.add(alloc);
+            		} else {
+            			resourceList.add(alloc);
+            		}
+                	allocatableList.add(alloc);
             	}
-                allocatableList.add(alloc);
-            }
+        	}
+        	allocatables = allocatableList.toArray(new Allocatable[ allocatableList.size()]);
+        	persons = personList.toArray(new Allocatable[ personList.size()]);
+        	resources = resourceList.toArray(new Allocatable[ resourceList.size()]);
         }
-        allocatables = allocatableList.toArray(new Allocatable[ allocatableList.size()]);
-        persons = personList.toArray(new Allocatable[ personList.size()]);
-        resources = resourceList.toArray(new Allocatable[ resourceList.size()]);
     }
 
     public boolean hasAllocated(Allocatable allocatable) {
@@ -286,14 +296,22 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
     }
 
     public void setRestriction(Allocatable allocatable,Appointment[] appointments) {
-        Object id = ((RefEntity<?>)allocatable).getId();
-        Assert.notNull(id,"Allocatable object has no ID");
+    	// FIXME add checkWritable on this
+    	//checkWritable();
+        setRestrictionPrivate(allocatable, appointments);
+    }
+
+	protected void setRestrictionPrivate(Allocatable allocatable,
+			Appointment[] appointments) {
+		Object id = ((RefEntity<?>)allocatable).getId();
         if ( !hasAllocated( allocatable))
         {
-            addAllocatable( allocatable);
+            addAllocatablePrivate( allocatable);
         }
+        Assert.notNull(id,"Allocatable object has no ID");
         setRestrictionForId(id,appointments);
-    }
+	}
+
     
     public void setRestriction(Appointment appointment, Allocatable[] restrictedAllocatables) {
     	for ( Allocatable alloc: restrictedAllocatables)
@@ -301,14 +319,15 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
             Collection<Appointment> restrictions = new LinkedHashSet<Appointment>();
             if ( !hasAllocated( alloc))
             {
-                addAllocatable( alloc);
+                addAllocatablePrivate( alloc);
             }
             else
             {
                 restrictions.addAll(Arrays.asList(getRestriction(alloc) ));    
             }
             restrictions.add( appointment);
-            setRestriction( alloc, restrictions.toArray(Appointment.EMPTY_ARRAY));
+            Object id = ((RefEntity<?>)alloc).getId();
+            setRestrictionForId( id, restrictions.toArray(Appointment.EMPTY_ARRAY));
         }
     }
 
@@ -440,8 +459,10 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
 
     @SuppressWarnings("unchecked")
 	public void copy(Reservation obj) {
-        super.copy((SimpleEntity<Reservation>)obj);
-        copy((ReservationImpl)obj,this);
+    	synchronized (this) {
+    		super.copy((SimpleEntity<Reservation>)obj);
+    		copy((ReservationImpl)obj,this);
+    	}
     }
 
     public Reservation deepClone() {

@@ -29,7 +29,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
+import java.util.TimeZone;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -46,6 +48,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.PreferenceReader;
@@ -67,7 +70,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     LocalCache cache;
     private EntityStore entityStore;
     private RaplaLocale raplaLocale;
-
+    
     Collection<Storage<T>> subStores = new ArrayList<Storage<T>>();
     Connection con;
     int lastParameterIndex; /** first paramter is 1 */
@@ -89,9 +92,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         {
             this.cache = context.lookup( LocalCache.class); 
         }
-        this.raplaLocale =  context.lookup(RaplaLocale.class);
-        datetimeCal =Calendar.getInstance( raplaLocale.getSystemTimeZone());
-        raplaLocale.getSystemTimeZone();
+        this.raplaLocale = context.lookup( RaplaLocale.class);
+        datetimeCal =Calendar.getInstance( getSystemTimeZone());
         logger = context.lookup( Logger.class);
         lastParameterIndex = entries.length;
         tableName = table;
@@ -119,14 +121,23 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			return null;
 		}
 		long time = timestamp.getTime();
-		Date returned = new Date( raplaLocale.toRaplaTime( raplaLocale.getSystemTimeZone(),time));
+		TimeZone systemTimeZone = getSystemTimeZone();
+		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
+		Date returned = new Date(time + offset);
 		return returned;
+	}
+
+	protected TimeZone getSystemTimeZone() {
+		return TimeZone.getDefault();
 	}
 	
 	protected void setDate(PreparedStatement stmt,int column, Date time) throws SQLException {
     	if ( time != null) 
         {
-            long timeInMillis = raplaLocale.fromRaplaTime(raplaLocale.getSystemTimeZone(),time.getTime());
+    		TimeZone systemTimeZone = getSystemTimeZone();
+    		// same as TimeZoneConverterImpl.fromRaplaTime
+    		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
+            long timeInMillis = time.getTime() - offset;
 			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
         }
         else
@@ -708,7 +719,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         for ( RefEntity<T> entity:entities)
         {
             
-            if (cache.get( entity.getId())!= null) {
+            if (cache.tryResolve( entity.getId())!= null) {
     		    toUpdate.add( entity );
     		} else {
     		    toInsert.add( entity );
@@ -828,7 +839,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     	{
     		return null;
     	}
-        return entityStore.get( id);  
+        return entityStore.tryResolve( id);  
     }
     
     protected void setText(PreparedStatement stmt, int columIndex, String xml)

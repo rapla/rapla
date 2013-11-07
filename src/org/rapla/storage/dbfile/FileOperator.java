@@ -75,8 +75,7 @@ import org.rapla.storage.xml.RaplaMainWriter;
  */
 final public class FileOperator extends LocalAbstractCachableOperator
 {
- 
-	private File storageFile;
+ 	private File storageFile;
     private URL loadingURL;
 
     private final String encoding;
@@ -189,12 +188,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
     	if ( wasConnected)
     	{
 	    	getLogger().info("Disconnecting: " + getURL());
+	    	cache.clearAll();
+	        idTable.setCache( cache );
 	        isConnected = false;
 	        fireStorageDisconnected("");
 	    	getLogger().debug("Disconnected");
     	}
     }
-
+    
     final public void refresh() throws RaplaException
     {
         getLogger().warn( "Incremental refreshs are not supported" );

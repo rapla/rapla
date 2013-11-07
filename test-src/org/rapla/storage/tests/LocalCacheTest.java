@@ -35,7 +35,9 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
 
 public class LocalCacheTest extends RaplaTestCase {
@@ -97,28 +99,34 @@ public class LocalCacheTest extends RaplaTestCase {
     }
 
     public void test2() throws Exception {
-        CachableStorageOperator storage = raplaContainer.lookup(CachableStorageOperator.class , "raplafile");
+        final CachableStorageOperator storage = raplaContainer.lookup(CachableStorageOperator.class , "raplafile");
         storage.connect();
-        LocalCache cache = storage.getCache();
-        {
-            Iterator<?> it = cache.getCollection(Period.TYPE).iterator();
-            Period period = (Period) it.next();
-            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
-            assertEquals(0,reservations.size());
-            period = (Period) it.next();
-            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
-            assertEquals(2, reservations.size());
-            User user = cache.getUser("homer");
-            reservations = storage.getReservations(user,null,null,null);
-            assertEquals(3, reservations.size());
-            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd());
-            assertEquals(2, reservations.size());
-        }
-        {
-            Iterator<Allocatable> it = cache.getCollection(Allocatable.class).iterator();
-            assertEquals("erwin",it.next().getName(locale));
-            assertEquals("Room A66",it.next().getName(locale));
-        }
+        storage.runWithReadLock(new CachableStorageOperatorCommand() {
+			
+			@Override
+			public void execute(LocalCache cache) throws RaplaException {
+				{
+		            Iterator<?> it = cache.getCollection(Period.TYPE).iterator();
+		            Period period = (Period) it.next();
+		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
+		            assertEquals(0,reservations.size());
+		            period = (Period) it.next();
+		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
+		            assertEquals(2, reservations.size());
+		            User user = cache.getUser("homer");
+		            reservations = storage.getReservations(user,null,null,null);
+		            assertEquals(3, reservations.size());
+		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd());
+		            assertEquals(2, reservations.size());
+		        }
+		        {
+		            Iterator<Allocatable> it = cache.getCollection(Allocatable.class).iterator();
+		            assertEquals("erwin",it.next().getName(locale));
+		            assertEquals("Room A66",it.next().getName(locale));
+		        }		
+			}
+		});
+       
     }
     
     public void testConflicts() throws Exception {

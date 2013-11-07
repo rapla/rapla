@@ -234,7 +234,7 @@ and all the rest</dynatt:description>
          </dynatt:event>
          <rapla:appointment start-date="2001-10-16" start-time="12:00:00" end-date="2001-10-16" end-time="19:00:00"/>
          <rapla:appointment start-date="2006-09-04" start-time="13:00:00" end-date="2006-09-04" end-time="14:00:00">
-            <rapla:repeating type="monthly"/>
+            <rapla:repeating type="monthly" end-date="2010-09-04"/>
          </rapla:appointment>
          <rapla:allocate idref="resource_1"/>
          <rapla:allocate idref="resource_2"/>

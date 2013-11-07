@@ -84,6 +84,11 @@ public class UpdateResult implements ModificationEvent
         
         return list.iterator();
     }
+    
+    public Iterable<UpdateOperation> getOperations()
+    {
+    	return Collections.unmodifiableCollection(operations);
+    }
 
     protected <T extends UpdateOperation> Set<RaplaObject> getObject( final Class<T> operationClass ) {
         Set<RaplaObject> set = new HashSet<RaplaObject>();
@@ -237,25 +242,16 @@ public class UpdateResult implements ModificationEvent
 		return hasChanged(object) || isRemoved( object);
 	}
 
-    @SuppressWarnings("unchecked")
-	private  <T extends RaplaObject> Set<T> retainObjects(Collection<RaplaObject> set,Collection<T> col) {
-        HashSet<RaplaObject> tempSet = new HashSet<RaplaObject>(set.size());
-        tempSet.addAll(set);
-        tempSet.retainAll(col);
-        if (tempSet.size() >0)
-           return (Set<T>) tempSet;
-        else
-            return Collections.emptySet();
-    }
-
-    /** returns the modified objects from a given set.*/
+	/** returns the modified objects from a given set.
+     * @deprecated use the retainObjects instead in combination with getChanged*/
     public <T extends RaplaObject> Set<T> getChanged(Collection<T> col) {
-        return retainObjects(getChanged(),col);
+        return RaplaType.retainObjects(getChanged(),col);
     }
 
-    /** returns the removed objects from a given set.*/
+    /** returns the modified objects from a given set.
+     * @deprecated use the retainObjects instead in combination with getChanged*/
     public <T extends RaplaObject> Set<T> getRemoved(Collection<T> col) {
-        return retainObjects(getRemoved(),col);
+        return RaplaType.retainObjects(getRemoved(),col);
     }
 
 	public Set<RaplaObject> getChanged() {
@@ -273,10 +269,6 @@ public class UpdateResult implements ModificationEvent
 		return !operations.isEmpty();
 	}
 
-}
-
-interface UpdateOperation {
-    public RaplaObject getCurrent();
 }
     
 

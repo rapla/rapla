@@ -43,7 +43,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
@@ -51,6 +50,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
@@ -62,8 +62,6 @@ import org.rapla.storage.xml.RaplaMainWriter;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 public class DBOperator extends LocalAbstractCachableOperator
-implements
-Disposable
 {
     private String driverClassname;
     protected String datasourceName;
@@ -266,20 +264,8 @@ Disposable
         getLogger().warn("Incremental refreshs are not supported");
     }
 
-    private void forceDisconnect() {
-        try 
-        {
-            disconnect();
-        } 
-        catch (Exception ex) 
-        {
-            getLogger().error("Error during disconnect ", ex);
-        }
-    }
-
     synchronized public void disconnect() throws RaplaException 
     {
-
     	if (!isConnected())
     		return;
         backupData();
@@ -308,12 +294,6 @@ Disposable
     	getLogger().info("Disconnected");
     }
 
-    synchronized public void dispose() 
-    {
-        forceDisconnect();
-    }
-    
-    
     public final void loadData() throws RaplaException {
     	Connection c = null;
     	Lock writeLock = writeLock();
@@ -353,7 +333,18 @@ Disposable
     		    	throw new RaplaException("Can't import, because db is configured as source.");
     		    }
     		    sourceOperator.connect();
-    		    saveData(c,sourceOperator.getCache());
+    		    final Connection conn = c;
+    		    sourceOperator.runWithReadLock( new CachableStorageOperatorCommand() {
+					
+					@Override
+					public void execute(LocalCache cache) throws RaplaException {
+		    		    try {
+							saveData(conn, cache);
+						} catch (SQLException e) {
+							throw new RaplaException( e);
+						}
+					}
+				});
     		    close( c);
     		    c = null;
     		    c = createConnection();
@@ -610,7 +601,7 @@ Disposable
     	}
         try 
         {
-        	getLogger().info("Closing "  + connection);
+        	getLogger().debug("Closing "  + connection);
         	connection.close();
         } 
         catch (SQLException e) 

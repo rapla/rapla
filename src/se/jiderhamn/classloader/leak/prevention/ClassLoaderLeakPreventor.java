@@ -1,5 +1,7 @@
 /*
-   Copyright 2012 Mattias Jiderhamn
+   
+  
+  Copyright 2012 Mattias Jiderhamn
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -202,7 +204,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       error("java.lang.ThreadLocal$ThreadLocalMap.table not found; something is seriously wrong!");
   }
 
-  JettyJMXRemover jettyJMXRemover;
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Implement javax.servlet.ServletContextListener 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,14 +227,6 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     
     final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 
-    // If you enable jmx support in jetty 8 or 9  some mbeans (e.g. for the servletholder or sessionmanager) are instanciated in the web application thread 
-    // and a reference to the WebappClassloader is stored in a private ObjectMBean._loader which is unfortunatly not the classloader that loaded the class.
-    // So for unregisterMBeans to work even for the jetty mbeans we need to access the MBeanContainer class of the jetty container.  
-    try {
-		jettyJMXRemover = new JettyJMXRemover(getWebApplicationClassLoader());
-	} catch (Exception ex) {
-		error( ex);
-	}
     
     try {
       // If package org.jboss is found, we may be running under JBoss
@@ -486,6 +480,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
       }
     }
     
+   
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -516,6 +511,16 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   /** Unregister MBeans loaded by the web application class loader */
   protected void unregisterMBeans() {
     try {
+    	JettyJMXRemover jettyJMXRemover = null;
+        // If you enable jmx support in jetty 8 or 9  some mbeans (e.g. for the servletholder or sessionmanager) are instanciated in the web application thread 
+        // and a reference to the WebappClassloader is stored in a private ObjectMBean._loader which is unfortunatly not the classloader that loaded the class.
+        // So for unregisterMBeans to work even for the jetty mbeans we need to access the MBeanContainer class of the jetty container.  
+        try {
+    		jettyJMXRemover = new JettyJMXRemover(getWebApplicationClassLoader());
+    	} catch (Exception ex) {
+    		error( ex);
+    	}
+
       MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
       final Set<ObjectName> allMBeanNames = mBeanServer.queryNames(new ObjectName("*:*"), null);
       for(ObjectName objectName : allMBeanNames) {
@@ -701,7 +706,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   protected void deregisterPropertyEditors() {
     final Field registryField = findField(PropertyEditorManager.class, "registry");
     if(registryField == null) {
-      error("Internal registry of " + PropertyEditorManager.class.getName() + " not found");
+      info("Internal registry of " + PropertyEditorManager.class.getName() + " not found");
     }
     else {
       try {

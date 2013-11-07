@@ -304,8 +304,10 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
         if ( permissionArrayUpToDate )
             return;
 
-        permissionArray = permissions.toArray(new PermissionImpl[] {});
-        permissionArrayUpToDate = true;
+         synchronized ( this) {
+            permissionArray = permissions.toArray(new PermissionImpl[] {});
+            permissionArrayUpToDate = true;
+		}
     }
 
     public Iterable<RefEntity<?>> getReferences() {
@@ -389,8 +391,10 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
 
     @SuppressWarnings("unchecked")
 	public void copy(Allocatable obj) {
-        super.copy((SimpleEntity<Allocatable>)obj);
-        copy((AllocatableImpl)obj,this);
+    	synchronized ( this) {
+            super.copy((SimpleEntity<Allocatable>)obj);
+            copy((AllocatableImpl)obj,this);
+		}
     }
 
     public Allocatable deepClone() {

@@ -103,9 +103,9 @@ public final class ReservationControllerTest extends GUITestCase {
 		mutex.release();
 		
 		//Testing undo & redo function
-		getFacade().getCommandHistory().undo();
+		clientService.getFacade().getCommandHistory().undo();
 		assertEquals(from, reservation.getAppointments()[0].getStart());
-		getFacade().getCommandHistory().redo();
+		clientService.getFacade().getCommandHistory().redo();
 		assertEquals(DateTools.addDay(from), reservation.getAppointments()[0].getStart());
 	}
 	

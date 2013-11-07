@@ -265,7 +265,9 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
 
     /** copies the references from the entity to this */
     protected void copy(SimpleEntity<T> entity) {
-        copy(entity,this,true);
+    	synchronized ( this) {
+            copy(entity,this,true);
+		}
     }
 
     protected void deepClone(SimpleEntity<T> clone) {

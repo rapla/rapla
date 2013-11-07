@@ -755,15 +755,15 @@ public class MainServlet extends HttpServlet {
             	StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
             	if ( operator.isConnected())
             	{
-	            	try 
-	            	{
-		            	User user = (User) ((CachableStorageOperator)operator).resolveId( userId); 
-		                ((RemoteSessionImpl)remoteSession).setUser( user);
+            		User user = (User) ((CachableStorageOperator)operator).tryResolve( userId);
+            		if ( user != null)
+            		{
+            			((RemoteSessionImpl)remoteSession).setUser( user);
 	            	}
-	            	catch (EntityNotFoundException ex)
-	            	{
-	            		throw ex;
-	            	}
+            		else
+            		{
+            			throw new EntityNotFoundException("User with id " + userId + " not found.");
+            		}
             	}
             	else
             	{

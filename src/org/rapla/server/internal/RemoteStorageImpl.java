@@ -68,7 +68,6 @@ import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageUpdateListener;
@@ -525,7 +524,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     ArrayList<RefEntity<?>> completeList = new ArrayList<RefEntity<?>>();
 	                for ( SimpleIdentifier id:ids)
                 	{
-	                    RefEntity<?> entity = operator.resolveId(id);
+	                    RefEntity<?> entity = operator.resolve(id);
 	                    if ( entity.getRaplaType() == Reservation.TYPE)
                     	{
                     		checkAndMakeReservationsAnonymous(sessionUser,	entity);
@@ -556,7 +555,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
                     for ( SimpleIdentifier id:allocatableIds)
                     {
-                    	RefEntity<?> entity = operator.resolveId(id);
+                    	RefEntity<?> entity = operator.resolve(id);
                     	Allocatable allocatable = (Allocatable) entity;
 	                    security.checkRead(sessionUser, entity);
 						allocatables.add( allocatable);
@@ -601,7 +600,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					// we can safely change the reservation info here because we cloned it in transaction safe before
 					reservation.setReadOnly( false);
-					DynamicType anonymousReservationType = operator.getCache().getAnonymousReservationType();
+					DynamicType anonymousReservationType = operator.getAnonymousReservationType();
 					reservation.setClassification( anonymousReservationType.newClassification());
 				}
 			}
@@ -650,7 +649,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             
             public boolean canChangePassword() throws RaplaException {
                 checkAuthentified();
-                return authenticationStore == null && operator.canChangePassword();
+                return operator.canChangePassword();
             }
 
             public void changePassword(String username
@@ -814,15 +813,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     User user;
                     if ( evt.getUserId() != null)
                     {
-                        user = (User) operator.resolveId(evt.getUserId());
+                        user = (User) operator.resolve(evt.getUserId());
                     }
                     else
                     {
                         user = session.getUser();
                     }
                     Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
-                    LocalCache cache = operator.getCache();
-                    EntityStore resolver = new EntityStore(cache, cache.getSuperCategory());
+                    EntityStore resolver = new EntityStore(operator, operator.getSuperCategory());
             		resolver.addAll(storeObjects);
                     for (RefEntity<?> entity:storeObjects) {
                         if (getLogger().isDebugEnabled())
@@ -998,7 +996,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					toAdd.add(reservation);
 					Comparable id = reservation.getId();
-					RefEntity<?> inCache = operator.getCache().get( id);
+					RefEntity<?> inCache;
+					try {
+						inCache = operator.resolve( id);
+					} catch (EntityNotFoundException e) {
+						inCache = null;
+					}
 					if ( inCache != null && inCache.getVersion() > reservation.getVersion())
 					{
 						getLogger().error("Try to send an older version of the reservation to the client " + reservation.cast().getName( raplaLocale.getLocale()));
@@ -1126,7 +1129,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				User sessionUser = getSessionUser();
 				for ( SimpleIdentifier id:allocatableIds)
 				{
-					RefEntity<?> entity = operator.resolveId(id);
+					RefEntity<?> entity = operator.resolve(id);
 					allocatables.add( (Allocatable) entity);
 					security.checkRead(sessionUser, entity);
 				}
@@ -1139,7 +1142,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					try
 					{
-						RefEntity<?> entity = operator.resolveId(reservationId);
+						RefEntity<?> entity = operator.resolve(reservationId);
 						ignoreConflictsWith.add( (Reservation) entity);
 					}
 					catch (EntityNotFoundException ex)
@@ -1157,17 +1160,25 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				for  (SimpleIdentifier id: referencedIds)
 				{
 					buf.append("{ id=");
-					buf.append(id.toString());
-					buf.append(": ");
-					RefEntity<?> refEntity = operator.getCache().get(id);
-					if ( refEntity != null )
+					if ( id != null)
 					{
-						buf.append( refEntity.toString());
+						buf.append(id.toString());
+						buf.append(": ");
+						RefEntity<?> refEntity = operator.tryResolve(id);
+						if ( refEntity != null )
+						{
+							buf.append( refEntity.toString());
+						}
+						else
+						{
+							buf.append("NOT FOUND");
+						}
 					}
 					else
 					{
-						buf.append("NOT FOUND");
+						buf.append( "is null");
 					}
+					
 					buf.append("},  ");
 				}
 				buf.append("}");

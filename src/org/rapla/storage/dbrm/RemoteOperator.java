@@ -315,7 +315,7 @@ public class RemoteOperator
         }
     }
 
-    synchronized private List<RefEntity<?>> addToCache(EntityList list, boolean useCache) throws RaplaException {
+    private List<RefEntity<?>> addToCache(EntityList list, boolean useCache) throws RaplaException {
         List<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
     	EntityResolver entityResolver = createEntityStore( list, useCache ? cache : null );
         synchronized (cache) {
@@ -540,9 +540,9 @@ public class RemoteOperator
     	return result;
 	}
     
-    public RefEntity<?> resolveId(Comparable id) throws EntityNotFoundException {
+    public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
         try {
-            return super.resolveId(id);
+            return super.resolve(id);
         } catch (EntityNotFoundException ex) {
             try {
             	SimpleIdentifier castedId = (SimpleIdentifier) id;
@@ -560,7 +560,7 @@ public class RemoteOperator
             } catch (RaplaException rex) {
             	throw new EntityNotFoundException("Object for id " + id.toString() + " not found due to " + ex.getMessage());
             }
-            return super.resolveId(id);
+            return super.resolve(id);
         }
     }
     
@@ -601,8 +601,8 @@ public class RemoteOperator
 		EntityStore resolver = new EntityStore(parentCache, cache.getSuperCategory())
 		{
 			@Override
-			public RefEntity<?> get(Comparable id) {
-				RefEntity<?> refEntity = super.get(id);
+			public RefEntity<?> resolve(Comparable id) {
+				RefEntity<?> refEntity = super.tryResolve(id);
 				if ( refEntity == null)
 				{
 					if ( id instanceof SimpleIdentifier)
@@ -613,7 +613,7 @@ public class RemoteOperator
 						{
 							AllocatableImpl unresolved = new AllocatableImpl(null, null);
 							unresolved.setId( castedId);
-							unresolved.setClassification( cache.getUnresolvedAllocatableType().newClassification());
+							unresolved.setClassification( getUnresolvedAllocatableType().newClassification());
 							return unresolved;
 						}
 						// if the type is not found we test if its an anonymous type (key = 0)
@@ -621,8 +621,8 @@ public class RemoteOperator
 						{
 							if ( ((SimpleIdentifier) id).getKey() == 0)
 							{
-								DynamicTypeImpl unresolvedReservation = cache.getAnonymousReservationType();
-								return unresolvedReservation;
+								DynamicType unresolvedReservation = getAnonymousReservationType();
+								return (RefEntity<?>) unresolvedReservation;
 							}
 						}
 					}
@@ -631,7 +631,7 @@ public class RemoteOperator
 			}
 			
 			public DynamicType getDynamicType(String key) {
-				DynamicType unresolvedReservation = cache.getAnonymousReservationType();
+				DynamicType unresolvedReservation = getAnonymousReservationType();
 				if ( key.equals(unresolvedReservation.getElementKey()))
 				{
 					return unresolvedReservation;
@@ -679,7 +679,7 @@ public class RemoteOperator
                 RefEntity<?> entity =  it.next();
                 if ( isStorableInCache(entity))
                 {
-	                RefEntity<?> cachedVersion = cache.get(entity.getId());
+	                RefEntity<?> cachedVersion = cache.tryResolve(entity.getId());
 	                // Ignore object if its not newer than the one in cache.
 	                if (cachedVersion != null && cachedVersion.getVersion() >= entity.getVersion()) {
 	                    //getLogger().debug("already on client " + entity + " version " + cachedVersion.getVersion());
@@ -689,16 +689,7 @@ public class RemoteOperator
                 }
             }
             
-    		// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
-            List<RefEntity<?>>removedObjectsWithoutConflicts = new LinkedList<RefEntity<?>>(removeObjects);
-            for ( Iterator<RefEntity<?>> it = removedObjectsWithoutConflicts.iterator();it.hasNext();)
-            {
-            	RefEntity<?> obj = it.next();
-            	if ( obj instanceof Conflict) 
-            	{
-            		it.remove();
-            	}
-            }
+    	
 
             Collection<RefEntity<?>> allObject = evt.getAllObjects();
 			RemoteOperator.super.resolveEntities
@@ -712,6 +703,16 @@ public class RemoteOperator
             		referenceObjects
             		,createEntityStore(allObject,cache)
              );
+			// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
+            List<RefEntity<?>>removedObjectsWithoutConflicts = new LinkedList<RefEntity<?>>(removeObjects);
+            for ( Iterator<RefEntity<?>> it = removedObjectsWithoutConflicts.iterator();it.hasNext();)
+            {
+            	RefEntity<?> obj = it.next();
+            	if ( obj instanceof Conflict) 
+            	{
+            		it.remove();
+            	}
+            }
 			RemoteOperator.super.resolveEntities
                 (
                 	removedObjectsWithoutConflicts
@@ -754,7 +755,7 @@ public class RemoteOperator
 			HashMap<RefEntity<?>, RefEntity<?>> oldEntityMap = new HashMap<RefEntity<?>, RefEntity<?>>();
 			for ( RefEntity<?> update: toUpdate)
 			{
-				RefEntity<?> newEntity = cache.get( update.getId());
+				RefEntity<?> newEntity = cache.tryResolve( update.getId());
 				if ( newEntity != null)
 				{
 					oldEntityMap.put( newEntity, update);

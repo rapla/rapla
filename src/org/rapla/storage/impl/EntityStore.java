@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.components.util.Assert;
+import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -21,14 +22,13 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.storage.LocalCache;
 
 public class EntityStore implements EntityResolver {
     HashMap<Object,RefEntity<?>> entities = new HashMap<Object,RefEntity<?>>();
     HashSet<Comparable> idsToRemove = new HashSet<Comparable>();
     HashSet<Comparable> idsToStore = new HashSet<Comparable>();
     HashSet<Comparable> idsToReference = new HashSet<Comparable>();
-    LocalCache parent;
+    EntityResolver parent;
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashSet<Allocatable> allocatables = new HashSet<Allocatable>();
     
@@ -36,9 +36,9 @@ public class EntityStore implements EntityResolver {
     HashMap<Object,String> passwordList = new HashMap<Object,String>();
     long repositoryVersion;
     
-    public EntityStore(LocalCache parent,CategoryImpl superCategory) {
+    public EntityStore(EntityResolver parent,Category superCategory) {
         this.parent = parent;
-        this.superCategory = superCategory;
+        this.superCategory = (CategoryImpl) superCategory;
        // put( superCategory);
     }
     
@@ -112,10 +112,10 @@ public class EntityStore implements EntityResolver {
 
     // Implementation of EntityResolver
     public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
-        RefEntity<?> result = get (id );
+        RefEntity<?> result = tryResolve(id );
         if ( result == null)
         {
-            throw new EntityNotFoundException("Object for id " + id.toString() + " not found", id);
+            throw new EntityNotFoundException("Object for id " + id.toString() + " not found",  id);
         }
         return result;
     }
@@ -153,7 +153,7 @@ public class EntityStore implements EntityResolver {
         return passwordList.get(userid);
     }
 
-    public RefEntity<?> get( Comparable id )
+    public RefEntity<?> tryResolve( Comparable id )
     {
     	Assert.notNull( id);
         RefEntity<?> entity = entities.get(id);
@@ -167,7 +167,7 @@ public class EntityStore implements EntityResolver {
       
         if (parent != null)
         {
-            return parent.get(id);
+            return parent.tryResolve(id);
             
         }
         return null;
@@ -176,9 +176,11 @@ public class EntityStore implements EntityResolver {
     public Collection<RaplaObject> getCollection( RaplaType raplaType )
     {
         List<RaplaObject> collection = new ArrayList<RaplaObject>();
-        for (RefEntity<?> obj: entities.values())
+        Iterator<RefEntity<?>> it = entities.values().iterator();
+        while (it.hasNext())
         {
-            if ( obj.getRaplaType() == raplaType)
+            RaplaObject obj = it.next();
+            if ( obj.getRaplaType().equals( raplaType))
             {
                 collection.add( obj);
             }

@@ -21,7 +21,6 @@ import org.rapla.RaplaTestCase;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.Provider;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 
 public class RemoteMethodSerializationTest extends RaplaTestCase {
@@ -42,15 +41,15 @@ public class RemoteMethodSerializationTest extends RaplaTestCase {
     
     
     public void testSerialization() throws Exception {
-		CachableStorageOperator operator = (CachableStorageOperator) getFacade().getOperator();
-		final LocalCache cache = operator.getCache();
-
+		final CachableStorageOperator operator = (CachableStorageOperator) getFacade().getOperator();
 		Provider<EntityStore> storeProvider = new Provider<EntityStore>() {
+			
 			public EntityStore get()  {
-				return new EntityStore( cache, cache.getSuperCategory());
+				return new EntityStore( operator, operator.getSuperCategory());
 			}
     		
 		};
+
 		RemoteMethodSerialization serialization = new RemoteMethodSerialization(getContext(), storeProvider);
 		Integer[][] array = new Integer[][]{};
 		String string = "{{},{0}}";
@@ -76,12 +75,10 @@ public class RemoteMethodSerializationTest extends RaplaTestCase {
     
 	  public void testEscape() throws Exception {
 	    	assertEquals( "\\23",RemoteMethodSerialization.unescape("\\\\23"));
-			CachableStorageOperator operator = (CachableStorageOperator) getFacade().getOperator();
-			final LocalCache cache = operator.getCache();
-
+			final CachableStorageOperator operator = (CachableStorageOperator) getFacade().getOperator();
 			Provider<EntityStore> storeProvider = new Provider<EntityStore>() {
 				public EntityStore get()  {
-					return new EntityStore( cache, cache.getSuperCategory());
+					return new EntityStore( operator, operator.getSuperCategory());
 				}
 	    		
 			};

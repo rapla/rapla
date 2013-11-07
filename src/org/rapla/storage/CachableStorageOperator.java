@@ -14,19 +14,27 @@
  */
 package org.rapla.storage;
 
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
 
-public interface CachableStorageOperator extends StorageOperator {
+public interface CachableStorageOperator extends StorageOperator, EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;
-    
-    LocalCache getCache();
+   
+	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     void authenticate(String username,String password) throws RaplaException;
     void saveData(LocalCache cache) throws RaplaException;
-    RefEntity<?> resolveId(Comparable id) throws EntityNotFoundException;
+    
+    DynamicType getUnresolvedAllocatableType(); 
+	
+	DynamicType getAnonymousReservationType();
 }
+
+
+
+
+
 
 
 

@@ -165,15 +165,18 @@ public class UserImpl extends SimpleEntity<User> implements User
     private void updateGroupArray() {
         if (groupArrayUpToDate)
             return;
-        Collection<Category> groupList = new ArrayList<Category>();
-        for( RefEntity<?> o:super.getReferences())
+        synchronized ( this )
         {
-            if (o.getRaplaType() == Category.TYPE) {
-                groupList.add((Category)o);
-            }
-        }
-        groups = groupList.toArray(Category.CATEGORY_ARRAY);
-        groupArrayUpToDate = true;
+        	Collection<Category> groupList = new ArrayList<Category>();
+        	for( RefEntity<?> o:super.getReferences())
+       	 	{
+            	if (o.getRaplaType() == Category.TYPE) {
+                	groupList.add((Category)o);
+            	}
+        	}
+        	groups = groupList.toArray(Category.CATEGORY_ARRAY);
+        	groupArrayUpToDate = true;
+    	}
     }
 
     static private void copy(UserImpl source,UserImpl dest) {
@@ -187,8 +190,10 @@ public class UserImpl extends SimpleEntity<User> implements User
 
     @SuppressWarnings("unchecked")
 	public void copy(User obj) {
-        super.copy((SimpleEntity<User>)obj);
-        copy((UserImpl) obj,this);
+    	synchronized (this) {
+            super.copy((SimpleEntity<User>)obj);
+            copy((UserImpl) obj,this);
+		}
     }
 
     public User deepClone() {

@@ -52,11 +52,13 @@ public class SecurityManagerTest extends ServletTestBase {
 		ClassificationFilter filter = roomType.newClassificationFilter();
 		filter.addEqualsRule("name", "erwin");
 		Allocatable resource = facade1.getAllocatables( filter.toArray())[0];
+		Appointment app1;
 		{
+			app1 = facade1.newAppointment( start, end ) ;
 			// First we create a reservation for the resource
 			Reservation event = facade1.newReservation();
 			event.getClassification().setValue("name", "taken");
-			event.addAppointment( facade1.newAppointment( start, end ) );
+			event.addAppointment( app1 );
 			event.addAllocatable( resource );
 			facade1.store( event );
 		}

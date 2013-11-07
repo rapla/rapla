@@ -12,8 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.framework.RaplaException;
 
@@ -89,5 +93,26 @@ public class RaplaType<T>  {
     public int hashCode() {
         return type.hashCode();
     }
+    
+    @SuppressWarnings("unchecked")
+	public static  <T extends RaplaObject> Set<T> retainObjects(Collection<RaplaObject> set,Collection<T> col) {
+	    HashSet<RaplaObject> tempSet = new HashSet<RaplaObject>(set.size());
+	    tempSet.addAll(set);
+	    tempSet.retainAll(col);
+	    if (tempSet.size() >0)
+	    {
+	    	HashSet<T> result = new HashSet<T>();
+	    	for ( RaplaObject t : tempSet)
+	    	{
+	    		result.add( (T)t);
+	    	}
+	    	return result;
+	    }
+	    else
+	    {
+	        return Collections.emptySet();
+	    }
+	}
+
 }
 

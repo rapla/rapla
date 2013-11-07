@@ -746,8 +746,10 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
     
     @SuppressWarnings("unchecked")
 	public void copy(Appointment obj) {
-        super.copy((SimpleEntity<Appointment>)obj);
-        copy((AppointmentImpl) obj,this);
+    	synchronized ( this) {
+            super.copy((SimpleEntity<Appointment>)obj);
+            copy((AppointmentImpl) obj,this);			
+		}
     }
 
     public Appointment deepClone() {

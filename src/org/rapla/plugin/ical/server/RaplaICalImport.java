@@ -36,6 +36,7 @@ import net.fortuna.ical4j.util.CompatibilityHints;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -48,23 +49,25 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
 
 public class RaplaICalImport extends RaplaComponent implements RemoteMethodFactory<ICalImport> {
 	private TimeZone timeZone;
+	private TimeZoneConverter timeZoneConverter;
 
 	public RaplaICalImport( RaplaContext context) throws RaplaContextException{
-		this( context, context.lookup(RaplaLocale.class).getImportExportTimeZone());
+		this( context, context.lookup(TimeZoneConverter.class).getImportExportTimeZone());
 	}
 	
-    public RaplaICalImport( RaplaContext context, TimeZone timeZone){
+    public RaplaICalImport( RaplaContext context, TimeZone timeZone) throws RaplaContextException{
 	    super( context);
 	    this.timeZone = timeZone;
+	    this.timeZoneConverter = context.lookup( TimeZoneConverter.class);
     }
 	
 	public ICalImport createService(final RemoteSession remoteSession) {
@@ -86,10 +89,10 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
         };
 	}
 	    
-	private Allocatable getAllocatable( final SimpleIdentifier id)  
+	private Allocatable getAllocatable( final SimpleIdentifier id)  throws EntityNotFoundException
 	{
 	    AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
-	    final RefEntity<?> refEntity = operator.getCache().get( id);
+	    final RefEntity<?> refEntity = operator.resolve( id);
 	    return (Allocatable) refEntity;
 	}
 
@@ -160,8 +163,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
         Iterator<Component> iterator = events.iterator();
 		List<Reservation> eventList = new ArrayList<Reservation>();
 	    Map<String, Reservation> reservationMap = new HashMap<String, Reservation>();
-	    RaplaLocale raplaLocale = getRaplaLocale();
-		while (iterator.hasNext()) {
+	    while (iterator.hasNext()) {
 			Component component = iterator.next();
 			if (component.getName().equalsIgnoreCase("VEVENT") ) {
                 try {
@@ -239,7 +241,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 		            }
 		            else
 		            {
-		            	Date begin = raplaLocale.toRaplaTime(timeZone, startdate);
+		            	Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
 			            Date end = new Date(begin.getTime() + duration_millis);
 			            appointment = newAppointment(user,begin, end);
 		            }
@@ -292,8 +294,8 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
                             {
                                 Period p = it.next();
                                
-								Date s = raplaLocale.toRaplaTime(timeZone, p.getStart());
-                                Date e = raplaLocale.toRaplaTime(timeZone,p.getEnd());
+								Date s = timeZoneConverter.toRaplaTime(timeZone, p.getStart());
+                                Date e = timeZoneConverter.toRaplaTime(timeZone,p.getEnd());
                                 Appointment singleAppointment = newAppointment( user,s, e);
                                 event.addAppointment( singleAppointment);
                             }
@@ -453,7 +455,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 				Date repeatingEnd;
 				if ( until instanceof DateTime)
 				{
-					repeatingEnd = getRaplaLocale().toRaplaTime( timeZone, until);
+					repeatingEnd = timeZoneConverter.toRaplaTime( timeZone, until);
 				}
 				else if ( until != null)
 				{

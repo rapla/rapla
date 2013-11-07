@@ -10,6 +10,7 @@ import javax.swing.SwingUtilities;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.rapla.client.ClientService;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -18,6 +19,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.tests.GUITestCase;
@@ -25,7 +27,6 @@ import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 
 public class UndoTests extends GUITestCase {
-	ReservationController control;
 
 //	ReservationEdit reservationEdit;
 	
@@ -39,7 +40,6 @@ public class UndoTests extends GUITestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		control = getService(ReservationController.class);
 //		reservationEdit = (ReservationEditImpl)control.getEditWindows()[0];
 //		reservationEdit.allocatableEdit
 //		selection = new AllocatableSelection(getContext(),true,null);
@@ -87,12 +87,16 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testMoveUndo() throws Exception{ 
-    	Allocatable nonPersistantAllocatable = getFacade().newResource();
-        Reservation nonPersistantEvent = getFacade().newReservation();
+		final ClientService clientService = getClientService();
+    	final ClientFacade facade = clientService.getFacade();
+		final ReservationController control = getService(ReservationController.class);
+
+    	Allocatable nonPersistantAllocatable = facade.newResource();
+        Reservation nonPersistantEvent = facade.newReservation();
         
         //Creating Event
         createEvent(nonPersistantAllocatable, nonPersistantEvent);
-        final Reservation persistantEvent = getFacade().getPersistant( nonPersistantEvent );
+        final Reservation persistantEvent = facade.getPersistant( nonPersistantEvent );
         final Appointment changedAppointment = changeTime( true);
 		int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
@@ -113,9 +117,9 @@ public class UndoTests extends GUITestCase {
         //it will create a new appointment and add it to the end of the array
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
         assertFalse((nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[persistantEvent.getAppointments().length-1].getStart())));
-        getFacade().getCommandHistory().undo();
+        facade.getCommandHistory().undo();
         assertTrue(nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[persistantEvent.getAppointments().length-1].getStart()));
-        getFacade().getCommandHistory().redo();
+        facade.getCommandHistory().redo();
         assertFalse(nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[persistantEvent.getAppointments().length-1].getStart()));
     }
 	
@@ -128,12 +132,16 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testResizeUndo() throws Exception{
-		Allocatable nonPersistantAllocatable = getFacade().newResource();
-        Reservation nonPersistantEvent = getFacade().newReservation();
+		final ClientService clientService = getClientService();
+    	final ClientFacade facade = clientService.getFacade();
+		final ReservationController control = getService(ReservationController.class);
+
+		Allocatable nonPersistantAllocatable = facade.newResource();
+        Reservation nonPersistantEvent = facade.newReservation();
         
         //Creating Event
         createEvent(nonPersistantAllocatable, nonPersistantEvent);
-        final Reservation persistantEvent = getFacade().getPersistant( nonPersistantEvent );
+        final Reservation persistantEvent = facade.getPersistant( nonPersistantEvent );
         final Appointment changedAppointment = changeTime( false);
         //control.resizeAppointment(persistantEvent.getAppointments()[0], persistantEvent.getAppointments()[0].getStart(), changedAppointment.getStart(), changedAppointment.getEnd(), null, null, false);
         
@@ -156,9 +164,9 @@ public class UndoTests extends GUITestCase {
         //it will create a new appointment and add it to the end of the array.
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
         assertFalse((nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[0].getStart())));
-        getFacade().getCommandHistory().undo();
+        facade.getCommandHistory().undo();
         assertTrue(nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[0].getStart()));
-        getFacade().getCommandHistory().redo();
+        facade.getCommandHistory().redo();
         assertFalse(nonPersistantEvent.getAppointments()[0].getStart().equals(persistantEvent.getAppointments()[0].getStart()));
     }
 	
@@ -171,12 +179,16 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testDeleteUndo() throws Exception{
-		Allocatable nonPersistantAllocatable = getFacade().newResource();
-        Reservation nonPersistantEvent = getFacade().newReservation();
+		final ClientService clientService = getClientService();
+    	final ClientFacade facade = clientService.getFacade();
+		final ReservationController control = getService(ReservationController.class);
+
+		Allocatable nonPersistantAllocatable = facade.newResource();
+        Reservation nonPersistantEvent = facade.newReservation();
         
         //Creating Event
         createEvent(nonPersistantAllocatable, nonPersistantEvent);
-        final Reservation persistantEvent = getFacade().getPersistant( nonPersistantEvent );
+        final Reservation persistantEvent = facade.getPersistant( nonPersistantEvent );
     	int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
 			
@@ -192,22 +204,22 @@ public class UndoTests extends GUITestCase {
         Reservation exist=null;
         try {
         	//if you deleted the whole event, it will throw an exception at this point
-        	exist = getFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getPersistant(nonPersistantEvent);
         	
         	//checks if an appointment was deleted (not used if exception is thrown)
         	assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
 		} catch (EntityNotFoundException e) {
-			getFacade().getCommandHistory().undo();
+			facade.getCommandHistory().undo();
 		}
         try {
-        	exist = getFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getPersistant(nonPersistantEvent);
         	assertTrue(exist !=null);
 		} catch (EntityNotFoundException e) {
 			e.printStackTrace();
 		}
-        getFacade().getCommandHistory().redo();
+        facade.getCommandHistory().redo();
         try {
-        	exist = getFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getPersistant(nonPersistantEvent);
         	assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
 		} catch (Exception e) {
 		}

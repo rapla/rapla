@@ -34,6 +34,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.RaplaPageGenerator;
 
 public class Export2iCalServlet extends RaplaComponent implements RaplaPageGenerator {
@@ -82,7 +83,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		return newContext;
 	}
 
-	public synchronized void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		//this.response = response;
 
@@ -155,7 +156,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	 *            the Filename of the exported view
 	 * @return
 	 */
-	private synchronized CalendarModel getCalendarModel(Preferences preferences, User user, String filename) {
+	private CalendarModel getCalendarModel(Preferences preferences, User user, String filename) {
 		try {
 			final CalendarSelectionModel calModel = getClientFacade().newCalendarModel( user);
 			calModel.load(filename);
@@ -200,7 +201,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		}
 	}
 
-	private synchronized Reservation[] getAllReservations(final CalendarModel calModel) throws RaplaException {
+	private Reservation[] getAllReservations(final CalendarModel calModel) throws RaplaException {
         final RaplaLocale raplaLocale = getRaplaLocale();
         final java.util.Calendar calendar = raplaLocale.createCalendar();
 
@@ -214,7 +215,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		return calModel.getReservations();
 	}
 
-	private synchronized void write(final HttpServletResponse response, final Reservation[] reserv, String filename, final Preferences preferences) throws RaplaException, IOException {
+	private void write(final HttpServletResponse response, final Reservation[] reserv, String filename, final Preferences preferences) throws RaplaException, IOException {
 
 	    if (filename == null )
 	    {
@@ -228,7 +229,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 			throw new RaplaException("Error with returning '" + filename);
 		}
 		final RaplaContext context = getContext();
-		TimeZone timezone = raplaLocale.getImportExportTimeZone();
+		TimeZone timezone = context.lookup( TimeZoneConverter.class).getImportExportTimeZone();
 		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences, config);
 		final Calendar iCal = converter.createiCalender(reserv);
 		final CalendarOutputter calOutputter = new CalendarOutputter();

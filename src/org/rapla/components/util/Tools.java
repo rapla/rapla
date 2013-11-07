@@ -24,6 +24,8 @@ public abstract class Tools
     /**  same as new Object[0].*/
     public static final Object[] EMPTY_ARRAY = new Object[0];
     public static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
+    public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    
     /** test if 2 char arrays match. */
     public static boolean match(char[] p1, char[] p2) {
         boolean bMatch = true;

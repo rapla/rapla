@@ -119,7 +119,7 @@ public interface ModificationModule {
      * @throws RaplaException */
     void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects) throws RaplaException;
     
-    void setTemplate(Template template);
+    void setTemplateName(String templateName);
     
     String getTemplateName();
 

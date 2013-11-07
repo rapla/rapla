@@ -215,7 +215,12 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
     public Date getFirstConflictDate(final Date  fromDate, Date toDate) {
         Appointment a1  =getAppointment1();
         Appointment a2  =getAppointment2();
-        Date minEnd =  a1.getMaxEnd();
+        return getFirstConflictDate(fromDate, toDate, a1, a2);
+    }
+
+	static public Date getFirstConflictDate(final Date fromDate, Date toDate,
+			Appointment a1, Appointment a2) {
+		Date minEnd =  a1.getMaxEnd();
         if ( a1.getMaxEnd() != null && a2.getMaxEnd() != null && a2.getMaxEnd().before( a1.getMaxEnd())) {
             minEnd = a2.getMaxEnd();
         }
@@ -255,40 +260,67 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
         }
         return null;
     }
-	public static void addConflicts(Collection<Conflict> conflictList, Appointment appointment1, Appointment appointment2,   Allocatable allocatable,Date today)
+	public static void addConflicts(Collection<Conflict> conflictList, Allocatable allocatable,Appointment appointment1, Appointment appointment2)
 	{
+        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2 );
+        // Rapla 1.4: Don't add conflicts twice
+        if (!contains(conflict, conflictList) )
+        {
+            conflictList.add(conflict);
+        }
+	}
+	
+	public boolean endsBefore(Date date )
+	{
+		Appointment appointment1 = getAppointment1();
+		Appointment appointment2 = getAppointment2();
+		boolean result = endsBefore( appointment1, appointment2, date);
+		return result;
+	}
+	
+	public static boolean isConflict(Appointment appointment1,Appointment appointment2, Date today) {
 		// Don't add conflicts, when in the past
-		Date maxEnd1 = appointment1.getMaxEnd();
-		Date maxEnd2 = appointment2.getMaxEnd();
-		if (maxEnd1 != null && maxEnd1.before( today))
+		if (endsBefore(appointment1, appointment2, today))
 		{
-			return;
-		}
-		if (maxEnd2 != null && maxEnd2.before( today))
-		{
-			return;
+			return false;
 		}
 		if (appointment1.equals(appointment2))
-			return;
+			return false;
 		if (RaplaComponent.isTemplate( appointment1))
 		{
-			return;
+			return false;
 		}
 		if (RaplaComponent.isTemplate( appointment2))
 		{
-			return;
+			return false;
 		}
-	    {
-	        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2 );
-	        
-	        // Rapla 1.4: Don't add conflicts twice
-	        if (!contains(conflict, conflictList) )
-	        {
-	            conflictList.add(conflict);
-	        }
-	    }
+		Date maxEnd1 = appointment1.getMaxEnd();
+		Date maxEnd2 = appointment2.getMaxEnd();
+		Date checkEnd = maxEnd1;
+        if ( maxEnd2 != null && checkEnd !=null && maxEnd2.before( checkEnd) )
+        {
+        	checkEnd = maxEnd2;
+        }
+        if (checkEnd != null && ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
+        {
+        	return false;
+        }
+        return true;
 	}
 
+	protected static boolean endsBefore(Appointment appointment1,Appointment appointment2, Date date) {
+		Date maxEnd1 = appointment1.getMaxEnd();
+		Date maxEnd2 = appointment2.getMaxEnd();
+		if (maxEnd1 != null && maxEnd1.before( date))
+		{
+			return true;
+		}
+		if (maxEnd2 != null && maxEnd2.before( date))
+		{
+			return true;
+		}
+		return false;
+	}
 	public boolean hasAppointment(Appointment appointment) 
 	{
 		boolean result = getAppointment1().equals( appointment) || getAppointment2().equals( appointment);

@@ -43,6 +43,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.IdTable;
@@ -136,8 +137,11 @@ public class RemoteMethodSerialization extends RaplaComponent
     
 	public void serializeReturnValue(User user, Object result,
 			Appendable appendable) throws RaplaException, IOException {
-		RaplaContext ioContext =  createContext(user == null || user.isAdmin());
-		write(ioContext, appendable, result);
+		if (result != null)
+		{
+			RaplaContext ioContext =  createContext(user == null || user.isAdmin());
+			write(ioContext, appendable, result);
+		}
 	}
 
     private Map<String,String> createArgumentMap( Class<?>[] parameterTypes, Object[] args ) throws RaplaException
@@ -180,53 +184,6 @@ public class RemoteMethodSerialization extends RaplaComponent
 	protected void readXML(String xml, RaplaMainReader reader)
 			throws RaplaException {
 		xmlAdapter.read( xml, reader, getLogger().getChildLogger("reading"));
-//            final PipedOutputStream out = new PipedOutputStream();
-//            final Writer bufout = new OutputStreamWriter(  out,"UTF-8");
-//            final Logger logger = getLogger().getChildLogger("xml-communication");
-//            new Thread()
-//            {
-//                public void run() {
-//                    try
-//                    {
-//                        int i=0;
-//                        while (true  )
-//                        {
-//                                String line = bufin.readLine() ; 
-//                                if ( line == null)
-//                                    break;
-//                                bufout.write( line);
-//                                bufout.write("\n");
-//                                if (logger.isDebugEnabled())
-//                                {
-//                                    String lineInfo = (10000 + i)+ ":" + line;
-//                                    logger.debug( lineInfo);
-//                                    //System.out.println(lineInfo);
-//                                }
-//                                i++;
-//                        }
-//                        bufout.flush();
-//                    }
-//                    catch ( IOException ex)
-//                    {
-//                    }
-//                    finally
-//                    {
-//                        try {
-//                            bufout.close();
-//                        } catch (IOException e) {
-//                        }
-//                    }
-//                }
-//            }.start();
-//            {
-//                PipedInputStream inPipe= new PipedInputStream( out );
-//                InputStreamReader xml = new InputStreamReader(inPipe, "UTF-8");
-//            	final BufferedReader bufin2 = new BufferedReader( xml);
-//                xmlAdapter.read( bufin2, contentHandler);
-//                bufin.close();
-//                xml.close();
-//                out.close();
-//            }
 	}
 
 	
@@ -402,10 +359,11 @@ public class RemoteMethodSerialization extends RaplaComponent
         		if ( object instanceof String)
         		{
         			String string = object.toString();
-					if (string.contains(",") || string.contains("{") || string.contains("}"))
-					{
-						throw new IllegalArgumentException("Serialized array strings cannot contain '{','}' or ',' characters");
-					}
+        			object = escape( string);
+//					if (string.contains(",") || string.contains("{") || string.contains("}"))
+//					{
+//						throw new IllegalArgumentException("Serialized array strings cannot contain '{','}' or ',' characters");
+//					}
         		}
         		if ( first)
         		{
@@ -468,7 +426,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<Comparable> it = store.getStoreIds().iterator();it.hasNext();)
         {
             Comparable id = it.next();
-            RefEntity<?> entity = store.get( id );
+            RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putStore( entity);
@@ -477,7 +435,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<Comparable> it = store.getReferenceIds().iterator();it.hasNext();)
         {
         	Comparable id = it.next();
-            RefEntity<?> entity = store.get( id );
+            RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putReference( entity);
@@ -495,7 +453,7 @@ public class RemoteMethodSerialization extends RaplaComponent
             }
             else
             {
-	            RefEntity<?> entity = store.get( id );
+	            RefEntity<?> entity = store.tryResolve( id );
 	            if ( entity != null)
 	            {
 	                event.putRemove( entity);
@@ -509,6 +467,11 @@ public class RemoteMethodSerialization extends RaplaComponent
    
 	public RaplaException deserializeException(String classname, String message, String param) throws RaplaException 
 	{
+		String error = "";
+		if ( message != null)
+		{
+			error+=message;
+		}
     	if ( classname != null)
     	{
     		if ( classname.equals( WrongRaplaVersionException.class.getName()))
@@ -518,6 +481,10 @@ public class RemoteMethodSerialization extends RaplaComponent
     		else if ( classname.equals( RaplaSecurityException.class.getName()))
     		{
     			return new RaplaSecurityException( message);
+    		}
+    		else if ( classname.equals( RaplaSynchronizationException.class.getName()))
+    		{
+    			return new RaplaSynchronizationException( message);
     		}
     		else if ( classname.equals( RaplaConnectException.class.getName()))
     		{
@@ -549,9 +516,13 @@ public class RemoteMethodSerialization extends RaplaComponent
     			//Collection<String> depList = Collections.emptyList();
     			return new DependencyException( message, new String[] {});
     		}
-    		message += classname;
+    		else
+    		{
+    			error = classname + " " + error;
+    		}
     	}
-    	return new RaplaException( message);
+    	
+    	return new RaplaException( error);
 
 	}
 
@@ -726,7 +697,6 @@ public class RemoteMethodSerialization extends RaplaComponent
 		String result = string.replaceAll("(,|\\\\|\\{|\\})", "\\\\$1");
 		return result;
 	}
-	
 
 }
 

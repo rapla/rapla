@@ -15,8 +15,10 @@ package org.rapla.facade.internal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -154,20 +156,33 @@ public class AllocationChangeFinder
         System.out.println("NEW appointments");
         printList(app2);
         */
-        ArrayList<Appointment> newList = new ArrayList<Appointment>(app2);
+        Set<Appointment> newList = new HashSet<Appointment>(app2);
         newList.retainAll(app1);
-        Collections.sort(newList);
 
         ArrayList<Appointment> oldList = new ArrayList<Appointment>(app1);
         oldList.retainAll(app2);
         Collections.sort(oldList);
+        
+        
 
         for (int i=0;i<oldList.size();i++) {
             Appointment oldApp =  oldList.get(i);
-            Appointment newApp =  newList.get(i);
-            Iterator<Allocatable> it = allocatableList.iterator();
-            while ( it.hasNext() ) {
-                Allocatable allocatable =  it.next();
+            Appointment newApp = null;
+            for ( Appointment app:newList)
+            {
+            	if ( app.equals( oldApp))
+            	{
+            		newApp = app;
+            	}
+            }
+            if ( newApp == null)
+            {
+            	// This should never happen as we call retainAll before
+            	getLogger().error("Not found matching pair for " + oldApp);
+            	continue;
+            }
+            for (Allocatable allocatable: allocatableList ) 
+            {
                 boolean oldAllocated = oldRes.hasAllocated(allocatable, oldApp);
                 boolean newAllocated = newRes.hasAllocated(allocatable, newApp);
                 if (!oldAllocated && !newAllocated) {
@@ -191,12 +206,10 @@ public class AllocationChangeFinder
     }
 
     private void addAppointmentAdd(User user,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
-        Iterator<Allocatable> it = allocatables.iterator();
-        while ( it.hasNext()) {
-            Allocatable allocatable =  it.next();
-            Iterator<Appointment> it2 = appointments.iterator();
-            while ( it2.hasNext()) {
-                Appointment appointment =  it2.next();
+        for (Allocatable allocatable:allocatables)
+        {
+        	for (Appointment appointment:appointments)
+            {
                 if (!newRes.hasAllocated(allocatable,appointment))
                     continue;
 
@@ -206,12 +219,10 @@ public class AllocationChangeFinder
     }
 
     private void addAppointmentRemove(User user,Reservation oldRes,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
-        Iterator<Allocatable> it = allocatables.iterator();
-        while ( it.hasNext()) {
-            Allocatable allocatable =  it.next();
-            Iterator<Appointment> it2 = appointments.iterator();
-            while ( it2.hasNext()) {
-                Appointment appointment =  it2.next();
+    	 for (Allocatable allocatable:allocatables)
+         {
+         	for (Appointment appointment:appointments)
+             {
                 if (!oldRes.hasAllocated(allocatable,appointment))
                     continue;
 

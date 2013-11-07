@@ -38,6 +38,7 @@ import javax.swing.tree.TreePath;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarSelectionModel;
@@ -125,10 +126,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     	}
     	else if ( evt.isModified(Conflict.TYPE) || (evt.isModified( Preferences.TYPE) ) )
         {
-        	Set<Conflict> changed = evt.getChanged(conflicts);
+        	Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);;
         	removeAll( conflicts,changed);
         	
-     		Set<Conflict> removed = evt.getRemoved( conflicts);
+     		Set<Conflict> removed = RaplaType.retainObjects(evt.getRemoved(), conflicts);
         	removeAll( conflicts,removed);
         	
         	conflicts.addAll( changed);
