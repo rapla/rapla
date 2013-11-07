@@ -102,7 +102,12 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 
     public void setConstraint(String key,Object constraint) {
         checkWritable();
-        if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
+        setContraintWithoutWritableCheck(key, constraint);
+    }
+
+	public void setContraintWithoutWritableCheck(String key,
+			Object constraint) {
+		if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
         	ReferenceHandler referenceHandler = getReferenceHandler();
         	String refID = "constraint." + key;
         	if ( constraint == null)
@@ -118,7 +123,7 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         		referenceHandler.putId(refID,(SimpleIdentifier)constraint);
         	}
         }
-    }
+	}
     
     public void setDefaultValue(Object object)
     {

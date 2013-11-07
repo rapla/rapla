@@ -92,8 +92,8 @@ public class DynamicTypeReader extends RaplaXMLReader
                 	{
                 		Attribute att = entry.getKey();
                 		String constraintKey = entry.getValue();
-                		// now set the unresolved constraint
-                		att.setConstraint(constraintKey, dynamicType);
+                		// now set the unresolved constraint, we need to ignore readonly check, because the type may be already closed
+                		((AttributeImpl)att).setContraintWithoutWritableCheck(constraintKey, dynamicType);
                 	}
                 }
                 unresolvedDynamicTypeConstraints.remove( name);
