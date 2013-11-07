@@ -94,13 +94,16 @@ public class SelectionHandler extends MouseAdapter {
     }
     
     public void clearSelection() {
-        for (int i=0;i<m_wv.getDayCount();i++)
-        {
-            if (m_wv.getSlot(i) != null)
-            {
-                m_wv.getSlot(i).unselectAll();
-            }
-        }
+    	if ( m_wv != null)
+    	{
+	        for (int i=0;i<m_wv.getDayCount();i++)
+	        {
+	            if (m_wv.getSlot(i) != null)
+	            {
+	                m_wv.getSlot(i).unselectAll();
+	            }
+	        }
+    	}
         selectionStart = -1;
         selectionEnd = -1;
         oldIndex = -1;

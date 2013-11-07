@@ -87,8 +87,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
 
     TableLayout tableLayout;
     public void rebuild() {
-    	selectionHandler.clearSelection();
-        rows.clear();
+    	rows.clear();
         columnMap.clear();
         for ( int i=0; i<rowNames.length; i++ ) {
             addRow();
@@ -155,6 +154,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
                 }
             }
         }
+        selectionHandler.clearSelection();
         jCenter.validate();
         jHeader.validate();
         if ( isEditable())
