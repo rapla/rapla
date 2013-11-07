@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
@@ -43,8 +44,10 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.IdTable;
@@ -53,8 +56,8 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.RaplaConfigurationWriter;
+import org.rapla.storage.xml.RaplaEntityWriter;
 import org.rapla.storage.xml.RaplaMainReader;
-import org.rapla.storage.xml.RaplaMainWriter;
 import org.rapla.storage.xml.RaplaNonValidatedInput;
 import org.rapla.storage.xml.ReservationReader;
 import org.rapla.storage.xml.ReservationWriter;
@@ -63,7 +66,6 @@ import org.rapla.storage.xml.ReservationWriter;
 public class RemoteMethodSerialization extends RaplaComponent
 {
     Provider<EntityStore> storeProvider;
-    LocalCache cache;
 	static private char escapeChar='\\';
     
     class EmptyIdTable extends IdTable
@@ -73,10 +75,9 @@ public class RemoteMethodSerialization extends RaplaComponent
         }
     }
 
-    public RemoteMethodSerialization(RaplaContext context,  Provider<EntityStore> storeProvider,LocalCache cache)  {
+    public RemoteMethodSerialization(RaplaContext context,  Provider<EntityStore> storeProvider)  {
         super(context);
         this.storeProvider = storeProvider;
-        this.cache = cache;
     }
     
     public Object[] deserializeArguments(Map<String, String> args, Method method) throws ParseException, RaplaException {
@@ -124,14 +125,25 @@ public class RemoteMethodSerialization extends RaplaComponent
     }
 
     private RaplaContext createContext(boolean admin) throws RaplaException {
-    	RaplaContext context = getContext();
-    	if ( !admin)
+     	RaplaContext context = getContext();
+    	Provider<Category> superCategoryProvider = new Provider<Category>()
+         		{
+ 					public Category get()  {
+ 						try {
+							return storeProvider.get().getSuperCategory();
+						} catch (RaplaContextException e) {
+								getLogger().error(e.getMessage(),e);
+							return null;
+						}
+ 					}
+         		};
+        if ( !admin)
     	{
     		RaplaDefaultContext newContext = new RaplaDefaultContext( context);
         	newContext.put( RaplaConfigurationWriter.Ignore_Configuration_Passwords, true );
         	context = newContext;
     	}
-        return new IOContext().createOutputContext( context, cache, true, true);
+        return new IOContext().createOutputContext( context, superCategoryProvider, true, true);
    	}
 
 
@@ -303,7 +315,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         else if ( value instanceof UpdateEvent)
         {
             UpdateEvent evt = (UpdateEvent) value;
-            RaplaMainWriter writer = new RaplaMainWriter(ioContext);
+            RaplaEntityWriter writer = new RaplaEntityWriter(ioContext);
             writer.setWriter( outWriter);
            
             writer.printList( evt);
@@ -320,7 +332,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         else if ( value instanceof EntityList)
         {
             EntityList storeList = (EntityList) value;
-            RaplaMainWriter writer = new RaplaMainWriter(ioContext);
+            RaplaEntityWriter writer = new RaplaEntityWriter(ioContext);
             writer.setWriter( outWriter);
             writer.printList(storeList);
         }
@@ -414,7 +426,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<?> it = store.getStoreIds().iterator();it.hasNext();)
         {
             Object id = it.next();
-            RefEntity<?> entity = store.get( id );
+            RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putStore( entity);
@@ -423,7 +435,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<?> it = store.getReferenceIds().iterator();it.hasNext();)
         {
             Object id = it.next();
-            RefEntity<?> entity = store.get( id );
+            RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putReference( entity);
@@ -445,7 +457,7 @@ public class RemoteMethodSerialization extends RaplaComponent
             }
             else
             {
-	            RefEntity<?> entity = store.get( id );
+	            RefEntity<?> entity = store.tryResolve( id );
 	            if ( entity != null)
 	            {
 	                event.putRemove( entity);
@@ -472,6 +484,10 @@ public class RemoteMethodSerialization extends RaplaComponent
     		else if ( classname.equals( RaplaSecurityException.class.getName()))
     		{
     			return new RaplaSecurityException( message);
+    		}
+    		else if ( classname.equals( RaplaSynchronizationException.class.getName()))
+    		{
+    			return new RaplaSynchronizationException( message);
     		}
     		else if ( classname.equals( RaplaConnectException.class.getName()))
     		{
@@ -685,7 +701,6 @@ public class RemoteMethodSerialization extends RaplaComponent
 		String result = string.replaceAll("(,|\\\\|\\{|\\})", "\\\\$1");
 		return result;
 	}
-
 
 }
 

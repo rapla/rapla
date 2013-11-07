@@ -87,6 +87,8 @@ public interface Conflict extends Named, RaplaObject<Conflict>
     }
     
     boolean hasAppointment(Appointment appointment);
+    
+    boolean endsBefore(Date date);
    
 }
 

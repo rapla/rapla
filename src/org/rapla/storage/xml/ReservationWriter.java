@@ -154,16 +154,6 @@ public class ReservationWriter extends ClassifiableWriter {
         closeElement("rapla:repeating");
     }
 
-    void printReservations() throws IOException, RaplaException {
-        openElement("rapla:reservations");
-        for (Reservation r: cache.getCollection(Reservation.class))
-        {
-            printReservation(r);
-        }
-        closeElement("rapla:reservations");
-    }
-
-
 
 }
 

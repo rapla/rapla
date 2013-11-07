@@ -15,7 +15,11 @@
   </resource-bundle>
 
   <rapla-client id="rapla" activation="request">
-    <facade>local-facade</facade>
+    <facade id="clientfacade">
+    	<store>raplafile</store>
+    	<username>homer</username>
+    	<password>duffs</password>
+    </facade>
   </rapla-client>
 
   <rapla-server id="storage-file" activation="request">

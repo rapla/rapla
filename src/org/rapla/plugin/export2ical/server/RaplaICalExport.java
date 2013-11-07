@@ -21,6 +21,7 @@ import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ValidationException;
 
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
@@ -31,6 +32,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
 public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
@@ -45,7 +47,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
     
     public void export(String reservationIds, OutputStream out ) throws RaplaException, IOException 
     {
-        TimeZone timeZone = getRaplaLocale().getImportExportTimeZone();
+        TimeZone timeZone = getContext().lookup( TimeZoneConverter.class).getImportExportTimeZone();
 		Export2iCalConverter converter = new Export2iCalConverter(getContext(),timeZone, null, config);
         if ( reservationIds.length() == 0)
         {
@@ -64,12 +66,12 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
         }
     }
     
-    private Reservation getReservation(String id)  
+    private Reservation getReservation(String id) throws EntityNotFoundException  
     {
         AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
         final int intId = Integer.parseInt(id);
         final SimpleIdentifier id2 = new SimpleIdentifier(Reservation.TYPE, intId);
-        final RefEntity<?> refEntity = operator.getCache().get( id2);
+        final RefEntity<?> refEntity = operator.resolveId(id2);
         return (Reservation) refEntity;
     }
 

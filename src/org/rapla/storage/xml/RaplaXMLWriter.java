@@ -13,13 +13,11 @@
 package org.rapla.storage.xml;
 
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.rapla.components.util.Assert;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Annotatable;
@@ -37,19 +35,19 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
+import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
-import org.rapla.storage.LocalCache;
 import org.xml.sax.helpers.NamespaceSupport;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter
     implements Namespaces
 {
-    protected LocalCache cache;
 
     String encoding = "utf-8";
     final static String OUTPUT_FILE_VERSION="1.0";
@@ -63,30 +61,39 @@ abstract public class RaplaXMLWriter extends XMLWriter
     protected RaplaContext context;
     public SerializableDateTimeFormat dateTimeFormat;
     public SerializableDateTimeFormat dateTimeFormatTimestamp;
+	private Provider<Category> superCategory;
     public RaplaXMLWriter( RaplaContext context) throws RaplaException {
         this.context = context;
         enableLogging( context.lookup( Logger.class));
         this.writerMap =context.lookup( PreferenceWriter.WRITERMAP );
         RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
         dateTimeFormat = new SerializableDateTimeFormat(raplaLocale.createCalendar());
-        dateTimeFormatTimestamp = new SerializableDateTimeFormat(Calendar.getInstance(raplaLocale.getSystemTimeZone()));
+        dateTimeFormatTimestamp = new SerializableDateTimeFormat(raplaLocale.createCalendar());
         this.localnameMap = context.lookup(PreferenceReader.LOCALNAMEMAPENTRY);
-        this.cache = context.lookup(LocalCache.class);
         this.isIdOnly = context.has(IOContext.IDONLY);
         this.printVersion = context.has(IOContext.PRINTVERSIONS);
   
-        Assert.notNull(cache);
+        this.superCategory = context.lookup( IOContext.SUPERCATEGORY);
 
         namespaceSupport.pushContext();
         for (int i=0;i<NAMESPACE_ARRAY.length;i++) {
-            String prefix = NAMESPACE_ARRAY[i][1];
-            String uri = NAMESPACE_ARRAY[i][0];
-            if ( prefix != null) {
-                namespaceSupport.declarePrefix(prefix, uri);
-            }
+        	String prefix = NAMESPACE_ARRAY[i][1];
+        	String uri = NAMESPACE_ARRAY[i][0];
+        	if ( prefix != null) {
+        		namespaceSupport.declarePrefix(prefix, uri);
+        	}
         }
-    }
-
+  }
+  
+  public Category getSuperCategory()
+  {
+  		try {
+			return superCategory.get();
+		} catch (RaplaContextException e) {
+			getLogger().error(e.getMessage(), e);
+			return null;
+		}
+  }
     public void enableLogging(Logger logger) {
         this.logger = logger;
     }

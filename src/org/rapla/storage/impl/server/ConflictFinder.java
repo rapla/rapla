@@ -34,21 +34,22 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentBlockEndComparator;
 import org.rapla.entities.domain.AppointmentBlockStartComparator;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
 
-public class ConflictFinder {
-	AllocationMap  appointmentMap;
+class ConflictFinder {
+	AllocationMap  allocationMap;
     Map<Allocatable,Set<Conflict>> conflictMap;
-
-    public ConflictFinder( AllocationMap  appointmentMap, Date today)  {
-    	this.appointmentMap = appointmentMap;
+    Logger logger;
+    
+    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger)  {
+    	this.logger = logger;
+    	this.allocationMap = allocationMap;
     	conflictMap = new HashMap<Allocatable, Set<Conflict>>();
-        for (Allocatable allocatable:appointmentMap.getAllocatables())
+        for (Allocatable allocatable:allocationMap.getAllocatables())
 		{
 			updateConflicts(allocatable, null, today);
 		}
@@ -64,28 +65,16 @@ public class ConflictFinder {
 		return set;
 	}
        
-
-    public static class AllocationChange
+	private void updateConflicts(Allocatable allocatable,AllocationChange change, Date today) 
     {
-    	public SortedSet<Appointment> toChange =  new TreeSet<Appointment>(new AppointmentStartComparator());
-    	public SortedSet<Appointment> toRemove=  new TreeSet<Appointment>(new AppointmentStartComparator());
-    	
-    	public String toString()
-    	{
-    		return "toChange="+toChange.toString() + ";toRemove=" + toRemove.toString();
-    	}
-    }
-	
-    private void updateConflicts(Allocatable allocatable,AllocationChange change, Date today) 
-    {
-		SortedSet<Appointment> allAppointments = appointmentMap.getAppointments(allocatable);
-		SortedSet<Appointment> changedAppointments;
-    	SortedSet<Appointment> removedAppointments;
+		Set<Appointment> allAppointments = allocationMap.getAppointments(allocatable);
+		Set<Appointment> changedAppointments;
+    	Set<Appointment> removedAppointments;
     	if ( change == null)
 		{
 			changedAppointments = allAppointments;
 	    	removedAppointments = new TreeSet<Appointment>();
-
+	    	conflictMap.remove( allocatable);
 		}
 		else
 		{
@@ -94,14 +83,20 @@ public class ConflictFinder {
 		}
 		
 		Set<Conflict> conflictList = conflictMap.get(allocatable);
-		if (!conflictMap.containsKey(allocatable))
+		if ( conflictList == null )
 		{
 			conflictList = new LinkedHashSet<Conflict>();
 			conflictMap.put( allocatable, conflictList);
 		}
-		removeConflicts(conflictList, removedAppointments);
-		removeConflicts(conflictList, changedAppointments);
-		
+		else
+		{
+			removeConflicts(conflictList, removedAppointments);
+			removeConflicts(conflictList, changedAppointments);
+		}
+		if ( allocatable.isHoldBackConflicts())
+		{
+			return;
+		}
 		{
 			SortedSet<AppointmentBlock> allAppointmentBlocks = createBlocks(allAppointments, new AppointmentBlockEndComparator());
 			SortedSet<AppointmentBlock> appointmentBlocks = createBlocks(changedAppointments, new AppointmentBlockStartComparator());
@@ -133,7 +128,10 @@ public class ConflictFinder {
                     if (!appointment2.equals( appointment1) && appointment2.overlaps(appointment1))
 					{
 						// Add appointments to conflict list
-                    	ConflictImpl.addConflicts(conflictList, appointment1, appointment2,  allocatable, today);
+                		if (ConflictImpl.isConflict(appointment1, appointment2, today))
+                		{
+                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2);
+                		}                    	
 					}
 				}
 			}
@@ -156,7 +154,7 @@ public class ConflictFinder {
 	}
 
 	private SortedSet<AppointmentBlock> createBlocks(
-			SortedSet<Appointment> appointmentSet,final Comparator<AppointmentBlock> comparator) {
+			Set<Appointment> appointmentSet,final Comparator<AppointmentBlock> comparator) {
 		  // overlaps will be checked  260 weeks (5 years) from now on
         long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
       
@@ -205,10 +203,6 @@ public class ConflictFinder {
 		for ( Allocatable allocatable: conflictMap.keySet())
 		{
 			Set<Conflict> set = conflictMap.get( allocatable);
-			if ( allocatable.isHoldBackConflicts())
-			{
-				continue;
-			}
 			if ( set != null)
 			{
 				for ( Conflict conflict: set)
@@ -223,51 +217,53 @@ public class ConflictFinder {
 		return conflictList;
 	}
 
-	public Map<Allocatable, Map<Appointment,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,Collection<Appointment> appointments, Collection<Reservation> ignoreList, boolean onlyFirstConflictingAppointment) {
-		Map<Allocatable, Map<Appointment,Collection<Appointment>>> map = new HashMap<Allocatable, Map<Appointment,Collection<Appointment>>>();
-        for ( Allocatable allocatable:allocatables)
-        {
-			if ( allocatable.isHoldBackConflicts())
-			{
-				continue;
-			}
-			SortedSet<Appointment> appointmentSet = appointmentMap.getAppointments( allocatable);
-			if ( appointmentSet == null)
-    		{
-				continue;
-    		}
-			map.put(allocatable,  new HashMap<Appointment,Collection<Appointment>>() );
-        	for (Appointment appointment:appointments)
-        	{
-    			Set<Appointment> conflictingAppointments = AppointmentImpl.getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
-        		if ( conflictingAppointments.size() > 0)
-        		{
-	        		Map<Appointment,Collection<Appointment>> appMap = map.get( allocatable);
-	        		if ( appMap == null)
-	        		{
-	        			appMap = new HashMap<Appointment, Collection<Appointment>>();
-	        			map.put( allocatable, appMap);
-	        		}
-	        		appMap.put( appointment,  conflictingAppointments);
-        		}
-        	}
-        }
-        return map;
-    }
-
-	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult evt, Date today)
+	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult evt, Date today,Collection<Allocatable> removedAllocatables)
 	{
+		for ( Allocatable alloc: removedAllocatables)
+		{
+			Set<Conflict> sortedSet = conflictMap.get( alloc);
+			if ( sortedSet != null && !sortedSet.isEmpty())
+			{
+				logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
+			}
+			conflictMap.remove( alloc);
+		}
+
+		Iterator<Change> it = evt.getOperations(UpdateResult.Change.class);
+		while (it.hasNext())
+		{
+			Change next = it.next();
+			RaplaObject current = next.getNew();
+			if ( current.getRaplaType() == Allocatable.TYPE)
+			{
+				Allocatable old = (Allocatable) next.getOld();
+				Allocatable newAlloc = (Allocatable) next.getNew();
+				if ( old != null && newAlloc != null )
+				{
+					if (old.isHoldBackConflicts() != newAlloc.isHoldBackConflicts())
+					{
+						// add an recalculate all if holdbackconflicts changed
+						toUpdate.put( newAlloc, null);
+					}
+				}
+			}
+		}
+		
     	Set<Conflict> added = new HashSet<Conflict>();
     	// this will recalculate the conflicts for that resource and the changed appointments
     	for ( Map.Entry<Allocatable, AllocationChange> entry:toUpdate.entrySet())
     	{
     		Allocatable allocatable = entry.getKey();
+    		
     		AllocationChange changedAppointments = entry.getValue();
+    		
     		if (!conflictMap.containsKey(allocatable))
     		{
     			LinkedHashSet<Conflict> conflictList = new LinkedHashSet<Conflict>();
     			conflictMap.put( allocatable, conflictList);
     		}
+    		
+    		
     		Set<Conflict> conflictListBefore = new HashSet<Conflict>( conflictMap.get(allocatable));
 			updateConflicts( allocatable, changedAppointments, today);
 			Set<Conflict> conflictListAfter = new HashSet<Conflict>( conflictMap.get(allocatable));
@@ -276,7 +272,7 @@ public class ConflictFinder {
 			for ( Conflict conflict: conflictListBefore)
 			{
 				boolean isResolved = !conflictListAfter.contains(conflict);
-				if  ( isResolved && conflict.canModify(user))
+				if  ( isResolved && conflict.canModify(user) && conflict.endsBefore( today))
 				{
 					evt.addOperation( new UpdateResult.Remove(conflict));
 				}
@@ -358,6 +354,25 @@ public class ConflictFinder {
 			SortedSet<Appointment> changedAppointments, Appointment appointment) {
 		Appointment foundAppointment = changedAppointments.tailSet( appointment).iterator().next();
 		return foundAppointment;
+	}
+
+
+	public void removeOldConflicts(UpdateResult result, Date today) 
+	{
+		for (Set<Conflict> sortedSet: conflictMap.values())
+		{
+			Iterator<Conflict> it = sortedSet.iterator();
+			while (it.hasNext())
+			{
+				Conflict conflict = it.next();
+				if ( conflict.endsBefore( today))
+				{
+					it.remove();
+					result.addOperation( new UpdateResult.Remove(conflict));
+				}
+			}
+		}
+		
 	}
 
 }

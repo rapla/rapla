@@ -85,7 +85,9 @@ public final class ReservationControllerTest extends GUITestCase {
 			}
 		});
 		// We block a mutex to wait for the move thread to finish
+		System.out.println("Blocking");
 		mutex.aquire();
+		System.out.println("Releasing");
 		SwingUtilities.invokeAndWait(new Runnable() {
 
 			@Override
@@ -99,14 +101,18 @@ public final class ReservationControllerTest extends GUITestCase {
 			}
 		});
 		// now wait until move thread is finished
+		System.out.println("Blocking 2");
 		mutex.aquire();
+		System.out.println("Releasing 2");
 		mutex.release();
 		
 		//Testing undo & redo function
-		getFacade().getCommandHistory().undo();
+		clientService.getFacade().getCommandHistory().undo();
 		assertEquals(from, reservation.getAppointments()[0].getStart());
-		getFacade().getCommandHistory().redo();
+		clientService.getFacade().getCommandHistory().redo();
 		assertEquals(DateTools.addDay(from), reservation.getAppointments()[0].getStart());
+		
+		System.out.println("Finished");
 	}
 	
 	

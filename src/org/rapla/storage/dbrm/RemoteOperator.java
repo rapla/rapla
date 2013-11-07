@@ -50,11 +50,9 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -125,7 +123,7 @@ public class RemoteOperator
         else
         {
         	connector = new HTTPConnector(context,config);
-        	remoteMethodSerialization = new RemoteMethodSerialization(context,  this, cache);
+        	remoteMethodSerialization = new RemoteMethodSerialization(context,  this);
         }
     	commandQueue = context.lookup( CommandScheduler.class);
     }
@@ -341,7 +339,7 @@ public class RemoteOperator
 
     private List<RefEntity<?>> addToCache(EntityList list, boolean useCache) throws RaplaException {
         List<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
-    	EntityResolver entityResolver = createEntityStore( list, useCache ? cache : null );
+    	EntityResolver entityResolver = createEntityStore( list, useCache  );
         synchronized (cache) {
         	resolveEntities( list.iterator(), entityResolver );
             for( Iterator<RefEntity<?>> it = list.iterator();it.hasNext();) {
@@ -584,7 +582,7 @@ public class RemoteOperator
     	RemoteStorage serv = getRemoteMethod( RemoteStorage.class);
     	SimpleIdentifier[] allocatableId = getIdList(allocatables);
 		EntityList list =serv.getReservations(allocatableId,start, end);
-        EntityResolver entityResolver = createEntityStore( list,  cache  );
+        EntityResolver entityResolver = createEntityStore( list );
         synchronized (cache) {
         	resolveEntities( list.iterator(), entityResolver );
         }
@@ -605,19 +603,24 @@ public class RemoteOperator
     public EntityStore get()
     {
     	Collection<RefEntity<?>> emptyList = Collections.emptyList();
-		EntityStore store = createEntityStore(emptyList, cache);
+		EntityStore store = createEntityStore(emptyList, true);
 		return store;
+    }
+    
+    private EntityResolver createEntityStore(Collection<RefEntity<?>> resolveableEntities) {
+    	return createEntityStore(resolveableEntities, true);
     }
     /**
 	 * Entities will be resolved against resolveableEntities. If not found the
 	 * ParentResolver will be used.
 	 */
-	private EntityStore createEntityStore(Collection<RefEntity<?>> resolveableEntities, LocalCache parent) {
+	private EntityStore createEntityStore(Collection<RefEntity<?>> resolveableEntities, boolean useCache) {
+		EntityResolver parent  = useCache? cache : null;
 		EntityStore resolver = new EntityStore(parent, cache.getSuperCategory())
 		{
 			@Override
-			public RefEntity<?> get(Object id) {
-				RefEntity<?> refEntity = super.get(id);
+			public RefEntity<?> tryResolve(Object id) {
+				RefEntity<?> refEntity = super.tryResolve(id);
 				if ( refEntity == null)
 				{
 					if ( id instanceof SimpleIdentifier)
@@ -628,7 +631,7 @@ public class RemoteOperator
 						{
 							AllocatableImpl unresolved = new AllocatableImpl(null, null);
 							unresolved.setId( castedId);
-							unresolved.setClassification( cache.getUnresolvedAllocatableType().newClassification());
+							unresolved.setClassification( getUnresolvedAllocatableType().newClassification());
 							return unresolved;
 						}
 						// if the type is not found we test if its an anonymous type (key = 0)
@@ -636,8 +639,8 @@ public class RemoteOperator
 						{
 							if ( ((SimpleIdentifier) id).getKey() == 0)
 							{
-								DynamicTypeImpl unresolvedReservation = cache.getAnonymousReservationType();
-								return unresolvedReservation;
+								DynamicType unresolvedReservation = getAnonymousReservationType();
+								return (RefEntity<?>) unresolvedReservation;
 							}
 						}
 					}
@@ -646,7 +649,7 @@ public class RemoteOperator
 			}
 			
 			public DynamicType getDynamicType(String key) {
-				DynamicType unresolvedReservation = cache.getAnonymousReservationType();
+				DynamicType unresolvedReservation = getAnonymousReservationType();
 				if ( key.equals(unresolvedReservation.getElementKey()))
 				{
 					return unresolvedReservation;
@@ -694,7 +697,7 @@ public class RemoteOperator
                 RefEntity<?> entity =  it.next();
                 if ( isStorableInCache(entity))
                 {
-	                RefEntity<?> cachedVersion = cache.get(entity.getId());
+	                RefEntity<?> cachedVersion = cache.tryResolve(entity.getId());
 	                // Ignore object if its not newer than the one in cache.
 	                if (cachedVersion != null && cachedVersion.getVersion() >= entity.getVersion()) {
 	                    //getLogger().debug("already on client " + entity + " version " + cachedVersion.getVersion());
@@ -708,13 +711,13 @@ public class RemoteOperator
 			RemoteOperator.super.resolveEntities
                 (
                  storeObjects.iterator()
-                 ,createEntityStore(allObject,cache)
+                 ,createEntityStore(allObject)
                  );
 
 			RemoteOperator.super.resolveEntities
             (
             		referenceObjects.iterator()
-            		,createEntityStore(allObject,cache)
+            		,createEntityStore(allObject)
              );
 			RemoteOperator.super.resolveEntities
                 (
@@ -725,7 +728,7 @@ public class RemoteOperator
 						return  !( obj instanceof Conflict);
 					}
                  }
-                 ,createEntityStore(allObject,cache)
+                 ,createEntityStore(allObject)
                  );
 
             clientRepositoryVersion = evt.getRepositoryVersion();
@@ -778,7 +781,7 @@ public class RemoteOperator
 			HashMap<RefEntity<?>, RefEntity<?>> oldEntityMap = new HashMap<RefEntity<?>, RefEntity<?>>();
 			for ( RefEntity<?> update: toUpdate)
 			{
-				RefEntity<?> newEntity = cache.get( update.getId());
+				RefEntity<?> newEntity = cache.tryResolve( update.getId());
 				if ( newEntity != null)
 				{
 					oldEntityMap.put( newEntity, update);
@@ -921,7 +924,7 @@ public class RemoteOperator
     	SimpleIdentifier[] reservationIds = getIdList(ignoreList);
     	Appointment[] appointmentArray = appointments.toArray( Appointment.EMPTY_ARRAY);
 		EntityList list = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds);
-	    EntityResolver entityResolver = createEntityStore( list,  cache  );
+	    EntityResolver entityResolver = createEntityStore( list  );
 	    Lock readLock = readLock();
 	    try
 	    {
@@ -983,7 +986,7 @@ public class RemoteOperator
 //    			logEntityNotFound((ConflictImpl)ref, new EntityNotFoundException("Test", ref.getId()));
 //    		}
 //    	}
-    	EntityResolver entityResolver = createEntityStore( list,  cache  );
+    	EntityResolver entityResolver = createEntityStore( list  );
         Lock readLock = readLock();
 	    try
 	    {
@@ -1021,22 +1024,13 @@ public class RemoteOperator
 		{
 			if ( obj instanceof ConflictImpl)
 			{
-				
-				ReferenceHandler referenceHandler = ((ConflictImpl)obj).getReferenceHandler();
-				SimpleIdentifier id0 = (SimpleIdentifier) referenceHandler.getId("allocatable");
-				SimpleIdentifier id1 = (SimpleIdentifier) referenceHandler.getId("appointment1");
-				SimpleIdentifier id2 = (SimpleIdentifier) referenceHandler.getId("appointment2");
+				List<Comparable> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
 				List<SimpleIdentifier> ids = new ArrayList<SimpleIdentifier>();
-				ids.add( id0);
-				ids.add( id1);
-				ids.add( id2);
-	//			List<Comparable> referencedIds = referenceHandler.getReferencedIds();
-	//			for (Comparable refId:referencedIds)
-	//			{
-	//				ids.add( (SimpleIdentifier) refId);
-	//			}
-				SimpleIdentifier[] idArray = ids.toArray(new  SimpleIdentifier[0]);
-				serv.logEntityNotFound( id  + " not found in conflict " + ids.toString(),idArray);
+				for (Comparable refId:referencedIds)
+				{
+					ids.add( (SimpleIdentifier) refId);
+				}
+				serv.logEntityNotFound( id  + " not found in conflict :",ids.toArray(new  SimpleIdentifier[0]));
 			}
 			else if ( id != null && id instanceof SimpleIdentifier)
 			{

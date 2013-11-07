@@ -172,7 +172,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         exitTemplateEdit.addActionListener( new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {
-				getModification().setTemplate( null );
+				getModification().setTemplateName( null );
 				
 			}
 		});

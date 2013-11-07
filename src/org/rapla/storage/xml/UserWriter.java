@@ -22,7 +22,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -32,21 +31,16 @@ public class UserWriter extends RaplaXMLWriter {
         super(sm);
     }
 
-    public void printUser(User user, boolean includePassword, boolean includePreference) throws IOException,RaplaException {
+    public void printUser(User user, String password, Preferences preferences) throws IOException,RaplaException {
        
         openTag("rapla:user");
         printId(user);
         printVersion( user);
         att("username",user.getUsername());
-        if ( includePassword)
+        if ( password != null )
         {
-            String password = cache.getPassword(((RefEntity<?>)user).getId());
-            if ( password != null )
-            {
-                att("password",password);
-                //System.out.println("Writing password to file " + password);
-            }
-            
+            att("password",password);
+            //System.out.println("Writing password to file " + password);
         }
             
         att("name",user.getName());
@@ -75,38 +69,29 @@ public class UserWriter extends RaplaXMLWriter {
             }
         }
 
-        if ( includePreference)
-        {
-            Preferences preferences = cache.getPreferences(user);
+//        if ( includePreference)
+//        {
+//            Preferences preferences = cache.getPreferences(user);
             if ( preferences != null) {
                 PreferenceWriter preferenceWriter = (PreferenceWriter) getWriterFor(Preferences.TYPE);
                 preferenceWriter.setIndentLevel( getIndentLevel() );
                 preferenceWriter.printPreferences(preferences);
             }
-        }
+//        }
 
         closeElement("rapla:user");
     }
     
     public void writeObject(RaplaObject object) throws IOException, RaplaException {
-        printUser( (User) object,false,true);
+        printUser( (User) object,null,null);
     }
 
 
     private String getGroupPath( Category category) throws EntityNotFoundException {
-        Category rootCategory = cache.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        Category rootCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
         return ((CategoryImpl) rootCategory ).getPathForCategory(category);
     }
     
-    public void printUsers()  throws IOException,RaplaException {
-        openElement("rapla:users");
-        println("<!-- Users of the system -->");
-        for (User user: cache.getCollection( User.class)) {
-            printUser( user, true, true);
-        }
-        closeElement("rapla:users");
-    }
-
 
 
 }

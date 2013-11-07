@@ -141,7 +141,7 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
     }
     
     static private void copy(PreferencesImpl source,PreferencesImpl dest) {
-        dest.map.clear();
+        HashMap<String,Object> map = new HashMap<String,Object>();
         for (Iterator<String> it = source.map.keySet().iterator();it.hasNext();)
         {
             String role =  it.next();
@@ -155,14 +155,17 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
             {
             	clone = entry;
             }
-            dest.map.put( role , clone);
+            map.put( role , clone);
         }
+        dest.map = map;
     }
 
     @SuppressWarnings("unchecked")
 	public void copy(Preferences obj) {
-        super.copy((SimpleEntity<Preferences>) obj);
-        copy((PreferencesImpl) obj,this);
+    	synchronized ( this) {
+            super.copy((SimpleEntity<Preferences>) obj);
+            copy((PreferencesImpl) obj,this);
+		}
     }
 
     public Preferences deepClone() {

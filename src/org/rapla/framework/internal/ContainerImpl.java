@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -297,8 +298,7 @@ public class ContainerImpl implements Container
             return Collections.emptyList();
         }
         List<T> result = new ArrayList<T>();
-        // make a copy, in case we have to remove a hint to avoid concurrent modification exception
-        Set<String> hintSet = new LinkedHashSet<String>(entry.getHintSet());
+        Set<String> hintSet = entry.getHintSet();
 		for (String hint: hintSet)
         {
         	ComponentHandler handler = entry.getHandler(hint);
@@ -350,7 +350,7 @@ public class ContainerImpl implements Container
         return getHandler( roleName, hint );
     }
 
-    synchronized ComponentHandler getHandler( String role,Object hint) {
+    ComponentHandler getHandler( String role,Object hint) {
         RoleEntry entry = m_roleMap.get( role );
         if ( entry == null)
         {
@@ -493,7 +493,9 @@ public class ContainerImpl implements Container
         	{
         		hint = generateHint();
         	}
-            componentMap.put( hint, handler);
+        	synchronized (this) {
+        		componentMap.put( hint, handler);
+			}
             if (firstEntry == null)
                 firstEntry = handler;
         }
@@ -504,7 +506,11 @@ public class ContainerImpl implements Container
         }
 
         Set<String> getHintSet() {
-            return componentMap.keySet();
+        	// we return a clone to avoid concurrent modification exception
+        	synchronized (this) {
+        		LinkedHashSet<String> result = new LinkedHashSet<String>(componentMap.keySet());
+        		return result;
+        	}
         }
 
         ComponentHandler getHandler(Object hint) {
@@ -525,14 +531,29 @@ public class ContainerImpl implements Container
         return m_context;
     }
 
-    /**
-     * @see org.rapla.framework.Disposable#dispose()
-     */
+    boolean disposing;
     public void dispose() {
-        removeAllComponents();
+    	// prevent reentrance in dispose
+    	synchronized ( this)
+    	{
+	    	if ( disposing)
+	    	{
+	    		getLogger().warn("Disposing is called twice",new RaplaException(""));
+	    		return;
+	    	}
+	    	disposing = true;
+    	}
+    	try
+    	{
+    		removeAllComponents();
+    	}
+    	finally
+    	{
+    		disposing = false;
+    	}
     }
 
-    synchronized protected void removeAllComponents() {
+    protected void removeAllComponents() {
         Iterator<ComponentHandler> it = new ArrayList<ComponentHandler>(m_componentHandler).iterator();
         while ( it.hasNext() ) {
             it.next().dispose();
@@ -642,25 +663,70 @@ public class ContainerImpl implements Container
             this.logger = logger;
         }
 
-
+        Semaphore instanciating = new Semaphore(1);
         Object get() throws RaplaContextException {
-            if ( component == null)
-                component = instanciate( componentClassName, config, logger );
-
-            return component;
+        	 if ( component != null)
+	         {
+        		 return component;
+	         }
+        	 boolean acquired;
+        	 try {
+        		 acquired = instanciating.tryAcquire(60,TimeUnit.SECONDS);
+        	 } catch (InterruptedException e) {
+        		 throw new RaplaContextException("Timeout while waiting for instanciation of " + componentClassName );
+        	 }
+        	 if ( !acquired)
+        	 {
+        		 throw new RaplaContextException("Instanciating component " + componentClassName + " twice possible cyclic dependency",new RaplaException(""));
+        	 }
+        	 else
+        	 {
+        		 try
+        		 {
+	        		 // test again, maybe instanciated by another thread
+	        		 if ( component != null)
+	        		 {
+	        			 return component;
+	        		 }
+	        		 component = instanciate( componentClassName, config, logger );
+	        		 return component;
+        		 }
+        		 finally
+        		 {
+        			 instanciating.release();
+        		 }
+        	 }
         }
 
+        boolean disposing;
         public void dispose() {
-            if ( !dispose)
-                return;
-            try {
+        	// prevent reentrence in dispose
+        	synchronized ( this)
+        	{
+    	    	if ( disposing)
+    	    	{
+    	    		getLogger().warn("Disposing is called twice",new RaplaException(""));
+    	    		return;
+    	    	}
+    	    	disposing = true;
+        	}
+        	try
+        	{
                 if (component instanceof Disposable)
                 {
+                	if ( component == ContainerImpl.this)
+                	{
+                		return;
+                	}
                     ((Disposable) component).dispose();
                 }
             } catch ( Exception ex) {
                 getLogger().error("Error disposing component ", ex );
             }
+        	finally
+        	{
+        		disposing = false;
+        	}
         }
 
         

@@ -81,6 +81,12 @@ public interface RaplaLocale
     /** format with locale DateFormat.MEDIUM */
     String formatDateLong( Date date );
 
+    String formatTimestamp(Date timestamp);
+    
+    /**
+     * @deprecated Timestamps are only stored in rapla timezone (GMT+0) 
+     */
+    @Deprecated
     String formatTimestamp(Date timestamp, TimeZone timezone);
     
     /** Abbreviation of locale weekday name of date. */
@@ -97,25 +103,41 @@ public interface RaplaLocale
      */
     TimeZone getTimeZone();
     /**
-    which returns the timezone of the system where Rapla is running (java default)
+    returns the timezone of the system where Rapla is running (java default)
     this is used on the server for storing the dates in mysql. Prior to 1.7 Rapla always switched the system time to gmt for the mysql api. But now the dates are converted from GMT+0 to system time before storing. 
     Converted meens: 10:00am GMT+0 Raplatime is converted to 10:00am Europe/Berlin, if thats the system timezone. When loading 10:00am Europe/Berlin is converted back to 10:00am GMT+0.
     This timezone is also used for the timestamps, so created-at and last-changed dates are always stored in system time.
     Also the logging api uses this timezone and now logs are in system time.
     @see RaplaLocale#toRaplaTime(TimeZone, long)
+    @deprecated only used internally by the storage api 
     */
+    @Deprecated
     TimeZone getSystemTimeZone();
 
     /**
     returns the timezone configured via main options, this is per default the system timezon. This timezone is used for ical/exchange import/export
     If Rapla will support timezones in the future, than this will be the default timezone for all times. Now its only used on import and export. It works as with system time above. 10:00am GMT+0 is converted to 10:00am of the configured timezone on export and on import all times are converted to GMT+0.
     @see RaplaLocale#toRaplaTime(TimeZone, long)
+    @deprecated moved to ImportExportLocale 
     */
+    @Deprecated
     TimeZone getImportExportTimeZone();
-    
+
+    /**
+    @deprecated moved to ImportExportLocale 
+    */
+    @Deprecated
     long fromRaplaTime(TimeZone timeZone,long raplaTime);
+    /**
+    @deprecated moved to ImportExportLocale 
+    */
+    @Deprecated
 	long toRaplaTime(TimeZone timeZone,long time);
 
+    /**
+    @deprecated moved to ImportExportLocale 
+    */
+    @Deprecated
 	Date fromRaplaTime(TimeZone timeZone,Date raplaTime);
 	/**
 	 * converts a common Date object into a Date object that
@@ -133,6 +155,7 @@ public interface RaplaLocale
 	 * @param time
 	 *            the Date object in the passed timezone 
      * @see RaplaLocale#fromRaplaTime
+    @deprecated moved to ImportExportLocale 
 	 */
 	Date toRaplaTime(TimeZone timeZone,Date time);
 	

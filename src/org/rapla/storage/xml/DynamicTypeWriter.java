@@ -14,7 +14,6 @@ package org.rapla.storage.xml;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Iterator;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
@@ -22,7 +21,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -34,19 +32,6 @@ public class DynamicTypeWriter extends RaplaXMLWriter
         super(sm);
     }
 
-    private void printStartPattern() throws IOException {
-        openElement("relax:start");
-        openElement("relax:choice");
-        Iterator<?> it =  cache.getCollection(DynamicType.TYPE).iterator();
-        while (it.hasNext()) {
-            DynamicTypeImpl type = (DynamicTypeImpl) it.next();
-            openTag("relax:ref");
-            att("name",type.getElementKey());
-            closeElementTag();
-        }
-        closeElement("relax:choice");
-        closeElement("relax:start");
-    }
 
     public void printDynamicType(DynamicType type) throws IOException,RaplaException {
         openTag("relax:define");
@@ -82,7 +67,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
 
 
     private String getCategoryPath( Category category) throws EntityNotFoundException {
-        Category rootCategory = cache.getSuperCategory();
+        Category rootCategory = getSuperCategory();
         if ( category != null && rootCategory.equals( category) )
         {
             return "";
@@ -160,21 +145,6 @@ public class DynamicTypeWriter extends RaplaXMLWriter
         if (attribute.isOptional())
             closeElement("relax:optional");
     }
-    
-    
-  
-    public void printDynamicTypes()  throws IOException,RaplaException {
-        openElement("relax:grammar");
-        for (DynamicType type:cache.getCollection(DynamicType.class)) {
-            printDynamicType(type);
-            println();
-        }
-        printStartPattern();
-        closeElement("relax:grammar");
-    }
-    
-
-    
     
 
 }

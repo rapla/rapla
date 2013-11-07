@@ -12,12 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.locks.Lock;
@@ -73,8 +75,7 @@ import org.rapla.storage.xml.RaplaMainWriter;
  */
 final public class FileOperator extends LocalAbstractCachableOperator
 {
- 
-	private File storageFile;
+ 	private File storageFile;
     private URL loadingURL;
 
     private final String encoding;
@@ -181,19 +182,20 @@ final public class FileOperator extends LocalAbstractCachableOperator
         return isConnected;
     }
 
-    /** this implementation does nothing. Once connected isConnected will always return true.*/
     final public void disconnect() throws RaplaException
     {
     	boolean wasConnected = isConnected();
     	if ( wasConnected)
     	{
 	    	getLogger().info("Disconnecting: " + getURL());
+	    	cache.clearAll();
+	        idTable.setCache( cache );
 	        isConnected = false;
 	        fireStorageDisconnected("");
 	    	getLogger().debug("Disconnected");
     	}
     }
-
+    
     final public void refresh() throws RaplaException
     {
         getLogger().warn( "Incremental refreshs are not supported" );
@@ -311,10 +313,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out, LocalCache cache, boolean includeIds ) throws IOException, RaplaException
     {
-        RaplaContext outputContext = new IOContext().createOutputContext( context, cache, includeIds, includeVersions );
-        RaplaMainWriter writer = new RaplaMainWriter( outputContext );
+        RaplaContext outputContext = new IOContext().createOutputContext( context, cache.getSuperCategoryProvider(), includeIds, includeVersions );
+        RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
-        writer.write( out );
+        BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,encoding));
+        writer.setWriter(w);
+        writer.printContent();
+        w.flush();
     }
 
     private void moveFile( File file, String newPath ) 

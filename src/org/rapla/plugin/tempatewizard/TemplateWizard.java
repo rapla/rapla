@@ -18,6 +18,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.TreeSet;
 import javax.swing.MenuElement;
 
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
@@ -48,7 +50,7 @@ import org.rapla.gui.toolkit.RaplaMenuItem;
 */
 public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener
 {
-	Map<Component,Template> componentMap = new HashMap<Component, Template>();
+	Map<Component,String> componentMap = new HashMap<Component, String>();
     public TemplateWizard(RaplaContext sm){
         super(sm);
     }
@@ -59,9 +61,9 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 
 
     public MenuElement getMenuElement() {
-    	Map<String, Template> templateMap;
+    	Collection<String> templateNames;
 		try {
-			templateMap = getQuery().getTemplateMap();
+			templateNames = getQuery().getTemplateNames();
 		} catch (RaplaException e) {
 			getLogger().error(e.getMessage(), e);
 			return null;
@@ -70,18 +72,18 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 
 		boolean canCreateReservation = canCreateReservation();
 		MenuElement element;
-		if (templateMap.size() == 0)
+		if (templateNames.size() == 0)
 		{
 			return null;
 		}
-		if ( templateMap.size() == 1)
+		if ( templateNames.size() == 1)
 		{
 			RaplaMenuItem item = new RaplaMenuItem( getId());
 			item.setEnabled( canAllocate() && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( getIcon("icon.new"));
 			item.addActionListener( this);
-			Template template = templateMap.values().iterator().next();
+			String template = templateNames.iterator().next();
 			componentMap.put( item, template);
 			element = item;
 		}
@@ -92,7 +94,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( getIcon("icon.new"));
 			 
-			Set<String> templateSet = new TreeSet<String>(templateMap.keySet());
+			Set<String> templateSet = new TreeSet<String>(templateNames);
 			SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>();
 			if ( templateSet.size() >  10)
 			{
@@ -125,26 +127,25 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 						int millisToScroll = 40;
 						MenuScroller.setScrollerFor( subMenu, maxItems , millisToScroll);
 					}
-					addTemplates(templateMap, subMenu, set);
+					addTemplates(templateNames, subMenu, set);
 					item.add( subMenu);
 				}
 			}
 			else
 			{
-				addTemplates(templateMap, item, templateSet);
+				addTemplates(templateNames, item, templateSet);
 			}
 			element = item;
 		}
 		return element;
 	}
 
-	public void addTemplates(Map<String, Template> templateMap, RaplaMenu item,
+	public void addTemplates(Collection<String> templateMap, RaplaMenu item,
 			Set<String> templateSet) {
 		for ( String templateName:templateSet)
 		{
-			final Template template = templateMap.get( templateName);
 			RaplaMenuItem newItem = new RaplaMenuItem(templateName);
-			componentMap.put( newItem, template);
+			componentMap.put( newItem, templateName);
 			newItem.setText( templateName );
 			item.add( newItem);
 			newItem.addActionListener( this);
@@ -215,27 +216,38 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			CalendarModel model = getService(CalendarModel.class);
 	    	Date beginn = getStartDate( model);
 	    	Object source = e.getSource();
-	    	Template template = componentMap.get( source);
-			Collection<Reservation> reservations = template.getReservations();
-			List<Entity<Reservation>> newReservations = copy( reservations, beginn);
-			Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-			if (markedAllocatables != null )
-			{
-				for (Entity<Reservation> reservation: newReservations)
+	    	String templateName = componentMap.get( source);
+	    	Collection<Template> templates = getQuery().getTemplates( Collections.singleton( templateName));
+	    	List<Entity<Reservation>> newReservations;
+	    	if ( templates.iterator().hasNext())
+	    	{
+				Template template = templates.iterator().next();
+				Collection<Reservation> reservations = template.getReservations();
+				newReservations = copy( reservations, beginn);
+				Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+				if (markedAllocatables != null )
 				{
-					Reservation event = reservation.cast();
-					if ( event.getAllocatables().length == 0)
+					for (Entity<Reservation> reservation: newReservations)
 					{
-						for ( Allocatable alloc:markedAllocatables)
+						Reservation event = reservation.cast();
+						if ( event.getAllocatables().length == 0)
 						{
-							if (!event.hasAllocated(alloc))
+							for ( Allocatable alloc:markedAllocatables)
 							{
-								event.addAllocatable( alloc);
-							}
-						}	
+								if (!event.hasAllocated(alloc))
+								{
+									event.addAllocatable( alloc);
+								}
+							}	
+						}
 					}
 				}
-			}
+	    	}
+	    	else
+	    	{
+	    		showException(new EntityNotFoundException("Template " + templateName + " not found"), getMainComponent());
+	    		return;
+	    	}
 			
 			if ( newReservations.size() == 1)
 			{

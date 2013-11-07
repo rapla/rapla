@@ -214,6 +214,20 @@ public class RaplaLocaleImpl implements RaplaLocale {
         }
         return buf.toString();
     }
+    
+    public String formatTimestamp( Date date ) 
+    {
+        StringBuffer buf = new StringBuffer();
+        {
+            buf.append( formatDate( date ));
+        }
+        buf.append(" ");
+        {
+            buf.append( formatTime( date ));
+        }
+        return buf.toString();
+    }
+
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getWeekday(java.util.Date)

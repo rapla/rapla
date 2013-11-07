@@ -16,8 +16,11 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.ical.server.RaplaICalImport;
+import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.internal.TimeZoneConverterImpl;
 
 public class ICalImportTest extends RaplaTestCase{
 
@@ -26,7 +29,9 @@ public class ICalImportTest extends RaplaTestCase{
 	}
 	
 	public void testICalImport1() throws Exception{
-        RaplaContext context = getContext();
+        RaplaContext parentContext = getContext();
+        RaplaDefaultContext context = new RaplaDefaultContext(parentContext);
+        context.put( TimeZoneConverter.class, new TimeZoneConverterImpl());
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         RaplaICalImport importer = new RaplaICalImport(context, timezone);
         boolean isUrl = true;
@@ -41,7 +46,9 @@ public class ICalImportTest extends RaplaTestCase{
     }
 	
 	public void testICalImport2() throws Exception{
-	    RaplaContext context = getContext();
+        RaplaContext parentContext = getContext();
+        RaplaDefaultContext context = new RaplaDefaultContext(parentContext);
+        context.put( TimeZoneConverter.class, new TimeZoneConverterImpl());
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         RaplaICalImport importer = new RaplaICalImport(context, timezone);
         boolean isUrl = false;

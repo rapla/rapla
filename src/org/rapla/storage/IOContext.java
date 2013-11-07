@@ -17,6 +17,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
+import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
@@ -116,8 +117,9 @@ public class IOContext
      }
     public static TypedComponentRole<Boolean> IDONLY = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
     public static TypedComponentRole<Boolean> PRINTVERSIONS = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".printversion");
+    public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<Provider<Category>>( IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultContext createOutputContext(RaplaContext parentContext, LocalCache cache, boolean includeIds, boolean includeVersions) throws RaplaException {
+    public RaplaDefaultContext createOutputContext(RaplaContext parentContext, Provider<Category> superCategory,boolean includeIds, boolean includeVersions) throws RaplaException {
         
         RaplaDefaultContext ioContext = new RaplaDefaultContext( parentContext);
         if ( includeIds)
@@ -128,7 +130,10 @@ public class IOContext
         {
             ioContext.put(PRINTVERSIONS, Boolean.TRUE);
         }
-        ioContext.put(LocalCache.class, cache);
+        if ( superCategory != null)
+        {
+        	ioContext.put( SUPERCATEGORY, superCategory);
+        }
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
         Map<RaplaType,RaplaXMLWriter> writerMap = new HashMap<RaplaType,RaplaXMLWriter>();
         ioContext.put(PreferenceWriter.WRITERMAP, writerMap);

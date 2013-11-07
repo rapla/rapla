@@ -65,12 +65,14 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
 
     public Category[] getCategories() {
         if (!childArrayUpToDate || childs == null) {
-            ArrayList<Category> categoryList = new ArrayList<Category>();
-            Iterator<RefEntity<?>> it = getSubEntities();
-            while (it.hasNext())
-                categoryList.add((Category)it.next());
-            childs = categoryList.toArray(Category.CATEGORY_ARRAY);
-            childArrayUpToDate = true;
+        	synchronized ( this) {
+            	ArrayList<Category> categoryList = new ArrayList<Category>();
+                Iterator<RefEntity<?>> it = getSubEntities();
+                while (it.hasNext())
+                    categoryList.add((Category)it.next());
+                childs = categoryList.toArray(Category.CATEGORY_ARRAY);
+                childArrayUpToDate = true;
+			}
         }
         return childs;
     }
@@ -329,9 +331,11 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public void copy(Category obj) {
-        CategoryImpl category = (CategoryImpl)obj;
-		super.copy((SimpleEntity<Category>)category);
-        copy(category,this);
+    	synchronized (this) {
+            CategoryImpl category = (CategoryImpl)obj;
+    		super.copy((SimpleEntity<Category>)category);
+            copy(category,this);
+		}
     }
 
     public Category deepClone() {

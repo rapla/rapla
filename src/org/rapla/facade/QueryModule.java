@@ -135,6 +135,12 @@ public interface QueryModule
     
 	public boolean canEditTemplats(User user);
 
+	public Collection<String> getTemplateNames() throws RaplaException;
+	
+	public Collection<Template> getTemplates(Collection<String> names) throws RaplaException;
+
+	/** @deprecated use getTemplateNames and getTemplate instead*/
+	@Deprecated
 	Map<String, Template> getTemplateMap() throws RaplaException;
 }
 

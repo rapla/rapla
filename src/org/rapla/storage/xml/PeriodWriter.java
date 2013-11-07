@@ -42,17 +42,6 @@ public class PeriodWriter extends RaplaXMLWriter {
         printPeriod( (Period) object);
     }
 
-
-    void printPeriods() throws IOException {
-        openElement("rapla:periods");
-        for (Period period: cache.getCollection(Period.class))
-        {
-            printPeriod(period);
-        }
-        closeElement("rapla:periods");
-    }
-
-
 }
 
 

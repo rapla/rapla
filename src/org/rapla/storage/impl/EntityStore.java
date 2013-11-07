@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.components.util.Assert;
+import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -21,14 +22,13 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.storage.LocalCache;
 
 public class EntityStore implements EntityResolver {
     HashMap<Object,RefEntity<?>> entities = new HashMap<Object,RefEntity<?>>();
     HashSet<Object> idsToRemove = new HashSet<Object>();
     HashSet<Object> idsToStore = new HashSet<Object>();
     HashSet<Object> idsToReference = new HashSet<Object>();
-    LocalCache parent;
+    EntityResolver parent;
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashSet<Allocatable> allocatables = new HashSet<Allocatable>();
     
@@ -36,9 +36,9 @@ public class EntityStore implements EntityResolver {
     HashMap<Object,String> passwordList = new HashMap<Object,String>();
     long repositoryVersion;
     
-    public EntityStore(LocalCache parent,CategoryImpl superCategory) {
+    public EntityStore(EntityResolver parent,Category superCategory) {
         this.parent = parent;
-        this.superCategory = superCategory;
+        this.superCategory = (CategoryImpl) superCategory;
        // put( superCategory);
     }
     
@@ -53,12 +53,12 @@ public class EntityStore implements EntityResolver {
     public void put(RefEntity<?> entity) {
         Object id = entity.getId();
         Assert.notNull(id);
-        if ( entity.getRaplaType().equals( DynamicType.TYPE))
+        if ( entity.getRaplaType() == DynamicType.TYPE)
         {
             DynamicType dynamicType = (DynamicType) entity;
             dynamicTypes.put ( dynamicType.getElementKey(), dynamicType);
         }
-        if ( entity.getRaplaType().equals( Allocatable.TYPE))
+        if ( entity.getRaplaType() ==  Allocatable.TYPE)
         {
         	Allocatable allocatable = (Allocatable) entity;
             allocatables.add (  allocatable);
@@ -112,7 +112,7 @@ public class EntityStore implements EntityResolver {
 
     // Implementation of EntityResolver
     public RefEntity<?> resolve(Object id) throws EntityNotFoundException {
-        RefEntity<?> result = get (id );
+        RefEntity<?> result = tryResolve(id );
         if ( result == null)
         {
             throw new EntityNotFoundException("Object for id " + id.toString() + " not found", (Comparable) id);
@@ -153,7 +153,7 @@ public class EntityStore implements EntityResolver {
         return passwordList.get(userid);
     }
 
-    public RefEntity<?> get( Object id )
+    public RefEntity<?> tryResolve( Object id )
     {
     	Assert.notNull( id);
         RefEntity<?> entity = entities.get(id);
@@ -167,7 +167,7 @@ public class EntityStore implements EntityResolver {
       
         if (parent != null)
         {
-            return parent.get(id);
+            return parent.tryResolve(id);
             
         }
         return null;

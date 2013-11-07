@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -67,7 +68,13 @@ public class SecurityManager
             throw new RaplaSecurityException("No id set");
 
         boolean permitted = false;
-        RefEntity<?> original = operator.getCache().get(entity.getId());
+        RefEntity<?> original;
+		try {
+			Comparable id2 = entity.getId();
+			original = operator.resolve(id2);
+		} catch (EntityNotFoundException e) {
+			original = null;
+		}
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
 
@@ -105,7 +112,7 @@ public class SecurityManager
         if (!permitted && entity instanceof Appointment)
         {
             final RefEntity<?> reservation = (RefEntity<?>)((Appointment)entity).getReservation();
-            RefEntity<?> originalReservation = operator.getCache().get(reservation.getId());
+            RefEntity<?> originalReservation = operator.tryResolve(reservation.getId());
             if ( originalReservation != null)
             {
             	permitted = RaplaComponent.checkClassifiablePermissions(originalReservation, user);

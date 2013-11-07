@@ -14,7 +14,6 @@
 package org.rapla.storage.xml;
 
 import java.text.ParseException;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
@@ -68,7 +67,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         this.idTable = context.lookup( IdTable.class );
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         dateTimeFormat = new SerializableDateTimeFormat( raplaLocale.createCalendar() );
-        dateTimeFormatTimestamp = new SerializableDateTimeFormat(Calendar.getInstance(raplaLocale.getSystemTimeZone()));
+        dateTimeFormatTimestamp = new SerializableDateTimeFormat(raplaLocale.createCalendar());
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );
     }

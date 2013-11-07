@@ -62,6 +62,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
@@ -700,18 +701,22 @@ public class RaplaComponent
 	public static Lock lock(Lock lock, int seconds) throws RaplaException {
 		try
 		{
+			if ( lock.tryLock())
+			{
+				return lock;
+			}
 			if (lock.tryLock(seconds, TimeUnit.SECONDS))
 			{
 				return lock;
 			}
 			else
 			{
-				throw new RaplaException("Can't acquire " + lock);
+				throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire lock " + lock );
 			}
 		}
 		catch (InterruptedException ex)
 		{
-			throw new RaplaException( ex);
+			throw new RaplaSynchronizationException( ex);
 		}
 	}
 }

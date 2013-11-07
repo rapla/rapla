@@ -99,7 +99,8 @@ public interface StorageOperator {
     /** returns the beginning of the current day. Server time will be used if in client/server mode. */
     Date today();
 
-    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. 
+    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Warning the current timestamp is returned in RaplaTime.
+     * That means the time difference between GMT+0 and the configured rapla timezone is added, e.g. if you are in GMT+1, one hour is added to the system time. 
      * @throws RaplaException */
     Date getCurrentTimestamp() throws RaplaException;
     

@@ -504,8 +504,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 		setInt(stmt,3, allocatable.isHoldBackConflicts()? 1:0);
 		org.rapla.entities.Timestamp timestamp = allocatable;
 		setId(stmt,4, allocatable.getOwner() );
-		setTimestamp(stmt, 5,timestamp.getCreateTime() );
-		setTimestamp(stmt, 6,timestamp.getLastChangeTime() );
+		setDate(stmt, 5,timestamp.getCreateTime() );
+		setDate(stmt, 6,timestamp.getLastChangeTime() );
 		setId( stmt,7,timestamp.getLastChangedBy() );
 		stmt.addBatch();
       	return 1;
@@ -515,8 +515,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
         SimpleIdentifier id= readId(rset,1, Allocatable.class);
     	String typeKey = getString(rset,2 , null);
 		boolean ignoreConflicts = getInt( rset, 3 ) == 1;
-		final Date createDate = getTimestamp( rset, 5);
-		final Date lastChanged = getTimestamp( rset, 6);
+		final Date createDate = getDate( rset, 5);
+		final Date lastChanged = getDate( rset, 6);
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
     	allocatable.setId( id);
@@ -570,16 +570,16 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
       	setString(stmt,2, typeKey );
     	setId(stmt,3, event.getOwner() );
     	org.rapla.entities.Timestamp timestamp = event;
-        setTimestamp( stmt,4,timestamp.getCreateTime());
-        setTimestamp( stmt,5,timestamp.getLastChangeTime());
+        setDate( stmt,4,timestamp.getCreateTime());
+        setDate( stmt,5,timestamp.getLastChangeTime());
         setId(stmt, 6, timestamp.getLastChangedBy());
         stmt.addBatch();
         return 1;
     }
 
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	final Date createDate = getTimestamp(rset,4);
-        final Date lastChanged = getTimestamp(rset,5);
+    	final Date createDate = getDate(rset,4);
+        final Date lastChanged = getDate(rset,5);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
     	SimpleIdentifier id = readId(rset,1,Reservation.class);
 		event.setId( id);

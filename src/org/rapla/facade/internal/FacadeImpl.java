@@ -132,7 +132,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	Logger logger;
 	
-	Template template;
+	String templateName;
 
 	
 	public FacadeImpl(RaplaContext context, Configuration config, Logger logger) throws RaplaException {
@@ -338,7 +338,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public AllocationChangeEvent[] createAllocationChangeEvents(UpdateResult evt) {
 		Logger logger = getLogger().getChildLogger("trigger.allocation");
-		return AllocationChangeFinder.getTriggerEvents(evt, logger).toArray( new AllocationChangeEvent[0]);
+		List<AllocationChangeEvent> triggerEvents = AllocationChangeFinder.getTriggerEvents(evt, logger);
+		return triggerEvents.toArray( new AllocationChangeEvent[0]);
 	}
 
 	public void addUpdateErrorListener(UpdateErrorListener listener) {
@@ -485,11 +486,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	int queryCounter = 0;
 	private Collection<Reservation> getVisibleReservations(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters)
 			throws RaplaException {
-		if ( template != null)
+		if ( templateName != null)
 		{
-			Template template2 = getTemplateMap().get( template.getName());
-			if ( template2 != null)
+			Collection<Template> templates = getTemplates( Collections.singleton(templateName));
+			if ( templates.iterator().hasNext())
 			{
+				Template template2 = templates.iterator().next();
 				return template2.getReservations();
 			}
 			else
@@ -592,6 +594,39 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throw new RaplaException("No category '"+ Permission.GROUP_CATEGORY_KEY + "' available");
 		}
 		return userGroups;
+	}
+	
+	public Collection<String> getTemplateNames() throws RaplaException
+	{
+		autologin();
+		Map<String, Template> templateMap = operator.getTemplateMap();
+		if ( templateMap != null)
+		{
+			return templateMap.keySet();
+		}
+		else
+		{
+			return Collections.emptyList();
+		}
+	}
+	
+	public Collection<Template> getTemplates(Collection<String> names) throws RaplaException
+	{
+		autologin();
+		List<Template> list = new ArrayList<Template>();
+		Map<String, Template> templateMap = operator.getTemplateMap();
+		if (templateMap != null)
+		{
+			for ( String name:names)
+			{
+				Template template = templateMap.get( name);
+				if ( template != null )
+				{
+					list.add( template);
+				}
+			}
+		}
+		return list;
 	}
 	
 	public Map<String, Template> getTemplateMap() throws RaplaException
@@ -733,7 +768,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 						{
 							for ( Appointment conflictingAppointment: conflictionAppointments)
 							{
-								ConflictImpl.addConflicts(conflictList,appointment,conflictingAppointment,allocatable, today);
+								
+								Appointment appointment1 = appointment;
+								Appointment appointment2 = conflictingAppointment;
+								if (ConflictImpl.isConflict(appointment1, appointment2, today))
+		                		{
+		                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2);
+		                		}
 							}
 						}
 					}
@@ -1002,16 +1043,21 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 ******************************/
 	public String getTemplateName() 
 	{
-		if ( template != null)
+		if ( templateName != null)
 		{
-			return template.getName();
+			return templateName;
 		}
 		return null;
 	}
-	
-	public void setTemplate(Template template) 
+
+	public void setTemplate(Template template)
 	{
-		this.template = template;
+		setTemplateName( template != null ? template.getName() : null);
+	}
+
+	public void setTemplateName(String templateName) 
+	{
+		this.templateName = templateName;
 		cachedReservations = null;
 		cacheValidString = null;
 		UpdateResult updateResult = new UpdateResult( workingUser);
@@ -1053,9 +1099,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         autologin();
     	Date now = operator.getCurrentTimestamp();
         ReservationImpl reservation = new ReservationImpl(now ,now );
-        if ( template != null )
+        if ( templateName != null )
         {
-        	reservation.setAnnotation(Reservation.TEMPLATE, template.getName());
+        	reservation.setAnnotation(Reservation.TEMPLATE, templateName);
         }
         reservation.setClassification(classification);
         setNew(reservation, user);
@@ -1335,9 +1381,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			{
 				r.setOwner( workingUser );
 			}
-			if ( template != null )
+			if ( templateName != null )
 			{
-				r.setAnnotation(Reservation.TEMPLATE, template.getName());
+				r.setAnnotation(Reservation.TEMPLATE, templateName);
 			}
 			else
 			{
@@ -1374,8 +1420,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	@SuppressWarnings({ "unchecked" })
+	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
+	 */
 	private Reservation cloneReservation(Entity<Reservation> obj)
 			throws RaplaException {
+		// first we do a reservation deep clone
 		Reservation clone =  ((Mementable<Reservation>) obj).deepClone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
 		Allocatable[] allocatables = clone.getAllocatables();
@@ -1384,6 +1433,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			restrictions.put(allocatable, clone.getRestriction(allocatable));
 		}
 
+		// then we set new ids for all appointments
 		Appointment[] clonedAppointments = clone.getAppointments();
 		setNew(Arrays.asList(clonedAppointments),Appointment.TYPE, this.workingUser);
 		
@@ -1391,7 +1441,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			clone.removeAppointment(clonedAppointment);
 		}
 
-		
+		// and now a new id for the reservation
 		setNew((RefEntity<Reservation>) clone, this.workingUser);
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.addAppointment(clonedAppointment);

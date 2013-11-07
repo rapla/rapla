@@ -87,29 +87,10 @@ public class AllocatableWriter extends ClassifiableWriter {
     }
 
     private String getGroupPath( Category category) throws EntityNotFoundException {
-        Category rootCategory = cache.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        Category rootCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
         return ((CategoryImpl) rootCategory ).getPathForCategory(category);
     }
 
-    public void printAllocatables() throws IOException,RaplaException {
-        openElement("rapla:resources");
-        println("<!-- resources -->");
-        // Print all resources that are not persons
-        for (Allocatable allocatable:cache.getCollection(Allocatable.class)) {
-            if ( allocatable.isPerson() )
-                continue;
-            printAllocatable(allocatable);
-        }
-        // Print all Persons
-        for (Allocatable allocatable:cache.getCollection(Allocatable.class)) {
-            if ( !allocatable.isPerson() )
-                continue;
-            printAllocatable(allocatable);
-        }
-        println();
-        closeElement("rapla:resources");
-
-    }
 
 
 }

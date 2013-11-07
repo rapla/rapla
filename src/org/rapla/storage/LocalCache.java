@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
@@ -31,7 +30,6 @@ import org.rapla.components.util.iterator.FilterIterator;
 import org.rapla.components.util.iterator.NestedIterator;
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -39,7 +37,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -49,7 +46,6 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
@@ -59,6 +55,7 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaException;
 
 public class LocalCache implements EntityResolver
@@ -80,45 +77,7 @@ public class LocalCache implements EntityResolver
     Map<RaplaType,Set<? extends RefEntity<?>>> entityMap;
 
     Locale locale;
-    DynamicTypeImpl unresolvedAllocatableType = new DynamicTypeImpl();
-    DynamicTypeImpl anonymousReservationType = new DynamicTypeImpl();
-    {
-    	try
-    	{
-	    	{
-				DynamicTypeImpl unresolved = unresolvedAllocatableType;
-				String key = "unresolved_resource";
-				unresolved.setElementKey(key);
-				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, -1));
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				unresolved.getName().setName("en", "anonymous");
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-				unresolved.setReadOnly( true);
-			}
-			{
-				DynamicTypeImpl unresolved = anonymousReservationType;
-				String key = "anonymous";
-				unresolved.setElementKey(key);
-				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, 0));
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-				unresolved.getName().setName("en", "anonymous");
-				unresolved.setReadOnly( true);
-			}
-    	}
-    	catch ( IllegalAnnotationException ex)
-    	{
-    		throw new IllegalStateException( ex.getMessage());
-    	}
-    }
-
-    // Index for start and end dates
-    TreeSet<Appointment> appointmentsStart;
-    
-    public SortedSet<Appointment> getAppointmentsSortedByStart() {
-		return appointmentsStart;
-	}
-    
+  
     class IdComparator implements Comparator<RefEntity<?>> {
         public int compare(RefEntity<?> o1,RefEntity<?> o2) {
             SimpleIdentifier id1 = (SimpleIdentifier)o1.getId();
@@ -164,13 +123,11 @@ public class LocalCache implements EntityResolver
         entityMap.put(Appointment.TYPE,appointments);
         entityMap.put(Preferences.TYPE, preferences);
 
-
-        appointmentsStart = new TreeSet<Appointment>(new AppointmentStartComparator());
         initSuperCategory();
     }
     
     /** @return true if the entity has been removed and false if the entity was not found*/
-    synchronized public boolean remove(RefEntity<?> entity) {
+    public boolean remove(RefEntity<?> entity) {
         RaplaType raplaType = entity.getRaplaType();
         Set<? extends RefEntity<?>> entitySet = entityMap.get(raplaType);
         boolean bResult = true;
@@ -181,9 +138,6 @@ public class LocalCache implements EntityResolver
                 return false;
 
 
-            if ( Appointment.TYPE == raplaType ) {
-                removeAppointment(entity);
-            }
 
             entities.remove(entity.getId());
             entitySet.remove( entity );
@@ -193,8 +147,13 @@ public class LocalCache implements EntityResolver
         return bResult;
     }
 
-    synchronized public void put(RefEntity<?> entity) {
+    public void put(RefEntity<?> entity) {
         Assert.notNull(entity);
+        // We don't add the superCategory
+        if (entity == superCategory)
+        {
+        	return;
+        }
         RaplaType raplaType = entity.getRaplaType();
         Object id = entity.getId();
         if (id == null)
@@ -204,11 +163,7 @@ public class LocalCache implements EntityResolver
 		Set<RefEntity<?>> entitySet =  (Set<RefEntity<?>>) entityMap.get(raplaType);
         if (entitySet != null) {
 
-            if (Appointment.TYPE == raplaType ) {
-                removeAppointment(entity);
-                Appointment appointment = (Appointment)entity;
-				appointmentsStart.add(appointment);
-	        }
+         
             entities.put(id,entity);
             entitySet.remove( entity );
 			entitySet.add( entity );
@@ -220,28 +175,38 @@ public class LocalCache implements EntityResolver
     }
 
 
-    public RefEntity<?> get(Object id) {
+    public RefEntity<?> tryResolve(Object id) {
         if (id == null)
             throw new RuntimeException("id is null");
         return entities.get(id);
     }
+//
+//    appointmentsStart = new TreeSet<Appointment>(new AppointmentStartComparator());
+//    
+//    if (Appointment.TYPE == raplaType ) {
+//        removeAppointment(entity);
+//        Appointment appointment = (Appointment)entity;
+//		appointmentsStart.add(appointment);
+//    }
+//    private void removeAppointment(RefEntity<?> entity) {
+//        if (appointments.remove(entity)) {
+//            // start date could have been changed, so we probably won't find it with a binary search
+//            if (!appointmentsStart.remove(entity)) {
+//                Iterator<Appointment> it = appointmentsStart.iterator();
+//                while (it.hasNext())
+//                    if (entity.equals(it.next())) {
+//                        it.remove();
+//                        break;
+//                    }
+//            }
+//        }
+//    }
 
-    synchronized private void removeAppointment(RefEntity<?> entity) {
-        if (appointments.remove(entity)) {
-            // start date could have been changed, so we probably won't find it with a binary search
-            if (!appointmentsStart.remove(entity)) {
-                Iterator<Appointment> it = appointmentsStart.iterator();
-                while (it.hasNext())
-                    if (entity.equals(it.next())) {
-                        it.remove();
-                        break;
-                    }
-            }
-        }
-    }
+//    appointmentsStart.clear();
 
+    
     @SuppressWarnings("unchecked")
-	synchronized public <T extends RefEntity<?>> Collection<T> getCollection(RaplaType type) {
+	public <T extends RefEntity<?>> Collection<T> getCollection(RaplaType type) {
         Set<? extends RefEntity<?>> entities =  entityMap.get(type);
         if ( Period.TYPE.equals( type)) {
             entities = new TreeSet<RefEntity<?>>( entities);
@@ -278,13 +243,12 @@ public class LocalCache implements EntityResolver
     }
 	*/
 
-    synchronized public void clearAll() {
+    public void clearAll() {
         passwords.clear();
         Iterator<Set<? extends RefEntity<?>>> it = entityMap.values().iterator();
         while (it.hasNext()) {
             it.next().clear();
         }
-        appointmentsStart.clear();
         entities.clear();
         initSuperCategory();
     }
@@ -301,10 +265,10 @@ public class LocalCache implements EntityResolver
 
     public static Comparable SUPER_CATEGORY_ID = new SimpleIdentifier(Category.TYPE,0);
     public CategoryImpl getSuperCategory() {
-        return (CategoryImpl) get(SUPER_CATEGORY_ID);
+        return (CategoryImpl) tryResolve(SUPER_CATEGORY_ID);
     }
 
-    synchronized public Collection<Attribute> getAttributeList(RefEntity<?> ref)    {
+    public Collection<Attribute> getAttributeList(RefEntity<?> ref)    {
         HashSet<Attribute> result = new HashSet<Attribute>();
         Iterator<AttributeImpl> it = attributes.iterator();
         while (it.hasNext()) {
@@ -315,7 +279,7 @@ public class LocalCache implements EntityResolver
         return result;
     }
 
-    synchronized public Collection<DynamicType> getDynamicTypeList(RefEntity<?> ref)    {
+    public Collection<DynamicType> getDynamicTypeList(RefEntity<?> ref)    {
         HashSet<DynamicType> result = new HashSet<DynamicType>();
         Iterator<Attribute> it = getAttributeList(ref).iterator();
         while (it.hasNext()) {
@@ -324,7 +288,7 @@ public class LocalCache implements EntityResolver
         return result;
     }
 
-    synchronized public Collection<RefEntity<?>> getReferers(RaplaType raplaType,RefEntity<?> object) {
+    public Collection<RefEntity<?>> getReferers(RaplaType raplaType,RefEntity<?> object) {
         ArrayList<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
         Iterator<RefEntity<?>> it = getCollection(raplaType).iterator();
         while (it.hasNext())
@@ -337,7 +301,7 @@ public class LocalCache implements EntityResolver
         return result;
     }
 
-    synchronized public UserImpl getUser(String username) {
+    public UserImpl getUser(String username) {
         for (UserImpl user: users)
         {
             if (user.getUsername().equals(username))
@@ -351,7 +315,7 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    synchronized public PreferencesImpl getPreferences(User user) {
+    public PreferencesImpl getPreferences(User user) {
         Iterator<PreferencesImpl> it = preferences.iterator();
         while (it.hasNext()) {
             PreferencesImpl pref =  it.next();
@@ -393,7 +357,7 @@ public class LocalCache implements EntityResolver
         }
     }
 
-    synchronized public DynamicTypeImpl getDynamicType(String elementKey) {
+    public DynamicTypeImpl getDynamicType(String elementKey) {
         Iterator<DynamicTypeImpl> it = dynamicTypes.iterator();
         while (it.hasNext()) {
             DynamicTypeImpl dt =  it.next();
@@ -403,7 +367,7 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    synchronized public Iterator<RefEntity<?>> getVisibleEntities(final User user) {
+    public Iterator<RefEntity<?>> getVisibleEntities(final User user) {
         return new NestedIterator<RefEntity<?>>(entityMap.keySet().iterator()) {
                 @SuppressWarnings("unchecked")
 				public Iterator<RefEntity<?>> getNestedIterator(Object key) {
@@ -466,7 +430,7 @@ public class LocalCache implements EntityResolver
             };
     }
 
-    synchronized public  Iterator<RefEntity<?>> getAllEntities() {
+    public  Iterator<RefEntity<?>> getAllEntities() {
         return new NestedIterator<RefEntity<?>>(entityMap.keySet().iterator()) {
                 @SuppressWarnings("unchecked")
 				public Iterator<RefEntity<?>> getNestedIterator(Object raplaType) {
@@ -488,7 +452,7 @@ public class LocalCache implements EntityResolver
         if (!(id instanceof SimpleIdentifier))
             throw new EntityNotFoundException("Unknown identifier class: " + id.getClass()
                                         + ". Only the SimpleIdentier class is supported.");
-        RefEntity<?> entity =  get(id);
+        RefEntity<?> entity =  tryResolve(id);
 
         if (entity == null)
             throw new EntityNotFoundException("Object for id [" + id.toString() + "] not found",(Comparable)id);
@@ -503,16 +467,15 @@ public class LocalCache implements EntityResolver
         passwords.put(userId,password);
     }
 
-    synchronized public void putAll( Collection<? extends RefEntity<?>> list )
+    public void putAll( Collection<? extends RefEntity<?>> list )
     {
     	for (RefEntity<?> obj: list )
     	{
-            put(obj);
+    		put(obj);
         }
     }
-    
 
-	synchronized public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
+	public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
     {
 		Set<? extends RefEntity<?>> entities = entityMap.get(Allocatable.TYPE);
     	for (RefEntity<?> entity: entities)
@@ -530,17 +493,13 @@ public class LocalCache implements EntityResolver
         }
     	throw new EntityNotFoundException("Object for email " + emailArg + " not found");
     }
-
-	public DynamicTypeImpl getUnresolvedAllocatableType() 
-	{
-		return unresolvedAllocatableType;
-	}
-
-
-
-	public DynamicTypeImpl getAnonymousReservationType() 
-	{
-		return anonymousReservationType;
+	
+	public Provider<Category> getSuperCategoryProvider() {
+		return new Provider<Category>() {
+			public Category get() {
+				return getSuperCategory();
+			}
+		};
 	}
 
 }

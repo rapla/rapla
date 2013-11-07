@@ -59,6 +59,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.server.TimeZoneConverter;
 
 public class Export2iCalConverter extends RaplaComponent {
 
@@ -68,9 +69,11 @@ public class Export2iCalConverter extends RaplaComponent {
     private String exportAttendeesAttribute;
     private String exportAttendeesParticipationStatus;
     private boolean doExportAsMeeting;
+    TimeZoneConverter timezoneConverter;
 
     public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences, Configuration config) throws RaplaContextException {
         super(context);
+        timezoneConverter = context.lookup( TimeZoneConverter.class);
         calendar = context.lookup(RaplaLocale.class).createCalendar();
         doExportAsMeeting = false;
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
@@ -622,7 +625,7 @@ public class Export2iCalConverter extends RaplaComponent {
     }
 
     private DateTime convertRaplaLocaleToUTC(Date date) {
-        Date converted = getRaplaLocale().fromRaplaTime(timeZone, date);
+        Date converted = timezoneConverter.fromRaplaTime(timeZone, date);
         DateTime result = new DateTime(converted.getTime());
         return result;
     }

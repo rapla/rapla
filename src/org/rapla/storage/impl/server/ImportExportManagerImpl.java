@@ -18,6 +18,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
 /**  Imports the content of on store into another.
@@ -57,7 +58,10 @@ public class ImportExportManagerImpl implements ImportExportManager {
     public void doImport() throws RaplaException {
         Logger logger = getLogger();
 		logger.info("Import from " + sourceString + " into " + destString);
-        doConvert(getSource(),getDestination());
+        CachableStorageOperator source = getSource();
+        source.connect();
+		CachableStorageOperator destination = getDestination();
+		doConvert(source,destination);
         logger.info("Import completed");
     }
 
@@ -65,13 +69,21 @@ public class ImportExportManagerImpl implements ImportExportManager {
     public void doExport() throws RaplaException {
         Logger logger = getLogger();
 		logger.info("Export from " +  destString + " into " + sourceString);
-        doConvert(getDestination(),getSource());
+        CachableStorageOperator destination = getDestination();
+        destination.connect();
+		CachableStorageOperator source = getSource();
+		doConvert(destination,source);
         logger.info("Export completed");
     }
 
-    private void doConvert(CachableStorageOperator cachableStorageOperator1,CachableStorageOperator cachableStorageOperator2) throws RaplaException {
-    	LocalCache cache = cachableStorageOperator1.getCache();
-    	cachableStorageOperator2.saveData(cache);
+    private void doConvert(final CachableStorageOperator cachableStorageOperator1,final CachableStorageOperator cachableStorageOperator2) throws RaplaException {
+    	cachableStorageOperator1.runWithReadLock( new CachableStorageOperatorCommand() {
+			
+			public void execute(LocalCache cache) throws RaplaException {
+		    	cachableStorageOperator2.saveData(cache);				
+			}
+		});
+
     }
 
 	@Override

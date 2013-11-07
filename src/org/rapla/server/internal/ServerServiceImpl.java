@@ -38,6 +38,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
@@ -55,13 +56,14 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.export2ical.server.RaplaICalTimezones;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.DefaultHTMLMenuEntry;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
@@ -71,7 +73,6 @@ import org.rapla.servletpages.RaplaResourcePageGenerator;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -82,6 +83,7 @@ import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
@@ -115,6 +117,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
     {
         super( parentContext, config, logger );
+        addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
         i18n =  parentContext.lookup( RaplaComponent.RAPLA_RESOURCES );
         Configuration login = config.getChild( "login" );
         String username = login.getChild( "username" ).getValue( null );
@@ -214,15 +217,34 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         }
         
         Preferences preferences = operator.getPreferences( null );
-        
-        String timezoneId = preferences.getEntryAsString(RaplaMainContainer.TIMEZONE, new RaplaICalTimezones(context).getDefaultTimezone());
+        RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+    	String importExportTimeZone = TimeZone.getDefault().getID();
+		if ( entry != null)
+		{
+			Configuration find = entry.find("class", Export2iCalPlugin.PLUGIN_CLASS);
+			if  ( find != null)
+			{
+				String timeZone = find.getChild("TIMEZONE").getValue( null);
+				if ( timeZone != null && !timeZone.equals("Etc/UTC"))
+				{
+					importExportTimeZone = timeZone;
+				}
+			}
+		}
+        String timezoneId = preferences.getEntryAsString(RaplaMainContainer.TIMEZONE, importExportTimeZone);
         RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
+        TimeZoneConverter importExportLocale = context.lookup(TimeZoneConverter.class);
         try {
             TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
-            TimeZone timezone = registry.getTimeZone(timezoneId);
-            ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone( timezone);
+            TimeZone timeZone = registry.getTimeZone(timezoneId);
+            ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone( timeZone);
+            ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone( timeZone);
+            if ( operator instanceof LocalAbstractCachableOperator)
+            {
+            	((LocalAbstractCachableOperator) operator).setTimeZone( timeZone);
+            }
         } catch (Exception rc) {
-			getLogger().error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + raplaLocale.getImportExportTimeZone());
+			getLogger().error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
         
 		initializePlugins( pluginList, preferences );
@@ -239,19 +261,21 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
             }
         }
-        final LocalCache cache = operator.getCache();
+        
+        final EntityResolver resolver = operator;
         Provider<EntityStore> storeProvider = new Provider<EntityStore>()
         {
 
 			public EntityStore get() throws RaplaContextException {
-				return new EntityStore(cache, cache.getSuperCategory());
+				return new EntityStore(resolver, operator.getSuperCategory());
 			}
         	
         };
-		remoteMethodService = new RemoteMethodSerialization(context, storeProvider, cache);
+		remoteMethodService = new RemoteMethodSerialization(context, storeProvider);
     }
 
-    @Override
+
+	@Override
     protected Map<String,ComponentInfo> getComponentInfos() {
         return new RaplaMetaConfigInfo();
     }
@@ -420,6 +444,13 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         try
         {
             final Object serviceUncasted;
+            {
+	            Logger debugLogger = getLogger().getChildLogger(interfaceName+"."+ methodName  + ".arguments" );
+	            if ( debugLogger.isDebugEnabled())
+	            {
+	            	debugLogger.debug(args.toString());            	
+	            }
+            }
             RemoteMethodFactory<?> factory = getRemoteMethod(interfaceName); 
             serviceUncasted = factory.createService( remoteSession);
             Method method = findMethod( interfaceName, methodName, args);
@@ -447,6 +478,14 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
             User user = remoteSession.isAuthentified() ? remoteSession.getUser() : null;
             remoteMethodService.serializeReturnValue(user, out, result);
+            {
+	            Logger debugLogger = getLogger().getChildLogger(interfaceName+"."+ methodName  + ".result" );
+	            if ( debugLogger.isDebugEnabled())
+	            {
+	            	debugLogger.debug(new String(out.toByteArray()));            	
+	            }
+            }
+
         }
         catch (EntityNotFoundException ex)
         {

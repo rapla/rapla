@@ -701,7 +701,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   protected void deregisterPropertyEditors() {
     final Field registryField = findField(PropertyEditorManager.class, "registry");
     if(registryField == null) {
-      error("Internal registry of " + PropertyEditorManager.class.getName() + " not found");
+    	info("Internal registry of " + PropertyEditorManager.class.getName() + " not found");
     }
     else {
       try {

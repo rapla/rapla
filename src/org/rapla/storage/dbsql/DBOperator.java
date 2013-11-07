@@ -12,10 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -40,7 +42,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
@@ -48,6 +49,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
@@ -59,9 +61,7 @@ import org.rapla.storage.xml.RaplaMainWriter;
 import org.rapla.storage.xml.RaplaNonValidatedInput;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
-public class DBOperator extends LocalAbstractCachableOperator
-implements
-Disposable
+public class DBOperator extends LocalAbstractCachableOperator 
 {
     private String driverClassname;
     protected String datasourceName;
@@ -266,20 +266,8 @@ Disposable
         getLogger().warn("Incremental refreshs are not supported");
     }
 
-    private void forceDisconnect() {
-        try 
-        {
-            disconnect();
-        } 
-        catch (Exception ex) 
-        {
-            getLogger().error("Error during disconnect ", ex);
-        }
-    }
-
     synchronized public void disconnect() throws RaplaException 
     {
-
     	if (!isConnected())
     		return;
         backupData();
@@ -308,12 +296,6 @@ Disposable
     	getLogger().info("Disconnected");
     }
 
-    synchronized public void dispose() 
-    {
-    	lookup = null;
-        forceDisconnect();
-    }
-    
     
     final public void loadData() throws RaplaException {
         
@@ -355,7 +337,18 @@ Disposable
     		    	throw new RaplaException("Can't import, because db is configured as source.");
     		    }
     		    sourceOperator.connect();
-    		    saveData(c,sourceOperator.getCache());
+    		    final Connection conn = c;
+    		    sourceOperator.runWithReadLock( new CachableStorageOperatorCommand() {
+					
+					@Override
+					public void execute(LocalCache cache) throws RaplaException {
+		    		    try {
+							saveData(conn, cache);
+						} catch (SQLException e) {
+							throw new RaplaException( e);
+						}
+					}
+				});
     		    close( c);
     		    c = null;
     		    c = createConnection();
@@ -383,6 +376,7 @@ Disposable
         {
         	unlock(writeLock);
         	close ( c );
+        	c = null;
         }
     }
     
@@ -541,7 +535,7 @@ Disposable
         // execute removes
         for (RefEntity<?> entityStore: evt.getRemoveObjects()) {
              Object id = entityStore.getId();
-             RefEntity<?> entity = cache.get(id);
+             RefEntity<?> entity = cache.tryResolve(id);
              if (entity != null)
                  raplaSQLOutput.remove( connection, entity);
         }
@@ -642,7 +636,8 @@ Disposable
     }
     
     private RaplaDefaultContext createOutputContext(LocalCache cache) throws RaplaException {
-        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(context, cache,true,false);
+        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(context, cache.getSuperCategoryProvider(),true,false);
+        outputContext.put( LocalCache.class, cache);
         return outputContext;
         
     }
@@ -671,10 +666,11 @@ Disposable
 
     private void writeData( OutputStream out ) throws IOException, RaplaException
     {
-        RaplaContext outputContext = new IOContext().createOutputContext( context, cache, true, true );
-        RaplaMainWriter writer = new RaplaMainWriter( outputContext );
+    	RaplaContext outputContext = new IOContext().createOutputContext( context,cache.getSuperCategoryProvider(), true, true );
+        RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding(backupEncoding);
-        writer.write( out );
+        BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,backupEncoding));
+        writer.setWriter(w);
+        writer.printContent();
     }
-    
 }

@@ -63,15 +63,6 @@ public class CategoryWriter extends RaplaXMLWriter {
     }
 
 
-    public void printCategories() throws IOException,RaplaException {
-        openElement("rapla:categories");
-        
-        Category[] categories = cache.getSuperCategory().getCategories();
-        for (int i=0;i<categories.length;i++)
-            printCategory(categories[i]);
-        
-        closeElement("rapla:categories");
-    }
 
 }
 

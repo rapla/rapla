@@ -203,11 +203,15 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
 
     public void addAllocatable(Allocatable allocatable) {
         checkWritable();
-        if (getReferenceHandler().isRefering((RefEntity<?>)allocatable))
+        addAllocatablePrivate(allocatable);
+    }
+
+	private void addAllocatablePrivate(Allocatable allocatable) {
+		if (getReferenceHandler().isRefering((RefEntity<?>)allocatable))
             return;
         allocatableArrayUpToDate = false;
         getReferenceHandler().add((RefEntity<?>)allocatable);
-    }
+	}
 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
@@ -233,46 +237,49 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
     }
 
     private void updateAppointmentArray() {
-        if (appointmentArrayUpToDate)
-            return;
-        Collection<Appointment> appointmentList = new TreeSet<Appointment>(new AppointmentStartComparator());
-        Iterator<RefEntity<?>> it = super.getSubEntities();
-        while (it.hasNext()) {
-            RefEntity<?> o = it.next();
-            if (o.getRaplaType().equals( Appointment.TYPE) ) {
-                appointmentList.add((Appointment)o);
-                //              System.out.println("Appointment " + o + " belongs to reservation " + this);
+    	if (appointmentArrayUpToDate)
+    		return;
+        synchronized (this) {
+            Collection<Appointment> appointmentList = new TreeSet<Appointment>(new AppointmentStartComparator());
+            Iterator<RefEntity<?>> it = super.getSubEntities();
+            while (it.hasNext()) {
+                RefEntity<?> o = it.next();
+                if (o.getRaplaType().equals( Appointment.TYPE) ) {
+                    appointmentList.add((Appointment)o);
+                    //              System.out.println("Appointment " + o + " belongs to reservation " + this);
+                }
             }
-        }
 
-        appointments = appointmentList.toArray(Appointment.EMPTY_ARRAY);
-        //notwendig?
-        //Arrays.sort(appointments, new AppointmentStartComparator());
+            appointments = appointmentList.toArray(Appointment.EMPTY_ARRAY);
+            appointmentArrayUpToDate = true;
+		}
     }
 
     private void updateAllocatableArrays() {
-        if (allocatableArrayUpToDate)
-            return;
-        Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
-        Collection<Allocatable> resourceList = new ArrayList<Allocatable>();
-        Collection<Allocatable> personList = new ArrayList<Allocatable>();
-        Iterator<RefEntity<?>> it = super.getReferences();
-        while (it.hasNext()) {
-            RefEntity<?> o =  it.next();
-            if (o.getRaplaType().equals( Allocatable.TYPE)) {
-            	Allocatable alloc = (Allocatable) o;
-            	if (alloc.isPerson()) {
-            		personList.add(alloc);
-            	} else {
-            		resourceList.add(alloc);
-            	}
-                allocatableList.add(alloc);
+    	if (allocatableArrayUpToDate)
+    		return;
+    	synchronized (this) {
+    	    Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
+            Collection<Allocatable> resourceList = new ArrayList<Allocatable>();
+            Collection<Allocatable> personList = new ArrayList<Allocatable>();
+            Iterator<RefEntity<?>> it = super.getReferences();
+            while (it.hasNext()) {
+                RefEntity<?> o =  it.next();
+                if (o.getRaplaType().equals( Allocatable.TYPE)) {
+                	Allocatable alloc = (Allocatable) o;
+                	if (alloc.isPerson()) {
+                		personList.add(alloc);
+                	} else {
+                		resourceList.add(alloc);
+                	}
+                    allocatableList.add(alloc);
+                }
             }
-        }
-        allocatables = allocatableList.toArray(Allocatable.ALLOCATABLE_ARRAY);
-        persons = personList.toArray(Allocatable.ALLOCATABLE_ARRAY);
-        resources = resourceList.toArray(Allocatable.ALLOCATABLE_ARRAY);
-        allocatableArrayUpToDate = true;
+            allocatables = allocatableList.toArray(Allocatable.ALLOCATABLE_ARRAY);
+            persons = personList.toArray(Allocatable.ALLOCATABLE_ARRAY);
+            resources = resourceList.toArray(Allocatable.ALLOCATABLE_ARRAY);
+            allocatableArrayUpToDate = true;	
+		}
     }
 
     public boolean hasAllocated(Allocatable allocatable) {
@@ -291,14 +298,21 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
     }
 
     public void setRestriction(Allocatable allocatable,Appointment[] appointments) {
-        Object id = ((RefEntity<?>)allocatable).getId();
+    	// FIXME add checkWritable on this
+    	//checkWritable();
+        setRestrictionPrivate(allocatable, appointments);
+    }
+
+	protected void setRestrictionPrivate(Allocatable allocatable,
+			Appointment[] appointments) {
+		Object id = ((RefEntity<?>)allocatable).getId();
         if ( !hasAllocated( allocatable))
         {
-            addAllocatable( allocatable);
+            addAllocatablePrivate( allocatable);
         }
         Assert.notNull(id,"Allocatable object has no ID");
         setRestrictionForId(id,appointments);
-    }
+	}
     
     public void setRestriction(Appointment appointment, Allocatable[] restrictedAllocatables) {
     	for ( Allocatable alloc: restrictedAllocatables)
@@ -306,14 +320,15 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
             Collection<Appointment> restrictions = new LinkedHashSet<Appointment>();
             if ( !hasAllocated( alloc))
             {
-                addAllocatable( alloc);
+                addAllocatablePrivate( alloc);
             }
             else
             {
                 restrictions.addAll(Arrays.asList(getRestriction(alloc) ));    
             }
             restrictions.add( appointment);
-            setRestriction( alloc, restrictions.toArray(Appointment.EMPTY_ARRAY));
+            Object id = ((RefEntity<?>)alloc).getId();
+            setRestrictionForId( id, restrictions.toArray(Appointment.EMPTY_ARRAY));
         }
     }
 
@@ -400,7 +415,7 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
     }
 
     static private void copy(ReservationImpl source,ReservationImpl dest) {
-        // First we must invalidate the arrays.
+		// First we must invalidate the arrays.
         dest.allocatableArrayUpToDate = false;
         dest.appointmentArrayUpToDate = false;
 
@@ -417,7 +432,7 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
                 for ( int j = 0; j < sourceRestriction.length; j ++) {
                     destRestriction[j] = dest.findAppointment( sourceRestriction[j] );
                 }
-                dest.setRestriction( allocatables[i],  destRestriction );
+                dest.setRestrictionPrivate( allocatables[i],  destRestriction );
             }
         }
         Iterator<RefEntity<?>> it = dest.getSubEntities();
@@ -430,8 +445,6 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
         @SuppressWarnings("unchecked")
 		HashMap<String,String> annotationClone = (HashMap<String,String>) source.annotations.clone();
 		dest.annotations = annotationClone;
-
-
     }
 
     public boolean needsChange(DynamicType type) {
@@ -445,8 +458,10 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
 
     @SuppressWarnings("unchecked")
 	public void copy(Reservation obj) {
-        super.copy((SimpleEntity<Reservation>)obj);
-        copy((ReservationImpl)obj,this);
+    	synchronized (this) {
+    		super.copy((SimpleEntity<Reservation>)obj);
+    		copy((ReservationImpl)obj,this);
+    	}
     }
 
     public Reservation deepClone() {

@@ -120,18 +120,17 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");
             RaplaLocale raplaLocale = getRaplaLocale();
-            // timestamp information are stored in gmt+0 we need to transfer them to system time
-            TimeZone timezone = raplaLocale.getSystemTimeZone();
+            TimeZone timezone = raplaLocale.getTimeZone();
             if ( createTime != null)
             {
                 buf.append(getString("created_at"));
                 buf.append(" ");
-                buf.append(raplaLocale.formatTimestamp(createTime, timezone));
+                buf.append(raplaLocale.formatTimestamp(createTime));
                 buf.append(", ");
             }
             buf.append(getString("last_changed"));
             buf.append(" ");
-            buf.append(raplaLocale.formatTimestamp(lastChangeTime, timezone));
+            buf.append(raplaLocale.formatTimestamp(lastChangeTime));
             buf.append("</div>");
             buf.append("\n");
         }

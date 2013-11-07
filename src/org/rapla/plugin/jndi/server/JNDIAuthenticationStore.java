@@ -573,7 +573,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
      *
      * @exception NamingException if a directory server error occurs
      */
-    protected synchronized JNDIUser authenticate(DirContext context,
+    protected JNDIUser authenticate(DirContext context,
                                           String username,
                                           String credentials)
         throws NamingException {

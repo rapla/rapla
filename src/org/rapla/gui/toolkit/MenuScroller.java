@@ -509,8 +509,9 @@ public class MenuScroller {
   }
 
   private class MenuScrollTimer extends Timer {
+	private static final long serialVersionUID = 1L;
 
-    public MenuScrollTimer(final int increment, int interval) {
+	public MenuScrollTimer(final int increment, int interval) {
       super(interval, new ActionListener() {
 
         @Override
@@ -525,7 +526,8 @@ public class MenuScroller {
   private class MenuScrollItem extends JMenuItem
           implements ChangeListener {
 
-    private MenuScrollTimer timer;
+    private static final long serialVersionUID = 1L;
+	private MenuScrollTimer timer;
 
     public MenuScrollItem(MenuIcon icon, int increment) {
       setIcon(icon);

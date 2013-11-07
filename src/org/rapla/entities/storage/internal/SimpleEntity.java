@@ -192,8 +192,6 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
 	static private <T> void copy(SimpleEntity<T> source,SimpleEntity<T> dest,boolean deepCopy) {
         Assert.isTrue(source != dest,"can't copy the same object");
 
-        dest.referenceHandler = (ReferenceHandler) source.referenceHandler.clone();
-
         ArrayList<RefEntity<?>> newEntities = new ArrayList<RefEntity<?>>();
         Iterator<RefEntity<?>> it = source.getSubEntityHandler().getReferences();
         while (it.hasNext()) {
@@ -217,6 +215,8 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
                 }
             }
         }
+        
+        dest.referenceHandler = (ReferenceHandler) source.referenceHandler.clone();
         dest.getSubEntityHandler().clearReferences();
         it = newEntities.iterator();
         while (it.hasNext()) {
@@ -242,7 +242,9 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
 
     /** copies the references from the entity to this */
     protected void copy(SimpleEntity<T> entity) {
-        copy(entity,this,true);
+    	synchronized ( this) {
+            copy(entity,this,true);
+		}
     }
 
     protected void deepClone(SimpleEntity<T> clone) {
