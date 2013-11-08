@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**@Deprecated use the template names to access the reservations of a template directly*/
+/**@deprecated use the template names to access the reservations of a template directly*/
 @Deprecated
 public class Template implements Comparable<Template>
 {
