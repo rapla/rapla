@@ -25,7 +25,6 @@ import junit.framework.TestSuite;
 
 import org.rapla.client.ClientService;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.util.Mutex;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Period;
