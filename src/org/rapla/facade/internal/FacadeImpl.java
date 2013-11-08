@@ -608,7 +608,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (templateMap != null)
 		{
 			Template template = templateMap.get( name);
-			return template.getReservations();
+			if (template != null)
+			{
+				return template.getReservations();
+			}
 		}
 		return Collections.emptyList();
 	}
