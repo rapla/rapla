@@ -18,7 +18,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Template;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -113,6 +111,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 					}
 					group.add(string);
 				}
+				
 				SortedMap<String, Set<String>> merged = merge( keyGroup);
 				for ( String subMenuName: merged.keySet())
 				{
@@ -216,13 +215,11 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	    	Date beginn = getStartDate( model);
 	    	Object source = e.getSource();
 	    	String templateName = componentMap.get( source);
-	    	Collection<Template> templates = getQuery().getTemplates( Collections.singleton( templateName));
 	    	List<Entity<Reservation>> newReservations;
-	    	if ( templates.iterator().hasNext())
-	    	{
-				Template template = templates.iterator().next();
-				Collection<Reservation> reservations = template.getReservations();
-				newReservations = copy( reservations, beginn);
+       		Collection<Reservation> reservations = getQuery().getTemplateReservations(templateName);
+       		if (reservations.size() > 0)
+       		{
+	       		newReservations = copy( reservations, beginn);
 				Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
 				if (markedAllocatables != null )
 				{
@@ -241,7 +238,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 						}
 					}
 				}
-	    	}
+       		}
 	    	else
 	    	{
 	    		showException(new EntityNotFoundException("Template " + templateName + " not found"), getMainComponent());

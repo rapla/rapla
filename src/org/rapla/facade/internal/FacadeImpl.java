@@ -475,16 +475,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throws RaplaException {
 		if ( templateName != null)
 		{
-			Collection<Template> templates = getTemplates( Collections.singleton(templateName));
-			if ( templates.iterator().hasNext())
-			{
-				Template template2 = templates.iterator().next();
-				return template2.getReservations();
-			}
-			else
-			{
-				return Collections.emptyList();
-			}
+			Collection<Reservation> reservations = getTemplateReservations( templateName);
+			return reservations;
 		}
 		Collection<Reservation> reservations = new ArrayList<Reservation>();
 		List<Allocatable> allocList;
@@ -593,22 +585,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 	
-	public Collection<Template> getTemplates(Collection<String> names) throws RaplaException
+	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException
 	{
-		List<Template> list = new ArrayList<Template>();
 		Map<String, Template> templateMap = operator.getTemplateMap();
 		if (templateMap != null)
 		{
-			for ( String name:names)
-			{
-				Template template = templateMap.get( name);
-				if ( template != null )
-				{
-					list.add( template);
-				}
-			}
+			Template template = templateMap.get( name);
+			return template.getReservations();
 		}
-		return list;
+		return Collections.emptyList();
 	}
 	
 	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {

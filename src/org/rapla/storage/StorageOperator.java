@@ -114,5 +114,7 @@ public interface StorageOperator {
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 
+    /**@deprecated will be replaced by direct accessors */
+    @Deprecated
     Map<String, Template> getTemplateMap();
 }
