@@ -13,11 +13,11 @@
 package org.rapla.gui.tests;
 
 import java.awt.BorderLayout;
+import java.util.concurrent.Semaphore;
 
 import javax.swing.JComponent;
 
 import org.rapla.RaplaTestCase;
-import org.rapla.components.util.Mutex;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameController;
@@ -68,15 +68,15 @@ public abstract class GUITestCase extends RaplaTestCase {
     }
 
     static class MyFrameControllerListener implements FrameControllerListener {
-        Mutex mutex;
+        Semaphore mutex;
 
         MyFrameControllerListener() {
-            mutex = new Mutex();
+            mutex = new Semaphore(1);
         }
         public void waitUntilClosed() throws InterruptedException {
-            mutex.aquire();
+            mutex.acquire();
             // we wait for the mutex to be released
-            mutex.aquire();
+            mutex.acquire();
             mutex.release();
         }
 

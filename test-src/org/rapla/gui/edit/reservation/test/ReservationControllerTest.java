@@ -15,6 +15,7 @@ package org.rapla.gui.edit.reservation.test;
 import java.awt.Point;
 import java.awt.Window;
 import java.util.Date;
+import java.util.concurrent.Semaphore;
 
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
@@ -63,7 +64,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		Appointment[] appointments = reservation.getAppointments();
 		final Appointment appointment = appointments[0];
 		final Date from = appointment.getStart();
-		final Mutex mutex = new Mutex();
+		final Semaphore mutex = new Semaphore(1);
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
@@ -86,7 +87,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		});
 		// We block a mutex to wait for the move thread to finish
 		System.out.println("Blocking");
-		mutex.aquire();
+		mutex.acquire();
 		System.out.println("Releasing");
 		SwingUtilities.invokeAndWait(new Runnable() {
 
@@ -102,7 +103,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		});
 		// now wait until move thread is finished
 		System.out.println("Blocking 2");
-		mutex.aquire();
+		mutex.acquire();
 		System.out.println("Releasing 2");
 		mutex.release();
 		
