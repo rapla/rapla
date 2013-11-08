@@ -9,8 +9,8 @@
     <target name="init" depends="properties">
       <fail unless="rapla.dir" message="Don't invoke buildplugin.xml directly. It is called from build.xml. Set plugin.includes and blugin.base in build.properties and use build-plugins target."/>
       <property name="raplalib.dir" value="${rapla.dir}/lib"/>
-      <property name="rapla.build.dest.main" value="${rapla.dir}/build/classes" />
-      <property name="rapla.build.dest.client" value="${rapla.dir}/build/clientclasses" />
+      <property name="rapla.build.dest.main" value="${rapla.build.dir}/classes" />
+      <property name="rapla.build.dest.client" value="${rapla.build.dir}/clientclasses" />
       <property file="${basedir}/build.number"/>
       <property file="${basedir}/build.properties"/>
       <basename property="project.name" file="${basedir}"/>
