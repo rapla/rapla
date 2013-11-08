@@ -27,10 +27,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -57,7 +55,6 @@ import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Template;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -562,15 +559,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
 						if ( template != null)
 						{
 							try {
-								Collection<Template> templates = getQuery().getTemplates( Collections.singleton( template));
-								if ( templates.size() > 0)
-								{
-									Collection<Reservation> reservations = templates.iterator().next().getReservations();
-									DeleteUndo<Reservation> cmd = new DeleteUndo<Reservation>(getContext(), reservations);
-									getModification().getCommandHistory().storeAndExecute( cmd);
-									Collection<String> templateNames= getQuery().getTemplateNames();
-									fillModel( model, templateNames);
-								}
+								Collection<Reservation> reservations = getQuery().getTemplateReservations(template);
+								DeleteUndo<Reservation> cmd = new DeleteUndo<Reservation>(getContext(), reservations);
+								getModification().getCommandHistory().storeAndExecute( cmd);
+								Collection<String> templateNames= getQuery().getTemplateNames();
+								fillModel( model, templateNames);
 							} catch (Exception ex) {
 								showException( ex, getMainComponent());
 							}
@@ -619,27 +612,21 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	            		
 	            		if ( selectedTemplate != null)
 	            		{
-		            		Set<String> templateNames = Collections.singleton(selectedTemplate);
 		            		try
 		            		{
-								Collection<Template> templates = getQuery().getTemplates(templateNames);
-			            		if ( templates.iterator().hasNext())
-			            		{
-									Template next = templates.iterator().next();
-									Collection<Reservation> reservations = next.getReservations();
-									for ( Reservation r:reservations)
+								Collection<Reservation> reservations = getQuery().getTemplateReservations(selectedTemplate);
+								for ( Reservation r:reservations)
+								{
+									Date firstDate = r.getFirstDate();
+									if ( start == null || firstDate.before(start ))
 									{
-										Date firstDate = r.getFirstDate();
-										if ( start == null || firstDate.before(start ))
-										{
-											start = firstDate;
-										}
+										start = firstDate;
 									}
-									if ( start != null)
-									{
-										getService(CalendarSelectionModel.class).setSelectedDate( start);
-									}
-			            		}
+								}
+								if ( start != null)
+								{
+									getService(CalendarSelectionModel.class).setSelectedDate( start);
+								}
 		            		}
 		            		catch (RaplaException ex)
 		            		{

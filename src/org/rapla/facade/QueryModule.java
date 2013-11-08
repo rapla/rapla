@@ -137,9 +137,9 @@ public interface QueryModule
 
 	public Collection<String> getTemplateNames() throws RaplaException;
 	
-	public Collection<Template> getTemplates(Collection<String> names) throws RaplaException;
+	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException;
 
-	/** @deprecated use getTemplateNames and getTemplate instead*/
+	/** @deprecated use getTemplateName and getTemplate instead*/
 	@Deprecated
 	Map<String, Template> getTemplateMap() throws RaplaException;
 }
