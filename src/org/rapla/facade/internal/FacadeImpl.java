@@ -591,7 +591,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (templateMap != null)
 		{
 			Template template = templateMap.get( name);
-			return template.getReservations();
+			if (template != null)
+			{
+				return template.getReservations();
+			}
 		}
 		return Collections.emptyList();
 	}
@@ -1010,11 +1013,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			return templateName;
 		}
 		return null;
-	}
-
-	public void setTemplate(Template template)
-	{
-		setTemplateName( template != null ? template.getName() : null);
 	}
 
 	public void setTemplateName(String templateName) 
