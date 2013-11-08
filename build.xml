@@ -457,6 +457,7 @@ Definition as published by the Open Source Initiative (OSI).
 		 <subant target="build" genericantfile="buildplugin.xml">
             <dirset dir="${plugin.base}" includes="${plugin.includes}" excludes="${plugin.excludes}"/>
 		 	<property name="rapla.dir" value="${main.dir}"/>
+		 	<property name="rapla.build.dir" value="${build.dir}"/>
 		 	<property name="plugin.base" value="${plugin.base}"/>
 	 	    <property name="permissions.client" value="${permissions.client}"/>
 	 	    <property name="application.name" value="${application.name}"/>
@@ -468,6 +469,7 @@ Definition as published by the Open Source Initiative (OSI).
 	    <subant target="compile" genericantfile="${main.dir}/buildplugin.xml" inheritAll="false" inheritRefs="false">
             <dirset dir="${plugin.base}" includes="${plugin.dependencies.sub}" />
 		 	<property name="rapla.dir" value="${main.dir}"/>
+		 	<property name="rapla.build.dir" value="${build.dir}"/>
 		 	<property name="plugin.base" value="${plugin.base}"/>
 	 	    <property name="permissions.client" value="${permissions.client}"/>
 	 	    <property name="application.name" value="${application.name}"/>
@@ -498,6 +500,7 @@ Definition as published by the Open Source Initiative (OSI).
     	<subant target="copytowebapp" genericantfile="buildplugin.xml" inheritAll="false" inheritRefs="false">
             <dirset dir="${plugin.base}" includes="${plugin.includes}" excludes="${plugin.excludes}"/>
 		 	<property name="rapla.dir" value="${main.dir}"/>
+	 	    <property name="rapla.build.dir" value="${build.dir}"/>
 	 	    <property name="webapp.dir" value="${webapp.dir}"/>
 	 	    <property name="plugin.base" value="${plugin.base}"/>
 	 	    <property name="permissions.client" value="${permissions.client}"/>
@@ -1003,6 +1006,7 @@ Definition as published by the Open Source Initiative (OSI).
    	    <subant target="clean" genericantfile="buildplugin.xml">
             <dirset dir="${plugin.base}" includes="${plugin.includes}"/>
    		 	<property name="rapla.dir" value="${main.dir}"/>
+   		 	<property name="rapla.build.dir" value="${build.dir}"/>
         </subant>
     </target>
 
