@@ -242,7 +242,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
     	        Reservation reservation = appointment.getReservation();
     	        if ( reservationsToRemove.contains( reservation))
     	        {
-    	            break;
+    	            continue;
     	        }
     	        parentReservations.put(appointment, reservation);
     	        Reservation mutableReservation=  toUpdate.get(reservation);
@@ -260,7 +260,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
                 Reservation reservation = appointment.getReservation();
                 if ( reservationsToRemove.contains( reservation))
                 {
-                    break;
+                    continue;
                 }
                 Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
