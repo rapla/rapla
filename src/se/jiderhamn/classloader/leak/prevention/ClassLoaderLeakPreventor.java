@@ -620,10 +620,10 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
 		list.add( servletHandler );
 		//Object[] servletMappings = servletHandler.getServletMappings();
 		final Object[] servletMappings = (Object[]) ServletHandlerC.getMethod("getServletMappings").invoke( servletHandler);
-		list.add( Arrays.asList(servletMappings ));
+		list.addAll( Arrays.asList(servletMappings ));
 		//Object[] servlets = servletHandler.getServlets();
 		final Object[] servlets = (Object[]) ServletHandlerC.getMethod("getServlets").invoke( servletHandler);
-		list.add( Arrays.asList(servlets ));
+		list.addAll( Arrays.asList(servlets ));
 		this.objectsWrappedWithMBean = list.toArray();
 	  }
     }
