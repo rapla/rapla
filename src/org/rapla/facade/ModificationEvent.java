@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;

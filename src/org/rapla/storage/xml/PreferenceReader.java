@@ -84,7 +84,6 @@ public class PreferenceReader extends RaplaXMLReader {
             }
             return;
         }
-
         RaplaType raplaTypeName = getTypeForLocalName(localName );
         childReader = getChildHandlerForType( raplaTypeName );
         delegateElement(childReader,namespaceURI,localName,atts);
