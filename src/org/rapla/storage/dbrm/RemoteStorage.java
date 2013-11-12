@@ -43,7 +43,6 @@ public interface RemoteStorage  {
     void changeEmail(String username,String newEmail) throws RaplaException;
     void confirmEmail(String username,String newEmail) throws RaplaException;
     
-    
     EntityList getResources() throws RaplaException;
     /** returns the time on the server in string format*/
     String getServerTime() throws RaplaException;

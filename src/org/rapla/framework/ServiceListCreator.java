@@ -18,7 +18,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Stack;
 
@@ -102,5 +105,32 @@ public class ServiceListCreator {
             }
         }
 		return list;
+	}
+
+	/** lookup for plugin classes in classpath*/
+	public static Collection<String> findPluginClasses(Logger logger)
+			throws ClassNotFoundException {
+		Collection<String> result = new LinkedHashSet<String>();
+		URL mainDir = ServiceListCreator.class.getResource("/");
+		if ( mainDir != null)
+		{
+			String classpath = System.getProperty("java.class.path");
+			final String[] split;
+			if (classpath != null)
+			{
+				split = classpath.split(""+File.pathSeparatorChar);
+			}
+			else
+			{
+				split = new String[] { mainDir.toExternalForm()};
+			}
+			for ( String path: split)
+			{
+				File pluginPath = new File(path);
+				List<String> foundInClasspathEntry = findPluginClasses(pluginPath, logger);
+				result.addAll(foundInClasspathEntry);
+			}
+		}
+		return result;
 	}
 }

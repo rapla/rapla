@@ -18,10 +18,10 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -93,6 +93,8 @@ final public class RaplaMainContainer extends ContainerImpl
     public static final TypedComponentRole<String> ENV_RAPLAFILE = new TypedComponentRole<String>("env.raplafile");
     public static final TypedComponentRole<Object> ENV_RAPLADB= new TypedComponentRole<Object>("env.rapladb");
     public static final TypedComponentRole<Object> ENV_RAPLAMAIL= new TypedComponentRole<Object>("env.raplamail");
+    public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
+    
     public static final TypedComponentRole<Object> TIMESTAMP = new TypedComponentRole<Object>("timestamp");
     public static final TypedComponentRole<String> CONTEXT_ROOT  = new TypedComponentRole<String>("context-root");
 	public final static TypedComponentRole<Set<String>> PLUGIN_LIST = new TypedComponentRole<Set<String>>("plugin-list");
@@ -208,31 +210,12 @@ final public class RaplaMainContainer extends ContainerImpl
 
         Set<String> pluginNames = new LinkedHashSet<String>();
 
+        boolean isDevelopment = getContext().has(RaplaMainContainer.ENV_DEVELOPMENT) && getContext().lookup( RaplaMainContainer.ENV_DEVELOPMENT);
         Enumeration<URL> pluginEnum =  ConfigTools.class.getClassLoader().getResources("META-INF/rapla-plugin.list");
-        if (!pluginEnum.hasMoreElements())
+        if (!pluginEnum.hasMoreElements() || isDevelopment)
         { 
-        	URL mainDir = getClass().getResource("/");
-        	if ( mainDir != null)
-        	{
-             	
-        		String classpath = System.getProperty("java.class.path");
-        		final String[] split;
-        		if (classpath != null)
-        		{
-        			split = classpath.split(""+File.pathSeparatorChar);
-        		}
-        		else
-        		{
-        			split = new String[] { mainDir.toExternalForm()};
-        		}
-        		for ( String path: split)
-        		{
-        			File pluginPath = new File(path);
-            		List<String> foundInClasspathEntry = ServiceListCreator.findPluginClasses(pluginPath, logger);
-					pluginNames.addAll(foundInClasspathEntry);
-           	
-        		}
-        	}
+        	Collection<String> result = ServiceListCreator.findPluginClasses(logger);
+    		pluginNames.addAll(result);
         }
         	
         while ( pluginEnum.hasMoreElements() ) {
@@ -260,11 +243,9 @@ final public class RaplaMainContainer extends ContainerImpl
             version = "-";
             logger.warn("Permission to system property java.version is denied!");
         }
-        
-       
     }
 
-    public void dispose() {
+	public void dispose() {
         getLogger().info("Shutting down rapla-container");
         if ( commandQueue != null)
         {

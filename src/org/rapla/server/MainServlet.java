@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -92,6 +91,7 @@ public class MainServlet extends HttpServlet {
    	private String env_raplafile;
    	private Object env_rapladb;
    	private Object env_raplamail;
+   	private Boolean env_development;
    	private String downloadUrl;
    	private String serverVersion;
    	
@@ -156,8 +156,8 @@ public class MainServlet extends HttpServlet {
 
     	if ( env != null)
     	{
-    		env_rapladatasource = lookupEnvVariable(env,  "rapladatasource", true);
-    		env_raplafile = lookupEnvVariable(env,"raplafile", true);
+    		env_rapladatasource = lookupEnvString(env,  "rapladatasource", true);
+    		env_raplafile = lookupEnvString(env,"raplafile", true);
     		env_rapladb =   lookupResource(env, "jdbc/rapladb", true);
     		getLogger().info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb="+env_rapladb + " env_raplafile="+ env_raplafile);
    		
@@ -178,19 +178,17 @@ public class MainServlet extends HttpServlet {
     		}
     		
     		env_raplamail =   lookupResource(env, "mail/Session", false);
-        		
-    		startupMode = lookupEnvVariable(env,"rapla_startup_mode", false);
-    		
+    		startupMode = lookupEnvString(env,"rapla_startup_mode", false);
+    		env_development = (Boolean) lookupEnvVariable(env, "rapla_development", false);
     		@SuppressWarnings("unchecked")
     		Collection<String> instanceCounterLookup = (Collection<String>)  lookup(env,"rapla_instance_counter", false);
     		instanceCounter = instanceCounterLookup;
     		
-    		selectedContextPath = lookupEnvVariable(env,"rapla_startup_context", false);
-    		startupUser = lookupEnvVariable( env, "rapla_startup_user", false);
+    		selectedContextPath = lookupEnvString(env,"rapla_startup_context", false);
+    		startupUser = lookupEnvString( env, "rapla_startup_user", false);
 			shutdownCommand = (Runnable) lookup(env,"rapla_shutdown_command", false);
 			port = (Integer) lookup(env,"rapla_startup_port", false);
 			downloadUrl = (String) lookup(env,"rapla_download_url", false);
-
     	}
     	if ( startupMode == null)
 		{
@@ -238,7 +236,13 @@ public class MainServlet extends HttpServlet {
 		return result;
 	}
 
-	private String lookupEnvVariable(Context env, String lookupname, boolean log) {
+	private String lookupEnvString(Context env, String lookupname, boolean log) {
+		Object result = lookupEnvVariable(env, lookupname, log);
+		return (String) result;
+	
+	}			
+	
+	private Object lookupEnvVariable(Context env, String lookupname, boolean log) {
 		String newEnvname = getServletContext().getInitParameter(lookupname);
 		if ( newEnvname != null)
 		{
@@ -251,7 +255,7 @@ public class MainServlet extends HttpServlet {
 		}
 		else
 		{
-			String result = (String) lookup(env,lookupname, log);
+			Object result = lookup(env,lookupname, log);
 			return result;
 		}
 	}
@@ -554,7 +558,10 @@ public class MainServlet extends HttpServlet {
 			context.put(RaplaMainContainer.ENV_RAPLAMAIL, env_raplamail);
 			getLogger().info("Configured mail service via JNDI");
 		}
-
+		if ( env_development != null && env_development)
+		{
+			context.put(RaplaMainContainer.ENV_DEVELOPMENT, Boolean.TRUE);
+		}
 		raplaContainer = new RaplaMainContainer( env, context );
 		logger = raplaContainer.getContext().lookup(Logger.class);
 		serverVersion = raplaContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");

@@ -728,7 +728,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         	 }
         	 if ( !acquired)
         	 {
-        		 throw new RaplaContextException("Instanciating component " + componentClassName + " twice possible cyclic dependency",new RaplaException(""));
+        		 throw new RaplaContextException("Instanciating component " + componentClassName + " twice. Possible a cyclic dependency.",new RaplaException(""));
         	 }
         	 else
         	 {

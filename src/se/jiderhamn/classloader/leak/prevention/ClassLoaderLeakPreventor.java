@@ -590,8 +590,16 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
 	  // first we need access to the MBeanContainer to access the beans
 	  //WebAppContext webappContext = (WebAppContext)servletContext;
 	  final Object webappContext = WebAppClassLoaderC.getMethod("getContext").invoke(classLoader);
+	  if  (webappContext == null)
+	  {
+		  return;
+	  }
 	  //Server server = (Server)webappContext.getServer();
 	  final Object server = WebAppContextC.getMethod("getServer").invoke(webappContext);
+	  if ( server == null)
+	  {
+		  return;
+	  }
 	  //MBeanContainer beanContainer = (MBeanContainer)server.getBean( MBeanContainer.class);
 
 	  
@@ -600,37 +608,52 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
 	  removeBeanM = MBeanContainerC.getMethod("removeBean", Object.class);
 	  
 	  // now we store all objects that belong to the webapplication and that will be wrapped by mbeans in a list
-	  if ( beanContainer !=null)
+	  if ( beanContainer !=null )
 	  {
 		List list = new ArrayList();
 		//SessionHandler sessionHandler =webappContext.getSessionHandler();
 		final Object sessionHandler = WebAppContextC.getMethod("getSessionHandler").invoke( webappContext);
-		list.add( sessionHandler);
-		//SessionManager  sessionManager = sessionHandler.getSessionManager();
-		final Object sessionManager = SessionHandlerC.getMethod("getSessionManager").invoke( sessionHandler);
-		list.add( sessionManager);
-		//SessionIdManager sessionIdManager = sessionManager.getSessionIdManager();
-		final Object sessionIdManager = SessionManagerC.getMethod("getSessionIdManager").invoke( sessionManager);
-		list.add( sessionIdManager);
+		if (sessionHandler != null)
+		{
+			list.add( sessionHandler);
+			//SessionManager  sessionManager = sessionHandler.getSessionManager();
+			final Object sessionManager = SessionHandlerC.getMethod("getSessionManager").invoke( sessionHandler);
+			if ( sessionManager != null)
+			{
+				list.add( sessionManager);
+				//SessionIdManager sessionIdManager = sessionManager.getSessionIdManager();
+				final Object sessionIdManager = SessionManagerC.getMethod("getSessionIdManager").invoke( sessionManager);
+				if (sessionIdManager != null)
+				{
+					list.add( sessionIdManager);
+				}
+			}
+		}
 		//SecurityHandler securityHandler = webappContext.getSecurityHandler();
 		final Object securityHandler = WebAppContextC.getMethod("getSecurityHandler").invoke( webappContext);
-		list.add( securityHandler);
+		if ( securityHandler != null )
+		{
+			list.add( securityHandler);
+		}
 		//ServletHandler servletHandler = webappContext.getServletHandler();
 		final Object servletHandler = WebAppContextC.getMethod("getServletHandler").invoke( webappContext);
-		list.add( servletHandler );
-		//Object[] servletMappings = servletHandler.getServletMappings();
-		final Object[] servletMappings = (Object[]) ServletHandlerC.getMethod("getServletMappings").invoke( servletHandler);
-		list.addAll( Arrays.asList(servletMappings ));
-		//Object[] servlets = servletHandler.getServlets();
-		final Object[] servlets = (Object[]) ServletHandlerC.getMethod("getServlets").invoke( servletHandler);
-		list.addAll( Arrays.asList(servlets ));
+		if ( servletHandler != null)
+		{
+			list.add( servletHandler );
+			//Object[] servletMappings = servletHandler.getServletMappings();
+			final Object[] servletMappings = (Object[]) ServletHandlerC.getMethod("getServletMappings").invoke( servletHandler);
+			list.addAll( Arrays.asList(servletMappings ));
+			//Object[] servlets = servletHandler.getServlets();
+			final Object[] servlets = (Object[]) ServletHandlerC.getMethod("getServlets").invoke( servletHandler);
+			list.addAll( Arrays.asList(servlets ));
+		}
 		this.objectsWrappedWithMBean = list.toArray();
 	  }
     }
 	  
 	boolean unregisterJettyJMXBean(ObjectName objectName)
 	{
-	  if ( objectsWrappedWithMBean == null || !objectName.getDomain().contains("org.eclipse.jetty"))
+	  if ( objectsWrappedWithMBean == null || objectName.getDomain() == null || !objectName.getDomain().contains("org.eclipse.jetty"))
 	  {
 		  return false;
 	  }
