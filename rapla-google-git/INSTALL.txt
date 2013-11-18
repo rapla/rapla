@@ -1,0 +1,68 @@
+This is the INSTALLING-GUIDE for the Rapla-BINARY-DISTRIBUTION, 
+
+You will find more information on our documentation pages on
+http://rapla.sourceforge.net/documentation.html
+
+if you have downloaded the SOURCE-DISTRIBUTION you have to
+!!! BUILD A BINARY-DISTRIBUTION first !!!
+For more information read README-BUILD.txt.
+
+Requirements:
+
+
+You need JAVA: JRE 1.5 at least (1.6 recommended). 
+You can download it from java.sun.com
+
+* The SDK works for the binary and source distribution but is very
+  large (>20 MB)
+
+* The JRE will only work for the binary distribution (Compiler
+  missing) but is much smaller (12MB)
+
+STARTING RAPLA:
+
+Start rapla.exe (rapla.sh under Unix).
+
+To start Rapla from the command-line, you have to set the java command
+in your PATH-Variable (if its not already there),
+
+Example:
+setenv PATH $PATH:/usr/local/java/bin  (Unix)
+set PATH=%PATH%:c:\Programme\Java\jre\bin  (Windows) 
+
+Then type:
+
+rapla.sh (Unix) 
+rapla.bat (win95/98). 
+call rapla.bat (win NT/2000)
+
+
+If you want to try out the simpsons-sample change the 
+following configuration entry in webapp/WEB-INF/rapla.xconf
+
+  <file-storage id="file" logger="file-operator">
+    <file>simpsons-data.xml</file>
+    <validate>no</validate>
+  </file-storage>
+
+or overwrite your existing data.xml file.
+
+If you want to test multiuser functionality comment out the default login-entry in the facade-entry:
+<!-- We comment out the username and the password to disable automatic login
+    <username>admin</username>
+    <password></password>
+-->
+
+You can than use the following logins:
+
+isa 	lisa 	 	
+admin 	donut 		
+homer 	duffs 	(Admin)	
+skinner 	edna 		
+monty 	money 	(Admin)	
+abe 	matlock 
+
+For more information visit the documentation pages on http://rapla.sourceforge.net/
+
+Rapla includes free software developed by other projects.
+For a complete list of all external libraraies, take a look at legal/LIBRARIES-FAQ
