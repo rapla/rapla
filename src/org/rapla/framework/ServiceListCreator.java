@@ -16,6 +16,7 @@ package org.rapla.framework;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
@@ -129,6 +130,58 @@ public class ServiceListCreator {
 				File pluginPath = new File(path);
 				List<String> foundInClasspathEntry = findPluginClasses(pluginPath, logger);
 				result.addAll(foundInClasspathEntry);
+			}
+		}
+		return result;
+	}
+	
+	/** lookup for plugin classes in classpath*/
+	public static Collection<File> findPluginWebappfolders(Logger logger)
+			throws ClassNotFoundException {
+		Collection<File> result = new LinkedHashSet<File>();
+		URL mainDir = ServiceListCreator.class.getResource("/");
+		if ( mainDir != null)
+		{
+			String classpath = System.getProperty("java.class.path");
+			final String[] split;
+			if (classpath != null)
+			{
+				split = classpath.split(""+File.pathSeparatorChar);
+			}
+			else
+			{
+				split = new String[] { mainDir.toExternalForm()};
+			}
+			FilenameFilter filter = new FilenameFilter() {
+				@Override
+				public boolean accept(File dir, String name) {
+					return name != null && name.equals("war");
+				}
+			};
+			for ( String path: split)
+			{
+				File pluginPath = new File(path);
+				List<String> foundInClasspathEntry = findPluginClasses(pluginPath, logger);
+				
+				if ( foundInClasspathEntry.size() > 0)
+				{
+					File parent = pluginPath.getParentFile().getAbsoluteFile();
+					int depth= 0;
+					while ( parent != null && parent.isDirectory())
+					{
+						File[] listFiles = parent.listFiles( filter);
+						if (listFiles != null && listFiles.length == 1)
+						{
+							result.add( listFiles[0]);
+						}
+						depth ++;
+						if ( depth > 5)
+						{
+							break;
+						}
+						parent = parent.getParentFile();
+					}
+				}
 			}
 		}
 		return result;

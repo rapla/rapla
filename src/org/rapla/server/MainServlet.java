@@ -18,9 +18,12 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
@@ -56,6 +59,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.ServiceListCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaJDKLoggingAdapter;
@@ -564,7 +568,76 @@ public class MainServlet extends HttpServlet {
 		}
 		raplaContainer = new RaplaMainContainer( env, context );
 		logger = raplaContainer.getContext().lookup(Logger.class);
+		if ( env_development != null && env_development)
+		{
+			addDevelopmentWarFolders();
+		}
 		serverVersion = raplaContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");
+	}
+
+	// add the war folders of the plugins to jetty resource handler so that the files inside the war 
+	// folders can be served from within jetty, even when they are not located in the same folder.
+	// The method will search the class path for plugin classes and then add the look for a war folder entry in the file hierarchy
+	// so a plugin allways needs a plugin class for this to work
+	@SuppressWarnings("unchecked")
+	private void addDevelopmentWarFolders() throws Exception 
+	{
+		  Collection<File> webappFolders = ServiceListCreator.findPluginWebappfolders(logger);
+		  if ( webappFolders.size() < 1)
+		  {
+			  return;
+		  }
+		  Thread currentThread = Thread.currentThread();
+		  ClassLoader classLoader = currentThread.getContextClassLoader();
+		  ClassLoader parent = classLoader.getParent();
+		  try
+		  {
+			  if ( parent != null)
+			  {
+				  currentThread.setContextClassLoader( parent);
+			  }
+			  
+			  
+			  // first we need to access the necessary classes via reflection (are all loaded, because webapplication is already initialized) 
+			  final Class WebAppClassLoaderC = Class.forName("org.eclipse.jetty.webapp.WebAppClassLoader",false, parent);
+			  final Class WebAppContextC = Class.forName("org.eclipse.jetty.webapp.WebAppContext",false, parent);
+			  final Class ResourceCollectionC = Class.forName("org.eclipse.jetty.util.resource.ResourceCollection",false, parent);
+			  final Class FileResourceC = Class.forName("org.eclipse.jetty.util.resource.FileResource",false, parent);
+			  final Object webappContext = WebAppClassLoaderC.getMethod("getContext").invoke(classLoader);
+			  if  (webappContext == null)
+			  {
+				  return;
+			  }
+			  final Object baseResource = WebAppContextC.getMethod("getBaseResource").invoke( webappContext);
+			  if ( baseResource != null && ResourceCollectionC.isInstance( baseResource) )
+			  {
+				  
+				  //Resource[] resources = ((ResourceCollection) baseResource).getResources();
+				  final Object[] resources = (Object[])ResourceCollectionC.getMethod("getResources").invoke( baseResource);
+				  Set list = new HashSet( Arrays.asList( resources));
+				  for (File folder:webappFolders)
+				  {
+					  Object fileResource = FileResourceC.getConstructor( URL.class).newInstance(  folder.toURI().toURL());
+					  if ( !list.contains( fileResource))
+					  {
+						  list.add( fileResource);
+						  getLogger().info("Adding " + fileResource + " to webapp folder");
+					  }
+					  
+				  }
+				  Object[] array = list.toArray( resources);
+				  //((ResourceCollection) baseResource).setResources( array);
+				  ResourceCollectionC.getMethod("setResources", resources.getClass()).invoke( baseResource, new Object[] {array});
+				  //ResourceCollectionC.getMethod(", parameterTypes)  
+			  }
+		  }
+		  finally
+		  {
+			  if ( parent != null)
+			  {
+				  currentThread.setContextClassLoader( classLoader);
+			  }
+		  }
 	}
 	
 	 private void exit() {

@@ -12,7 +12,16 @@ detected.
 ===================================================================== -->
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <!-- 
  <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/war</Set>
+  -->
+ <Set name="baseResource">
+    <!--  you can add additional war files here. Also if in development mode, rapla will search for war folders in plugin projects that are on the classpath -->
+    <New class="org.eclipse.jetty.util.resource.ResourceCollection">
+      <Arg><SystemProperty name="jetty.home" default="."/>/war</Arg>
+    </New>
+  </Set>
+ 
   <!-- this is the property for the deployment context 
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/rapla.war</Set>
   -->
@@ -93,5 +102,4 @@ detected.
     </Array>
   </Set>
  	
-   
 </Configure>

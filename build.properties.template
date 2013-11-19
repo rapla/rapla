@@ -6,8 +6,8 @@ target=dist-bin
 #The base folder where all plugin source projects are located 
 plugin.base=${main.dir}/..
 #You can choose plugin directories to include in the build 
-#plugin.includes=demo_plugin,periodwizard_plugin
-plugin.includes=*_plugin
+#plugin.includes=rapla.demo-p,rapla.periodwizard-p
+plugin.includes=rapla.*-p
 
 #Class for testing rapla when using the "test" target
 #test.class=org.rapla.entities.PreferencesTest
