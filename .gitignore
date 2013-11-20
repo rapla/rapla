@@ -1,2 +1,7 @@
 /eclipse-build
 /logs
+/data
+/build
+/dist
+/temp
+/build.properties

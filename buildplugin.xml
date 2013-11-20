@@ -19,10 +19,8 @@
       <property name="mainclient.lib" value="raplaclient_${project.name}.jar"/>
       <property name="lib.dir" value="${basedir}/lib"/>
       <property name="war.dir" value="${basedir}/war"/>
-      <property name="war.images.dir" value="${basedir}/war/images"/>
       <available file="${war.dir}" type="dir"  property="war.present" />
-      <available file="${war.images.dir}" type="dir" property="war.images.present" />
-
+      
         <!-- Information about the compiler -->
 	  <!-- property name="build.compiler" value="javac1.3"/-->
 	  <property name="debug"          value="on"/>
@@ -42,9 +40,6 @@
     <!-- edit the following lines to your needs            -->
 	<target name="prepare" depends="init">
 	    <mkdir dir="${generated.dir}" />
-		<mkdir dir="${lib.dir}" />
-		<mkdir dir="${lib.dir}/common" />
-		<mkdir dir="${lib.dir}/server" />
 	    <mkdir dir="${build.dir}" />
 	    <mkdir dir="${build.dest}" />
 	    <mkdir dir="${build.dest}/META-INF" />
@@ -89,7 +84,7 @@
      	   includeAntRuntime="false"
      	>
          <classpath>
-           <fileset dir="${lib.dir}">
+           <fileset dir="${lib.dir}" erroronmissingdir="false">
              <include name="common/**"/>
            </fileset>
            <fileset dir="${raplalib.dir}">
@@ -114,7 +109,7 @@
     	   includeAntRuntime="false"
     	>
         <classpath>
-          <fileset dir="${lib.dir}">
+          <fileset dir="${lib.dir}" erroronmissingdir="false">
           	<include name="common/**"/>
         	<include name="server/**"/>
           </fileset>
@@ -217,7 +212,7 @@
   
   <target name="copytowebapp" depends="build">
   	<copy todir="${webapp.dir}/webclient">
-    	<fileset dir="${lib.dir}/common">
+    	<fileset dir="${lib.dir}/common" erroronmissingdir="false">
             <include name="*.jar" />
         </fileset>
     </copy>
@@ -229,11 +224,11 @@
   	  </manifest>
     </jar>
     <copy todir="${webapp.dir}/WEB-INF/lib" >
-        <fileset dir="${lib.dir}/common">
-            <include name="*.jar" />
+        <fileset dir="${lib.dir}/common" erroronmissingdir="false">
+            <include name="*.jar"/>
         </fileset>
-        <fileset dir="${lib.dir}/server">
-            <include name="*.jar" />
+        <fileset dir="${lib.dir}/server" erroronmissingdir="false">
+            <include name="*.jar"/>
         </fileset>
         <fileset dir="${build.dir}">
             <include name="${main.lib}" />
@@ -246,16 +241,9 @@
     <target name="copywar" if="war.present">
         <copy todir="${webapp.dir}" >
             <fileset dir="${war.dir}">
-                <include name="*.*"  />
+                <include name="**"  />
             </fileset>
         </copy>
-
-        <copy todir="${webapp.dir}/images" >
-            <fileset dir="${war.images.dir}">
-                <include name="*.*"/>
-            </fileset>
-        </copy>
-
     </target>
 	
 </project>
