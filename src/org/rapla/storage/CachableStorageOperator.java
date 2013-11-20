@@ -15,10 +15,9 @@
 package org.rapla.storage;
 
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
 
-public interface CachableStorageOperator extends StorageOperator, EntityResolver {
+public interface CachableStorageOperator extends StorageOperator {
 	public static final int MAX_DEPENDENCY = 20;
    
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;

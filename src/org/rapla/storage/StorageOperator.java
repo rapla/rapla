@@ -37,12 +37,13 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.Template;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
-public interface StorageOperator {
+public interface StorageOperator extends EntityResolver {
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();
