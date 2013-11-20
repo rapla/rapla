@@ -272,7 +272,7 @@ class ConflictFinder {
 			for ( Conflict conflict: conflictListBefore)
 			{
 				boolean isResolved = !conflictListAfter.contains(conflict);
-				if  ( isResolved && conflict.canModify(user) && conflict.endsBefore( today))
+				if  ( isResolved && (conflict.canModify(user) || conflict.endsBefore( today)))
 				{
 					evt.addOperation( new UpdateResult.Remove(conflict));
 				}
