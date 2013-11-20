@@ -580,18 +580,19 @@ public class MainServlet extends HttpServlet {
 	// The method will search the class path for plugin classes and then add the look for a war folder entry in the file hierarchy
 	// so a plugin allways needs a plugin class for this to work
 	@SuppressWarnings("unchecked")
-	private void addDevelopmentWarFolders() throws Exception 
+	private void addDevelopmentWarFolders()
 	{
-		  Collection<File> webappFolders = ServiceListCreator.findPluginWebappfolders(logger);
-		  if ( webappFolders.size() < 1)
-		  {
-			  return;
-		  }
 		  Thread currentThread = Thread.currentThread();
 		  ClassLoader classLoader = currentThread.getContextClassLoader();
-		  ClassLoader parent = classLoader.getParent();
+		  ClassLoader parent = null;
 		  try
 		  {
+			  Collection<File> webappFolders = ServiceListCreator.findPluginWebappfolders(logger);
+			  if ( webappFolders.size() < 1)
+			  {
+				  return;
+			  }
+			  parent = classLoader.getParent();
 			  if ( parent != null)
 			  {
 				  currentThread.setContextClassLoader( parent);
@@ -630,6 +631,14 @@ public class MainServlet extends HttpServlet {
 				  ResourceCollectionC.getMethod("setResources", resources.getClass()).invoke( baseResource, new Object[] {array});
 				  //ResourceCollectionC.getMethod(", parameterTypes)  
 			  }
+		  }
+		  catch (ClassNotFoundException ex)
+		  {
+			  getLogger().info("Development mode not in jetty so war finder will be disabled");
+		  }
+		  catch (Exception ex)
+		  {
+			  getLogger().error(ex.getMessage(), ex);
 		  }
 		  finally
 		  {
