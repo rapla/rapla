@@ -85,7 +85,6 @@ As a special exception, you are granted the permission to link this
 program with every library, of wich license fullfills the Open Source
 Definition as published by the Open Source Initiative (OSI).
 -->
-
 <project name="Rapla" default="choose-target" basedir=".">
 	
     <!-- This is for the crlf-fix -->
