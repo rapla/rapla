@@ -10,7 +10,8 @@ target=dist-bin
 plugin.base=${main.dir}/..
 #You can choose plugin directories to include in the build 
 #plugin.includes=rapla.demo-p,rapla.periodwizard-p
-plugin.includes=rapla.*-p
+#plugin.includes=rapla.nothing-p
+plugin.includes=rapla.*
 
 #Class for testing rapla when using the "test" target
 #test.class=org.rapla.entities.PreferencesTest
