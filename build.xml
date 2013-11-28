@@ -90,8 +90,13 @@ Definition as published by the Open Source Initiative (OSI).
 	
     <!-- This is for the crlf-fix -->
     <patternset id="text-files">
-        <include name="**.java" />
-        <include name="**.txt" />
+        <include name="**/*.java" />
+        <include name="contexts/rapla.xml" />
+        <include name="build.xml" />
+        <include name="build.properties.template" />
+        <include name="buildplugin.xml" />
+        <include name="**/*.txt" />
+        <include name="**/*.properties" />
     </patternset>
 
     <property name="main.dir" value="${basedir}" />
@@ -449,7 +454,6 @@ Definition as published by the Open Source Initiative (OSI).
                 	<attribute name="Permissions" value="all-permissions"/>
              </manifest>
         </jar>
-        
     	
     </target>
 	
@@ -728,8 +732,6 @@ Definition as published by the Open Source Initiative (OSI).
 	   	</fixcrlf>
         <fixcrlf srcdir="${dist-bin.dir}" eol="lf">
 	      <include name="*.sh" />
-          <include name="bin/ant" />
-          <include name="bin/antRun" />
 	    </fixcrlf>
         <chmod perm="u+x">
             <fileset dir="${dist-bin.dir}">
@@ -790,6 +792,14 @@ Definition as published by the Open Source Initiative (OSI).
                 <include name="bin/antRun" />
             </fileset>
         </chmod>
+        <fixcrlf srcdir="${dist-src.dir}" eol="crlf">
+	       <include name="*.bat" />
+	   	</fixcrlf>
+	   	<fixcrlf srcdir="${dist-src.dir}" eol="lf">
+	      <include name="*.sh" />
+          <include name="bin/ant" />
+          <include name="bin/antRun" />
+	    </fixcrlf>
     </target>
 
 
