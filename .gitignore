@@ -1,1 +1,8 @@
 /eclipse-build
+/build.properties
+/temp
+/logs
+/dist
+/data
+/custom-builds
+/build
