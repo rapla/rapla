@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Attribute;
@@ -120,7 +119,6 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");
             RaplaLocale raplaLocale = getRaplaLocale();
-            TimeZone timezone = raplaLocale.getTimeZone();
             if ( createTime != null)
             {
                 buf.append(getString("created_at"));
