@@ -32,6 +32,7 @@ import java.util.TreeMap;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -277,7 +278,8 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	        throw new RaplaException("Can't load " + type);
 	    }
 	    String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml); 
-	    getReader().read(xmlWithNamespaces, reader, logger);
+	    RaplaNonValidatedInput parser = getReader();
+		parser.read(xmlWithNamespaces, reader, logger);
 	    return reader;
 	}
 }
@@ -712,7 +714,8 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
             }
 	    	Attribute attribute = classification.getType().getAttribute( attributekey );
 	    	if ( attribute == null) {
-	    		throw new EntityNotFoundException("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current Allocatable Id " + classifiableIdInt);
+	    		getLogger().error("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current allocatable/reservation Id " + classifiableIdInt + ". Ignoring attribute.");
+	    		return;
 	    	}
 	    	String valueAsString = rset.getString( 3);
     	    if ( valueAsString != null )
