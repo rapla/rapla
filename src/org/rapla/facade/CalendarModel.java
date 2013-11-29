@@ -17,6 +17,7 @@ import org.rapla.framework.TypedComponentRole;
 public interface CalendarModel extends Cloneable, ClassifiableFilter 
 {
     public static final String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
+    public static final String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
 	public static final String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
 	public static final String ONLY_MY_EVENTS = "only_own_reservations";
 	public static final TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<Boolean>("org.rapla.plugin.abstractcalendar.only_own_reservations");

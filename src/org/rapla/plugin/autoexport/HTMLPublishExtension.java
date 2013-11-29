@@ -30,6 +30,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
      final JCheckBox htmlCheck;
      final JTextField titleField;
      final JPanel statusHtml;
+     final JCheckBox onlyAllocationInfoField;
      
 	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model)  
 	 {
@@ -38,12 +39,13 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
     	this.model = model;
     	
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField);
   
         showNavField = new JCheckBox();
         saveSelectedDateField = new JCheckBox();
+        onlyAllocationInfoField = new JCheckBox();
         htmlURL = new JTextField();
         htmlCheck = new JCheckBox("HTML " + getString("publish"));
         statusHtml = createStatus( htmlURL);
@@ -65,15 +67,21 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
         String dateString = getRaplaLocale().formatDate(model.getSelectedDate());
         panel.add(new JLabel(getI18n().format("including_date",dateString)),"2,6");
         panel.add( saveSelectedDateField, "4,6");
-        panel.add( statusHtml, "2,8,4,1");
+        panel.add(new JLabel(getI18n().getString("only_allocation_info")),"2,8");
+        panel.add( onlyAllocationInfoField, "4,8");
+        panel.add( statusHtml, "2,10,4,1");
         
-        {
+        {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
             htmlCheck.setSelected( entry != null && entry.equals("true"));
         }
         {
             final String entry = model.getOption(CalendarModel.SHOW_NAVIGATION_ENTRY);
             showNavField.setSelected( entry == null || entry.equals("true"));
+        }
+        {
+            final String entry = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
+            onlyAllocationInfoField.setSelected( entry != null && entry.equals("true"));
         }
         {
             final String entry = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
@@ -150,6 +158,9 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 	   
 		String saveSelectedDate = saveSelectedDateField.isSelected() ? "true" : "false";
 		model.setOption( CalendarModel.SAVE_SELECTED_DATE, saveSelectedDate);
+		
+		String onlyAlloactionInfo = onlyAllocationInfoField.isSelected() ? "true" : "false";
+		model.setOption( CalendarModel.ONLY_ALLOCATION_INFO, onlyAlloactionInfo);
 	   
 		final String htmlSelected = htmlCheck.isSelected() ? "true" : "false";
 		model.setOption( AutoExportPlugin.HTML_EXPORT, htmlSelected);

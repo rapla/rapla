@@ -8,6 +8,10 @@
     <text lang="es">Indicar la navegación</text>
     <text lang="nl">Navigatie balk</text>
   </entry>
+  <entry key="only_allocation_info">
+    <text lang="en">Only allocation information</text>
+    <text lang="de">Nur Belegungsinformationen</text>
+  </entry>
   <entry key="webserver">
 	<text lang="en">Web Server</text>
 	<text lang="de">Web-Server</text>
