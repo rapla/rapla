@@ -792,7 +792,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * 
 	 * @param entity
 	 */
-	final protected Set<RefEntity<?>> getDependencies(RefEntity<?> entity) throws RaplaException  {
+	final protected Set<RefEntity<?>> getDependencies(RefEntity<?> entity)  {
 		HashSet<RefEntity<?>> dependencyList = new HashSet<RefEntity<?>>();
 		RaplaType type = entity.getRaplaType();
 		final Collection<RefEntity<?>> referencingEntities;
@@ -805,26 +805,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return dependencyList;
 	}
 
-	protected List<RefEntity<Reservation>> getReferencingReservations(RefEntity<?> entity) throws RaplaException  {
-		ArrayList<RefEntity<Reservation>> result = new ArrayList<RefEntity<Reservation>>();
-		Collection<Reservation> list = this.getReservations(null,null, null, null);
-		for (Reservation reservation:list) {
-			@SuppressWarnings("unchecked")
-			RefEntity<Reservation> referer = (RefEntity<Reservation>) reservation;
-			if (referer != null && referer.isRefering(entity)) {
-				result.add(referer);
-			}
-		}
-		return result;
-	}
-
-	protected List<RefEntity<?>> getReferencingEntities(RefEntity<?> entity) throws RaplaException {
+	protected List<RefEntity<?>> getReferencingEntities(RefEntity<?> entity) {
 		ArrayList<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
-		// Important to use getReferncingReservations here, because the method
-		// getReservations could be overidden in the subclass,
-		// to avoid loading unneccessary Reservations in client/server mode.
-
-		list.addAll(getReferencingReservations(entity));
+		list.addAll(cache.getReferers(Reservation.TYPE, entity));
 		list.addAll(cache.getReferers(Allocatable.TYPE, entity));
 		list.addAll(cache.getReferers(Preferences.TYPE, entity));
 		list.addAll(cache.getReferers(User.TYPE, entity));
