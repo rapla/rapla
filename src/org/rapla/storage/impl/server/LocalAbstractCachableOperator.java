@@ -468,7 +468,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 						{
 							if ( !allocatablesToProcess.contains( allocatable))
 							{
-								getLogger().error("Old reservation " + reservation.toString() + " has not the correct allocatable information. Using full search for appointment " + app + " and resource " + allocatable ) ;
+								getLogger().warn("Old reservation " + reservation.toString() + " has not the correct allocatable information. Using full search for appointment " + app + " and resource " + allocatable ) ;
 								allocatablesToProcess.add(allocatable);
 							}
 						}
