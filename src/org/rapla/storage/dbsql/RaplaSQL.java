@@ -69,6 +69,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
+import org.rapla.storage.xml.RaplaNonValidatedInput;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 import org.xml.sax.SAXException;
@@ -279,7 +280,8 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	        throw new RaplaException("Can't load " + type);
 	    }
 	    try {
-	        getReader().readWithNamespaces( xml, contentHandler);
+	        RaplaNonValidatedInput reader = getReader();
+			reader.readWithNamespaces( xml, contentHandler);
 	    } catch (IOException ex) {
 	        throw new RaplaException( ex );
 	    }
@@ -717,7 +719,8 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
             }
 	    	Attribute attribute = classification.getType().getAttribute( attributekey );
 	    	if ( attribute == null) {
-	    		throw new EntityNotFoundException("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current Allocatable Id " + classifiableIdInt);
+	    		getLogger().error("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current allocatable/reservation Id " + classifiableIdInt + ". Ignoring attribute.");
+	    		return;
 	    	}
 	    	String valueAsString = rset.getString( 3);
 		    Object value = null;
