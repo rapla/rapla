@@ -92,6 +92,7 @@ public abstract class RaplaBuilder extends RaplaComponent
     int max =0;
     int min =0;
 
+    
     List<AppointmentBlock> preparedBlocks = null;
     private Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
 	public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
@@ -135,7 +136,6 @@ public abstract class RaplaBuilder extends RaplaComponent
         		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
         	}
         }
-    
         User user = model.getUser();
 		CalendarOptions calendarOptions = getCalendarOptions( user);
         isEmptyBlockVisible = allocatables.size() == 0;
@@ -539,7 +539,7 @@ public abstract class RaplaBuilder extends RaplaComponent
             }
         }
       
-        boolean isAnonymous = !canRead(appointment, buildContext.user);
+        boolean isAnonymous = isAnonymous(buildContext.user, appointment);
         RaplaBlockContext firstContext = new RaplaBlockContext( block, this, buildContext, null, isBlockSelected, isAnonymous );
         List<Allocatable> selectedAllocatables = firstContext.getSelectedAllocatables();
         if ( !splitByAllocatables || selectedAllocatables.size() < 2) {
@@ -551,6 +551,10 @@ public abstract class RaplaBuilder extends RaplaComponent
         }
         return context;
     }
+
+	protected boolean isAnonymous(User user,Appointment appointment) {
+		return !canRead(appointment, user);
+	}
 
     private boolean isMovable(Reservation reservation) {
         return selectedReservations.contains( reservation ) && canModify(reservation, editingUser);

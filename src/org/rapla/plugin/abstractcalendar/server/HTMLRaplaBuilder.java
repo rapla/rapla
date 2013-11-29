@@ -17,7 +17,11 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.rapla.components.calendarview.Block;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 
@@ -27,9 +31,33 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     /** shared calendar instance. Only used for temporary stored values. */
     String m_html;
     int index = 0;
-
+    protected boolean onlyAllocationInfo;
+    
     public HTMLRaplaBuilder(RaplaContext sm) {
         super(sm);
+    }
+    
+    @Override
+    public void setFromModel(CalendarModel model, Date startDate, Date endDate)
+    		throws RaplaException {
+    	// TODO Auto-generated method stub
+    	super.setFromModel(model, startDate, endDate);
+        {
+        	String option = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
+        	if (option != null && option.equalsIgnoreCase("true"))
+        	{
+        		onlyAllocationInfo = true;
+        	}
+        }
+    }
+    
+    @Override
+    protected boolean isAnonymous(User user, Appointment appointment) {
+    	if ( onlyAllocationInfo)
+    	{
+    		return true;
+    	}
+    	return super.isAnonymous(user, appointment);
     }
 
     @Override
