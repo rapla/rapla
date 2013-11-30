@@ -641,6 +641,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
              //   UpdateEvent event = createUpdateEvent( context,xml, cache );
             	User sessionUser = getSessionUser();
 				getLogger().info("Dispatching change for user " + sessionUser);
+				if ( sessionUser != null)
+				{
+					event.setUserId(((RefEntity<?>)sessionUser).getId());
+				}
             	dispatch_( event);
                 getLogger().info("Change for user " + sessionUser + " dispatched.");
                 UpdateEvent result = createUpdateEvent(Long.valueOf( event.getRepositoryVersion()).longValue());
