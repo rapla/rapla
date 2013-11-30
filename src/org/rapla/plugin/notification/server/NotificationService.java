@@ -24,6 +24,7 @@ import java.util.Set;
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -119,7 +120,8 @@ public class NotificationService extends RaplaComponent
                 reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
             AllocationChangeEvent event = changeEvents[i];
             Reservation reservation = event.getNewReservation();
-            if (!allocatables.contains(event.getAllocatable()))
+            Allocatable allocatable = event.getAllocatable();
+			if (!allocatables.contains(allocatable))
                 continue;
             if (!notifyIfOwner && owner.equals(reservation.getOwner()))
                 continue;
@@ -132,7 +134,7 @@ public class NotificationService extends RaplaComponent
             {
                 changedAllocatables = new HashSet<Allocatable>();
             }
-            changedAllocatables.add(event.getAllocatable());
+            changedAllocatables.add(allocatable);
             eventList.add(event);
         }
         if ( reservationMap == null || changedAllocatables == null) {
@@ -152,8 +154,9 @@ public class NotificationService extends RaplaComponent
             printEvents(changes,buf,reservation,eventList);
             buf.append("\n\n");
         }
-        buf.append(getI18n().format("disclaimer_1", getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"))));
-        buf.append(getI18n().format("disclaimer_2", changes.toString()));
+        I18nBundle i18n = getI18n();
+		String raplaTitle = getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+		buf.append(i18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {
             if ( allocatableNames.length() > 0)
@@ -162,7 +165,9 @@ public class NotificationService extends RaplaComponent
             }
             allocatableNames.append(alloc.getName(getLocale()));
         }
-        mail.subject = getI18n().format("mail_subject",allocatableNames.toString());
+        String allocatablesString = allocatableNames.toString();
+        buf.append(i18n.format("disclaimer_2", allocatablesString));
+		mail.subject = i18n.format("mail_subject",allocatablesString);
         mail.body = buf.toString();
         mail.recipient = owner.getUsername();
         return mail;
@@ -211,12 +216,21 @@ public class NotificationService extends RaplaComponent
             */
             Reservation newReservation = event.getNewReservation();
 			if ( newReservation != null && changed == false) {
-            	User lastChangedBy = newReservation.getLastChangedBy();
-            	if ( lastChangedBy == null)
+				User eventUser = event.getUser();
+				User lastChangedBy = newReservation.getLastChangedBy();
+				String name;  
+				if ( lastChangedBy != null)
             	{
-            		lastChangedBy = newReservation.getOwner();
+					name =  lastChangedBy.getName();
             	}
-            	String name =  lastChangedBy.getName();
+				else if ( eventUser != null)
+				{
+					name = eventUser.getName();
+				}
+				else
+				{
+					name = "Rapla";
+				}
 				buf.insert(0, getI18n().format("mail_body", name) + "\n");
             	changed = true;
             }
