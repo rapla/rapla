@@ -66,7 +66,8 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
             for( int i = 0; i < attrNames.length; i++ )
             {
                 String key = attrNames[ i ];
-                boolean containsPassword = key.toLowerCase().indexOf("password")>=0;
+                String lowerCase = key.toLowerCase();
+				boolean containsPassword = lowerCase.indexOf("password")>=0 || key.indexOf("urlEncKey") >=0;
                 if ( ignoreConfigurationPasswords && containsPassword )
                 {
                     continue;
