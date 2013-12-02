@@ -11,6 +11,12 @@
   <entry key="only_allocation_info">
     <text lang="en">Only allocation information</text>
     <text lang="de">Nur Belegungsinformationen</text>
+    <text lang="fr">Seulement allocation</text>
+    <text lang="es">Sólo asignaciones</text>
+    <text lang="cs">Moje rozvržení</text>
+    <text lang="nl">Enkel bezetting</text>
+    <text lang="pl">Tylko przydział zasobów</text>
+	<text lang="pt">Apenas alocações</text>
   </entry>
   <entry key="webserver">
 	<text lang="en">Web Server</text>
