@@ -3,6 +3,7 @@ package org.rapla.server.internal;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.RemoteSession;
@@ -31,9 +32,9 @@ public abstract class RemoteSessionImpl extends RaplaComponent implements Remote
     	return logger;
     }
 
-    public User getUser() throws RaplaException {
+    public User getUser() throws RaplaContextException {
     	if (user == null)
-    	    throw new IllegalStateException("No user found in session.");
+    	    throw new RaplaContextException("No user found in session.");
     	return user;
     }
 

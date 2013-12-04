@@ -13,9 +13,7 @@
 
 package org.rapla.storage.dbrm;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -545,11 +543,9 @@ public class RemoteMethodSerialization extends RaplaComponent
 		
 		if ( paramObject != null)
 		{
-			StringWriter writer = new StringWriter();
-			BufferedWriter buf = new BufferedWriter( writer);
+			StringBuilder buf = new StringBuilder();;
 			write(null, buf,paramObject);
-			buf.flush();
-			String result = writer.toString();
+			String result = buf.toString();
 			return result;
 		}
 
