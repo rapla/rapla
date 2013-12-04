@@ -11,7 +11,7 @@ For more information read README-BUILD.txt.
 Requirements:
 
 You need JAVA: JRE 1.6 at least (1.7 recommended). 
-You can download it from java.sun.com
+You can download it from java.com
 
 * The SDK works for the binary and source distribution but is very
   large 
@@ -24,7 +24,7 @@ STARTING RAPLA:
 
 Start rapla.exe (rapla.sh under Unix).
 
-To start Rapla from the command-line, you have to set the java command
+To start Rapla from the command-line, you may to set the java command
 in your PATH-Variable (if its not already there),
 
 Example:

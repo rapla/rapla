@@ -7,7 +7,6 @@ http://code.google.com/p/rapla/
 The Rapla server:
 ---------------------------
 
-Since version 0.10.2 Rapla server installation is very easy:
 Download the binary-distribution or build one with "build dist-bin"
 
 You can start it with:
@@ -107,7 +106,7 @@ Considering  the original rapla.xml
 	<Arg type="boolean">true</Arg>
  </New>
  	
- If you want a second instance running on a different context. e.g. second-rapla
+ If you want a second instance running on a different context. e.g. secondRapla.xml
   
   <Set name="contextPath">/secondRapla</Set>
   <New id="raplafile" class="org.eclipse.jetty.plus.jndi.EnvEntry">
