@@ -1,20 +1,9 @@
-This README is for building rapla from source. You will find more information on our
-documentation pages on 
+This README is for building rapla from source. You will find more information and the rapla sources on 
 
 http://code.google.com/p/rapla/
 
 We recommend reading the faqs and the development documents under https://code.google.com/p/rapla/wiki/ for more information.
-
-1. Get the source:
-
-To get the Source-Distribution download it from 
-http://code.google.com/p/rapla/downloads/
-
-If you want the latest development version 
-check out the trunk folder from http://rapla.googlecode.com/svn/
-
-
-2. Build Rapla:
+especially the http://code.google.com/p/rapla/wiki/BuildGuide
 
 We use the ant tool for our build process. Ant is the java-equivalent to make
 Look at jakarta.apache.org/ant for more information. If you don't want 
@@ -26,10 +15,8 @@ the rapla source distribution.
 
 build.sh (Linux/Unix) 
 build.bat  (Win) 
-call build  (win NT/2000) 
 
-
-Calling build with no arguments will create a Binary-Distribution
+Calling build with no arguments will create a binary-distribution
 in the sub-folder dist. There you will find the scripts to start rapla. (SEE INSTALL.txt)
 
 
@@ -39,7 +26,7 @@ You can call build with different arguments, e.g.:
    (default)   Default target is dist-bin.
 
  dist-bin      Creates a new Binary-Distribution in the folder dist.
- build         Builds a new rapla.jar in the build sub-folder
+ build         Builds a new rapla.war in the build sub-folder
  clean         Deletes the build sub-folder
  clean-dist    Deletes the dist sub-folder
  javadocs      create the Javadoc in the build sub-folder
