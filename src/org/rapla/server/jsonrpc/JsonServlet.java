@@ -261,10 +261,10 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
       call.xsrf = xsrf;
 
       call.noCache();
-      if (!acceptJSON(call)) {
-        textError(call, SC_BAD_REQUEST, "Must Accept " + JsonConstants.JSON_TYPE);
-        return;
-      }
+//      if (!acceptJSON(call)) {
+//        textError(call, SC_BAD_REQUEST, "Must Accept " + JsonConstants.JSON_TYPE);
+//        return;
+//      }
 
       perThreadCall.set(call);
       doService(call);
