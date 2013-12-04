@@ -68,6 +68,7 @@ import org.rapla.server.internal.RemoteServiceDispatcher;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ShutdownService;
+import org.rapla.server.jsonrpc.JsonServlet;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
@@ -700,9 +701,12 @@ public class MainServlet extends HttpServlet {
 	            }
 	        }
 	        //String servletPath = request.getServletPath();
-	        int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
-	        if ( rpcIndex>= 0)  {
+	        if ( requestURI.indexOf("/rapla/rpc/") >= 0)  {
 	            handleRPCCall( request, response, requestURI );
+	            return;
+	        }
+	        if ( requestURI.indexOf("/rapla/json/")>= 0)  {
+	            handleJSONCall( request, response, requestURI );
 	            return;
 	        }
 	        if ( page == null || page.trim().length() == 0) {
@@ -760,6 +764,24 @@ public class MainServlet extends HttpServlet {
         	}
         }
         
+    }
+    
+    
+    private  void handleJSONCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) throws ServletException, IOException 
+    {
+        try
+        {
+	        final ServerServiceContainer serverContainer = getServer();
+	        final RaplaContext context = serverContainer.getContext();
+	    	RemoteServiceDispatcher serviceDispater= context.lookup( RemoteServiceDispatcher.class);
+	    	JsonServlet servlet = serviceDispater.getJsonServlet( request);
+	    	ServletContext servletContext = getServletContext();
+			servlet.service(request, response, servletContext);
+        }
+        catch ( RaplaException ex)
+        {
+        	getLogger().error(ex.getMessage(), ex);
+        }
     }
     
     private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 

@@ -6,7 +6,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="lib/server/commons-codec-1.8.jar">
 		<accessrules>
-			<accessrule kind="nonaccessible" pattern="**"/>
+			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/server/commons-lang-2.6.jar">
@@ -39,6 +39,21 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/server/commons-logging-1.1.3.jar">
+		<accessrules>
+			<accessrule kind="discouraged" pattern="**"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/server/gson-2.2.4.jar">
+		<accessrules>
+			<accessrule kind="discouraged" pattern="**"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/server/gwtjsonrpc-1.4-SNAPSHOT.jar" exported="true">
+		<accessrules>
+			<accessrule kind="discouraged" pattern="**"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/server/gwtjsonrpc-1.4-SNAPSHOT-sources.jar" exported="true">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>

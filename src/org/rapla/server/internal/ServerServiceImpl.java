@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
@@ -60,11 +63,13 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaServerExtensionPoints;
+import org.rapla.server.RemoteJsonFactory;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.jsonrpc.JsonServlet;
 import org.rapla.servletpages.DefaultHTMLMenuEntry;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
@@ -85,6 +90,8 @@ import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
+import com.google.gwtjsonrpc.common.RemoteJsonService;
+
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
  <pre>
@@ -103,6 +110,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 {
     @SuppressWarnings("rawtypes")
     public static Class<RemoteMethodFactory> REMOTE_METHOD_FACTORY = RemoteMethodFactory.class;
+    public static Class<RemoteJsonFactory> REMOTE_JSON_FACTORY = RemoteJsonFactory.class;
     static Class<RaplaPageGenerator> SERVLET_PAGE_EXTENSION = RaplaPageGenerator.class;
 
     protected CachableStorageOperator operator;
@@ -281,6 +289,11 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory, Configuration configuration) {
         addContainerProvidedComponent(REMOTE_METHOD_FACTORY,factory, role.getName(), configuration);
+    }
+    
+    public <T extends RemoteJsonService> void addRemoteJsonFactory( Class<T> service, Class<? extends RemoteJsonFactory<T>> factory, Configuration configuration)
+    {
+        addContainerProvidedComponent(REMOTE_JSON_FACTORY,factory, service.getName(), configuration);
     }
     
 	@SuppressWarnings("unchecked")
@@ -705,6 +718,35 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			getLogger().error("Shutdown service not set");
 		}
 		
+	}
+
+	JsonServlet servlet;
+	@Override
+	public JsonServlet getJsonServlet(HttpServletRequest request) throws ServletException {
+		if ( servlet == null)
+		{
+			servlet = new JsonServlet()
+			{
+				@Override
+				protected Object createServiceHandle() throws Exception {
+					
+					String interfaceName = "org.rapla.plugin.freiraum.common.RaplaJsonService";
+					Collection<RemoteJsonFactory> allServicesForThisContainer = getAllServicesForThisContainer( RemoteJsonFactory.class);
+					RemoteJsonFactory factory;
+					if ( allServicesForThisContainer.size() > 0)
+					{
+						factory = allServicesForThisContainer.iterator().next();
+					}
+					else
+					{
+						factory = lookup( REMOTE_JSON_FACTORY ,interfaceName); 
+					}
+					return factory.createService( null);
+				}
+			};
+			servlet.init();
+		}
+		return servlet;
 	}
       
 
