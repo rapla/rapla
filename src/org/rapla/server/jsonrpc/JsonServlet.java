@@ -394,9 +394,19 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
       d.addProperty("method", req.getParameter("method"));
       d.addProperty("id", req.getParameter("id"));
       try {
-        final byte[] params = req.getParameter("params").getBytes("ISO-8859-1");
-        final String p = new String(Base64.decodeBase64(params), "UTF-8");
-        d.add("params", new JsonParser().parse(p));
+        String parameter = req.getParameter("params");
+		final byte[] params = parameter.getBytes("ISO-8859-1");
+        JsonElement parsed;
+        try 
+        {
+           	parsed = new JsonParser().parse(parameter);
+        }
+        catch (JsonParseException e)
+        {
+            final String p = new String(Base64.decodeBase64(params), "UTF-8");
+           	parsed = new JsonParser().parse(p);
+        }
+		d.add("params", parsed);
       } catch (UnsupportedEncodingException e) {
         throw new JsonParseException("Cannot parse params", e);
       }

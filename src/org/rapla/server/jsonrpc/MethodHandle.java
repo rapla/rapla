@@ -14,13 +14,13 @@
 
 package org.rapla.server.jsonrpc;
 
-import com.google.gwtjsonrpc.common.AllowCrossSiteRequest;
-import com.google.gwtjsonrpc.common.RemoteJsonService;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+
+import com.google.gwtjsonrpc.common.AllowCrossSiteRequest;
+import com.google.gwtjsonrpc.common.RemoteJsonService;
 
 /**
  * Pairing of a specific {@link RemoteJsonService} implementation and method.
