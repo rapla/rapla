@@ -6,7 +6,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.server.TimeZoneConverter;
 
 
 /** This class contains all locale specific information for Rapla. Like
@@ -129,18 +128,18 @@ public interface RaplaLocale
     TimeZone getImportExportTimeZone();
 
     /**
-    @deprecated moved to {@link TimeZoneConverter} 
+    @deprecated moved to TimeZoneConverter 
     */
     @Deprecated
     long fromRaplaTime(TimeZone timeZone,long raplaTime);
     /**
-    @deprecated moved to {@link TimeZoneConverter} 
+    @deprecated moved to TimeZoneConverter 
     */
     @Deprecated
 	long toRaplaTime(TimeZone timeZone,long time);
 
     /**
-    @deprecated moved to {@link TimeZoneConverter}
+    @deprecated moved to TimeZoneConverter
     */
     @Deprecated
 	Date fromRaplaTime(TimeZone timeZone,Date raplaTime);
@@ -160,7 +159,7 @@ public interface RaplaLocale
 	 * @param time
 	 *            the Date object in the passed timezone 
      * @see RaplaLocale#fromRaplaTime
-    @deprecated moved to {@link TimeZoneConverter}
+    @deprecated moved to TimeZoneConverter
 	 */
 	Date toRaplaTime(TimeZone timeZone,Date time);
 	
