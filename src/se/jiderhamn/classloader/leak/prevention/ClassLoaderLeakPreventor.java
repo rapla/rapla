@@ -48,7 +48,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 
 
-/**
+/** Changed by Christopher Kohlhaas
  * Modified from the original uncommented the following line
  *       //java.awt.Toolkit.getDefaultToolkit(); // Will start a Thread
   *     //javax.imageio.ImageIO.getCacheDirectory(); // Will call sun.awt.AppContext.getAppContext()
