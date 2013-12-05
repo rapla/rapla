@@ -409,6 +409,17 @@ public class LocalCache implements EntityResolver
 			}
 		};
 	}
+	
+	static public Comparable getId(String string) throws RaplaException {
+		int index = string.lastIndexOf("_") + 1;
+		if ( index <= 0)
+		{
+            throw new RaplaException("invalid rapla-id '" + string + "' Type is missing and not passed as argument.");
+		}
+		String typeName = string.substring(0, index -1);
+		RaplaType raplaType = RaplaType.find(typeName);
+		return getId( raplaType, string);
+	}
 
 	 static public Comparable getId(RaplaType type,String str) throws RaplaException {
 	    	if (str == null)

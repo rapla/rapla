@@ -230,14 +230,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    {
 		    	return null;
 		    }
-  	    	int index = string.lastIndexOf("_") + 1;
-    		if ( index <= 0)
-    		{
-	            throw new RaplaException("invalid rapla-id '" + string + "' Type is missing and not passed as argument.");
-    		}
-    		String typeName = string.substring(0, index -1);
-    		RaplaType raplaType = RaplaType.find(typeName);
-			return LocalCache.getId(raplaType, string);
+  	    	return LocalCache.getId(string);
 		}
 	  	else if ( type.equals( Appointment.class))
   		{
