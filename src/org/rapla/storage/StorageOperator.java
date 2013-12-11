@@ -72,8 +72,7 @@ public interface StorageOperator extends EntityResolver {
 
     /** returns the user or null if a user with the given username was not found. */
     User getUser(String username) throws RaplaException;
-    Preferences getPreferences(User user) throws RaplaException;
-
+    Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
     /** returns the reservations of the specified user, sorted by name.
      * @param allocatables */
@@ -118,4 +117,5 @@ public interface StorageOperator extends EntityResolver {
     /**@deprecated will be replaced by direct accessors */
     @Deprecated
     Map<String, Template> getTemplateMap();
+
 }

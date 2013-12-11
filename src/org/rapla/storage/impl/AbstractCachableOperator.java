@@ -293,7 +293,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 
 	@SuppressWarnings("unchecked")
-	public Preferences getPreferences(final User user) throws RaplaException {
+	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
 		// Test if user is already stored
 		if (user != null) {
@@ -309,7 +309,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		{
 			unlock(readLock);
 		}
-		if (pref == null) {
+		if (pref == null && createIfNotNull) {
 			Lock writeLock = writeLock();
 			try
 			{

@@ -116,8 +116,11 @@ public interface QueryModule
      */
     //boolean hasPermissionToAllocate( Appointment appointment, Allocatable allocatable );
 
-    /** returns the preferences for the passed user, must be admin todo this.*/
+    /** returns the preferences for the passed user, must be admin todo this. creates a new prefence object if not set*/
     Preferences getPreferences(User user) throws RaplaException;
+
+    /** returns the preferences for the passed user, must be admin todo this.*/
+    Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
     /** returns the preferences for the login user */
     Preferences getPreferences() throws RaplaException;
@@ -138,6 +141,7 @@ public interface QueryModule
 	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException;
 
 	Date getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
+
 
 }
 

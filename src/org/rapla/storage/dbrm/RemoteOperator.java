@@ -177,7 +177,7 @@ public class RemoteOperator
 		int intervalLength = UpdateModule.REFRESH_INTERVAL_DEFAULT;
 		if (isConnected()) {
 			try {
-				intervalLength = getPreferences(null).getEntryAsInteger(UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
+				intervalLength = getPreferences(null, true).getEntryAsInteger(UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
 			} catch (RaplaException e) {
 				getLogger().error("Error refreshing.", e);
 			}

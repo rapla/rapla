@@ -481,7 +481,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         {
             try
             {
-                delay = operator.getPreferences( null ).getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY,  delay );
+                delay = operator.getPreferences( null, true ).getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY,  delay );
             }
             catch ( RaplaException e )
             {
@@ -721,7 +721,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 if ( changingUser.cast().isAdmin() || user.equals( changingUser) )
                 {
                 	String subject =  getString("security_code");
-    			    Preferences prefs = operator.getPreferences( null );
+    			    Preferences prefs = operator.getPreferences( null, true );
     				String mailbody = "" + getString("send_code_mail_body_1") + user.cast().getUsername() + ",\n\n" 
     	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.cast().getEmail().hashCode()) 
     	        		+ "\n\n" + getString("send_code_mail_body_3") + "\n\n" + "-----------------------------------------------------------------------------------"

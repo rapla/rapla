@@ -223,7 +223,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         }
         
-        Preferences preferences = operator.getPreferences( null );
+        Preferences preferences = operator.getPreferences( null, true );
         RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
     	String importExportTimeZone = TimeZone.getDefault().getID();
 		if ( entry != null)
