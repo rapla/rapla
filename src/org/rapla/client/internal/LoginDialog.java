@@ -45,6 +45,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.RaplaFrame;
 
 public final class LoginDialog extends RaplaFrame implements LocaleChangeListener
@@ -69,10 +70,13 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 	JPanel						canvas;
 	protected LocaleSelector	localeSelector;
     StartupEnvironment env;
+    // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
+    RaplaGUIComponent guiComponent;
     
     public LoginDialog(RaplaContext context) throws RaplaException
 	{
 		super(context);
+		this.guiComponent = new RaplaGUIComponent(context);
 		env =  context.lookup( StartupEnvironment.class );
 		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 		localeSelector = context.lookup(LocaleSelector.class);
@@ -170,7 +174,8 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		Listener listener = new Listener();
 		password.addActionListener(listener);
 		languageSelector.addFocusListener(listener);
-		
+		guiComponent.addCopyPaste( username);
+		guiComponent.addCopyPaste( password );
 		// ################## END LABELS AND TEXTFIELDS ###################
 		
 		// ################## BEGIN BUTTONS ###################
