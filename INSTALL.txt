@@ -1,6 +1,5 @@
 This is the INSTALLING-GUIDE for the Rapla-BINARY-DISTRIBUTION, 
 
-
 You will find more information on our documentation pages on
 http://code.google.com/p/rapla/
 
