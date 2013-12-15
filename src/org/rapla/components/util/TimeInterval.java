@@ -1,9 +1,11 @@
 package org.rapla.components.util;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public final class TimeInterval 
+public final class TimeInterval implements Serializable
 {
+	private static final long serialVersionUID = -8387919392038291664L;
 	Date start;
 	Date end;
 
