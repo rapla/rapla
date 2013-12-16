@@ -16,11 +16,14 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
+import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -61,42 +64,46 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
     		selectedObjects.add( focusedObject);
     	}
     		
-    	final Collection<Reservation> events = new HashSet<Reservation>();
+    	final Collection<Entity<? extends Entity>> ownables = new HashSet<Entity<? extends Entity>>();
     	for ( Object obj: selectedObjects)
     	{
-    		final Reservation event;
+    		final Entity<? extends Entity> ownable;
     		if  ( obj instanceof AppointmentBlock)
     		{
-    			event = ((AppointmentBlock) obj).getAppointment().getReservation(); 
+    			ownable = ((AppointmentBlock) obj).getAppointment().getReservation(); 
     		}
-    		else if ( obj instanceof RaplaObject )
+    		else if ( obj instanceof Entity )
     		{
     			RaplaType raplaType = ((RaplaObject)obj).getRaplaType();
     	    	if ( raplaType == Appointment.TYPE )
     	        {
     	    		Appointment appointment = (Appointment) obj;
-    	    	    		event = appointment.getReservation();
+    	    	    		ownable = appointment.getReservation();
     	        }
     	    	else if ( raplaType ==  Reservation.TYPE)
     	    	{
-    	    		event = (Reservation) obj;
+    	    		ownable = (Reservation) obj;
+    	    	}
+    	    	else if ( raplaType ==  Allocatable.TYPE)
+    	    	{
+    	    		ownable = (Allocatable) obj;
     	    	}
     	    	else
     	    	{
-    	    		event = null;
+    	    		ownable = null;
     	    	}
     		}
     		else
     		{
-    			event  = null;
+    			ownable  = null;
     		}
-    		if ( event != null)
+    		if ( ownable != null)
     		{
-    			events.add( event);
+    			ownables.add( ownable);
     		}
     	}
     	
-    	if ( events.size() == 0 )
+    	if ( ownables.size() == 0 )
     	{
     		return RaplaMenuItem.EMPTY_ARRAY;
     	}
@@ -111,18 +118,17 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
             {
                 try 
                 {
-             
                 	User newOwner = showAddDialog();
                 	if(newOwner != null) {
-                		ArrayList<Reservation> toStore = new ArrayList<Reservation>();
-                		for ( Reservation event: events)
+                		ArrayList<Entity<?>> toStore = new ArrayList<Entity<?>>();
+                		for ( Entity<? extends Entity> ownable: ownables)
                 		{
-	                		Reservation editableEvent = getClientFacade().edit( event);
-	                		editableEvent.setOwner(newOwner);
-	                		toStore.add( editableEvent);
+                			Entity<?> editableOwnables = getClientFacade().edit( ownable);
+	                		((Ownable)editableOwnables).setOwner(newOwner);
+	                		toStore.add( editableOwnables);
                 		}
 	                		//((SimpleEntity) editableEvent).setLastChangedBy(newOwner);
-                		getClientFacade().storeObjects( toStore.toArray( Reservation.RESERVATION_ARRAY) ); 
+                		getClientFacade().storeObjects( toStore.toArray( Entity.ENTITY_ARRAY) ); 
                 	}
                 }
                 catch (RaplaException ex )
