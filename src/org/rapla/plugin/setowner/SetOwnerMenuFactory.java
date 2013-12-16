@@ -123,7 +123,8 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
                 		ArrayList<Entity<?>> toStore = new ArrayList<Entity<?>>();
                 		for ( Entity<? extends Entity> ownable: ownables)
                 		{
-                			Entity<?> editableOwnables = getClientFacade().edit( ownable);
+                			@SuppressWarnings("unchecked")
+							Entity<?> editableOwnables = getClientFacade().edit( ownable);
 	                		((Ownable)editableOwnables).setOwner(newOwner);
 	                		toStore.add( editableOwnables);
                 		}
