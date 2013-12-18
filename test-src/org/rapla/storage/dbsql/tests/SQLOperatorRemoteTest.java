@@ -100,8 +100,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
    @Override
    protected void initTestData() throws Exception {
 	   super.initTestData();
-	   DBOperator operator = (DBOperator) getContainer().lookup(CachableStorageOperator.class, "rapladb");
-	   operator.removeAll();
+	   
    }
 
     private void changeEventType( ClientFacade facade ) throws RaplaException

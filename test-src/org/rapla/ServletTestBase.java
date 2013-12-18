@@ -19,6 +19,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.MainServlet;
 
+import sun.security.action.GetLongAction;
+
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase extends TestCase
 {
@@ -40,9 +42,9 @@ public abstract class ServletTestBase extends TestCase
 
     protected void setUp() throws Exception
     {
-        super.setUp();
-        new File(WEBAPP_FOLDER_NAME).mkdir();
-        new File(WEBAPP_INF_FOLDER_NAME).mkdir();
+        File webappFolder = new File(WEBAPP_FOLDER_NAME);
+		IOUtil.deleteAll( webappFolder );
+        new File(WEBAPP_INF_FOLDER_NAME).mkdirs();
         
         IOUtil.copy( TEST_SRC_FOLDER_NAME + "/test.xconf", WEBAPP_INF_FOLDER_NAME + "/raplaserver.xconf" );
         //IOUtil.copy( "test-src/test.xlog", WEBAPP_INF_FOLDER_NAME + "/raplaserver.xlog" );
@@ -52,7 +54,7 @@ public abstract class ServletTestBase extends TestCase
         
         jettyServer =new Server(8052);
         WebAppContext context = new WebAppContext( jettyServer,"rapla","/" );
-        context.setResourceBase( WEBAPP_FOLDER_NAME );
+        context.setResourceBase(  webappFolder.getAbsolutePath() );
         context.setMaxFormContentSize(64000000);
         MainServlet.serverContainerHint=getStorageName();
         
