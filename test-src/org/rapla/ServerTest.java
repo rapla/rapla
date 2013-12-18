@@ -71,7 +71,6 @@ public class ServerTest extends ServletTestBase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        initTestData();
         // start the server
         
         Container container = getContainer();
@@ -83,10 +82,6 @@ public class ServerTest extends ServletTestBase {
         facade2 = container.lookup(ClientFacade.class, "remote-facade-2");
         facade2.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
-    }
-
-    protected void initTestData() throws Exception{
-
     }
 
     protected String getStorageName() {

@@ -97,12 +97,6 @@ public class SQLOperatorRemoteTest extends ServerTest {
        
    }
 
-   @Override
-   protected void initTestData() throws Exception {
-	   super.initTestData();
-	   
-   }
-
     private void changeEventType( ClientFacade facade ) throws RaplaException
     {
         DynamicType eventType = facade.edit( facade.getDynamicType("event") );
