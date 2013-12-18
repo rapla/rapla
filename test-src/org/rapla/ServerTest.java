@@ -69,8 +69,8 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	protected void setUp() throws Exception {
-		super.setUp();
 		initTestData();
+		super.setUp();
 		// start the server
 
 		Container container = getContainer();
