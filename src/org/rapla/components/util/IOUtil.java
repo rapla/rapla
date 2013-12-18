@@ -199,6 +199,16 @@ abstract public class IOUtil {
 		  return;
 	  }
 
+	  public static void deleteAll(File f)
+	  {
+		  if (f.isDirectory()) {
+			  File[] files = f.listFiles();
+			  for (File file:files) {
+				  deleteAll(file);
+			  }
+		  }
+		  f.delete();
+	  }
       /** returns the relative path of file to base.
          * @throws IOException if position of file is not relative  to base
         */

@@ -125,6 +125,7 @@ public class ServerTest extends ServletTestBase {
         
         // test for modify in second facade
         Reservation persistant = facade1.getPersistant(r2);
+
 		assertEquals(1, persistant.getAllocatables().length);
         facade2.logout();
     }
@@ -170,7 +171,6 @@ public class ServerTest extends ServletTestBase {
             facade2.logout();
         }
 
-        
         assertEquals(4, allocatable.getClassification().getAttributes().length);
         DynamicType typeEdit2 = facade1.edit(type);
         Attribute attributeLater =  typeEdit2.getAttribute("test");
