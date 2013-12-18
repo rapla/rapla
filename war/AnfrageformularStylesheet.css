@@ -1,0 +1,38 @@
+.tdNeutral{
+	background-color:white;
+	border: 1px solid;
+	border-color:black;
+	
+}
+.tdSelect{
+	background-color:gray;
+	border:1px solid;
+	border-color:gray;
+	opacity:0.2;
+}
+.tdPlus{
+	background-color:#00aa00;
+	border:1px solid;
+}
+.tdMinus{
+	background-color:red;
+	border:1px solid;
+}
+#timeTableBody {
+	text-align:center;
+	vertical-align:center;
+}
+#timeTableBody td{
+	cursor:pointer;
+	width:120px;
+}
+#timeTableBody th{
+	width:120px;
+}
+#timeTable{
+	text-align:center;
+	border-collapse:collapse;		
+}
+
+	
+
