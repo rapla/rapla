@@ -678,12 +678,6 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
         return count;
     }
 
-    @Override
-    public void save( Collection<RefEntity<T>> entity ) throws RaplaException, SQLException{
-        delete( entity );
-        insert( entity );
-    }
-
     String annotationPrefix = "annotation:";
 	
     protected void load(ResultSet rset) throws SQLException, RaplaException {
@@ -772,13 +766,6 @@ class PermissionStorage extends EntityStorage<Allocatable>  {
 			count ++;
         }
         return count;
-    }
-
-
-	@Override
-    public void save( Collection<RefEntity<Allocatable>> entity ) throws RaplaException, SQLException{
-        delete( entity );
-        insert( entity );
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
@@ -917,12 +904,6 @@ class AllocationStorage extends EntityStorage<Appointment>  {
         return count;
     }
   
-    @Override
-    public void save( Collection<RefEntity<Appointment>> entity ) throws RaplaException, SQLException{
-        delete( entity );
-        insert( entity );
-    }
-
     protected void load(ResultSet rset) throws SQLException, RaplaException {
     	Appointment appointment =resolveFromId(rset,1, Appointment.class);
     	if ( appointment == null)
@@ -1069,12 +1050,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
         return count;
     }
 
-    @Override
-    public void save( Collection<RefEntity<Preferences>> entity ) throws RaplaException, SQLException{
-        delete( entity );
-        insert( entity );
-    }
-
     protected void load(ResultSet rset) throws SQLException, RaplaException {
     	//findPreferences
     	//check if value set
@@ -1202,12 +1177,6 @@ class UserStorage extends RaplaTypeStorage<User> {
 class UserGroupStorage extends EntityStorage<User> {
     public UserGroupStorage(RaplaContext context) throws RaplaException {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID INTEGER NOT NULL KEY","CATEGORY_ID INTEGER NOT NULL"});
-    }
-
-    @Override
-    public void save( Collection<RefEntity<User>> entity ) throws RaplaException, SQLException{
-        delete( entity );
-        insert( entity );
     }
 
     protected int write(PreparedStatement stmt, RefEntity<User> entity) throws SQLException, RaplaException {

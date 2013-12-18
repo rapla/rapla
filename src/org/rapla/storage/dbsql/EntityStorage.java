@@ -587,8 +587,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	    }
 	}
     
-  
-    
     protected void addSubStorage(Storage<T> subStore) {
     	subStores.add(subStore);
     }
@@ -721,54 +719,59 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
-    public void update(Collection<RefEntity<T>> entities ) throws SQLException,RaplaException {
-        for (Storage<T> storage: subStores) {
-            storage.delete( entities );
-		    storage.insert( entities);
-		}
-        PreparedStatement stmt = null;
-        try {
-            stmt = con.prepareStatement( updateSql);
-            int count = 0;
-            for ( RefEntity<T> entity: entities)
-            {
-                int id = getId( entity );
-                stmt.setInt( lastParameterIndex + 1,id );
-                count+=write(stmt, entity);
-            }
-            if ( count > 0)
-            {
-                stmt.executeBatch();
-            }
-        } finally {
-            if (stmt!=null)
-                stmt.close();
-        }
-    }
+//    public void update(Collection<RefEntity<T>> entities ) throws SQLException,RaplaException {
+//        for (Storage<T> storage: subStores) {
+//            storage.delete( entities );
+//		    storage.insert( entities);
+//		}
+//        PreparedStatement stmt = null;
+//        try {
+//            stmt = con.prepareStatement( updateSql);
+//            int count = 0;
+//            for ( RefEntity<T> entity: entities)
+//            {
+//                int id = getId( entity );
+//                stmt.setInt( lastParameterIndex + 1,id );
+//                count+=write(stmt, entity);
+//            }
+//            if ( count > 0)
+//            {
+//                stmt.executeBatch();
+//            }
+//        } finally {
+//            if (stmt!=null)
+//                stmt.close();
+//        }
+//    }
 
-    public void save(Collection<RefEntity<T>> entities) throws SQLException,RaplaException {
-        Collection<RefEntity<T>>  toUpdate = new ArrayList<RefEntity<T>>();
-        Collection<RefEntity<T>>  toInsert = new ArrayList<RefEntity<T>>();
-        for ( RefEntity<T> entity:entities)
-        {
-            
-            if (cache.tryResolve( entity.getId())!= null) {
-    		    toUpdate.add( entity );
-    		} else {
-    		    toInsert.add( entity );
-    		}
-        }
-        if  ( !toInsert.isEmpty())
-        {
-            insert( toInsert);
-        }
-        if  ( !toUpdate.isEmpty())
-        {
-            update( toUpdate);
-        }
-    }
+//    public void save(Collection<RefEntity<T>> entities) throws SQLException,RaplaException {
+//        Collection<RefEntity<T>>  toUpdate = new ArrayList<RefEntity<T>>();
+//        Collection<RefEntity<T>>  toInsert = new ArrayList<RefEntity<T>>();
+//        for ( RefEntity<T> entity:entities)
+//        {
+//            
+//            if (cache.tryResolve( entity.getId())!= null) {
+//    		    toUpdate.add( entity );
+//    		} else {
+//    		    toInsert.add( entity );
+//    		}
+//        }
+//        if  ( !toInsert.isEmpty())
+//        {
+//            insert( toInsert);
+//        }
+//        if  ( !toUpdate.isEmpty())
+//        {
+//            update( toUpdate);
+//        }
+//    }
 
-	public void delete(Collection<RefEntity<T>> entities) throws SQLException, RaplaException {
+    public void save( Collection<RefEntity<T>> entities ) throws RaplaException, SQLException{
+        delete( entities );
+        insert( entities );
+    }
+	
+    public void delete(Collection<RefEntity<T>> entities) throws SQLException, RaplaException {
         for (Storage<T> storage: subStores) {
             storage.delete( entities );
         }
