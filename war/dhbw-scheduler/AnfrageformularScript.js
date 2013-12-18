@@ -1,7 +1,19 @@
 $('document').ready(function(){		
-	$('#btnTest').on('click',function(){
-		alert("es geht...Script.js");
-	});
+	$('#btnSubmit').on('click',function(){
+		var objData={timeTableArray:formatArray(),datelist:getDatelist()};
+		var url=$('#inpHidden').val();
+		$.ajax({
+			 url: url,
+		     type: 'POST',
+		     data: objData,
+		     success: function (data){
+		    	 alert("Gesendet");
+		     },
+		     error: function(){
+		    	 alert("Error");
+		     }		
+		});
+	})
 	//Selection Funktion
 	$('#timeTableBody td').on('click',function(){
 		if($(this).attr('class') != 'tdSelect'){
@@ -131,7 +143,6 @@ function formatArray(){
 		newTableArray[i] = new Array();
 		for(var j=0;j<taFdLength;j++){
 			var tempT= startTime+j;
-			alert(tableArray[j][i]);
 			newTableArray[i][tempT]=tableArray[j][i];
 		}
 	}				
