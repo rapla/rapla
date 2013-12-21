@@ -73,4 +73,12 @@ public class CompoundI18n implements I18nBundle {
     public Locale getLocale() {
         return inner.getLocale();
     }
+
+	public String getString(String key, Locale locale) {
+		try {
+    	    return inner.getString(key,locale);
+    	} catch (MissingResourceException ex) {
+    	    return outer.getString(key, locale);
+    	}
+	}
 } 

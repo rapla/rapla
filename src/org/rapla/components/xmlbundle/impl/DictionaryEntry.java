@@ -12,13 +12,14 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.components.xmlbundle.impl;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
 class DictionaryEntry {
     String key;
-    Map<String,String> translations = new TreeMap<String,String>();
+    Map<String,String> translations = Collections.synchronizedMap(new TreeMap<String,String>());
     
     public DictionaryEntry(String key) {
         this.key = key;

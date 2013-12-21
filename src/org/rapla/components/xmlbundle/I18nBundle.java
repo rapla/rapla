@@ -49,9 +49,15 @@ public interface I18nBundle {
     ImageIcon getIcon(String key) throws MissingResourceException;
 
     /** returns the specified string from the selected resource-file.
-        @throws MissingResourceException if not found or can't be loaded.
+     * Same as getString(key,getLocale())
+     *  @throws MissingResourceException if not found or can't be loaded.
     */
     String getString(String key) throws MissingResourceException;
+    
+    /** returns the specified string from the selected resource-file for the specified locale
+    @throws MissingResourceException if not found or can't be loaded.
+     */
+    String getString( String key, Locale locale);
 
     /** @return the selected language. */
     String getLang();
