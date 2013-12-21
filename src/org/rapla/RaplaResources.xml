@@ -2554,6 +2554,16 @@ See French text.
         <text lang="pl">Przydział zasobów:</text>
 		<text lang="pt">Alocações:</text>
     </entry>
+    <entry key="allocation">
+        <text lang="en">allocation</text>
+        <text lang="de">Belegung</text>
+         <text lang="fr">allocation</text>
+        <text lang="es">asignaciones</text>
+        <text lang="cs">rozvržení</text>
+        <text lang="nl">bezetting</text>
+        <text lang="pl">przydział zasobów</text>
+		<text lang="pt">alocações</text>
+    </entry>
     <entry key="reservation.owner">
         <text lang="en">Reserved by</text>
         <text lang="de">reserviert von</text>

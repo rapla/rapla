@@ -413,47 +413,40 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     {
     	this.locale = locale;
     	getLogger().debug( "Locale changed to " + locale );
-		LanguagePack pack = packMap.get(locale);
-        if (pack == null)
-        {
-        	synchronized ( packMap )
-        	{
-	        	pack = new LanguagePack();
-	        	pack.locale = locale;
-	        	if ( dictionaryFile == null )
-	        	{
-	        		try
-	                {
-	        			pack.resourceBundle = new ResourceBundleLoader().loadResourceBundle( className, locale );
-	                }
-	                catch ( MissingResourceException ex)
-	                {
-	                }
-	             }
-	        	packMap.put( locale, pack);
-        	}
-        }
+    	getPack(locale);
     }
 
 	private LanguagePack getPack(Locale locale) {
+		LanguagePack pack = packMap.get(locale);
+        if (pack != null)
+        {
+        	return pack;
+        }
+		synchronized ( packMap )
 		{
-			LanguagePack pack = packMap.get( locale);
-			if ( pack != null)
+			// again, now with synchronization
+			pack = packMap.get(locale);
+	        if (pack != null)
+	        {
+	        	return pack;
+	        }
+			pack = new LanguagePack();
+			pack.locale = locale;
+			if ( dictionaryFile == null )
 			{
-				return pack;
-			}
+				try
+		        {
+					pack.resourceBundle = new ResourceBundleLoader().loadResourceBundle( className, locale );
+		        }
+		        catch ( MissingResourceException ex)
+		        {
+		        }
+		     }
+			packMap.put( locale, pack);
+			return pack;
 		}
-		synchronized ( packMap ) {
-			for (LanguagePack pack: packMap.values())
-			{
-				if ( pack.locale.getLanguage().equals( locale.getLanguage()))
-				{
-					return pack;
-				}
-			}	
-		}
-		return packMap.get( getLocale());
 	}
+
 }
 
 class ResourceBundleLoader 
