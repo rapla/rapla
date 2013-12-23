@@ -28,7 +28,8 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		this.entities = new ArrayList<T>();
 		for ( T entity: entities)
 		{
-			if ( entity.getRaplaType() == Category.TYPE)
+			// Hack for 1.6 compiler compatibility
+			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
 	    	{
 				this.entities.add(entity);
 	    	}
@@ -39,9 +40,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 				this.entities.add(mementable.deepClone());
 			}
 		}
-
 	}
-	
 	
 	public boolean execute() throws RaplaException 
 	{
@@ -49,7 +48,8 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	    List<T> toRemove = new ArrayList<T>();
 	    for ( T entity: entities)
 		{
-			if ( entity.getRaplaType() == Category.TYPE)
+	    	// Hack for 1.6 compiler compatibility
+			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
 	    	{
 				Entity casted = entity;
 				// to avoid compiler error
