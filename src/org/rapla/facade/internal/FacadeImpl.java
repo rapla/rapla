@@ -1353,13 +1353,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 		T result;
 		RaplaType<T> raplaType = obj.getRaplaType();
-		if (raplaType ==  Appointment.TYPE ){
+		// Hack for 1.6 compiler compatibility
+		if (((Object)raplaType) ==  Appointment.TYPE ){
 			T _clone = _clone(obj);
 			// Hack for 1.6 compiler compatibility
 			Object temp = _clone;
 			((AppointmentImpl) temp).setParent(null);
 			result = _clone;
-		} else if (raplaType == Reservation.TYPE) {
+		// Hack for 1.6 compiler compatibility
+		} else if (((Object)raplaType) == Reservation.TYPE) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = obj;
 			Entity<Reservation> clonedReservation = cloneReservation((Entity<Reservation>) temp);
