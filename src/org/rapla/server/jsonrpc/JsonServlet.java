@@ -53,6 +53,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gwtjsonrpc.common.AsyncCallback;
@@ -387,16 +388,17 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
 
   private void parseGetRequest(final CallType call) {
     final HttpServletRequest req = call.httpRequest;
-
     if ("2.0".equals(req.getParameter("jsonrpc"))) {
       final JsonObject d = new JsonObject();
       d.addProperty("jsonrpc", "2.0");
       d.addProperty("method", req.getParameter("method"));
       d.addProperty("id", req.getParameter("id"));
+      
       try {
         String parameter = req.getParameter("params");
 		final byte[] params = parameter.getBytes("ISO-8859-1");
         JsonElement parsed;
+       
         try 
         {
            	parsed = new JsonParser().parse(parameter);
@@ -422,36 +424,62 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
         throw err;
       }
 
-    } else { /* JSON-RPC 1.1 */
+    } else { /* JSON-RPC 1.1 or REST API*/
       final Gson gs = createGsonBuilder().create();
-
-      call.method = lookupMethod(req.getParameter("method"));
+      String classAndMethodName = (String) req.getAttribute("jsonmethod");
+      String methodName;
+      if ( classAndMethodName != null)
+      {
+     	  call.versionName = "jsonrpc";
+    	  call.versionValue = new JsonPrimitive("2.0");
+    	  int indexRole = classAndMethodName.indexOf( "/" );
+    	  //String interfaceNameNonFinal = classAndMethodName.substring( 0, indexRole );
+    	  methodName = classAndMethodName.substring( indexRole + 1 );
+  	  }	
+      else
+  	  {
+    	  methodName = req.getParameter("method");
+    	  call.versionName = "version";
+    	  call.versionValue = new JsonPrimitive("1.1");
+    	  call.callback = req.getParameter("callback");
+  	  }
+      call.method = lookupMethod(methodName);
       if (call.method == null) {
         throw new NoSuchRemoteMethodException();
       }
       final Type[] paramTypes = call.method.getParamTypes();
+      String[] paramNames = call.method.getParamNames();
+      
       final Object[] r = new Object[paramTypes.length];
-
-      for (int i = 0; i < r.length; i++) {
-        final String v = req.getParameter("param" + i);
-        if (v == null) {
-          r[i] = null;
-        } else if (paramTypes[i] == String.class) {
-          r[i] = v;
-        } else if (paramTypes[i] instanceof Class<?>
-            && ((Class<?>) paramTypes[i]).isPrimitive()) {
-          // Primitive type, use the JSON representation of that type.
-          //
-          r[i] = gs.fromJson(v, paramTypes[i]);
-        } else {
-          // Assume it is like a java.sql.Timestamp or something and treat
-          // the value as JSON string.
-          //
-          r[i] = gs.fromJson(gs.toJson(v), paramTypes[i]);
-        }
+      for (int i = 0; i < r.length; i++) 
+      {
+    	  Type type = paramTypes[i];
+    	  String name = paramNames[i];
+    	  if (name == null || classAndMethodName == null )
+    	  {
+     		 name = "param" + i;
+    	  }
+    	  {
+        	final String v = req.getParameter(name);
+	        if (v == null) {
+	          r[i] = null;
+	        } else if (type == String.class) {
+	        	r[i] = v;
+	        } else if (type instanceof Class<?> && ((Class<?>) type).isPrimitive()) {
+				  // Primitive type, use the JSON representation of that type.
+				  //
+				  r[i] = gs.fromJson(v, type);
+	        } else {
+				  // Assume it is like a java.sql.Timestamp or something and treat
+				  // the value as JSON string.
+				  //
+	        	JsonElement parsed = new JsonParser().parse(v);
+	        	r[i] = gs.fromJson(parsed, type);
+			}
+         }
       }
       call.params = r;
-      call.callback = req.getParameter("callback");
+      
     }
   }
 
@@ -561,15 +589,20 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
         }
         if (src.externalFailure != null) {
           final JsonObject error = new JsonObject();
-          if ("jsonrpc".equals(src.versionName)) {
+          String message = src.externalFailure.getMessage();
+          if ( message == null)
+          {
+        	  message = src.externalFailure.toString();
+          }
+		  if ("jsonrpc".equals(src.versionName)) {
             final int code = to2_0ErrorCode(src);
 
             error.addProperty("code", code);
-            error.addProperty("message", src.externalFailure.getMessage());
+            error.addProperty("message", message);
           } else {
             error.addProperty("name", "JSONRPCError");
             error.addProperty("code", 999);
-            error.addProperty("message", src.externalFailure.getMessage());
+            error.addProperty("message", message);
           }
           r.add("error", error);
         } else {
@@ -584,7 +617,8 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
       o.write(call.callback);
       o.write("(");
     }
-    gb.create().toJson(call, o);
+    Gson create = gb.create();
+	create.toJson(call, o);
     if (call.callback != null) {
       o.write(");");
     }

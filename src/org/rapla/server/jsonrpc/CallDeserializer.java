@@ -114,6 +114,7 @@ final class CallDeserializer<CallType extends ActiveCall> implements
 
       final Object[] r = new Object[paramTypes.length];
       for (int i = 0; i < r.length; i++) {
+    	Type type = paramTypes[i];
         final JsonElement v = paramsArray.get(i);
         if (v != null) {
           r[i] = context.deserialize(v, paramTypes[i]);

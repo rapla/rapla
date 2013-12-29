@@ -12,12 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import javax.jws.WebParam;
 import javax.jws.WebService;
 
 import org.rapla.framework.RaplaException;
 
 @WebService
 public interface RemoteServer  {
-    String login(String username,String password, String connectAs) throws RaplaException;
-	void logout() throws RaplaException;
+    String login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs) throws RaplaException;
+    void logout() throws RaplaException;
 }

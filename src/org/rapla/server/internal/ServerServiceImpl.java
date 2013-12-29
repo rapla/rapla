@@ -15,11 +15,13 @@ package org.rapla.server.internal;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,7 @@ import com.google.gwtjsonrpc.common.RemoteJsonService;
  * The store value contains the id of a storage-component.
  * Storage-Components are all components that implement the
  * <code>CachableStorageOperator<code> interface.
+ * 
  * </p>
  @see ServerService
  */
@@ -459,9 +462,11 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	debugLogger.debug(args.toString());            	
 	            }
             }
-            RemoteMethodFactory<?> factory = getRemoteMethod(interfaceName); 
+            RemoteMethodFactory<?> factory = getRemoteMethod(interfaceName);
+            Class<?> interfaceClass = Class.forName( interfaceName);
+            
             serviceUncasted = factory.createService( remoteSession);
-            Method method = findMethod( interfaceName, methodName, args);
+            Method method = findMethod( interfaceClass, methodName, args);
             if ( method == null)
             {
                 throw new RaplaException("Can't find method with name " + methodName);
@@ -531,16 +536,19 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         return out.toByteArray();
     }
 
-  
-    private Method findMethod( String role,String methodName,Map<String,String> args) throws ClassNotFoundException
+    private Method findMethod( Class inter,String methodName,Map<String,String> args) 
     {
-        Class<?> inter = Class.forName( role);
         Method[] methods = inter.getMethods();
         for ( Method method: methods)
         {
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if ( method.getName().equals( methodName) && parameterTypes.length == args.size())
+            if ( method.getName().equals( methodName) )
             {
+            	Class<?>[] parameterTypes = method.getParameterTypes();
+            	Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+            	int length = parameterTypes.length;
+            	//	Map 
+            	//for ( int i=0;)
+            	if (parameterTypes.length == args.size())
                 return method;
             }
         }
@@ -720,9 +728,21 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		
 	}
 
-	JsonServlet servlet;
+	Map<String,JsonServlet> servletMap = new HashMap<String, JsonServlet>();
 	@Override
 	public JsonServlet getJsonServlet(HttpServletRequest request) throws ServletException {
+		String classAndMethodName = (String) request.getAttribute("jsonmethod");
+		String interfaceNameNonFinal = "org.rapla.plugin.freiraum.common.RaplaJsonService";
+		if  ( classAndMethodName != null) {
+			int indexRole = classAndMethodName.indexOf( "/" );
+			if ( indexRole > 0 )
+			{
+				interfaceNameNonFinal = classAndMethodName.substring( 0, indexRole );
+//				String methodName = classAndMethodName.substring( indexRole + 1 );
+			}	
+		} 
+		final String interfaceName = interfaceNameNonFinal;
+		JsonServlet servlet = servletMap.get( interfaceName);
 		if ( servlet == null)
 		{
 			servlet = new JsonServlet()
@@ -730,7 +750,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 				@Override
 				protected Object createServiceHandle() throws Exception {
 					
-					String interfaceName = "org.rapla.plugin.freiraum.common.RaplaJsonService";
 					Collection<RemoteJsonFactory> allServicesForThisContainer = getAllServicesForThisContainer( RemoteJsonFactory.class);
 					RemoteJsonFactory factory;
 					if ( allServicesForThisContainer.size() > 0)
@@ -745,6 +764,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 				}
 			};
 			servlet.init();
+			servletMap.put( interfaceName, servlet);
 		}
 		return servlet;
 	}

@@ -18,6 +18,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+
+import javax.jws.WebParam;
 
 import com.google.gwtjsonrpc.common.AllowCrossSiteRequest;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
@@ -30,7 +33,8 @@ public class MethodHandle {
   private final Method method;
   private final Type[] parameterTypes;
   private final boolean allowXsrf;
-
+  private String[] parameterNames;
+ 
   /**
    * Create a new handle for a specific service implementation and method.
    * 
@@ -45,7 +49,27 @@ public class MethodHandle {
     this.allowXsrf = method.getAnnotation(AllowCrossSiteRequest.class) != null;
 
     final Type[] args = method.getGenericParameterTypes();
+    Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+    parameterNames = new String[args.length - 1];
+    for (int i=0;i<args.length -1;i++)
+    {
+    	Annotation[] annot= parameterAnnotations[i];
+		String paramterName = null;
+    	for ( Annotation a:annot)
+    	{
+    		Class<? extends Annotation> annotationType = a.annotationType();
+			if ( annotationType.equals( WebParam.class))
+    		{
+    			paramterName = ((WebParam)a).name();
+    		}
+    	}
+    	if ( paramterName != null)
+    	{
+    		parameterNames[i] = paramterName;
+    	}
+    }
     parameterTypes = new Type[args.length - 1];
+   
     System.arraycopy(args, 0, parameterTypes, 0, parameterTypes.length);
   }
 
@@ -66,6 +90,11 @@ public class MethodHandle {
    */
   public Type[] getParamTypes() {
     return parameterTypes;
+  }
+  
+  public String[] getParamNames()
+  {
+  	return parameterNames;
   }
 
   /** @return true if the method can be called cross-site. */

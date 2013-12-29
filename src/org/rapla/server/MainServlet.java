@@ -80,7 +80,10 @@ import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public class MainServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+    private static final String RAPLA_JSON_PATH = "/rapla/json/";
+    private static final String RAPLA_RPC_PATH = "/rapla/rpc/";
+
+	private static final long serialVersionUID = 1L;
 
     /** The default config filename is raplaserver.xconf*/
     private ContainerImpl raplaContainer;
@@ -701,11 +704,11 @@ public class MainServlet extends HttpServlet {
 	            }
 	        }
 	        //String servletPath = request.getServletPath();
-	        if ( requestURI.indexOf("/rapla/rpc/") >= 0)  {
+	        if ( requestURI.indexOf(RAPLA_RPC_PATH) >= 0)  {
 	            handleRPCCall( request, response, requestURI );
 	            return;
 	        }
-	        if ( requestURI.indexOf("/rapla/json/")>= 0)  {
+	        if ( requestURI.indexOf(RAPLA_JSON_PATH)>= 0)  {
 	            handleJSONCall( request, response, requestURI );
 	            return;
 	        }
@@ -769,6 +772,17 @@ public class MainServlet extends HttpServlet {
     
     private  void handleJSONCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) throws ServletException, IOException 
     {
+    	int rpcIndex=requestURI.indexOf(RAPLA_JSON_PATH) ;
+        int sessionParamIndex = requestURI.indexOf(";");
+        int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 
+        String methodName = requestURI.substring(rpcIndex + RAPLA_JSON_PATH.length(),endIndex);
+        //final HttpSession session = request.getSession( true );
+        //String sessionId = session.getId();
+        //response.addCookie(new Cookie("JSESSIONID", sessionId));
+    	if ( methodName != null && methodName.trim().length() >0 )
+    	{
+    		request.setAttribute("jsonmethod", methodName);
+    	}
         try
         {
 	        final ServerServiceContainer serverContainer = getServer();
@@ -786,11 +800,10 @@ public class MainServlet extends HttpServlet {
     
     private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
     {
-    	
-    	int rpcIndex=requestURI.indexOf("/rapla/rpc/") ;
+    	int rpcIndex=requestURI.indexOf(RAPLA_RPC_PATH) ;
         int sessionParamIndex = requestURI.indexOf(";");
         int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 
-        String methodName = requestURI.substring(rpcIndex + "/rapla/rpc/".length(),endIndex);
+        String methodName = requestURI.substring(rpcIndex + RAPLA_RPC_PATH.length(),endIndex);
         final HttpSession session = request.getSession( true );
         String sessionId = session.getId();
         response.addCookie(new Cookie("JSESSIONID", sessionId));
@@ -956,7 +969,7 @@ public class MainServlet extends HttpServlet {
     
     private boolean isClientVersionSupported(String clientVersion) {
 		// add/remove supported client versions here 
-		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")  || clientVersion == "1.7.4RC2"  || clientVersion == "1.7.4";
+		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
 	}
 
 	private String getVersionErrorText(HttpServletRequest request, String methodName, String clientVersion) 
