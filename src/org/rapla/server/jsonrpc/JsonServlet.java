@@ -20,6 +20,7 @@ import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -44,10 +45,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.framework.logger.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -86,7 +89,7 @@ import com.google.gwtjsonrpc.server.XsrfException;
  * the resulting JSON, reducing transfer time for the response data.
  */
 @SuppressWarnings("serial")
-public abstract class JsonServlet<CallType extends ActiveCall>  {
+public class JsonServlet<CallType extends ActiveCall>  {
   /** Pattern that any safe JSON-in-script callback conforms to. */
   public static final Pattern SAFE_CALLBACK =
       Pattern.compile("^([A-Za-z0-9_$.]|\\[|\\])+$");
@@ -125,17 +128,10 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
 
   private Map<String, MethodHandle> myMethods;
   private SignedToken xsrf;
-  
-  //@Override
-  public void init() throws ServletException {
+  Logger logger;
+  public  JsonServlet(final Logger logger,    final RemoteJsonService impl) throws ServletException {
     //super.init(config);
-
-    final RemoteJsonService impl;
-    try {
-      impl = (RemoteJsonService) createServiceHandle();
-    } catch (Exception e) {
-      throw new ServletException("Service handle not available", e);
-    }
+	 this.logger = logger;
 
     myMethods = methods(impl);
     if (myMethods.isEmpty()) {
@@ -147,17 +143,6 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
     } catch (XsrfException e) {
       throw new ServletException("Cannot initialize XSRF", e);
     }
-  }
-
-  /**
-   * Get the object which provides the RemoteJsonService implementation.
-   *
-   * @return by default <code>this</code>, but any object which implements a
-   *         RemoteJsonService interface.
-   * @throws Exception any error indicating the service is not configured.
-   */
-  protected Object createServiceHandle() throws Exception {
-    return this;
   }
 
   /**
@@ -221,11 +206,11 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
 
   /** @return maximum size of a JSON request, in bytes */
   protected int maxRequestSize() {
-    // Our default limit of 1 MB should be sufficient for nearly any
+    // Our default limit of 10 MB should be sufficient for nearly any
     // application. It takes a long time to format this on the client
     // or to upload it.
     //
-    return 1 * 1024 * 1024;
+    return 10 * 1024 * 1024;
   }
 
   /**
@@ -270,14 +255,7 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
       perThreadCall.set(call);
       doService(call);
 
-	if (call.internalFailure != null) {
-        // Hide internal errors from the client.
-        //
-        final String msg = "Error in " + call.method.getName();
-        servletContext.log(msg, call.internalFailure);
-        call.onFailure(new Exception("Internal Server Error"));
-      }
-
+	
       final String out = formatResult(call);
       RPCServletUtils.writeResponse(servletContext, call.httpResponse,
           out, call.callback == null
@@ -572,8 +550,15 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
       @Override
       public JsonElement serialize(final ActiveCall src, final Type typeOfSrc,
           final JsonSerializationContext context) {
-        if (call.callback != null) {
-          if (src.externalFailure != null) {
+    	  if (call.internalFailure != null) {
+    	        final String msg = "Error in " + call.method.getName();
+    	        logger.error(msg, call.internalFailure);
+    	  }
+
+    	  
+    	Throwable failure = src.externalFailure != null ? src.externalFailure : src.internalFailure;
+		if (call.callback != null) {
+          if (failure != null) {
             return new JsonNull();
           }
           return context.serialize(src.result);
@@ -587,29 +572,39 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
         if (src.xsrfKeyOut != null) {
           r.addProperty("xsrfKey", src.xsrfKeyOut);
         }
-        if (src.externalFailure != null) {
-          final JsonObject error = new JsonObject();
-          String message = src.externalFailure.getMessage();
-          if ( message == null)
-          {
-        	  message = src.externalFailure.toString();
-          }
-		  if ("jsonrpc".equals(src.versionName)) {
-            final int code = to2_0ErrorCode(src);
-
-            error.addProperty("code", code);
-            error.addProperty("message", message);
-          } else {
-            error.addProperty("name", "JSONRPCError");
-            error.addProperty("code", 999);
-            error.addProperty("message", message);
-          }
+        if (failure != null) {
+          final JsonObject error = getError(src, failure);
           r.add("error", error);
         } else {
           r.add("result", context.serialize(src.result));
         }
         return r;
       }
+
+	public JsonObject getError(final ActiveCall src, Throwable failure) {
+		final JsonObject error = new JsonObject();
+          String message = failure.getMessage();
+          if ( message == null)
+          {
+        	  message = failure.toString();
+          }
+		  if ("jsonrpc".equals(src.versionName)) {
+            final int code = to2_0ErrorCode(src);
+            error.addProperty("code", code);
+            error.addProperty("message", message);
+			JsonArray stackTrace = new JsonArray();
+			for ( StackTraceElement el: failure.getStackTrace())
+			{
+				stackTrace.add( new JsonPrimitive(el.toString()));
+			}
+            error.add("data", stackTrace);
+          } else {
+            error.addProperty("name", "JSONRPCError");
+            error.addProperty("code", 999);
+            error.addProperty("message", message);
+          }
+		return error;
+	}
     });
 
     final StringWriter o = new StringWriter();
@@ -629,11 +624,14 @@ public abstract class JsonServlet<CallType extends ActiveCall>  {
   private int to2_0ErrorCode(final ActiveCall src) {
     final Throwable e = src.externalFailure;
     final Throwable i = src.internalFailure;
-
     if (e instanceof NoSuchRemoteMethodException
         || i instanceof NoSuchRemoteMethodException) {
       return -32601 /* Method not found. */;
     }
+    if (e instanceof IllegalArgumentException
+            || i instanceof IllegalArgumentException) {
+          return -32602 /* Invalid paramters. */;
+        }
     if (e instanceof JsonParseException || i instanceof JsonParseException) {
       return -32700 /* Parse error. */;
     }

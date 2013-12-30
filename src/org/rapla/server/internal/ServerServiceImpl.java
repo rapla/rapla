@@ -730,7 +730,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
 	Map<String,JsonServlet> servletMap = new HashMap<String, JsonServlet>();
 	@Override
-	public JsonServlet getJsonServlet(HttpServletRequest request) throws ServletException {
+	public JsonServlet getJsonServlet(HttpServletRequest request) throws ServletException, RaplaException {
 		String classAndMethodName = (String) request.getAttribute("jsonmethod");
 		String interfaceNameNonFinal = "org.rapla.plugin.freiraum.common.RaplaJsonService";
 		if  ( classAndMethodName != null) {
@@ -745,25 +745,18 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		JsonServlet servlet = servletMap.get( interfaceName);
 		if ( servlet == null)
 		{
-			servlet = new JsonServlet()
+			Collection<RemoteJsonFactory> allServicesForThisContainer = getAllServicesForThisContainer( RemoteJsonFactory.class);
+			RemoteJsonFactory factory;
+			if ( allServicesForThisContainer.size() > 0)
 			{
-				@Override
-				protected Object createServiceHandle() throws Exception {
-					
-					Collection<RemoteJsonFactory> allServicesForThisContainer = getAllServicesForThisContainer( RemoteJsonFactory.class);
-					RemoteJsonFactory factory;
-					if ( allServicesForThisContainer.size() > 0)
-					{
-						factory = allServicesForThisContainer.iterator().next();
-					}
-					else
-					{
-						factory = lookup( REMOTE_JSON_FACTORY ,interfaceName); 
-					}
-					return factory.createService( null);
-				}
-			};
-			servlet.init();
+				factory = allServicesForThisContainer.iterator().next();
+			}
+			else
+			{
+				factory = lookup( REMOTE_JSON_FACTORY ,interfaceName); 
+			}
+			final RemoteJsonService impl = factory.createService( null);
+			servlet = new JsonServlet(getLogger(),impl);
 			servletMap.put( interfaceName, servlet);
 		}
 		return servlet;
