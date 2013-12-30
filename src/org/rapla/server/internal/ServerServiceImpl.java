@@ -739,7 +739,15 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			{
 				interfaceNameNonFinal = classAndMethodName.substring( 0, indexRole );
 //				String methodName = classAndMethodName.substring( indexRole + 1 );
-			}	
+			}
+			else
+			{
+				// special case for compatibility
+				if (!classAndMethodName.equalsIgnoreCase("RaplaJsonService"))
+				{
+					interfaceNameNonFinal = classAndMethodName;
+				}
+			}
 		} 
 		final String interfaceName = interfaceNameNonFinal;
 		JsonServlet servlet = servletMap.get( interfaceName);
