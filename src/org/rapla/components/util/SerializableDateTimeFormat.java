@@ -35,9 +35,15 @@ public class SerializableDateTimeFormat
 		if ( !it.hasNext() )
 		    throwParseTimeException( time );
 		int minute = it.next();
-		if ( !it.hasNext() )
-		    throwParseTimeException( time );
-		int second = it.next();
+		int second;
+		if ( it.hasNext() )
+		{
+			second = it.next();
+		}
+		else
+		{
+			second = 0;
+		}
 		long result = DateTools.toTime( hour, minute,second);
 		return result;
 	}
@@ -112,7 +118,7 @@ public class SerializableDateTimeFormat
         timestamp = timestamp.trim();
         long millisDate = parseDate_(timestamp, fillDate);
         int indexOfSpace = timestamp.indexOf(" ");
-		if ( timestamp.indexOf(":") >=  indexOfSpace && indexOfSpace > 0)
+        if ( timestamp.indexOf(":") >=  indexOfSpace && indexOfSpace > 0)
         {
             String timeString = timestamp.substring( indexOfSpace + 1);
             if  ( timeString.length() > 0)
