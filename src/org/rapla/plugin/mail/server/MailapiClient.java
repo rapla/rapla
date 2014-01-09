@@ -33,10 +33,10 @@ public class MailapiClient  implements MailInterface
 	    	// get the configuration entry text with the default-value "Welcome"
 	        setPort(config.getChild("smtp-port").getValueAsInteger(25));
 	        setSmtpHost(config.getChild("smtp-host").getValue());
-	        String value = config.getChild("username").getValue(null);
+	        String username = config.getChild("username").getValue(null);
 	        if ( username != null && username.length() >0)
 	        {
-	        	setUsername( value);
+	        	setUsername( username);
 	        }
 	        else
 	        {
