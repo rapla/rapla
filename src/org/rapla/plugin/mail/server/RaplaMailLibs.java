@@ -11,7 +11,7 @@ public class RaplaMailLibs
 		javax.mail.Authenticator authenticator = null;
 		final String username2 = (String) props.get("username");
 		final String password2 = (String) props.get("password");
-		if ( props.contains("username"))
+		if ( props.containsKey("username"))
 		{
 			authenticator = new javax.mail.Authenticator() {
 		    	   protected PasswordAuthentication getPasswordAuthentication() {
