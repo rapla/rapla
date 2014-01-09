@@ -108,7 +108,10 @@ final public class ErrorDialog extends RaplaComponent {
                 getLogger().error(message, e);
             JPanel component = new JPanel();
             component.setLayout( new BorderLayout());
-            component.add( new JLabel( message ),BorderLayout.NORTH);
+            
+            HTMLView textView = new HTMLView();
+            JEditorPaneWorkaround.packText(textView, HTMLView.createHTMLPage(message)  ,450);
+            component.add( textView,BorderLayout.NORTH);
             boolean showStacktrace = true;
             Throwable nestedException = e;
 
