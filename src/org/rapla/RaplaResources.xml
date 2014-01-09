@@ -4759,5 +4759,21 @@ See French text.
         <text lang="pl">Export do CSV</text>
 		<text lang="pt">Exportar para CSV</text>
     </entry>
+    <entry key="design_status">
+    	<text lang="en">design status</text>
+    	<text lang="de">Planungsstatus</text>
+    </entry>
+     <entry key="closed">
+    	<text lang="en">planned</text>
+    	<text lang="de">geplant</text>
+    </entry>
+     <entry key="planning_open">
+    	<text lang="en">in process of planning</text>
+    	<text lang="de">in Planung</text>
+    </entry>
+     <entry key="planning_closed">
+    	<text lang="en">planning closed</text>
+    	<text lang="de">in Planung geschlossen</text>
+    </entry>
 
 </resources>
