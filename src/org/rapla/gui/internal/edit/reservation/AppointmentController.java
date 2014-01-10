@@ -1005,8 +1005,9 @@ public class AppointmentController extends RaplaGUIComponent
 		}
 
 		private void mapFromAppointment() {
-			if (exceptionDlg != null && exceptionDlg.isVisible())
-				exceptionDlg.dispose();
+			// closing is not necessary as dialog is modal
+//			if (exceptionDlg != null && exceptionDlg.isVisible())
+//				exceptionDlg.dispose();
 			repeating = appointment.getRepeating();
 			if (repeating == null) {
 				return;
@@ -1126,7 +1127,7 @@ public class AppointmentController extends RaplaGUIComponent
 			exceptionEditor.getComponent().setBorder( BorderFactory.createEmptyBorder(5, 5, 5, 5));
 			exceptionDlg = DialogUI.create(getContext(), getComponent(), true,
 					exceptionEditor.getComponent(),
-					new String[] { getString("back") });
+					new String[] { getString("close") });
 			exceptionDlg.setTitle(getString("appointment.exceptions"));
 			exceptionDlg.start();
 			updateExceptionCount();
@@ -1190,8 +1191,6 @@ public class AppointmentController extends RaplaGUIComponent
 		RaplaButton addButton = new RaplaButton(RaplaButton.SMALL);
 		RaplaButton removeButton = new RaplaButton(RaplaButton.SMALL);
 		JList specialExceptions = new JList();
-		JList generalExceptions = new JList(new String[] { "Feiertage",
-				"Dies academicus" });
 
 		public ExceptionEditor() {
 			// Create a TableLayout for the frame
@@ -1231,7 +1230,6 @@ public class AppointmentController extends RaplaGUIComponent
 			content.add(new JScrollPane(specialExceptions,
 					JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 					JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), "5,2,5,3,t");
-			generalExceptions.setEnabled(false);
 
 			addButton.addActionListener(this);
 			removeButton.addActionListener(this);
