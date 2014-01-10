@@ -12,7 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -61,7 +63,13 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
     	{
     		allocatables = getQuery().getAllocatables();
     	}
-		return getTreeFactory().createClassifiableModel(allocatables);
+		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables);
+		if (dynamicTypeConstraint !=null)
+		{
+			TreeNode child = ((TreeNode)treeModel.getRoot()).getChildAt(0);
+			treeModel = new DefaultTreeModel( child );
+		}
+		return treeModel;
     }
 
 

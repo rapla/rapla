@@ -69,7 +69,7 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		this.list = new Vector<Object>(v);
 		if ( includeNothingSelected)
 		{
-		    list.add( nothingSelected);
+		    list.insertElementAt(nothingSelected, 0);
 		}
 		field.setModel(new DefaultComboBoxModel(list));
 	}

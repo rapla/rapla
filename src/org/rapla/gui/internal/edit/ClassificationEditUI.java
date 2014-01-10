@@ -120,36 +120,44 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         return values;
     }
 
-	private SetGetField<?> createField(Attribute attribute) {
+	private SetGetField<?> createField(Attribute attribute) throws RaplaException {
 		AttributeType type = attribute.getType();
 		String key = attribute.getKey();
 		SetGetField<?> field = null;
 
+		RaplaContext context = getContext();
 		if (type.equals(AttributeType.STRING)) {
 			Integer rows = new Integer(attribute.getAnnotation(	AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
 			Integer columns = new Integer(attribute.getAnnotation( AttributeAnnotations.KEY_EXPECTED_COLUMNS,String.valueOf(TextField.DEFAULT_LENGTH)));
-			field = new TextField(getContext(), key, rows.intValue(),columns.intValue());
+			field = new TextField(context, key, rows.intValue(),columns.intValue());
 		} else if (type.equals(AttributeType.INT)) {
-			field = new LongField(getContext(), key);
+			field = new LongField(context, key);
 		} else if (type.equals(AttributeType.DATE)) {
-			field = new DateField(getContext(), key);
+			field = new DateField(context, key);
 		} else if (type.equals(AttributeType.BOOLEAN)) {
-			field = new BooleanField(getContext(), key);
+			field = new BooleanField(context, key);
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-			field = new AllocatableSelectField(getContext(), key, dynamicTypeConstraint);
 			boolean multipleSelectionPossible = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true");
-			((AllocatableSelectField)field).setMultipleSelectionPossible( multipleSelectionPossible);
+	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
+				 AllocatableSelectField allocField = new AllocatableSelectField(context, key, dynamicTypeConstraint);
+				 allocField.setMultipleSelectionPossible( multipleSelectionPossible);
+				 field = allocField;
+//			 }else {
+//				 AllocatableListField allocField = new AllocatableListField(context, key, dynamicTypeConstraint);
+//				 field = allocField;
+//			 }
+			 
 		} else if (type.equals(AttributeType.CATEGORY)) {
 			Category defaultCategory = (Category) attribute.defaultValue();
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
 			boolean multipleSelectionPossible = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true");
             if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(getContext(), key, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(context, key, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible);
                 field = catField;
             } else {
-			    CategoryListField catField = new CategoryListField(getContext(), key, rootCategory);
+			    CategoryListField catField = new CategoryListField(context, key, rootCategory);
 			    field = catField;
             }
 		}
