@@ -5,12 +5,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ComponentList;
 import net.fortuna.ical4j.model.DateTime;
 import net.fortuna.ical4j.model.PropertyList;
 import net.fortuna.ical4j.model.Recur;
@@ -111,24 +113,17 @@ public class Export2iCalConverter extends RaplaComponent {
     }
 
 
-    public Calendar createiCalender(Reservation[] reservations) {
-
+    public Calendar createiCalender(Collection<Appointment> appointments) 
+    {
         Calendar calendar = initiCalendar();
         addICalMethod(calendar, Method.PUBLISH);
         addVTimeZone(calendar);
-
-        if (reservations.length == 0) {
-            return calendar;
+        ComponentList components = calendar.getComponents();
+        for (Appointment app:appointments) 
+        {
+			VEvent event = createVEvent(app);
+			components.add(event);
         }
-
-        for (int resIt = 0, resLen = reservations.length; resIt < resLen; resIt++) {
-            Appointment[] appointments = reservations[resIt].getAppointments();
-
-            for (int appIt = 0, appLen = appointments.length; appIt < appLen; appIt++) {
-                calendar.getComponents().add(createVEvent(appointments[appIt]));
-            }
-        }
-
         return calendar;
     }
 

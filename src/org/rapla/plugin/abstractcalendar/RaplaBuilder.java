@@ -79,7 +79,6 @@ public abstract class RaplaBuilder extends RaplaComponent
     // TODO Christopher Check if this fits most users
     private boolean bTimeVisible = true; //Shows time <from - till> in top of all HTML- and Swing-View Blocks
     private boolean splitByAllocatables = false;
-    protected boolean isEmptyBlockVisible = false;
     private HashMap<Allocatable,String> colors = new HashMap<Allocatable,String>(); //This currently only works with HashMap
     private User editingUser;
     private boolean isResourceColoring;
@@ -142,7 +141,6 @@ public abstract class RaplaBuilder extends RaplaComponent
     
         User user = model.getUser();
 		CalendarOptions calendarOptions = getCalendarOptions( user);
-        isEmptyBlockVisible = allocatables.size() == 0;
         nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
         isResourceColoring =calendarOptions.isResourceColoring();
         isEventColoring =calendarOptions.isEventColoring();
@@ -331,79 +329,47 @@ public abstract class RaplaBuilder extends RaplaComponent
         }
         createColorMap();
     }
-    /** @param emptyBlockVisible indicates that blocks that don't contain one of the selected
-    * allocatables should also be visible.
-    * */
-    static public List<AppointmentBlock> getAffectedAppointments(Collection<Reservation> selectedReservations, Collection<Allocatable> selectedAllocatables,
-                                           Date start, Date end, boolean emptyBlockVisible, boolean excludeExceptions) {
-        if ( selectedAllocatables == null )
-            selectedAllocatables = Collections.emptyList();
-        List<AppointmentBlock> preparedBlocks = new ArrayList<AppointmentBlock>();
-        // The appointments that are explictly connected to
-        // a selected allocatable
-        ArrayList<Appointment> connectedAppointments = new ArrayList<Appointment>();
-        Iterator<Reservation> it = selectedReservations.iterator();
-        while (it.hasNext()){
-            Reservation r=  it.next();
-            //System.out.println("Selected : " + r.getName(Locale.getDefault()));
-            Appointment[] appointments= r.getAppointments();
-            Allocatable[] allocatables = r.getAllocatables();
 
-            // this flag is set true if one of the allocatables of a
-            // reservation matches a selected allocatable.
-            boolean allocatableMatched = false;
-
-            // a reservation is wildcardConnected, if at least one of its
-            // allocatables is connected to all appointments and
-            // this allocatable is selected.
-            boolean wildcardConnected = false;
-
-            connectedAppointments.clear();
-            for (int i=0; i<allocatables.length; i++)   {
-                if (selectedAllocatables.contains(allocatables[i])) {
-                    Appointment[] restriction = r.getRestriction(allocatables[i]);
-                    if (restriction.length == 0) {
-                        // this allocatable is connected to all appointments.
-                        allocatableMatched = true;
-                        wildcardConnected = true;
-                        break;
-                    } else {
-                        allocatableMatched = true;
-                        for (int j=0; j<appointments.length; j++)   {
-                            for (int k = 0; k < restriction.length; k++ ) {
-                                if ( appointments[j].equals( restriction[k] ) ) {
-                                    // This appointment is explictly connected to
-                                    // the selected allocatable
-                                    connectedAppointments.add(appointments[j]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // block should not be included if it doesn't contain one
-            // of the allocatables
-            if (!allocatableMatched && !emptyBlockVisible )
-                continue;
-
-            // An  appointment should not be visible, if no
-            // selected allocatable is connected to this appointment.
-            for (int i=0; i<appointments.length; i++)
+    
+    public static List<Appointment> getAppointments(
+			Reservation[] reservations,
+			Allocatable[] allocatables) {
+    	return getAppointments( Arrays.asList( reservations), Arrays.asList( allocatables));
+    }
+    
+    public static List<Appointment> getAppointments(
+			Collection<Reservation> reservations,
+			Collection<Allocatable> allocatables) {
+		List<Appointment> appointments = new ArrayList<Appointment>();
+        for (Reservation r:reservations)
+        {
+            for ( Appointment app:r.getAppointments())
             {
-                if (    emptyBlockVisible
-                        || wildcardConnected
-                        || connectedAppointments.contains(appointments[i]))
-                {
-                    // Add appointment to the blocks
-                    appointments[i].createBlocks(start, end, preparedBlocks, excludeExceptions);
-
-                    // Here the other exceptions should be added
-                }
+				if (allocatables == null || allocatables.isEmpty())
+            	{
+            		appointments.add( app);
+            	}
+            	else 
+            	{
+	                // this flag is set true if one of the allocatables of a
+	                // reservation matches a selected allocatable.
+	                boolean allocatableMatched = false;
+	            	for (Allocatable alloc:r.getAllocatablesFor(app))
+	            	{
+	            		if (allocatables.contains(alloc)) {
+	            			allocatableMatched = true;
+	            			break;
+	            		}
+	            	}
+	            	if ( allocatableMatched )
+	            	{
+	            		appointments.add( app);
+	            	}
+            	}
             }
         }
-        return preparedBlocks;
-    }
+		return appointments;
+	}
 
     static public class SplittedBlock extends AppointmentBlock
     {
@@ -461,13 +427,20 @@ public abstract class RaplaBuilder extends RaplaComponent
     	boolean excludeExceptions = isExceptionsExcluded();
         HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
         allReservations.addAll( allReservationsForAllocatables);
-        preparedBlocks = getAffectedAppointments(allReservations, selectedAllocatables, start, end, isEmptyBlockVisible, excludeExceptions);
-        preparedBlocks = splitBlocks(preparedBlocks, start, end);
+        
+        Collection<Appointment> appointments = getAppointments(	selectedReservations, selectedAllocatables);
+        // Add appointment to the blocks
+        final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+        for (Appointment app:appointments)
+        {
+            app.createBlocks(start, end, blocks, excludeExceptions);
+        }
+        preparedBlocks = splitBlocks(blocks, start, end);
 
         // calculate new start and end times
         max =0;
         min =24*60;
-        for (AppointmentBlock block:preparedBlocks)
+        for (AppointmentBlock block:blocks)
         {
             int starthour = DateTools.getHourOfDay(block.getStart());
             int startminute = DateTools.getMinuteOfHour(block.getStart());

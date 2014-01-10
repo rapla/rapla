@@ -20,7 +20,6 @@ public class EventTimeCalculatorFactory extends RaplaComponent
 
     public  EventTimeModel getEventTimeModel () {
        
-        EventTimeModel m = new EventTimeModel();
         Configuration configuration = config;
         if ( isUserPrefAllowed)
         {
@@ -36,10 +35,7 @@ public class EventTimeCalculatorFactory extends RaplaComponent
 			}
         
         }
-        m.timeTillBreak = configuration.getChild(EventTimeCalculatorPlugin.INTERVAL_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_intervalNumber);
-        m.durationOfBreak= configuration.getChild(EventTimeCalculatorPlugin.BREAK_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_breakNumber);
-        m.timeUnit= configuration.getChild(EventTimeCalculatorPlugin.TIME_UNIT).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_timeUnit);
-        m.timeFormat= configuration.getChild(EventTimeCalculatorPlugin.TIME_FORMAT).getValue(EventTimeCalculatorPlugin.DEFAULT_timeFormat);
+        EventTimeModel m = new EventTimeModel(configuration);
         return m;
     }
 

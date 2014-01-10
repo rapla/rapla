@@ -3,6 +3,8 @@ package org.rapla.plugin.export2ical.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 import java.util.SimpleTimeZone;
@@ -21,6 +23,8 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
@@ -33,6 +37,7 @@ import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.RaplaPageGenerator;
@@ -136,7 +141,9 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 			}
 
 			final Reservation[] reserv = isAllAppointmentsSet ? getAllReservations(calModel) : calModel.getReservations();
-			write(response, reserv, filename, null);
+			Allocatable[] allocatables = calModel.getSelectedAllocatables();
+			Collection<Appointment> appointments = RaplaBuilder.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
+			write(response, appointments, filename, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -215,7 +222,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		return calModel.getReservations();
 	}
 
-	private void write(final HttpServletResponse response, final Reservation[] reserv, String filename, final Preferences preferences) throws RaplaException, IOException {
+	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, final Preferences preferences) throws RaplaException, IOException {
 
 	    if (filename == null )
 	    {
@@ -225,13 +232,13 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		response.setContentType("text/calendar; charset=" + raplaLocale.getCharsetNonUtf());
 		response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".ics");
 
-		if (reserv == null) {
+		if (appointments == null) {
 			throw new RaplaException("Error with returning '" + filename);
 		}
 		final RaplaContext context = getContext();
 		TimeZone timezone = context.lookup( TimeZoneConverter.class).getImportExportTimeZone();
 		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences, config);
-		final Calendar iCal = converter.createiCalender(reserv);
+		final Calendar iCal = converter.createiCalender(appointments);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
 		final PrintWriter responseWriter = response.getWriter();
 		try {
