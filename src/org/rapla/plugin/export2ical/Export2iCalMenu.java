@@ -4,19 +4,24 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.List;
 
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener{
 
@@ -43,17 +48,16 @@ public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMe
 		getCalendarOptions();
 		try {
 			CalendarModel raplaCal = getService(CalendarModel.class);
-		    StringBuffer buf = new StringBuffer();
-		    for (Reservation reservation:raplaCal.getReservations())
+		    Reservation[] reservations = raplaCal.getReservations();
+		    Allocatable[] allocatables = raplaCal.getSelectedAllocatables();
+		    List<Appointment> appointments= RaplaBuilder.getAppointments( reservations, allocatables);
+		    SimpleIdentifier[] appointmentIds = new SimpleIdentifier[appointments.size()];
+		    for ( int i=0;i<appointmentIds.length;i++)
 		    {
-		        boolean first = buf.length() == 0;
-		        if ( !first)
-		            buf.append(",");
-		        final String idString = ((RefEntity<?>) reservation).getId().toString().split("_")[1];
-                buf.append( idString );
+		    	appointmentIds[i] = (SimpleIdentifier) ((RefEntity<?>)appointments.get(i)).getId();
 		    }
-		    String ids = buf.toString();
-		    String result = getWebservice( ICalExport.class).export(ids);
+		    ICalExport exportService = getWebservice( ICalExport.class);
+		    String result = exportService.export(appointmentIds);
 		    if ( result.trim().length() == 0)
 		    {
 		        JOptionPane.showMessageDialog(null, getString("no_dates_text"), "Export2iCal", JOptionPane.INFORMATION_MESSAGE);
