@@ -9,6 +9,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.framework.Configuration;
 
 /**
  * Created with IntelliJ IDEA.
@@ -23,27 +24,70 @@ public class EventTimeModel {
     protected int timeUnit;
     protected String timeFormat;
 
-    public String format(long duration) {
+    public EventTimeModel()
+    {
+    	timeUnit = EventTimeCalculatorPlugin.DEFAULT_timeUnit;
+    	timeFormat = EventTimeCalculatorPlugin.DEFAULT_timeFormat;
+    	timeTillBreak = EventTimeCalculatorPlugin.DEFAULT_intervalNumber;
+    	durationOfBreak = EventTimeCalculatorPlugin.DEFAULT_breakNumber;
+    }
+    public int getTimeTillBreak() {
+		return timeTillBreak;
+	}
+	public void setTimeTillBreak(int timeTillBreak) {
+		this.timeTillBreak = timeTillBreak;
+	}
+	public int getDurationOfBreak() {
+		return durationOfBreak;
+	}
+	public void setDurationOfBreak(int durationOfBreak) {
+		this.durationOfBreak = durationOfBreak;
+	}
+	public int getTimeUnit() {
+		return timeUnit;
+	}
+	public void setTimeUnit(int timeUnit) {
+		this.timeUnit = timeUnit;
+	}
+	public String getTimeFormat() {
+		return timeFormat;
+	}
+	public void setTimeFormat(String timeFormat) {
+		this.timeFormat = timeFormat;
+	}
+	public EventTimeModel(Configuration configuration) {
+    	timeTillBreak = configuration.getChild(EventTimeCalculatorPlugin.INTERVAL_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_intervalNumber);
+        durationOfBreak= configuration.getChild(EventTimeCalculatorPlugin.BREAK_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_breakNumber);
+        timeUnit= configuration.getChild(EventTimeCalculatorPlugin.TIME_UNIT).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_timeUnit);
+        timeFormat= configuration.getChild(EventTimeCalculatorPlugin.TIME_FORMAT).getValue(EventTimeCalculatorPlugin.DEFAULT_timeFormat);
+	}
+    
+	public String format(long duration) {
         if (duration < 0 || timeUnit == 0) {
             return "";
         }
         return MessageFormat.format(timeFormat, duration / timeUnit, duration % timeUnit);
     }
 	
-    public long calcDuration(long minutes) {
-
-        if (timeTillBreak + durationOfBreak == 0)
+    public long calcDuration(long minutes) 
+    {
+    	int blockTimeIncludingBreak = timeTillBreak + durationOfBreak;
+		if (timeTillBreak  <= 0 || durationOfBreak <= 0 || minutes<=timeTillBreak)
             return minutes;
 
-        long actualDuration = 0;
-
-
-        if (minutes > (timeTillBreak + durationOfBreak)) {
-            long counter = (minutes / (timeTillBreak + durationOfBreak));
-            actualDuration = minutes - (counter * durationOfBreak);
-        } else {
-            actualDuration = minutes;
-        }
+		long breaks = (minutes + durationOfBreak -1 ) / blockTimeIncludingBreak;
+		long fullBreaks = minutes   / blockTimeIncludingBreak;
+		long partBreak;
+		if ( breaks > fullBreaks)
+		{
+			long timeInclFullBreak =  timeTillBreak * (fullBreaks + 1) + fullBreaks * durationOfBreak ;
+			partBreak = minutes - timeInclFullBreak;
+		}
+		else
+		{
+			partBreak = 0;
+		}
+		long actualDuration = minutes - (fullBreaks * durationOfBreak) - partBreak;
         return actualDuration;
     }
 
