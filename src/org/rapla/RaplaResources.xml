@@ -4775,5 +4775,17 @@ See French text.
     	<text lang="en">planning closed</text>
     	<text lang="de">in Planung geschlossen</text>
     </entry>
+    <entry key="missing_planing_constraints">
+    	<text lang="en">For the following events, the constraints of the lecturers are missing</text>
+    	<text lang="de">Bei folgenden Verantstaltungen fehlen die Planungsconstraints der Dozenten</text>
+    </entry>
+    <entry key="missing_allocatables">
+    	<text lang="en">For the following events, some allocatables are missing</text>
+    	<text lang="de">Bei folgenden Veranstaltungen fehlen Ressourcen</text>
+    </entry>
+     <entry key="no_holiday_plugin">
+    	<text lang="en">The holiday plugin is not available. The schuduler does not pay attention on holidays.</text>
+    	<text lang="de">Der Feiertagskalender ist nicht verfügbar. Der Scheduler beachtet keine Feiertage.</text>
+    </entry>
 
 </resources>
