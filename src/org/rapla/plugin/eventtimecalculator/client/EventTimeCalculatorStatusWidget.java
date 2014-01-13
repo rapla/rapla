@@ -2,7 +2,9 @@ package org.rapla.plugin.eventtimecalculator.client;
 
 import java.awt.Font;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -31,6 +33,7 @@ import org.rapla.plugin.eventtimecalculator.EventTimeModel;
 public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implements RaplaWidget {
     JPanel content = new JPanel();
     JLabel totalDurationLabel = new JLabel();
+    JLabel selectedDurationLabel = new JLabel();
     I18nBundle i18n;
     ReservationEdit reservationEdit;
     EventTimeCalculatorFactory factory;
@@ -47,16 +50,16 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
 
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5},
-                {TableLayout.PREFERRED, 5,
-                        TableLayout.PREFERRED, 5
-                }};
+                {TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5}};
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
 
         Font font1 = totalDurationLabel.getFont().deriveFont((float) 9.0);
         totalDurationLabel.setFont(font1);
+        selectedDurationLabel.setFont(font1);
 
-        content.add(totalDurationLabel, "1,2");
+        content.add(selectedDurationLabel, "1,2");
+        content.add(totalDurationLabel, "3,2");
         this.reservationEdit = reservationEdit;
 
         /**
@@ -65,7 +68,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         reservationEdit.addAppointmentListener(new AppointmentListener() {
            
             public void appointmentSelected(Collection<Appointment> appointment) {
-                //To change body of implemented methods use File | Settings | File Templates.
+                updateStatus();
             }
 
             public void appointmentRemoved(Collection<Appointment> appointment) {
@@ -95,6 +98,28 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
             return;
         }
 
+        final EventTimeModel eventTimeModel = factory.getEventTimeModel();
+        boolean totalDurationVisible = eventTimeModel.hasEnd(event.getAppointments());
+
+        if (totalDurationVisible) {
+            long totalDuration = 0;
+            totalDuration = eventTimeModel.calcDuration(event.getAppointments());
+            totalDurationLabel.setText(getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
+        }
+
+        final Collection<Appointment> selectedAppointmentsCollection = reservationEdit.getSelectedAppointments();
+        final Appointment [] selectedAppointments = selectedAppointmentsCollection.toArray(new Appointment[selectedAppointmentsCollection.size()]);
+        boolean selectedDurationVisible = eventTimeModel.hasEnd(event.getAppointments());
+        if (selectedDurationVisible) {
+            long totalDuration = 0;
+            totalDuration = eventTimeModel.calcDuration(selectedAppointments);
+            selectedDurationLabel.setText(getString("duration") + ": " + eventTimeModel.format(totalDuration));
+        }
+
+
+
+/*
+
 
         Appointment[] appointments = event.getAppointments();
         boolean noEnd = false;
@@ -107,7 +132,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
                 noEnd = true;
                 break;
             }
-            java.util.List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>(); // split appointment block
+            List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>(); // split appointment block
             appointment.createBlocks(appointment.getStart(),
                     DateTools.fillDate(appointment.getMaxEnd()), splits);
             for (AppointmentBlock block : splits) { // goes through the block
@@ -121,11 +146,14 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
                 totalDuration += actualDuration;
             }
         }
+*/
 
        // String format = EventTimeCalculatorFactory.format(config, totalDuration);
-        totalDurationLabel.setText(getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
-        totalDurationLabel.setVisible(!noEnd);
+
+        totalDurationLabel.setVisible(totalDurationVisible);
+        selectedDurationLabel.setVisible(selectedDurationVisible);
     }
+
 
   /*  public String formatDuration(Configuration config, long totalDuration) {
         final String format = config.getChild(EventTimeCalculatorPlugin.TIME_FORMAT).getValue(EventTimeCalculatorPlugin.DEFAULT_timeFormat);

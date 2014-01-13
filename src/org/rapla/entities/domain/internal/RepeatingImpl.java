@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.TreeSet;
 
@@ -369,8 +370,10 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     private static Date[] DATE_ARRAY = new Date[0];
     public Date[] getExceptions() {
         if (!arrayUpToDate) {
-            if (exceptions != null)
+            if (exceptions != null) {
                 exceptionArray = exceptions.toArray(DATE_ARRAY);
+                Arrays.sort(exceptionArray);
+            }
             else
                 exceptionArray = DATE_ARRAY;
             arrayUpToDate = true;

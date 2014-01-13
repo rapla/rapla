@@ -32,7 +32,7 @@ public class DurationColumn extends RaplaComponent implements ModificationListen
 
     public String getColumnName() {
         I18nBundle i18n = getService(EventTimeCalculatorPlugin.RESOURCE_FILE);
-        return i18n.getString("total_duration");
+        return i18n.getString("duration");
     }
 
 

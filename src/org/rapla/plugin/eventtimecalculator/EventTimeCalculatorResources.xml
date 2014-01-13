@@ -22,12 +22,21 @@ currently supported languages are english, german.
     </entry>
 	<entry key="total_duration">
         <text lang="en">Total duration</text>
-        <text lang="de">Dauer</text>
+        <text lang="de">Gesamtdauer</text>
         <text lang="fr">Total duration</text>
         <text lang="es">Total duration</text>
         <text lang="cs">Total duration</text> 
         <text lang="nl">Totale duur</text>
         <text lang="pl">Total duration</text>   
+    </entry>
+    <entry key="duration">
+        <text lang="en">duration</text>
+        <text lang="de">Dauer</text>
+        <text lang="fr">duration</text>
+        <text lang="es">duration</text>
+        <text lang="cs">duration</text>
+        <text lang="nl">duur</text>
+        <text lang="pl">duration</text>
     </entry>
     <entry key="lunch_break">
         <text lang="en">lunch break</text>
@@ -108,7 +117,7 @@ currently supported languages are english, german.
         <text lang="pl">time unit:</text>
     </entry>
     <entry key="time_format">
-        <text lang="en">time format</text>
+        <text lang="en">time format ({0} = # time units, {1} = rest)</text>
         <text lang="de">Format der Zeiteinheit ({0} = volle Zeiteinheiten, {1} = Rest)</text>
         <text lang="fr">time format:</text>
         <text lang="es">time format:</text>

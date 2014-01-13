@@ -32,7 +32,7 @@ public class AllocatableListField extends ListField<Allocatable>  {
   		ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
   		ClassificationFilter[] filters = new ClassificationFilter[] {filter};
   		Allocatable[] allocatables = getQuery().getAllocatables(filters);
-  		Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<>(getLocale()));
+  		Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
         list.addAll( Arrays.asList( allocatables));
         setVector(list);
     }

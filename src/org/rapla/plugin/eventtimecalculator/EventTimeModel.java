@@ -92,9 +92,18 @@ public class EventTimeModel {
     }
 
     public long calcDuration(Reservation reservation) {
-        Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+        return calcDuration(reservation.getAppointments());
+    }
+
+    public long calcDuration(AppointmentBlock block) {
+        long duration = DateTools.countMinutes(block.getStart(), block.getEnd());
+        return calcDuration(duration);
+    }
+
+    public long calcDuration(Appointment[] appointments){
+        final Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         long totalDuration = 0;
-        for (Appointment app : reservation.getAppointments()) {
+        for (Appointment app : appointments) {
             Date start = app.getStart();
             Date end = app.getMaxEnd();
             if (end == null) {
@@ -113,12 +122,22 @@ public class EventTimeModel {
         return totalDuration;
     }
 
-    public long calcDuration(AppointmentBlock block) {
-        long duration = DateTools.countMinutes(block.getStart(), block.getEnd());
-        long totalDuration = calcDuration(duration);
-        return totalDuration;
+    public boolean hasEnd(Appointment[] appointments) {
+        boolean hasEnd = true;
+        for (Appointment appointment : appointments) { // goes through all appointments of the reservation
+            if (hasEnd(appointment)) { // appoinment repeats forever?
+                hasEnd = false;
+                break;
+            }
+        }
+        return hasEnd;
     }
 
+    public boolean hasEnd(Appointment appointment) {
+        return appointment != null && appointment.getRepeating() != null && appointment.getRepeating().getEnd() == null;
+    }
 
-
+    public boolean hasEnd(Reservation reservation) {
+        return hasEnd(reservation.getAppointments());
+    }
 }
