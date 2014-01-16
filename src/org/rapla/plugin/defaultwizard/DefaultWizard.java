@@ -96,7 +96,11 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 			CalendarModel model = getService(CalendarModel.class);
 	    	Object source = e.getSource();
 			DynamicType type = typeMap.get( source);
-	    	
+	    	if ( type == null)
+	    	{
+	    		getLogger().warn("Type not found for " + source + " in map " + typeMap);
+	    		return;
+	    	}
 	        Classification newClassification = type.newClassification();
 			Reservation r = getModification().newReservation( newClassification );
 	    	Appointment appointment = createAppointment(model);
