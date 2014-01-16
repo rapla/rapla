@@ -110,7 +110,7 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 	    	{
 	    		string = resourceBundle.getString( key );
 	    		entry = new DictionaryEntry( key);
-				entry.add(lang, key);
+				entry.add(lang, string);
 				try {
 					dict.addEntry( entry);
 				} catch (UniqueKeyException e) {
@@ -246,8 +246,9 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
                     className = config.getAttribute( "id" );
                 else
                     className = className.trim();
-                dictionaryFile = "" + className.replaceAll("\\.", "/") + ".xml";
-            	resource = getClass().getClassLoader().getResourceAsStream(dictionaryFile);
+                String resourceFile = "" + className.replaceAll("\\.", "/") + ".xml";
+            	resource = getClass().getClassLoader().getResourceAsStream(resourceFile);
+            	dictionaryFile = null;
             }
             else
             {
@@ -413,10 +414,17 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     {
     	this.locale = locale;
     	getLogger().debug( "Locale changed to " + locale );
-    	getPack(locale);
+    	try
+    	{
+    		getPack(locale);
+    	}
+    	catch (MissingResourceException ex)
+    	{
+    		getLogger().error(ex.getMessage(), ex);
+    	}
     }
 
-	private LanguagePack getPack(Locale locale) {
+	private LanguagePack getPack(Locale locale)  throws MissingResourceException {
 		LanguagePack pack = packMap.get(locale);
         if (pack != null)
         {
@@ -434,14 +442,8 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 			pack.locale = locale;
 			if ( dictionaryFile == null )
 			{
-				try
-		        {
-					pack.resourceBundle = new ResourceBundleLoader().loadResourceBundle( className, locale );
-		        }
-		        catch ( MissingResourceException ex)
-		        {
-		        }
-		     }
+				pack.resourceBundle = new ResourceBundleLoader().loadResourceBundle( className, locale );
+		    }
 			packMap.put( locale, pack);
 			return pack;
 		}
