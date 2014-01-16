@@ -242,20 +242,24 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
             if ( filePath == null )
             {
                 className = config.getChild( "classname" ).getValue( null );
-                if ( className == null )
+                if ( className == null ) 
+                {
                     className = config.getAttribute( "id" );
+                }
                 else
+                {
                     className = className.trim();
+                }
                 String resourceFile = "" + className.replaceAll("\\.", "/") + ".xml";
-            	resource = getClass().getClassLoader().getResourceAsStream(resourceFile);
-            	dictionaryFile = null;
+                resource = getClass().getClassLoader().getResourceAsStream(resourceFile);
+                dictionaryFile = resource != null ? resourceFile : null;
             }
             else
             {
-            	dictionaryFile = filePath;
-            	String path = new File( dictionaryFile ).getCanonicalPath();
-      		    getLogger().info( "getting lanaguageResources  from " + path );
-      		    resource = new FileInputStream( new File( dictionaryFile ) );
+            	File file = new File( filePath);
+      		    getLogger().info( "getting lanaguageResources  from " + file.getCanonicalPath() );
+      		    resource = new FileInputStream( file );
+      		    dictionaryFile = filePath;
             }
             if ( resource != null)
             {
