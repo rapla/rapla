@@ -266,12 +266,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		public void stateChanged(ChangeEvent evt) {
 			Appointment appointment = appointmentController.getAppointment();
-			int indexOf = model.indexOf(appointment);
+			List<Object> selectedValues = Arrays.asList(listEdit.getList().getSelectedValues());
+	    	int indexOf = model.indexOf(appointment);
 			if ( indexOf >=0)
 			{
 			    model.set(indexOf, appointment);
 			}
-			selectAppointment( appointment, true);
+			listEdit.updateSort( selectedValues);
 			fireAppointmentChanged(Collections.singleton(appointment));
 		}
 

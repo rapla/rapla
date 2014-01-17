@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendar;
 
+import java.awt.Component;
+import java.awt.MouseInfo;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -76,6 +79,8 @@ public abstract class AbstractBlockField extends JTextField {
         public void mouseEntered(MouseEvent me) {
         }
         public void mouseExited(MouseEvent me) {
+        	blocksValid();
+        	fireValueChanged();
         }
         public void mouseClicked(MouseEvent evt) {
         	if ( evt.getButton() != MouseEvent.BUTTON1)
@@ -183,8 +188,23 @@ public abstract class AbstractBlockField extends JTextField {
             } else if (isValidChar(m_lastChar)) {
                 advance();
                 evt.consume();
+                if (blocksValid() && !isMouseOverComponent())
+                {
+                	fireValueChanged();
+                }
             }
         }
+        
+        private boolean isMouseOverComponent()
+        {
+           Component comp = AbstractBlockField.this;
+           Point compLoc = comp.getLocationOnScreen();
+           Point mouseLoc = MouseInfo.getPointerInfo().getLocation();
+           boolean result = (mouseLoc.x >= compLoc.x  && mouseLoc.x <= compLoc.x + comp.getWidth()
+        		   && mouseLoc.y >= compLoc.y && mouseLoc.y <= compLoc.y + comp.getHeight());
+          return result;
+        }
+        
         public void keyTyped(KeyEvent evt) {
         }
 
