@@ -32,6 +32,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -248,11 +249,13 @@ final public class RaplaMainContainer extends ContainerImpl
         addContainerProvidedComponentInstance( PLUGIN_LIST, pluginNames);
         logger.info("Config=" + getStartupEnvironment().getConfigURL());
         
-        I18nBundle m_i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
-        String version = m_i18n.getString( "rapla.version" );
+        I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+        String version = i18n.getString( "rapla.version" );
         logger.info("Rapla.Version=" + version);
-        version = m_i18n.getString( "rapla.build" );
+        version = i18n.getString( "rapla.build" );
         logger.info("Rapla.Build=" + version);
+        AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
         try {
             version = System.getProperty("java.version");
             logger.info("Java.Version=" + version);

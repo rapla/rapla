@@ -23,7 +23,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.internal.ClassificationImpl;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 
@@ -76,7 +76,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 	            if (value instanceof Boolean) {
 	                valueString = getString(((Boolean) value).booleanValue() ? "yes":"no");
 	            } else {
-	            	valueString = ClassificationImpl.getValueAsString(attribute, locale, value);
+	            	valueString = ((AttributeImpl)attribute).getValueAsString( locale, value);
 	            }
 	            att.add (new Row(pre,encode(valueString)));
 	            pre = "";
