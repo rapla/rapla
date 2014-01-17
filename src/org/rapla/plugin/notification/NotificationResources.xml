@@ -29,7 +29,7 @@
     <text lang="de">Neuer Termin für [{0}]:</text>
     <text lang="fr">Nouvelle réservation pour [{0}] :</text>
     <text lang="es">Nueva cita para [{0}]</text>
-    <text lang="en">Nieuwe afspraak voor [{0}]:</text>
+    <text lang="nl">Nieuwe afspraak voor [{0}]:</text>
   </entry>
 
   <entry key="appointment.change">
@@ -37,7 +37,7 @@
     <text lang="de">Termin verändert für [{0}] von:</text>
     <text lang="fr">Changement d''horaire pour [{0}] c''était:</text>
     <text lang="es">Cambio de cita para [{0}]</text>
-    <text lang="en">Afspraak gewijzigd voor [{0}] van:</text>
+    <text lang="nl">Afspraak gewijzigd voor [{0}] van:</text>
   </entry>
 
   <entry key="appointment.remove">
@@ -66,7 +66,7 @@
     <text lang="de">Komplette Veranstaltung</text>
     <text lang="fr">Description complète de l'évènement</text>
     <text lang="es">Descriptción completa del evento</text>
-    <text lang="en">Volledige reservatie</text>
+    <text lang="nl">Volledige reservatie</text>
   </entry>  
 
   <entry key="notify_if_owner">
