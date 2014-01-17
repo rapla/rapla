@@ -15,22 +15,17 @@ package org.rapla.entities.dynamictype.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
@@ -133,32 +128,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 //        {
 //        	buf.append( getValueAsString(attribute, locale, value));
 //        }
-        buf.append( getValueAsString(attribute, locale, value) );
+        buf.append( ((AttributeImpl)attribute).getValueAsString( locale, value) );
         String result = buf.toString();
         return result;
     }
 
-    static public String getValueAsString(Attribute attribute,Locale locale,Object value)
-    {
-    	if (value == null)
-            return "";
-        if (value instanceof Category) {
-            Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-            return ((Category) value).getPath(rootCategory, locale);
-        }
-        if (value instanceof Allocatable) {
-            return ((Allocatable) value).getName( locale);
-        }
-        if (value instanceof Date) {
-            return DateTools.formatDate((Date) value, locale);
-        }
-         if (value instanceof Boolean) {
-            		return value.toString(); // needs translation 
-        } else {
-            return value.toString();
-        }	
-    }
-    
     public Attribute getAttribute(String key) {
         return getType().getAttribute(key);
     }

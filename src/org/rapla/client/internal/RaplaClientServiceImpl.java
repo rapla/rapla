@@ -54,6 +54,7 @@ import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -528,6 +529,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
                 localeSelector.setLanguage( language );
             }
         }
+		AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
     }
 
     protected void initializePlugins(List<PluginDescriptor<ClientServiceContainer>> pluginList, Preferences preferences) throws RaplaException {

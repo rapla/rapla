@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Category;
@@ -41,7 +42,14 @@ import org.rapla.storage.LocalCache;
 
 public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 {
-    private MultiLanguageName name = new MultiLanguageName();
+	public static final MultiLanguageName TRUE_TRANSLATION = new MultiLanguageName();
+	public static final MultiLanguageName FALSE_TRANSLATION = new MultiLanguageName();
+	
+	static {
+		TRUE_TRANSLATION.setName("en", "yes");
+		FALSE_TRANSLATION.setName("en", "no");
+	}
+	private MultiLanguageName name = new MultiLanguageName();
     private AttributeType type;
     private String key;
     private boolean bOptional = false;
@@ -547,6 +555,36 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
             }
         }
     }
+
+    public String getValueAsString(Locale locale,Object value)
+	{
+		if (value == null)
+	        return "";
+	    if (value instanceof Category) {
+	        Category rootCategory = (Category) getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+	        return ((Category) value).getPath(rootCategory, locale);
+	    }
+	    if (value instanceof Allocatable) {
+	        return ((Allocatable) value).getName( locale);
+	    }
+	    if (value instanceof Date) {
+	        return DateTools.formatDate((Date) value, locale);
+	    }
+	     if (value instanceof Boolean) {
+	    	 String language = locale.getLanguage();
+	    	 if ( (Boolean) value)
+	    	 {
+				return TRUE_TRANSLATION.getName( language);
+	    	 }
+	    	 else
+	    	 {
+	    		 return FALSE_TRANSLATION.getName( language);
+	    	 }
+	    } else {
+	        return value.toString();
+	    }	
+	}
+    
 
 }
 
