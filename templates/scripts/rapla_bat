@@ -11,9 +11,11 @@ set RAPLA_JAVA=%JAVA_HOME%\bin\
 if not "%JAVA_HOME%" == "" goto gotJavaHome
    set RAPLA_JAVA=""
 :gotJavaHome
+if not "%RAPLA_JAVA_OPTIONS%" == "" goto gotJavaOptions
 set RAPLA_JAVA_OPTIONS=%JAVA_OPTIONS%
 if not "%JAVA_OPTIONS%" == "" goto gotJavaOptions
    set RAPLA_JAVA_OPTIONS="-Xmx128M"
 :gotJavaOptions
 cd %_PROG_DIR%
+echo %RAPLA_JAVA_OPTIONS%
 "%RAPLA_JAVA%java" %RAPLA_ENVIRONMENT% %RAPLA_JAVA_OPTIONS% -cp raplabootstrap.jar org.rapla.bootstrap.RaplaJettyLoader %1 %2 %3 %4
