@@ -161,7 +161,12 @@ public class ParsedText implements Serializable {
 				functionName.append( c);
 			}
 		}
-		String variableName = functionName.toString();
+		String variableName = functionName.toString().trim();
+		if ( variableName.startsWith("'") && (variableName.endsWith("'")) || (variableName.startsWith("\"") && variableName.endsWith("\"") ) && variableName.length() > 1)
+		{
+			String constant = variableName.substring(1, variableName.length() - 1);
+			return new StringVariable(constant);
+		}
 		Function varFunction = context.resolveVariableFunction( variableName);
 		if (varFunction != null)
 		{
@@ -188,7 +193,6 @@ public class ParsedText implements Serializable {
                                                  + "' not found. You have probably deleted or renamed the attribute. "
                                             );
         }
-	
 	}
 
 	private Function parseArguments(ParseContext context,String functionName, String content) throws IllegalAnnotationException {
@@ -233,6 +237,10 @@ public class ParsedText implements Serializable {
 		if ( functionName.equals("substring"))
 		{
 			return new SubstringFunction(args);
+		}
+		if ( functionName.equals("if"))
+		{
+			return new IfFunction(args);
 		}
 		else
 		{
@@ -309,7 +317,6 @@ public class ParsedText implements Serializable {
 			}
 			return buf.toString();
 		}
-		
 	}
 
 	class KeyFunction extends Function
@@ -401,6 +408,33 @@ public class ParsedText implements Serializable {
 		}
 		
 	}
+	
+	class StringVariable extends Function
+	{
+		String s;
+		public StringVariable( String s) {
+			super( "string");
+			this.s = s;
+		}
+
+		@Override
+		public String eval(EvalContext context) 
+		{
+			return s;
+		}
+		
+		public String getRepresentation( ParseContext context)
+		{
+			return "\"" + s.toString() + "\"";
+		}
+		
+		public String toString()
+		{
+			return s.toString();
+		}
+		
+	}
+	
 	class ParentFunction extends Function
 	{
 		Function arg;
@@ -459,8 +493,8 @@ public class ParsedText implements Serializable {
 			return null;
 			
 		}
-		
 	}
+	
 	class SubstringFunction extends Function
 	{
 		Function content;
@@ -535,7 +569,67 @@ public class ParsedText implements Serializable {
 			
 		}
 	}
-	 
+
+	
+	class IfFunction extends Function
+	{
+		Function condition;
+		Function conditionTrue;
+		Function conditionFalse;
+		public IfFunction( List<Function> args) throws IllegalAnnotationException {
+			super( "if", args);
+			if ( args.size() != 3)
+			{
+				throw new IllegalAnnotationException("If Function expects 3 argument!");
+			}
+			condition = args.get(0);
+			conditionTrue = args.get(1);
+			conditionFalse = args.get(2);
+			testMethod();
+		}
+
+		private void testMethod() throws IllegalAnnotationException {
+//			{
+//				Method method;
+//				try {
+//					Class<? extends Function> class1 = start.getClass();
+//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
+//				} catch (Exception e) {
+//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
+//				}
+//				if ( !method.getReturnType().isAssignableFrom(Long.class))
+//				{
+//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as second argument");
+//				}
+//			}
+//			{
+//				Method method;
+//				try {
+//					Class<? extends Function> class1 = end.getClass();
+//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
+//				} catch (Exception e) {
+//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
+//				}
+//				if ( !method.getReturnType().isAssignableFrom(Long.class))
+//				{
+//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as third argument");
+//				}
+//			}
+		}
+
+		@Override
+		public Object eval(EvalContext context) 
+		{
+			Object condResult =condition.eval( context);
+			String stringResult = ParsedText.this.toString( condResult, context);
+			boolean isTrue = Boolean.parseBoolean(stringResult);
+			Function resultFunction = isTrue ? conditionTrue : conditionFalse;
+			Object result = resultFunction.eval(context);
+			return result;
+		}
+	}
+
+	
 	private String toString(Object result, EvalContext context) {
 		if ( result == null)
 		{
