@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -273,6 +274,24 @@ final public class RaplaListEdit<T> implements
             );
         }
     }
+    
+    private boolean disableListSelection;
+    public void updateSort(List<Object> selectedValues) {
+		ListModel model2 = list.getModel();
+		int[] index = new int[selectedValues.size()];
+		int j = 0;
+		for ( int i=0;i<model2.getSize();i++)
+		{
+			Object elementAt = model2.getElementAt( i);
+			if ( selectedValues.contains( elementAt ))
+			{
+				index[j++] = i;
+			}
+		}
+		disableListSelection = true;
+		list.setSelectedIndices( index);
+		disableListSelection = false;
+	}
 
     class Listener extends MouseAdapter implements ListSelectionListener,ActionListener,ChangeListener {
         public void actionPerformed(ActionEvent evt) {
@@ -309,6 +328,10 @@ final public class RaplaListEdit<T> implements
         }
 
         public void valueChanged(ListSelectionEvent evt) {
+        	if ( disableListSelection )
+        	{
+        		return;
+        	}
             //if (evt.getValueIsAdjusting())
             //return;
             int index = getSelectedIndex();
@@ -336,6 +359,8 @@ final public class RaplaListEdit<T> implements
 	public T getSelectedValue() {
 		return (T) list.getSelectedValue();
 	}
+
+	
 }
 
 
