@@ -1411,6 +1411,16 @@ See French text.
         <text lang="pl">Suma wystąpień</text>
 		<text lang="pt">Total de ocorrências</text>
     </entry>
+        <entry key="planning_gui">
+        <text lang="en"></text>
+        <text lang="de">PlanungsGUI</text>
+        <text lang="fr"></text>
+        <text lang="es"></text>
+        <text lang="cs"></text>
+        <text lang="nl"></text>
+        <text lang="pl"></text>
+		<text lang="pt"></text>
+    </entry>
     <entry key="translation">
         <text lang="en">Translation</text>
         <text lang="de">Übersetzung</text>
