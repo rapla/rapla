@@ -190,6 +190,9 @@ See French text.
 	<entry key="icon.question">
 		<icon src="gui/images/info.png"/>
 	</entry>
+    <entry key="icon.planning">
+		<icon src="gui/images/planning.png"/>
+	</entry>
 	<entry key="icon.radio">
 		<icon src="gui/images/eclipse-icons/radio.gif"/>
 	</entry>
