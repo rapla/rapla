@@ -147,11 +147,11 @@ public class NotificationService extends RaplaComponent
 
         AllocationMail mail = new AllocationMail();
         StringBuffer buf = new StringBuffer();
-        StringBuffer changes = new StringBuffer();
         //buf.append(getString("mail_body") + "\n");
         for (Reservation reservation:keySet) {
             List<AllocationChangeEvent> eventList = reservationMap.get(reservation);
-            printEvents(changes,buf,reservation,eventList);
+            String eventBlock = printEvents(reservation,eventList);
+            buf.append( eventBlock );
             buf.append("\n\n");
         }
         I18nBundle i18n = getI18n();
@@ -173,8 +173,9 @@ public class NotificationService extends RaplaComponent
         return mail;
     }
 
-    private void printEvents(StringBuffer changes, StringBuffer buf,Reservation reservation,List<AllocationChangeEvent> eventList) {
-        buf.append("\n");
+    private String printEvents(Reservation reservation,List<AllocationChangeEvent> eventList) {
+    	StringBuilder buf =new StringBuilder();
+    	buf.append("\n");
         buf.append("-----------");
         buf.append(getString("changes"));
         buf.append("-----------");
@@ -188,6 +189,7 @@ public class NotificationService extends RaplaComponent
         Iterator<AllocationChangeEvent> it = eventList.iterator();
         boolean removed = true;
         boolean changed = false;
+//        StringBuilder changes = new StringBuilder();
         while (it.hasNext()) {
             AllocationChangeEvent event = it.next();
             if (!event.getType().equals( AllocationChangeEvent.REMOVE ))
@@ -196,9 +198,9 @@ public class NotificationService extends RaplaComponent
             buf.append(getI18n().format("appointment." + event.getType()
                                         ,event.getAllocatable().getName(getLocale()))
                        );
-            changes.append("[" + event.getAllocatable().getName(getLocale()) + "]");
-            if(it.hasNext())
-            	changes.append(", ");
+//            changes.append("[" + event.getAllocatable().getName(getLocale()) + "]");
+//            if(it.hasNext())
+//            	changes.append(", ");
             if (!event.getType().equals(AllocationChangeEvent.ADD )) {
                 printAppointment (buf, event.getOldAppointment() );
             }
@@ -240,7 +242,7 @@ public class NotificationService extends RaplaComponent
         }
 
         if (removed)
-            return;
+            return buf.toString();
 
         buf.append("-----------");
         buf.append(getString("complete_reservation"));
@@ -294,10 +296,11 @@ public class NotificationService extends RaplaComponent
         for (int i = 0;i<appointments.length;i++) {
             printAppointment(buf, appointments[i]);
         }
+        return buf.toString();
     }
 
 
-    private void printAppointment(StringBuffer buf, Appointment app) {
+    private void printAppointment(StringBuilder buf, Appointment app) {
         buf.append("\n");
         buf.append(getAppointmentFormater().getSummary(app));
         buf.append("\n");
@@ -315,7 +318,7 @@ public class NotificationService extends RaplaComponent
         }
     }
 
-    private String printAllocatables(StringBuffer buf
+    private String printAllocatables(StringBuilder buf
                                      ,Reservation reservation
                                      ,Allocatable[] allocatables) {
         for (int i = 0;i<allocatables.length;i++) {
@@ -329,7 +332,7 @@ public class NotificationService extends RaplaComponent
         return buf.toString();
     }
 
-    private void printRestriction(StringBuffer buf
+    private void printRestriction(StringBuilder buf
                                   ,Reservation reservation
                                   , Allocatable allocatable) {
         Appointment[] restriction = reservation.getRestriction(allocatable);
