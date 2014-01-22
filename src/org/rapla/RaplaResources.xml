@@ -190,9 +190,7 @@ See French text.
 	<entry key="icon.question">
 		<icon src="gui/images/info.png"/>
 	</entry>
-    <entry key="icon.planning">
-		<icon src="gui/images/planning.png"/>
-	</entry>
+
 	<entry key="icon.radio">
 		<icon src="gui/images/eclipse-icons/radio.gif"/>
 	</entry>
@@ -1413,16 +1411,6 @@ See French text.
         <text lang="nl">Totaal aantal</text>
         <text lang="pl">Suma wystąpień</text>
 		<text lang="pt">Total de ocorrências</text>
-    </entry>
-        <entry key="planning_gui">
-        <text lang="en"></text>
-        <text lang="de">PlanungsGUI</text>
-        <text lang="fr"></text>
-        <text lang="es"></text>
-        <text lang="cs"></text>
-        <text lang="nl"></text>
-        <text lang="pl"></text>
-		<text lang="pt"></text>
     </entry>
     <entry key="translation">
         <text lang="en">Translation</text>
