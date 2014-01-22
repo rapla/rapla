@@ -4797,12 +4797,16 @@ See French text.
     	<text lang="de">Bei folgenden Veranstaltungen fehlen Ressourcen</text>
     </entry>
      <entry key="no_holiday_plugin">
-    	<text lang="en">The holiday plugin is not available. The schuduler does not pay attention on holidays.</text>
+    	<text lang="en">The holiday plugin is not available. The scheduler does not pay attention on holidays.</text>
     	<text lang="de">Der Feiertagskalender ist nicht verfügbar. Der Scheduler beachtet keine Feiertage.</text>
     </entry>
      <entry key="planning_constraints">
     	<text lang="en">planning constraints</text>
     	<text lang="de">planungsconstraints</text>
+    </entry>
+     <entry key="planning_not_successful">
+    	<text lang="en">For the following events, the planning was not successful: </text>
+    	<text lang="de">Die folgenden Veranstaltungen konnten nicht geplant werden: </text>
     </entry>
 
 </resources>
