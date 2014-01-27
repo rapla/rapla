@@ -197,12 +197,10 @@ public class MailapiClient  implements MailInterface
 			Object parsedRecipient = InternetAddressC.getMethod("parse", String.class).invoke(null, recipient);
 			Method method = MessageC.getMethod("setRecipients", RecipientTypeC, parsedRecipientDummy.getClass());
 			method.invoke( message, type, parsedRecipient);
-			
 			//message.setSubject(subject);
 			MimeMessageC.getMethod("setSubject", String.class).invoke( message, subject);
 			//message.setText(mailBody);
-			MimeMessageC.getMethod("setText", String.class).invoke( message, mailBody);
-			
+			MimeMessageC.getMethod("setContent", Object.class, String.class).invoke( message, mailBody, "text/plain; charset=UTF-8");
 			//Transport.send(message);
 			TransportC.getMethod("send", MessageC).invoke( null, message);
 		
