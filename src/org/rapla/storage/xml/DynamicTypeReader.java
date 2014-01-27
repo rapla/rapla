@@ -138,7 +138,10 @@ public class DynamicTypeReader extends RaplaXMLReader
                 throw createSAXParseException( "element relax:data is requiered!" );
             AttributeType type = AttributeType.findForString( typeName );
             if (type == null)
-                throw createSAXParseException( "AttributeType '" + typeName + "' not found." );
+            {
+            	getLogger().error( "AttributeType '" + typeName + "' not found. Using string.");
+            	type = AttributeType.STRING;
+            }
             attribute.setType( type );
         }
 
