@@ -1168,6 +1168,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			map.put(allocatable,  new HashMap<Appointment,Collection<Appointment>>() );
         	for (Appointment appointment:appointments)
         	{
+        		if ( !appointment.getReservation().hasAllocated( allocatable, appointment))
+        		{
+        			continue;
+        		}
     			Set<Appointment> conflictingAppointments = AppointmentImpl.getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
         		if ( conflictingAppointments.size() > 0)
         		{

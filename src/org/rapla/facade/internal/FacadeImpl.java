@@ -720,6 +720,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
 			{
 				Allocatable allocatable= entry.getKey();
+				if (allocatable.isHoldBackConflicts())
+				{
+					continue;
+				}
 				Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
 				for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry: appointmentMap.entrySet())
 				{
