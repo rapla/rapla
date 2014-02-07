@@ -29,7 +29,7 @@ import org.rapla.entities.storage.RefEntity;
  * for deep cloning and serialization of references. {@link ReferenceHandler}
 */
 
-public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
+public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
 {
     private String id;
     private long version = 0;
@@ -38,7 +38,8 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
     ReferenceHandler referenceHandler = new ReferenceHandler();
 
     transient boolean readOnly = false;
-
+    transient Integer key;
+    
     public SimpleEntity() {
 
     }
@@ -126,9 +127,9 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
      * between enties.
      * @see SimpleIdentifier
      */
-
     public void setId(String id)  {
         this.id= id;
+        key = null;
     }
 
     /** @return the identifier of the object.
@@ -157,6 +158,15 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
             return e2 == this;
         return id.equals( id2);
 
+    }
+    
+    public Integer getIdKey()
+    {
+    	if ( key == null && id != null)
+    	{
+    		key = getRaplaType().getKey( id );
+    	}
+    	return key;
     }
 
     /** The hashcode of the id-object will be returned.
@@ -283,33 +293,41 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
         return "no id for " + super.toString();
     }
 
-    @SuppressWarnings("unchecked")
-	public int compareTo(T o) {
-         if ( o == this )
-         {
-             return 0;
-         }
-         Comparable id1 = id;
-         Comparable id2 = ((RefEntity<?>) o).getId();
-         if ( equals( o))
-             return 0;
-         if ( id1 == null)
-         {
-        	 if ( id2 == null)
-        	 {
-        		throw new IllegalStateException("Can't compare two entities without ids");
-        	 }
-        	 else
-        	 {
-        		return -1; 
-        	 }
-         }
-         else if ( id2 == null)
-         {
-        	 return 1;
-         }
-         return id1.compareTo( id2);        
+	public int compareTo(T o) 
+    {
+    	return compare_(this, (SimpleEntity<?>)o);
     }
+	
+	static private int compare_(SimpleEntity<?> o1,SimpleEntity<?> o2) {
+        if ( o1 == o2)
+        {
+            return 0;
+        }
+        Integer id1 = o1.getIdKey();
+        Integer id2 = o2.getIdKey();
+        if ( o1.equals( o2))
+            return 0;
+        if ( id1 == null)
+        {
+       	 if ( id2 == null)
+       	 {
+       		throw new IllegalStateException("Can't compare two entities without ids");
+       	 }
+       	 else
+       	 {
+       		return -1; 
+       	 }
+        }
+        else if ( id2 == null)
+        {
+       	 	return 1;
+        }
+        return id1.compareTo( id2 );
+        //Integer key1 = o1.getRaplaType().getKey( id1 );
+        //Integer key2  = o2.getRaplaType().getKey( id2 );
+        //return key1.compareTo( key2);        
+    }
+
 }
 
 

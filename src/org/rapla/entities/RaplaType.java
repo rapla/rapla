@@ -133,6 +133,12 @@ public class RaplaType<T>  {
 		return Integer.parseInt(keyPart);
 	}
 
+	public Integer getKey(String id) {
+		String keyPart = id.substring(localname.length()+1);
+		Integer key = Integer.parseInt( keyPart );
+		return key;
+	}
+
 
 }
 

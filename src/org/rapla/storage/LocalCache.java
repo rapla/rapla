@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -70,30 +71,21 @@ public class LocalCache implements EntityResolver
     
     Map<RaplaType,Set<? extends RefEntity<?>>> entityMap;
         
-    class IdComparator implements Comparator<RefEntity<?>> {
-        public int compare(RefEntity<?> o1,RefEntity<?> o2) {
-            Comparable id1 = o1.getId();
-            Comparable id2 = o2.getId();
-            return id1.compareTo( id2);
-        }
-    }
-
     private CategoryImpl superCategory = new CategoryImpl();
 
     public LocalCache() {
         superCategory.setId(LocalCache.SUPER_CATEGORY_ID);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
-        Comparator<RefEntity<?>> comp = new IdComparator();
         
-        entityMap = new HashMap<RaplaType, Set<? extends RefEntity<?>>>();
+        entityMap = new LinkedHashMap<RaplaType, Set<? extends RefEntity<?>>>();
         entities = new HashMap<Object, RefEntity<?>>();
         // top-level-entities
-        reservations = new TreeSet<ReservationImpl>(comp);
-        periods = new TreeSet<PeriodImpl>(comp);
-        users = new TreeSet<UserImpl>(comp);
-        resources = new TreeSet<AllocatableImpl>(comp);
-        dynamicTypes = new TreeSet<DynamicTypeImpl>(comp);
+        reservations = new TreeSet<ReservationImpl>();
+        periods = new TreeSet<PeriodImpl>();
+        users = new TreeSet<UserImpl>();
+        resources = new TreeSet<AllocatableImpl>();
+        dynamicTypes = new TreeSet<DynamicTypeImpl>();
 
         // non-top-level-entities with exception of one super-category
         categories = new HashSet<CategoryImpl>();

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.rapla.components.util.Assert;
@@ -24,7 +25,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 
 public class EntityStore implements EntityResolver {
-    HashMap<Object,RefEntity<?>> entities = new HashMap<Object,RefEntity<?>>();
+    HashMap<Object,RefEntity<?>> entities = new LinkedHashMap<Object,RefEntity<?>>();
     HashSet<String> idsToRemove = new HashSet<String>();
     HashSet<String> idsToStore = new HashSet<String>();
     HashSet<String> idsToReference = new HashSet<String>();
