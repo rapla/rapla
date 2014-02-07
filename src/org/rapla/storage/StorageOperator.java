@@ -63,7 +63,7 @@ public interface StorageOperator extends EntityResolver {
      storage.*/
     void storeAndRemove(Collection<RefEntity<?>> storeObjects,Collection<RefEntity<?>> removeObjects,RefEntity<User> user) throws RaplaException;
 
-    Comparable[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
+    String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
 
     <T extends RaplaObject> Collection<T> getObjects(Class<T> raplaType) throws RaplaException;
 

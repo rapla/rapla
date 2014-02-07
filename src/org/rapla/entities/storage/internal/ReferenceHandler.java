@@ -17,10 +17,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.rapla.components.util.Assert;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -56,12 +57,12 @@ Itertor references = referenceHandler.getReferences();
  */
 public class ReferenceHandler implements EntityReferencer {
     
-    private HashMap<String,ReferenceEntry[]> map;
-    private ArrayList<ReferenceEntry> list;
+    private HashMap<String,List> map;
+    //private ArrayList<ReferenceEntry> list;
     private transient boolean contextualizeCalled;
 
     // added for performance reasons
-    private transient List<RefEntity<?>> referenceList;
+    private transient Set<RefEntity<?>> referenceList;
 
     /**
      * @see org.rapla.entities.storage.EntityReferencer#resolveEntities(org.rapla.entities.storage.EntityResolver)
@@ -74,19 +75,24 @@ public class ReferenceHandler implements EntityReferencer {
 //        }
 		try {
 		    if (map != null) {
-		        for (ReferenceEntry[] entries:map.values()) {
-		            for ( ReferenceEntry entry: entries)
+		        for (String key :map.keySet()) {
+		        	List newEntries = new ArrayList<>();
+		        	List entries = map.get( key); 
+		        	for (Object entry : entries)
 		            {
-		            	entry.reference = resolver.resolve(entry.id);
+		            	String id = getId(entry);
+		            	Object entity = resolver.resolve(id);
+						newEntries.add( entity);
 		            }
+		        	map.put( key, newEntries);
 		        }
 		    }
-		    if (list != null) {
-		    	for (ReferenceEntry entry:list) 
-		    	{
-		            entry.reference = resolver.resolve(entry.id);
-		        }
-		    }
+//		    if (list != null) {
+//		    	for (ReferenceEntry entry:list) 
+//		    	{
+//		            entry.reference = resolver.resolve(entry.id);
+//		        }
+//		    }
 		} catch (EntityNotFoundException ex) {
 		    clearReferences();
 		    throw ex;
@@ -94,24 +100,38 @@ public class ReferenceHandler implements EntityReferencer {
         contextualizeCalled = true;
         referenceList = null;
     }
+
+	public String getId(Object entry) {
+		String id;
+		if ( entry instanceof RefEntity)
+		{
+			id = ((RefEntity)entry).getId();
+		}
+		else
+		{
+			id = (String) entry;
+		}
+		return id;
+	}
     
     public List<Comparable> getReferencedIds()
     {
     	ArrayList<Comparable> result = new ArrayList<Comparable>();
     	if (map != null) {
-            for (ReferenceEntry[] entries:map.values()) {
-                for ( ReferenceEntry entry: entries)
+            for (List entries:map.values()) {
+                for ( Object entry: entries)
                 {
-                	result.add(entry.id);
+                	Comparable id = getId( entry );
+					result.add(id);
                 }
             }
         }
-        if (list != null) {
-        	for (ReferenceEntry entry:this.list) 
-        	{
-        		result.add(entry.id);
-            }
-        }
+//        if (list != null) {
+//        	for (ReferenceEntry entry:this.list) 
+//        	{
+//        		result.add(entry.id);
+//            }
+//        }
         return result;
     }
     
@@ -123,54 +143,78 @@ public class ReferenceHandler implements EntityReferencer {
      * You have to add the reference-ids to other entities immediatly after the constructor.
      * @throws IllegalStateException if contextualize has been called before.
      */
-    public void addId(Comparable id) {
-        if (contextualizeCalled)
-            throw new IllegalStateException("Contextualize has been called before.");
-        synchronized (this) 
-        {
-	        if (list == null)
-	            list = new ArrayList<ReferenceEntry>(1);
-	        Assert.notNull(id);
-	
-	        ReferenceEntry entry = new ReferenceEntry();
-	        entry.id = id ;
-	        if ( list.contains( entry))
-	        {
-	            return;
-	        }
-	        list.add(entry);
-        }
-    }
+//    public void addId(Comparable id) {
+//        if (contextualizeCalled)
+//            throw new IllegalStateException("Contextualize has been called before.");
+//        synchronized (this) 
+//        {
+//	        if (list == null)
+//	            list = new ArrayList<ReferenceEntry>(1);
+//	        Assert.notNull(id);
+//	
+//	        ReferenceEntry entry = new ReferenceEntry();
+//	        entry.id = id ;
+//	        if ( list.contains( entry))
+//	        {
+//	            return;
+//	        }
+//	        list.add(entry);
+//        }
+//    }
 
     /** Use this method if you want to implement deserialization of the object manualy.
      * You have to add the reference-ids to other entities immediatly after the constructor.
      * @throws IllegalStateException if contextualize has been called before.
      */
-    public void putId(String key,Comparable id) {
+    public void putId(String key,String id) {
     	putIds( key, Collections.singleton(id));
     }
     
-    public void putIds(String key,Collection<Comparable> ids) {
+    public void addId(String key,String id) {
+        if (contextualizeCalled)
+            throw new IllegalStateException("Contextualize has been called before.");
+        addObject(key, id);
+    }
+
+    public void add(String key, RefEntity<?> entity) {
+        addObject(key, entity);
+	}
+
+	private void addObject(String key, Object obj) {
+		synchronized (this) 
+        {
+	        if (map == null)
+	        {
+	            map = new HashMap<String,List>(1);
+	        }
+	        List referenceEntries = map.get( key );
+	        if ( referenceEntries == null )
+	        {
+	        	referenceEntries = new ArrayList<>();
+	        	map.put(key, referenceEntries);
+	        }
+			referenceEntries.add(obj);
+			referenceList = null;
+        }
+	}    
+
+    public void putIds(String key,Collection<String> ids) {
         if (contextualizeCalled)
             throw new IllegalStateException("Contextualize has been called before.");
         synchronized (this) 
         {
 	        if (map == null)
-	            map = new HashMap<String,ReferenceEntry[]>(1);
+	            map = new HashMap<String,List>(1);
 	
 	        if (ids == null || ids.size() == 0) {
 	            map.remove(key);
 	            return;
 	        }
 	
-	        ReferenceEntry[] entries = new ReferenceEntry[ids.size()];
-	        int i=0;
+	        List entries = new ArrayList();
 	        for (Comparable id:ids)
 	        {
-	        	ReferenceEntry entry = new ReferenceEntry();
-	        	entry.id = id;
-	        	entries[i] = entry;
-	        	i++;
+	        	entries.add( id);
 	        }
 	        map.put(key, entries);
         }
@@ -179,27 +223,29 @@ public class ReferenceHandler implements EntityReferencer {
     
     public Object getId(String key)
     {
-    	ReferenceEntry entry = _get(key);
+    	Object entry = _get(key);
     	if ( entry == null)
     	{
     		return null;
     	}
-    	return entry.id;
+    	Object id = getId( entry);
+		return id;
     }
     
-	public Collection<Comparable> getIds(String key) 
+	public Collection<String> getIds(String key) 
 	{
 		if (map == null)
 			return Collections.emptyList();
-		ReferenceEntry[] entries  = map.get(key);
+		List entries  = map.get(key);
 		if ( entries == null )
 		{
 			return Collections.emptyList();
 		}
-		ArrayList<Comparable> entities = new ArrayList<Comparable>(1);
-		for ( ReferenceEntry entry: entries)
+		ArrayList<String> entities = new ArrayList<String>(1);
+		for ( Object entry: entries)
 		{
-			entities.add(entry.id);
+			String id = getId( entry);
+			entities.add(id);
 		}
 		return entities;
 		
@@ -238,17 +284,14 @@ public class ReferenceHandler implements EntityReferencer {
 	        	{
 	        		return;
 	        	}
-	        	map = new HashMap<String,ReferenceEntry[]>(1);
+	        	map = new HashMap<String,List>(1);
 	        }
 	        if (entity == null) {
 	            map.remove(key);
 	            return;
 	        }
 	        
-	        ReferenceEntry entry = new ReferenceEntry();
-	        entry.id = entity.getId() ;
-	        entry.reference = entity;
-	        map.put(key,new ReferenceEntry[] {entry} );
+	        map.put(key, Collections.singletonList(entity) );
 	        referenceList = null;
         }
     }
@@ -257,7 +300,7 @@ public class ReferenceHandler implements EntityReferencer {
         synchronized (this) 
         {
 	    	if (map == null)
-	            map = new HashMap<String,ReferenceEntry[]>(1);
+	            map = new HashMap<String,List>(1);
      
             if (entities == null || entities.size() == 0) 
 	        {
@@ -265,15 +308,7 @@ public class ReferenceHandler implements EntityReferencer {
 	            return;
 	        }
 	
-	        ReferenceEntry[] entries = new ReferenceEntry[entities.size()];
-	        int i=0;
-	        for ( RefEntity<?> entity: entities)
-	        {
-		        ReferenceEntry entry = new ReferenceEntry();
-		        entry.id = entity.getId() ;
-		        entry.reference = entity;
-		        entries[i++] = entry;
-	        }
+	        List entries = new ArrayList(entities);
 	        map.put(key,entries );
 	        referenceList = null;
         }
@@ -285,58 +320,62 @@ public class ReferenceHandler implements EntityReferencer {
 		if (map == null)
 			return Collections.emptyList();
 
-		ReferenceEntry[] entries  = map.get(key);
+		List entries  = map.get(key);
 		if ( entries == null )
 		{
 			return Collections.emptyList();
 		}
 		ArrayList<RefEntity<?>> entities = new ArrayList<RefEntity<?>>(1);
-		for ( ReferenceEntry entry: entries)
+		for ( Object entry: entries)
 		{
-			entities.add(entry.reference);
+			entities.add((RefEntity<?>) entry);
 		}
 		return entities;
 		
 	}	
 
     public RefEntity<?> get(String key) {
-        ReferenceEntry entry = _get(key);
+        Object entry = _get(key);
         if ( entry == null)
         {
         	return null;
         }
-        return entry.reference;
-    }
-
-	protected ReferenceEntry _get(String key) {
-		if (map == null)
-            return null;
-        ReferenceEntry[] entries  = map.get(key);
-        if ( entries == null || entries.length == 0)
+        if ( !(entry instanceof RefEntity))
         {
         	return null;
         }
-        ReferenceEntry entry  = entries[0];
+        return (RefEntity<?>) entry;
+    }
+
+	protected Object _get(String key) {
+		if (map == null)
+            return null;
+        List entries  = map.get(key);
+        if ( entries == null || entries.size() == 0)
+        {
+        	return null;
+        }
+        Object entry  = entries.get(0);
         if (entry == null)
             return null;
 		return entry;
 	}
 
 
-    public void add(RefEntity<?> entity) {
-        if (isRefering(entity))
-            return;
-        synchronized (this) 
-        {
-	        if (list == null)
-	            list = new ArrayList<ReferenceEntry>(1);
-	        ReferenceEntry entry = new ReferenceEntry();
-	        entry.id = entity.getId() ;
-	        entry.reference = entity;
-	        list.add(entry);
-	        referenceList = null;
-        }
-    }
+//    public void add(RefEntity<?> entity) {
+//        if (isRefering(entity))
+//            return;
+//        synchronized (this) 
+//        {
+//	        if (list == null)
+//	            list = new ArrayList<ReferenceEntry>(1);
+//	        ReferenceEntry entry = new ReferenceEntry();
+//	        entry.id = entity.getId() ;
+//	        entry.reference = entity;
+//	        list.add(entry);
+//	        referenceList = null;
+//        }
+//    }
 
     public boolean remove(RefEntity<?> entity) {
         if (!isRefering(entity)) {
@@ -344,34 +383,34 @@ public class ReferenceHandler implements EntityReferencer {
         }
         synchronized (this) 
         {
-	        if (list != null) {
-	            Iterator<ReferenceEntry> it = list.iterator();
-	            while (it.hasNext()) {
-	                ReferenceEntry entry =  it.next();
-	                if (entry.reference.equals(entity))
-	                    it.remove();
-	            }
-	        }
+//	        if (list != null) {
+//	            Iterator<ReferenceEntry> it = list.iterator();
+//	            while (it.hasNext()) {
+//	                ReferenceEntry entry =  it.next();
+//	                if (entry.reference.equals(entity))
+//	                    it.remove();
+//	            }
+//	        }
 	        if (map != null) {
 	            Iterator<String> it = map.keySet().iterator();
-	            Map<String,Collection<ReferenceEntry>> toChange = new HashMap<String, Collection<ReferenceEntry>>();
+	            Map<String,List<Object>> toChange = new HashMap<String, List<Object>>();
 	            while (it.hasNext()) {
 	                String key = it.next();
-					ReferenceEntry[] entries = map.get(key);
+					List entries = map.get(key);
 	                boolean remove = false;
-	                for (ReferenceEntry entry: entries)
+	                for (Object entry: entries)
 	                {
-	                	if (entry.reference.equals(entity))
+	                	if (entry.equals(entity))
 	                	{
 	                		remove = true;
 	                	}
 	                }
 	                if ( remove)
 	                {
-	                	Collection<ReferenceEntry> newEntries = new ArrayList<ReferenceHandler.ReferenceEntry>();
-	                	for (ReferenceEntry entry: entries)
+	                	List<Object> newEntries = new ArrayList<>();
+	                	for (Object entry: entries)
 	                	{
-	                		if (!entry.reference.equals(entity))
+	                		if (!entry.equals(entity))
 	                		{
 	                			newEntries.add(entry);
 	                        }
@@ -379,9 +418,9 @@ public class ReferenceHandler implements EntityReferencer {
 	                	toChange.put(key, newEntries);
 	                }
 	            }
-	            for ( Map.Entry<String, Collection<ReferenceEntry>> entry: toChange.entrySet())
+	            for ( Map.Entry<String, List<Object>> entry: toChange.entrySet())
 	            {
-	            	Collection<ReferenceEntry> values = entry.getValue();
+	            	List<Object> values = entry.getValue();
 	            	String key = entry.getKey();
 	            	if ( values.size() == 0)
 	            	{
@@ -389,7 +428,7 @@ public class ReferenceHandler implements EntityReferencer {
 	            	}
 	            	else
 	            	{
-	            		ReferenceEntry[] array = values.toArray(new ReferenceEntry[] {});
+	            		List array = values;
 						map.put( key, array);
 	            	}
 	            }
@@ -404,25 +443,25 @@ public class ReferenceHandler implements EntityReferencer {
             return referenceList;
         synchronized (this) 
         {
-	        List<RefEntity<?>> referenceList = new ArrayList<RefEntity<?>>(1);
-	        if (list != null) {
-	            Iterator<ReferenceEntry> it = list.iterator();
-	            while (it.hasNext()) {
-	                ReferenceEntry entry =  it.next();
-	                if (entry.reference == null)
-	                    throw new IllegalStateException("Contextualize was not called. References need to be resolved in context.");
-	                referenceList.add(entry.reference);
-	            }
-	        }
+	        Set<RefEntity<?>> referenceList = new LinkedHashSet<RefEntity<?>>(1);
+//	        if (list != null) {
+//	            Iterator<ReferenceEntry> it = list.iterator();
+//	            while (it.hasNext()) {
+//	                ReferenceEntry entry =  it.next();
+//	                if (entry.reference == null)
+//	                    throw new IllegalStateException("Contextualize was not called. References need to be resolved in context.");
+//	                referenceList.add(entry.reference);
+//	            }
+//	        }
 	        if (map != null) {
 	            Iterator<String> it = map.keySet().iterator();
 	            while (it.hasNext()) {
-	                ReferenceEntry[] entries =  map.get(it.next());
-	                for (ReferenceEntry entry:entries)
+	                List entries =  map.get(it.next());
+	                for (Object entry:entries)
 	                {
-		                if (entry.reference == null)
+		                if (!(entry  instanceof RefEntity))
 		                    throw new IllegalStateException("Contextualize was not called. References need to be resolved in context.");
-		                referenceList.add(entry.reference);
+		                referenceList.add((RefEntity<?>)entry);
 	                }
 	            }
 	        }
@@ -432,7 +471,7 @@ public class ReferenceHandler implements EntityReferencer {
     }
 
     public boolean isRefering(RefEntity<?> obj) {
-        if (list == null && map == null)
+        if (/*list == null && */map == null)
             return false;
         Collection<RefEntity<?>> referenceList = getReferenceList();
         return referenceList.contains(obj);
@@ -440,7 +479,7 @@ public class ReferenceHandler implements EntityReferencer {
 
     @SuppressWarnings("unchecked")
 	public Iterable<RefEntity<?>> getReferences() {
-        if (list == null && map == null)
+        if (/*list == null &&*/ map == null)
             return Collections.EMPTY_LIST;
         return getReferenceList();
     }
@@ -454,8 +493,8 @@ public class ReferenceHandler implements EntityReferencer {
     public void clearReferences() {
         if (map != null)
             map.clear();
-        if (list != null)
-            list.clear();
+//        if (list != null)
+//            list.clear();
         referenceList = null;
     }
 
@@ -463,59 +502,59 @@ public class ReferenceHandler implements EntityReferencer {
 	public Object clone() {
         ReferenceHandler clone;
 		clone = new ReferenceHandler();
-		clone.map = this.map;
-		clone.list = this.list;
 		clone.contextualizeCalled = this.contextualizeCalled;
 		clone.referenceList = this.referenceList;
-        if (map != null)
-            clone.map = (HashMap<String,ReferenceEntry[]>) map.clone();
-        if (list != null)
-            clone.list = (ArrayList<ReferenceEntry>) list.clone();
+		clone.map = this.map;
+		if (map != null)
+            clone.map = (HashMap<String,List>) map.clone();
+//        clone.list = this.list;
+//        if (list != null)
+//            clone.list = (ArrayList<ReferenceEntry>) list.clone();
         
         return clone;
     }
 
-    class ReferenceEntry  {
-    	RefEntity<?> reference;
-        Comparable id;
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((id == null) ? 0 : id.hashCode());
-            return result;
-        }
-        
-        public boolean equals(Object obj)
-        {
-            if ( !(obj instanceof ReferenceEntry))
-            {
-                return false;
-            }
-            Object id2 = ((ReferenceEntry)obj).id;
-            if ( id2 == null)
-            {
-                return false;
-            }
-            return id2.equals( id);
-        }
-        
-        public String toString()
-        {
-        	if ( reference != null)
-        	{
-        		return reference.toString();
-        	}
-        	else if ( id != null)
-        	{
-        		return id.toString();
-        	}
-        	else
-        	{
-        		return "";
-        	}
-        }
-        
-    }
+//    class ReferenceEntry  {
+//    	RefEntity<?> reference;
+//        Comparable id;
+//        public int hashCode() {
+//            final int prime = 31;
+//            int result = 1;
+//            result = prime * result + ((id == null) ? 0 : id.hashCode());
+//            return result;
+//        }
+//        
+//        public boolean equals(Object obj)
+//        {
+//            if ( !(obj instanceof ReferenceEntry))
+//            {
+//                return false;
+//            }
+//            Object id2 = ((ReferenceEntry)obj).id;
+//            if ( id2 == null)
+//            {
+//                return false;
+//            }
+//            return id2.equals( id);
+//        }
+//        
+//        public String toString()
+//        {
+//        	if ( reference != null)
+//        	{
+//        		return reference.toString();
+//        	}
+//        	else if ( id != null)
+//        	{
+//        		return id.toString();
+//        	}
+//        	else
+//        	{
+//        		return "";
+//        	}
+//        }
+//        
+//    }
 
 	public String toString()
 	{
@@ -526,7 +565,8 @@ public class ReferenceHandler implements EntityReferencer {
 		}
 	    return builder.toString();
 	    
-	}    
+	}
+
     
 
 

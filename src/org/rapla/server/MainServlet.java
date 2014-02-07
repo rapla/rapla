@@ -51,8 +51,6 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
@@ -73,7 +71,6 @@ import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
@@ -829,7 +826,7 @@ public class MainServlet extends HttpServlet {
                 	}
                 	else
                 	{
-                		session.setAttribute("userid", "" + ((SimpleIdentifier)((RefEntity<?>)user).getId()).getKey());
+                		session.setAttribute("userid",  user.getId());
                 	}
                 }
             };
@@ -872,7 +869,7 @@ public class MainServlet extends HttpServlet {
                  return;
             }
             Object attribute = session.getAttribute("userid");
-			final Comparable userId = attribute != null ? LocalCache.getId(User.TYPE,(String) attribute) : null;
+			final String userId = attribute != null ? attribute.toString() : null;
 
             if ( userId != null)
             {

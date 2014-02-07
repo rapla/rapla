@@ -43,7 +43,7 @@ import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.util.CompatibilityHints;
 
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.RaplaObject;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -52,8 +52,6 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
@@ -479,9 +477,9 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param entity
      * @return
      */
-    private String getId(RaplaObject entity) {
-        SimpleIdentifier id = (SimpleIdentifier) ((RefEntity<?>) entity).getId();
-        return entity.getRaplaType().getLocalName() + "_" + id.getKey();
+    private String getId(Entity entity) {
+        String id =   entity.getId();
+        return id;
     }
 
     /**

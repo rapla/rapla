@@ -18,7 +18,6 @@ import javax.jws.WebService;
 
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.UpdateEvent;
 @WebService
@@ -47,22 +46,22 @@ public interface RemoteStorage  {
     /** returns the time on the server in string format*/
     String getServerTime() throws RaplaException;
     /** delegates the corresponding method in the StorageOperator. */
-    EntityList getReservations(SimpleIdentifier[] allocatableIds,Date start,Date end) throws RaplaException;
+    EntityList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException;
 
-    EntityList getEntityRecursive(SimpleIdentifier... id) throws RaplaException;
+    EntityList getEntityRecursive(String... id) throws RaplaException;
 
     UpdateEvent refresh(String clientRepoVersion) throws RaplaException;
     
     void restartServer() throws RaplaException;
     UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
     
-    SimpleIdentifier[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
+    String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
 
     EntityList getConflicts() throws RaplaException;
-    Integer[][] getFirstAllocatableBindings(SimpleIdentifier[] allocatables, Appointment[] appointments, SimpleIdentifier[] reservationIds) throws RaplaException;
-    EntityList getAllAllocatableBindings(SimpleIdentifier[] allocatables, Appointment[] appointments, SimpleIdentifier[] reservationIds) throws RaplaException;
+    Integer[][] getFirstAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds) throws RaplaException;
+    EntityList getAllAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds) throws RaplaException;
 
-    Date getNextAllocatableDate(SimpleIdentifier[] allocatableIds, Appointment appointment,SimpleIdentifier[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException;
+    Date getNextAllocatableDate(String[] allocatableIds, Appointment appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException;
 	
-	void logEntityNotFound(String logMessage,SimpleIdentifier... referencedIds) throws RaplaException;
+	void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 }

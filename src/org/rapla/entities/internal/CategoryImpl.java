@@ -27,6 +27,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 public class CategoryImpl extends SimpleEntity<Category> implements Category
@@ -44,6 +45,16 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         super.resolveEntities( resolver);
         childArrayUpToDate = false;
     }
+    
+    @Override
+    protected void addEntity(RefEntity<?> entity) {
+    	if ( subEntityHandler == null)
+    	{
+    		 subEntityHandler = new ReferenceHandler();
+    	}
+        subEntityHandler.add("categories",entity);
+    }
+
 
     public Category getParent() {
         return (Category)getReferenceHandler().get("parent");
@@ -113,7 +124,7 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         
         CategoryImpl categoryImpl = (CategoryImpl)category;
         Assert.isTrue( !categoryImpl.isSubEntity( this), "Can't add a parent category to one of its ancestors.");
-        super.addEntity( (RefEntity<?>) category);
+        addEntity( (RefEntity<?>) category);
 		categoryImpl.setParent(this);
     }
 

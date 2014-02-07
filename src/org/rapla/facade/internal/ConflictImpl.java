@@ -60,7 +60,7 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
 		setId( createId());
     }
 
-    public Comparable createId()
+    public String createId()
     {
     	ReferenceHandler referenceHandler = getReferenceHandler();
     	StringBuilder buf = new StringBuilder();

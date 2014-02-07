@@ -21,8 +21,8 @@ with other entities.<br>
 storage-backend.
 */
 public interface RefEntity<T> extends Entity<T>,  EntityReferencer, Mementable<T> {
-    Comparable getId();
-    void setId(Comparable id);
+    String getId();
+    void setId(String id);
 
     long getVersion();
     void setVersion(long version);

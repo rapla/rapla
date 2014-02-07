@@ -13,6 +13,7 @@
 package org.rapla.entities.dynamictype.internal;
 
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -20,7 +21,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 
 public final class ClassificationFilterRuleImpl
     implements
@@ -51,22 +51,24 @@ public final class ClassificationFilterRuleImpl
         this.ruleValues = ruleValues;
         unresolvedRuleValues = new Object[ruleValues.length];
         valueNeedsResolving = new boolean[ruleValues.length];
+        RaplaType refType = attribute.getRefType();
         for (int i=0;i<ruleValues.length;i++) {
-            if (ruleValues[i] instanceof RefEntity)
+            Object ruleValue = ruleValues[i];
+			if (ruleValue instanceof RefEntity)
             {
-                referenceHandler.put(String.valueOf(i),(RefEntity<?>)ruleValues[i]);
+                referenceHandler.put(String.valueOf(i),(RefEntity<?>)ruleValue);
                 //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
                 valueNeedsResolving[i] = true;
             }
-            else if (ruleValues[i] instanceof SimpleIdentifier)
+            else if (refType != null && refType.isId(ruleValue))
             {
-                referenceHandler.putId(String.valueOf(i),(SimpleIdentifier)ruleValues[i]);
+                referenceHandler.putId(String.valueOf(i),(String)ruleValue);
                 //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
                 valueNeedsResolving[i] = true;
             }
             else
             {
-                unresolvedRuleValues[i] = ruleValues[i];
+                unresolvedRuleValues[i] = ruleValue;
                 valueNeedsResolving[i] = false;
             }
         }

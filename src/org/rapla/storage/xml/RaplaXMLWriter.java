@@ -34,7 +34,6 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -219,15 +218,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
 
     protected String getId(RaplaObject entity) {
         Comparable id2 = ((RefEntity<?>) entity).getId();
-        if ( id2 instanceof SimpleIdentifier)
-        {
-        	SimpleIdentifier id = (SimpleIdentifier)id2;
-        	return entity.getRaplaType().getLocalName() + "_" + id.getKey();
-        }
-        else
-        {
-        	return id2.toString();
-        }
+        return id2.toString();
     }
 
     protected long getVersion(RaplaObject entity) {

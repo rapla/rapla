@@ -24,7 +24,6 @@ import java.util.TreeSet;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.internal.PeriodImpl;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -74,7 +73,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         if (date == null)
             return null;
         PeriodImpl comparePeriod = new PeriodImpl(date,date);
-        comparePeriod.setId( new SimpleIdentifier(Period.TYPE, -1));
+        comparePeriod.setId(Period.TYPE.getId( -1));
         Iterator<Period> it = m_periods.tailSet(comparePeriod).iterator();
         while (it.hasNext()) {
             Period period = it.next();
@@ -163,7 +162,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             return list;
 
         PeriodImpl comparePeriod = new PeriodImpl(date,date);
-        comparePeriod.setId( new SimpleIdentifier(Period.TYPE, -1));
+        comparePeriod.setId( Period.TYPE.getId( -1));
         SortedSet<Period> set = m_periods.tailSet(comparePeriod);
         Iterator<Period> it = set.iterator();
         while (it.hasNext()) {

@@ -1244,11 +1244,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
-		Comparable[] ids = operator.createIdentifier(raplaType, entities.size());
+		String[] ids = operator.createIdentifier(raplaType, entities.size());
 		int i = 0;
 		for ( T uncasted: entities)
 		{
-			Comparable id = ids[i++];
+			String id = ids[i++];
 			RefEntity<?> entity = (RefEntity<?>) uncasted;
 			entity.setId(id);
 			entity.setVersion(0);

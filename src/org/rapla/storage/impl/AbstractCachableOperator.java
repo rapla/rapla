@@ -56,7 +56,6 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.Mementable;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -104,7 +103,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				DynamicTypeImpl unresolved = unresolvedAllocatableType;
 				String key = "unresolved_resource";
 				unresolved.setElementKey(key);
-				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, -1));
+				unresolved.setId(DynamicType.TYPE.getId(-1));
 				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 				unresolved.getName().setName("en", "anonymous");
 				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
@@ -114,7 +113,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				DynamicTypeImpl unresolved = anonymousReservationType;
 				String key = "anonymous";
 				unresolved.setElementKey(key);
-				unresolved.setId(new SimpleIdentifier(DynamicType.TYPE, 0));
+				unresolved.setId(DynamicType.TYPE.getId( 0));
 				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 				unresolved.getName().setName("en", "anonymous");
@@ -315,7 +314,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			{
 				PreferencesImpl newPref = new PreferencesImpl();
 				newPref.setOwner(user);
-				Comparable createIdentifier = createIdentifier(Preferences.TYPE,1)[0];
+				String createIdentifier = createIdentifier(Preferences.TYPE,1)[0];
 				newPref.setId(createIdentifier);
 				pref = newPref;
 				cache.put(newPref);
@@ -565,7 +564,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 	
 	@Override
-	public RefEntity<?> tryResolve(Comparable id) {
+	public RefEntity<?> tryResolve(String id) {
 		Lock readLock = null;
 		try {
 			readLock = readLock();
@@ -583,7 +582,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 	
 	@Override
-	public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
+	public RefEntity<?> resolve(String id) throws EntityNotFoundException {
 		Lock readLock;
 		try {
 			readLock = readLock();
@@ -600,7 +599,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
-	protected RefEntity<?> resolveIdWithoutSync(Comparable id)
+	protected RefEntity<?> resolveIdWithoutSync(String id)
 			throws EntityNotFoundException {
 		return cache.resolve(id);
 	}
@@ -734,7 +733,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
-		Comparable userId = evt.getUserId();
+		String userId = evt.getUserId();
 		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 	}
 
@@ -758,7 +757,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			Map<RefEntity<?>, RefEntity<?>> oldEntities,
 			Collection<RefEntity<?>> updatedEntities,
 			Collection<RefEntity<?>> toRemove, TimeInterval invalidateInterval,
-			Comparable userId) throws EntityNotFoundException {
+			String userId) throws EntityNotFoundException {
 		User user = null;
 		if (userId != null) {
 			user = (User) resolveIdWithoutSync(userId);

@@ -15,7 +15,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -52,10 +51,10 @@ public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMe
 		    Reservation[] reservations = raplaCal.getReservations();
 		    Allocatable[] allocatables = raplaCal.getSelectedAllocatables();
 		    List<Appointment> appointments= RaplaBuilder.getAppointments( reservations, allocatables);
-		    SimpleIdentifier[] appointmentIds = new SimpleIdentifier[appointments.size()];
+		    String[] appointmentIds = new String[appointments.size()];
 		    for ( int i=0;i<appointmentIds.length;i++)
 		    {
-		    	appointmentIds[i] = (SimpleIdentifier) ((RefEntity<?>)appointments.get(i)).getId();
+		    	appointmentIds[i] =  ((RefEntity<?>)appointments.get(i)).getId();
 		    }
 		    String result = exportService.export(appointmentIds);
 		    if ( result.trim().length() == 0)

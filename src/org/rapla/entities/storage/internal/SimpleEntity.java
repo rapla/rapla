@@ -31,10 +31,10 @@ import org.rapla.entities.storage.RefEntity;
 
 public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
 {
-    private Comparable id;
+    private String id;
     private long version = 0;
 
-    private ReferenceHandler subEntityHandler;
+    protected ReferenceHandler subEntityHandler;
     ReferenceHandler referenceHandler = new ReferenceHandler();
 
     transient boolean readOnly = false;
@@ -99,11 +99,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
     }
 
     protected void addEntity(RefEntity<?> entity) {
-    	if ( subEntityHandler == null)
-    	{
-    		 subEntityHandler = new ReferenceHandler();
-    	}
-        subEntityHandler.add(entity);
+    	throw new UnsupportedOperationException();
     }
 
     public ReferenceHandler getReferenceHandler() {
@@ -131,14 +127,14 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
      * @see SimpleIdentifier
      */
 
-    public void setId(Comparable id)  {
+    public void setId(String id)  {
         this.id= id;
     }
 
     /** @return the identifier of the object.
      * @see SimpleIdentifier
      */
-    final public Comparable getId()  {
+    final public String getId()  {
         return id;
     }
     
@@ -217,7 +213,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
 
         dest.referenceHandler = (ReferenceHandler) source.referenceHandler.clone();
 
-        ArrayList<RefEntity<?>> newEntities = new ArrayList<RefEntity<?>>();
+        ArrayList<RefEntity<?>> newSubEntities = new ArrayList<RefEntity<?>>();
         for (RefEntity<?> entity: source.getSubEntities())
         {
             RefEntity<?> oldEntity = dest.findEntity(entity);
@@ -226,16 +222,16 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
                 {
                     ((Mementable<RefEntity<?>>)oldEntity).copy(entity);
                 }
-                newEntities.add( oldEntity);
+                newSubEntities.add( oldEntity);
             } else {
                 if ( deepCopy)
                 {
                     RefEntity<?> deepClone = ((Mementable<RefEntity<?>>)entity).deepClone();
-                    newEntities.add( deepClone);
+                    newSubEntities.add( deepClone);
                 }
                 else
                 {
-                    newEntities.add( entity);
+                    newSubEntities.add( entity);
                 }
             }
         }
@@ -243,7 +239,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>, Comparable<T>
         {
         	dest.subEntityHandler.clearReferences();
         }
-        for (RefEntity<?> entity: newEntities)
+        for (RefEntity<?> entity: newSubEntities)
         {
             dest.addEntity( entity );
         }

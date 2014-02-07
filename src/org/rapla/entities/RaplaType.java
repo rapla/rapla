@@ -114,5 +114,25 @@ public class RaplaType<T>  {
 	    }
 	}
 
+    public String getId(int id)
+    {
+    	return getLocalName() + "_" + id;
+    }
+
+	public boolean isId( Object object) {
+		if (object instanceof String)
+		{
+			return ((String)object).startsWith(localname);
+		}
+		return false;
+	}
+    
+	public static int parseId(String id) {
+		int indexOf = id.indexOf("_");
+		String keyPart = id.substring( indexOf + 1);
+		return Integer.parseInt(keyPart);
+	}
+
+
 }
 

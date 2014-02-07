@@ -30,6 +30,9 @@ public interface Attribute extends Entity<Attribute>,MultiLanguageNamed,Annotata
     final RaplaType<Attribute> TYPE = new RaplaType<Attribute>(Attribute.class, "attribute");
 
     AttributeType getType();
+    
+    RaplaType getRefType();
+
     /** Set the type of the Attribute.
 <strong>Warning:</strong> Changing the type after initialization can lead to data loss,
         if there are already classifications that use this attribute and the classification value

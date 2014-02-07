@@ -44,7 +44,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
@@ -269,11 +268,11 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 					} else {
 					    iCal = bufferedICal;
 					}
-					SimpleIdentifier[] allocatableIds = new SimpleIdentifier[liste.size()];
+					String[] allocatableIds = new String[liste.size()];
 					int i = 0;
 					for ( Allocatable alloc:liste)
 					{
-						allocatableIds[i++] = (SimpleIdentifier) ((RefEntity<?>) alloc).getId();
+						allocatableIds[i++] = ((RefEntity<?>) alloc).getId();
 					}
                     final DynamicType dynamicType = (DynamicType) comboEventType.getSelectedItem();
                     if (dynamicType == null)

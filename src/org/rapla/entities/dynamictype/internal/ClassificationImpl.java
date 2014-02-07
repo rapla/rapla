@@ -20,8 +20,11 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
+import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -35,7 +38,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -52,7 +54,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     transient ParsedText lastParsedAnnotation;
 
     /** stores the nonreference values like integers,boolean and string.*/
-    HashMap<Comparable,Object> attributeValueMap = new HashMap<Comparable,Object>(1);
+    HashMap<String,Object> attributeValueMap = new HashMap<String,Object>(1);
 
     /** stores the references to the dynamictype and the reference values */
     ReferenceHandler referenceHandler = new ReferenceHandler();
@@ -92,7 +94,14 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     public DynamicType getType() {
-        return (DynamicType) referenceHandler.get("parent");
+    	try
+    	{
+    		return (DynamicType) referenceHandler.get("parent");
+    	} catch (ClassCastException ex)
+    	{
+    		ex.printStackTrace();
+    		throw ex;
+    	}
     }
 
     public String getName(Locale locale) {
@@ -174,7 +183,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         referenceHandler.put("parent", (RefEntity<?>) type);
         Collection<Attribute> attributes = new ArrayList<Attribute>();
         Collection<String> removedKeys = new ArrayList<String>();
-        Collection<SimpleIdentifier> removedIds = new ArrayList<SimpleIdentifier>();
+        Collection<String> removedIds = new ArrayList<String>();
         for (String referenceKey : referenceHandler.getReferenceKeys())
         {
         	if ( referenceKey.equals ("parent") )
@@ -185,12 +194,12 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         	else
         		removedKeys.add( referenceKey );
         }
-       for  (Object id:attributeValueMap.keySet()) {
-            Attribute attribute = findAttributeById(type, (SimpleIdentifier)id );
+       for  (String id:attributeValueMap.keySet()) {
+            Attribute attribute = findAttributeById(type, id );
             if (attribute != null) {
             	attributes.add ( attribute );
             } else {
-            	removedIds.add( (SimpleIdentifier)id );
+            	removedIds.add( id );
             }
         }
 
@@ -212,14 +221,14 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         for (String key: removedKeys) {
         	referenceHandler.removeWithKey (key );
         }
-        for (SimpleIdentifier id: removedIds) {
+        for (String id: removedIds) {
         	attributeValueMap.remove ( id );
         }
         nameString = null;
     }
 
     /** find the attribute of the given type that matches the id */
-    private Attribute findAttributeById(DynamicType type,SimpleIdentifier id) {
+    private Attribute findAttributeById(DynamicType type,String id) {
         Attribute[] typeAttributes = type.getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
             if (((RefEntity<?>)typeAttributes[i]).getId().equals(id)) {
@@ -233,8 +242,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     private static Attribute findAttributeByReferenceKey(DynamicType type,String key) {
         Attribute[] typeAttributes = type.getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
-        	SimpleIdentifier id = (SimpleIdentifier)((RefEntity<?>)typeAttributes[i]).getId();
-			if ((id.getKey() + "").equals(key)) {
+        	String id = ((RefEntity<?>)typeAttributes[i]).getId();
+			if (id.equals(key)) {
                 return typeAttributes[i];
             }
         }
@@ -274,10 +283,12 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	{
             value = null;
     	}
-        SimpleIdentifier attributeId = (SimpleIdentifier)((RefEntity<?>)attribute).getId();
-        String attributeIdString = ""+attributeId.getKey();
+        String attributeId = ((RefEntity<?>)attribute).getId();
+        String attributeIdString = attributeId.toString();
     	referenceHandler.removeWithKey(attributeIdString);
-		if (attribute.getType().equals(AttributeType.CATEGORY) || attribute.getType().equals( AttributeType.ALLOCATABLE)) {
+		RaplaType refType = attribute.getRefType();
+		if (refType != null) 
+        {
 			if ( value == null)
 			{
 				referenceHandler.removeWithKey( attributeIdString );
@@ -286,9 +297,9 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             {
             	referenceHandler.put(attributeIdString, (RefEntity<?>)value);
             }
-            else if ( !referenceHandler.isContextualizeCalled() &&  value instanceof SimpleIdentifier)
+            else if ( !referenceHandler.isContextualizeCalled() &&  refType.isId( value))
             {
-            	referenceHandler.putId(attributeIdString, (SimpleIdentifier)value);
+            	referenceHandler.putId(attributeIdString, (String)value);
             }
             // we need to remove it from the other the other map
             // Important! The map is for attributes objects not for their string representations
@@ -303,8 +314,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     
     public <T> void setValues(Attribute attribute,Collection<T> values) {
         checkWritable();
-        SimpleIdentifier attributeId = (SimpleIdentifier)((RefEntity<?>)attribute).getId();
-        String attributeIdString = ""+attributeId.getKey();
+        String attributeId = ((RefEntity<?>)attribute).getId();
+        String attributeIdString = attributeId.toString();
 		if ( values.isEmpty())
         {
         	attributeValueMap.remove(attributeId);
@@ -318,10 +329,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			return;
         }
     	referenceHandler.removeWithKey(attributeIdString);
-        if (attribute.getType().equals(AttributeType.CATEGORY) || attribute.getType().equals( AttributeType.ALLOCATABLE)) 
+		RaplaType refType = attribute.getRefType();
+		if (refType != null) 
         {
-        	Object first = values.iterator().next();
-        	if ( first instanceof RefEntity<?>)
+        	Object object = values.iterator().next();
+        	if ( object instanceof RefEntity<?>)
         	{
 	        	Collection<RefEntity<?>> castedArray = new ArrayList<RefEntity<?>>();
 	        	for ( Object value:values)
@@ -330,12 +342,12 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 	        	}
 	        	referenceHandler.putList(attributeIdString, castedArray);
         	}
-        	if ( !referenceHandler.isContextualizeCalled() && first instanceof SimpleIdentifier)
+        	else if ( !referenceHandler.isContextualizeCalled() && refType.isId(  object) )
         	{
-	        	Collection<Comparable> castedArray = new ArrayList<Comparable>();
+	        	Collection<String> castedArray = new ArrayList<String>();
 	        	for ( Object value:values)
 	        	{
-	        		castedArray.add( (SimpleIdentifier) value);
+	        		castedArray.add( value.toString());
 	        	}
 	        	referenceHandler.putIds(attributeIdString, castedArray);
         	}
@@ -352,13 +364,14 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     @SuppressWarnings("unchecked")
 	public <T> void addValue(Attribute attribute,T value) {
     	checkWritable();
-    	SimpleIdentifier attributeId = (SimpleIdentifier)((RefEntity<?>)attribute).getId();
-        String attributeIdString = ""+attributeId.getKey();
+    	String attributeId = ((RefEntity<?>)attribute).getId();
+        String attributeIdString = attributeId.toString();
     	String multiSelect = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT);
     	if ( multiSelect != null && Boolean.valueOf(multiSelect))
 		{
-    		if (attribute.getType().equals(AttributeType.CATEGORY) || attribute.getType().equals( AttributeType.ALLOCATABLE)) 
-    		{
+    		RaplaType refType = attribute.getRefType();
+    		if (refType != null) 
+            {
     			if ( value instanceof RefEntity<?>)
 	        	{
 		        	Collection<RefEntity<?>> list = referenceHandler.getList( attributeIdString);
@@ -366,10 +379,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		        	castedArray.add( (RefEntity<?>) value);
 		        	referenceHandler.putList(attributeIdString, castedArray);
 	        	}
-    			if ( !referenceHandler.isContextualizeCalled() && value instanceof SimpleIdentifier)  
+    			if ( !referenceHandler.isContextualizeCalled() && refType.isId(value))  
         		{
-    			   	Collection<Comparable> castedArray = new ArrayList<Comparable>(referenceHandler.getIds( attributeIdString));
-		        	castedArray.add( (SimpleIdentifier) value);
+    			   	Collection<String> castedArray = new ArrayList<String>(referenceHandler.getIds( attributeIdString));
+		        	castedArray.add(  (String) value );
 		        	referenceHandler.putIds(attributeIdString, castedArray);
         		}
     		}
@@ -400,13 +413,14 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		}
 
     }
+
     
     public Collection<Object> getValues(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
     	}
-    	SimpleIdentifier attributeId = (SimpleIdentifier)((RefEntity<?>)attribute).getId();
-        String attributeIdString = ""+attributeId.getKey();
+    	String attributeId = ((RefEntity<?>)attribute).getId();
+        String attributeIdString = attributeId.toString();
 
         // first lookup in attribute map
         Object o = attributeValueMap.get(attributeId);
@@ -434,8 +448,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
     	}
-    	SimpleIdentifier attributeId = (SimpleIdentifier)((RefEntity<?>)attribute).getId();
-        String attributeIdString = ""+attributeId.getKey();
+    	String attributeId = ((RefEntity<?>)attribute).getId();
+        String attributeIdString = attributeId.toString();
         // first lookup in attribute map
         Object o = attributeValueMap.get(attributeId);
 
@@ -474,7 +488,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 	public Object clone() {
         ClassificationImpl clone = new ClassificationImpl((DynamicTypeImpl)getType());
         clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
-        clone.attributeValueMap = (HashMap<Comparable,Object>) attributeValueMap.clone();
+        clone.attributeValueMap = (HashMap<String,Object>) attributeValueMap.clone();
         clone.nameString = null;
         clone.readOnly = false;// clones are always writable
         return clone;

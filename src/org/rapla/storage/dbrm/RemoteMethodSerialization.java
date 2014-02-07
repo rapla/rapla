@@ -33,7 +33,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Provider;
@@ -45,7 +44,6 @@ import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.IdTable;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
@@ -66,7 +64,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 
     class EmptyIdTable extends IdTable
     {
-        public Comparable createId(RaplaType raplaType) throws RaplaException {
+        public String createId(RaplaType raplaType) throws RaplaException {
             throw new RaplaException("Id creation not supported during remote method call");
         }
     }
@@ -192,7 +190,11 @@ public class RemoteMethodSerialization extends RaplaComponent
 			return null;
 		}
 		boolean isEmpty = string.trim().length() == 0;
-		if ( type.equals(UpdateEvent.class))
+		if ( type == String.class)
+		{
+			return string;
+		}
+		if ( type == UpdateEvent.class)
 		{
 			if ( isEmpty)
 		    {
@@ -200,7 +202,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    }
 			return createUpdateEvent( string );
 		}
-		else if ( type.equals( Long.class)  ||  type.equals( long.class)  )
+		else if ( type ==  Long.class  ||  type == long.class  )
 		{
 	  		if ( isEmpty)
 		    {
@@ -208,7 +210,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    }
 	  		return Long.parseLong( string);
 		}
-	  	else if ( type.equals( Integer.class)  ||  type.equals( int.class)  )
+	  	else if ( type == Integer.class  ||  type == int.class  )
 		{
 	  		if ( isEmpty)
 		    {
@@ -216,7 +218,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    }
 	  		return Integer.parseInt( string);
 		}
-	  	else if ( type.equals( Double.class)  ||  type.equals( double.class)  )
+	  	else if ( type ==Double.class  ||  type == double.class  )
 		{
 	  		if ( isEmpty)
 		    {
@@ -224,15 +226,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    }
 	  		return Double.parseDouble( string);
 		}
-	  	else if ( type.equals( SimpleIdentifier.class)  )
-		{
-	  		if ( isEmpty)
-		    {
-		    	return null;
-		    }
-  	    	return LocalCache.getId(string);
-		}
-	  	else if ( type.equals( Appointment.class))
+	  	else if ( type == Appointment.class)
   		{
 	  		if ( isEmpty)
 		    {
@@ -248,7 +242,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 	  	else if ( type.isArray()  )
 		{
 	  		Class<?> componentType = type.getComponentType();
-	  		if ( componentType.equals( Appointment.class))
+	  		if ( componentType == Appointment.class)
 	  		{
 	  			Collection<Appointment> appointmentList = createAppointmentList( string);
 				return appointmentList.toArray( Appointment.EMPTY_ARRAY);
@@ -273,7 +267,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 				throw new RaplaException( e.getMessage(), e);
 			}
 		}
-	  	else if ( type.equals( RaplaType.class))
+	  	else if ( type == RaplaType.class)
 		{
 			if ( isEmpty)
 		    {
@@ -281,7 +275,7 @@ public class RemoteMethodSerialization extends RaplaComponent
 		    }
 		    return RaplaType.find( string);
 		}
-	  	else if ( type.equals( Boolean.class)  ||  type.equals( boolean.class))
+	  	else if ( type == Boolean.class  ||  type == boolean.class)
 		{
 			if ( isEmpty)
 		    {
@@ -299,15 +293,17 @@ public class RemoteMethodSerialization extends RaplaComponent
         {
             return;
         }
+        else if ( value instanceof String)
+        {
+        	String result = value.toString();
+    		outWriter.append( result);
+        }
+
         else if ( value instanceof Date)
         {
         	SerializableDateTimeFormat format = ioContext.lookup( RaplaLocale.class).getSerializableFormat();
         	String date = format.formatTimestamp( (Date)value);
         	outWriter.append( date);
-        }
-        else if ( value instanceof SimpleIdentifier)
-        {
-    		outWriter.append( value.toString());
         }
         else if ( value instanceof UpdateEvent)
         {
@@ -414,27 +410,27 @@ public class RemoteMethodSerialization extends RaplaComponent
         event.setInvalidateInterval( reader.getInvalidateInterval());
         event.setNeedResourcesRefresh( reader.isResourcesRefresh());
         event.setRepositoryVersion(store.getRepositoryVersion());
-        for (Iterator<Comparable> it = store.getStoreIds().iterator();it.hasNext();)
+        for (Iterator<String> it = store.getStoreIds().iterator();it.hasNext();)
         {
-            Comparable id = it.next();
+            String id = it.next();
             RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putStore( entity);
             }
         }
-        for (Iterator<Comparable> it = store.getReferenceIds().iterator();it.hasNext();)
+        for (Iterator<String> it = store.getReferenceIds().iterator();it.hasNext();)
         {
-        	Comparable id = it.next();
+        	String id = it.next();
             RefEntity<?> entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putReference( entity);
             }
         }
-        for (Iterator<Comparable> it = store.getRemoveIds().iterator();it.hasNext();)
+        for (Iterator<String> it = store.getRemoveIds().iterator();it.hasNext();)
         {
-        	Comparable id = it.next();
+        	String id = it.next();
             // TODO: this is a hack replace with proper id solution
             if ( id instanceof String)
             {
@@ -485,14 +481,7 @@ public class RemoteMethodSerialization extends RaplaComponent
     		{
     			if ( param != null)
     			{
-    				Comparable id;
-    				try {
-    					id = (SimpleIdentifier)convertFromString( SimpleIdentifier.class, param);
-    				}
-    				catch (Exception ex)
-    				{
-    					id = (String)convertFromString( String.class, param);
-    				}
+    				String id = (String)convertFromString( String.class, param);
     				return new EntityNotFoundException( message, id);
     			}
     			return new EntityNotFoundException( message);

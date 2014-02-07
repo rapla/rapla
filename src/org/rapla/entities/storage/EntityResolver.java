@@ -22,10 +22,10 @@ import org.rapla.entities.dynamictype.DynamicType;
 
 public interface EntityResolver
 {
-    public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException;
+    public RefEntity<?> resolve(String id) throws EntityNotFoundException;
     public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException;
     /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
-    public RefEntity<?> tryResolve(Comparable id);
+    public RefEntity<?> tryResolve(String id);
     public DynamicType getDynamicType(String key);
 
 }

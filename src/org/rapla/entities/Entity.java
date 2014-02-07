@@ -17,7 +17,9 @@ public interface Entity<T> extends RaplaObject<T> {
      * and has the same id as the object. If both Entities have
      * no ids, the == operator will be applied.
      */
-
+	
+	String getId();
+	
     boolean isIdentical(Entity<?> id2);
 
     /** returns if the instance of the entity is persisant and the cache or just a local copy.

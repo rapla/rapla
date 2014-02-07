@@ -33,7 +33,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -58,10 +57,10 @@ public class LocalCacheTest extends RaplaTestCase {
     public DynamicTypeImpl createDynamicType() throws Exception {
         AttributeImpl attribute = new AttributeImpl(AttributeType.STRING);
         attribute.setKey("name");
-        attribute.setId(new SimpleIdentifier(Attribute.TYPE,1));
+        attribute.setId(Attribute.TYPE.getId(1));
         DynamicTypeImpl dynamicType = new DynamicTypeImpl();
         dynamicType.setElementKey("defaultResource");
-        dynamicType.setId(new SimpleIdentifier(DynamicType.TYPE,1));
+        dynamicType.setId(DynamicType.TYPE.getId(1));
         dynamicType.addAttribute(attribute);
         dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
         return dynamicType;
@@ -71,7 +70,7 @@ public class LocalCacheTest extends RaplaTestCase {
     public AllocatableImpl createResource(int id,DynamicType type,String name) {
         Date today = new Date();
         AllocatableImpl resource = new AllocatableImpl(today, today);
-        resource.setId(new SimpleIdentifier(Allocatable.TYPE,id));
+        resource.setId(Allocatable.TYPE.getId(id));
         Classification classification = type.newClassification();
         classification.setValue("name",name);
         resource.setClassification(classification);

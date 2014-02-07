@@ -51,7 +51,6 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.Mementable;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -516,13 +515,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
 
-            public EntityList getEntityRecursive(SimpleIdentifier... ids) throws RaplaException {
+            public EntityList getEntityRecursive(String... ids) throws RaplaException {
                 checkAuthentified();
                 User sessionUser = getSessionUser();
                 //synchronized (operator.getLock()) 
                 {
                     ArrayList<RefEntity<?>> completeList = new ArrayList<RefEntity<?>>();
-	                for ( SimpleIdentifier id:ids)
+	                for ( String id:ids)
                 	{
 	                    RefEntity<?> entity = operator.resolve(id);
 	                    if ( entity.getRaplaType() == Reservation.TYPE)
@@ -543,7 +542,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
 			
-            public EntityList getReservations(SimpleIdentifier[] allocatableIds,Date start,Date end) throws RaplaException
+            public EntityList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException
             {
                 checkAuthentified();
                 User sessionUser = getSessionUser();
@@ -553,7 +552,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 	// Reservations and appointments
                     ArrayList<RefEntity<?>> completeList = new ArrayList<RefEntity<?>>();
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
-                    for ( SimpleIdentifier id:allocatableIds)
+                    for ( String id:allocatableIds)
                     {
                     	RefEntity<?> entity = operator.resolve(id);
                     	Allocatable allocatable = (Allocatable) entity;
@@ -749,11 +748,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				return getI18n().getString( key);
 			}
             
-			public SimpleIdentifier[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
+			public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
                 checkAuthentified();
                 //User user =
                 getSessionUser(); //check if authenified
-                SimpleIdentifier[] simpleIdentifier =(SimpleIdentifier[]) operator.createIdentifier(raplaType, count);
+                String[] simpleIdentifier =operator.createIdentifier(raplaType, count);
                 return simpleIdentifier;
             }
 
@@ -999,7 +998,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				RefEntity<Reservation> reservation = (RefEntity<Reservation>)appointment.getReservation();
 				{
 					toAdd.add(reservation);
-					Comparable id = reservation.getId();
+					String id = reservation.getId();
 					RefEntity<?> inCache;
 					try {
 						inCache = operator.resolve( id);
@@ -1057,7 +1056,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 
             }
 			@Override
-			public Date getNextAllocatableDate(	SimpleIdentifier[] allocatableIds, Appointment appointment,SimpleIdentifier[] reservationIds, Integer worktimestartMinutes, Integer worktimeendMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException 
+			public Date getNextAllocatableDate(	String[] allocatableIds, Appointment appointment,String[] reservationIds, Integer worktimestartMinutes, Integer worktimeendMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException 
 			{
                 checkAuthentified();
             	List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
@@ -1066,7 +1065,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			}
 
 			@Override
-			public Integer[][] getFirstAllocatableBindings(SimpleIdentifier[] allocatableIds, Appointment[] appointments, SimpleIdentifier[] reservationIds) throws RaplaException
+			public Integer[][] getFirstAllocatableBindings(String[] allocatableIds, Appointment[] appointments, String[] reservationIds) throws RaplaException
 			{
                 checkAuthentified();
                 Integer[][] result = new Integer[allocatableIds.length][];
@@ -1100,7 +1099,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			}
 			
 			@Override
-			public EntityList getAllAllocatableBindings(SimpleIdentifier[] allocatableIds, Appointment[] appointments, SimpleIdentifier[] reservationIds) throws RaplaException
+			public EntityList getAllAllocatableBindings(String[] allocatableIds, Appointment[] appointments, String[] reservationIds) throws RaplaException
 			{
                 checkAuthentified();
                 Set<RefEntity<?>> completeList = new HashSet<RefEntity<?>>();
@@ -1127,11 +1126,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 return list;
 			}
 			
-			private List<Allocatable> resolveAllocatables(SimpleIdentifier[] allocatableIds) throws RaplaException,EntityNotFoundException, RaplaSecurityException 
+			private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException,EntityNotFoundException, RaplaSecurityException 
 			{
 				List<Allocatable> allocatables = new ArrayList<Allocatable>();
 				User sessionUser = getSessionUser();
-				for ( SimpleIdentifier id:allocatableIds)
+				for ( String id:allocatableIds)
 				{
 					RefEntity<?> entity = operator.resolve(id);
 					allocatables.add( (Allocatable) entity);
@@ -1140,9 +1139,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				return allocatables;
 			}
 			
-			private Collection<Reservation> resolveReservations(SimpleIdentifier[] ignoreList) {
+			private Collection<Reservation> resolveReservations(String[] ignoreList) {
 				Set<Reservation> ignoreConflictsWith = new HashSet<Reservation>();
-				for (SimpleIdentifier reservationId: ignoreList)
+				for (String reservationId: ignoreList)
 				{
 					try
 					{
@@ -1157,11 +1156,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				return ignoreConflictsWith;
 			}
 			
-			public void logEntityNotFound(String logMessage,SimpleIdentifier... referencedIds)
+			public void logEntityNotFound(String logMessage,String... referencedIds)
 			{
 				StringBuilder buf = new StringBuilder();
 				buf.append("{");
-				for  (SimpleIdentifier id: referencedIds)
+				for  (String id: referencedIds)
 				{
 					buf.append("{ id=");
 					if ( id != null)

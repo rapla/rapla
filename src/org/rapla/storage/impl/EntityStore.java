@@ -25,9 +25,9 @@ import org.rapla.entities.storage.RefEntity;
 
 public class EntityStore implements EntityResolver {
     HashMap<Object,RefEntity<?>> entities = new HashMap<Object,RefEntity<?>>();
-    HashSet<Comparable> idsToRemove = new HashSet<Comparable>();
-    HashSet<Comparable> idsToStore = new HashSet<Comparable>();
-    HashSet<Comparable> idsToReference = new HashSet<Comparable>();
+    HashSet<String> idsToRemove = new HashSet<String>();
+    HashSet<String> idsToStore = new HashSet<String>();
+    HashSet<String> idsToReference = new HashSet<String>();
     EntityResolver parent;
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashSet<Allocatable> allocatables = new HashSet<Allocatable>();
@@ -66,17 +66,17 @@ public class EntityStore implements EntityResolver {
         entities.put(id,entity);
     }
     
-    public void addRemoveId(Comparable id)
+    public void addRemoveId(String id)
     {
         idsToRemove.add(id);
     }
     
-    public void addReferenceId(Comparable id)
+    public void addReferenceId(String id)
     {
         idsToReference.add(id);
     }
 
-    public void addStoreId(Comparable id)
+    public void addStoreId(String id)
     {
         idsToStore.add(id);
     }
@@ -97,21 +97,21 @@ public class EntityStore implements EntityResolver {
         return entities.values();
     }
     
-    public Collection<Comparable> getRemoveIds() {
+    public Collection<String> getRemoveIds() {
         return  idsToRemove;
     }
 
-    public Collection<Comparable> getStoreIds() {
+    public Collection<String> getStoreIds() {
         return  idsToStore;
     }
    
-	public Collection<Comparable> getReferenceIds() {
+	public Collection<String> getReferenceIds() {
 	    return idsToReference;
 	}
 
 
     // Implementation of EntityResolver
-    public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
+    public RefEntity<?> resolve(String id) throws EntityNotFoundException {
         RefEntity<?> result = tryResolve(id );
         if ( result == null)
         {
@@ -153,7 +153,8 @@ public class EntityStore implements EntityResolver {
         return passwordList.get(userid);
     }
 
-    public RefEntity<?> tryResolve( Comparable id )
+    @Override
+    public RefEntity<?> tryResolve( String id )
     {
     	Assert.notNull( id);
         RefEntity<?> entity = entities.get(id);

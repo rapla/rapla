@@ -45,6 +45,7 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 
@@ -82,6 +83,16 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
         appointments = null;
         classification.resolveEntities( resolver);
     }
+    
+    @Override
+    protected void addEntity(RefEntity<?> entity) {
+    	if ( subEntityHandler == null)
+    	{
+    		 subEntityHandler = new ReferenceHandler();
+    	}
+        subEntityHandler.add("appointments",entity);
+    }
+
 
     public void setReadOnly(boolean enable) {
         super.setReadOnly( enable );
@@ -147,7 +158,7 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
                                             + appointment.getReservation());
         ((AppointmentImpl) appointment).setParent(this);
         appointments = null;
-        super.addEntity((RefEntity<?>)appointment);
+        this.addEntity((RefEntity<?>)appointment);
     }
 
     public void removeAppointment(Appointment appointment)   {
@@ -209,7 +220,7 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
             return;
 		synchronized (this) {
 			allocatables = null;
-			getReferenceHandler().add((RefEntity<?>)allocatable);
+			getReferenceHandler().add("resource",(RefEntity<?>)allocatable);
 		}
 	}
 

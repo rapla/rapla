@@ -176,7 +176,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     	throws RaplaSAXParseException
     {
         String idString = atts.getValue( "id" );
-        Comparable id = getId( entity.getRaplaType(), idString );
+        String id = getId( entity.getRaplaType(), idString );
         entity.setId( id );
         return id;
     }
@@ -201,7 +201,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
-            Comparable id = idTable.createId( entity.getRaplaType() );
+            String id = idTable.createId( entity.getRaplaType() );
             entity.setId( id );
             return id;
         }
@@ -239,7 +239,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	}
 
 
-    protected Comparable getId( RaplaType type, String str ) throws RaplaSAXParseException
+    protected String getId( RaplaType type, String str ) throws RaplaSAXParseException
     {
         try
         {
@@ -247,7 +247,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         	{
         		return str;
         	}
-        	Comparable id = LocalCache.getId( type, str );
+        	String id = LocalCache.getId( type, str );
             return id;
         }
         catch (RaplaException ex)
@@ -281,7 +281,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
-            Comparable id = getId( type, str );
+            String id = getId( type, str );
 			RefEntity<?> resolved = resolver.resolve( id );
 			@SuppressWarnings("unchecked")
 			T casted = (T)resolved;
@@ -312,21 +312,21 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     public void remove(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
-        Comparable idObject = getId( type, id );
+        String idObject = getId( type, id );
         resolver.addRemoveId( idObject );
     }
     
     public void reference(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
-        Comparable idObject = getId( type, id );
+        String idObject = getId( type, id );
         resolver.addReferenceId( idObject );
     }
     
     public void store(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
-        Comparable idObject = getId( type, id );
+        String idObject = getId( type, id );
         resolver.addStoreId( idObject );
     }
     

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -162,6 +163,16 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         }
         return super.isRefering(entity);
     }
+    
+    @Override
+    protected void addEntity(RefEntity<?> entity) {
+    	if ( subEntityHandler == null)
+    	{
+    		 subEntityHandler = new ReferenceHandler();
+    	}
+        subEntityHandler.add("attributes",entity);
+    }
+
 
     public String getAnnotation(String key, String defaultValue) {
         String annotation = getAnnotation( key );
@@ -199,14 +210,16 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         Attribute attribute2 = attribute[index2];
         ReferenceHandler subEntityHandler = getSubEntityHandler();
 		subEntityHandler.clearReferences();
+		List<RefEntity<?>> newList = new ArrayList<RefEntity<?>>();
         for (int i=0;i<attributes.length;i++) {
-            if (i == index1)
-                subEntityHandler.add((RefEntity<?>)attribute2);
+        	if (i == index1)
+                newList.add((RefEntity<?>)attribute2);
             else if (i == index2)
-                subEntityHandler.add((RefEntity<?>)attribute1);
+                newList.add((RefEntity<?>)attribute1);
             else
-                subEntityHandler.add((RefEntity<?>)attributes[i]);
+                newList.add((RefEntity<?>)attributes[i]);
         }
+        subEntityHandler.putList("attributes", newList);
         attributeArrayUpToDate = false;
     }
 
@@ -247,7 +260,7 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
     public void addAttribute(Attribute attribute) {
         checkWritable();
         attributeArrayUpToDate = false;
-        super.addEntity((RefEntity<?>) attribute);
+        this.addEntity((RefEntity<?>) attribute);
         if (attribute.getDynamicType() != null
             && !this.isIdentical(attribute.getDynamicType()))
             throw new IllegalStateException("Attribute '" + attribute

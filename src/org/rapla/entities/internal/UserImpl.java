@@ -134,7 +134,7 @@ public class UserImpl extends SimpleEntity<User> implements User
         if (getReferenceHandler().isRefering((RefEntity<?>)group))
             return;
         groupArrayUpToDate = false;
-        getReferenceHandler().add((RefEntity<?>)group);
+        getReferenceHandler().add("groups",(RefEntity<?>)group);
     }
 
     public boolean removeGroup(Category group)   {

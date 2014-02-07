@@ -35,7 +35,6 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 
 public class AppointmentImpl extends SimpleEntity<Appointment> implements Appointment
@@ -171,15 +170,13 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
             return 0;
         }
         
-        SimpleIdentifier id1 = (SimpleIdentifier) getId();
-        SimpleIdentifier id2 = (SimpleIdentifier)((RefEntity<?>)a2).getId();
+        Comparable id1 =  getId();
+        Comparable id2 = ((RefEntity<?>)a2).getId();
         if ( id1 == null || id2 == null)
         {
             return hashCode() < a2.hashCode() ? -1 : 1;
         }
-        if ( id1.getKey() == id2.getKey())
-            return 0;
-        return (id1.getKey() < id2.getKey()) ? -1 : 1;
+        return id1.compareTo( id2);
     }
 
     transient Date maxDate;
@@ -769,7 +766,7 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
 		if (end != null) {
 	        // all appointments that start before the enddate
 	        AppointmentImpl compareElement = new AppointmentImpl(end, end);
-			compareElement.setId(new SimpleIdentifier(Appointment.TYPE, -1) );
+			compareElement.setId(Appointment.TYPE.getId( -1) );
 	        it = sortedAppointmentList.headSet(compareElement).iterator();
 	        //it = appointments.values().iterator();
 	    } else {

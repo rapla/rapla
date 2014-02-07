@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.logger.Logger;
 
 import com.google.gson.Gson;
@@ -117,6 +118,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
           }
         });
     gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
+    gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
     gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
     gb.registerTypeAdapter(java.sql.Timestamp.class,
         new SqlTimestampDeserializer());

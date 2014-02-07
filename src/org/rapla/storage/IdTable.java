@@ -17,16 +17,15 @@ import java.util.Map;
 
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaException;
 
 /** Maintains the highest ids for every RaplaType in the LocalCache.*/
 public class IdTable {
-    Map<RaplaType,SimpleIdentifier> idTable = new HashMap<RaplaType,SimpleIdentifier>();
+    Map<RaplaType,String> idTable = new HashMap<RaplaType,String>();
     LocalCache cache;
     /** increment and return the highest id for the selected RaplaType */
-    public Comparable createId(RaplaType raplaType) throws RaplaException {
-        SimpleIdentifier oldId =  idTable.get(raplaType);
+    public String createId(RaplaType raplaType) throws RaplaException {
+        String oldId =  idTable.get(raplaType);
         if ( oldId == null) {
             oldId = calc(cache, raplaType);
             idTable.put(raplaType, oldId);
@@ -34,20 +33,21 @@ public class IdTable {
         if (oldId == null)
             throw new RaplaException("Error in Program: RaplaType '" + raplaType +
                                      "' not found in idtable. Have you called recalc?");
-        SimpleIdentifier newId = new SimpleIdentifier(raplaType,oldId.getKey() + 1);
+        String newId = raplaType.getId(RaplaType.parseId(oldId) + 1);
         idTable.put(raplaType,newId);
         return newId;
     }
 
     /** Finds the highest id in an entity-collection */
-    protected SimpleIdentifier calc(LocalCache cache,RaplaType raplaType) {
+    protected String calc(LocalCache cache,RaplaType raplaType) {
         int max = 0;
         for (RefEntity<?> ref: cache.getCollection( raplaType )) {
-            SimpleIdentifier id =(SimpleIdentifier) ref.getId();
-            if (id != null && id.getKey() > max)
-                max = id.getKey();
+            String id = ref.getId();
+            int key = RaplaType.parseId(id);
+			if (id != null && key > max)
+                max = key;
         }
-        return new SimpleIdentifier(raplaType,max);
+        return raplaType.getId(max);
     }
     
     public void setCache(LocalCache cache) {

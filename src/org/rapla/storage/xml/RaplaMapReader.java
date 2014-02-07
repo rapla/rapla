@@ -72,13 +72,13 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
             if ( raplaType.equals( Appointment.TYPE) || raplaType.equals( Reservation.TYPE)) {
                 return;
             }
-            Comparable id = getId( raplaType, refid);
+            String id = getId( raplaType, refid);
             entityMap.getReferenceHandler().putId( key,  id);
         }  else if ( keyref != null) {
             childReader = null;
             DynamicType type = getDynamicType( keyref );
             if ( type != null) {
-            	Comparable id = ((RefEntity<?>) type).getId();
+            	String id = ((RefEntity<?>) type).getId();
                 entityMap.getReferenceHandler().putId( key,  id);
             }
         } else {

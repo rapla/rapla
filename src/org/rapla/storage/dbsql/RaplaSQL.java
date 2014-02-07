@@ -63,7 +63,6 @@ import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -300,7 +299,7 @@ class PeriodStorage extends RaplaTypeStorage<Period> {
     }
 
     protected void load(ResultSet rset) throws SQLException {
-		SimpleIdentifier id = new SimpleIdentifier(Period.TYPE, rset.getInt(1));
+		String id = Period.TYPE.getId( rset.getInt(1));
 		String name = getString(rset,2, null);
 		if ( name == null)
 		{
@@ -317,7 +316,7 @@ class PeriodStorage extends RaplaTypeStorage<Period> {
 
 class CategoryStorage extends RaplaTypeStorage<Category> {
 	Map<Category,Integer> orderMap =  new HashMap<Category,Integer>();
-    Map<Category,Comparable> categoriesWithoutParent = new TreeMap<Category,Comparable>(new Comparator<Category>()
+    Map<Category,String> categoriesWithoutParent = new TreeMap<Category,String>(new Comparator<Category>()
         {
             public int compare( Category o1, Category o2 )
             {
@@ -407,8 +406,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	Comparable id = readId(rset, 1, Category.class);
-    	Comparable parentId = readId(rset, 2, Category.class, true);
+    	String id = readId(rset, 1, Category.class);
+    	String parentId = readId(rset, 2, Category.class, true);
 
         String xml = getText( rset, 5 );
     	Integer order = getInt(rset, 6 );
@@ -447,10 +446,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     	categoriesWithoutParent.clear();
     	super.loadAll();
     	// then we rebuild the hierarchy
-    	Iterator<Map.Entry<Category,Comparable>> it = categoriesWithoutParent.entrySet().iterator();
+    	Iterator<Map.Entry<Category,String>> it = categoriesWithoutParent.entrySet().iterator();
     	while (it.hasNext()) {
-    		Map.Entry<Category,Comparable> entry = it.next();
-    		Comparable parentId = entry.getValue();
+    		Map.Entry<Category,String> entry = it.next();
+    		String parentId = entry.getValue();
     		Category category =  entry.getKey();
     		Category parent;
             Assert.notNull( category );
@@ -466,8 +465,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 }
 
 class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
-    Map<Integer,Classification> classificationMap = new HashMap<Integer,Classification>();
-    Map<Integer,Allocatable> allocatableMap = new HashMap<Integer,Allocatable>();
+    Map<String,Classification> classificationMap = new HashMap<String,Classification>();
+    Map<String,Allocatable> allocatableMap = new HashMap<String,Allocatable>();
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
     PermissionStorage permissionStorage;
 
@@ -509,7 +508,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     }
 	
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        SimpleIdentifier id= readId(rset,1, Allocatable.class);
+        String id= readId(rset,1, Allocatable.class);
     	String typeKey = getString(rset,2 , null);
 		boolean ignoreConflicts = getInt( rset, 3 ) == 1;
 		final Date createDate = getDate( rset, 5);
@@ -532,8 +531,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 		allocatable.setLastChangedBy( resolveFromId(rset, 7, User.class) );
     	Classification classification = type.newClassification(false);
     	allocatable.setClassification( classification );
-    	classificationMap.put( id.getKey(), classification );
-    	allocatableMap.put(  id.getKey(), allocatable);
+    	classificationMap.put( id, classification );
+    	allocatableMap.put( id, allocatable);
     	put( allocatable );
     }
 
@@ -544,8 +543,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 }
 
 class ReservationStorage extends RaplaTypeStorage<Reservation> {
-    Map<Integer,Classification> classificationMap = new HashMap<Integer,Classification>();
-    Map<Integer,Reservation> reservationMap = new HashMap<Integer,Reservation>();
+    Map<String,Classification> classificationMap = new HashMap<String,Classification>();
+    Map<String,Reservation> reservationMap = new HashMap<String,Reservation>();
     AttributeValueStorage<Reservation> attributeValueStorage;
     public ReservationStorage(RaplaContext context) throws RaplaException {
         super(context,Reservation.TYPE, "EVENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
@@ -578,7 +577,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	final Date createDate = getDate(rset,4);
         final Date lastChanged = getDate(rset,5);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
-    	SimpleIdentifier id = readId(rset,1,Reservation.class);
+    	String id = readId(rset,1,Reservation.class);
 		event.setId( id);
 		String typeKey = getString(rset,2,null);
 		DynamicType type = null;
@@ -601,8 +600,8 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         event.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	Classification classification = type.newClassification(false);
     	event.setClassification( classification );
-    	classificationMap.put( id.getKey(), classification );
-    	reservationMap.put( id.getKey(), event );
+    	classificationMap.put( id, classification );
+    	reservationMap.put( id, event );
     	put( event );
     }
 
@@ -614,10 +613,10 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 
 /** This class should only be used within the ResourceStorage class*/
 class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > extends EntityStorage<T> {
-    Map<Integer,Classification> classificationMap;
-    Map<Integer,? extends Annotatable> annotableMap;
+    Map<String,Classification> classificationMap;
+    Map<String,? extends Annotatable> annotableMap;
     final String foreignKeyName;
-    public AttributeValueStorage(RaplaContext context,String tablename, String foreignKeyName, Map<Integer,Classification> classificationMap, Map<Integer, ? extends Annotatable> annotableMap) throws RaplaException {
+    public AttributeValueStorage(RaplaContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " INTEGER NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(100)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
@@ -724,8 +723,8 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
 }
 
 class PermissionStorage extends EntityStorage<Allocatable>  {
-    Map<Integer,Allocatable> allocatableMap;
-    public PermissionStorage(RaplaContext context,Map<Integer,Allocatable> allocatableMap) throws RaplaException {
+    Map<String,Allocatable> allocatableMap;
+    public PermissionStorage(RaplaContext context,Map<String,Allocatable> allocatableMap) throws RaplaException {
         super(context,"PERMISSION",new String[] {"RESOURCE_ID INTEGER NOT NULL KEY","USER_ID INTEGER","GROUP_ID INTEGER","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.allocatableMap = allocatableMap;
     }
@@ -816,7 +815,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
    
 
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
-        SimpleIdentifier idInt = readId(rset, 1, Appointment.class);
+        String id = readId(rset, 1, Appointment.class);
         Reservation event = resolveFromId(rset, 2, Reservation.class);
         if ( event == null)
         {
@@ -826,7 +825,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         Date end = getDate(rset,4);
         boolean wholeDayAppointment = start.getTime() == DateTools.cutDate( start.getTime()) && end.getTime() == DateTools.cutDate( end.getTime());
     	AppointmentImpl appointment = new AppointmentImpl(start, end);
-    	appointment.setId( idInt);
+    	appointment.setId( id);
     	appointment.setWholeDays( wholeDayAppointment);
     	event.addAppointment( appointment );
     	String repeatingType = getString( rset,5, null);
@@ -1035,14 +1034,14 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
     	//  yes read value
     	//  no read xml
 
-        SimpleIdentifier userId = readId(rset, 1,User.class, true);
+        String userId = readId(rset, 1,User.class, true);
         User owner = null;
-        Comparable preferenceId;
+        String preferenceId;
         if ( userId != null){
             owner = (User) get( userId );
-            preferenceId = new SimpleIdentifier( Preferences.TYPE, userId.getKey() );
+            preferenceId = Preferences.TYPE.getId( RaplaType.parseId( userId));
         } else {
-        	preferenceId = new SimpleIdentifier( Preferences.TYPE, 0 );
+        	preferenceId = Preferences.TYPE.getId( 0);
         }
         PreferencesImpl preferences = (PreferencesImpl) get( preferenceId );
         if ( preferences == null) {
@@ -1126,7 +1125,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        Comparable userId = readId(rset,1, User.class );
+        String userId = readId(rset,1, User.class );
         String username = getString(rset,2, null);
         if ( username == null)
         {

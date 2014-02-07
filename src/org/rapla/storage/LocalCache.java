@@ -47,7 +47,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Provider;
@@ -73,11 +72,9 @@ public class LocalCache implements EntityResolver
         
     class IdComparator implements Comparator<RefEntity<?>> {
         public int compare(RefEntity<?> o1,RefEntity<?> o2) {
-            SimpleIdentifier id1 = (SimpleIdentifier)o1.getId();
-            SimpleIdentifier id2 = (SimpleIdentifier)o2.getId();
-            if ( id1.getKey() == id2.getKey())
-                return 0;
-            return (id1.getKey() < id2.getKey()) ? -1 : 1;
+            Comparable id1 = o1.getId();
+            Comparable id2 = o2.getId();
+            return id1.compareTo( id2);
         }
     }
 
@@ -118,7 +115,8 @@ public class LocalCache implements EntityResolver
         initSuperCategory();
     }
     
-    public RefEntity<?> tryResolve(Comparable id) {
+    @Override
+    public RefEntity<?> tryResolve(String id) {
         if (id == null)
             throw new RuntimeException("id is null");
         return entities.get(id);
@@ -162,8 +160,6 @@ public class LocalCache implements EntityResolver
         @SuppressWarnings("unchecked")
 		Set<RefEntity<?>> entitySet =  (Set<RefEntity<?>>) entityMap.get(raplaType);
         if (entitySet != null) {
-
-         
             entities.put(id,entity);
             entitySet.remove( entity );
 			entitySet.add( entity );
@@ -225,7 +221,7 @@ public class LocalCache implements EntityResolver
         }
     }
 
-    public static Comparable SUPER_CATEGORY_ID = new SimpleIdentifier(Category.TYPE,0);
+    public static String SUPER_CATEGORY_ID = Category.TYPE.getId(0);
     public CategoryImpl getSuperCategory() {
         return (CategoryImpl) get(SUPER_CATEGORY_ID);
     }
@@ -355,10 +351,8 @@ public class LocalCache implements EntityResolver
     }
 
     // Implementation of EntityResolver
-    public RefEntity<?> resolve(Comparable id) throws EntityNotFoundException {
-        if (!(id instanceof SimpleIdentifier))
-            throw new EntityNotFoundException("Unknown identifier class: " + id.getClass()
-                                        + ". Only the SimpleIdentier class is supported.");
+    @Override
+    public RefEntity<?> resolve(String id) throws EntityNotFoundException {
         RefEntity<?> entity =  tryResolve(id);
 
         if (entity == null)
@@ -410,7 +404,7 @@ public class LocalCache implements EntityResolver
 		};
 	}
 	
-	static public Comparable getId(String string) throws RaplaException {
+	static public String getId(String string) throws RaplaException {
 		int index = string.lastIndexOf("_") + 1;
 		if ( index <= 0)
 		{
@@ -421,14 +415,14 @@ public class LocalCache implements EntityResolver
 		return getId( raplaType, string);
 	}
 
-	 static public Comparable getId(RaplaType type,String str) throws RaplaException {
+	 static public String getId(RaplaType type,String str) throws RaplaException {
 	    	if (str == null)
 	    		throw new RaplaException("Id string for " + type + " can't be null");
 	    	int index = str.lastIndexOf("_") + 1;
 	        if (index>str.length())
 	            throw new RaplaException("invalid rapla-id '" + str + "'");
 	        try {
-	        	return new SimpleIdentifier(type,Integer.parseInt(str.substring(index)));
+	        	return type.getId(Integer.parseInt(str.substring(index)));
 	        } catch (NumberFormatException ex) {
 	            throw new RaplaException("invalid rapla-id '" + str + "'");
 	        }

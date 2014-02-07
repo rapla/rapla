@@ -93,7 +93,7 @@ public class CategoryReader extends RaplaXMLReader
                     	    }
                     	    category.getReferenceHandler().put("parent", superCategory);
                     	} else {
-                    		Comparable parentIdN = getId( Category.TYPE, parentId);
+                    		String parentIdN = getId( Category.TYPE, parentId);
                     	    category.getReferenceHandler().putId("parent", parentIdN);
                     	}
                     } 

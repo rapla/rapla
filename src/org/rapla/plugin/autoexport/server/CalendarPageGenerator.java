@@ -28,7 +28,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -103,25 +102,13 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
             String allocatableId = request.getParameter( "allocatable_id" );
             if ( allocatableId != null)
             {
-            	int intId;
-            	try
-            	{
-	            	intId = Integer.parseInt(allocatableId);
-            	}
-            	catch ( NumberFormatException ex)
-            	{
-            	 	String message = "404 allocatable_id not parsable for calendar " + user + "/" + filename ;
-        			write404(response, message);
-                	return;
-            	}
-				SimpleIdentifier id = new SimpleIdentifier(Allocatable.TYPE, intId);
             	Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
             	Allocatable foundAlloc = null; 
             	for ( Allocatable alloc:selectedAllocatables)
             	{
             		@SuppressWarnings("unchecked")
                     RefEntity<Allocatable> refEntity = (RefEntity<Allocatable>)alloc;
-                    if (refEntity.getId().equals( id))
+                    if (refEntity.getId().equals( allocatableId))
             		{
             			foundAlloc = alloc;
             			break;
@@ -134,7 +121,7 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
             	}
             	else
             	{
-            		String message = "404 allocatable with id " + intId + " not found for calendar " + user + "/" + filename  ;
+            		String message = "404 allocatable with id '" + allocatableId + "' not found for calendar " + user + "/" + filename  ;
         			write404(response, message);
                 	return;
             	}

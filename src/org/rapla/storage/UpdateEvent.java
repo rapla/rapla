@@ -27,7 +27,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     private LinkedHashMap<Object,RefEntity<?>> storeSet = new LinkedHashMap<Object,RefEntity<?>>();
     private LinkedHashMap<Object,RefEntity<?>> referenceSet = new LinkedHashMap<Object,RefEntity<?>>();
     
-    private Comparable userId;
+    private String userId;
     private long repositoryVersion;
     
     private boolean needResourcesRefresh = false;
@@ -39,10 +39,10 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     public UpdateEvent() {
     }
     
-    public void setUserId( Comparable userId) {
+    public void setUserId( String userId) {
         this.userId = userId;
     }
-    public Comparable getUserId() {
+    public String getUserId() {
         return userId;
     }
     

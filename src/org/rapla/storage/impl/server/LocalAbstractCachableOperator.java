@@ -73,7 +73,6 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
@@ -151,8 +150,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	
-	public Comparable[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
-        Comparable[] ids = new SimpleIdentifier[ count];
+	public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
+        String[] ids = new String[ count];
         synchronized ( idTable) {
         	for ( int i=0;i<count;i++)
             {
@@ -582,7 +581,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Collection<RefEntity<?>> updatedEntities = new LinkedHashSet<RefEntity<?>>();
 		Collection<RefEntity<?>> toRemove  = new LinkedHashSet<RefEntity<?>>();
 		TimeInterval invalidateInterval = null;
-		Comparable userId = null;
+		String userId = null;
 		UpdateResult result = createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		//Date today = getCurrentTimestamp();
 		Date today = today();
@@ -1298,7 +1297,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					{
 						{
 							RefEntity<?> original = (RefEntity<?>)reservation;
-							Comparable id = original.getId();
+							String id = original.getId();
 							if ( id == null )
 							{
 								logger.error( "Empty id  for " + original);
@@ -1321,7 +1320,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 						}
 						{
 							RefEntity<?> original = (RefEntity<?>)app;
-							Comparable id = original.getId();
+							String id = original.getId();
 							if ( id == null )
 							{
 								logger.error( "Empty id  for " + original);

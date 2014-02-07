@@ -25,7 +25,6 @@ import net.fortuna.ical4j.model.ValidationException;
 
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -45,7 +44,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
     }
 
     
-    public void export(SimpleIdentifier[] appointmentIds, OutputStream out ) throws RaplaException, IOException 
+    public void export(String[] appointmentIds, OutputStream out ) throws RaplaException, IOException 
     {
         TimeZone timeZone = getContext().lookup( TimeZoneConverter.class).getImportExportTimeZone();
 		Export2iCalConverter converter = new Export2iCalConverter(getContext(),timeZone, null, config);
@@ -55,7 +54,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
         }
         EntityResolver operator = (EntityResolver) getClientFacade().getOperator();
         Collection<Appointment> appointments = new ArrayList<Appointment>();
-        for ( SimpleIdentifier id:appointmentIds)
+        for ( String id:appointmentIds)
         {
         	Appointment app = (Appointment) operator.resolve( id );
         	appointments.add( app );
@@ -76,8 +75,9 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
             }
        
     }
-
-	public String export( SimpleIdentifier[] appointmentIds) throws RaplaException
+    
+    @Override
+	public String export( String[] appointmentIds) throws RaplaException
     {
     	ByteArrayOutputStream out = new ByteArrayOutputStream();
     	try {

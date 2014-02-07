@@ -41,7 +41,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -155,11 +154,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 	}
 	 
-	protected SimpleIdentifier readId(ResultSet rset, int column, Class<? extends Entity> class1) throws SQLException, RaplaException {
+	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1) throws SQLException, RaplaException {
 		return readId(rset, column, class1, false);
 	}
 
-	protected SimpleIdentifier readId(ResultSet rset, int column, Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
+	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
 		RaplaType type = RaplaType.get( class1);
 		Integer id = rset.getInt( column );
 		if ( rset.wasNull() || id == null )
@@ -170,7 +169,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			}
 			throw new RaplaException("Id can't be null for " + tableName);
 		}
-		return new SimpleIdentifier( type,id);
+		return  type.getId(id);
 	}
     
 	protected <S extends RaplaObject> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
@@ -182,7 +181,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			return null;
 		}
 		try {
-			RefEntity<?> resolved = resolve( new SimpleIdentifier( type,id));
+			RefEntity<?> resolved = resolve(type.getId(id));
 			@SuppressWarnings("unchecked")
 			S casted = (S) resolved;
 			return casted;
@@ -638,10 +637,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     
 
     public static int getId(RefEntity<?> entity) {
-    	return ((SimpleIdentifier) entity.getId()).getKey();
+    	String id = (String) entity.getId();
+		return RaplaType.parseId(id);
     }
 
-    public void loadAll() throws SQLException,RaplaException {
+	public void loadAll() throws SQLException,RaplaException {
 	    Statement stmt = null;
         ResultSet rset = null;
         try {
@@ -822,7 +822,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.getDynamicType( typeKey);
     }
 
-    protected RefEntity<?> resolve( Comparable id) throws EntityNotFoundException
+    protected RefEntity<?> resolve( String id) throws EntityNotFoundException
     {
         return entityStore.resolve( id);
     }
@@ -836,7 +836,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.getSuperCategory();
     }
     
-    protected RefEntity<?> get( Comparable id )
+    protected RefEntity<?> get( String id )
     {
     	if ( id == null)
     	{

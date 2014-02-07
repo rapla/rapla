@@ -85,6 +85,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbrm.RemoteJsonStorage;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
@@ -154,6 +155,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( ClientFacade.class, facade );
         addContainerProvidedComponent( SecurityManager.class, SecurityManager.class );
         addRemoteMethodFactory( RemoteStorage.class,RemoteStorageImpl.class);
+        addRemoteJsonFactory(RemoteJsonStorage.class, RemoteJsonStorageImpl.class, null);
         addContainerProvidedComponentInstance( REMOTE_METHOD_FACTORY, this, RemoteServer.class.getName() );
         // adds 5 basic pages to the webapplication
         addWebpage( "server",RaplaStatusPageGenerator.class);

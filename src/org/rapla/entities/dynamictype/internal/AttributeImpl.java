@@ -36,7 +36,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
 
@@ -76,6 +75,23 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 
     final public RaplaType<Attribute> getRaplaType() {return TYPE;}
 
+    public RaplaType getRefType() {
+    	if (type == null)
+    	{
+    		return null;
+    	}
+    	if ( type.equals(AttributeType.CATEGORY))
+		{
+			return Category.TYPE;
+		}
+		else if ( type.equals( AttributeType.ALLOCATABLE))
+		{
+			return Allocatable.TYPE;
+		}
+		return null;
+	}
+
+    
     public AttributeType getType() {
         return type;
     }
@@ -126,9 +142,9 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         	{
         		referenceHandler.put(refID,(RefEntity<?>)constraint);
         	}
-        	else if ( constraint instanceof SimpleIdentifier)
+        	else if ( constraint instanceof String)
         	{
-        		referenceHandler.putId(refID,(SimpleIdentifier)constraint);
+        		referenceHandler.putId(refID,(String)constraint);
         	}
         }
 	}

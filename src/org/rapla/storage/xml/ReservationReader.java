@@ -30,7 +30,7 @@ import org.rapla.framework.RaplaException;
 
 public class ReservationReader extends RaplaXMLReader {
     ReservationImpl reservation;
-    private Comparable allocatableId = null;
+    private String allocatableId = null;
     private AppointmentImpl appointment = null;
     private Repeating repeating = null;
     
@@ -148,7 +148,7 @@ public class ReservationReader extends RaplaXMLReader {
         if (localName.equals("allocate")) {
             String id = getString( atts, "idref" );
             allocatableId = getId( Allocatable.TYPE, id);
-            reservation.getReferenceHandler().addId( allocatableId );
+            reservation.getReferenceHandler().addId("resources", allocatableId );
             if ( appointment != null )
             {
                 reservation.addRestrictionForId( allocatableId, appointment);

@@ -70,7 +70,7 @@ public class SecurityManager
         boolean permitted = false;
         RefEntity<?> original;
 		try {
-			Comparable id2 = entity.getId();
+			String id2 = entity.getId();
 			original = operator.resolve(id2);
 		} catch (EntityNotFoundException e) {
 			original = null;

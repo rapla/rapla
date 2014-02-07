@@ -44,7 +44,6 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.SimpleIdentifier;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -72,11 +71,12 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 	
 	public ICalImport createService(final RemoteSession remoteSession) {
         return new ICalImport() {
-            public Integer[] importICal(String content, boolean isURL, SimpleIdentifier[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
+        	@Override
+            public Integer[] importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
                     if ( allocatableIds.length > 0)
                     {
-                        for ( SimpleIdentifier id:allocatableIds)
+                        for ( String id:allocatableIds)
                         {
                             Allocatable allocatable = getAllocatable(id);
                             allocatables.add ( allocatable);
@@ -89,7 +89,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
         };
 	}
 	    
-	private Allocatable getAllocatable( final SimpleIdentifier id)  throws EntityNotFoundException
+	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
 	    AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
 	    final RefEntity<?> refEntity = operator.resolve( id);
