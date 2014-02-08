@@ -25,7 +25,9 @@ import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,6 +39,7 @@ import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleIdentifier;
@@ -696,6 +699,50 @@ public class RemoteMethodSerialization extends RaplaComponent
 		return result;
 	}
 	
+	static public Integer[][] serializeBindings(Appointment[] appointments,	Collection<Allocatable> allocatables,Map<Allocatable, Collection<Appointment>> bindings) {
+		Integer[][] result = new Integer[allocatables.size()][];
+		int i=0;
+	    for ( Allocatable alloc: allocatables)
+	    {
+	    	Collection<Appointment> apps = bindings.get(alloc);
+	    	if ( apps == null)
+	    	{
+	    		apps = Collections.emptyList();
+	    	}
+	    	Integer[] indexArray = new Integer[apps.size()];
+	    	int index = 0;
+	    	for ( Appointment app: apps)
+	    	{
+	        	for ( int j=0;j<appointments.length;j++)
+	        	{
+	        		if (appointments[j].equals(app ))
+	        		{
+	        			indexArray[index++] = j;
+	        		}
+	        	}
+	    	}
+	    	result[i] = indexArray;
+	    	i++;
+	    }
+		return result;
+	}
+
+	public static Map<Allocatable, Collection<Appointment>> deserializeBinding(Appointment[] appointments,Collection<Allocatable> allocatables, Integer[][] bindings) {
+		HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
+		int allocNumber = 0;
+		for ( Allocatable alloc:allocatables)
+		{
+			Integer[] bindingsAlloc = bindings[allocNumber++];
+			Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
+			for ( Integer binding:bindingsAlloc)
+			{
+				appointmentBinding.add( appointments[binding]);
+			}
+			result.put( alloc, appointmentBinding);
+		}
+		return result;
+	}
+
 	public static String escape(String string)
 	{
 		String result = string.replaceAll("(,|\\\\|\\{|\\})", "\\\\$1");

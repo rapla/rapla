@@ -75,6 +75,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.dbrm.EntityList;
+import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -1048,32 +1049,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			public Integer[][] getFirstAllocatableBindings(SimpleIdentifier[] allocatableIds, Appointment[] appointments,SimpleIdentifier[] ignoreList) throws RaplaException
 			{
                 checkAuthentified();
-                Integer[][] result = new Integer[allocatableIds.length][];
         		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         		Collection<Reservation> ignoreConflictsWith = resolveReservations(ignoreList);
                 Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, Arrays.asList(appointments), ignoreConflictsWith);
-                for ( int i=0;i<result.length;i++)
-                {
-                	Allocatable alloc = allocatables.get( i);
-                	Collection<Appointment> apps = bindings.get(alloc);
-                	if ( apps == null)
-                	{
-                		apps = Collections.emptyList();
-                	}
-                	Integer[] indexArray = new Integer[apps.size()];
-                	int index = 0;
-                	for ( Appointment app: apps)
-                	{
-                    	for ( int j=0;j<appointments.length;j++)
-                    	{
-                    		if (appointments[j].equals(app ))
-                    		{
-                    			indexArray[index++] = j;
-                    		}
-                    	}
-                	}
-                	result[i] = indexArray;
-                }
+                Integer[][] result = RemoteMethodSerialization.serializeBindings(appointments, allocatables, bindings);
             	return result;
 			}
 			

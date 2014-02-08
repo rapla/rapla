@@ -901,18 +901,7 @@ public class RemoteOperator
     	SimpleIdentifier[] reservationIds = getIdList(ignoreList);
 		Appointment[] appointmentArray = appointments.toArray( Appointment.EMPTY_ARRAY);
 		Integer[][] bindings = serv.getFirstAllocatableBindings(allocatableIds, appointmentArray , reservationIds);
-		HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
-		int allocNumber = 0;
-		for ( Allocatable alloc:allocatables)
-		{
-			Integer[] bindingsAlloc = bindings[allocNumber++];
-			Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
-			for ( Integer binding:bindingsAlloc)
-			{
-				appointmentBinding.add( appointmentArray[binding]);
-			}
-			result.put( alloc, appointmentBinding);
-		}
+		Map<Allocatable, Collection<Appointment>> result = RemoteMethodSerialization.deserializeBinding(appointmentArray, allocatables, bindings);
 		return result;
 	}
 
