@@ -172,11 +172,14 @@ Definition as published by the Open Source Initiative (OSI).
         <property name="webapp.dir" value="${build.dir}/war" />
         <property name="keystore.file" value="${main.dir}/testkeystore" />
        	<property name="keystore.password" value="secret" />
+        <property name="keystore.keypass" value="${keystore.password}" />
+       	
         <property name="application.name" value="Rapla" />
         <property name="main.lib" value="rapla-${doc.version}.jar" />
     	<property name="main.client.lib" value="raplaclient.jar" /> 	       
         <property name="target" value="dist-bin" />
         <available file="${keystore.file}" property="keystore.present" />
+        
         <condition property="permissions.client" value="all-permissions" else="sandbox">
             <available file="${keystore.file}"/>
         </condition>
@@ -330,33 +333,43 @@ Definition as published by the Open Source Initiative (OSI).
         </condition>
     </target>
 	
-	<target name="check-svn-entries" depends="init">
-	  <available file="${basedir}/.svn" property="svn.entries.present"/>
-	  <echo message="SVN present ${svn.entries.present}"/>
-	</target>
-	
-	<target name="revision-number" depends="check-svn-entries" if="svn.entries.present">
+    
+  	<available file="${basedir}/.svn" property="svn.entries.present"/>
+    <available file="${basedir}/.git" type="dir" property="git.present"/>
+	<target name="svn.revision" if="svn.entries.present">
       <delete file="${temp.dir}/svninfo.xml"/>
 	  <exec executable="svn" output="${temp.dir}/svninfo.xml" failifexecutionfails="false" logerror="false" searchpath="true" resolveexecutable="true">
           <arg line="info --xml" />
       </exec>
       <xmlproperty file="${temp.dir}/svninfo.xml" collapseattributes="true" />
     </target>
-
-    <target name="revision-number-filter1" depends="check-svn-entries,revision-number" if="info.entry.commit.revision">
+	<target name="git.revision" if="git.present">
+	    <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" logerror="false" searchpath="true" resolveexecutable="true" errorproperty="">
+	        <arg value="describe"/>
+	        <arg value="--tags"/>
+	        <arg value="--always"/>
+	        <arg value="HEAD"/>
+	    </exec>
+	    <condition property="info.entry.commit.revision" value="${git.revision}" else="unknown">
+	        <and>
+	            <isset property="git.revision"/>
+	            <length string="${git.revision}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+	</target>
+    <target name="revision-number-filter1" depends="svn.revision,git.revision" if="info.entry.commit.revision">
       <filterset id="revisionfilter">
             <filter token="doc.revision" value="${info.entry.commit.revision}" />
        </filterset>
 	</target>
 
-    <target name="revision-number-filter2" depends="check-svn-entries,revision-number" unless="info.entry.commit.revision">
+    <target name="revision-number-filter2" depends="svn.revision,git.revision" unless="info.entry.commit.revision">
 		<filterset id="revisionfilter">
             <filter token="doc.revision" value="-" />
        </filterset>
     </target>
-	    
-	<target name="compile-resources"  unless="resources.notrequired" description="Generate and compile the RaplaResources" depends="check-svn-entries,revision-number,revision-number-filter1,revision-number-filter2,resources-check,compile">
-	 
+	
+	<target name="compile-resources"  unless="resources.notrequired" description="Generate and compile the RaplaResources" depends="svn.revision,git.revision,revision-number-filter1,revision-number-filter2,resources-check,compile">
         <echo message="generating Resourcefiles" />
         <java classname="org.rapla.components.xmlbundle.impl.ResourceFileGenerator" failonerror="true" fork="yes">
             <arg value="${src.dir}" />
@@ -578,6 +591,7 @@ Definition as published by the Open Source Initiative (OSI).
 	   <signjar
         alias="rapla" keystore="${keystore.file}"
         storepass="${keystore.password}"
+        keypass="${keystore.keypass}"
         lazy="true"
         >
       <path>
