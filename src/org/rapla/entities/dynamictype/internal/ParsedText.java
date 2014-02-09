@@ -4,6 +4,7 @@
 package org.rapla.entities.dynamictype.internal;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -242,6 +243,10 @@ public class ParsedText implements Serializable {
 		{
 			return new IfFunction(args);
 		}
+		if ( functionName.equals("equals"))
+		{
+			return new EqualsFunction(args);
+		}
 		else
 		{
 			 throw new IllegalAnnotationException("Unknown function '"+ functionName + "'" );
@@ -333,21 +338,21 @@ public class ParsedText implements Serializable {
 		}
 
 		private void testMethod() throws IllegalAnnotationException {
-//			Method method;
-//			try {
-//				Class<? extends Function> class1 = arg.getClass();
-//				method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//			} catch (Exception e) {
-//				String message = e.getMessage();
-//				throw new IllegalAnnotationException( "Could not parse method for internal error : " + message);
-//			}
-//			if ( !method.getReturnType().isAssignableFrom(Attribute.class))
-//			{
-//				if ( !method.getReturnType().isAssignableFrom(Category.class))
-//				{
-//					throw new IllegalAnnotationException("Key Function expects an attribute variable or a function which returns a category");
-//				}
-//			}
+			Method method;
+			try {
+				Class<? extends Function> class1 = arg.getClass();
+				method = class1.getMethod("eval", new Class[] {EvalContext.class});
+			} catch (Exception e) {
+				String message = e.getMessage();
+				throw new IllegalAnnotationException( "Could not parse method for internal error : " + message);
+			}
+			if ( !method.getReturnType().isAssignableFrom(Attribute.class))
+			{
+				if ( !method.getReturnType().isAssignableFrom(Category.class))
+				{
+					throw new IllegalAnnotationException("Key Function expects an attribute variable or a function which returns a category");
+				}
+			}
 		}
 
 		@Override
@@ -449,20 +454,20 @@ public class ParsedText implements Serializable {
 		}
 
 		private void testMethod() throws IllegalAnnotationException {
-//			Method method;
-//			try {
-//				Class<? extends Function> class1 = arg.getClass();
-//				method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//			} catch (Exception e) {
-//				throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
-//			}
-//			if ( !method.getReturnType().isAssignableFrom(Attribute.class))
-//			{
-//				if ( !method.getReturnType().isAssignableFrom(Category.class))
-//				{
-//					throw new IllegalAnnotationException("Parent Function expects an attribute variable or a function which returns a category");
-//				}
-//			}
+			Method method;
+			try {
+				Class<? extends Function> class1 = arg.getClass();
+				method = class1.getMethod("eval", new Class[] {EvalContext.class});
+			} catch (Exception e) {
+				throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
+			}
+			if ( !method.getReturnType().isAssignableFrom(Attribute.class))
+			{
+				if ( !method.getReturnType().isAssignableFrom(Category.class))
+				{
+					throw new IllegalAnnotationException("Parent Function expects an attribute variable or a function which returns a category");
+				}
+			}
 		}
 
 		@Override
@@ -513,32 +518,32 @@ public class ParsedText implements Serializable {
 		}
 
 		private void testMethod() throws IllegalAnnotationException {
-//			{
-//				Method method;
-//				try {
-//					Class<? extends Function> class1 = start.getClass();
-//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//				} catch (Exception e) {
-//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
-//				}
-//				if ( !method.getReturnType().isAssignableFrom(Long.class))
-//				{
-//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as second argument");
-//				}
-//			}
-//			{
-//				Method method;
-//				try {
-//					Class<? extends Function> class1 = end.getClass();
-//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//				} catch (Exception e) {
-//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
-//				}
-//				if ( !method.getReturnType().isAssignableFrom(Long.class))
-//				{
-//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as third argument");
-//				}
-//			}
+			{
+				Method method;
+				try {
+					Class<? extends Function> class1 = start.getClass();
+					method = class1.getMethod("eval", new Class[] {EvalContext.class});
+				} catch (Exception e) {
+					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
+				}
+				if ( !method.getReturnType().isAssignableFrom(Long.class))
+				{
+					throw new IllegalAnnotationException( "Substring method expects a Long parameter as second argument");
+				}
+			}
+			{
+				Method method;
+				try {
+					Class<? extends Function> class1 = end.getClass();
+					method = class1.getMethod("eval", new Class[] {EvalContext.class});
+				} catch (Exception e) {
+					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
+				}
+				if ( !method.getReturnType().isAssignableFrom(Long.class))
+				{
+					throw new IllegalAnnotationException( "Substring method expects a Long parameter as third argument");
+				}
+			}
 		}
 
 		@Override
@@ -570,7 +575,6 @@ public class ParsedText implements Serializable {
 		}
 	}
 
-	
 	class IfFunction extends Function
 	{
 		Function condition;
@@ -580,7 +584,7 @@ public class ParsedText implements Serializable {
 			super( "if", args);
 			if ( args.size() != 3)
 			{
-				throw new IllegalAnnotationException("If Function expects 3 argument!");
+				throw new IllegalAnnotationException("if function expects 3 argument!");
 			}
 			condition = args.get(0);
 			conditionTrue = args.get(1);
@@ -589,46 +593,70 @@ public class ParsedText implements Serializable {
 		}
 
 		private void testMethod() throws IllegalAnnotationException {
-//			{
-//				Method method;
-//				try {
-//					Class<? extends Function> class1 = start.getClass();
-//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//				} catch (Exception e) {
-//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
-//				}
-//				if ( !method.getReturnType().isAssignableFrom(Long.class))
-//				{
-//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as second argument");
-//				}
-//			}
-//			{
-//				Method method;
-//				try {
-//					Class<? extends Function> class1 = end.getClass();
-//					method = class1.getMethod("eval", new Class[] {EvalContext.class});
-//				} catch (Exception e) {
-//					throw new IllegalAnnotationException( "Could not parse method for internal error : " + e.getMessage());
-//				}
-//				if ( !method.getReturnType().isAssignableFrom(Long.class))
-//				{
-//					throw new IllegalAnnotationException( "Substring method expects a Long parameter as third argument");
-//				}
-//			}
 		}
 
 		@Override
 		public Object eval(EvalContext context) 
 		{
 			Object condResult =condition.eval( context);
-			String stringResult = ParsedText.this.toString( condResult, context);
-			boolean isTrue = Boolean.parseBoolean(stringResult);
+			Object resultCond = ParsedText.this.getValue( condResult, context);
+			boolean isTrue;
+			if ( resultCond != null)
+			{
+				isTrue = Boolean.parseBoolean(resultCond.toString());
+			} 
+			else 
+			{
+				isTrue  = false;
+			}
 			Function resultFunction = isTrue ? conditionTrue : conditionFalse;
 			Object result = resultFunction.eval(context);
 			return result;
 		}
 	}
 
+	
+	class EqualsFunction extends Function
+	{
+		Function arg1;
+		Function arg2;
+		public EqualsFunction( List<Function> args) throws IllegalAnnotationException {
+			super( "equals", args);
+			if ( args.size() != 2)
+			{
+				throw new IllegalAnnotationException("equals function expects 2 argument!");
+			}
+			arg1 = args.get(0);
+			arg2 = args.get(1);
+			testMethod();
+		}
+
+		private void testMethod() throws IllegalAnnotationException {
+			
+		}
+
+		@Override
+		public Boolean eval(EvalContext context) 
+		{
+			Object evalResult1 = arg1.eval( context);
+			Object evalResult2 =arg2.eval( context);
+			if ( evalResult1 == null || evalResult2 == null)
+			{
+				return evalResult1 == evalResult2;
+			}
+			return evalResult1.equals( evalResult2);
+		}
+	}
+	private Object getValue(Object result, EvalContext context)
+	{
+		if ( result instanceof Attribute)
+		{
+			Attribute attribute = (Attribute) result;
+			Classification classification = context.getClassification();
+			return classification.getValue(attribute);
+		}
+		return result;
+	}
 	
 	private String toString(Object result, EvalContext context) {
 		if ( result == null)

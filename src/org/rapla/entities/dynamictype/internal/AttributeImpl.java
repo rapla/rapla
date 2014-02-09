@@ -587,18 +587,26 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 	        return DateTools.formatDate((Date) value, locale);
 	    }
 	     if (value instanceof Boolean) {
-	    	 String language = locale.getLanguage();
-	    	 if ( (Boolean) value)
-	    	 {
-				return TRUE_TRANSLATION.getName( language);
-	    	 }
-	    	 else
-	    	 {
-	    		 return FALSE_TRANSLATION.getName( language);
-	    	 }
+	    	 return getBooleanTranslation(locale, (Boolean) value);
 	    } else {
 	        return value.toString();
 	    }	
+	}
+
+	public static String getBooleanTranslation(Locale locale, Boolean value) {
+		if (locale == null)
+		 {
+			 locale = Locale.getDefault();
+		 }
+		 String language = locale.getLanguage();
+		 if ( (Boolean) value)
+		 {
+			return TRUE_TRANSLATION.getName( language);
+		 }
+		 else
+		 {
+			 return FALSE_TRANSLATION.getName( language);
+		 }
 	}
     
 

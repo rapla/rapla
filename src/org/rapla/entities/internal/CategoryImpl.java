@@ -176,6 +176,10 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public String getName(Locale locale) {
+    	if ( locale == null)
+    	{
+    		locale = Locale.getDefault();
+    	}
         return name.getName(locale.getLanguage());
     }
 
