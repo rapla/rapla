@@ -35,7 +35,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     private long version = 0;
 
     protected ReferenceHandler subEntityHandler;
-    ReferenceHandler referenceHandler = new ReferenceHandler();
+    ReferenceHandler references = new ReferenceHandler();
 
     transient boolean readOnly = false;
     transient Integer key;
@@ -54,7 +54,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     }
 
     public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        referenceHandler.resolveEntities( resolver);
+        references.resolveEntities( resolver);
         if ( subEntityHandler != null)
         {
         	subEntityHandler.resolveEntities( resolver );
@@ -73,21 +73,21 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     }
 
     public User getOwner() {
-        return (User) referenceHandler.get("owner");
+        return (User) references.get("owner");
     }
 
     @SuppressWarnings("unchecked")
 	public void setOwner(User owner) {
-        referenceHandler.put("owner",(RefEntity<User>)owner);
+        references.put("owner",(RefEntity<User>)owner);
     }
     
 	public User getLastChangedBy() {
-		return (User) referenceHandler.get("last_changed_by");
+		return (User) references.get("last_changed_by");
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setLastChangedBy(User user) {
-        referenceHandler.put("last_changed_by",(RefEntity<User>)user);
+        references.put("last_changed_by",(RefEntity<User>)user);
 	}
 
 
@@ -104,7 +104,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     }
 
     public ReferenceHandler getReferenceHandler() {
-        return referenceHandler;
+        return references;
     }
 
     protected ReferenceHandler getSubEntityHandler() {
@@ -221,7 +221,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
 	static private <T> void copy(SimpleEntity<T> source,SimpleEntity<T> dest,boolean deepCopy) {
         Assert.isTrue(source != dest,"can't copy the same object");
 
-        dest.referenceHandler = (ReferenceHandler) source.referenceHandler.clone();
+        dest.references = (ReferenceHandler) source.references.clone();
 
         ArrayList<RefEntity<?>> newSubEntities = new ArrayList<RefEntity<?>>();
         for (RefEntity<?> entity: source.getSubEntities())

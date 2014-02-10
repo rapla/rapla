@@ -25,14 +25,10 @@
 	<classpathentry exported="true" kind="lib" path="lib/common/super-csv-2.0.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/server/ical4j-1.0.5.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/server/backport-util-concurrent-3.1.jar">
-	    <accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<!-- 
-	<classpathentry exported="true" kind="lib" path="lib/server/ical4j-1.0.4.jar"/>
-	-->
-	
 	<classpathentry kind="lib" path="lib/ext/hsqldb-2.3.1.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
@@ -44,16 +40,6 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/server/gson-2.2.4.jar">
-		<accessrules>
-			<accessrule kind="discouraged" pattern="**"/>
-		</accessrules>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/server/gwtjsonrpc-1.4-SNAPSHOT.jar" exported="true">
-		<accessrules>
-			<accessrule kind="discouraged" pattern="**"/>
-		</accessrules>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/server/gwtjsonrpc-1.4-SNAPSHOT-sources.jar" exported="true">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
@@ -89,17 +75,17 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/logback-access-1.0.13.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/commons-compiler-2.7.0.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/janino-2.7.0.jar">
-			<accessrules>
+		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>

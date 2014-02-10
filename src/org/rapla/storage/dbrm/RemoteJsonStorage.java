@@ -17,8 +17,7 @@ import java.util.List;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaException;
+import org.rapla.entities.internal.UserImpl;
 
 import com.google.gwtjsonrpc.common.AllowCrossSiteRequest;
 import com.google.gwtjsonrpc.common.AsyncCallback;
@@ -26,5 +25,5 @@ import com.google.gwtjsonrpc.common.RemoteJsonService;
 @WebService
 public interface RemoteJsonStorage extends RemoteJsonService{
 	@AllowCrossSiteRequest
-	void getUsers(@WebParam(name="username")String username,AsyncCallback<List<User>> callback) throws RaplaException;
+	void getUsers(@WebParam(name="username")String username,AsyncCallback<UserImpl[]> callback);
 }

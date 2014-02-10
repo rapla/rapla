@@ -7,7 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
-import org.rapla.server.jsonrpc.JsonServlet;
+
+import com.google.gwtjsonrpc.server.JsonServlet;
 
 
 public interface RemoteServiceDispatcher {

@@ -33,7 +33,7 @@ public class UserImpl extends SimpleEntity<User> implements User
     private String username = "";
     private String email = "";
     private String name = "";
-    private boolean bAdmin = false;
+    private boolean admin = false;
 
     transient private boolean groupArrayUpToDate = false;
     // The resolved references
@@ -41,7 +41,7 @@ public class UserImpl extends SimpleEntity<User> implements User
 
     final public RaplaType<User> getRaplaType() {return TYPE;}
 
-    public boolean isAdmin() {return bAdmin;}
+    public boolean isAdmin() {return admin;}
     public String getName() 
     {
         final Allocatable person = getPerson();
@@ -107,7 +107,7 @@ public class UserImpl extends SimpleEntity<User> implements User
 
     public void setAdmin(boolean bAdmin)  {
         checkWritable();
-        this.bAdmin=bAdmin;
+        this.admin=bAdmin;
     }
 
     public String getName(Locale locale) 
@@ -185,7 +185,7 @@ public class UserImpl extends SimpleEntity<User> implements User
         dest.username = source.username;
         dest.name = source.name;
         dest.email = source.email;
-        dest.bAdmin = source.bAdmin;
+        dest.admin = source.admin;
     }
 
     @SuppressWarnings("unchecked")
@@ -257,6 +257,5 @@ public class UserImpl extends SimpleEntity<User> implements User
         final Allocatable person = (Allocatable) referenceHandler.get("person");
         return person;
     }
-
 
 }

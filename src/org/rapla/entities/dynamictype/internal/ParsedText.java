@@ -21,6 +21,8 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+
+import com.google.gwt.thirdparty.guava.common.annotations.GwtIncompatible;
 /** 
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
  * Also some functions like {substring(name,1,2)} are available for simple text processing  
@@ -334,9 +336,10 @@ public class ParsedText implements Serializable {
 				throw new IllegalAnnotationException("Key Function expects one argument!");
 			}
 			arg = args.get(0);
-			testMethod();
+			//testMethod();
 		}
 
+		@GwtIncompatible
 		private void testMethod() throws IllegalAnnotationException {
 			Method method;
 			try {
@@ -450,9 +453,10 @@ public class ParsedText implements Serializable {
 				throw new IllegalAnnotationException("Parent Function expects one argument!");
 			}
 			arg = args.get(0);
-			testMethod();
+			//testMethod();
 		}
 
+		@GwtIncompatible
 		private void testMethod() throws IllegalAnnotationException {
 			Method method;
 			try {
@@ -514,9 +518,10 @@ public class ParsedText implements Serializable {
 			content = args.get(0);
 			start = args.get(1);
 			end = args.get(2);
-			testMethod();
+			//testMethod();
 		}
 
+		@GwtIncompatible
 		private void testMethod() throws IllegalAnnotationException {
 			{
 				Method method;

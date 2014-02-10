@@ -66,7 +66,6 @@ import org.rapla.server.internal.RemoteServiceDispatcher;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ShutdownService;
-import org.rapla.server.jsonrpc.JsonServlet;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
@@ -76,6 +75,8 @@ import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodSerialization;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.WrongRaplaVersionException;
+
+import com.google.gwtjsonrpc.server.JsonServlet;
 public class MainServlet extends HttpServlet {
     private static final String RAPLA_JSON_PATH = "/rapla/json/";
     private static final String RAPLA_RPC_PATH = "/rapla/rpc/";

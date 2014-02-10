@@ -269,7 +269,6 @@ public class ReservationImpl extends SimpleEntity<Reservation> implements Reserv
             return;
         synchronized (this)
         {
-
 	        Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
     	    Collection<Allocatable> resourceList = new ArrayList<Allocatable>();
        		Collection<Allocatable> personList = new ArrayList<Allocatable>();

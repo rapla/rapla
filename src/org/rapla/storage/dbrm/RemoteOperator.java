@@ -962,9 +962,9 @@ public class RemoteOperator
 		try {
 			if ( obj instanceof ConflictImpl)
 			{
-				List<Comparable> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
-				List<Comparable> ids = new ArrayList<Comparable>();
-				for (Comparable refId:referencedIds)
+				List<String> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
+				List<String> ids = new ArrayList<String>();
+				for (String refId:referencedIds)
 				{
 					ids.add(  refId);
 				}

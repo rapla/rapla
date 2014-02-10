@@ -71,7 +71,6 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.jsonrpc.JsonServlet;
 import org.rapla.servletpages.DefaultHTMLMenuEntry;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
@@ -94,6 +93,7 @@ import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.server.JsonServlet;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:

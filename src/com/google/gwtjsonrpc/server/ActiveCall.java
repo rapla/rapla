@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.server.jsonrpc;
+package com.google.gwtjsonrpc.server;
 
 import java.util.HashMap;
 import java.util.Map;
