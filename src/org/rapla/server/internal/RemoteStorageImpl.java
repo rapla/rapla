@@ -38,6 +38,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -49,7 +50,8 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.Mementable;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -133,14 +135,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     }
 
 
-    private static EntityList makeTransactionSafe(Collection<? extends RefEntity<?>> objectList, long repositoryVersion) {
-        Collection<? extends RefEntity<?>> emptyList = Collections.emptyList();
+    private static EntityList createList(Collection<? extends Entity> objectList, long repositoryVersion) {
+        Collection<? extends Entity> emptyList = Collections.emptyList();
         EntityList saveList = new EntityList(emptyList, repositoryVersion);
-        Iterator<? extends RefEntity<?>> it = objectList.iterator();
+        Iterator<? extends Entity> it = objectList.iterator();
         while (it.hasNext()) {
-            @SuppressWarnings("unchecked")
-            Mementable<RefEntity<?>> mementable = (Mementable<RefEntity<?>>)it.next();
-            saveList.add((mementable.deepClone()));
+            saveList.add(it.next());
         }
         return saveList;
     }
@@ -151,13 +151,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         UpdateEvent saveEvent = new UpdateEvent();
         if ( user != null )
         {
-            saveEvent.setUserId( ( (RefEntity<?>) updateResult.getUser() ).getId() );
+            saveEvent.setUserId( updateResult.getUser().getId() );
         }
         {
             Iterator<UpdateResult.Add> it = updateResult.getOperations( UpdateResult.Add.class );
             while ( it.hasNext() )
             {
-                RefEntity<?> newEntity = (RefEntity<?>) (  it.next() ).getNew();
+                Entity newEntity = (Entity) (  it.next() ).getNew();
 				saveEvent.putStore( newEntity );
             }
         }
@@ -165,7 +165,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             Iterator<UpdateResult.Change> it = updateResult.getOperations( UpdateResult.Change.class );
             while ( it.hasNext() )
             {
-                RefEntity<?> newEntity = (RefEntity<?>) ( it.next() ).getNew();
+                Entity newEntity = (Entity) ( it.next() ).getNew();
 				saveEvent.putStore( newEntity );
             }
         }
@@ -173,17 +173,17 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             Iterator<UpdateResult.Remove> it = updateResult.getOperations( UpdateResult.Remove.class );
             while ( it.hasNext() )
             {
-                RefEntity<?> removeEntity = (RefEntity<?>) (it.next() ).getCurrent();
+                Entity removeEntity = (Entity) (it.next() ).getCurrent();
 				saveEvent.putRemove( removeEntity );
             }
         }
         return saveEvent;
     }
     
-    private Map<RefEntity<?>,Long> updateMap = new HashMap<RefEntity<?>,Long>();
+    private Map<Entity,Long> updateMap = new HashMap<Entity,Long>();
     private Map<User,Long> needConflictRefresh = new HashMap<User,Long>();
     private Map<User,Long> needResourceRefresh = new HashMap<User,Long>();
-    private Map<RefEntity<?>,Long> removeMap = new HashMap<RefEntity<?>,Long>();
+    private Map<Entity,Long> removeMap = new HashMap<Entity,Long>();
     private SortedMap<Long, TimeInterval> invalidateMap = new TreeMap<Long,TimeInterval>();
    
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -223,9 +223,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent( evt );
 	        if ( getLogger().isDebugEnabled() )
 	            getLogger().debug( "Storage was modified. Calling notify." );
-	        for ( Iterator<RefEntity<?>> it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
+	        for ( Iterator<Entity>it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
 	        {
-	            RefEntity<?> obj = it.next();
+	            Entity obj = it.next();
 	        	RaplaType<?> raplaType = obj.getRaplaType();
 	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
 	        	{
@@ -235,9 +235,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	            updateMap.remove( obj );
 	            updateMap.put( obj, new Long( repositoryVersion ) );
 	        }
-	        for ( Iterator<RefEntity<?>> it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
+	        for ( Iterator<Entity>it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
 	        {
-	            RefEntity<?> obj =  it.next();
+	            Entity obj =  it.next();
 	        	RaplaType<?> raplaType = obj.getRaplaType();
 	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
 	        	{
@@ -440,10 +440,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         try
         {
  	    	{
-                RefEntity<?>[] keys = updateMap.keySet().toArray(new RefEntity[] {});
+                Entity[] keys = updateMap.keySet().toArray(new Entity[] {});
                 for ( int i=0;i<keys.length;i++)
                 {
-                    RefEntity<?> key = keys[i];
+                    Entity key = keys[i];
                     Long lastVersion =  updateMap.get( key );
                     if ( lastVersion.longValue() <= cleanupPointVersion )
                     {
@@ -452,10 +452,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
             {
-                RefEntity<?>[] keys = removeMap.keySet().toArray(new RefEntity[] {});
+                Entity[] keys = removeMap.keySet().toArray(new Entity[] {});
                 for ( int i=0;i<keys.length;i++)
                 {
-                    RefEntity<?> key = keys[i];
+                    Entity key = keys[i];
                     Long lastVersion = removeMap.get( key );
                     if ( lastVersion.longValue() <= cleanupPointVersion )
                     {
@@ -509,8 +509,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 User user = getSessionUser();
                 getLogger().debug ("A RemoteServer wants to get all resource-objects.");
                 {
-                    Collection<RefEntity<?>> visibleEntities = operator.getVisibleEntities(user);
-                    EntityList resources = makeTransactionSafe(visibleEntities, repositoryVersion);
+                    Collection<Entity>visibleEntities = operator.getVisibleEntities(user);
+                    EntityList resources = createList(visibleEntities, repositoryVersion);
                     return resources;
                 }
             }
@@ -520,10 +520,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 User sessionUser = getSessionUser();
                 //synchronized (operator.getLock()) 
                 {
-                    ArrayList<RefEntity<?>> completeList = new ArrayList<RefEntity<?>>();
+                    ArrayList<Entity>completeList = new ArrayList<Entity>();
 	                for ( String id:ids)
                 	{
-	                    RefEntity<?> entity = operator.resolve(id);
+	                    Entity entity = operator.resolve(id);
 	                    if ( entity.getRaplaType() == Reservation.TYPE)
                     	{
                     		checkAndMakeReservationsAnonymous(sessionUser,	entity);
@@ -532,12 +532,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    completeList.add( entity );
 	                    getLogger().debug("Get entity " + entity);
 	                    // FIXME check if the client has the permission to read the entity
-	                    for (RefEntity<?> ref:entity.getSubEntities())
-	                    {
-	                        completeList.add( ref );
-	                    }
+//	                    Iterable<Entity>subEntities = entity.getSubEntities();
+//						for (Entity ref:subEntities)
+//	                    {
+//	                        completeList.add( ref );
+//	                    }
                 	}
-                    EntityList list = makeTransactionSafe( completeList, repositoryVersion);
+                    EntityList list = createList( completeList, repositoryVersion);
                     return list;
                 }
             }
@@ -550,11 +551,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
                 {
                 	// Reservations and appointments
-                    ArrayList<RefEntity<?>> completeList = new ArrayList<RefEntity<?>>();
+                    ArrayList<Entity> completeList = new ArrayList<Entity>();
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
                     for ( String id:allocatableIds)
                     {
-                    	RefEntity<?> entity = operator.resolve(id);
+                    	Entity entity = operator.resolve(id);
                     	Allocatable allocatable = (Allocatable) entity;
 	                    security.checkRead(sessionUser, entity);
 						allocatables.add( allocatable);
@@ -565,19 +566,20 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                     	if (isAllocatablesVisible(sessionUser, res))
                 		{
-                        	completeList.add( (RefEntity<?>) res);
+                        	completeList.add( (Entity) res);
                 		}
                     	
                     }
                     for (Reservation r:reservations)
                     {
-                        for (RefEntity<?> appointments:((RefEntity<?>)r).getSubEntities())
+                    	Iterable<Entity>subEntities = ((ParentEntity)r).getSubEntities();
+                        for (Entity appointments:subEntities)
                         {
                             completeList.add( appointments);
                         }
                     }
-                    EntityList list = makeTransactionSafe( completeList, repositoryVersion );
-                    for ( RefEntity<?> entity:list)
+                    EntityList list = createList( completeList, repositoryVersion );
+                    for ( Entity entity:list)
                     {
                     	if ( entity.getRaplaType() == Reservation.TYPE)
                     	{
@@ -590,7 +592,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
 			private void checkAndMakeReservationsAnonymous(User sessionUser,
-					RefEntity<?> entity) {
+					Entity entity) {
 				ReservationImpl reservation =(ReservationImpl) entity;
 				boolean canReadFromOthers = facade.canReadReservationsFromOthers(sessionUser);
 				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser, canReadFromOthers);
@@ -642,7 +644,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				getLogger().info("Dispatching change for user " + sessionUser);
 				if ( sessionUser != null)
 				{
-					event.setUserId(((RefEntity<?>)sessionUser).getId());
+					event.setUserId(sessionUser.getId());
 				}
             	dispatch_( event);
                 getLogger().info("Change for user " + sessionUser + " dispatched.");
@@ -669,19 +671,16 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     }
                     operator.authenticate(username,new String(oldPassword));
                 }
-                @SuppressWarnings("unchecked")
-                RefEntity<User> user = (RefEntity<User>)operator.getUser(username);
+                User user = operator.getUser(username);
                 operator.changePassword(user,oldPassword.toCharArray(),newPassword.toCharArray());
             }
             
             public void changeName(String username,String newTitle,
                     String newSurename, String newLastname) throws RaplaException 
             {
-                @SuppressWarnings("unchecked")
-                RefEntity<User> changingUser = (RefEntity<User>)getSessionUser();
-                @SuppressWarnings("unchecked")
-                RefEntity<User> user = (RefEntity<User>)operator.getUser(username);
-                if ( changingUser.cast().isAdmin() || user.equals( changingUser) )
+                User changingUser = getSessionUser();
+                User user = operator.getUser(username);
+                if ( changingUser.isAdmin() || user.equals( changingUser) )
                 {
                     operator.changeName(user,newTitle,newSurename,newLastname);
                 }
@@ -695,11 +694,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             public void changeEmail(String username,String newEmail)
                     throws RaplaException 
             {
-                @SuppressWarnings("unchecked")
-                RefEntity<User> changingUser = (RefEntity<User>)getSessionUser();
-                @SuppressWarnings("unchecked")
-                RefEntity<User> user = (RefEntity<User>)operator.getUser(username);
-                if ( changingUser.cast().isAdmin() || user.equals( changingUser) )
+                User changingUser = getSessionUser();
+                User user = operator.getUser(username);
+                if ( changingUser.isAdmin() || user.equals( changingUser) )
                 {
                     operator.changeEmail(user,newEmail);
                 }
@@ -713,16 +710,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     throws RaplaException
             {
             	
-            	@SuppressWarnings("unchecked")
-                RefEntity<User> changingUser = (RefEntity<User>)getSessionUser();
-                @SuppressWarnings("unchecked")
-                RefEntity<User> user = (RefEntity<User>)operator.getUser(username);
-                if ( changingUser.cast().isAdmin() || user.equals( changingUser) )
+            	User changingUser = getSessionUser();
+                User user = operator.getUser(username);
+                if ( changingUser.isAdmin() || user.equals( changingUser) )
                 {
                 	String subject =  getString("security_code");
     			    Preferences prefs = operator.getPreferences( null, true );
-    				String mailbody = "" + getString("send_code_mail_body_1") + user.cast().getUsername() + ",\n\n" 
-    	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.cast().getEmail().hashCode()) 
+    				String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" 
+    	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.getEmail().hashCode()) 
     	        		+ "\n\n" + getString("send_code_mail_body_3") + "\n\n" + "-----------------------------------------------------------------------------------"
     	        		+ "\n\n" + getString("send_code_mail_body_4") + prefs.getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title")) + " "
     	        		+ getString("send_code_mail_body_5");
@@ -822,27 +817,27 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                         user = session.getUser();
                     }
-                    Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
+                    Collection<Entity>storeObjects = evt.getStoreObjects();
                     EntityStore resolver = new EntityStore(operator, operator.getSuperCategory());
             		resolver.addAll(storeObjects);
-                    for (RefEntity<?> entity:storeObjects) {
+                    for (Entity entity:storeObjects) {
                         if (getLogger().isDebugEnabled())
                             getLogger().debug("Contextualizing " + entity);
-                        entity.resolveEntities( resolver);
+                        ((EntityReferencer)entity).setResolver( resolver);
                     }
 
-                    Collection<RefEntity<?>> removeObjects = evt.getRemoveObjects();
+                    Collection<Entity>removeObjects = evt.getRemoveObjects();
                     resolver.addAll( removeObjects );
-					for ( RefEntity<?> entity:removeObjects)
+					for ( Entity entity:removeObjects)
                     {
-                        entity.resolveEntities( resolver);
+                        ((EntityReferencer)entity).setResolver( resolver);
                     }
 
-                    for (RefEntity<?> entity:storeObjects) 
+                    for (Entity entity:storeObjects) 
                     {
                         security.checkWritePermissions(user,entity);
                     }
-                    for ( RefEntity<?> entity:removeObjects)
+                    for ( Entity entity:removeObjects)
                     {
                     	security.checkWritePermissions(user,entity);
                     }
@@ -883,18 +878,18 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                safeResultEvent.setRepositoryVersion( currentVersion );
 	                if ( clientRepositoryVersion < currentVersion )
 	                {
-	                    for ( Iterator<RefEntity<?>> it = updateMap.keySet().iterator(); it.hasNext(); )
+	                    for ( Iterator<Entity>it = updateMap.keySet().iterator(); it.hasNext(); )
 	                    {
-	                        RefEntity<?> obj = it.next();
+	                        Entity obj = it.next();
 	                        Long lastVersion = updateMap.get( obj );
 	                        if ( lastVersion.longValue() > clientRepositoryVersion )
 	                        {
 	                        	processClientReadable( user, safeResultEvent, obj, false);
 	                        }
 	                    }
-	                    for ( Iterator<RefEntity<?>> it = removeMap.keySet().iterator(); it.hasNext(); )
+	                    for ( Iterator<Entity>it = removeMap.keySet().iterator(); it.hasNext(); )
 	                    {
-	                        RefEntity<?> obj =  it.next();
+	                        Entity obj =  it.next();
 	                        Long lastVersion = removeMap.get( obj );
 	                        if ( lastVersion.longValue() > clientRepositoryVersion )
 	                        {
@@ -930,7 +925,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             }
             
 			protected void processClientReadable(User user,
-					UpdateEvent safeResultEvent, RefEntity<?> obj, boolean remove) {
+					UpdateEvent safeResultEvent, Entity obj, boolean remove) {
 				boolean clientStore = true;
 				if (user != null )
 				{
@@ -959,13 +954,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				    		// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
 				    		if (!remove)
 				    		{
-				    			Set<RefEntity<?>> toAdd = new HashSet<RefEntity<?>>();
+				    			Set<Entity> toAdd = new HashSet<Entity>();
 								Appointment appointment1 = conflict.getAppointment1();
 								toAdd.addAll( getDependentObjects(appointment1));
 								Appointment appointment2 = conflict.getAppointment2();
 								toAdd.addAll( getDependentObjects(appointment2));
 								
-								for (RefEntity<?> entity:toAdd)
+								for (Entity entity:toAdd)
 								{
 									safeResultEvent.putReference( entity);
 								}
@@ -990,33 +985,33 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
 			}
 			
-			protected List<RefEntity<?>> getDependentObjects(
+			protected List<Entity>getDependentObjects(
 					Appointment appointment) {
-				List<RefEntity<?>> toAdd = new ArrayList<RefEntity<?>>();
-				toAdd.add( (RefEntity<?>)appointment);
+				List<Entity> toAdd = new ArrayList<Entity>();
+				toAdd.add( (Entity)appointment);
 				@SuppressWarnings("unchecked")
-				RefEntity<Reservation> reservation = (RefEntity<Reservation>)appointment.getReservation();
+				ReservationImpl reservation = (ReservationImpl)appointment.getReservation();
 				{
 					toAdd.add(reservation);
 					String id = reservation.getId();
-					RefEntity<?> inCache;
+					Entity inCache;
 					try {
 						inCache = operator.resolve( id);
 					} catch (EntityNotFoundException e) {
 						inCache = null;
 					}
-					if ( inCache != null && inCache.getVersion() > reservation.getVersion())
+					if ( inCache != null && ((RefEntity)inCache).getVersion() > reservation.getVersion())
 					{
-						getLogger().error("Try to send an older version of the reservation to the client " + reservation.cast().getName( raplaLocale.getLocale()));
+						getLogger().error("Try to send an older version of the reservation to the client " + reservation.getName( raplaLocale.getLocale()));
 					}
-					for (RefEntity<?> ref:reservation.getSubEntities())
+					for (Entity ref:reservation.getSubEntities())
 					{
 						toAdd.add( ref );
 					}
 				}
 				if (!toAdd.contains(appointment))
 				{
-					getLogger().error(appointment.toString() + " at " + raplaLocale.formatDate(appointment.getStart()) + " does refer to reservation " + reservation.cast().getName( raplaLocale.getLocale()) + " but the reservation does not refer back.");
+					getLogger().error(appointment.toString() + " at " + raplaLocale.formatDate(appointment.getStart()) + " does refer to reservation " + reservation.getName( raplaLocale.getLocale()) + " but the reservation does not refer back.");
 				}
 				return toAdd;
 			}
@@ -1041,17 +1036,17 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			
 			public EntityList getConflicts() throws RaplaException 
 			{
-            	Set<RefEntity<?>> completeList = new HashSet<RefEntity<?>>();
+            	Set<Entity>completeList = new HashSet<Entity> ();
             	User sessionUser = getSessionUser();
 				Collection<Conflict> conflicts = operator.getConflicts( sessionUser);
 				for ( Conflict conflict:conflicts)
 				{
-					RefEntity<?> conflictRef = (RefEntity<?>)conflict;
+					Entity conflictRef = (Entity)conflict;
 					completeList.add(conflictRef);
  					completeList.addAll( getDependentObjects(conflict.getAppointment1()));
  					completeList.addAll( getDependentObjects(conflict.getAppointment2()));
 				}
-				EntityList list = makeTransactionSafe( completeList, repositoryVersion );
+				EntityList list = createList( completeList, repositoryVersion );
                 return list;
 
             }
@@ -1102,7 +1097,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			public EntityList getAllAllocatableBindings(String[] allocatableIds, Appointment[] appointments, String[] reservationIds) throws RaplaException
 			{
                 checkAuthentified();
-                Set<RefEntity<?>> completeList = new HashSet<RefEntity<?>>();
+                Set<Entity>completeList = new HashSet<Entity>();
         		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
                 Collection<Reservation> ignoreList = resolveReservations(reservationIds);
 				Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, Arrays.asList(appointments), ignoreList);
@@ -1113,16 +1108,16 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     					for ( Appointment appointment: bound)
     					{
     						@SuppressWarnings("unchecked")
-    						RefEntity<Reservation> reservation = (RefEntity<Reservation>)appointment.getReservation();
+    						ReservationImpl reservation = (ReservationImpl)appointment.getReservation();
     						completeList.add(reservation);
-    						for (RefEntity<?> ref:reservation.getSubEntities())
+    						for (Entity ref:reservation.getSubEntities())
     						{
     							completeList.add( ref );
     						}
     					}
     				}
 				}
-        		EntityList list = makeTransactionSafe( completeList, repositoryVersion );
+        		EntityList list = createList( completeList, repositoryVersion );
                 return list;
 			}
 			
@@ -1132,7 +1127,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				User sessionUser = getSessionUser();
 				for ( String id:allocatableIds)
 				{
-					RefEntity<?> entity = operator.resolve(id);
+					Entity entity = operator.resolve(id);
 					allocatables.add( (Allocatable) entity);
 					security.checkRead(sessionUser, entity);
 				}
@@ -1145,7 +1140,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					try
 					{
-						RefEntity<?> entity = operator.resolve(reservationId);
+						Entity entity = operator.resolve(reservationId);
 						ignoreConflictsWith.add( (Reservation) entity);
 					}
 					catch (EntityNotFoundException ex)
@@ -1167,7 +1162,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					{
 						buf.append(id.toString());
 						buf.append(": ");
-						RefEntity<?> refEntity = operator.tryResolve(id);
+						Entity refEntity = operator.tryResolve(id);
 						if ( refEntity != null )
 						{
 							buf.append( refEntity.toString());

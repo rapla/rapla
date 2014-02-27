@@ -91,7 +91,7 @@ public class CategoryReader extends RaplaXMLReader
                     	    {
                     	        superCategory.addCategory( category);
                     	    }
-                    	    category.getReferenceHandler().put("parent", superCategory);
+                    	    category.getReferenceHandler().putEntity("parent", superCategory);
                     	} else {
                     		String parentIdN = getId( Category.TYPE, parentId);
                     	    category.getReferenceHandler().putId("parent", parentIdN);

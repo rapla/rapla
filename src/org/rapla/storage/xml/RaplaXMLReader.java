@@ -21,6 +21,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Ownable;
@@ -172,22 +173,22 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
 
     /** return the new id */
-    protected Object setId( RefEntity<?> entity, RaplaSAXAttributes atts )
+    protected Object setId( Entity entity, RaplaSAXAttributes atts )
     	throws RaplaSAXParseException
     {
         String idString = atts.getValue( "id" );
         String id = getId( entity.getRaplaType(), idString );
-        entity.setId( id );
+        ((SimpleEntity)entity).setId( id );
         return id;
     }
 
-    protected void setVersionIfThere( RefEntity<?> entity, RaplaSAXAttributes atts )
+    protected void setVersionIfThere( SimpleEntity entity, RaplaSAXAttributes atts )
     {
         String  version= atts.getValue( "version" );
         if ( version != null)
         {
             try {
-                entity.setVersion( Long.parseLong( version));
+                entity.setVersion( Integer.parseInt( version));
             } 
             catch (NumberFormatException ex)
             {
@@ -197,12 +198,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
 
     /** return the new id */
-    protected Object setNewId( RefEntity<?> entity ) throws RaplaSAXParseException
+    protected Object setNewId( Entity entity ) throws RaplaSAXParseException
     {
         try
         {
             String id = idTable.createId( entity.getRaplaType() );
-            entity.setId( id );
+            ((SimpleEntity)entity).setId( id );
             return id;
         }
         catch (RaplaException ex)
@@ -282,7 +283,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         try
         {
             String id = getId( type, str );
-			RefEntity<?> resolved = resolver.resolve( id );
+		Entity resolved = resolver.resolve( id );
 			@SuppressWarnings("unchecked")
 			T casted = (T)resolved;
 			return casted;
@@ -305,7 +306,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         }
     }
     
-    public void add(RefEntity<?> entity){
+    public void add(Entity entity){
         resolver.put(entity);
     }
     

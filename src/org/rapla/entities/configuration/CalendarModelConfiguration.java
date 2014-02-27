@@ -18,7 +18,6 @@ import java.util.Date;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.storage.Mementable;
 import org.rapla.framework.TypedComponentRole;
 
 /**
@@ -27,7 +26,8 @@ import org.rapla.framework.TypedComponentRole;
  * @version 1.00.00
  * @since 2.03.00
  */
-public interface CalendarModelConfiguration extends RaplaObject<CalendarModelConfiguration>, Mementable<CalendarModelConfiguration> {
+public interface CalendarModelConfiguration extends RaplaObject<CalendarModelConfiguration>
+{
     public static final RaplaType<CalendarModelConfiguration> TYPE = new RaplaType<CalendarModelConfiguration>(CalendarModelConfiguration.class, "calendar");
     public static final TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.DefaultSelection");
     public Date getStartDate();

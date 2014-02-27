@@ -23,13 +23,13 @@ import java.util.TreeSet;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.UpdateEvent;
@@ -111,16 +111,15 @@ public class RaplaEntityWriter extends RaplaXMLWriter
 	   boolean resourcesRefresh = evt.isNeedResourcesRefresh();
 	   printHeader( repositoryVersion, invalidateInterval, resourcesRefresh);
        
-       Collection<RefEntity<?>> remove = evt.getRemoveObjects();
-       Collection<RefEntity<?>> store = evt.getStoreObjects();
-       Collection<RefEntity<?>> all = evt.getAllObjects();
-       Collection<RefEntity<?>> reference = evt.getReferenceObjects();
+       Collection<Entity>remove = evt.getRemoveObjects();
+       Collection<Entity>store = evt.getStoreObjects();
+       Collection<Entity>all = evt.getAllObjects();
+       Collection<Entity>reference = evt.getReferenceObjects();
        
        printListPrivate( all);
        openElement("rapla:store");
-       for ( Iterator<? extends RaplaObject> it = store.iterator();it.hasNext();)
+       for ( Entity object:store)
        {
-           RaplaObject object =  it.next();
            openTag("rapla:" + object.getRaplaType().getLocalName());
            String id = getId( object);
            att("idref", id);
@@ -128,18 +127,16 @@ public class RaplaEntityWriter extends RaplaXMLWriter
        }
        closeElement("rapla:store");
        openElement("rapla:remove");
-       for ( Iterator<? extends RaplaObject> it = remove.iterator();it.hasNext();)
+       for ( Entity object:remove)
        {
-           RaplaObject object =  it.next();
            openTag("rapla:" + object.getRaplaType().getLocalName());
            att("idref", getId( object));
            closeElementTag();
        }
        closeElement("rapla:remove");
        openElement("rapla:reference");
-       for ( Iterator<? extends RaplaObject> it = reference.iterator();it.hasNext();)
+       for ( Entity object:reference)
        {
-           RaplaObject object =  it.next();
            openTag("rapla:" + object.getRaplaType().getLocalName());
            att("idref", getId( object));
            closeElementTag();

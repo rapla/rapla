@@ -54,7 +54,7 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 		editWindowList.remove(editWindow);
 	}
 
-	public <T extends Entity<T>> EditComponent<T> createUI(Entity<T> obj) throws RaplaException 
+	public <T extends Entity> EditComponent<T> createUI(T obj) throws RaplaException 
 	{
 		return createUI( obj,false);
 	}
@@ -66,7 +66,7 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 	 * RaplaPersistant)
 	 */
 	@SuppressWarnings("unchecked")
-    public <T extends Entity<T>> EditComponent<T> createUI(Entity<T> obj, boolean createNew) throws RaplaException {
+    public <T extends Entity> EditComponent<T> createUI(T obj, boolean createNew) throws RaplaException {
 		RaplaType type = obj.getRaplaType();
 		EditComponent<?> ui = null;
 		if (Allocatable.TYPE.equals(type)) {
@@ -128,16 +128,16 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 			return null;
 	}
 
-	public <T extends Entity<T>> void edit(Entity<T> obj, Component owner) throws RaplaException {
+	public <T extends Entity> void edit(T obj, Component owner) throws RaplaException {
 		edit(obj, guessTitle(obj), owner);
 	}
 
-	public <T extends Entity<T>> void editNew(Entity<T> obj, Component owner)
+	public <T extends Entity> void editNew(T obj, Component owner)
 			throws RaplaException {
 		edit(obj, guessTitle(obj), owner, true);
 	}
 
-	public <T extends Entity<T>> void edit(Entity<T>[] obj, Component owner) throws RaplaException {
+	public <T extends Entity> void edit(T[] obj, Component owner) throws RaplaException {
 		edit(obj, guessTitle(obj), owner);
 	}
 
@@ -149,12 +149,12 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 	 * @see org.rapla.gui.edit.IEditController#edit(org.rapla.entities.Entity,
 	 * java.lang.String, java.awt.Component)
 	 */
-	public <T extends Entity<T>> void edit(Entity<T> obj, String title, Component owner)
+	public <T extends Entity> void edit(T obj, String title, Component owner)
 			throws RaplaException {
 		edit(obj, title, owner, false);
 	}
 	
-	protected <T extends Entity<T>> void edit(Entity<T> obj, String title, Component owner,boolean createNew )
+	protected <T extends Entity> void edit(T obj, String title, Component owner,boolean createNew )
 				throws RaplaException {
 		
 		// Hack for 1.6 compiler compatibility
@@ -193,7 +193,7 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 //	method analog to edit(Entity obj, String title, Component owner)
 
 //	however for using with arrays
-	public  <T extends Entity<T>> void edit(Entity<T>[] obj, String title, Component owner)
+	public  <T extends Entity> void edit(T[] obj, String title, Component owner)
 			throws RaplaException {
 		
 //		checks if all entities are from the same type; otherwise return
@@ -209,9 +209,9 @@ public class EditControllerImpl extends RaplaGUIComponent implements
     	}
 	}
 
-    protected <T extends Entity<T>> void editAndOpenDialog(List<Entity<T>> list, String title, Component owner, boolean createNew) throws RaplaException {
+    protected <T extends Entity> void editAndOpenDialog(List<T> list, String title, Component owner, boolean createNew) throws RaplaException {
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
-    	Collection<Entity<T>> toEdit = getModification().edit( list);
+    	Collection<T> toEdit = getModification().edit( list);
     	if (toEdit.size() > 0) {
         	EditComponent<T> ui = createUI(toEdit.iterator().next(), createNew);
         	EditDialog<T> gui = new EditDialog<T>(getContext(), ui, false);

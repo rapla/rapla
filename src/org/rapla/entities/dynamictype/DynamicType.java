@@ -32,7 +32,7 @@ public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Anno
     
     /** find an attribute in the dynamic type that equals the specified attribute This is usefull if you have the
      * persistant version of an attribute and want to discover the editable version in the working copy of a dynamic type */
-    Attribute findAttribute(Attribute attribute);
+    String findAttribute(Attribute attribute);
     
     boolean hasAttribute(Attribute attribute);
     void removeAttribute(Attribute attribute);

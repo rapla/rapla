@@ -14,6 +14,10 @@
 
 package com.google.gwtjsonrpc.server;
 
+import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -23,10 +27,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gwtjsonrpc.common.JavaSqlTimestampHelper;
-
-import java.lang.reflect.Type;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
 
 public class SqlTimestampDeserializer implements
     JsonDeserializer<java.sql.Timestamp>, JsonSerializer<java.sql.Timestamp> {

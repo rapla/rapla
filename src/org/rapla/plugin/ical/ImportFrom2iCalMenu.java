@@ -43,7 +43,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
@@ -272,7 +271,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 					int i = 0;
 					for ( Allocatable alloc:liste)
 					{
-						allocatableIds[i++] = ((RefEntity<?>) alloc).getId();
+						allocatableIds[i++] = alloc.getId();
 					}
                     final DynamicType dynamicType = (DynamicType) comboEventType.getSelectedItem();
                     if (dynamicType == null)

@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ | Copyright (C) 21006 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -22,6 +22,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
@@ -33,13 +34,13 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
 
-public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
+public class AttributeImpl extends SimpleEntity implements Attribute
 {
 	public static final MultiLanguageName TRUE_TRANSLATION = new MultiLanguageName();
 	public static final MultiLanguageName FALSE_TRANSLATION = new MultiLanguageName();
@@ -54,7 +55,8 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
     private boolean bOptional = false;
     private HashMap<String,String> annotations = new LinkedHashMap<String,String>();
     private Object defaultValue =null;
-
+    private transient DynamicTypeImpl parent;
+    
     public final static AttributeType DEFAULT_TYPE = AttributeType.STRING;
 
     public AttributeImpl() {
@@ -65,12 +67,12 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         setType(type);
     }
 
-    void setParent(DynamicType parent) {
-        getReferenceHandler().put("parent", (RefEntity<?>)parent);
+    void setParent(DynamicTypeImpl parent) {
+    	this.parent = parent;
     }
     
     public DynamicType getDynamicType() {
-        return (DynamicType)getReferenceHandler().get("parent");
+        return parent;
     }
 
     final public RaplaType<Attribute> getRaplaType() {return TYPE;}
@@ -101,7 +103,7 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         Object oldValue = defaultValue;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            oldValue = getReferenceHandler().get("default.category");
+            oldValue = getReferenceHandler().getEntity("default.category");
         }
         this.type = type;
         defaultValue = convertValue( oldValue);
@@ -138,9 +140,9 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         	{
         		referenceHandler.removeWithKey( refID);
         	} 
-        	else if ( constraint instanceof RefEntity<?>)
+        	else if ( constraint instanceof Entity)
         	{
-        		referenceHandler.put(refID,(RefEntity<?>)constraint);
+        		referenceHandler.putEntity(refID,(Entity)constraint);
         	}
         	else if ( constraint instanceof String)
         	{
@@ -154,13 +156,13 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
         defaultValue = object;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            getReferenceHandler().put("default.category",(RefEntity<?>)object);
+            getReferenceHandler().putEntity("default.category",(Entity)object);
         }
     }
 
     public Object getConstraint(String key) {
         if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
-            return getReferenceHandler().get("constraint." + key);
+            return getReferenceHandler().getEntity("constraint." + key);
         }
         return null;
     }
@@ -421,32 +423,22 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
     }
 
 
-    static private void copy(AttributeImpl source,AttributeImpl dest) {
-        dest.name = (MultiLanguageName) source.name.clone();
-        @SuppressWarnings("unchecked")
-		HashMap<String,String> annotationClone = (HashMap<String,String>) source.annotations.clone();
-		dest.annotations = annotationClone;
-        dest.type = source.getType();
-        dest.setKey(source.getKey());
-        dest.setOptional(source.isOptional());
-        String[] constraintKeys = source.getConstraintKeys();
-        for ( int i = 0;i < constraintKeys.length; i++) {
-            String key = constraintKeys[ i ];
-            dest.setConstraint( key, source.getConstraint(key));
-        }
-        dest.setDefaultValue( source.defaultValue());
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(Attribute obj) {
-        super.copy((SimpleEntity<Attribute>)obj);
-        copy((AttributeImpl) obj,this);
-    }
-
-    public Attribute deepClone() {
+    public Attribute clone() {
         AttributeImpl clone = new AttributeImpl();
         super.deepClone(clone);
-        copy(this,clone);
+        clone.name = (MultiLanguageName) name.clone();
+        @SuppressWarnings("unchecked")
+		HashMap<String,String> annotationClone = (HashMap<String,String>) annotations.clone();
+		clone.annotations = annotationClone;
+        clone.type = getType();
+        clone.setKey(getKey());
+        clone.setOptional(isOptional());
+        String[] constraintKeys = getConstraintKeys();
+        for ( int i = 0;i < constraintKeys.length; i++) {
+            String key = constraintKeys[ i ];
+            clone.setConstraint( key, getConstraint(key));
+        }
+        clone.setDefaultValue( defaultValue());
         return clone;
     }
 
@@ -525,13 +517,13 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 	    AttributeType type = attribute.getType();
 	    if (type.equals( AttributeType.ALLOCATABLE ))
 	    {
-	    	return ((RefEntity<?>)value).getId().toString();
+	    	return ((Entity)value).getId().toString();
 	    }
 	    if (type.equals( AttributeType.CATEGORY ))
 	    {
 	        CategoryImpl rootCategory = (CategoryImpl) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
 	        if ( idOnly) {
-	            return ((RefEntity<?>)value).getId().toString();
+	            return ((Entity)value).getId().toString();
 	        } else {
 	           return  rootCategory.getPathForCategory((Category)value) ;
 	        }
@@ -607,6 +599,46 @@ public class AttributeImpl extends SimpleEntity<Attribute> implements Attribute
 		 {
 			 return FALSE_TRANSLATION.getName( language);
 		 }
+	}
+
+	public String toStringValue( Object value) {
+		String stringValue = null;
+		RaplaType refType = getRefType();
+		if (refType != null) 
+		{
+			if ( value instanceof Entity)
+			{
+				stringValue = ((Entity) value).getId();
+			}
+			else if ( refType.isId(  value) )
+			{
+				stringValue = value.toString();
+			}
+		} 
+		else if (type.equals( AttributeType.DATE )) {
+			return new SerializableDateTimeFormat().formatDate((Date)value);
+		}
+		else if ( value != null)
+		{
+			stringValue = value.toString();
+		}
+		return stringValue;
+	}
+
+	public Object fromString(EntityResolver resolver, String value) throws EntityNotFoundException {
+		RaplaType refType = getRefType();
+		if (refType != null) 
+		{
+		Entity resolved = resolver.resolve( value );
+			return resolved;
+		}
+		Object result;
+		try {
+			result = parseAttributeValue(this, value);
+		} catch (RaplaException e) {
+			throw new IllegalStateException("Value not parsable");
+		}
+		return result;
 	}
     
 

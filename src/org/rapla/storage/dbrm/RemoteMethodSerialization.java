@@ -28,11 +28,11 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Provider;
@@ -173,7 +173,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         RaplaContext inputContext = new IOContext().createInputContext(getContext(),store,idTable);
         RaplaMainReader contentHandler = new RaplaMainReader( inputContext);
         readXML(xml, contentHandler);
-        Collection<RefEntity<?>> list = new ArrayList<RefEntity<?>>(store.getList());
+        Collection<Entity> list = new ArrayList<Entity>(store.getList());
         return new EntityList(list,store.getRepositoryVersion());
     }
 
@@ -413,7 +413,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<String> it = store.getStoreIds().iterator();it.hasNext();)
         {
             String id = it.next();
-            RefEntity<?> entity = store.tryResolve( id );
+            Entity entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putStore( entity);
@@ -422,7 +422,7 @@ public class RemoteMethodSerialization extends RaplaComponent
         for (Iterator<String> it = store.getReferenceIds().iterator();it.hasNext();)
         {
         	String id = it.next();
-            RefEntity<?> entity = store.tryResolve( id );
+            Entity entity = store.tryResolve( id );
             if ( entity != null)
             {
                 event.putReference( entity);
@@ -432,15 +432,15 @@ public class RemoteMethodSerialization extends RaplaComponent
         {
         	String id = it.next();
             // TODO: this is a hack replace with proper id solution
-            if ( id instanceof String)
+            if ( ConflictImpl.isConflictId(id))
             {
             	ConflictImpl entity;
-            	entity = new ConflictImpl((String)id);
+            	entity = new ConflictImpl(id);
             	event.putRemove( entity);
             }
             else
             {
-	            RefEntity<?> entity = store.tryResolve( id );
+	            Entity entity = store.tryResolve( id );
 	            if ( entity != null)
 	            {
 	                event.putRemove( entity);

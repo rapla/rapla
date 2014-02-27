@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -690,6 +691,14 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             Named obj = (Named) getUserObject();
             if (obj != null) {
                 Locale locale = getI18n().getLocale();
+            	if ( obj instanceof Classifiable)
+            	{
+            		Classification classification = ((Classifiable)obj).getClassification();
+					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING) != null)
+					{
+						return classification.getNamePlaning(locale);
+					}
+            	}
 				String name = obj.getName(locale);
 				return name;
             } else {
@@ -918,7 +927,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                     String text = TreeFactoryImpl.this.getName( nodeInfo);
                     if ( value instanceof TreeNode)
                     {
-                        text+= " (" + getRecursiveChildCount(((TreeNode) value)) +")";
+                        //text+= " (" + getRecursiveChildCount(((TreeNode) value)) +")";
+                        text+= " (" + getRecursiveList(((TreeNode) value)).size() +")";
+                        
                     }
                     value = text;
                                            
@@ -942,6 +953,30 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 count+= getRecursiveChildCount( child);
             }
             return count;
+        }
+        
+        private Set<Conflict> getRecursiveList(TreeNode treeNode)
+        {
+            int children= treeNode.getChildCount();
+            if ( children == 0)
+            {
+                return Collections.emptySet();
+            }
+            HashSet set = new HashSet();
+            for ( int i=0;i<children;i++)
+            {
+                TreeNode child = treeNode.getChildAt(i);
+                Object userObject = ((DefaultMutableTreeNode)child).getUserObject();
+                if ( userObject != null && userObject instanceof Conflict)
+                {
+                	set.add((Conflict)userObject);
+                }
+                else
+                {
+                	set.addAll(getRecursiveList( child));
+                }
+            }
+            return set;
         }
 
     }

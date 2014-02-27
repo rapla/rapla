@@ -13,8 +13,6 @@
 package org.rapla.entities.domain;
 import java.util.Comparator;
 
-import org.rapla.entities.storage.internal.SimpleEntity;
-
 
 public class AppointmentStartComparator implements Comparator<Appointment> {
     public int compare(Appointment a1,Appointment a2) {
@@ -25,7 +23,7 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
         if (a1.getStart().after(a2.getStart()))
             return 1;
 
-        return ((SimpleEntity)a1).compareTo( (SimpleEntity)a2 );
+        return ((Comparable)a1).compareTo( (Comparable)a2 );
     }
 
 }

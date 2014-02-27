@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -90,8 +91,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -1869,16 +1872,23 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		{
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
 			Object nodeInfo = node.getUserObject();
+			Locale locale = getI18n().getLocale();
 			if (nodeInfo != null && nodeInfo instanceof Named)
 			{
-				value = ((Named) nodeInfo).getName(getI18n().getLocale());
+				value = ((Named) nodeInfo).getName(locale);
 			}
 			
 			if (leaf)
 			{
 				if (nodeInfo instanceof Allocatable)
 				{
-					setLeafIcon(getIcon((Allocatable) nodeInfo));
+					Allocatable allocatable = (Allocatable) nodeInfo;
+					setLeafIcon(getIcon(allocatable));
+					Classification classification = allocatable.getClassification();
+					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING) != null)
+					{
+						value = classification.getNamePlaning(locale);
+					}
 				}
 			}
 			Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);

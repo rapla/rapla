@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -22,10 +23,9 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 
 public class EntityStore implements EntityResolver {
-    HashMap<Object,RefEntity<?>> entities = new LinkedHashMap<Object,RefEntity<?>>();
+    HashMap<Object,Entity> entities = new LinkedHashMap<Object,Entity>();
     HashSet<String> idsToRemove = new HashSet<String>();
     HashSet<String> idsToStore = new HashSet<String>();
     HashSet<String> idsToReference = new HashSet<String>();
@@ -43,15 +43,15 @@ public class EntityStore implements EntityResolver {
        // put( superCategory);
     }
     
-    public void addAll(Collection<RefEntity<?>> collection) {
-        Iterator<RefEntity<?>> it = collection.iterator();
+    public void addAll(Collection<Entity>collection) {
+        Iterator<Entity>it = collection.iterator();
         while (it.hasNext())
         {
             put(it.next());
         }
     }
 
-    public void put(RefEntity<?> entity) {
+    public void put(Entity entity) {
         Object id = entity.getId();
         Assert.notNull(id);
         if ( entity.getRaplaType() == DynamicType.TYPE)
@@ -94,7 +94,7 @@ public class EntityStore implements EntityResolver {
         return type;
     }
     
-    public Collection<RefEntity<?>> getList() {
+    public Collection<Entity>getList() {
         return entities.values();
     }
     
@@ -112,8 +112,8 @@ public class EntityStore implements EntityResolver {
 
 
     // Implementation of EntityResolver
-    public RefEntity<?> resolve(String id) throws EntityNotFoundException {
-        RefEntity<?> result = tryResolve(id );
+    public Entity resolve(String id) throws EntityNotFoundException {
+        Entity result = tryResolve(id );
         if ( result == null)
         {
             throw new EntityNotFoundException("Object for id " + id.toString() + " not found",  id);
@@ -121,7 +121,7 @@ public class EntityStore implements EntityResolver {
         return result;
     }
     
-    public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
+    public Entity resolveEmail(final String emailArg) throws EntityNotFoundException
     {
     	for (Allocatable entity: allocatables)
     	{
@@ -132,7 +132,7 @@ public class EntityStore implements EntityResolver {
     			final String email = (String)classification.getValue(attribute);
     			if ( email != null && email.equals( emailArg))
     			{
-    				return (RefEntity<?>)entity;
+    				return (Entity)entity;
     			}
     		}
         }
@@ -155,10 +155,10 @@ public class EntityStore implements EntityResolver {
     }
 
     @Override
-    public RefEntity<?> tryResolve( String id )
+    public Entity tryResolve( String id )
     {
     	Assert.notNull( id);
-        RefEntity<?> entity = entities.get(id);
+        Entity entity = entities.get(id);
         if (entity != null)
             return entity;
 
@@ -178,7 +178,7 @@ public class EntityStore implements EntityResolver {
     public Collection<RaplaObject> getCollection( RaplaType raplaType )
     {
         List<RaplaObject> collection = new ArrayList<RaplaObject>();
-        Iterator<RefEntity<?>> it = entities.values().iterator();
+        Iterator<Entity>it = entities.values().iterator();
         while (it.hasNext())
         {
             RaplaObject obj = it.next();

@@ -15,18 +15,15 @@ package org.rapla.entities.storage.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -56,62 +53,56 @@ Itertor references = referenceHandler.getReferences();
 </p>
     @see EntityResolver
  */
-public class ReferenceHandler implements EntityReferencer {
-    
-    private HashMap<String,List> map;
-    //private ArrayList<ReferenceEntry> list;
-    private transient boolean contextualizeCalled;
-
-    // added for performance reasons
-    private transient Set<RefEntity<?>> referenceList;
-
-    /**
-     * @see org.rapla.entities.storage.EntityReferencer#resolveEntities(org.rapla.entities.storage.EntityResolver)
-     */
-    public void resolveEntities(EntityResolver resolver) throws EntityNotFoundException {
-		try {
-		    if (map != null) {
-		        for (String key :map.keySet()) {
-		        	List newEntries = new ArrayList();
-		        	List entries = map.get( key); 
-		        	for (Object entry : entries)
-		            {
-		            	String id = getId(entry);
-		            	Object entity = resolver.resolve(id);
-						newEntries.add( entity);
-		            }
-		        	map.put( key, newEntries);
-		        }
-		    }
-		} catch (EntityNotFoundException ex) {
-		    clearReferences();
-		    throw ex;
-		}
-        contextualizeCalled = true;
-        referenceList = null;
+public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
+	private Map<String,List<String>> idmap;
+    transient EntityResolver resolver;
+	
+    public ReferenceHandler() {
+    	this( new LinkedHashMap<String,List<String>>());
     }
-
-	public String getId(Object entry) {
-		String id;
-		if ( entry instanceof RefEntity)
-		{
-			id = ((RefEntity)entry).getId();
-		}
-		else
-		{
-			id = (String) entry;
-		}
-		return id;
-	}
     
-    public List<String> getReferencedIds()
+    public EntityResolver getResolver()
     {
-    	ArrayList<String> result = new ArrayList();
-    	if (map != null) {
-            for (List entries:map.values()) {
-                for ( Object entry: entries)
+    	return resolver;
+    }
+    
+    public ReferenceHandler(Map<String,List<String>> idmap) {
+    	if ( idmap == null )
+    	{
+    		idmap = Collections.emptyMap();
+    	}
+    	this.idmap = idmap;
+    }
+    /**
+     * @see org.rapla.entities.storage.EntityReferencer#setResolver(org.rapla.entities.storage.EntityResolver)
+     */
+    public void setResolver(EntityResolver resolver)  {
+    	if (resolver == null){
+    		throw new IllegalArgumentException("Null not allowed");
+    	}
+		this.resolver = resolver;
+			
+//    	try {
+//	        for (String key :idmap.keySet()) {
+//	        	List<String> ids = idmap.get( key); 
+//	        	for (String id: ids)
+//	            {
+//	            	Entity entity = resolver.resolve(id);
+//	            }
+//	        }
+//		} catch (EntityNotFoundException ex) {
+//		    clearReferences();
+//		    throw ex;
+//		}
+    }
+    
+    public Collection<String> getReferencedIds()
+    {
+    	Set<String> result = new HashSet<String>();
+    	if (idmap != null) {
+            for (List<String> entries:idmap.values()) {
+                for ( String id: entries)
                 {
-                	String id = getId( entry );
 					result.add(id);
                 }
             }
@@ -119,10 +110,6 @@ public class ReferenceHandler implements EntityReferencer {
         return result;
     }
     
-    public boolean isContextualizeCalled() {
-		return contextualizeCalled;
-	}
-
     /** Use this method if you want to implement deserialization of the object manualy.
      * You have to add the reference-ids to other entities immediatly after the constructor.
      * @throws IllegalStateException if contextualize has been called before.
@@ -132,91 +119,127 @@ public class ReferenceHandler implements EntityReferencer {
     }
     
     public void addId(String key,String id) {
-        if (contextualizeCalled)
-            throw new IllegalStateException("Contextualize has been called before.");
-        addObject(key, id);
+    	synchronized (this) 
+        {
+	        List<String> idEntries = idmap.get( key );
+	        if ( idEntries == null )
+	        {
+	        	idEntries = new ArrayList<String>();
+	        	idmap.put(key, idEntries);
+	        }
+			idEntries.add(id);
+        }
     }
 
-    public void add(String key, RefEntity<?> entity) {
-        addObject(key, entity);
-	}
-
-	private void addObject(String key, Object obj) {
+    public void add(String key, Entity entity) {
 		synchronized (this) 
         {
-	        if (map == null)
-	        {
-	            map = new LinkedHashMap<String,List>(1);
-	        }
-	        List referenceEntries = map.get( key );
-	        if ( referenceEntries == null )
-	        {
-	        	referenceEntries = new ArrayList();
-	        	map.put(key, referenceEntries);
-	        }
-			referenceEntries.add(obj);
-			referenceList = null;
+			addId( key, entity.getId());
         }
 	}    
 
     public void putIds(String key,Collection<String> ids) {
-        if (contextualizeCalled)
-            throw new IllegalStateException("Contextualize has been called before.");
         synchronized (this) 
         {
-	        if (map == null)
-	            map = new LinkedHashMap<String,List>(1);
-	
 	        if (ids == null || ids.size() == 0) {
-	            map.remove(key);
+	            idmap.remove(key);
 	            return;
 	        }
 	
-	        List entries = new ArrayList();
-	        for (Comparable id:ids)
+	        List<String> entries = new ArrayList<String>();
+	        for (String id:ids)
 	        {
 	        	entries.add( id);
 	        }
-	        map.put(key, entries);
+	        idmap.put(key, entries);
         }
     }
     
-    public Object getId(String key)
+    public String getId(String key)
     {
-    	Object entry = _get(key);
-    	if ( entry == null)
+    	List<String> entries  = idmap.get(key);
+    	if ( entries == null || entries.size() == 0)
     	{
     		return null;
     	}
-    	Object id = getId( entry);
-		return id;
+    	String entry  = entries.get(0);
+    	if (entry == null)
+    		return null;
+    	return entry;
     }
     
 	public Collection<String> getIds(String key) 
 	{
-		if (map == null)
-			return Collections.emptyList();
-		List entries  = map.get(key);
+		List<String> entries  = idmap.get(key);
 		if ( entries == null )
 		{
 			return Collections.emptyList();
 		}
-		ArrayList<String> entities = new ArrayList<String>(1);
-		for ( Object entry: entries)
-		{
-			String id = getId( entry);
-			entities.add(id);
-		}
-		return entities;
+		return entries;
 	}	
 
-    public boolean removeWithKey(String key) {
+    public void putEntity(String key,Entity entity) {
+        synchronized (this) 
+        {
+	        if (entity == null) {
+	            idmap.remove(key);
+	            return;
+	        }
+	        idmap.put(key, Collections.singletonList(entity.getId()) );
+        }
+    }
+    
+    public void putList(String key, Collection<Entity>entities) {
+        synchronized (this) 
+        {
+            if (entities == null || entities.size() == 0) 
+	        {
+	            idmap.remove(key);
+	            return;
+	        }
+	        List<String> idEntries = new ArrayList<String>();
+	        for (Entity ent: entities)
+	        {
+	        	String id = ent.getId();
+				idEntries.add( id);
+	        }
+	        idmap.put(key, idEntries);
+        }
+    }
+    
+
+	public Collection<Entity> getList(String key) 
+	{
+		List<String> ids  = idmap.get(key);
+		if ( ids == null )
+		{
+			return Collections.emptyList();
+		}
+		List<Entity> entries = new ArrayList<Entity>(ids.size());
+		for ( String id:ids)
+		{
+			Entity entity = resolver.tryResolve( id );
+			entries.add( entity );
+		}
+		return entries;
+	}	
+
+    public Entity getEntity(String key) {
+    	 List<String>entries  = idmap.get(key);
+         if ( entries == null || entries.size() == 0)
+         {
+         	return null;
+         }
+         String id  = entries.get(0);
+         if (id == null)
+             return null;
+ 		return resolver.tryResolve( id );
+    }
+
+	public boolean removeWithKey(String key) {
     	synchronized (this) 
         {
-        	if (map == null)
-        		return false;
-	        if  ( map.remove(key) != null ) {
-	            referenceList = null;
+	        if  ( idmap.remove(key) != null ) {
 	            return true;
 	        } else {
 	            return false;
@@ -224,215 +247,53 @@ public class ReferenceHandler implements EntityReferencer {
 	    }
     }
 
-    public void put(String key,RefEntity<?> entity) {
-        synchronized (this) 
+    public boolean remove(String id) {
+        boolean removed = false;
+    	synchronized (this) 
         {
-	    	if (map == null)
-	        {
-	        	if ( entity == null)
-	        	{
-	        		return;
-	        	}
-	        	map = new LinkedHashMap<String,List>(1);
-	        }
-	        if (entity == null) {
-	            map.remove(key);
-	            return;
-	        }
-	        
-	        map.put(key, Collections.singletonList(entity) );
-	        referenceList = null;
+        	for (String key: idmap.keySet())
+        	{
+				List<String> entries = idmap.get(key);
+				if ( entries.contains( id))
+				{
+					entries.remove( id);
+					removed = true;
+				}
+        	}
         }
-    }
-    
-    public void putList(String key, Collection<RefEntity<?>> entities) {
-        synchronized (this) 
-        {
-	    	if (map == null)
-	            map = new LinkedHashMap<String,List>(1);
-     
-            if (entities == null || entities.size() == 0) 
-	        {
-	            map.remove(key);
-	            return;
-	        }
-	        List entries = new ArrayList(entities);
-	        map.put(key,entries );
-	        referenceList = null;
-        }
-    }
-    
-
-	public Collection<RefEntity<?>> getList(String key) 
-	{
-		if (map == null)
-			return Collections.emptyList();
-
-		List entries  = map.get(key);
-		if ( entries == null )
-		{
-			return Collections.emptyList();
-		}
-		ArrayList<RefEntity<?>> entities = new ArrayList<RefEntity<?>>(1);
-		for ( Object entry: entries)
-		{
-			entities.add((RefEntity<?>) entry);
-		}
-		return entities;
-		
-	}	
-
-    public RefEntity<?> get(String key) {
-        Object entry = _get(key);
-        if ( entry == null)
-        {
-        	return null;
-        }
-        if ( !(entry instanceof RefEntity))
-        {
-        	return null;
-        }
-        return (RefEntity<?>) entry;
+        return removed;
     }
 
-	protected Object _get(String key) {
-		if (map == null)
-            return null;
-        List entries  = map.get(key);
-        if ( entries == null || entries.size() == 0)
-        {
-        	return null;
-        }
-        Object entry  = entries.get(0);
-        if (entry == null)
-            return null;
-		return entry;
-	}
-
-    public boolean remove(RefEntity<?> entity) {
-        if (!isRefering(entity)) {
-            return false;
-        }
-        synchronized (this) 
-        {
-	        if (map != null) {
-	            Iterator<String> it = map.keySet().iterator();
-	            Map<String,List<Object>> toChange = new LinkedHashMap<String, List<Object>>();
-	            while (it.hasNext()) {
-	                String key = it.next();
-					List entries = map.get(key);
-	                boolean remove = false;
-	                for (Object entry: entries)
-	                {
-	                	if (entry.equals(entity))
-	                	{
-	                		remove = true;
-	                	}
-	                }
-	                if ( remove)
-	                {
-	                	List<Object> newEntries = new ArrayList();
-	                	for (Object entry: entries)
-	                	{
-	                		if (!entry.equals(entity))
-	                		{
-	                			newEntries.add(entry);
-	                        }
-	                	}
-	                	toChange.put(key, newEntries);
-	                }
-	            }
-	            for ( Map.Entry<String, List<Object>> entry: toChange.entrySet())
-	            {
-	            	List<Object> values = entry.getValue();
-	            	String key = entry.getKey();
-	            	if ( values.size() == 0)
-	            	{
-	            		map.remove( key);
-	            	}
-	            	else
-	            	{
-	            		List array = values;
-						map.put( key, array);
-	            	}
-	            }
-	        }
-	        referenceList = null;
-	        return true;
-        }
+    public boolean isRefering(String id) {
+        return getReferencedIds().contains(id);
     }
 
-    private Collection<RefEntity<?>> getReferenceList() {
-        if (referenceList != null)
-            return referenceList;
-        synchronized (this) 
-        {
-	        Set<RefEntity<?>> referenceList = new LinkedHashSet<RefEntity<?>>(1);
-	        if (map != null) {
-	            Iterator<String> it = map.keySet().iterator();
-	            while (it.hasNext()) {
-	                List entries =  map.get(it.next());
-	                for (Object entry:entries)
-	                {
-		                if (!(entry  instanceof RefEntity))
-		                    throw new IllegalStateException("Contextualize was not called. References need to be resolved in context.");
-		                referenceList.add((RefEntity<?>)entry);
-	                }
-	            }
-	        }
-	        this.referenceList= referenceList;
-        }
-        return referenceList;
-    }
-
-    public boolean isRefering(RefEntity<?> obj) {
-        if ( map == null)
-            return false;
-        Collection<RefEntity<?>> referenceList = getReferenceList();
-        return referenceList.contains(obj);
-    }
-
-    @SuppressWarnings("unchecked")
-	public Iterable<RefEntity<?>> getReferences() {
-        if ( map == null)
-            return Collections.EMPTY_LIST;
-        return getReferenceList();
-    }
-    
     public Iterable<String> getReferenceKeys() {
-        if (map == null)
-            return Collections.emptySet();
-        return map.keySet();
+        return idmap.keySet();
     }
     
     public void clearReferences() {
-        if (map != null)
-            map.clear();
-        referenceList = null;
+    	idmap.clear();
     }
 
     @SuppressWarnings("unchecked")
-	public Object clone() {
+	public ReferenceHandler clone(Map<String,List<String>> idmapClone) {
         ReferenceHandler clone;
-		clone = new ReferenceHandler();
-		clone.contextualizeCalled = this.contextualizeCalled;
-		clone.referenceList = this.referenceList;
-		clone.map = this.map;
-		if (map != null)
-            clone.map = (HashMap<String,List>) map.clone();
-        return clone;
+		clone = new ReferenceHandler(idmapClone);
+		clone.resolver = this.resolver;
+		return clone;
     }
 
 
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
-		for (RefEntity<?> ref: getReferences())
+		for (String ref: getReferencedIds())
 		{
 			builder.append(ref);
+			builder.append(",");
 		}
 	    return builder.toString();
-	    
 	}
 
 

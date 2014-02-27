@@ -366,4 +366,6 @@ public class DefaultConfiguration implements Configuration {
         buf.append( "}");
         return buf.toString();
     }
+    
+    
 }

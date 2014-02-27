@@ -18,21 +18,22 @@ import java.util.Locale;
 
 import org.rapla.components.util.iterator.FilterIterator;
 import org.rapla.components.util.iterator.NestedIterator;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.Mementable;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.TypedComponentRole;
 
-public class PreferencesImpl extends SimpleEntity<Preferences>
+public class PreferencesImpl extends SimpleEntity
     implements
         Preferences
         , DynamicTypeDependant
@@ -41,7 +42,26 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
     
     final public RaplaType<Preferences> getRaplaType() {return TYPE;}
     
-    public void putEntry(String role,RaplaObject entry) {
+    public PreferencesImpl() {
+    	super();
+    }
+    
+    @Override
+    public void putEntry(TypedComponentRole<CalendarModelConfiguration> role, CalendarModelConfiguration entry) {
+    	putEntryPrivate(role.getId(), entry);
+    }
+ 
+    @Override
+    public void putEntry(TypedComponentRole<RaplaConfiguration> role, RaplaConfiguration entry) {
+    	putEntryPrivate(role.getId(), entry);
+    }
+    
+    @Override
+    public <T> void putEntry(TypedComponentRole<RaplaMap<T>> role, RaplaMap<T> entry) {
+    	putEntryPrivate(role.getId(), entry);
+    }
+    
+    public void putEntryPrivate(String role,RaplaObject entry) {
         checkWritable();
         if ( entry == null)
         {
@@ -49,7 +69,11 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
         }
         else
         {
-            map.put( role ,entry);
+        	if (entry instanceof EntityReferencer)
+        	{
+        		setResolver(((ReferenceHandler)getEntityReferencers()).getResolver());
+        	}
+        	map.put( role ,entry);
         }
     }
     
@@ -65,11 +89,11 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
         }
     }
     
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        super.resolveEntities( resolver);
+    public void setResolver( EntityResolver resolver)  {
+        super.setResolver( resolver);
         for (Object obj:getEntityReferencers())
         {
-            ((EntityReferencer) obj).resolveEntities( resolver);
+            ((EntityReferencer) obj).setResolver( resolver);
         }
     }
         
@@ -118,15 +142,15 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
         };
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-        return new NestedIterator<RefEntity<?>>( getEntityReferencers() ) {
-            public Iterable<RefEntity<?>> getNestedIterator(Object obj) {
-                return ((EntityReferencer) obj).getReferences();
+    public Iterable<String> getReferencedIds() {
+        return new NestedIterator<String,EntityReferencer>( getEntityReferencers() ) {
+            public Iterable<String> getNestedIterator(EntityReferencer obj) {
+                return  obj.getReferencedIds();
             }
         };
     }
     
-    public boolean isRefering(RefEntity<?> object) {
+    public boolean isRefering(String object) {
         for (EntityReferencer entityReferencer:getEntityReferencers()) {
             if (entityReferencer.isRefering( object)) {
                 return true;
@@ -139,38 +163,28 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
         return map.keySet().isEmpty();
     }
     
-    static private void copy(PreferencesImpl source,PreferencesImpl dest) {
+
+    public PreferencesImpl clone() {
+        PreferencesImpl clone = new PreferencesImpl();
+        super.deepClone(clone);
         HashMap<String,Object> map = new HashMap<String,Object>();
-        for (Iterator<String> it = source.map.keySet().iterator();it.hasNext();)
+        for (Iterator<String> it = map.keySet().iterator();it.hasNext();)
         {
             String role =  it.next();
-            Object entry = source.map.get( role );
-            Object clone;
-            if (entry instanceof Mementable )
+            Object entry = map.get( role );
+            Object clone1;
+            // fixme need to clone not 
+            if (entry instanceof RaplaObject )
             {
-            	clone = ((Mementable<?>) entry).deepClone();
+            	clone1 = ((RaplaObject) entry).clone();
             }
             else 
             {
-            	clone = entry;
+            	clone1 = entry;
             }
-            map.put( role , clone);
+            map.put( role , clone1);
         }
-        dest.map = map;
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(Preferences obj) {
-    	synchronized ( this) {
-            super.copy((SimpleEntity<Preferences>) obj);
-            copy((PreferencesImpl) obj,this);
-		}
-    }
-
-    public Preferences deepClone() {
-        PreferencesImpl clone = new PreferencesImpl();
-        super.deepClone(clone);
-        copy(this,clone);
+        clone.map = map;
         return clone;
     }
 
@@ -246,7 +260,7 @@ public class PreferencesImpl extends SimpleEntity<Preferences>
 
 	public <T extends RaplaObject> void putEntry(TypedComponentRole<T> role,
 			T entry) {
-		putEntry( role.getId(), entry);
+		putEntryPrivate( role.getId(), entry);
 	}
 
 	public <T extends RaplaObject> T getEntry(TypedComponentRole<T> role) {

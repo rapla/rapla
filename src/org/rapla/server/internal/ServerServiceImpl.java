@@ -39,13 +39,13 @@ import org.rapla.RaplaMainContainer;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
@@ -613,16 +613,18 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	                	 {
 	                		 logger.info("Successfull for " + username);
 		                	 @SuppressWarnings("unchecked")
-		                     RefEntity<User> user = (RefEntity<User>)operator.getUser( username );
+		                     Entity user = (Entity)operator.getUser( username );
 		                     if ( user == null )
 		                     {
 		                		 logger.info("User not found in localstore. Creating new Rapla user " + username);
-		                         user = new UserImpl();
-		                         user.setId( operator.createIdentifier( User.TYPE,1 )[0] );
+		                         UserImpl newUser = new UserImpl();
+		                         newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
+		                         user = newUser;
 		                     }
 		                     else
 		                     {
-		                        Collection<RefEntity<User>> editList = operator.editObjects( Collections.singleton(user), null );
+		                        Set<Entity>singleton = Collections.singleton(user);
+								Collection<Entity>editList = operator.editObjects( singleton, null );
 								user = editList.iterator().next();
 		                     }
 		                     
@@ -631,16 +633,16 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		                     {
 		                         Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
 		                		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
-		                         initUser = authenticationStore.initUser( user.cast(), username, password, groupCategory );
+		                         initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
 		                     } catch (RaplaSecurityException ex){
 		                         throw new RaplaSecurityException(i18n.getString("error.login"));
 		                     }
 		                     if ( initUser )
 		                     {
 		                		 logger.info("Udating rapla user '" + username + "' from external source.");
-		                    	 List<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>(1);
+		                    	 List<Entity>storeList = new ArrayList<Entity>(1);
 		                         storeList.add( user);
-		                         List<RefEntity<?>> removeList = Collections.emptyList();
+		                         List<Entity>removeList = Collections.emptyList();
 		                         
 		                         operator.storeAndRemove( storeList, removeList, null );
 		                     }

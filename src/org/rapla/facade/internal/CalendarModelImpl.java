@@ -224,8 +224,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         
         setSelectedObjects( selectedObjects );
-        ClassificationFilter[] filter = config.getFilter();
-        for ( ClassificationFilter f:filter)
+        for ( ClassificationFilter f:config.getFilter())
         {
             final DynamicType type = f.getType();
             final String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);

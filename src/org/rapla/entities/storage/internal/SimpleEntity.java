@@ -14,36 +14,40 @@ package org.rapla.entities.storage.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.Mementable;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 
 /** Base-class for all Rapla Entity-Implementations. Provides services
  * for deep cloning and serialization of references. {@link ReferenceHandler}
 */
 
-public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
+public abstract class SimpleEntity implements RefEntity, Comparable
 {
     private String id;
-    private long version = 0;
+    private int version = 0;
+    //transient protected ReferenceHandler subEntityHandler;
 
-    protected ReferenceHandler subEntityHandler;
-    ReferenceHandler references = new ReferenceHandler();
-
+    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+    transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
     transient boolean readOnly = false;
     transient Integer key;
     
     public SimpleEntity() {
 
     }
-
+    
     public void checkWritable() {
         if ( readOnly )
             throw new ReadOnlyException( this );
@@ -53,18 +57,37 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
         return isReadOnly();
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        references.resolveEntities( resolver);
-        if ( subEntityHandler != null)
+    public void setResolver( EntityResolver resolver)  {
+        referenceHandler.setResolver( resolver);
+        Iterable<Entity>subEntities = getSubEntities();
+		for (Entity subEntity :subEntities)
         {
-        	subEntityHandler.resolveEntities( resolver );
+        	((EntityReferencer)subEntity).setResolver( resolver );
         }
     }
     
-    public void setReadOnly(boolean enable) {
+    public boolean isIdentical(Entity object)
+    {
+    	return equals( object);
+    }
+    
+    private Iterable<Entity>getSubEntities() {
+		if  (!( this instanceof ParentEntity))
+		{
+			return Collections.emptyList();
+		}
+		else
+		{
+			@SuppressWarnings("unchecked")
+			Iterable<Entity>subEntities = ((ParentEntity)this).getSubEntities();
+			return subEntities;
+		}
+	}
+
+	public void setReadOnly(boolean enable) {
         this.readOnly = enable;
-        for (RefEntity<?> ref:getSubEntities()) {
-            ((SimpleEntity<?>)ref).setReadOnly(enable);
+        for (Entity ref:getSubEntities()) {
+            ((SimpleEntity)ref).setReadOnly(enable);
         }
     }
 
@@ -73,52 +96,27 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     }
 
     public User getOwner() {
-        return (User) references.get("owner");
+        return (User) referenceHandler.getEntity("owner");
     }
 
     @SuppressWarnings("unchecked")
 	public void setOwner(User owner) {
-        references.put("owner",(RefEntity<User>)owner);
+        referenceHandler.putEntity("owner",(Entity)owner);
     }
     
 	public User getLastChangedBy() {
-		return (User) references.get("last_changed_by");
+		return (User) referenceHandler.getEntity("last_changed_by");
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setLastChangedBy(User user) {
-        references.put("last_changed_by",(RefEntity<User>)user);
+        referenceHandler.putEntity("last_changed_by",user);
 	}
 
-
-    protected boolean isSubEntity(RefEntity<?> obj) {
-    	if ( subEntityHandler == null)
-    	{
-    		return false;
-    	}
-        return subEntityHandler.isRefering(obj);
-    }
-
-    protected void addEntity(RefEntity<?> entity) {
-    	throw new UnsupportedOperationException();
-    }
-
+   
     public ReferenceHandler getReferenceHandler() {
-        return references;
+        return referenceHandler;
     }
-
-    protected ReferenceHandler getSubEntityHandler() {
-        return subEntityHandler;
-    }
-
-    protected void removeEntity(RefEntity<?> entity) {
-    	if ( subEntityHandler != null)
-    	{
-    		subEntityHandler.isRefering(entity);
-    		subEntityHandler.remove(entity);
-    	}
-    }
-
 
     /** sets the identifier for an object. The identifier should be
      * unique accross all entities (not only accross the entities of a
@@ -139,10 +137,6 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
         return id;
     }
     
-    final public boolean isIdentical(Entity<?> ob2) {
-        return equals( ob2);
-    }
-
     /** two Entities are equal if they are identical.
      * @see #isIdentical
      */
@@ -164,7 +158,7 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
     {
     	if ( key == null && id != null)
     	{
-    		key = getRaplaType().getKey( id );
+    		key = ((RaplaObject)this).getRaplaType().getKey( id );
     	}
     	return key;
     }
@@ -177,90 +171,31 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
         if ( id != null) {
             return id.hashCode();
         } else {
-            throw new IllegalStateException("Id not set for type '" +  getRaplaType()
-                                            + "'. You must set an Id before you can use the hashCode method."
+            throw new IllegalStateException("Id not set. You must set an Id before you can use the hashCode method."
                                             );
         }
     }
 
-    public void setVersion(long version)  {
+    public void setVersion(int version)  {
         this.version= version;
     }
 
-    public long getVersion()  {
+    public int getVersion()  {
         return version;
     }
 
-    public Iterable<RefEntity<?>> getSubEntities() {
-    	if ( subEntityHandler != null)
-    	{
-            return subEntityHandler.getReferences();
-    	}
-    	Set<RefEntity<?>> emptySet = Collections.emptySet();
-		return emptySet;
+    @Override
+    public Iterable<String> getReferencedIds() {
+    	return referenceHandler.getReferencedIds();
     }
-
-    public Iterable<RefEntity<?>> getReferences() {
-        return getReferenceHandler().getReferences();
-    }
-
-    public boolean isRefering(RefEntity<?> entity) {
-        ReferenceHandler referenceHandler = getReferenceHandler();
+    public boolean isRefering(String entity) {
         return referenceHandler.isRefering(entity);
     }
 
-    public boolean isParentEntity(RefEntity<?> object) {
-    	if ( subEntityHandler == null)
-    	{
-    		return false;
-    	}
-        return subEntityHandler.isRefering(object);
-    }
-    
-	@SuppressWarnings("unchecked")
-	static private <T> void copy(SimpleEntity<T> source,SimpleEntity<T> dest,boolean deepCopy) {
-        Assert.isTrue(source != dest,"can't copy the same object");
-
-        dest.references = (ReferenceHandler) source.references.clone();
-
-        ArrayList<RefEntity<?>> newSubEntities = new ArrayList<RefEntity<?>>();
-        for (RefEntity<?> entity: source.getSubEntities())
-        {
-            RefEntity<?> oldEntity = dest.findEntity(entity);
-            if (oldEntity != null) {
-                if ( deepCopy && oldEntity != entity)
-                {
-                    ((Mementable<RefEntity<?>>)oldEntity).copy(entity);
-                }
-                newSubEntities.add( oldEntity);
-            } else {
-                if ( deepCopy)
-                {
-                    RefEntity<?> deepClone = ((Mementable<RefEntity<?>>)entity).deepClone();
-                    newSubEntities.add( deepClone);
-                }
-                else
-                {
-                    newSubEntities.add( entity);
-                }
-            }
-        }
-        if ( dest.subEntityHandler != null)
-        {
-        	dest.subEntityHandler.clearReferences();
-        }
-        for (RefEntity<?> entity: newSubEntities)
-        {
-            dest.addEntity( entity );
-        }
-        // In a copy operation the target/destination object should always be writable
-        dest.readOnly = false;
-        dest.setVersion(source.getVersion());
-    }
 
     /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
-	public RefEntity<?> findEntity(RefEntity<?> copy) {
-        for (RefEntity<?> entity:getSubEntities())
+	public Entity findEntity(Entity copy) {
+        for (Entity entity:getSubEntities())
         {
             if (entity.equals(copy)) {
                 return entity;
@@ -269,23 +204,31 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
         return null;
     }
 
-    /** copies the references from the entity to this */
-    protected void copy(SimpleEntity<T> entity) {
-    	synchronized ( this) {
-            copy(entity,this,true);
-		}
+
+    protected void deepClone(SimpleEntity dest) {
+        dest.setId(id);
+        Map<String, List<String>> idmapClone = (Map<String, List<String>>) ((HashMap<String,List<String>>) links).clone();
+    	dest.referenceHandler = (ReferenceHandler) referenceHandler.clone(idmapClone);
+    	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
+    	for (Entity entity: getSubEntities())
+    	{
+    		Entity deepClone = (Entity) entity.clone();
+    		newSubEntities.add( deepClone);
+    	}
+    	for (Entity entity: newSubEntities)
+    	{
+    		((ParentEntity)dest).addEntity( entity );
+    	}
+    	// In a copy operation the target/destination object should always be writable
+    	dest.readOnly = false;
+    	dest.setVersion(getVersion());
     }
 
-    protected void deepClone(SimpleEntity<T> clone) {
-        clone.setId(id);
-        copy(this,clone,true);
-    }
-
-    @SuppressWarnings("unchecked")
-	public T cast()
-    {
-    	return (T) this;
-    }
+//    @SuppressWarnings("unchecked")
+//	public T cast()
+//    {
+//    	return (T) this;
+//    }
 
     public String toString() {
         if (id != null)
@@ -293,12 +236,12 @@ public abstract class SimpleEntity<T> implements RefEntity<T>,Comparable<T>
         return "no id for " + super.toString();
     }
 
-	public int compareTo(T o) 
+	public int compareTo(Object o) 
     {
-    	return compare_(this, (SimpleEntity<?>)o);
+    	return compare_(this, (SimpleEntity)o);
     }
 	
-	static private int compare_(SimpleEntity<?> o1,SimpleEntity<?> o2) {
+	static private int compare_(SimpleEntity o1,SimpleEntity o2) {
         if ( o1 == o2)
         {
             return 0;

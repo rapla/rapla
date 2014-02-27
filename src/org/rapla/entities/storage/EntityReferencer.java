@@ -21,13 +21,12 @@ import org.rapla.entities.EntityNotFoundException;
 
 public interface EntityReferencer
 {
-    void resolveEntities( EntityResolver resolver) throws EntityNotFoundException;
+    void setResolver( EntityResolver resolver);
     /**Return all References of the object*/
-    Iterable<RefEntity<?>> getReferences();
+    Iterable<String> getReferencedIds();
     /** returns if the entity is refering to the Object. */
-    boolean isRefering(RefEntity<?> object);
-
-
+    //boolean isRefering(Entity object);
+    boolean isRefering(String id);
 }
 
 

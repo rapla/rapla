@@ -40,7 +40,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -147,7 +146,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		
 	protected void setId(PreparedStatement stmt, int column, Entity<?> entity) throws SQLException {
     	if ( entity != null) {
-		    int groupId = getId( (RefEntity<?>) entity);
+		    int groupId = getId( (Entity) entity);
 		    stmt.setInt( column, groupId );
 		} else {
 			stmt.setObject(column, null, Types.INTEGER);
@@ -181,7 +180,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			return null;
 		}
 		try {
-			RefEntity<?> resolved = resolve(type.getId(id));
+			Entity resolved = resolve(type.getId(id));
 			@SuppressWarnings("unchecked")
 			S casted = (S) resolved;
 			return casted;
@@ -636,7 +635,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     
 
-    public static int getId(RefEntity<?> entity) {
+    public static int getId(Entity entity) {
     	String id = (String) entity.getId();
 		return RaplaType.parseId(id);
     }
@@ -661,7 +660,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
-    public void insert(Collection<RefEntity<T>> entities) throws SQLException,RaplaException {
+    public void insert(Collection<T> entities) throws SQLException,RaplaException {
         for (Storage<T> storage: subStores) 
         {
             storage.insert(entities);
@@ -670,7 +669,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         try {
             stmt = con.prepareStatement(insertSql);
             int count = 0;
-            for ( RefEntity<T> entity: entities)
+            for ( T entity: entities)
             {
                 count+= write(stmt, entity);
             }
@@ -686,7 +685,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
-//    public void update(Collection<RefEntity<T>> entities ) throws SQLException,RaplaException {
+//    public void update(Collection<Entity>> entities ) throws SQLException,RaplaException {
 //        for (Storage<T> storage: subStores) {
 //            storage.delete( entities );
 //		    storage.insert( entities);
@@ -695,7 +694,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //        try {
 //            stmt = con.prepareStatement( updateSql);
 //            int count = 0;
-//            for ( RefEntity<T> entity: entities)
+//            for (Entity entity: entities)
 //            {
 //                int id = getId( entity );
 //                stmt.setInt( lastParameterIndex + 1,id );
@@ -711,10 +710,10 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //        }
 //    }
 
-//    public void save(Collection<RefEntity<T>> entities) throws SQLException,RaplaException {
-//        Collection<RefEntity<T>>  toUpdate = new ArrayList<RefEntity<T>>();
-//        Collection<RefEntity<T>>  toInsert = new ArrayList<RefEntity<T>>();
-//        for ( RefEntity<T> entity:entities)
+//    public void save(Collection<Entity>> entities) throws SQLException,RaplaException {
+//        Collection<Entity>>  toUpdate = new ArrayList<Entity>>();
+//        Collection<Entity>>  toInsert = new ArrayList<Entity>>();
+//        for (Entity entity:entities)
 //        {
 //            
 //            if (cache.tryResolve( entity.getId())!= null) {
@@ -733,19 +732,19 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //        }
 //    }
 
-    public void save( Collection<RefEntity<T>> entities ) throws RaplaException, SQLException{
+    public void save( Collection<T> entities ) throws RaplaException, SQLException{
         delete( entities );
         insert( entities );
     }
 	
-    public void delete(Collection<RefEntity<T>> entities) throws SQLException, RaplaException {
+    public void delete(Collection<T> entities) throws SQLException, RaplaException {
         for (Storage<T> storage: subStores) {
             storage.delete( entities );
         }
         PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);
-            for ( RefEntity<?> entity: entities)
+            for ( T entity: entities)
             {
                 stmt.setInt(1,getId( entity));
                 stmt.addBatch();
@@ -767,7 +766,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 		executeBatchedStatement(con,deleteAllSql);
     }
-    abstract protected int write(PreparedStatement stmt,RefEntity<T> entity) throws SQLException,RaplaException;
+    abstract protected int write(PreparedStatement stmt,T entity) throws SQLException,RaplaException;
     abstract protected void load(ResultSet rs) throws SQLException,RaplaException;
 
     public RaplaNonValidatedInput getReader() throws RaplaException {
@@ -801,7 +800,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
 
     }
-    protected void put( RefEntity<?> entity)
+    protected void put( Entity entity)
     {
        entityStore.put( entity);
         
@@ -822,7 +821,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.getDynamicType( typeKey);
     }
 
-    protected RefEntity<?> resolve( String id) throws EntityNotFoundException
+    protected Entity resolve( String id) throws EntityNotFoundException
     {
         return entityStore.resolve( id);
     }
@@ -836,7 +835,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.getSuperCategory();
     }
     
-    protected RefEntity<?> get( String id )
+    protected Entity get( String id )
     {
     	if ( id == null)
     	{

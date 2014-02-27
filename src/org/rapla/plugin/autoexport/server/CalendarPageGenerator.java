@@ -27,7 +27,6 @@ import org.rapla.components.util.ParseDateException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -106,9 +105,7 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
             	Allocatable foundAlloc = null; 
             	for ( Allocatable alloc:selectedAllocatables)
             	{
-            		@SuppressWarnings("unchecked")
-                    RefEntity<Allocatable> refEntity = (RefEntity<Allocatable>)alloc;
-                    if (refEntity.getId().equals( allocatableId))
+                    if (alloc.getId().equals( allocatableId))
             		{
             			foundAlloc = alloc;
             			break;

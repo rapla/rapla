@@ -29,7 +29,6 @@ import java.util.TreeSet;
 
 import javax.swing.MenuElement;
 
-import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -215,7 +214,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	    	Date beginn = getStartDate( model);
 	    	Object source = e.getSource();
 	    	String templateName = componentMap.get( source);
-	    	List<Entity<Reservation>> newReservations;
+	    	List<Reservation> newReservations;
        		Collection<Reservation> reservations = getQuery().getTemplateReservations(templateName);
        		if (reservations.size() > 0)
        		{
@@ -223,9 +222,8 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 				Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
 				if (markedAllocatables != null )
 				{
-					for (Entity<Reservation> reservation: newReservations)
+					for (Reservation event: newReservations)
 					{
-						Reservation event = reservation.cast();
 						if ( event.getAllocatables().length == 0)
 						{
 							for ( Allocatable alloc:markedAllocatables)
@@ -247,15 +245,15 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			
 			if ( newReservations.size() == 1)
 			{
-				Reservation next = newReservations.iterator().next().cast();
+				Reservation next = newReservations.iterator().next();
 				getReservationController().edit( next);
 			}
 			else
 			{
 				Collection<Reservation> list = new ArrayList<Reservation>();
-				for ( Entity<Reservation> reservation:newReservations)
+				for ( Reservation reservation:newReservations)
 				{
-					Reservation cast = reservation.cast();
+					Reservation cast = reservation;
 					User lastChangedBy = cast.getLastChangedBy();
 					if ( lastChangedBy != null && !lastChangedBy.equals(getUser()))
 					{

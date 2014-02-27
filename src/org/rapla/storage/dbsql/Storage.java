@@ -19,17 +19,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 
 interface Storage<T extends Entity<T>> {
     void loadAll() throws SQLException,RaplaException;
     void deleteAll() throws SQLException;
     void setConnection(Connection con) throws SQLException;
-    void save( Collection<RefEntity<T>> entities) throws SQLException,RaplaException ;
-    void insert( Collection<RefEntity<T>> entities) throws SQLException,RaplaException ;
-   // void update( Collection<RefEntity<T>> entities) throws SQLException,RaplaException ;
-    void delete(Collection<RefEntity<T>> entities) throws SQLException,RaplaException ;
+    void save( Collection<T> entities) throws SQLException,RaplaException ;
+    void insert( Collection<T> entities) throws SQLException,RaplaException ;
+   // void update( Collection<Entity>> entities) throws SQLException,RaplaException ;
+    void delete(Collection<T> entities) throws SQLException,RaplaException ;
     public List<String> getCreateSQL();
 	void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException;
 }

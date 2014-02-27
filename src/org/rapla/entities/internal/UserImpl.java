@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Locale;
 
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -24,11 +25,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class UserImpl extends SimpleEntity<User> implements User
+public class UserImpl extends SimpleEntity implements User
 {
     private String username = "";
     private String email = "";
@@ -81,13 +81,13 @@ public class UserImpl extends SimpleEntity<User> implements User
         this.email =  email;
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        super.resolveEntities(resolver);
+    public void setResolver( EntityResolver resolver)  {
+        super.setResolver(resolver);
         if ( email != null && email.trim().length() > 0)
         {
             try
             {
-                final RefEntity<?> person = resolver.resolveEmail(email);
+                final Entity person = resolver.resolveEmail(email);
                 if ( person instanceof Allocatable)
                 {
                     setPerson((Allocatable)person);
@@ -131,18 +131,15 @@ public class UserImpl extends SimpleEntity<User> implements User
 
     public void addGroup(Category group) {
         checkWritable();
-        if (getReferenceHandler().isRefering((RefEntity<?>)group))
+        if (getReferenceHandler().isRefering(group.getId()))
             return;
         groupArrayUpToDate = false;
-        getReferenceHandler().add("groups",(RefEntity<?>)group);
+        getReferenceHandler().add("groups",group);
     }
 
     public boolean removeGroup(Category group)   {
         checkWritable();
-        if (!getReferenceHandler().isRefering((RefEntity<?>)group))
-            return false;
-        groupArrayUpToDate = false;
-        return getReferenceHandler().remove((RefEntity<?>)group);
+        return getReferenceHandler().remove(group.getId());
     }
 
     public Category[] getGroups()  {
@@ -168,38 +165,23 @@ public class UserImpl extends SimpleEntity<User> implements User
         synchronized ( this )
         {
         	Collection<Category> groupList = new ArrayList<Category>();
-        	for( RefEntity<?> o:super.getReferences())
+        	for(Entity o:getReferenceHandler().getList("groups"))
        	 	{
-            	if (o.getRaplaType() == Category.TYPE) {
-                	groupList.add((Category)o);
-            	}
+        		groupList.add((Category)o);
         	}
         	groups = groupList.toArray(Category.CATEGORY_ARRAY);
         	groupArrayUpToDate = true;
     	}
     }
 
-    static private void copy(UserImpl source,UserImpl dest) {
-        dest.groupArrayUpToDate = false;
-
-        dest.username = source.username;
-        dest.name = source.name;
-        dest.email = source.email;
-        dest.admin = source.admin;
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(User obj) {
-    	synchronized (this) {
-            super.copy((SimpleEntity<User>)obj);
-            copy((UserImpl) obj,this);
-		}
-    }
-
-    public User deepClone() {
+    public User clone() {
         UserImpl clone = new UserImpl();
         super.deepClone(clone);
-        copy(this,clone);
+        clone.groupArrayUpToDate = false;
+        clone.username = username;
+        clone.name = name;
+        clone.email = email;
+        clone.admin = admin;
         return clone;
     }
 
@@ -221,7 +203,7 @@ public class UserImpl extends SimpleEntity<User> implements User
     	final ReferenceHandler referenceHandler = getReferenceHandler();
         if ( person == null)
         {
-            referenceHandler.put("person", null);
+            referenceHandler.putEntity("person", null);
             return;
         }
         final Classification classification = person.getClassification();
@@ -230,7 +212,7 @@ public class UserImpl extends SimpleEntity<User> implements User
         if ( email != null)
         {
             this.email = email;
-            referenceHandler.put("person", (RefEntity<?>) person);
+            referenceHandler.putEntity("person", (Entity) person);
             setName(person.getClassification().getName(null));
         }
     }
@@ -254,7 +236,7 @@ public class UserImpl extends SimpleEntity<User> implements User
     public Allocatable getPerson() 
     {
         final ReferenceHandler referenceHandler = getReferenceHandler();
-        final Allocatable person = (Allocatable) referenceHandler.get("person");
+        final Allocatable person = (Allocatable) referenceHandler.getEntity("person");
         return person;
     }
 

@@ -15,14 +15,22 @@ package org.rapla.entities.dynamictype;
 public interface DynamicTypeAnnotations
 {
     String KEY_NAME_FORMAT="nameformat";
+    String KEY_NAME_FORMAT_PLANING="nameformat_planing";
+    
     String KEY_CLASSIFICATION_TYPE="classification-type";
     String VALUE_CLASSIFICATION_TYPE_RESOURCE="resource";
     String VALUE_CLASSIFICATION_TYPE_RESERVATION="reservation";
     String VALUE_CLASSIFICATION_TYPE_PERSON="person";
+    
     String KEY_COLORS="colors";
 	String COLORS_AUTOMATED = "rapla:automated";
 	String COLORS_COLOR_ATTRIBUTE = "color";
 	String COLORS_DISABLED = "rapla:disabled";
+	
+	String KEY_CONFLICTS="conflicts";
+	String VALUE_CONFLICTS_NONE="never";
+	String VALUE_CONFLICTS_ALWAYS="always";
+	String VALUE_CONFLICTS_WITH_OTHER_TYPES="with_other_types";
 }
 
 

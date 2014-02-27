@@ -63,6 +63,10 @@ public class RaplaConfiguration extends DefaultConfiguration implements RaplaObj
    }
     
    
+   public RaplaConfiguration clone()
+   {
+	   return new RaplaConfiguration( this);
+   }
 
     
     

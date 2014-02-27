@@ -20,7 +20,6 @@ import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -45,7 +44,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.logger.Logger;
 
 import com.google.gson.Gson;
@@ -63,12 +61,6 @@ import com.google.gson.JsonSerializer;
 import com.google.gwtjsonrpc.common.AsyncCallback;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
-import com.google.gwtjsonrpc.server.MapDeserializer;
-import com.google.gwtjsonrpc.server.RPCServletUtils;
-import com.google.gwtjsonrpc.server.SignedToken;
-import com.google.gwtjsonrpc.server.SqlDateDeserializer;
-import com.google.gwtjsonrpc.server.SqlTimestampDeserializer;
-import com.google.gwtjsonrpc.server.XsrfException;
 
 
 /**
@@ -118,7 +110,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
           }
         });
     gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
-    gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
+    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
     gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
     gb.registerTypeAdapter(java.sql.Timestamp.class,
         new SqlTimestampDeserializer());

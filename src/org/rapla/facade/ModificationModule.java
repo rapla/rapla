@@ -86,14 +86,14 @@ public interface ModificationModule {
      won't be equal to the original. The resulting object is not persistant and therefore
      can be editet.
      */
-    <T extends Entity<T>> T clone(Entity<T> obj) throws RaplaException;
+    <T extends Entity> T clone(T obj) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
      * returns an editable working copy of an object. Only objects return by this method and new objects are editable.
      * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
-    <T extends Entity<T>> T edit(Entity<T> obj) throws RaplaException;
+    <T extends Entity> T edit(T obj) throws RaplaException;
 
-    <T extends Entity<T>> Collection<Entity<T>> edit(Collection<Entity<T>> list) throws RaplaException;
+    <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
     
     /** Returns the persistant version of a working copy.
      * Throws an {@link org.rapla.entities.EntityNotFoundException} when the
@@ -101,9 +101,9 @@ public interface ModificationModule {
      * @see #edit
      * @see #clone
      */
-    <T> T getPersistant(Entity<T> working) throws RaplaException;
+    <T extends Entity> T getPersistant(T working) throws RaplaException;
     
-    <T> Map<Entity<T>,T> getPersistant(Collection<Entity<T>> list) throws RaplaException;
+    <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator} */
     void storeObjects(Entity<?>[] obj) throws RaplaException;

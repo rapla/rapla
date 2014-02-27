@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ | Copyright (C) 2013 Christopher Kohlhaas                                     |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -10,20 +10,31 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.entities;
+package org.rapla.entities.storage;
 
-/**This interface is a marker to distinct the different rapla classes
- * like Reservation, Allocatable and Category.
- * It is something like the java instanceof keyword. But it must be unique for each
- * class.  This type-information is for examle used for mapping the correct storage-,
- * editing- mechanism to the class.
- */
-public interface RaplaObject<T> extends Cloneable {
-    public static final String[] EMPTY_STRING_ARRAY = new String[0];
+import java.util.Collection;
 
-	RaplaType<T> getRaplaType();
+import org.rapla.entities.Entity;
 
-	T clone();
+public interface ParentEntity {
+
+    /**
+       returns all entities that are aggregated under the entity.
+       This information is usefull to transparently store the
+       subentities along with their parent.
+       * The difference between subEntities and other references is,
+     * that the subEntities are aggregated instead of associated. That
+     * means SubEntities should be
+     * <li>stored, when the parent is stored</li>
+     * <li>deleted, when the parent is deleted or when they are
+     * removed from the parent</li>
+     */
+    <T extends Entity> Collection<T> getSubEntities();
+
+    void addEntity(Entity entity);
+    
+    Entity findEntity(Entity copy);
+    
 }
 
 

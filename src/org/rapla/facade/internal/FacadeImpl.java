@@ -68,8 +68,8 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.Mementable;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.CalendarOptions;
@@ -628,7 +628,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			for ( Allocatable alloc:allocatables)
 			{
-				buf.append(((RefEntity<?>)alloc).getId());
+				buf.append(alloc.getId());
 				buf.append(";");
 			}
 		}
@@ -1008,7 +1008,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	@SuppressWarnings("unchecked")
 	public void changePassword(User user, char[] oldPassword, char[] newPassword)
 			throws RaplaException {
-		operator.changePassword((RefEntity<User>) user, oldPassword, newPassword);
+		operator.changePassword( user, oldPassword, newPassword);
 	}
 
 	/******************************
@@ -1226,11 +1226,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return classificationType + (max);
 	}
 
-	private void setNew(RefEntity<?> entity) throws RaplaException {
+	private void setNew(Entity entity) throws RaplaException {
 		setNew(entity, null);
 	}
 	
-	private void setNew(RefEntity<?> entity,User user) throws RaplaException {
+	private void setNew(Entity entity,User user) throws RaplaException {
 		setNew(Collections.singleton(entity), entity.getRaplaType(), user);
 	}
 
@@ -1240,7 +1240,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 		for ( T entity: entities)
 		{
-			if (((RefEntity<?>)entity).getSubEntities().iterator().hasNext()) {
+			if ((entity instanceof ParentEntity) && (((ParentEntity)entity).getSubEntities().iterator().hasNext())) {
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
@@ -1249,9 +1249,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		for ( T uncasted: entities)
 		{
 			String id = ids[i++];
-			RefEntity<?> entity = (RefEntity<?>) uncasted;
+			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id);
 			entity.setVersion(0);
+			entity.setResolver(operator);
 			if (getLogger() != null && getLogger().isDebugEnabled()) {
 				getLogger().debug("new " + entity.getId());
 			}
@@ -1274,37 +1275,35 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 
-	public <T extends Entity<T>> T edit(Entity<T> obj) throws RaplaException {
+	public <T extends Entity> T edit(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
-		Collection<Entity<T>> edit = edit(Collections.singleton( obj));
-		T result = edit.iterator().next().cast();
+		Collection<T> edit = edit(Collections.singleton( obj));
+		T result = edit.iterator().next();
 		return result;
 	}
 	
-	public <T extends Entity<T>> Collection<Entity<T>> edit(Collection<Entity<T>> list) throws RaplaException
+	public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
 	{
-		List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
-		for ( Entity<T> entity:list)
+		List<Entity> castedList = new ArrayList<Entity>();
+		for ( Entity entity:list)
 		{
-			castedList.add( (RefEntity<T>) entity);
+			castedList.add( entity);
 		}
-		Collection<RefEntity<T>> result = operator.editObjects(castedList,	workingUser);
-		List<Entity<T>> castedResult = new ArrayList<Entity<T>>();
+		Collection<Entity> result = operator.editObjects(castedList,	workingUser);
+		List<T> castedResult = new ArrayList<T>();
 		for ( Entity<T> entity:result)
 		{
-			castedResult.add(  entity);
+			castedResult.add( (T) entity);
 		}
 		return castedResult;
 	}
 
 
 	@SuppressWarnings("unchecked")
-	private <T extends Entity<T>> T _clone(Entity<T> obj) throws RaplaException {
-		// We assume that all type preconditions are met, e.g. obj implements
-		// Refentity and Memementable
-		Entity<T> deepClone = ((Mementable<T>) obj).deepClone();
-		T clone = deepClone.cast();
+	private <T extends Entity> T _clone(T obj) throws RaplaException {
+		T deepClone =  (T) obj.clone();
+		T clone = deepClone;
 
 		RaplaType raplaType = clone.getRaplaType();
 		if (raplaType == Appointment.TYPE) {
@@ -1318,12 +1317,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			((CategoryImpl) temp).removeParent();
 		}
 
-		setNew((RefEntity<T>) clone, this.workingUser);
+		setNew((Entity) clone, this.workingUser);
 		return clone;
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity<T>> T clone(Entity<T> obj) throws RaplaException {
+	public <T extends Entity> T clone(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't clone null objects");
 
@@ -1340,9 +1339,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		} else if (((Object)raplaType) == Reservation.TYPE) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = obj;
-			Entity<Reservation> clonedReservation = cloneReservation((Entity<Reservation>) temp);
+			Reservation clonedReservation = cloneReservation((Reservation) temp);
 			// Hack for 1.6 compiler compatibility
-			Reservation r = clonedReservation.cast();
+			Reservation r = clonedReservation;
 			if ( workingUser != null)
 			{
 				r.setOwner( workingUser );
@@ -1369,7 +1368,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			try {
 				T _clone = _clone(obj);
-				result = _clone.cast();
+				result = _clone;
 			} catch (ClassCastException ex) {
 				throw new RaplaException("This entity can't be cloned ", ex);
 			} finally {
@@ -1388,10 +1387,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	@SuppressWarnings({ "unchecked" })
 	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
 	 */
-	private Reservation cloneReservation(Entity<Reservation> obj)
+	private Reservation cloneReservation(Reservation obj)
 			throws RaplaException {
 		// first we do a reservation deep clone
-		Reservation clone =  ((Mementable<Reservation>) obj).deepClone();
+		Reservation clone =  obj.clone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
 		Allocatable[] allocatables = clone.getAllocatables();
 
@@ -1408,7 +1407,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 
 		// and now a new id for the reservation
-		setNew((RefEntity<Reservation>) clone, this.workingUser);
+		setNew((Entity) clone, this.workingUser);
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.addAppointment(clonedAppointment);
 		}
@@ -1424,9 +1423,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return clone;
 	}
 
-	public <T> T getPersistant(Entity<T> entity) throws RaplaException {
-		Set<Entity<T>> persistantList = Collections.singleton( entity);
-		Map<Entity<T>,T> map = getPersistant( persistantList);
+	public <T extends Entity> T getPersistant(T entity) throws RaplaException {
+		Set<T> persistantList = Collections.singleton( entity);
+		Map<T,T> map = getPersistant( persistantList);
 		T result = map.get( entity);
 		if ( result == null)
 		{
@@ -1435,17 +1434,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return result;
 	}
 	
-	public <T> Map<Entity<T>,T> getPersistant(Collection<Entity<T>> list) throws RaplaException {
-		List<RefEntity<T>> castedList = new ArrayList<RefEntity<T>>();
-		for ( Entity<T> entity:list)
+	public <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException {
+		Map<Entity,Entity> result = operator.getPersistant(list);
+		LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
+		for ( Map.Entry<Entity,Entity> entry: result.entrySet())
 		{
-			castedList.add( (RefEntity<T>) entity);
-		}
-		Map<RefEntity<T>, T> result = operator.getPersistant(castedList);
-		LinkedHashMap<Entity<T>, T> castedResult = new LinkedHashMap<Entity<T>, T>();
-		for ( Map.Entry<RefEntity<T>, T> entry: result.entrySet())
-		{
-			castedResult.put( entry.getKey(), entry.getValue());
+			@SuppressWarnings("unchecked")
+			T key = (T) entry.getKey();
+			@SuppressWarnings("unchecked")
+			T value = (T) entry.getValue();
+			castedResult.put( key, value);
 		}
 		return castedResult;
 	}
@@ -1490,15 +1488,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 		}
 
-		ArrayList<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>();
-		ArrayList<RefEntity<?>> removeList = new ArrayList<RefEntity<?>>();
-		for (Entity<?> toStore : storeObjects) {
-			storeList.add((RefEntity<?>) toStore);
+		ArrayList<Entity>storeList = new ArrayList<Entity>();
+		ArrayList<Entity>removeList = new ArrayList<Entity>();
+		for (Entity toStore : storeObjects) {
+			storeList.add((Entity) toStore);
 		}
 		for (Entity<?> toRemove : removedObjects) {
-			removeList.add((RefEntity<?>) toRemove);
+			removeList.add((Entity) toRemove);
 		}
-		operator.storeAndRemove(storeList, removeList, (RefEntity<User>) workingUser);
+		operator.storeAndRemove(storeList, removeList, workingUser);
 	
 		if (getLogger().isDebugEnabled())
 			getLogger().debug("Storing took " + (System.currentTimeMillis() - time)	+ " ms.");
@@ -1511,21 +1509,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public void changeName(String title, String firstname, String surname) throws RaplaException
 	{
-		@SuppressWarnings("unchecked")
-		RefEntity<User> user = (RefEntity<User>)getUser();
+		User user = getUser();
 		getOperator().changeName(user,title,firstname,surname);
 	}
 
 	public void changeEmail(String newEmail)  throws RaplaException
 	{
-		@SuppressWarnings("unchecked")
-		RefEntity<User> user = (RefEntity<User>)getUser();
+		User user = getUser();
 		getOperator().changeEmail(user, newEmail);
 	}
 
 	public void confirmEmail(String newEmail) throws RaplaException {
-		@SuppressWarnings("unchecked")
-		RefEntity<User> user = (RefEntity<User>)getUser();
+		User user = getUser();
 		getOperator().confirmEmail(user, newEmail);
 	}
 

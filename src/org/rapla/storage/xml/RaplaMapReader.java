@@ -14,6 +14,7 @@
 package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
@@ -21,7 +22,6 @@ import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -78,7 +78,7 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
             childReader = null;
             DynamicType type = getDynamicType( keyref );
             if ( type != null) {
-            	String id = ((RefEntity<?>) type).getId();
+            	String id = ((Entity) type).getId();
                 entityMap.getReferenceHandler().putId( key,  id);
             }
         } else {

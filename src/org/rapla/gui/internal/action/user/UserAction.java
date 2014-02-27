@@ -98,7 +98,7 @@ public class UserAction extends RaplaAction {
                 User newUser = getModification().newUser();
                 EditComponent<User> ui = getEditController().createUI( newUser);
                 EditDialog<User> gui = new EditDialog<User>(getContext(),ui);
-                List<Entity<User>> singletonList = new ArrayList<Entity<User>>();
+                List<User> singletonList = new ArrayList<User>();
                 singletonList.add(newUser);
                 if (gui.start( singletonList ,getString("user"), parent) == 0
                     && getUserModule().canChangePassword() )

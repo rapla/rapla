@@ -27,7 +27,6 @@ import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -665,11 +664,11 @@ public class RaplaComponent
 		return false;
 	}
 
-	protected List<Entity<Reservation>> copy(Collection<Reservation> toCopy, Date beginn) throws RaplaException 
+	protected List<Reservation> copy(Collection<Reservation> toCopy, Date beginn) throws RaplaException 
 	{
 		List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
 		Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));
-		List<Entity<Reservation>> copies = new ArrayList<Entity<Reservation>>();
+		List<Reservation> copies = new ArrayList<Reservation>();
 		Date firstStart = null;
 		for (Reservation reservation: sortedReservations) {
 		    if ( firstStart == null )

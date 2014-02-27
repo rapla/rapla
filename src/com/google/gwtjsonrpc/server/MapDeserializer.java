@@ -14,6 +14,11 @@
 
 package com.google.gwtjsonrpc.server;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.gson.InstanceCreator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -24,11 +29,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MapDeserializer implements JsonDeserializer<Map<Object, Object>>,
     JsonSerializer<Map<Object, Object>>, InstanceCreator<Map<Object, Object>> {

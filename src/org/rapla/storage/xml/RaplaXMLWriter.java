@@ -22,6 +22,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -159,13 +160,13 @@ abstract public class RaplaXMLWriter extends XMLWriter
     	AttributeType type = attribute.getType();
     	if (type.equals(AttributeType.ALLOCATABLE))
     	{
-    	      print(getId((RefEntity<?>)value));
+    	      print(getId((Entity)value));
     	}
     	else if (type.equals(AttributeType.CATEGORY))
         {
             CategoryImpl rootCategory = (CategoryImpl) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             if (isIdOnly()) {
-                print(getId((RefEntity<?>)value));
+                print(getId((Entity)value));
             } else {
                 if ( !(value instanceof Category))
                 {
@@ -204,7 +205,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
 
-    protected void printReference(RaplaObject entity) throws IOException {
+    protected void printReference(Entity entity) throws IOException {
         String localName = entity.getRaplaType().getLocalName();
         openTag("rapla:" + localName);
         if ( entity.getRaplaType() == DynamicType.TYPE && !isIdOnly()) {
@@ -216,13 +217,13 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
 
-    protected String getId(RaplaObject entity) {
-        Comparable id2 = ((RefEntity<?>) entity).getId();
+    protected String getId(Entity entity) {
+        Comparable id2 = entity.getId();
         return id2.toString();
     }
 
     protected long getVersion(RaplaObject entity) {
-        long version = ((RefEntity<?>) entity).getVersion();
+        long version = ((RefEntity) entity).getVersion();
         return version;
     }
 
@@ -236,18 +237,18 @@ abstract public class RaplaXMLWriter extends XMLWriter
         return writer;
      }
 
-    protected void printId(RaplaObject entity) throws IOException {
+    protected void printId(Entity entity) throws IOException {
         att("id", getId( entity ));
     }
 
-    protected void printVersion(RaplaObject entity) throws IOException {
+    protected void printVersion(Entity entity) throws IOException {
         if ( printVersion)
         {
             att("version", String.valueOf(getVersion( entity )));
         }
     }
 
-    protected void printIdRef(RaplaObject entity) throws IOException {
+    protected void printIdRef(Entity entity) throws IOException {
         att("idref", getId( entity ) );
     }
 

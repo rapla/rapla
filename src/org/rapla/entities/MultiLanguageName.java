@@ -13,6 +13,7 @@
 package org.rapla.entities;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TreeMap;
 
 
@@ -28,7 +29,7 @@ public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
     private boolean readOnly;
-    TreeMap<String,String> mapLocales = new TreeMap<String,String>();
+    Map<String,String> mapLocales = new TreeMap<String,String>();
 
     public MultiLanguageName(String language,String translation) {
         setName(language,translation);

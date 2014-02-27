@@ -29,12 +29,12 @@ class RecursiveEntityIterator extends NestedIterator {
 </pre>
 */
 
-public abstract class NestedIterator<T> implements Iterator<T>, Iterable<T> {
-    protected Iterator<?> outerIt;
+public abstract class NestedIterator<T,S> implements Iterator<T>, Iterable<T> {
+    protected Iterator<S> outerIt;
     protected Iterator<T> innerIt;
     T nextElement;
     boolean isInitialized;
-    public NestedIterator(Iterable<?> outerIt) {
+    public NestedIterator(Iterable<S> outerIt) {
         this.outerIt = outerIt.iterator();
     }
 
@@ -47,7 +47,7 @@ public abstract class NestedIterator<T> implements Iterator<T>, Iterable<T> {
         return null;
     }
 
-    public abstract Iterable<T> getNestedIterator(Object obj);
+    public abstract Iterable<T> getNestedIterator(S obj);
 
     public boolean hasNext() {
         if (!isInitialized)

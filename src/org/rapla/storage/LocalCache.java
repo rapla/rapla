@@ -14,7 +14,6 @@ package org.rapla.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,6 +24,7 @@ import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -46,8 +46,8 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Provider;
@@ -57,7 +57,7 @@ public class LocalCache implements EntityResolver
 {
     Map<Object,String> passwords = new HashMap<Object,String>();
 
-    Map<Object,RefEntity<?>> entities;
+    Map<Object,Entity> entities;
     Set<DynamicTypeImpl> dynamicTypes;
     Set<UserImpl> users;
     Set<AllocatableImpl> resources;
@@ -69,7 +69,7 @@ public class LocalCache implements EntityResolver
     Set<AttributeImpl> attributes;
     Set<PreferencesImpl> preferences;
     
-    Map<RaplaType,Set<? extends RefEntity<?>>> entityMap;
+    Map<RaplaType,Set<? extends Entity>> entityMap;
         
     private CategoryImpl superCategory = new CategoryImpl();
 
@@ -78,8 +78,8 @@ public class LocalCache implements EntityResolver
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
         
-        entityMap = new LinkedHashMap<RaplaType, Set<? extends RefEntity<?>>>();
-        entities = new HashMap<Object, RefEntity<?>>();
+        entityMap = new LinkedHashMap<RaplaType, Set<? extends Entity>>();
+        entities = new HashMap<Object,Entity>();
         // top-level-entities
         reservations = new TreeSet<ReservationImpl>();
         periods = new TreeSet<PeriodImpl>();
@@ -102,22 +102,21 @@ public class LocalCache implements EntityResolver
         entityMap.put(Reservation.TYPE,reservations);
         entityMap.put(Appointment.TYPE,appointments);
         entityMap.put(Preferences.TYPE, preferences);
-
-
         initSuperCategory();
     }
     
-    @Override
-    public RefEntity<?> tryResolve(String id) {
+    @SuppressWarnings("unchecked")
+	@Override
+    public Entity tryResolve(String id) {
         if (id == null)
             throw new RuntimeException("id is null");
         return entities.get(id);
     }
 
     /** @return true if the entity has been removed and false if the entity was not found*/
-    public boolean remove(RefEntity<?> entity) {
+    public boolean remove(Entity entity) {
         RaplaType raplaType = entity.getRaplaType();
-        Set<? extends RefEntity<?>> entitySet = entityMap.get(raplaType);
+        Set<? extends Entity> entitySet = entityMap.get(raplaType);
         boolean bResult = true;
         if (entitySet != null) {
             if (entities.get(entity.getId()) != null)
@@ -135,7 +134,7 @@ public class LocalCache implements EntityResolver
         return bResult;
     }
 
-    public void put(RefEntity<?> entity) {
+    public void put(Entity entity) {
         Assert.notNull(entity);
         // We don't add the superCategory
         if (entity == superCategory)
@@ -150,7 +149,7 @@ public class LocalCache implements EntityResolver
             throw new IllegalStateException("ID can't be null");
 
         @SuppressWarnings("unchecked")
-		Set<RefEntity<?>> entitySet =  (Set<RefEntity<?>>) entityMap.get(raplaType);
+		Set<Entity>entitySet =  (Set<Entity>) entityMap.get(raplaType);
         if (entitySet != null) {
             entities.put(id,entity);
             entitySet.remove( entity );
@@ -163,18 +162,18 @@ public class LocalCache implements EntityResolver
     }
 
 
-    public RefEntity<?> get(Comparable id) {
+    public Entity get(Comparable id) {
         if (id == null)
             throw new RuntimeException("id is null");
         return entities.get(id);
     }
 
     @SuppressWarnings("unchecked")
-	public <T extends RefEntity<?>> Collection<T> getCollection(RaplaType type) {
-        Set<? extends RefEntity<?>> entities =  entityMap.get(type);
+	public <T extends Entity> Collection<T> getCollection(RaplaType type) {
+        Set<? extends Entity> entities =  entityMap.get(type);
 
         if ( Period.TYPE.equals( type)) {
-            entities = new TreeSet<RefEntity<?>>( entities);
+            entities = new TreeSet<Entity>( entities);
         }
 
         if (entities != null) {
@@ -195,7 +194,7 @@ public class LocalCache implements EntityResolver
 
     public void clearAll() {
         passwords.clear();
-        for (Set<? extends RefEntity<?>> set: entityMap.values() )
+        for (Set<? extends Entity> set: entityMap.values() )
         {
         	set.clear();
         }
@@ -218,12 +217,11 @@ public class LocalCache implements EntityResolver
         return (CategoryImpl) get(SUPER_CATEGORY_ID);
     }
 
-    public <T extends RaplaObject> Collection<RefEntity<?>> getReferers(Class<T> raplaType,RefEntity<?> object) {
-        ArrayList<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
-        for ( T obj: getCollection( raplaType))
+    public <T extends Entity> Collection<Entity> getReferers(Class<T> raplaType,Entity object) {
+        ArrayList<Entity> result = new ArrayList<Entity>();
+        for ( T referer: getCollection( raplaType))
         {
-        	RefEntity<?> referer = (RefEntity<?>) obj;
-        	if (referer != null && !referer.isIdentical(object) && referer.isRefering(object))
+        	if (referer != null && !referer.isIdentical(object) && ((EntityReferencer)referer).isRefering(object.getId()))
         	{
                 result.add(referer);
             }
@@ -269,19 +267,19 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-   public Collection<RefEntity<?>> getVisibleEntities(final User user) {
-	   Collection<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
-	   for ( Map.Entry<RaplaType,Set<? extends RefEntity<?>>> entry:entityMap.entrySet() )
+   public Collection<Entity> getVisibleEntities(final User user) {
+	   Collection<Entity> result = new ArrayList<Entity>();
+	   for ( Map.Entry<RaplaType,Set<? extends Entity>> entry:entityMap.entrySet() )
 	   {
 		   RaplaType raplaType = entry.getKey();
 		   if (   Conflict.TYPE.equals( raplaType ))
 		   {
 			   continue;
            }
-		   Set<RefEntity<?>> set =  (Set<RefEntity<?>>) entry.getValue();
+		   Set<Entity>set =  (Set<Entity>) entry.getValue();
 		   if (   Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType))
 		   {
-			   for ( RefEntity<?> obj: set)
+			   for ( Entity obj: set)
 			   {
             		if ( RaplaComponent.isTemplate(obj))
             		{
@@ -314,7 +312,7 @@ public class LocalCache implements EntityResolver
                 }
                 else if (   Allocatable.TYPE.equals( raplaType )  )
                 {
-                	for ( RefEntity<?> obj: set)
+                	for ( Entity obj: set)
                 	{
                     	Allocatable alloc = (Allocatable) obj;
 						if (user.isAdmin() || alloc.canReadOnlyInformation( user))
@@ -332,10 +330,10 @@ public class LocalCache implements EntityResolver
 	   	return result;
     }
 
-    public  Set<RefEntity<?>> getAllEntities() 
+    public  Set<Entity> getAllEntities() 
     {
-    	HashSet<RefEntity<?>> result = new HashSet<RefEntity<?>>();
-    	for ( Set<? extends RefEntity<?>> set:entityMap.values() )
+    	HashSet<Entity> result = new HashSet<Entity>();
+    	for ( Set<? extends Entity> set:entityMap.values() )
  	   	{
     		result.addAll( set);
  	   	}
@@ -344,11 +342,11 @@ public class LocalCache implements EntityResolver
 
     // Implementation of EntityResolver
     @Override
-    public RefEntity<?> resolve(String id) throws EntityNotFoundException {
-        RefEntity<?> entity =  tryResolve(id);
+    public Entity resolve(String id) throws EntityNotFoundException {
+        Entity entity =  tryResolve(id);
 
         if (entity == null)
-            throw new EntityNotFoundException("Object for id [" + id.toString() + "] not found", id);
+            throw new EntityNotFoundException("Object for id [" + id + "] not found", id);
         return entity;
     }
 
@@ -360,18 +358,18 @@ public class LocalCache implements EntityResolver
         passwords.put(userId,password);
     }
 
-    public void putAll( Collection<? extends RefEntity<?>> list )
+    public void putAll( Collection<? extends Entity> list )
     {
-    	for ( RefEntity<?> entity: list)
+    	for ( Entity entity: list)
     	{
     		put( entity);
     	}
     }
 
-	public RefEntity<?> resolveEmail(final String emailArg) throws EntityNotFoundException
+	public Entity resolveEmail(final String emailArg) throws EntityNotFoundException
     {
-		Set<? extends RefEntity<?>> entities = entityMap.get(Allocatable.TYPE);
-    	for (RefEntity<?> entity: entities)
+		Set<? extends Entity> entities = entityMap.get(Allocatable.TYPE);
+    	for (Entity entity: entities)
     	{
     		final Classification classification = ((Allocatable) entity).getClassification();
     		final Attribute attribute = classification.getAttribute("email");

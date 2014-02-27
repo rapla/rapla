@@ -15,8 +15,8 @@ package org.rapla.storage;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 
 /** Maintains the highest ids for every RaplaType in the LocalCache.*/
@@ -41,7 +41,7 @@ public class IdTable {
     /** Finds the highest id in an entity-collection */
     protected String calc(LocalCache cache,RaplaType raplaType) {
         int max = 0;
-        for (RefEntity<?> ref: cache.getCollection( raplaType )) {
+        for (Entity ref: cache.getCollection( raplaType )) {
             String id = ref.getId();
             int key = RaplaType.parseId(id);
 			if (id != null && key > max)

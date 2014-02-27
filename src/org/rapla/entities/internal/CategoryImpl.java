@@ -13,59 +13,61 @@
 package org.rapla.entities.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.ReferenceHandler;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class CategoryImpl extends SimpleEntity<Category> implements Category
+public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
 {
     private MultiLanguageName name = new MultiLanguageName();
     private String key;
-    transient boolean childArrayUpToDate = false;
-    transient Category[] childs;
-    private HashMap<String,String> annotations = new HashMap<String,String>();
-
+    List<CategoryImpl> childs = new ArrayList<CategoryImpl>();
+    private Map<String,String> annotations = new LinkedHashMap<String,String>();
+    
+    transient Category parent;
+    
     public CategoryImpl() {
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        super.resolveEntities( resolver);
-        childArrayUpToDate = false;
-    }
-    
     @Override
-    protected void addEntity(RefEntity<?> entity) {
-    	if ( subEntityHandler == null)
-    	{
-    		 subEntityHandler = new ReferenceHandler();
-    	}
-        subEntityHandler.add("categories",entity);
+    public void setResolver(EntityResolver resolver) {
+    	super.setResolver(resolver);
+        for (CategoryImpl child:childs)
+        {
+        	child.setParent( this);
+        }
+    }
+    @Override
+    public void addEntity(Entity entity) {
+    	childs.add( (CategoryImpl) entity);
     }
 
 
     public Category getParent() {
-        return (Category)getReferenceHandler().get("parent");
+        return parent;
     }
 
     public RaplaType<Category> getRaplaType() {return TYPE;}
 
-    @SuppressWarnings("unchecked")
-	void setParent(Category parent) {
-        getReferenceHandler().put("parent",(RefEntity<Category>)parent);
-    }
+	void setParent(CategoryImpl parent) {
+		this.parent = parent;
+	}
 
     public void removeParent()
     {
@@ -73,20 +75,12 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public Category[] getCategories() {
-        if (!childArrayUpToDate || childs == null) {
-        	synchronized(this)
-        	{
-            	ArrayList<Category> categoryList = new ArrayList<Category>();
-          		for (RefEntity<?> ref:getSubEntities())
-            	{
-                	categoryList.add((Category)ref);
-            	}
-            	childs = categoryList.toArray(Category.CATEGORY_ARRAY);
-            	childArrayUpToDate = true;
-        	}
-        }
-        return childs;
+        return childs.toArray(Category.CATEGORY_ARRAY);
     }
+
+	public Collection<CategoryImpl> getSubEntities() {
+		return childs;
+	}
 
     public boolean isAncestorOf(Category category) {
         if (category == null)
@@ -100,7 +94,7 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public Category getCategory(String key) {
-        for (RefEntity<?> ref: getSubEntities())
+        for (Entity ref: getSubEntities())
         {	
             Category cat = (Category) ref;
             if (cat.getKey().equals(key))
@@ -110,21 +104,17 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public boolean hasCategory(Category category) {
-        return (super.isSubEntity((RefEntity<?>)category));
+        return childs.contains(category);
     }
 
     public void addCategory(Category category) {
         checkWritable();
-        if (super.isSubEntity((RefEntity<?>)category))
-            return;
-        childArrayUpToDate = false;
-        Assert.notNull(  category );
         Assert.isTrue(category.getParent() == null || category.getParent().equals(this)
                       ,"Category is already attached to a parent");
         
         CategoryImpl categoryImpl = (CategoryImpl)category;
-        Assert.isTrue( !categoryImpl.isSubEntity( this), "Can't add a parent category to one of its ancestors.");
-        addEntity( (RefEntity<?>) category);
+        Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
+        addEntity( (Entity) category);
 		categoryImpl.setParent(this);
     }
 
@@ -156,14 +146,13 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         checkWritable();
         if ( findCategory( category ) == null)
             return;
-        childArrayUpToDate = false;
-        super.removeEntity((RefEntity<?>) category);
+        childs.remove(category);
         if (category.getParent().equals(this))
             ((CategoryImpl)category).setParent(null);
     }
 
     public Category findCategory(Category copy) {
-        return (Category) super.findEntity((RefEntity<?>)copy);
+        return (Category) super.findEntity((Entity)copy);
     }
 
     public MultiLanguageName getName() {
@@ -305,7 +294,7 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
     }
 
     public Category findCategory(Object copy) {
-        return (Category) super.findEntity((RefEntity<?>)copy);
+        return (Category) super.findEntity((Entity)copy);
     }
 
 
@@ -331,30 +320,17 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
-    @SuppressWarnings("unchecked")
-	static private void copy(CategoryImpl source,CategoryImpl dest) {
-        dest.name = (MultiLanguageName) source.name.clone();
-        dest.annotations = (HashMap<String,String>) source.annotations.clone();
-        dest.key = source.key;
-        for (RefEntity<?> ref:dest.getSubEntities())
-        {
-            ((CategoryImpl)ref).setParent(dest);
-        }
-        dest.childArrayUpToDate = false;
-    }
-
-    public void copy(Category obj) {
-    	synchronized (this) {
-            CategoryImpl category = (CategoryImpl)obj;
-    		super.copy((SimpleEntity<Category>)category);
-            copy(category,this);
-		}
-    }
-
-    public Category deepClone() {
+    public Category clone() {
         CategoryImpl clone = new CategoryImpl();
         super.deepClone(clone);
-        copy(this,clone);
+        clone.name = (MultiLanguageName) name.clone();
+        clone.annotations = (HashMap<String,String>) ((HashMap<String,String>)annotations).clone();
+        clone.key = key;
+        for (Entity ref:clone.getSubEntities())
+        {
+            ((CategoryImpl)ref).setParent(clone);
+        }
+        
         return clone;
     }
     
@@ -411,6 +387,7 @@ public class CategoryImpl extends SimpleEntity<Category> implements Category
         }
         return super.compareTo( o);
    }
+
 
 
 }

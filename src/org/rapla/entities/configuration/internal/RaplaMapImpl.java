@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
-| Copyright (C) 2006 Christopher Kohlhaas                                  |
+| Co//pyright (C) 2006 Christopher Kohlhaas                                  |
 |                                                                          |
 | This program is free software; you can redistribute it and/or modify     |
 | it under the terms of the GNU General Public License as published by the |
@@ -13,46 +13,51 @@
 package org.rapla.entities.configuration.internal;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.FilterIterator;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
-import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
+import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.Mementable;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferencer, DynamicTypeDependant,Mementable<RaplaMap<T>> {
+public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferencer, DynamicTypeDependant {
    private static final long serialVersionUID = 1;
-
    //this map stores all objects in the map 
-   private Map<String,T> map;
+   private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+   private Map<String,String> constants;
+   private Map<String,RaplaConfiguration> configurations;
+   private Map<String,RaplaMapImpl> maps;
+   private Map<String,CalendarModelConfigurationImpl> calendars;
+
+   private transient Map<String,T> map;
    
    // this map only stores the references
-   private ReferenceHandler referenceHandler = new ReferenceHandler();
+   private ReferenceHandler referenceHandler;
   
    // this map only stores the child objects (not the references)
-   private Map<String,T> childMap = new HashMap<String,T>();
    
    public RaplaMapImpl() {
-       this.map = new TreeMap<String,T>();
    }
 
    public RaplaMapImpl( Collection<T> list) {
@@ -69,37 +74,51 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
    }
 
    public RaplaMapImpl( Map<String,T> map) {
-       this.map = Collections.unmodifiableMap(map);
        for ( Iterator<String> it = this.map.keySet().iterator();it.hasNext();) {
            String key = it.next();
            T o = this.map.get(key );
-           if ( ! (o instanceof RaplaObject ) && !(o instanceof String) )
-           {   
-        	   throw new IllegalArgumentException("Only map entries of type RaplaObject or String are allowed.");
-           }
-           if ( o instanceof RefEntity) {
-               getReferenceHandler().put( key, (RefEntity<?>)o);
-           } else  {
-               childMap.put( key, o );
-           }
+          putPrivate(key, o);
        }
+       	referenceHandler = new ReferenceHandler(links);
    }
 
    
    /** This method is only used in storage operations, please dont use it from outside*/
    public void putPrivate(String key, T value)
    {
-       childMap.put( key, value);
+	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
+       {   
+       }
+       if ( value instanceof Entity) {
+    	   if ( links == null)
+    	   {
+    		   links = new LinkedHashMap<>();
+    	   }
+    	   links.put(key, Collections.singletonList( ((Entity) value).getId()));
+       }
+       else if ( value instanceof RaplaConfiguration) {
+    	   configurations.put( key, (RaplaConfiguration) value);
+       }
+       else if ( value instanceof RaplaMap) {
+    	   maps.put( key, (RaplaMapImpl) value);
+       }
+       else if ( value instanceof CalendarModelConfiguration) {
+    	   calendars.put( key, (CalendarModelConfigurationImpl) value);
+       }
+       else if ( value instanceof String) {
+    	   constants.put( key , (String) value);
+       } else {
+    	   throw new IllegalArgumentException("Map type not supported only entities, maps, configuration  or Strings are allowed.");
+       }
    }
 
-   
-   public Iterable<RefEntity<?>> getReferences() {
-	   NestedIterator<RefEntity<?>> refIt = new NestedIterator<RefEntity<?>>( getEntityReferencers()) {
-           public Iterable<RefEntity<?>> getNestedIterator(Object obj) {
-               return ((EntityReferencer)obj).getReferences();
+   public Iterable<String> getReferencedIds() {
+	   NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
+           public Iterable<String> getNestedIterator(EntityReferencer obj) {
+               return obj.getReferencedIds();
            }
        };
-       return new IteratorChain<RefEntity<?>>( refIt, getReferenceHandler().getReferences());
+       return new IteratorChain<String>( refIt, getReferenceHandler().getReferencedIds());
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
@@ -111,7 +130,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
    }
 
 
-   public boolean isRefering(RefEntity<?> object) {
+   public boolean isRefering(String object) {
        if ( getReferenceHandler().isRefering( object )) {
            return true;
        }
@@ -131,32 +150,29 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
        return getReferenceHandler().isRefering( entity);
    }*/
 
-   public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-       referenceHandler.resolveEntities( resolver );
+   public void setResolver( EntityResolver resolver) {
+       referenceHandler.setResolver( resolver );
        this.map =  fillMap(resolver);
    }
 
-   private Map<String, T> fillMap(EntityResolver resolver) throws EntityNotFoundException {
-	   Map<String,T> map = new HashMap<String,T>();
-       for ( String key:childMap.keySet()) 
-       {
-           T entity =  childMap.get(key) ;
-           if (resolver != null && entity instanceof EntityReferencer) {
-               ((EntityReferencer) entity).resolveEntities( resolver);
-           }
-           map.put( key, entity);
-       }
-       for ( String key: getReferenceHandler().getReferenceKeys()) {
-           @SuppressWarnings("unchecked")
-           T entity = (T) getReferenceHandler().get(key) ;
-           Assert.notNull( entity );
-           map.put( key, entity);
-       }
-       Map<String, T> unmodifiableMap = Collections.unmodifiableMap( map );
-       return unmodifiableMap;
+   private Map<String, T> fillMap(EntityResolver resolver)  {
+	   Map<String,T> map = new LinkedHashMap<String,T>();
+	   fillMap(maps);
+	   fillMap(configurations);
+	   fillMap(constants);
+	   fillMap(calendars);
+       return map;
    }
 
-   public ReferenceHandler getReferenceHandler() {
+   private void fillMap(Map<String, ?> map) {
+	   if ( map == null)
+	   {
+		   return;
+	   }
+	   this.map.putAll( (Map<? extends String, ? extends T>) map);
+   }
+
+public ReferenceHandler getReferenceHandler() {
        return referenceHandler;
    }
 
@@ -165,7 +181,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
     }
 
     public boolean needsChange(DynamicType type) {
-        for (Iterator<T> it = childMap.values().iterator();it.hasNext();) {
+        for (Iterator<T> it = map.values().iterator();it.hasNext();) {
             Object obj = it.next();
             if ( obj instanceof DynamicTypeDependant) {
                 if (((DynamicTypeDependant) obj).needsChange( type ))
@@ -176,7 +192,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
     }
 
     public void commitChange(DynamicType type) {
-        for (Iterator<T> it = childMap.values().iterator();it.hasNext();) {
+        for (Iterator<T> it = map.values().iterator();it.hasNext();) {
             Object obj = it.next();
             if ( obj instanceof DynamicTypeDependant) {
                 ((DynamicTypeDependant) obj).commitChange( type );
@@ -185,7 +201,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
     }
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException {
-        for (Iterator<T> it = childMap.values().iterator();it.hasNext();) {
+        for (Iterator<T> it = map.values().iterator();it.hasNext();) {
             Object obj = it.next();
             if ( obj instanceof DynamicTypeDependant) {
                 ((DynamicTypeDependant) obj).commitRemove( type );
@@ -270,57 +286,96 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
      * @see java.util.Map#values()
      */
     public Collection<T> values() {
-        return map.values();
+    	if ( links == null)
+    	{
+    		return map.values();
+    	}
+    	else
+    	{
+    		List<T> result = new ArrayList();
+    		Collection<List<String>> values = links.values();
+    		for (List<String> list: values)
+    		{
+    			if ( list!= null && list.size() > 0 )
+    			{
+    				String id = list.get(0);
+    				Entity resolved = getReferenceHandler().getResolver().tryResolve( id);
+    				result.add((T) resolved);
+    			}
+    		}
+    		return result;
+    	}
     }
 
+    class Entry implements Map.Entry<String, T>
+    {
+    	String key;
+    	String id;
+    	
+    	Entry(String key,String id)
+    	{
+    		this.key = key;
+    		this.id = id;
+    	}
+    	public String getKey() {
+			return key;
+		}
+    	
+		public T getValue() {
+			if ( id == null)
+			{
+				return null;
+			}
+			Entity resolve = getReferenceHandler().getResolver().tryResolve( id );
+			return (T) resolve;
+		}
+
+		public T setValue(T value) {
+			throw new UnsupportedOperationException();
+		}
+		
+		public int hashCode() {
+			return key.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return key.equals( ((Entry)  obj).key);
+		}
+    }
+    
+    transient Set<Map.Entry<String, T>> linkEntries; 
     /**
      * @see java.util.Map#entrySet()
      */
     public Set<Map.Entry<String, T>> entrySet() {
-        return map.entrySet();
+    	if ( links != null)
+    	{
+    		if ( linkEntries != null)
+    		{
+    			linkEntries = new HashSet<Map.Entry<String, T>>();
+    			for (Map.Entry<String,List<String>> entry:links.entrySet())
+    			{
+    				String key = entry.getKey();
+    				List<String> list = entry.getValue();
+    				String id = (list== null || list.size() == 0) ? null: list.get( 0);
+					linkEntries.add(new Entry( key, id));
+    			}
+    		}
+    		return linkEntries;
+    	}
+    	else
+    	{
+    		return map.entrySet();
+    	}
     }
 
-    @SuppressWarnings("unchecked")
-	static private <T> void copy(RaplaMapImpl<T> source,RaplaMapImpl<T> dest) {
-    	dest.referenceHandler = (ReferenceHandler)source.referenceHandler.clone();
-    	dest.childMap = new HashMap<String,T>();
-    	for (Map.Entry<String, T> entry:source.childMap.entrySet())
-    	{
-    		String key = entry.getKey();
-    		T value = entry.getValue();
-    		T copy;
-    		if ( value instanceof Mementable)
-    		{
-    			copy = ((Mementable<? extends T>)value).deepClone();
-    		}
-    		else
-    		{
-    			copy = value;
-    		}
-    		dest.childMap.put( key, copy);
-    	}
-    	try {
-			dest.map = dest.fillMap(null);
-		} catch (EntityNotFoundException e) {
-			// Do nothing as we don't resolve entities
-		}
-    }
-	
-    
-        /** Sets the attributes of the object implementing this interface 
-     * to the attributes stored in the passed objects.
-     */
-    public void copy( RaplaMap<T> obj )
-    {
-    	copy( (RaplaMapImpl<T>)obj, this);
-    	    	
-    }
     
     /** Clones the entity and all subentities*/
     public RaplaMap<T> deepClone()
     {
-    	RaplaMapImpl<T> clone = new RaplaMapImpl<T>();
-    	copy( this,clone);
+    	RaplaMapImpl<T> clone = new RaplaMapImpl<T>(this);
+    	clone.setResolver( getReferenceHandler().getResolver());
     	return clone;
     }
 

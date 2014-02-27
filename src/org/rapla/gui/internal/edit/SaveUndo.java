@@ -13,15 +13,15 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.Mementable;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements CommandUndo<RaplaException> {
-	protected final List<Entity<T>> newEntities;
-	protected final List<Entity<T>> oldEntities;
+public class SaveUndo<T extends Entity> extends RaplaComponent implements CommandUndo<RaplaException> {
+	protected final List<T> newEntities;
+	protected final List<T> oldEntities;
 	protected final String commandoName;
    	protected boolean firstTimeCall = true;
 	
@@ -33,12 +33,11 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 	{
 	    super(context);
 	    this.commandoName = commandoName;
-	    this.newEntities = new ArrayList<Entity<T>>();
+	    this.newEntities = new ArrayList<T>();
 		for ( T entity: newEntity)
 		{
-			@SuppressWarnings("unchecked")
-            Mementable<T> mementable = (Mementable<T>)entity;
-            this.newEntities.add(mementable.deepClone());
+            T clone = (T) entity.clone();
+			this.newEntities.add(clone);
 		}
 		if (originalEntity !=null)
 		{
@@ -46,12 +45,11 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 			{
 				throw new IllegalArgumentException("Original and new list need the same size");
 			}
-			this.oldEntities = new ArrayList<Entity<T>>();
+			this.oldEntities = new ArrayList<T>();
 			for ( T entity: originalEntity)
     		{
-				@SuppressWarnings("unchecked")
-                Mementable<T> mementable = (Mementable<T>)entity;
-                this.oldEntities.add( mementable.deepClone());
+                T clone = (T) entity.clone();
+                this.oldEntities.add( clone);
     		}
 		}
 		else
@@ -63,8 +61,8 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 	public boolean execute() throws RaplaException {
 		final boolean isNew = oldEntities == null;
 
-		List<Entity<T>> toStore = new ArrayList<Entity<T>>();
-		Map<Entity<T>,T> newEntitiesPersistant = null;
+		List<T> toStore = new ArrayList<T>();
+		Map<T,T> newEntitiesPersistant = null;
 		if ( !firstTimeCall || !isNew)
 		{
 			newEntitiesPersistant= getModification().getPersistant(newEntities);
@@ -77,16 +75,14 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 		{
 			checklastChanged(newEntities, newEntitiesPersistant);
 		}
-		for ( Entity<T> entity: newEntities)
+		for ( T entity: newEntities)
 		{
-			RefEntity<T> newEntity = (RefEntity<T>) entity;
-			@SuppressWarnings("unchecked")
-            Mementable<T> mementable = (Mementable<T>)entity;
-            RefEntity<T>  mutableEntity = (RefEntity<T>) mementable.deepClone();
+			Entity newEntity =  entity;
+            T  mutableEntity = (T) entity.clone();
 			if (!isNew)
 			{
 				@SuppressWarnings("null")
-				RefEntity<T> persistant = (RefEntity<T>) newEntitiesPersistant.get( entity);
+				Entity persistant = (Entity) newEntitiesPersistant.get( entity);
 				copyVersions(newEntity, mutableEntity, persistant);
 			}
 			toStore.add( mutableEntity);
@@ -97,7 +93,7 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 		return true;
 	}
 
-	protected void checklastChanged(List<Entity<T>> entities, Map<Entity<T>,T> persistantVersions) throws RaplaException,
+	protected void checklastChanged(List<T> entities, Map<T,T> persistantVersions) throws RaplaException,
 			EntityNotFoundException {
 		getUpdateModule().refresh();
 		for ( Entity<T> entity:entities)
@@ -133,23 +129,20 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 		boolean isNew = oldEntities == null;
 
 		if (isNew) {
-			Map<Entity<T>,T> newEntitiesPersistant = getModification().getPersistant(newEntities);
+			Map<T,T> newEntitiesPersistant = getModification().getPersistant(newEntities);
 			checklastChanged(newEntities, newEntitiesPersistant);
-			@SuppressWarnings("unchecked")
-            Entity<T>[] array = newEntities.toArray(new Entity[]{});
+            Entity[] array = newEntities.toArray(new Entity[]{});
 			getModification().removeObjects(array);
 		} else {
-			List<Entity<T>> toStore = new ArrayList<Entity<T>>();
+			List<T> toStore = new ArrayList<T>();
 			int i=0;
-			Map<Entity<T>,T> oldEntitiesPersistant = getModification().getPersistant(oldEntities);
+			Map<T,T> oldEntitiesPersistant = getModification().getPersistant(oldEntities);
 			checklastChanged(oldEntities, oldEntitiesPersistant);
-			for ( Entity<T> entity: oldEntities)
+			for ( T entity: oldEntities)
     		{
-				@SuppressWarnings("unchecked")
-                Mementable<T> mementable = (Mementable<T>)entity;
-                RefEntity<T> mutableEntity = (RefEntity<T>) mementable.deepClone();
-            	RefEntity<T> persistantVersion = (RefEntity<T>) oldEntitiesPersistant.get( entity);
-            	RefEntity<T> versionedEntity = (RefEntity<T>) newEntities.get( i);
+                T mutableEntity = (T) entity.clone();
+            	T persistantVersion = oldEntitiesPersistant.get( entity);
+            	T versionedEntity = newEntities.get( i);
 				copyVersions(versionedEntity, mutableEntity, persistantVersion);
 				toStore.add( mutableEntity);
     		}
@@ -162,23 +155,26 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 	}
 	
 	// FIXME this method is dangerous, because dynamic type changes can be overwritten.
-	 private  void copyVersions(RefEntity<T> source, RefEntity<T> dest, RefEntity<T> persistant) {
-		for (RefEntity<?> next:source.getSubEntities())
+	 private  void copyVersions(Entity source, Entity dest, Entity persistant) {
+		if ( source instanceof ParentEntity)
 		{
-			RefEntity<?> foundEntity = persistant.findEntity( next);
-			if ( foundEntity != null)
+			for (Entity next:((ParentEntity)source).getSubEntities())
 			{
-				long version = foundEntity.getVersion();
-				RefEntity<?> refEntity = (RefEntity<?>) dest.findEntity(next);
-				if ( refEntity != null)
+				RefEntity foundEntity = (RefEntity) ((ParentEntity)persistant).findEntity( next);
+				if ( foundEntity != null)
 				{
-					refEntity.setVersion(version);
+					int version = foundEntity.getVersion();
+					RefEntity refEntity = (RefEntity) ((ParentEntity)dest).findEntity(next);
+					if ( refEntity != null)
+					{
+						refEntity.setVersion(version);
+					}
 				}
 			}
 		}
 		
-		long version = persistant.getVersion();
-		dest.setVersion(version);
+		int version = ((RefEntity)persistant).getVersion();
+		((RefEntity)dest).setVersion(version);
 	 }
 	 
 	 public String getCommandoName() 
@@ -188,7 +184,7 @@ public class SaveUndo<T extends Entity<T>> extends RaplaComponent implements Com
 			 return commandoName;
 		 }
 	     boolean isNew = oldEntities == null;     
-         Iterator<Entity<T>> iterator = newEntities.iterator();
+         Iterator<T> iterator = newEntities.iterator();
          StringBuffer buf = new StringBuffer();
          buf.append(isNew ? getString("new"): getString("edit") );
          if ( iterator.hasNext())

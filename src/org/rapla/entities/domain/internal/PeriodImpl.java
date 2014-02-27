@@ -19,7 +19,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class PeriodImpl extends SimpleEntity<Period>
+public class PeriodImpl extends SimpleEntity
     implements
         Period
 {
@@ -106,23 +106,12 @@ public class PeriodImpl extends SimpleEntity<Period>
         return (hashCode() < period.hashCode()) ? -1 : 1;
     }
 
-
-    static private void copy(PeriodImpl source,PeriodImpl dest) {
-        dest.start = source.start;
-        dest.end = source.end;
-        dest.name = source.name;
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(Period obj) {
-        super.copy((SimpleEntity<Period>)obj);
-        copy((PeriodImpl) obj,this);
-    }
-
-    public Period deepClone() {
+    public PeriodImpl clone() {
         PeriodImpl clone = new PeriodImpl();
         super.deepClone(clone);
-        copy(this,clone);
+    	clone.start = start;
+        clone.end = end;
+        clone.name = name;
         return clone;
     }
 

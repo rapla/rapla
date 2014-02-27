@@ -12,9 +12,11 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.EntityNotFoundException;
@@ -24,9 +26,9 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 
 
 /**
@@ -59,7 +61,15 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
        this.startDate = startDate;
        this.endDate = endDate;
        this.selectedDate = selectedDate;
-       super.setClassificationFilter( filter );
+       List<ClassificationFilterImpl> filterList = new ArrayList<ClassificationFilterImpl>();
+       if ( filter != null)
+       {
+	       for ( ClassificationFilter f:filter)
+	       {
+	    	   filterList.add((ClassificationFilterImpl)f);
+	       }
+       }
+       super.setClassificationFilter( filterList );
        this.selected = (RaplaMapImpl<RaplaObject>)selected;
        if (selected == null)
        {
@@ -75,10 +85,10 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    private CalendarModelConfigurationImpl() {
    }
 
-   public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-       super.resolveEntities( resolver );
-       selected.resolveEntities( resolver );
-       optionMap.resolveEntities( resolver );
+   public void setResolver( EntityResolver resolver)  {
+       super.setResolver( resolver );
+       selected.setResolver( resolver );
+       optionMap.setResolver( resolver );
    }
 
 
@@ -116,18 +126,15 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
     }
 
     
-    /**
-     * @see org.rapla.entities.storage.EntityReferencer#getReferences()
-     */
-    public Iterable<RefEntity<?>> getReferences() {
-        Iterable<RefEntity<?>> references = super.getReferences();
-		return new IteratorChain<RefEntity<?>>(references, selected.getReferences());
+    public Iterable<String> getReferencedIds() {
+        Iterable<String> references = super.getReferencedIds();
+		return new IteratorChain<String>(references, selected.getReferencedIds());
     }
 
     /**
-     * @see org.rapla.entities.storage.EntityReferencer#isRefering(org.rapla.entities.storage.RefEntity)
+     * @see org.rapla.entities.storage.EntityReferencer#isRefering(org.rapla.entities.storage.Entity)
      */
-    public boolean isRefering(RefEntity<?> object) {
+    public boolean isRefering(String object) {
         if ( selected.isRefering( object ) )
             return true;
         if ( super.isRefering(object)) {
@@ -175,11 +182,11 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
          dest.startDate = source.startDate;
          dest.endDate = source.endDate;
          dest.selectedDate = source.selectedDate;
-         ClassificationFilter[] filter = source.getFilter();
-         ClassificationFilter[] newFilter = new ClassificationFilter[filter.length];
-         for ( int i=0;i<filter.length;i++)
+         List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>();
+         for ( ClassificationFilterImpl f: source.classificationFilters)
          {
-        	 newFilter[i] = filter[i].clone();
+        	 ClassificationFilterImpl clone = f.clone();
+        	 newFilter.add( clone);
          }
          dest.setClassificationFilter(newFilter  );
          dest.selected = (RaplaMapImpl<RaplaObject>)source.selected.deepClone();
@@ -198,7 +205,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 		copy(this,clone);
 		return clone;
 	}
-	
 
 	public CalendarModelConfiguration clone() {
 		return deepClone();

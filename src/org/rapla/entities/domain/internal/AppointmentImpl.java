@@ -33,11 +33,10 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 
-public class AppointmentImpl extends SimpleEntity<Appointment> implements Appointment
+public class AppointmentImpl extends SimpleEntity implements Appointment
 {
     private Date start;
     private Date end;
@@ -50,6 +49,7 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
     public static String DD = null;
 
     final public RaplaType<Appointment> getRaplaType() {return TYPE;}
+    transient ReservationImpl parent;
     
     private AppointmentImpl() {
     }
@@ -61,7 +61,6 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
         {
             isWholeDaysSet = true;
         }
- 
     }
 
     public AppointmentImpl(Date start,Date end, RepeatingType type, int repeatingDuration) {
@@ -70,19 +69,17 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
         repeating.setNumber(repeatingDuration);
     }
     
-    
-    
 
-    public void setParent(Reservation parent) {
-        getReferenceHandler().put("parent",(RefEntity<?>)parent);
-        if (parent != null)
+    public void setParent(ReservationImpl parent) {
+    	this.parent = parent;
+    	if (parent != null)
             setOwner(parent.getOwner());
     }
 
     public void removeParent()
     {
-        getReferenceHandler().removeWithKey("parent");
-        setOwner( null );
+    	this.parent = null;
+    	setOwner( null );
     }
 
     
@@ -122,7 +119,7 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
     }
 
     public Reservation getReservation() {
-        return (Reservation)getReferenceHandler().get("parent");
+        return parent;
     }
 
     public boolean isWholeDaysSet() {
@@ -171,7 +168,7 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
         }
         
         Comparable id1 =  getId();
-        Comparable id2 = ((RefEntity<?>)a2).getId();
+        Comparable id2 = a2.getId();
         if ( id1 == null || id2 == null)
         {
             return hashCode() < a2.hashCode() ? -1 : 1;
@@ -738,26 +735,23 @@ public class AppointmentImpl extends SimpleEntity<Appointment> implements Appoin
                                            : null);
         if (dest.repeating != null)
             dest.repeating.setAppointment(dest);
+        dest.parent = source.parent;
     }
 
     
     @SuppressWarnings("unchecked")
-	public void copy(Appointment obj) {
+	public void copy(Object obj) {
     	synchronized ( this) {
-            super.copy((SimpleEntity<Appointment>)obj);
             copy((AppointmentImpl) obj,this);			
 		}
     }
 
-    public Appointment deepClone() {
+
+    public AppointmentImpl clone() {
         AppointmentImpl clone = new AppointmentImpl();
         super.deepClone(clone);
         copy(this,clone);
         return clone;
-    }
-
-    public Appointment clone() {
-        return deepClone();
     }
     
     static public SortedSet<Appointment> getAppointments(SortedSet<Appointment> sortedAppointmentList,User user,Date start,Date end, boolean excludeExceptions) {

@@ -31,7 +31,6 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
@@ -208,7 +207,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 					out.print("</a>");
 					out.print("</td>");
 					out.print("<td>");
-					String link = base + "/rapla?" + queryPath + "&allocatable_id=" + ((RefEntity)alloc).getId();
+					String link = base + "/rapla?" + queryPath + "&allocatable_id=" + alloc.getId();
 					out.print("<a href=\""+ link+ "\">");
 					out.print(link);
 					out.print("</a>");

@@ -17,6 +17,7 @@ import java.util.Date;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -24,7 +25,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
@@ -117,7 +117,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println("<!-- Users of the system -->");
         for (User user:cache.getCollection(User.class)) {
 			PreferencesImpl preferences = cache.getPreferences( user);
-			String password = cache.getPassword(((RefEntity<?>)user).getId());
+			String password = cache.getPassword(((Entity)user).getId());
 			userWriter.printUser( user, password, preferences);
         }
         closeElement("rapla:users");

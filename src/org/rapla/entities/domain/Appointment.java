@@ -21,7 +21,7 @@ import org.rapla.entities.User;
 /** The basic building blocks of reservations.
     @see Reservation
     @see Repeating*/
-public interface Appointment extends Entity<Appointment>, Comparable<Appointment> {
+public interface Appointment extends Entity<Appointment>, Comparable {
     final RaplaType<Appointment> TYPE = new RaplaType<Appointment>(Appointment.class, "appointment" );
     Date getStart();
     Date getEnd();

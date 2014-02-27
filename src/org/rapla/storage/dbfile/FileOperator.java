@@ -27,7 +27,6 @@ import java.util.concurrent.locks.Lock;
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -221,7 +220,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             cache.getSuperCategory().setReadOnly(true);
             for (User user:cache.getCollection(User.class))
             {
-                Object id = ((RefEntity<?>)user).getId();
+                String id = user.getId();
                 String password = entityStore.getPassword( id );
                 //System.out.println("Storing password in cache" + password);
                 cache.putPassword( id, password );

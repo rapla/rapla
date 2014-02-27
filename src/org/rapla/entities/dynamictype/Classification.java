@@ -23,6 +23,7 @@ import org.rapla.entities.Named;
 public interface Classification extends Named,Cloneable {
     DynamicType getType();
     String getName(Locale locale);
+    String getNamePlaning(Locale locale);
     Attribute[] getAttributes();
     Attribute getAttribute(String key);
     void setValue(Attribute attribute,Object value);

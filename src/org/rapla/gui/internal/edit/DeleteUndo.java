@@ -12,7 +12,6 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.Mementable;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -35,9 +34,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	    	}
 			else
 			{
-				@SuppressWarnings("unchecked")
-				Mementable<T> mementable = (Mementable<T>)entity;
-				this.entities.add(mementable.deepClone());
+				this.entities.add(entity.clone());
 			}
 		}
 	}
@@ -94,9 +91,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		List<Entity<T>> toStore = new ArrayList<Entity<T>>();
 		for ( T entity: entities)
 		{
-			@SuppressWarnings("unchecked")
-            Mementable<T> mementable = (Mementable<T>)entity;
-            Entity<T>  mutableEntity = mementable.deepClone();
+            Entity<T>  mutableEntity = entity.clone();
 			toStore.add( mutableEntity);
 		}
 		Collection<Category> categoriesToStore2 = new LinkedHashSet<Category>();

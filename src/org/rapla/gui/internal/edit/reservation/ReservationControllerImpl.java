@@ -663,8 +663,8 @@ public class ReservationControllerImpl extends RaplaGUIComponent
 					try
 					{
 						Reservation persistant = getModification().getPersistant( original);
-						long version = ((RefEntity<?>)persistant).getVersion();
-						long originalVersion = ((RefEntity<?>)original).getVersion();
+						long version = ((RefEntity)persistant).getVersion();
+						long originalVersion = ((RefEntity)original).getVersion();
 						if ( originalVersion < version)
 						{
 							c.updateReservation(persistant);
@@ -1394,7 +1394,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
 		}
 		
 		public boolean execute() throws RaplaException {
-			List<Entity<Reservation>> clones = copy(fromReservation,start);
+			List<Reservation> clones = copy(fromReservation,start);
 			array = clones.toArray(Reservation.RESERVATION_ARRAY);
 			getModification().storeAndRemove(array , Reservation.RESERVATION_ARRAY);
 			return true;

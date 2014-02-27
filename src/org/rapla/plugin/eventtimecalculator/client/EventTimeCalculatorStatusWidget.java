@@ -1,20 +1,15 @@
 package org.rapla.plugin.eventtimecalculator.client;
 
 import java.awt.Font;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;

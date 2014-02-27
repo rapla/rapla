@@ -24,9 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.gson.JsonElement;
 import com.google.gwtjsonrpc.common.AsyncCallback;
 import com.google.gwtjsonrpc.common.JsonConstants;
-import com.google.gwtjsonrpc.server.SignedToken;
-import com.google.gwtjsonrpc.server.ValidToken;
-import com.google.gwtjsonrpc.server.XsrfException;
 
 /** An active RPC call. */
 public class ActiveCall implements AsyncCallback<Object> {

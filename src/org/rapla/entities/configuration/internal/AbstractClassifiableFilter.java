@@ -14,7 +14,7 @@ package org.rapla.entities.configuration.internal;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,50 +27,52 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 
 public abstract class AbstractClassifiableFilter  implements EntityReferencer, DynamicTypeDependant, Serializable
 {
     private static final long serialVersionUID = 1L;
-    ClassificationFilter[] classificationFilters;
+    List<ClassificationFilterImpl> classificationFilters;
     
     AbstractClassifiableFilter() {
-    	classificationFilters = new ClassificationFilter[0];
+    	classificationFilters = new ArrayList<ClassificationFilterImpl>();
     }
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        for (int i=0;i<classificationFilters.length;i++) {
-            ((EntityReferencer)classificationFilters[i]).resolveEntities( resolver );
+   
+    public void setResolver( EntityResolver resolver) {
+        for (ClassificationFilterImpl filter:classificationFilters) {
+            filter.setResolver( resolver );
         }
     }
 
-    public boolean isRefering(RefEntity<?> object) {
-        for (int i=0;i<classificationFilters.length;i++)
-            if (((ClassificationFilterImpl)classificationFilters[i]).isRefering(object))
-                return true;
-        return false;
+    public boolean isRefering(String object) {
+    	for (ClassificationFilterImpl filter:classificationFilters) {
+    		if (filter.isRefering( object ))
+    		{
+    			return true;
+    		}
+    	}
+    	return false;
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-        Iterable<ClassificationFilter> classificatonFilterIterator = Arrays.asList(classificationFilters);
-        return new NestedIterator<RefEntity<?>>(classificatonFilterIterator) {
-                public Iterable<RefEntity<?>> getNestedIterator(Object obj) {
-                    return ((ClassificationFilterImpl)obj).getReferences();
+    public Iterable<String> getReferencedIds() {
+        Iterable<ClassificationFilterImpl> classificatonFilterIterator = classificationFilters;
+        return new NestedIterator<String,ClassificationFilterImpl>(classificatonFilterIterator) {
+                public Iterable<String> getNestedIterator(ClassificationFilterImpl obj) {
+                    return obj.getReferencedIds();
                 }
             };
     }
 
 
-    public void setClassificationFilter(ClassificationFilter[] classificationFilters) {
+    public void setClassificationFilter(List<ClassificationFilterImpl> classificationFilters) {
         if ( classificationFilters != null)
             this.classificationFilters = classificationFilters;
         else
-            this.classificationFilters = ClassificationFilter.CLASSIFICATIONFILTER_ARRAY;
+            this.classificationFilters = Collections.emptyList();
     }
 
     public boolean needsChange(DynamicType type) {
-        ClassificationFilter[] filters = getFilter();
-        for (int i=0;i<filters.length;i++) {
-            ClassificationFilterImpl filter = (ClassificationFilterImpl)filters[i];
+        for (ClassificationFilterImpl filter:classificationFilters)
+        {
             if (filter.needsChange(type))
                 return true;
         }
@@ -78,9 +80,8 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     }
 
     public void commitChange(DynamicType type) {
-        ClassificationFilter[] filters = getFilter();
-        for (int i=0;i<filters.length;i++) {
-            ClassificationFilterImpl filter = (ClassificationFilterImpl)filters[i];
+        for (ClassificationFilterImpl filter:classificationFilters)
+        {
             if (filter.getType().equals(type))
                 filter.commitChange(type);
         }
@@ -88,22 +89,21 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
     {
-        ClassificationFilter[] filters = getFilter();
-        List<ClassificationFilter> newFilter = new ArrayList<ClassificationFilter>(Arrays.asList( filters));
-        for (Iterator<ClassificationFilter> f=newFilter.iterator();f.hasNext();) {
-            ClassificationFilter filter = f.next();
+        List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>( classificationFilters);
+        for (Iterator<ClassificationFilterImpl> f=newFilter.iterator();f.hasNext();) {
+            ClassificationFilterImpl filter = f.next();
             if (filter.getType().equals(type))
             {
                 f.remove();
                 break;
             }
         }
-        classificationFilters = newFilter.toArray( ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
+        classificationFilters = newFilter;
  
     }
 
     public ClassificationFilter[] getFilter() {
-        return classificationFilters;
+        return classificationFilters.toArray( ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
     }
     
     

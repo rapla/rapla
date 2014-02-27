@@ -53,6 +53,7 @@ public class PreferenceReader extends RaplaXMLReader {
             
         if (localName.equals("preferences")) {
             preferences = new PreferencesImpl();
+            preferences.setResolver( resolver);
             String id = atts.getValue("id");
             if ( id!=null) {
                 setId( preferences, atts );
@@ -110,7 +111,7 @@ public class PreferenceReader extends RaplaXMLReader {
         } 
         if (localName.equals("entry") && stringValue == null) {
             RaplaObject type = childReader.getType();
-            preferences.putEntry(configRole, type);
+            preferences.putEntryPrivate(configRole, type);
         }
     }
     

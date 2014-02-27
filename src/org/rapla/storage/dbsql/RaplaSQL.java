@@ -62,7 +62,6 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -158,7 +157,7 @@ class RaplaSQL {
     }
 
     @SuppressWarnings("unchecked")
-	synchronized public void remove(Connection con,RefEntity<?> entity) throws SQLException,RaplaException {
+	synchronized public void remove(Connection con,Entity entity) throws SQLException,RaplaException {
     	if ( Attribute.TYPE ==  entity.getRaplaType() )
 			return;
 		for (RaplaTypeStorage storage:stores) {
@@ -166,7 +165,7 @@ class RaplaSQL {
 		    	storage.setConnection(con);
 		    	try
 		    	{
-			    	List<RefEntity<?>> list = new ArrayList<RefEntity<?>>();
+			    	List<Entity>list = new ArrayList<Entity>();
 			    	list.add( entity);
 	                storage.delete(list);
 		    	}
@@ -181,10 +180,10 @@ class RaplaSQL {
     }
 
     @SuppressWarnings("unchecked")
-	synchronized public void store(Connection con, Collection<RefEntity<?>> entities) throws SQLException,RaplaException {
+	synchronized public void store(Connection con, Collection<Entity>entities) throws SQLException,RaplaException {
 
-        Map<Storage,List<RefEntity<?>>> store = new LinkedHashMap<Storage, List<RefEntity<?>>>();
-        for ( RefEntity<?> entity:entities)
+        Map<Storage,List<Entity>> store = new LinkedHashMap<Storage, List<Entity>>();
+        for ( Entity entity:entities)
         {
             if ( Attribute.TYPE ==  entity.getRaplaType() )
                 continue;
@@ -192,10 +191,10 @@ class RaplaSQL {
             for ( RaplaTypeStorage storage: stores)
             {
                 if (storage.canStore(entity)) {
-                    List<RefEntity<?>> list = store.get( storage);
+                    List<Entity>list = store.get( storage);
                     if ( list == null)
                     {
-                        list = new ArrayList<RefEntity<?>>();
+                        list = new ArrayList<Entity>();
                         store.put( storage, list);
                     }
                     list.add( entity);
@@ -212,7 +211,7 @@ class RaplaSQL {
             storage.setConnection(con);
             try
             {
-            	List<RefEntity<?>> list = store.get( storage);
+            	List<Entity>list = store.get( storage);
             	storage.save(list);
             }
             finally
@@ -251,8 +250,8 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
     	return entity.getRaplaType() == raplaType;
     }
     void insertAll() throws SQLException,RaplaException {
-        Collection<RefEntity<T>> collection = cache.getCollection( raplaType );
-		insert(collection);
+    	Collection<T> collection = cache.getCollection( raplaType );
+		insert( collection );
     }
 
     protected String getXML(RaplaObject type) throws RaplaException {
@@ -288,12 +287,11 @@ class PeriodStorage extends RaplaTypeStorage<Period> {
     	super(context, Period.TYPE,"PERIOD",new String[] {"ID INTEGER NOT NULL PRIMARY KEY","NAME VARCHAR(255) NOT NULL","PERIOD_START DATETIME NOT NULL","PERIOD_END DATETIME NOT NULL"});
     }
 
-    protected int write(PreparedStatement stmt,RefEntity<Period> entity) throws SQLException {
-		Period s =  entity.cast();
-		setId(stmt,1,entity);
-		setString(stmt,2,s.getName());
-		setDate( stmt,3, s.getStart());
-		setDate( stmt,4, s.getEnd());
+    protected int write(PreparedStatement stmt,Period period) throws SQLException {
+		setId(stmt,1,period);
+		setString(stmt,2,period.getName());
+		setDate( stmt,3, period.getStart());
+		setDate( stmt,4, period.getEnd());
 		stmt.addBatch();
 		return 1;
     }
@@ -360,13 +358,12 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     	checkAndRetype(schema, "DEFINITION");
 	}
         
-	protected int write(PreparedStatement stmt,RefEntity<Category> entity) throws SQLException, RaplaException {
+	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
         Category root = getSuperCategory();
-        if ( entity.equals( root ))
+        if ( category.equals( root ))
             return 0;
-		Category category =  entity.cast();
 		String name = category.getName( getLocale() );
-		setId( stmt,1, entity);
+		setId( stmt,1, category);
 		setId( stmt,2, category.getParent());
         int order = getOrder( category);
         String xml = getXML( category );
@@ -492,7 +489,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     }
        
     
-	protected int write(PreparedStatement stmt,RefEntity<Allocatable> entity) throws SQLException,RaplaException {
+	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
 	  	AllocatableImpl allocatable = (AllocatableImpl) entity;
 	  	String typeKey = allocatable.getClassification().getType().getElementKey();
 		setId(stmt, 1, entity);
@@ -559,10 +556,9 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	checkAndAdd(schema, "LAST_CHANGED_BY");
     }
 
-    protected int write(PreparedStatement stmt,RefEntity<Reservation> entity) throws SQLException,RaplaException {
-      	Reservation event = entity.cast();
+    protected int write(PreparedStatement stmt,Reservation event) throws SQLException,RaplaException {
       	String typeKey = event.getClassification().getType().getElementKey();
-      	setId(stmt,1, entity );
+      	setId(stmt,1, event );
       	setString(stmt,2, typeKey );
     	setId(stmt,3, event.getOwner() );
     	org.rapla.entities.Timestamp timestamp = event;
@@ -612,7 +608,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 }
 
 /** This class should only be used within the ResourceStorage class*/
-class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > extends EntityStorage<T> {
+class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     Map<String,Classification> classificationMap;
     Map<String,? extends Annotatable> annotableMap;
     final String foreignKeyName;
@@ -632,8 +628,8 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
     }
     
     
-	protected int write(PreparedStatement stmt,RefEntity<T> classifiable) throws EntityNotFoundException, SQLException {
-        Classification classification =  classifiable.cast().getClassification();
+	protected int write(PreparedStatement stmt,T classifiable) throws EntityNotFoundException, SQLException {
+        Classification classification =  ((Classifiable)classifiable).getClassification();
         Attribute[] attributes = classification.getAttributes();
         int count =0;
         for (int i=0;i<attributes.length;i++) {
@@ -644,8 +640,7 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
             	String valueAsString;
             	if ( value instanceof Category || value instanceof Allocatable)
             	{
-            		@SuppressWarnings("unchecked")
-                    RefEntity<Category> casted = (RefEntity<Category>) value;
+                    Category casted = (Category) value;
                     valueAsString = ""+	getId(casted);
             	}
             	else
@@ -659,7 +654,7 @@ class AttributeValueStorage<T extends Classifiable & Annotatable & Entity<T> > e
 	            count++;
             }
         }
-    	Annotatable annotatable = classifiable.cast();
+    	Annotatable annotatable = (Annotatable)classifiable;
     	for ( String key: annotatable.getAnnotationKeys())
     	{
     		String valueAsString = annotatable.getAnnotation( key);
@@ -729,9 +724,9 @@ class PermissionStorage extends EntityStorage<Allocatable>  {
         this.allocatableMap = allocatableMap;
     }
 
-    protected int write(PreparedStatement stmt, RefEntity<Allocatable> allocatable) throws SQLException, RaplaException {
+    protected int write(PreparedStatement stmt, Allocatable allocatable) throws SQLException, RaplaException {
         int count = 0;
-        for (Permission s:allocatable.cast().getPermissions()) {
+        for (Permission s:allocatable.getPermissions()) {
 			setId(stmt,1,allocatable);
 			setId(stmt,2,s.getUser());
 			setId(stmt,3,s.getGroup());
@@ -789,9 +784,8 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         addSubStorage(allocationStorage);
     }
 
-    protected int write(PreparedStatement stmt,RefEntity<Appointment> entity) throws SQLException,RaplaException {
-        Appointment appointment =  entity.cast();
-      	setId( stmt, 1, entity);
+    protected int write(PreparedStatement stmt,Appointment appointment) throws SQLException,RaplaException {
+      	setId( stmt, 1, appointment);
       	setId( stmt, 2, appointment.getReservation());
       	setDate(stmt, 3, appointment.getStart());
       	setDate(stmt, 4, appointment.getEnd());
@@ -868,8 +862,7 @@ class AllocationStorage extends EntityStorage<Appointment>  {
     	checkAndAdd( schema, "OPTIONAL");
     }
     
-    protected int write(PreparedStatement stmt, RefEntity<Appointment> entity) throws SQLException, RaplaException {
-        Appointment appointment =  entity.cast();
+    protected int write(PreparedStatement stmt, Appointment appointment) throws SQLException, RaplaException {
         Reservation event = appointment.getReservation();
         int count = 0;
         for (Allocatable allocatable: event.getAllocatablesFor(appointment)) {
@@ -918,8 +911,8 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
     }
 
 
-    protected int write(PreparedStatement stmt, RefEntity<Appointment> entity) throws SQLException, RaplaException {
-        Repeating repeating = entity.cast().getRepeating();
+    protected int write(PreparedStatement stmt, Appointment entity) throws SQLException, RaplaException {
+        Repeating repeating = entity.getRepeating();
         int count = 0;
         if ( repeating == null) {
             return count;
@@ -961,9 +954,8 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
     	checkAndRetype(schema, "DEFINITION");
     }
 
-	protected int write(PreparedStatement stmt,RefEntity<DynamicType> entity) throws SQLException, RaplaException {
-        setId(stmt,1,entity);
-        DynamicType type = entity.cast();
+	protected int write(PreparedStatement stmt, DynamicType type) throws SQLException, RaplaException {
+        setId(stmt,1,type);
         setString(stmt,2, type.getElementKey());
         setText(stmt,3,  getXML( type) );
         stmt.addBatch();
@@ -993,13 +985,13 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
     	checkAndRetype(schema, "XML_VALUE");
     }
 
-    protected int write(PreparedStatement stmt, RefEntity<Preferences> entity) throws SQLException, RaplaException {
+    protected int write(PreparedStatement stmt, Preferences entity) throws SQLException, RaplaException {
         PreferencesImpl preferences = (PreferencesImpl) entity;
         User user = preferences.getOwner();
         if ( user == null) {
 			stmt.setInt(1, 0);
         } else {
-            stmt.setInt(1,getId( (RefEntity<?>) user));
+            stmt.setInt(1,getId( (Entity) user));
         }
         int count = 0;
         Iterator<String> it = preferences.getPreferenceEntries();
@@ -1064,20 +1056,19 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
 	        {
 		        PreferenceReader contentHandler = (PreferenceReader) processXML( Preferences.TYPE, xml );
 		        RaplaObject type = contentHandler.getChildType();
-		        preferences.putEntry(configRole, type);
+		        preferences.putEntryPrivate(configRole, type);
 	        }
         }
     }
 
     @Override
-    public void delete( Collection<RefEntity<Preferences>> entities) throws SQLException {
+    public void delete( Collection<Preferences> entities) throws SQLException {
         PreparedStatement stmt = null;
         boolean deleteNullUserPreference = false;
         try {
             stmt = con.prepareStatement(deleteSql);
-            for ( RefEntity<Preferences> entity: entities)
+            for ( Preferences preferences: entities)
             {
-                Preferences preferences = entity.cast();
                 User user = preferences.getOwner();
                 if ( user == null) {
                 	deleteNullUserPreference = true;
@@ -1111,11 +1102,10 @@ class UserStorage extends RaplaTypeStorage<User> {
         addSubStorage( groupStorage );
     }
 
-    protected int write(PreparedStatement stmt,RefEntity<User> entity) throws SQLException, RaplaException {
-       setId(stmt, 1, entity);
-       User user =  entity.cast();
+    protected int write(PreparedStatement stmt,User user) throws SQLException, RaplaException {
+       setId(stmt, 1, user);
        stmt.setString(2,user.getUsername());
-       String password = cache.getPassword(entity.getId());
+       String password = cache.getPassword(user.getId());
        stmt.setString(3,password);
        stmt.setString(4,user.getName());
        stmt.setString(5,user.getEmail());
@@ -1153,10 +1143,10 @@ class UserGroupStorage extends EntityStorage<User> {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID INTEGER NOT NULL KEY","CATEGORY_ID INTEGER NOT NULL"});
     }
 
-    protected int write(PreparedStatement stmt, RefEntity<User> entity) throws SQLException, RaplaException {
+    protected int write(PreparedStatement stmt, User entity) throws SQLException, RaplaException {
         setId( stmt,1, entity);
         int count = 0;
-        for (Category category:entity.cast().getGroups()) {
+        for (Category category:entity.getGroups()) {
             setId(stmt, 2, category);
             stmt.addBatch();
             count++;

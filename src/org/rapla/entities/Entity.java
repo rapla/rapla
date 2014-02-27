@@ -20,7 +20,7 @@ public interface Entity<T> extends RaplaObject<T> {
 	
 	String getId();
 	
-    boolean isIdentical(Entity<?> id2);
+    boolean isIdentical(Entity id2);
 
     /** returns if the instance of the entity is persisant and the cache or just a local copy.
      * Persistant objects are usably not editable and are updated in a multiuser system.
@@ -32,8 +32,6 @@ public interface Entity<T> extends RaplaObject<T> {
     boolean isPersistant();
 
     public static Entity<?>[] ENTITY_ARRAY = new Entity[0];
-
-    public T cast();
 }
 
 

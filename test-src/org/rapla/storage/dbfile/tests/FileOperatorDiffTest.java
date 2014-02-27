@@ -18,13 +18,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 
@@ -88,12 +89,14 @@ public class FileOperatorDiffTest extends RaplaTestCase {
         String testFile = "test-src/testdefault.xml";
         assertTrue(differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false);
         operator.connect();
-        RefEntity<?> obj = (RefEntity<?>)operator.getObjects( User.class).iterator().next();
-        RefEntity<?> clone = operator.editObjects(Collections.singleton(obj), null).iterator().next();
+        Entity obj = (Entity)operator.getObjects( User.class).iterator().next();
+        Set<Entity>singleton = Collections.singleton(obj);
+		Collection<Entity> r = operator.editObjects(singleton, null);
+        Entity clone = r.iterator().next();
         
-        Collection<RefEntity<?>> storeList = new ArrayList<RefEntity<?>>(1);
+        Collection<Entity> storeList = new ArrayList<Entity>(1);
         storeList.add( clone);
-		Collection<RefEntity<?>> removeList = Collections.emptyList();
+		Collection<Entity> removeList = Collections.emptyList();
 		operator.storeAndRemove(storeList, removeList, null);
         assertTrue("stored version differs from orginal " + testFile
                    , differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false );

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
@@ -32,16 +33,13 @@ import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.ReferenceHandler;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements DynamicType
+public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity
 {
     // added an attribute array for performance reasons
-    transient private boolean attributeArrayUpToDate = false;
-    transient Attribute[] attributes;
-
+	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
     MultiLanguageName name  = new MultiLanguageName();
     String elementKey = "";
 
@@ -50,9 +48,12 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
     public DynamicTypeImpl() {
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        super.resolveEntities( resolver);
-        attributeArrayUpToDate = false;
+    public void setResolver( EntityResolver resolver) {
+        super.setResolver( resolver);
+        for (AttributeImpl child:attributes)
+        {
+        	child.setParent( this);
+        }
     }
 
     public RaplaType<DynamicType> getRaplaType() {return TYPE;}
@@ -81,6 +82,8 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         }
         return classification;
     }
+    
+   
 
     public Classification newClassification(Classification original) {
         if ( !isPersistant()) {
@@ -117,7 +120,9 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
     	if ( !isPersistant()) {
     		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
     	}
-        return new ClassificationFilterImpl(this);
+        ClassificationFilterImpl classificationFilterImpl = new ClassificationFilterImpl(this);
+        classificationFilterImpl.setResolver( getReferenceHandler().getResolver());
+        return classificationFilterImpl;
     }
 
     public MultiLanguageName getName() {
@@ -151,11 +156,9 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         }
     }
     
-    public boolean isRefering(RefEntity<?> entity) {
-        Attribute[] attributes = getAttributes();
-        for ( int i=0;i<attributes.length;i++)
+    public boolean isRefering(String entity) {
+        for ( AttributeImpl attribute:attributes)
         {
-            RefEntity<?> attribute = (RefEntity<?>)attributes[i];
             if ( attribute.isRefering( entity))
             {
                 return true;
@@ -165,12 +168,16 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
     }
     
     @Override
-    protected void addEntity(RefEntity<?> entity) {
-    	if ( subEntityHandler == null)
-    	{
-    		 subEntityHandler = new ReferenceHandler();
-    	}
-        subEntityHandler.add("attributes",entity);
+    public void addEntity(Entity entity) 
+    {
+    	Attribute attribute = (Attribute) entity;
+    	attributes.add((AttributeImpl) attribute);
+        if (attribute.getDynamicType() != null
+            && !this.isIdentical(attribute.getDynamicType()))
+            throw new IllegalStateException("Attribute '" + attribute
+                                            + "' belongs to another dynamicType :"
+                                            + attribute.getDynamicType());
+        ((AttributeImpl) attribute).setParent(this);
     }
 
 
@@ -208,30 +215,26 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         Attribute[] attribute = getAttributes();
         Attribute attribute1 = attribute[index1];
         Attribute attribute2 = attribute[index2];
-        ReferenceHandler subEntityHandler = getSubEntityHandler();
-		subEntityHandler.clearReferences();
-		List<RefEntity<?>> newList = new ArrayList<RefEntity<?>>();
-        for (int i=0;i<attributes.length;i++) {
+		List<AttributeImpl> newMap = new ArrayList<AttributeImpl>();
+        for (int i=0;i<attribute.length;i++) {
+        	Attribute att;
         	if (i == index1)
-                newList.add((RefEntity<?>)attribute2);
+                att = attribute2;
             else if (i == index2)
-                newList.add((RefEntity<?>)attribute1);
+                att = attribute1;
             else
-                newList.add((RefEntity<?>)attributes[i]);
+                att = attribute[i];
+            newMap.add((AttributeImpl) att);
         }
-        subEntityHandler.putList("attributes", newList);
-        attributeArrayUpToDate = false;
+        attributes = newMap;
     }
 
-    /** find an attribute in the dynamic-type that equals the specified attribute. */
-    public Attribute findAttribute(Attribute copy) {
-        return (Attribute) super.findEntity((RefEntity<?>)copy);
-    }
+	/** find an attribute in the dynamic-type that equals the specified attribute. */
 
     public Attribute findAttributeForId(Object id) {
         Attribute[] typeAttributes = getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
-            if (((RefEntity<?>)typeAttributes[i]).getId().equals(id)) {
+            if (((Entity)typeAttributes[i]).getId().equals(id)) {
                 return typeAttributes[i];
             }
         }
@@ -241,14 +244,13 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
 
     public void removeAttribute(Attribute attribute) {
         checkWritable();
-        if ( findAttribute( attribute ) == null) {
+        String matchingAttributeKey = findAttribute( attribute );
+		if ( matchingAttributeKey == null) {
             return;
         }
-        attributeArrayUpToDate = false;
-        super.removeEntity((RefEntity<?>) attribute);
+        attributes.remove( matchingAttributeKey);
         if (this.equals(attribute.getDynamicType()))
         {
-        
         	if (((AttributeImpl) attribute).isReadOnly())
         	{
         		throw new IllegalArgumentException("Attribute is not writable. It does not belong to the same dynamictype instance");
@@ -257,89 +259,74 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
         }
     }
 
+	public String findAttribute(Attribute attribute) {
+		for ( AttributeImpl att: attributes )
+        {
+        	if (att.equals( attribute))
+        	{
+        		return att.getKey();
+        	}
+        }
+		return null;
+	}
+
     public void addAttribute(Attribute attribute) {
         checkWritable();
-        attributeArrayUpToDate = false;
-        this.addEntity((RefEntity<?>) attribute);
-        if (attribute.getDynamicType() != null
-            && !this.isIdentical(attribute.getDynamicType()))
-            throw new IllegalStateException("Attribute '" + attribute
-                                            + "' belongs to another dynamicType :"
-                                            + attribute.getDynamicType());
-        ((AttributeImpl) attribute).setParent(this);
-    }
-
-    private void updateAttributeArray() {
-        if (attributeArrayUpToDate)
-            return;
-        Collection<Attribute> attributeList = new ArrayList<Attribute>();
-        for (RefEntity<?> o:super.getSubEntities())
-        {
-            if (o.getRaplaType() == Attribute.TYPE) {
-                attributeList.add((Attribute)o);
-            }
-        }
-        attributes =  attributeList.toArray(Attribute.ATTRIBUTE_ARRAY);
-        attributeArrayUpToDate = true;
+        addEntity(attribute);
     }
 
     public boolean hasAttribute(Attribute attribute) {
-        return getReferenceHandler().isRefering((RefEntity<?>)attribute);
+        return isRefering(attribute.getId());
     }
 
     public Attribute[] getAttributes() {
-        updateAttributeArray();
-        return attributes;
+        return attributes.toArray(Attribute.ATTRIBUTE_ARRAY);
     }
 
-    public Attribute getAttribute(String key) {
-        Attribute[] attributes = getAttributes();
-        for (int i=0;i<attributes.length;i++) {
-            String att = attributes[i].getKey();
-            if (att.equals(key))
-                return attributes[i];
-        }
+    public AttributeImpl getAttribute(String key) {
+    	// FIXME Performance improvement
+    	for ( AttributeImpl att:attributes)
+    	{
+    		if ( att.getKey().equals( key))
+    		{
+    			return att;
+    		}
+    	}
         return null;
     }
 
     ParsedText getParsedAnnotation(String key) {
         return  annotations.get( key );
     }
+    
+    public Collection<AttributeImpl> getSubEntities() {
+    	// TODO Auto-generated method stub
+    	return attributes;
+    }
 
-    static private void copy(DynamicTypeImpl source,DynamicTypeImpl dest) {
-       
-        dest.name = (MultiLanguageName) source.name.clone();
-        dest.elementKey = source.elementKey;
-        for (RefEntity<?> att:dest.getSubEntities())
+    public DynamicTypeImpl clone() {
+        DynamicTypeImpl clone = new DynamicTypeImpl();
+        super.deepClone(clone);
+        
+        clone.name = (MultiLanguageName) name.clone();
+        clone.elementKey = elementKey;
+        for (AttributeImpl att:clone.getSubEntities())
         {
-            ((AttributeImpl)att).setParent(dest);
+            ((AttributeImpl)att).setParent(clone);
         }
-        dest.attributeArrayUpToDate = false;
-        dest.annotations = new LinkedHashMap<String, ParsedText>();
-        for (Map.Entry<String,ParsedText> entry: source.annotations.entrySet())
+        clone.annotations = new LinkedHashMap<String, ParsedText>();
+        for (Map.Entry<String,ParsedText> entry: annotations.entrySet())
         {
             String annotation = entry.getKey();
             ParsedText parsedAnnotation =entry.getValue();
-            DynamicTypeParseContext parseContext = new DynamicTypeParseContext(dest);
+            DynamicTypeParseContext parseContext = new DynamicTypeParseContext(clone);
             String parsedValue = parsedAnnotation.getExternalRepresentation(parseContext);
             try {
-                dest.setAnnotation(annotation, parsedValue);
+                clone.setAnnotation(annotation, parsedValue);
             } catch (IllegalAnnotationException e) {
                 throw new IllegalStateException("Can't parse annotation back", e);
             }
         }
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(DynamicType obj) {
-        super.copy((SimpleEntity<DynamicType>)obj);
-        copy((DynamicTypeImpl) obj,this);
-    }
-
-    public DynamicType deepClone() {
-        DynamicTypeImpl clone = new DynamicTypeImpl();
-        super.deepClone(clone);
-        copy(this,clone);
         return clone;
     }
 
@@ -368,6 +355,10 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
 	public boolean hasAttributeChanged(DynamicTypeImpl newType, Object attributeId) {
     	Attribute oldAttribute = findAttributeForId(attributeId );
     	Attribute newAttribute = newType.findAttributeForId(attributeId );
+    	if ( oldAttribute == null && newAttribute == null)
+    	{
+    		return false;
+    	}
     	if ((newAttribute == null ) ||  ( oldAttribute == null)) {
     		return true;
     	}
@@ -429,7 +420,7 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
 			AttributeFunction(Attribute attribute )
 			{
 				super("attribute:"+attribute.getKey());
-				id =((RefEntity<?>)attribute).getId() ;
+				id =attribute.getId() ;
 				
 			}
 			
@@ -474,7 +465,7 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
 			TypeFunction(DynamicType type) 
 			{
 				super("type:"+type.getElementKey());
-				id = ((RefEntity<?>) type).getId() ;
+				id = type.getId() ;
 			}
 			
 			public String eval(EvalContext context) 

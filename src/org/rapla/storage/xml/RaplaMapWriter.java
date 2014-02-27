@@ -16,9 +16,9 @@ package org.rapla.storage.xml;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -60,8 +60,8 @@ public class RaplaMapWriter extends RaplaXMLWriter {
             return;
         }
         closeTag();
-        if ( obj instanceof RefEntity ) {
-            printReference( (RefEntity<?>) obj);
+        if ( obj instanceof Entity ) {
+            printReference( (Entity) obj);
         } else {
             RaplaObject raplaObj = (RaplaObject) obj;
             getWriterFor( raplaObj.getRaplaType()).writeObject( raplaObj );

@@ -313,13 +313,13 @@ public class RemoteOperator
         }
     }
 
-    private List<RefEntity<?>> addToCache(EntityList list, boolean useCache) throws RaplaException {
-        List<RefEntity<?>> result = new ArrayList<RefEntity<?>>();
+    private List<Entity>addToCache(EntityList list, boolean useCache) throws RaplaException {
+        List<Entity>result = new ArrayList<Entity>();
     	EntityResolver entityResolver = createEntityStore( list, useCache ? cache : null );
         synchronized (cache) {
         	resolveEntities( list, entityResolver );
-            for( Iterator<RefEntity<?>> it = list.iterator();it.hasNext();) {
-                RefEntity<?> entity =  it.next();
+            for( Iterator<Entity>it = list.iterator();it.hasNext();) {
+                Entity entity =  it.next();
 				if ( isStorableInCache(entity))
 				{
 					cache.put(entity);
@@ -361,14 +361,14 @@ public class RemoteOperator
         check( closure );
         // Store on server
         if (getLogger().isDebugEnabled()) {
-            Iterator<RefEntity<?>> it =closure.getStoreObjects().iterator();
+            Iterator<Entity>it =closure.getStoreObjects().iterator();
             while (it.hasNext()) {
-                RefEntity<?> entity = it.next();
+                Entity entity = it.next();
                 getLogger().debug("dispatching store for: " + entity);
             }
             it =closure.getRemoveObjects().iterator();
             while (it.hasNext()) {
-                RefEntity<?> entity = it.next();
+                Entity entity = it.next();
                 getLogger().debug("dispatching remove for: " + entity);
             }
         }
@@ -387,7 +387,7 @@ public class RemoteOperator
 	 */
 	protected UpdateEvent createClosure(final UpdateEvent evt) throws RaplaException {
 		UpdateEvent closure = evt.clone();
-		for (RefEntity<?> object:evt.getStoreObjects())
+		for (Entity object:evt.getStoreObjects())
 		{
 			addStoreOperationsToClosure(closure, object);
 		}
@@ -395,21 +395,21 @@ public class RemoteOperator
 	}
 
 	protected void check(final UpdateEvent evt) throws RaplaException {
-		Set<RefEntity<?>> storeObjects = new HashSet<RefEntity<?>>(evt.getStoreObjects());
+		Set<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
 		checkConsistency(storeObjects);
 	}
     
 	
-	protected void addStoreOperationsToClosure(UpdateEvent evt, RefEntity<?> entity) throws RaplaException {
+	protected void addStoreOperationsToClosure(UpdateEvent evt, Entity entity) throws RaplaException {
 		if (getLogger().isDebugEnabled() && !evt.getStoreObjects().contains(entity)) {
 			getLogger().debug("Adding " + entity + " to store closure");
 		}
 		evt.putStore(entity);
-		
-		for (RefEntity<?> subEntity:entity.getSubEntities())
-		{
-			addStoreOperationsToClosure(evt, subEntity);
-		}
+//		Iterable<Entity>subEntities = entity.getSubEntities();
+//		for (Entity subEntity:subEntities)
+//		{
+//			addStoreOperationsToClosure(evt, subEntity);
+//		}
 
 	}
 
@@ -455,10 +455,10 @@ public class RemoteOperator
     }
 
     @Override
-    public void changePassword(RefEntity<User> user,char[] oldPassword,char[] newPassword) throws RaplaException {
+    public void changePassword(User user,char[] oldPassword,char[] newPassword) throws RaplaException {
         try {
         	RemoteStorage remoteMethod = getRemoteStorage();
-	        String username = user.cast().getUsername();
+	        String username = user.getUsername();
 			remoteMethod.changePassword(username, new String(oldPassword),new String(newPassword));
 		    refresh();
         } catch (RaplaSecurityException ex) {
@@ -467,42 +467,42 @@ public class RemoteOperator
     }
     
     @Override
-    public void changeEmail(RefEntity<User> user, String newEmail) throws RaplaException 
+    public void changeEmail(User user, String newEmail) throws RaplaException 
     		
     {
     	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.cast().getUsername();
+        String username = user.getUsername();
 		remoteMethod.changeEmail(username,newEmail);
         refresh();
     }
     
     @Override
-	public void confirmEmail(RefEntity<User> user, String newEmail)	throws RaplaException 
+	public void confirmEmail(User user, String newEmail)	throws RaplaException 
 	{
     	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.cast().getUsername();
+        String username = user.getUsername();
 		remoteMethod.confirmEmail(username,newEmail);
 	}
 
     
     @Override
-    public void changeName(RefEntity<User> user, String newTitle, String newFirstname, String newSurname) throws RaplaException 
+    public void changeName(User user, String newTitle, String newFirstname, String newSurname) throws RaplaException 
     {
     	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.cast().getUsername();
+        String username = user.getUsername();
 		remoteMethod.changeName(username,newTitle, newFirstname, newSurname);
         refresh();
     }
     
-    public <T> Map<RefEntity<T>, T> getPersistant(Collection<RefEntity<T>> list) throws RaplaException 
+    public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
 	{
-    	Map<RefEntity<T>,T> superResult = super.getPersistant(list);
-     	Map<RefEntity<T>,T> result = new LinkedHashMap<RefEntity<T>, T>();
-    	Map<String,RefEntity<T>> idMap = new LinkedHashMap<String, RefEntity<T>>();
+    	Map<Entity,Entity> superResult = super.getPersistant(list);
+     	Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
+    	Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
         
-     	for ( RefEntity<T> key: list)
+     	for ( Entity key: list)
     	{
-			T resolved = superResult.get(key);
+			Entity resolved = superResult.get(key);
 			if ( resolved != null)
 			{
 				result.put( key, resolved);
@@ -519,16 +519,14 @@ public class RemoteOperator
 		{
 			String[] array = keySet.toArray(new String[] {});
 			EntityList entityList = serv.getEntityRecursive( array);
-	    	List<RefEntity<?>> resolvedList = addToCache(entityList, true );
-	    	for (RefEntity<?> entity:resolvedList)
+	    	List<Entity>resolvedList = addToCache(entityList, true );
+	    	for (Entity entity:resolvedList)
 	    	{
 	    		String id = entity.getId().toString();
-				RefEntity<T> key = idMap.get( id);
+				Entity key = idMap.get( id);
 				if ( key != null )
 				{
-					@SuppressWarnings("unchecked")
-					T cast = (T) entity.cast();
-					result.put( key, cast);
+					result.put( key, entity);
 				}
 	    	}
 		} 
@@ -538,7 +536,7 @@ public class RemoteOperator
     	return result;
 	}
     
-    public RefEntity<?> resolve(String id) throws EntityNotFoundException {
+    public Entity resolve(String id) throws EntityNotFoundException {
         try {
             return super.resolve(id);
         } catch (EntityNotFoundException ex) {
@@ -548,7 +546,7 @@ public class RemoteOperator
             	RemoteStorage serv = getRemoteStorage();
             	EntityList resolved = serv.getEntityRecursive( new String[] { castedId });
             	addToCache(resolved, true );
-            	for ( RefEntity<?> entity: resolved)
+            	for ( Entity entity: resolved)
             	{
             		if ( id.equals(entity.getId()))
             		{
@@ -587,7 +585,7 @@ public class RemoteOperator
 
     public EntityStore get()
     {
-    	Collection<RefEntity<?>> emptyList = Collections.emptyList();
+    	Collection<Entity>emptyList = Collections.emptyList();
 		EntityStore store = createEntityStore(emptyList, cache);
 		return store;
     }
@@ -595,12 +593,12 @@ public class RemoteOperator
 	 * Entities will be resolved against resolveableEntities. If not found the
 	 * ParentResolver will be used.
 	 */
-	private EntityStore createEntityStore(Collection<RefEntity<?>> resolveableEntities, LocalCache parentCache) {
+	private EntityStore createEntityStore(Collection<Entity>resolveableEntities, LocalCache parentCache) {
 		EntityStore resolver = new EntityStore(parentCache, cache.getSuperCategory())
 		{
 			@Override
-			public RefEntity<?> resolve(String id) {
-				RefEntity<?> refEntity = super.tryResolve(id);
+			public Entity resolve(String id) {
+				Entity refEntity = super.tryResolve(id);
 				if ( refEntity == null)
 				{
 					{
@@ -615,7 +613,7 @@ public class RemoteOperator
 						if ( id.startsWith(DynamicType.TYPE.getLocalName() + "_0"))
 						{
 							DynamicType unresolvedReservation = getAnonymousReservationType();
-							return (RefEntity<?>) unresolvedReservation;
+							return (Entity) unresolvedReservation;
 						}
 					}
 				}
@@ -643,7 +641,7 @@ public class RemoteOperator
     		for ( Entity entity:entities)
     		{
                 if (entity != null)
-    			    idList.add( ((RefEntity<?>)entity).getId().toString());
+    			    idList.add( ((Entity)entity).getId().toString());
     		}
     	}
     	String[] ids = idList.toArray(new String[] {});
@@ -662,18 +660,18 @@ public class RemoteOperator
 		Lock writeLock = writeLock();
 		try
         {
-            Collection<RefEntity<?>> storeObjects = evt.getStoreObjects();
-            Collection<RefEntity<?>> removeObjects = evt.getRemoveObjects();
-            Collection<RefEntity<?>> referenceObjects = evt.getReferenceObjects();
+            Collection<Entity> storeObjects = evt.getStoreObjects();
+            Collection<Entity> removeObjects = evt.getRemoveObjects();
+            Collection<Entity> referenceObjects = evt.getReferenceObjects();
 
-            for (Iterator<RefEntity<?>> it = storeObjects.iterator();it.hasNext();)
+            for (Iterator<Entity>it = storeObjects.iterator();it.hasNext();)
             {
-                RefEntity<?> entity =  it.next();
+                Entity entity =  it.next();
                 if ( isStorableInCache(entity))
                 {
-	                RefEntity<?> cachedVersion = cache.tryResolve(entity.getId());
+	                RefEntity cachedVersion = (RefEntity) cache.tryResolve(entity.getId());
 	                // Ignore object if its not newer than the one in cache.
-	                if (cachedVersion != null && cachedVersion.getVersion() >= entity.getVersion()) {
+	                if (cachedVersion != null && cachedVersion.getVersion() >= ((RefEntity)entity).getVersion()) {
 	                    //getLogger().debug("already on client " + entity + " version " + cachedVersion.getVersion());
 	                    it.remove();
 	                    continue;
@@ -683,7 +681,7 @@ public class RemoteOperator
             
     	
 
-            Collection<RefEntity<?>> allObject = evt.getAllObjects();
+            Collection<Entity>allObject = evt.getAllObjects();
 			RemoteOperator.super.resolveEntities
                 (
                  storeObjects
@@ -696,10 +694,10 @@ public class RemoteOperator
             		,createEntityStore(allObject,cache)
              );
 			// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
-            List<RefEntity<?>>removedObjectsWithoutConflicts = new LinkedList<RefEntity<?>>(removeObjects);
-            for ( Iterator<RefEntity<?>> it = removedObjectsWithoutConflicts.iterator();it.hasNext();)
+            List<Entity> removedObjectsWithoutConflicts = new LinkedList<Entity>(removeObjects);
+            for ( Iterator<Entity> it = removedObjectsWithoutConflicts.iterator();it.hasNext();)
             {
-            	RefEntity<?> obj = it.next();
+            	Entity obj = it.next();
             	if ( obj instanceof Conflict) 
             	{
             		it.remove();
@@ -734,20 +732,20 @@ public class RemoteOperator
 		Lock writeLock = writeLock();
 		try
 		{
-			Set<RefEntity<?>> oldEntities = cache.getAllEntities();
+			Set<Entity> oldEntities = cache.getAllEntities();
 			loadData(null);
-			Set<RefEntity<?>> newEntities = cache.getAllEntities();
-			HashSet<RefEntity<?>> updated = new HashSet<RefEntity<?>>(newEntities);
-			Set<RefEntity<?>> toRemove = new HashSet<RefEntity<?>>(oldEntities);
-			Set<RefEntity<?>> toUpdate = new HashSet<RefEntity<?>>(oldEntities);
+			Set<Entity> newEntities = cache.getAllEntities();
+			HashSet<Entity> updated = new HashSet<Entity>(newEntities);
+			Set<Entity> toRemove = new HashSet<Entity>(oldEntities);
+			Set<Entity> toUpdate = new HashSet<Entity>(oldEntities);
 			toRemove.removeAll(newEntities);
 			updated.removeAll( toRemove);
 			toUpdate.retainAll(newEntities);
 			
-			HashMap<RefEntity<?>, RefEntity<?>> oldEntityMap = new HashMap<RefEntity<?>, RefEntity<?>>();
-			for ( RefEntity<?> update: toUpdate)
+			HashMap<Entity,Entity> oldEntityMap = new HashMap<Entity,Entity>();
+			for ( Entity update: toUpdate)
 			{
-				RefEntity<?> newEntity = cache.tryResolve( update.getId());
+				Entity newEntity = cache.tryResolve( update.getId());
 				if ( newEntity != null)
 				{
 					oldEntityMap.put( newEntity, update);
@@ -764,14 +762,14 @@ public class RemoteOperator
 	}
     
     @Override
-    protected void increaseVersion(RefEntity<?> e) {
+    protected void increaseVersion(Entity e) {
     	// To nothing here versions are increased on the server
     }
     
     /**
 	 * @param entity  
 	 */
-	protected boolean isAddedToUpdateResult(RefEntity<?> entity) {
+	protected boolean isAddedToUpdateResult(Entity entity) {
 		RaplaType raplaType = entity.getRaplaType();
 		if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(entity))
 		{
@@ -783,7 +781,7 @@ public class RemoteOperator
 	/**
 	 * @param entity  
 	 */
-	protected boolean isStorableInCache(RefEntity<?> entity) {
+	protected boolean isStorableInCache(Entity entity) {
 		RaplaType raplaType = entity.getRaplaType();
 		if  (raplaType == Conflict.TYPE)
 		{
@@ -875,10 +873,10 @@ public class RemoteOperator
 	    	unlock( readLock );
 	    }
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
-        Iterator<RefEntity<?>> it = list.iterator();
+        Iterator<Entity>it = list.iterator();
         while ( it.hasNext())
         {
-        	RefEntity<?> entity = it.next();
+        	Entity entity = it.next();
         	if ( entity.getRaplaType() == Appointment.TYPE)
         	{
         		allAppointments.add( (Appointment) entity);
@@ -956,13 +954,13 @@ public class RemoteOperator
 	}
 
 	@Override
-	protected void logEntityNotFound(RefEntity<?> obj, EntityNotFoundException ex) {
+	protected void logEntityNotFound(Entity obj, EntityNotFoundException ex) {
 		RemoteStorage serv = getRemoteStorage();
 		Comparable id = ex.getId();
 		try {
 			if ( obj instanceof ConflictImpl)
 			{
-				List<String> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
+				Collection<String> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
 				List<String> ids = new ArrayList<String>();
 				for (String refId:referencedIds)
 				{

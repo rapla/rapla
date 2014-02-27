@@ -34,7 +34,11 @@ public interface Preferences extends Entity<Preferences>,Ownable, Named {
     void putEntry(TypedComponentRole<Boolean> role,Boolean entry);
     void putEntry(TypedComponentRole<Integer> role,Integer entry);
     void putEntry(TypedComponentRole<String> role,String entry);
-    <T extends RaplaObject> void putEntry(TypedComponentRole<T> role,T entry);
+    //<T extends RaplaObject> void putEntry(TypedComponentRole<T> role,T entry);
+    void putEntry(TypedComponentRole<CalendarModelConfiguration> role,CalendarModelConfiguration entry);
+    <T> void putEntry(TypedComponentRole<RaplaMap<T>> role,RaplaMap<T> entry);
+    void putEntry(TypedComponentRole<RaplaConfiguration> role,RaplaConfiguration entry);
+
     <T extends RaplaObject> T getEntry(TypedComponentRole<T> role);
     <T extends RaplaObject> T getEntry(TypedComponentRole<T> role, T defaultEntry);
     String getEntryAsString(TypedComponentRole<String> role, String defaultValue);

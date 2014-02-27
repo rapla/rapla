@@ -39,8 +39,8 @@ import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
@@ -529,9 +529,9 @@ public class DBOperator extends LocalAbstractCachableOperator
         raplaSQLOutput.store( connection, evt.getStoreObjects());
 
         // execute removes
-        for (RefEntity<?> entityStore: evt.getRemoveObjects()) {
+        for (Entity entityStore: evt.getRemoveObjects()) {
              Comparable id = entityStore.getId();
-             RefEntity<?> entity = cache.get(id);
+             Entity entity = cache.get(id);
              if (entity != null)
                  raplaSQLOutput.remove( connection, entity);
         }
@@ -619,7 +619,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         cache.getSuperCategory().setReadOnly(true);
         for (User user:cache.getCollection(User.class))
         {
-            Object id = ((RefEntity<?>)user).getId();
+            Object id = ((Entity)user).getId();
 			String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }

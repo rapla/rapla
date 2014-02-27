@@ -16,18 +16,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -36,8 +33,6 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -48,24 +43,60 @@ import org.rapla.entities.storage.internal.ReferenceHandler;
  */
 public class ClassificationImpl implements Classification,DynamicTypeDependant, EntityReferencer {
 
-    boolean readOnly = false;
+	String parentId;
+	Map<String,List<String>> map = new LinkedHashMap<>();
+	transient boolean readOnly = false;
 
-    transient String nameString;
-    transient ParsedText lastParsedAnnotation;
-
+    transient TextCache name;
+    transient TextCache namePlaning;
+    transient EntityResolver resolver;
+    
     /** stores the nonreference values like integers,boolean and string.*/
-    HashMap<String,Object> attributeValueMap = new HashMap<String,Object>(1);
-
+    //HashMap<String,Object> attributeValueMap = new HashMap<String,Object>(1);
     /** stores the references to the dynamictype and the reference values */
-    ReferenceHandler referenceHandler = new ReferenceHandler();
+    //transient ReferenceHandler referenceHandler = new ReferenceHandler(data);
 
+    class TextCache
+    {
+        String nameString;
+        ParsedText lastParsedAnnotation;
+        public String getName(Locale locale, String keyNameFormat) {
+    		DynamicTypeImpl type = (DynamicTypeImpl)getType();
+    		ParsedText parsedAnnotation = type.getParsedAnnotation( keyNameFormat );
+            if ( parsedAnnotation == null) {
+                return type.toString();
+            }
 
-    ClassificationImpl(DynamicTypeImpl dynamicType) {
-        referenceHandler.put("parent",dynamicType);
+            if (nameString != null)
+            {
+                if (parsedAnnotation.equals(lastParsedAnnotation))
+                    return nameString;
+            }
+            lastParsedAnnotation =  parsedAnnotation;
+            EvalContext evalContext = new EvalContext(locale)
+            {
+            	public Classification getClassification()
+            	{
+            		return ClassificationImpl.this;
+            	}
+            };
+    		nameString = parsedAnnotation.formatName(evalContext).trim();
+            return nameString;
+    	}
+    }
+    
+    public ClassificationImpl()
+    {
+    	
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        referenceHandler.resolveEntities( resolver);
+    ClassificationImpl(DynamicTypeImpl dynamicType) {
+        parentId = dynamicType.getId();
+    }
+
+    public void setResolver( EntityResolver resolver)
+    {
+        this.resolver = resolver;
     }
 
     public void setReadOnly(boolean enable) {
@@ -80,54 +111,60 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         if ( readOnly )
             throw new ReadOnlyException( this );
     }
-    
+    /*
     public ReferenceHandler getReferenceHandler() {
 		return referenceHandler;
 	}
+	*/
 
-    public boolean isRefering(RefEntity<?> obj) {
-        return referenceHandler.isRefering(obj);
+    public boolean isRefering(String id) {
+        return id.equals(parentId) || map.containsKey( id );
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-        return referenceHandler.getReferences();
-    }
-
-    public DynamicType getType() {
-    	try
+    public Iterable<String> getReferencedIds() {
+    	List<String> result = new ArrayList<String>();
+    	result.add( parentId );
+    	DynamicTypeImpl type = getType();
+    	for ( Map.Entry<String,List<String>> entry:map.entrySet())
     	{
-    		return (DynamicType) referenceHandler.get("parent");
-    	} catch (ClassCastException ex)
-    	{
-    		ex.printStackTrace();
-    		throw ex;
+    		String key = entry.getKey();
+    		Attribute attribute = type.getAttribute(key);
+    		if ( attribute == null || attribute.getRefType() == null)
+    		{
+    			continue;
+    		}
+    		List<String> values = entry.getValue();
+    		if  (values != null ) 
+    		{
+    			result.addAll(values );
+    		}
     	}
+    	return result;
+    }
+
+    public DynamicTypeImpl getType() {
+        DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
+    	return type;
     }
 
     public String getName(Locale locale) {
     	// display name = Title of event
-        DynamicTypeImpl type = (DynamicTypeImpl)getType();
-        ParsedText parsedAnnotation = type.getParsedAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT );
-        if ( parsedAnnotation == null) {
-            return type.toString();
-        }
-
-        if (nameString != null)
-        {
-            if (parsedAnnotation.equals(lastParsedAnnotation))
-                return nameString;
-        }
-        lastParsedAnnotation =  parsedAnnotation;
-        EvalContext evalContext = new EvalContext(locale)
-        {
-        	public Classification getClassification()
-        	{
-        		return ClassificationImpl.this;
-        	}
-        };
-		nameString = parsedAnnotation.formatName(evalContext).trim();
-        return nameString;
+    	if ( name == null)
+    	{
+    		name = new TextCache();
+    	}
+        return name.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT);
     }
+
+    public String getNamePlaning(Locale locale) {
+    	// display name = Title of event
+    	if ( namePlaning == null)
+    	{
+    		namePlaning = new TextCache();
+    	}
+        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING);
+    }
+	
 
     public String getValueAsString(Attribute attribute,Locale locale)
     {
@@ -154,18 +191,12 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	if ( !hasType (newType )) {
             return false;
     	}
-        if ( !newType.getElementKey().equals( getType().getElementKey()))
+        DynamicTypeImpl type = getType();
+		if ( !newType.getElementKey().equals( type.getElementKey()))
         	return true;
-        for (String referenceKey :referenceHandler.getReferenceKeys()) {
-            RefEntity<?> attribute = ((RefEntity<?>)findAttributeByReferenceKey( getType(), referenceKey));
-            if (attribute == null)
-            	continue;
-            
-            if (((DynamicTypeImpl)getType()).hasAttributeChanged( (DynamicTypeImpl)newType , attribute.getId()))
-            	return true;
-        }
-        for (Object id:attributeValueMap.keySet()) {
-            if (((DynamicTypeImpl)getType()).hasAttributeChanged( (DynamicTypeImpl)newType , id))
+		
+        for (Object id:map.keySet()) {
+            if (type.hasAttributeChanged( (DynamicTypeImpl)newType , id))
             	return true;
         }
         return false;
@@ -179,71 +210,74 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         if ( !hasType (type )) {
             return;
         }
-        // update referenced values
-        referenceHandler.put("parent", (RefEntity<?>) type);
-        Collection<Attribute> attributes = new ArrayList<Attribute>();
+        
         Collection<String> removedKeys = new ArrayList<String>();
         Collection<String> removedIds = new ArrayList<String>();
-        for (String referenceKey : referenceHandler.getReferenceKeys())
-        {
-        	if ( referenceKey.equals ("parent") )
-        		continue;
-        	Attribute attribute = findAttributeByReferenceKey(type, referenceKey ) ;
-        	if (attribute != null )
-        		attributes.add( attribute);
-        	else
-        		removedKeys.add( referenceKey );
-        }
-       for  (String id:attributeValueMap.keySet()) {
-            Attribute attribute = findAttributeById(type, id );
-            if (attribute != null) {
-            	attributes.add ( attribute );
-            } else {
-            	removedIds.add( id );
-            }
-        }
+//        for (String referenceKey : referenceHandler.getReferenceKeys())
+//        {
+//        	if ( referenceKey.equals ("parent") )
+//        		continue;
+//        	Attribute attribute = findAttributeByReferenceKey(type, referenceKey ) ;
+//        	if (attribute != null )
+//        		attributes.add( attribute);
+//        	else
+//        		removedKeys.add( referenceKey );
+//        }
+//       for  (String id:attributeValueMap.keySet()) {
+//            Attribute attribute = findAttributeById(type, id );
+//            if (attribute != null) {
+//            	attributes.add ( attribute );
+//            } else {
+//            	removedIds.add( id );
+//            }
+//        }
 
-        for (Attribute attribute: attributes) 
+        Map<Attribute,Attribute> attributeMapping = new HashMap<Attribute,Attribute>();
+        for  (String key:map.keySet()) {
+        	Attribute attribute = type.getAttribute(key);
+			if ( attribute == null)
+			{
+        		removedKeys.add( key );
+        		continue;
+			}
+			String id = attribute.getId();
+			Attribute newAtt = findAttributeById(type, id);
+			if ( newAtt == null)
+			{
+        		removedKeys.add( key );
+        		continue;
+			}
+			attributeMapping.put(attribute, newAtt);
+        }
+        for (String key:removedKeys)
+        {
+        	map.remove( key );
+        }
+        for (Attribute attribute: attributeMapping.keySet()) 
         {
 			Collection<Object> convertedValues = new ArrayList<Object>();
 			Collection<?> valueCollection = getValues( attribute);
-            for (Object oldValue: valueCollection)
+            Attribute newAttribute = attributeMapping.get( attribute);
+			for (Object oldValue: valueCollection)
 			{
-    			Object newValue = attribute.convertValue(oldValue);
+    			Object newValue = newAttribute.convertValue(oldValue);
     			if ( newValue != null)
     			{
     				convertedValues.add( newValue);
     			}
 			}
-			setValues(attribute, convertedValues);
+			setValues(newAttribute, convertedValues);
         }
-
-        for (String key: removedKeys) {
-        	referenceHandler.removeWithKey (key );
-        }
-        for (String id: removedIds) {
-        	attributeValueMap.remove ( id );
-        }
-        nameString = null;
+        name = null;
+        namePlaning = null;
     }
 
     /** find the attribute of the given type that matches the id */
     private Attribute findAttributeById(DynamicType type,String id) {
         Attribute[] typeAttributes = type.getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
-            if (((RefEntity<?>)typeAttributes[i]).getId().equals(id)) {
-                return typeAttributes[i];
-            }
-        }
-        return null;
-    }
-
-    /** find the attribute of the given type that matches the id */
-    private static Attribute findAttributeByReferenceKey(DynamicType type,String key) {
-        Attribute[] typeAttributes = type.getAttributes();
-        for (int i=0; i<typeAttributes.length; i++) {
-        	String id = ((RefEntity<?>)typeAttributes[i]).getId();
-			if (id.equals(key)) {
+            String key2 = typeAttributes[i].getId();
+			if (key2.equals(id)) {
                 return typeAttributes[i];
             }
         }
@@ -270,226 +304,115 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     public void setValue(Attribute attribute,Object value) {
-    	if ( value instanceof Collection<?>)
-    	{
-    		setValues(attribute, (Collection<?>) value);
-    		return;
-    	}
     	checkWritable();
-        
-    	if (attribute.getType().equals(AttributeType.STRING)
-            && value != null
-            && value.toString().length() == 0)
+    	if ( value != null && !(value instanceof Collection<?>))
     	{
-            value = null;
+    		value = Collections.singleton( value);
     	}
-        String attributeId = ((RefEntity<?>)attribute).getId();
-        String attributeIdString = attributeId.toString();
-    	referenceHandler.removeWithKey(attributeIdString);
-		RaplaType refType = attribute.getRefType();
-		if (refType != null) 
-        {
-			if ( value == null)
-			{
-				referenceHandler.removeWithKey( attributeIdString );
-			}
-			else if ( value instanceof RefEntity<?>)
-            {
-            	referenceHandler.put(attributeIdString, (RefEntity<?>)value);
-            }
-            else if ( !referenceHandler.isContextualizeCalled() &&  refType.isId( value))
-            {
-            	referenceHandler.putId(attributeIdString, (String)value);
-            }
-            // we need to remove it from the other the other map
-            // Important! The map is for attributes objects not for their string representations
-            attributeValueMap.remove(attributeId);
-        } else {
-        	attributeValueMap.put(attributeId,value);
-        }
-		//isNameUpToDate = false;
-		nameString = null;
+    	setValues(attribute, (Collection<?>) value);
     }
 
     
     public <T> void setValues(Attribute attribute,Collection<T> values) {
         checkWritable();
-        String attributeId = ((RefEntity<?>)attribute).getId();
-        String attributeIdString = attributeId.toString();
-		if ( values.isEmpty())
+        String attributeKey = attribute.getKey();
+		if ( values == null || values.isEmpty())
         {
-        	attributeValueMap.remove(attributeId);
-        	referenceHandler.removeWithKey(attributeIdString);
+			map.remove(attributeKey);
         	return;
         }
-        if ( values.size() == 1)
-        {
-        	Object value = values.iterator().next();
-			setValue( attribute, value);
-			return;
+		ArrayList<String> newValues = new ArrayList<String>();
+		for (Object value:values)
+		{
+			String stringValue = ((AttributeImpl)attribute).toStringValue(value);
+			if ( stringValue != null)
+			{
+				newValues.add(stringValue);
+			}
         }
-    	referenceHandler.removeWithKey(attributeIdString);
-		RaplaType refType = attribute.getRefType();
-		if (refType != null) 
-        {
-        	Object object = values.iterator().next();
-        	if ( object instanceof RefEntity<?>)
-        	{
-	        	Collection<RefEntity<?>> castedArray = new ArrayList<RefEntity<?>>();
-	        	for ( Object value:values)
-	        	{
-	        		castedArray.add( (RefEntity<?>) value);
-	        	}
-	        	referenceHandler.putList(attributeIdString, castedArray);
-        	}
-        	else if ( !referenceHandler.isContextualizeCalled() && refType.isId(  object) )
-        	{
-	        	Collection<String> castedArray = new ArrayList<String>();
-	        	for ( Object value:values)
-	        	{
-	        		castedArray.add( value.toString());
-	        	}
-	        	referenceHandler.putIds(attributeIdString, castedArray);
-        	}
-        	// we need to remove it from the other the other map
-            // Important! The map is for attributes objects not for their string representations
-            attributeValueMap.remove(attributeId);
-        } else {
-        	attributeValueMap.put(attributeId,new ArrayList<Object>(values));
-        }
+		map.put(attributeKey,newValues);
         //isNameUpToDate = false;
-        nameString = null;
+        name = null;
+        namePlaning = null;
     }
-    
+
     @SuppressWarnings("unchecked")
 	public <T> void addValue(Attribute attribute,T value) {
     	checkWritable();
-    	String attributeId = ((RefEntity<?>)attribute).getId();
-        String attributeIdString = attributeId.toString();
-    	String multiSelect = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT);
-    	if ( multiSelect != null && Boolean.valueOf(multiSelect))
-		{
-    		RaplaType refType = attribute.getRefType();
-    		if (refType != null) 
-            {
-    			if ( value instanceof RefEntity<?>)
-	        	{
-		        	Collection<RefEntity<?>> list = referenceHandler.getList( attributeIdString);
-					Collection<RefEntity<?>> castedArray = new ArrayList<RefEntity<?>>(list);
-		        	castedArray.add( (RefEntity<?>) value);
-		        	referenceHandler.putList(attributeIdString, castedArray);
-	        	}
-    			if ( !referenceHandler.isContextualizeCalled() && refType.isId(value))  
-        		{
-    			   	Collection<String> castedArray = new ArrayList<String>(referenceHandler.getIds( attributeIdString));
-		        	castedArray.add(  (String) value );
-		        	referenceHandler.putIds(attributeIdString, castedArray);
-        		}
-    		}
-    		else
-    		{
-    			Object existing = attributeValueMap.get( attributeId );
-    			if ( existing == null)
-    			{
-    				setValue(attribute, value);
-    				return;
-    			}
-    			Collection collection;
-    			if ( existing instanceof Collection)
-    			{
-    				collection =  (Collection) existing; 
-    			}
-    			else
-    			{
-    				collection = new ArrayList();
-    				collection.add( existing);
-    			}
-				attributeValueMap.put(attributeId,existing);
-    		}
-		}
-		else
-		{
-			setValue(attribute, value);
-		}
-
+    	String attributeKey = attribute.getKey();
+        String stringValue = ((AttributeImpl)attribute).toStringValue( value);
+        if ( stringValue == null)
+        {
+        	return;
+        }
+    	List<String> l = map.get(attributeKey);
+    	if ( l == null) 
+    	{
+    		l = new ArrayList<String>();
+    		map.put(attributeKey, l);
+    	}
+    	l.add(stringValue);
     }
-
     
     public Collection<Object> getValues(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
     	}
-    	String attributeId = ((RefEntity<?>)attribute).getId();
-        String attributeIdString = attributeId.toString();
-
-        // first lookup in attribute map
-        Object o = attributeValueMap.get(attributeId);
-
-        // not found, then lookup in the reference map
-        if ( o == null)
-        	o = referenceHandler.getList(attributeIdString);
-
-        if (o != null)
+    	String attributeKey = attribute.getKey();
+    	// first lookup in attribute map
+        List<String> list = map.get(attributeKey);
+        if ( list == null || list.size() == 0)
         {
-        	if ( o instanceof Collection)
-        	{
-        		Collection<Object> unmodifiableCollection = Collections.unmodifiableCollection((Collection<?>)o);
-                return unmodifiableCollection;
-        	}
-        	else
-        	{
-        		return Collections.singletonList( o);
-        	}
+        	return Collections.emptyList();
         }
-        return Collections.emptyList();
+        List<Object> result = new ArrayList<Object>();
+        for (String value:list)
+        {
+        	Object obj;
+			try {
+				obj = ((AttributeImpl)attribute).fromString(resolver,value);
+				result.add( obj);
+			} catch (EntityNotFoundException e) {
+			}
+        }
+        return result;
     }
     
     public Object getValue(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
     	}
-    	String attributeId = ((RefEntity<?>)attribute).getId();
-        String attributeIdString = attributeId.toString();
+    	String attributeKey = attribute.getKey();
         // first lookup in attribute map
-        Object o = attributeValueMap.get(attributeId);
-
-        // not found, then lookup in the reference map
-        if ( o == null)
-        	o = referenceHandler.get(attributeIdString);
-
-        if (o != null)
+        List<String> o = map.get(attributeKey);
+        if ( o == null  || o.size() == 0)
         {
-        	if ( o instanceof Collection)
-        	{
-        		Iterator<?> it  = ((Collection<?>) o).iterator();
-        		if  ( it.hasNext() )
-        		{
-        			return it.next();
-        		}
-        		else
-        		{
-        			return null;
-        		}
-        	}
-        	else
-        	{
-        		return o;
-        	}
+        	return null;
         }
-        
-        if ( attribute.getType().is(AttributeType.BOOLEAN))
-        {
-            return Boolean.FALSE;
-        }
-        return null;
+        String stringRep = o.get(0);
+        Object fromString;
+		try {
+			fromString = ((AttributeImpl)attribute).fromString(resolver, stringRep);
+			return fromString;
+		} catch (EntityNotFoundException e) {
+			throw new IllegalStateException(e.getMessage());
+		}
     }
 
-    @SuppressWarnings("unchecked")
-	public Object clone() {
+	public ClassificationImpl clone() {
         ClassificationImpl clone = new ClassificationImpl((DynamicTypeImpl)getType());
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
-        clone.attributeValueMap = (HashMap<String,Object>) attributeValueMap.clone();
-        clone.nameString = null;
+        //clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)data).clone());
+        //clone.attributeValueMap = (HashMap<String,Object>) attributeValueMap.clone();
+        for ( Map.Entry<String,List<String>> entry: map.entrySet())
+        {
+        	String key = entry.getKey();
+			List<String> value = new ArrayList<String>(entry.getValue());
+			clone.map.put(key, value);
+        }
+        clone.resolver = resolver;
+        clone.parentId = parentId;
+        clone.name = null;
+        clone.namePlaning = null;
         clone.readOnly = false;// clones are always writable
         return clone;
     }

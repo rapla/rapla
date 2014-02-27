@@ -18,7 +18,7 @@ import org.rapla.entities.domain.Allocatable;
 /**
 The User-Class is mainly for authentication-purpose
 */
-public interface User extends Entity<User>, Named, Comparable<User>
+public interface User extends Entity<User>, Named, Comparable
 {
     final RaplaType<User> TYPE = new RaplaType<User>(User.class,"user");
 

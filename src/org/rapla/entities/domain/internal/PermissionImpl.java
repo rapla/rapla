@@ -15,10 +15,15 @@ package org.rapla.entities.domain.internal;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
@@ -26,35 +31,31 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
 public class PermissionImpl
     implements
         Permission
         ,EntityReferencer
-        ,java.io.Serializable
 {
-    // Don't forget to increase the serialVersionUID when you change the fields
-    private static final long serialVersionUID = 1;
-    
-    boolean readOnly = false;
-    ReferenceHandler referenceHandler = new ReferenceHandler();
+    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+    transient boolean readOnly = false;
+    transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
     Date pEnd = null;
     Date pStart = null;
     Integer maxAdvance = null;
     Integer minAdvance = null;
     int accessLevel = ALLOCATE_CONFLICTS;
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        referenceHandler.resolveEntities( resolver );
+    public void setResolver( EntityResolver resolver)  {
+        referenceHandler.setResolver( resolver );
     }
 
     public void setUser(User user) {
         checkWritable();
         if (user != null)
-            referenceHandler.put("group",null);
-        referenceHandler.put("user",(RefEntity<?>)user);
+            referenceHandler.putEntity("group",null);
+        referenceHandler.putEntity("user",(Entity)user);
     }
 
     public void setEnd(Date end) {
@@ -168,37 +169,37 @@ public class PermissionImpl
     }
 
     public User getUser() {
-        return (User) referenceHandler.get("user");
+        return (User) referenceHandler.getEntity("user");
     }
 
     public void setGroup(Category group) {
         if (group != null)
-            referenceHandler.put("user",null);
-        referenceHandler.put("group",(RefEntity<?>)group);
+            referenceHandler.putEntity("user",null);
+        referenceHandler.putEntity("group",(Entity)group);
     }
 
     public Period getPeriod() {
-        return (Period) referenceHandler.get("period");
+        return (Period) referenceHandler.getEntity("period");
     }
 
     public void setPeriod(Period period) {
-        referenceHandler.put("period",(RefEntity<?>)period);
+        referenceHandler.putEntity("period",(Entity)period);
     }
 
     public ReferenceHandler getReferenceHandler() {
         return referenceHandler;
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-        return referenceHandler.getReferences();
+    public Iterable<String> getReferencedIds() {
+        return referenceHandler.getReferencedIds();
     }
 
-    public boolean isRefering( RefEntity<?> object ) {
+    public boolean isRefering( String object ) {
         return referenceHandler.isRefering( object );
     }
 
     public Category getGroup() {
-        return (Category) referenceHandler.get("group");
+        return (Category) referenceHandler.getEntity("group");
     }
 
     public Date getMinAllowed(Date today) {
@@ -274,7 +275,7 @@ public class PermissionImpl
     public PermissionImpl clone() {
         PermissionImpl clone = new PermissionImpl();
         // This must be done first
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
+        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone());
         clone.accessLevel = accessLevel;
         clone.pEnd = pEnd;
         clone.pStart = pStart;

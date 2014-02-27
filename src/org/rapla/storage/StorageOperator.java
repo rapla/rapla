@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.rapla.ConnectInfo;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -38,7 +39,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.Template;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -55,20 +55,20 @@ public interface StorageOperator extends EntityResolver {
 
     /** should return a clone of the object. <strong>Never</strong> edit the
         original, <strong>always</strong> edit the object returned by editObject.*/
-    <T> Collection<RefEntity<T>> editObjects(Collection<RefEntity<T>> obj, User user) throws RaplaException;
+    Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
 
-    <T> Map<RefEntity<T>,T> getPersistant(Collection<RefEntity<T>> entity) throws RaplaException;
+    Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
-    void storeAndRemove(Collection<RefEntity<?>> storeObjects,Collection<RefEntity<?>> removeObjects,RefEntity<User> user) throws RaplaException;
+    void storeAndRemove(Collection<Entity> storeObjects,Collection<Entity> removeObjects,User user) throws RaplaException;
 
     String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
 
     <T extends RaplaObject> Collection<T> getObjects(Class<T> raplaType) throws RaplaException;
 
     /** returns all the objects (except reservations)that are visible for the current user */
-    Collection<RefEntity<?>> getVisibleEntities(User user) throws RaplaException;
+    Collection<Entity>getVisibleEntities(User user) throws RaplaException;
 
     /** returns the user or null if a user with the given username was not found. */
     User getUser(String username) throws RaplaException;
@@ -81,15 +81,15 @@ public interface StorageOperator extends EntityResolver {
     Category getSuperCategory();
 
     /** changes the password for the user */
-    void changePassword(RefEntity<User> user,char[] oldPassword,char[] newPassword) throws RaplaException;
+    void changePassword(User user,char[] oldPassword,char[] newPassword) throws RaplaException;
 
     /** changes the name for the passed user. If a person is connected then all three fields are used. Otherwise only lastname is used*/
-	void changeName(RefEntity<User> user,String title, String firstname, String surname) throws RaplaException;
+	void changeName(User user,String title, String firstname, String surname) throws RaplaException;
 
 	 /** changes the name for the user */ 
-	void changeEmail(RefEntity<User> user,String newEmail) throws RaplaException;
+	void changeEmail(User user,String newEmail) throws RaplaException;
 
-	void confirmEmail(RefEntity<User> user, String newEmail) throws RaplaException;
+	void confirmEmail(User user, String newEmail) throws RaplaException;
 
 	boolean canChangePassword() throws RaplaException;
 

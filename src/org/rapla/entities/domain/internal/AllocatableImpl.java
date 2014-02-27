@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
@@ -42,17 +43,16 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class AllocatableImpl extends SimpleEntity<Allocatable> implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
+public class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
     private ClassificationImpl classification;
     private boolean holdBackConflicts;
     private Set<PermissionImpl> permissions = new LinkedHashSet<PermissionImpl>();
     private Date lastChanged;
     private Date createDate;
-    private HashMap<String,String> annotations = new LinkedHashMap<String,String>();
+    private Map<String,String> annotations = new LinkedHashMap<String,String>();
     
     transient private boolean permissionArrayUpToDate = false;
     transient private PermissionImpl[] permissionArray;
@@ -74,12 +74,12 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
             this.lastChanged = this.createDate;
     }
     
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        super.resolveEntities( resolver);
-        classification.resolveEntities( resolver);
+    public void setResolver( EntityResolver resolver) {
+        super.setResolver( resolver);
+        classification.setResolver( resolver);
         for (Iterator<PermissionImpl> it = permissions.iterator();it.hasNext();)
         {
-             it.next().resolveEntities( resolver);
+             it.next().setResolver( resolver);
         }
     }
 
@@ -310,13 +310,13 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
 		}
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-        return new IteratorChain<RefEntity<?>>
+    public Iterable<String> getReferencedIds() {
+        return new IteratorChain<String>
             (
-             classification.getReferences()
-             ,new NestedIterator<RefEntity<?>>( permissions ) {
-                     public Iterable<RefEntity<?>> getNestedIterator(Object obj) {
-                         return ((PermissionImpl)obj).getReferences();
+             classification.getReferencedIds()
+             ,new NestedIterator<String,PermissionImpl>( permissions ) {
+                     public Iterable<String> getNestedIterator(PermissionImpl obj) {
+                         return obj.getReferencedIds();
                      }
                  }
              );
@@ -335,7 +335,7 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
         classification.commitRemove(type);
     }
         
-    public boolean isRefering(RefEntity<?> object) {
+    public boolean isRefering(String object) {
         if (super.isRefering(object))
             return true;
         if (classification.isRefering(object))
@@ -371,36 +371,25 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
     }
 
     
-    static private void copy(AllocatableImpl source,AllocatableImpl dest) {
-        dest.permissionArrayUpToDate = false;
-        dest.classification =  (ClassificationImpl) source.classification.clone();
 
-        dest.permissions.clear();
-        Iterator<PermissionImpl> it = source.permissions.iterator();
-        while ( it.hasNext() ) {
-            dest.permissions.add(it.next().clone());
-        }
-
-        dest.holdBackConflicts = source.holdBackConflicts;
-        dest.createDate = source.createDate;
-        dest.lastChanged = source.lastChanged;
-        @SuppressWarnings("unchecked")
-    	HashMap<String,String> annotationClone = (HashMap<String,String>) source.annotations.clone();
-        dest.annotations = annotationClone;
-    }
-
-    @SuppressWarnings("unchecked")
-	public void copy(Allocatable obj) {
-    	synchronized ( this) {
-            super.copy((SimpleEntity<Allocatable>)obj);
-            copy((AllocatableImpl)obj,this);
-		}
-    }
-
-    public Allocatable deepClone() {
+    public Allocatable clone() {
         AllocatableImpl clone = new AllocatableImpl();
         super.deepClone(clone);
-        copy(this,clone);
+        clone.permissionArrayUpToDate = false;
+        clone.classification =  classification.clone();
+
+        clone.permissions.clear();
+        Iterator<PermissionImpl> it = permissions.iterator();
+        while ( it.hasNext() ) {
+            clone.permissions.add(it.next().clone());
+        }
+
+        clone.holdBackConflicts = holdBackConflicts;
+        clone.createDate = createDate;
+        clone.lastChanged = lastChanged;
+        @SuppressWarnings("unchecked")
+    	Map<String,String> annotationClone = (Map<String, String>) ((HashMap<String,String>) annotations).clone();
+        clone.annotations = annotationClone;
         return clone;
     }
 
@@ -417,11 +406,12 @@ public class AllocatableImpl extends SimpleEntity<Allocatable> implements Alloca
         return buf.toString();
     }
 
+	public int compareTo(Allocatable o) 
+	{
+		return super.compareTo(o);
+	}
+
+
 }
-
-
-
-
-
 
 

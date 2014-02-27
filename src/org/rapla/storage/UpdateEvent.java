@@ -15,30 +15,62 @@ package org.rapla.storage;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.Entity;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.internal.PeriodImpl;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.internal.UserImpl;
 
 public class UpdateEvent implements java.io.Serializable,Cloneable
 {
-    private static final long serialVersionUID = 1L;
-    
-    private LinkedHashMap<Object,RefEntity<?>> removeSet = new LinkedHashMap<Object,RefEntity<?>>();
-    private LinkedHashMap<Object,RefEntity<?>> storeSet = new LinkedHashMap<Object,RefEntity<?>>();
-    private LinkedHashMap<Object,RefEntity<?>> referenceSet = new LinkedHashMap<Object,RefEntity<?>>();
-    
+	List<PreferencesImpl> preferences;
+	List<AllocatableImpl> allocatable;
+	List<CategoryImpl> categories;
+	List<UserImpl> users;
+	List<DynamicTypeImpl> types;
+	List<ReservationImpl> reservations;
+	List<PeriodImpl> periods;
+	
+	private static final long serialVersionUID = 1L;
+    //List<User> changedUser;
+    transient private Map<String,Entity> removeSet = new LinkedHashMap<String,Entity>();
+    transient private Map<String,Entity> storeSet = new LinkedHashMap<String,Entity>();
+    transient private Map<String,Entity> referenceSet = new LinkedHashMap<String,Entity>();
+//    RaplaMapImpl<RaplaObject> objMap = new RaplaMapImpl<>();
     private String userId;
     private long repositoryVersion;
     
     private boolean needResourcesRefresh = false;
 
-	
-
 	private TimeInterval invalidateInterval;
     
     public UpdateEvent() {
     }
-    
+
+
+//	@Override
+//	public void resolveEntities(EntityResolver resolver) throws EntityNotFoundException {
+//		objMap.resolveEntities(resolver);
+//	}
+//
+//	@Override
+//	public Iterable<Entity>getReferences() {
+//		return objMap.getReferences();
+//	}
+//
+//	@Override
+//	public boolean isRefering(Entity object) {
+//		return objMap.isRefering(object);
+//	}
+
+
     public void setUserId( String userId) {
         this.userId = userId;
     }
@@ -46,46 +78,46 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         return userId;
     }
     
-    private void addRemove(RefEntity<?> entity) {
-        removeSet.put( entity.getId(),entity);
+    private void addRemove(Entity entity) {
+        removeSet.put( entity.getId(),(Entity)entity);
     }
     
-    private void addStore(RefEntity<?> entity) {
-        storeSet.put( entity.getId(), entity);
+    private void addStore(Entity entity) {
+        storeSet.put( entity.getId(), (Entity)entity);
     }
 
-    public Collection<RefEntity<?>> getRemoveObjects() {
+    public Collection<Entity>getRemoveObjects() {
         return removeSet.values();
     }
 
-    public Collection<RefEntity<?>> getStoreObjects() {
+    public Collection<Entity>getStoreObjects() {
         return storeSet.values();
     }
     
-    public void putReference(RefEntity<?> entity) {
+    public void putReference(Entity entity) {
 		referenceSet.put(entity.getId(), entity);
 	}
 
-    public Collection<RefEntity<?>> getReferenceObjects() {
+    public Collection<Entity>getReferenceObjects() {
         return referenceSet.values();
     }
     /** use this method if you want to avoid adding the same Entity twice.*/
-    public void putStore(RefEntity<?> entity) {
+    public void putStore(Entity entity) {
        
         if (storeSet.get(entity.getId()) == null)
             addStore(entity);
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
-    public void putRemove(RefEntity<?> entity) {
+    public void putRemove(Entity entity) {
         if (removeSet.get(entity.getId()) == null)
             addRemove(entity);
     }
 
     /** find an entity in the update-event that matches the passed original. Returns null
      * if no such entity is found. */
-    public RefEntity<?> findEntity(RefEntity<?> original) {
-        RefEntity<?> entity =  storeSet.get( original.getId());
+    public Entity findEntity(Entity original) {
+        Entity entity =  storeSet.get( original.getId());
         if ( entity != null)
             return entity;
         entity =  removeSet.get( original.getId());
@@ -101,8 +133,8 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         clone.invalidateInterval = invalidateInterval;
         clone.needResourcesRefresh = needResourcesRefresh;
         clone.userId = userId;
-        clone.removeSet = (LinkedHashMap<Object,RefEntity<?>>) removeSet.clone();
-        clone.storeSet = (LinkedHashMap<Object,RefEntity<?>>) storeSet.clone();
+        clone.removeSet = (Map<String,Entity>) ((LinkedHashMap<String,Entity>) removeSet).clone();
+        clone.storeSet = (Map<String,Entity>) ((LinkedHashMap<String,Entity>) storeSet).clone();
         return clone;
     }
 
@@ -134,14 +166,13 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 		this.needResourcesRefresh = needResourcesRefresh;
 	}
 
-	public Collection<RefEntity<?>> getAllObjects() {
-		HashSet<RefEntity<?>> objects = new HashSet<RefEntity<?>>();
+	public Collection<Entity> getAllObjects() {
+		HashSet<Entity> objects = new HashSet<Entity>();
 		objects.addAll( storeSet.values());
 		objects.addAll( removeSet.values());
 		objects.addAll( referenceSet.values());
 		return objects;
 	}
-
 	
     
 }

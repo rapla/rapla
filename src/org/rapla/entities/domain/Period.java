@@ -21,7 +21,7 @@ import org.rapla.entities.RaplaType;
 Most universities and schools are planning for fixed periods/terms
 rather than arbitrary dates. Rapla provides support for this periods.
 */
-public interface Period extends Entity<Period>,Comparable<Period>,Named {
+public interface Period extends Entity<Period>,Comparable,Named {
     final RaplaType<Period> TYPE = new RaplaType<Period>(Period.class, "period");
     
     Date getStart();

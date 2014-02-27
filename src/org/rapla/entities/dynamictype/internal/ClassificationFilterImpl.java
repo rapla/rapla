@@ -14,8 +14,12 @@ package org.rapla.entities.dynamictype.internal;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IteratorChain;
@@ -34,7 +38,6 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
 public final class ClassificationFilterImpl
@@ -48,30 +51,30 @@ public final class ClassificationFilterImpl
     private static final long serialVersionUID = 1;
     
     boolean readOnly;
-
+    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
     LinkedList<ClassificationFilterRuleImpl> list = new LinkedList<ClassificationFilterRuleImpl>();
     transient boolean arrayUpToDate = false;
     transient ClassificationFilterRuleImpl[] rulesArray;
-    ReferenceHandler referenceHandler = new ReferenceHandler();
+    ReferenceHandler referenceHandler = new ReferenceHandler(links);
 
     ClassificationFilterImpl(DynamicTypeImpl dynamicType) {
-        referenceHandler.put("parent",dynamicType);
+        referenceHandler.putEntity("parent",dynamicType);
     }
 
-    public void resolveEntities( EntityResolver resolver) throws EntityNotFoundException {
-        referenceHandler.resolveEntities( resolver );
+    public void setResolver( EntityResolver resolver)  {
+        referenceHandler.setResolver( resolver );
         for (Iterator<ClassificationFilterRuleImpl> it=list.iterator();it.hasNext();)
         {
-             it.next().resolveEntities( resolver );
+             it.next().setResolver( resolver );
         }
     }
 
     public DynamicType getType() {
-        DynamicType dynamicType = (DynamicType) referenceHandler.get("parent");
+        DynamicType dynamicType = (DynamicType) referenceHandler.getEntity("parent");
 		return dynamicType;
     }
 
-    public boolean isRefering(RefEntity<?> object) {
+    public boolean isRefering(String object) {
         if (referenceHandler.isRefering(object))
             return true;
         ClassificationFilterRuleImpl[] rules = getRules();
@@ -81,13 +84,13 @@ public final class ClassificationFilterImpl
         return false;
     }
 
-    public Iterable<RefEntity<?>> getReferences() {
-    	NestedIterator<RefEntity<?>> ruleIterator = new NestedIterator<RefEntity<?>>(list) {
-                public Iterable<RefEntity<?>> getNestedIterator(Object obj) {
-                    return ((ClassificationFilterRuleImpl) obj).getReferences();
+    public Iterable<String> getReferencedIds() {
+    	NestedIterator<String,ClassificationFilterRuleImpl> ruleIterator = new NestedIterator<String,ClassificationFilterRuleImpl>(list) {
+                public Iterable<String> getNestedIterator(ClassificationFilterRuleImpl obj) {
+                    return obj.getReferencedIds();
                 }
             };
-        return new IteratorChain<RefEntity<?>>(referenceHandler.getReferences(), ruleIterator);
+        return new IteratorChain<String>(referenceHandler.getReferencedIds(), ruleIterator);
     }
 
 
@@ -123,7 +126,7 @@ public final class ClassificationFilterImpl
             ruleValues[i] = conditions[i][1];
         }
         ClassificationFilterRuleImpl rule = new ClassificationFilterRuleImpl( attribute, operators, ruleValues);
-
+        rule.setResolver( referenceHandler.getResolver());
         //      System.out.println("Rule " + index + " for '" + dynamicType + "' added. " + " Attribute " + rule.attribute  + " Params: " + rule.params[0]);
         if (index < list.size() )
             list.set(index, rule);
@@ -394,7 +397,7 @@ public final class ClassificationFilterImpl
             	return true;
             }
 
-            Object id = ((RefEntity<?>)attribute).getId();
+            Object id = attribute.getId();
             if (((DynamicTypeImpl)getType()).hasAttributeChanged( (DynamicTypeImpl)newType , id))
             	return true;
             Attribute newAttribute = newType.getAttribute(attribute.getKey());
@@ -422,7 +425,7 @@ public final class ClassificationFilterImpl
             	it.remove();
             	continue;
             }
-			Object id = ((RefEntity<?>)attribute).getId();
+			Object id = attribute.getId();
             Attribute typeAttribute = ((DynamicTypeImpl)type).findAttributeForId(id );
             if (typeAttribute == null) {
                 it.remove();
@@ -438,9 +441,9 @@ public final class ClassificationFilterImpl
         throw new CannotExistWithoutTypeException();
     }
 
-    public ClassificationFilter clone() {
+    public ClassificationFilterImpl clone() {
         ClassificationFilterImpl clone = new ClassificationFilterImpl((DynamicTypeImpl)getType());
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
+        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone());
         clone.list = new LinkedList<ClassificationFilterRuleImpl>();
         Iterator<ClassificationFilterRuleImpl> it = list.iterator();
         while (it.hasNext()) {

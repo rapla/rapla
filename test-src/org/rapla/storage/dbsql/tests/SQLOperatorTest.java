@@ -17,6 +17,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -30,7 +31,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
@@ -66,8 +66,8 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         facade.store(event);
         operator.refresh();
         
-        @SuppressWarnings("unchecked")
-		Reservation event1 = operator.getPersistant( Collections.singleton((RefEntity<Reservation>) event )).get( event);
+        Set<Reservation> singleton = Collections.singleton( event );
+		Reservation event1 = (Reservation) operator.getPersistant( singleton).get( event);
         Repeating repeating = event1.getAppointments()[0].getRepeating();
         assertNotNull( repeating );
         assertNull( repeating.getEnd());
@@ -85,8 +85,7 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         facade.store( period);
         operator.refresh();
         
-        @SuppressWarnings("unchecked")
-		Period period1 = operator.getPersistant( Collections.singleton((RefEntity<Period>) period )).get( period);
+		Period period1 = (Period) operator.getPersistant( Collections.singleton( period )).get( period);
         assertEquals( period1.getStart(), period.getStart());
         assertEquals( period1.getEnd(), period1.getEnd());
     }
@@ -120,7 +119,7 @@ public class SQLOperatorTest extends AbstractOperatorTest {
     {
         facade.login("homer", "duffs".toCharArray() );
         DynamicType type = facade.edit(facade.getDynamicType("event"));
-        Object id = ((RefEntity<?>)type).getId();
+        String id = type.getId();
         Attribute att = facade.newAttribute( AttributeType.STRING);
         att.setKey("test-att");
         type.addAttribute( att );
@@ -130,7 +129,7 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         operator.disconnect();
         facade.login("homer", "duffs".toCharArray() );
         DynamicType typeAfterEdit = facade.getDynamicType("event");
-        Object idAfterEdit = ((RefEntity<?>)typeAfterEdit).getId();
+        String idAfterEdit = typeAfterEdit.getId();
         assertEquals( id, idAfterEdit);
     }
 

@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
@@ -30,7 +31,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -59,7 +59,7 @@ public class SecurityManager
         this.context = context;
     }
 
-    void checkWritePermissions(User user,RefEntity<?> entity) throws RaplaSecurityException {
+    void checkWritePermissions(User user,Entity entity) throws RaplaSecurityException {
         if (user.isAdmin())
             return;
 
@@ -68,7 +68,7 @@ public class SecurityManager
             throw new RaplaSecurityException("No id set");
 
         boolean permitted = false;
-        RefEntity<?> original;
+        Entity original;
 		try {
 			String id2 = entity.getId();
 			original = operator.resolve(id2);
@@ -129,8 +129,8 @@ public class SecurityManager
         }
         if (!permitted && entity instanceof Appointment)
         {
-            final RefEntity<?> reservation = (RefEntity<?>)((Appointment)entity).getReservation();
-            RefEntity<?> originalReservation = operator.tryResolve(reservation.getId());
+            final Entity reservation = (Entity)((Appointment)entity).getReservation();
+           Entity originalReservation = operator.tryResolve(reservation.getId());
             if ( originalReservation != null)
             {
             	permitted = RaplaComponent.checkClassifiableModifyPermissions(originalReservation, user);
@@ -188,7 +188,7 @@ public class SecurityManager
 
     /** checks if the user just exchanges one allocatable or removes one. The user needs admin-access on the
      * removed allocatable and the newly inserted allocatable */
-    private boolean canExchange(User user, RefEntity<?> entity, RefEntity<?> original) {
+    private boolean canExchange(User user,Entity entity,Entity original) {
         if ( Appointment.TYPE.equals( entity.getRaplaType() )) {
             return ((Appointment) entity).matches( (Appointment) original );
         } if ( Reservation.TYPE.equals( entity.getRaplaType() )) {
@@ -357,7 +357,7 @@ public class SecurityManager
         }
     }
     
-    public void checkRead(User user, RefEntity<?> entity)
+    public void checkRead(User user,Entity entity)
 			throws RaplaSecurityException, RaplaException {
 		RaplaType<?> raplaType = entity.getRaplaType();
 		if ( raplaType == Allocatable.TYPE)

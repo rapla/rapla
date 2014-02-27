@@ -19,13 +19,15 @@ import java.util.List;
 import java.util.Locale;
 
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
@@ -43,20 +45,20 @@ import org.rapla.storage.LocalCache;
  * @author Christopher Kohlhaas
  */
 
-public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
+public class ConflictImpl extends SimpleEntity implements Conflict
 {
     public ConflictImpl(
                     Allocatable allocatable,
                     Appointment app1,
                     Appointment app2)
     {
-    	RefEntity<?> allocEntity = (RefEntity<?>) allocatable;
-    	RefEntity<?> app1Entity = (RefEntity<?>) app1;
-    	RefEntity<?> app2entity = (RefEntity<?>) app2;
+    Entity allocEntity = (Entity) allocatable;
+    Entity app1Entity = (Entity) app1;
+    Entity app2entity = (Entity) app2;
 		ReferenceHandler referenceHandler = getReferenceHandler();
-		referenceHandler.put("allocatable", allocEntity);
-		referenceHandler.put("appointment1", app1Entity);
-		referenceHandler.put("appointment2", app2entity);
+		referenceHandler.putEntity("allocatable", allocEntity);
+		referenceHandler.putEntity("appointment1", app1Entity);
+		referenceHandler.putEntity("appointment2", app2entity);
 		setId( createId());
     }
 
@@ -83,6 +85,26 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
 		referenceHandler.putId("appointment2", LocalCache.getId(Appointment.TYPE,split[2]));
 		setId( id);
 	}
+	
+	public static boolean isConflictId(String id) {
+		if ( id == null)
+		{
+			return false;
+		}
+		String[] split = id.split(";");
+		if ( split.length != 3)
+		{
+			return false;
+		}
+		try {
+			LocalCache.getId(Allocatable.TYPE,split[0]);
+			LocalCache.getId(Appointment.TYPE,split[1]);
+			LocalCache.getId(Appointment.TYPE,split[2]);
+		} catch (RaplaException e) {
+			return false;
+		}
+		return true;
+	}
 
 	/** @return the first Reservation, that is involed in the conflict.*/
     public Reservation getReservation1() 
@@ -97,12 +119,12 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
     /** The appointment of the first reservation, that causes the conflict. */
     public Appointment getAppointment1() 
     { 
-    	return (Appointment)getReferenceHandler().get("appointment1");
+    	return (Appointment)getReferenceHandler().getEntity("appointment1");
     }
     /** @return the allocatable, allocated for the same time by two different reservations. */
     public Allocatable getAllocatable() 
     { 
-    	return (Allocatable)getReferenceHandler().get("allocatable"); 
+    	return (Allocatable)getReferenceHandler().getEntity("allocatable"); 
     }
     /** @return the second Reservation, that is involed in the conflict.*/
     public Reservation getReservation2() 
@@ -122,7 +144,7 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
     /** The appointment of the second reservation, that causes the conflict. */
     public Appointment getAppointment2() 
     { 
-    	return (Appointment)getReferenceHandler().get("appointment2");
+    	return (Appointment)getReferenceHandler().getEntity("appointment2");
     }
 
     public static final ConflictImpl[] CONFLICT_ARRAY= new ConflictImpl[] {};
@@ -294,6 +316,11 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
 		{
 			return false;
 		}
+		boolean conflictTypes = checkForConflictTypes( appointment1, appointment2);
+		if ( !conflictTypes )
+		{
+			return false;
+		}
 		Date maxEnd1 = appointment1.getMaxEnd();
 		Date maxEnd2 = appointment2.getMaxEnd();
 		Date checkEnd = maxEnd1;
@@ -306,6 +333,48 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
         	return false;
         }
         return true;
+	}
+
+	private static boolean checkForConflictTypes(Appointment a1,	Appointment a2) {
+		String annotation1 = getConflictAnnotation(a1);
+		String annotation2 = getConflictAnnotation(a2);
+		if ( isNoConflicts( annotation1 ) || isNoConflicts ( annotation2))
+		{
+			return false;
+		}
+		if ( annotation1 != null )
+		{
+			if ( annotation1.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES))
+			{
+				if  (annotation2 != null)
+				{
+					DynamicType type2 = a2.getReservation().getClassification().getType();
+					DynamicType type1 = a1.getReservation().getClassification().getType();
+					if (type1.equals(type2))
+					{
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private static boolean isNoConflicts(String annotation) {
+		if ( annotation != null && annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	private static String getConflictAnnotation(Appointment a) {
+		Reservation reservation = a.getReservation();
+		if ( reservation == null)
+		{
+			return null;
+		}
+		return reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
 	}
 
 	protected static boolean endsBefore(Appointment appointment1,Appointment appointment2, Date date) {
@@ -327,19 +396,15 @@ public class ConflictImpl extends SimpleEntity<Conflict> implements Conflict
 		return result;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public void copy(Conflict obj) {
-		super.copy((SimpleEntity<Conflict>) obj);
-	}
-	
-	@Override
-	public Conflict deepClone() 
+	public Conflict clone() 
 	{
 		ConflictImpl clone = new ConflictImpl();
 		super.deepClone( clone);
 		return clone;
 	}
+
+
 	
 }
 

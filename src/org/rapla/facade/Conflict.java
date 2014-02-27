@@ -18,8 +18,8 @@ import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -37,7 +37,7 @@ import org.rapla.entities.domain.Reservation;
  * @author Christopher Kohlhaas
  */
 
-public interface Conflict extends Named, RaplaObject<Conflict>
+public interface Conflict extends Named, Entity<Conflict>
 {
     static public final RaplaType<Conflict> TYPE = new RaplaType<Conflict>(Conflict.class,"conflict");
     /** @return the first Reservation, that is involved in the conflict.*/

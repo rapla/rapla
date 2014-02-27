@@ -43,7 +43,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -92,7 +91,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
 	    AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
-	    final RefEntity<?> refEntity = operator.resolve( id);
+	    final Entity refEntity = operator.resolve( id);
 	    return (Allocatable) refEntity;
 	}
 

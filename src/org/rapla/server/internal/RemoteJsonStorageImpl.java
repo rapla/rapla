@@ -20,6 +20,9 @@ import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
@@ -81,23 +84,62 @@ public class RemoteJsonStorageImpl implements RemoteJsonFactory<RemoteJsonStorag
     public RemoteJsonStorage createService(final RemoteSession session) {
         return new RemoteJsonStorage() {
 			@Override
-			public void getUsers(String username, AsyncCallback<UserImpl[]> callback) {
+			public void getUser(String username, AsyncCallback<UserImpl> callback) {
 				try {
 					Collection<User> users = operator.getObjects(User.class);
-					ArrayList<UserImpl> result = new ArrayList<UserImpl>();
 					for (User user: users)
 					{
 						if ( username == null || user.getUsername().equalsIgnoreCase(username))
 						{
-							result.add( (UserImpl) user );
+							callback.onSuccess((UserImpl) user);
 						}
 					}
-					callback.onSuccess(result.toArray( new UserImpl[] {}));
 				} catch (RaplaException e) {
 					callback.onFailure( e );
 				}
 				
 			}
+
+			@Override
+			public void storeUser(UserImpl user,AsyncCallback<Boolean> callback) {
+				getLogger().info(user.getEmail());
+				callback.onSuccess( Boolean.TRUE);
+			}
+
+			public void getResources(AsyncCallback<List<AllocatableImpl>> callback)
+			{
+				try
+				{
+					Collection<Allocatable> list = operator.getObjects(Allocatable.class);
+					List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
+					for (Allocatable a:list)
+					{
+						result.add( (AllocatableImpl) a);
+					}
+					callback.onSuccess( result);
+				} catch (RaplaException e) {
+					callback.onFailure( e );
+				}
+			}
+
+			public void getCategory(AsyncCallback<CategoryImpl> callback)
+			{
+				try
+				{
+					CategoryImpl superCat = (CategoryImpl) operator.getSuperCategory();
+					//Collection<Allocatable> list = operator.getObjects(Allocatable.class);
+					callback.onSuccess( superCat);
+				} catch (Exception e) {
+					callback.onFailure( e );
+				}
+			}
+
+			//			@Override
+//			public void getMap(String username,	AsyncCallback<Map<String, Object>> callback) {
+//				Map<String,Object> result = new HashMap<String, Object>();
+//				result.put("a","HelloWorld");
+//				callback.onSuccess( result );
+//			}
 		};
     }
 

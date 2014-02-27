@@ -28,7 +28,6 @@ import javax.swing.JPanel;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.storage.Mementable;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
@@ -40,12 +39,12 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.DisposingTool;
 
-public class EditDialog<T extends Entity<T>> extends RaplaGUIComponent implements ModificationListener,Disposable {
+public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener,Disposable {
     DialogUI dlg;
     boolean bSaving = false;
     EditComponent<T> ui;
     boolean modal;
-    private Collection<Entity<T>> originals;
+    private Collection<T> originals;
 
     public EditDialog(RaplaContext sm,EditComponent<T> ui,boolean modal){
         super( sm);
@@ -61,26 +60,26 @@ public class EditDialog<T extends Entity<T>> extends RaplaGUIComponent implement
         return (EditControllerImpl) getService(EditController.class);
     }
 
-    public int start(Collection<Entity<T>> editObjects,String title,Component owner)
+    public int start(Collection<T> editObjects,String title,Component owner)
         throws
             RaplaException
     {
             // sets for every object in this array an edit item in the logfile
-            originals= new ArrayList<Entity<T>>();
-            Map<Entity<T>, T> persistant = getModification().getPersistant( editObjects);
-            for (Entity<T> entity : editObjects) 
+            originals= new ArrayList<T>();
+            Map<T, T> persistant = getModification().getPersistant( editObjects);
+            for (T entity : editObjects) 
             {
               
                 getLogger().debug("Editing Object: " + entity);
                 @SuppressWarnings("unchecked")
-                Mementable<Entity<T>> mementable = (Mementable<Entity<T>>) persistant.get( entity);
+                Entity<T> mementable = persistant.get( entity);
                 if ( mementable != null)
                 {
                 	if ( originals == null)
                 	{
                 		throw new RaplaException("You cannot edit persistant and new entities in one operation");
                 	}
-                	originals.add( mementable.deepClone() );
+                	originals.add( mementable.clone() );
                 }
                 else
                 {
@@ -92,11 +91,7 @@ public class EditDialog<T extends Entity<T>> extends RaplaGUIComponent implement
                 }
             }
 
-            List<T> toEdit = new ArrayList<T>();
-            for (Entity<T> entity : editObjects) 
-            {
-                toEdit.add( entity.cast());
-            }
+            List<T> toEdit = new ArrayList<T>(editObjects);
             ui.setObjects(toEdit);
 
             JComponent editComponent = ui.getComponent();
@@ -177,7 +172,7 @@ public class EditDialog<T extends Entity<T>> extends RaplaGUIComponent implement
 
 				// object which is processed by EditComponent
 				List<T> saveObjects = ui.getObjects();
-				Collection<Entity<T>> entities = new ArrayList<Entity<T>>();
+				Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);
 
                 @SuppressWarnings({ "unchecked", "rawtypes" })
