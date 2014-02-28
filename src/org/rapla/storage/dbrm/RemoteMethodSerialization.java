@@ -311,7 +311,7 @@ public class RemoteMethodSerialization extends RaplaComponent
             RaplaEntityWriter writer = new RaplaEntityWriter(ioContext);
             writer.setWriter( outWriter);
            
-            writer.printList( evt);
+            //writer.printList( evt);
         }
         else if ( value instanceof Appointment[])
         {
@@ -334,7 +334,7 @@ public class RemoteMethodSerialization extends RaplaComponent
             EntityList storeList = (EntityList) value;
             RaplaEntityWriter writer = new RaplaEntityWriter(ioContext);
             writer.setWriter( outWriter);
-            writer.printList(storeList);
+          //  writer.printList(storeList);
         }
         else if ( value.getClass().isArray())
         {
@@ -419,15 +419,15 @@ public class RemoteMethodSerialization extends RaplaComponent
                 event.putStore( entity);
             }
         }
-        for (Iterator<String> it = store.getReferenceIds().iterator();it.hasNext();)
-        {
-        	String id = it.next();
-            Entity entity = store.tryResolve( id );
-            if ( entity != null)
-            {
-                event.putReference( entity);
-            }
-        }
+//        for (Iterator<String> it = store.getReferenceIds().iterator();it.hasNext();)
+//        {
+//        	String id = it.next();
+//            Entity entity = store.tryResolve( id );
+//            if ( entity != null)
+//            {
+//                event.putReference( entity);
+//            }
+//        }
         for (Iterator<String> it = store.getRemoveIds().iterator();it.hasNext();)
         {
         	String id = it.next();

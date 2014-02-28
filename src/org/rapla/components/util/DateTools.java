@@ -24,9 +24,9 @@ public abstract class DateTools
 {
 
     public static final int DAYS_PER_WEEK= 7;
-    public static final long MILLISECONDS_PER_MINUTE = 1000 * 60;
-    public static final long MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
-    public static final long MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
+    public static final int MILLISECONDS_PER_MINUTE = 1000 * 60;
+    public static final int MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
+    public static final int MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
     public static final long MILLISECONDS_PER_WEEK = 7 * MILLISECONDS_PER_DAY;
     public static final int SUNDAY = 1, MONDAY = 2, TUESDAY = 3, WEDNESDAY = 4, THURSDAY = 5, FRIDAY = 6, SATURDAY = 7;
     

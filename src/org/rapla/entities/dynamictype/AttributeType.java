@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /** Attributes are to DynamicTypes, what properties are to Beans.
 Currently Rapla supports the following types:
@@ -25,27 +22,19 @@ Currently Rapla supports the following types:
         <li>rapla:category</li>
         <li>rapla:allocatable</li>
 @see DynamicType */
-public class AttributeType implements Serializable {
-    //  Don't forget to increase the serialVersionUID when you change the fields
-    private static final long serialVersionUID = 1;
+public enum AttributeType {
+	 STRING("string"),
+	    INT("int"),
+	    DATE("date"),
+	    BOOLEAN("boolean"),
+	    CATEGORY("rapla:category"),
+	    ALLOCATABLE("rapla:allocatable");
     
     private String type;
-    
-    static public AttributeType STRING = new AttributeType("string");
-    static public AttributeType INT = new AttributeType("int");
-    static public AttributeType DATE = new AttributeType("date");
-    static public AttributeType BOOLEAN = new AttributeType("boolean");
-    static public AttributeType CATEGORY = new AttributeType("rapla:category");
-    static public AttributeType ALLOCATABLE = new AttributeType("rapla:allocatable");
-    
-    private static Map<String,AttributeType> types;
+   
 
     private AttributeType(String type) {
         this.type = type;
-        if (types == null) {
-            types = new HashMap<String,AttributeType>();
-        }
-        types.put( type, this);
     }
     
     public boolean is(AttributeType other) {
@@ -55,22 +44,20 @@ public class AttributeType implements Serializable {
     }
     
     public static AttributeType findForString(String string  ) {
-         return  types.get( string );
+    	for (AttributeType type:values())
+    	{
+    		if ( type.type.equals( string))
+    		{
+    			return type;
+    		}
+    	}
+    	return null;
     }
     
     public String toString() {
         return type;
     }
     
-    public boolean equals( Object other) {
-        if ( !(other instanceof AttributeType))
-            return false;
-        return is( (AttributeType)other);
-    }
-    
-    public int hashCode() {
-        return type.hashCode();
-    }
 }
 
 

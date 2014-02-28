@@ -12,12 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 
-import org.rapla.components.util.iterator.FilterIterator;
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -27,9 +25,7 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.TypedComponentRole;
 
@@ -38,8 +34,7 @@ public class PreferencesImpl extends SimpleEntity
         Preferences
         , DynamicTypeDependant
 {
-    HashMap<String,Object> map = new HashMap<String,Object>();
-    
+	RaplaMapImpl map = new RaplaMapImpl();
     final public RaplaType<Preferences> getRaplaType() {return TYPE;}
     
     public PreferencesImpl() {
@@ -63,38 +58,17 @@ public class PreferencesImpl extends SimpleEntity
     
     public void putEntryPrivate(String role,RaplaObject entry) {
         checkWritable();
-        if ( entry == null)
-        {
-            map.remove( role);
-        }
-        else
-        {
-        	if (entry instanceof EntityReferencer)
-        	{
-        		setResolver(((ReferenceHandler)getEntityReferencers()).getResolver());
-        	}
-        	map.put( role ,entry);
-        }
+        map.putPrivate(role, entry);
     }
     
     public void putEntry(String role,String entry) {
         checkWritable();
-        if ( entry == null)
-        {
-            map.remove( role);
-        }
-        else
-        {
-            map.put( role ,entry);
-        }
+        map.putPrivate(role, entry);
     }
     
     public void setResolver( EntityResolver resolver)  {
-        super.setResolver( resolver);
-        for (Object obj:getEntityReferencers())
-        {
-            ((EntityReferencer) obj).setResolver( resolver);
-        }
+    	super.setResolver(resolver);
+    	map.setResolver(resolver);
     }
         
     public <T> T getEntry(String role) {
@@ -134,57 +108,29 @@ public class PreferencesImpl extends SimpleEntity
         return map.keySet().iterator();
     }
 
-    private Iterable<EntityReferencer> getEntityReferencers() {
-        return new FilterIterator<EntityReferencer>( map.values()) {
-            protected boolean isInIterator(Object obj) {
-                return obj instanceof EntityReferencer;
-            }
-        };
-    }
-
     public Iterable<String> getReferencedIds() {
-        return new NestedIterator<String,EntityReferencer>( getEntityReferencers() ) {
-            public Iterable<String> getNestedIterator(EntityReferencer obj) {
-                return  obj.getReferencedIds();
-            }
-        };
+    	IteratorChain<String> iteratorChain = new IteratorChain<String>(super.getReferencedIds(),map.getReferencedIds());
+		return iteratorChain;
     }
     
-    public boolean isRefering(String object) {
-        for (EntityReferencer entityReferencer:getEntityReferencers()) {
-            if (entityReferencer.isRefering( object)) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isRefering(String id) {
+    	if ( super.isRefering( id))
+    	{
+    		return true;
+    	}
+        return map.isRefering(id);
     }
 
     public boolean isEmpty() {
-        return map.keySet().isEmpty();
+        return map.isEmpty();
     }
     
 
     public PreferencesImpl clone() {
         PreferencesImpl clone = new PreferencesImpl();
         super.deepClone(clone);
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        for (Iterator<String> it = map.keySet().iterator();it.hasNext();)
-        {
-            String role =  it.next();
-            Object entry = map.get( role );
-            Object clone1;
-            // fixme need to clone not 
-            if (entry instanceof RaplaObject )
-            {
-            	clone1 = ((RaplaObject) entry).clone();
-            }
-            else 
-            {
-            	clone1 = entry;
-            }
-            map.put( role , clone1);
-        }
-        clone.map = map;
+        clone.map = new RaplaMapImpl<Object>( map);
+        clone.setResolver( getReferenceHandler().getResolver());
         return clone;
     }
 
@@ -222,34 +168,17 @@ public class PreferencesImpl extends SimpleEntity
 	}
     
     public boolean needsChange(DynamicType type) {
-        for (Iterator<Object> it = map.values().iterator();it.hasNext();) {
-            Object obj = it.next();
-            if ( obj instanceof DynamicTypeDependant) {
-                if (((DynamicTypeDependant) obj).needsChange( type ))
-                    return true;
-            }
-        }
-        return false;
+        return map.needsChange(type);
     }
     
     public void commitChange(DynamicType type) {
-        for (Iterator<Object> it = map.values().iterator();it.hasNext();) {
-            Object obj = it.next();
-            if ( obj instanceof DynamicTypeDependant) {
-                ((DynamicTypeDependant) obj).commitChange( type );
-            }
-        }
+    	map.commitChange(type);
     }
 
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
     {
-        for (Iterator<Object> it = map.values().iterator();it.hasNext();) {
-            Object obj = it.next();
-            if ( obj instanceof DynamicTypeDependant) {
-                ((DynamicTypeDependant) obj).commitRemove( type );
-            }
-        } 
+    	map.commitRemove(type);
     }
 
     

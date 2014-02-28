@@ -440,7 +440,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
-	protected void resolveEntities(Collection<Entity> entities,	EntityResolver resolver) throws RaplaException {
+	protected void resolveEntities(Collection<? extends Entity> entities,	EntityResolver resolver) throws RaplaException {
 		List<Entity>readOnlyList = new ArrayList<Entity>();
 		for (Entity obj: entities) {
 			((RefEntity)obj).setResolver(resolver);

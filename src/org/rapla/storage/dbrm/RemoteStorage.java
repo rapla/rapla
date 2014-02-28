@@ -13,15 +13,20 @@
 package org.rapla.storage.dbrm;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import javax.jws.WebService;
 
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.framework.RaplaException;
+import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.storage.UpdateEvent;
+
+import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.common.VoidResult;
 @WebService
-public interface RemoteStorage  {
+public interface RemoteStorage extends RemoteJsonService {
   //  RemoteMethod GET_RESOURCES = new RemoteMethod("getResources");
 //    RemoteMethod GET_RESERVATIONS= new RemoteMethod("getReservations", new String[] {"start","end"});
     //RemoteMethod GET_ENTITY_RECURSIVE= new RemoteMethod("getEntityRecursive", new String[] {"id"});
@@ -35,33 +40,33 @@ public interface RemoteStorage  {
     //RemoteMethod CHECK_SERVER_VERSION = new RemoteMethod("checkServerVersion",new String[] {"clientVersion" });
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
-    void authenticate(String username,String password) throws RaplaException;
-    boolean canChangePassword() throws RaplaException;
-    void changePassword(String username,String oldPassword,String newPassword) throws RaplaException;
-    void changeName(String username, String newTitle,String newSurename,String newLastname) throws RaplaException;
-    void changeEmail(String username,String newEmail) throws RaplaException;
-    void confirmEmail(String username,String newEmail) throws RaplaException;
+    FutureResult<VoidResult> authenticate(String username,String password);
+    FutureResult<Boolean> canChangePassword();
+    FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
+    FutureResult<VoidResult> changeName(String username, String newTitle,String newSurename,String newLastname);
+    FutureResult<VoidResult> changeEmail(String username,String newEmail);
+    FutureResult<VoidResult> confirmEmail(String username,String newEmail);
     
-    EntityList getResources() throws RaplaException;
+    FutureResult<UpdateEvent> getResources();
     /** returns the time on the server in string format*/
-    String getServerTime() throws RaplaException;
+    FutureResult<String> getServerTime();
     /** delegates the corresponding method in the StorageOperator. */
-    EntityList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException;
+    FutureResult<List<ReservationImpl>> getReservations(String[] allocatableIds,Date start,Date end);
 
-    EntityList getEntityRecursive(String... id) throws RaplaException;
+    FutureResult<UpdateEvent> getEntityRecursive(String... id);
 
-    UpdateEvent refresh(String clientRepoVersion) throws RaplaException;
+    FutureResult<UpdateEvent> refresh(String clientRepoVersion);
     
-    void restartServer() throws RaplaException;
-    UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
+    FutureResult<VoidResult> restartServer();
+    FutureResult<UpdateEvent> dispatch(UpdateEvent event);
     
-    String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
+    FutureResult<String[]> createIdentifier(String raplaType, int count);
 
-    EntityList getConflicts() throws RaplaException;
-    Integer[][] getFirstAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds) throws RaplaException;
-    EntityList getAllAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds) throws RaplaException;
+    FutureResult<List<ConflictImpl>> getConflicts();
+    FutureResult<Map<String,List<String>>> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
+    //List<ConflictImpl> getAllAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds);
 
-    Date getNextAllocatableDate(String[] allocatableIds, Appointment appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException;
+    FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
 	
-	void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
+    FutureResult<VoidResult> logEntityNotFound(String logMessage,String... referencedIds);
 }

@@ -35,7 +35,7 @@ public class EntityStore implements EntityResolver {
     
     CategoryImpl superCategory;
     HashMap<Object,String> passwordList = new HashMap<Object,String>();
-    long repositoryVersion;
+    int repositoryVersion;
     
     public EntityStore(EntityResolver parent,Category superCategory) {
         this.parent = parent;
@@ -190,12 +190,12 @@ public class EntityStore implements EntityResolver {
         return collection;
     }
 
-    public long getRepositoryVersion()
+    public int getRepositoryVersion()
     {
         return repositoryVersion;
     }
 
-    public void setRepositoryVersion( long repositoryVersion )
+    public void setRepositoryVersion( int repositoryVersion )
     {
         this.repositoryVersion = repositoryVersion;
     }

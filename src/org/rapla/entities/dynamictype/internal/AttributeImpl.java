@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
@@ -53,8 +54,8 @@ public class AttributeImpl extends SimpleEntity implements Attribute
     private AttributeType type;
     private String key;
     private boolean bOptional = false;
-    private HashMap<String,String> annotations = new LinkedHashMap<String,String>();
-    private Object defaultValue =null;
+    private Map<String,String> annotations = new LinkedHashMap<String,String>();
+    transient private Object defaultValue =null;
     private transient DynamicTypeImpl parent;
     
     public final static AttributeType DEFAULT_TYPE = AttributeType.STRING;
@@ -428,7 +429,7 @@ public class AttributeImpl extends SimpleEntity implements Attribute
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();
         @SuppressWarnings("unchecked")
-		HashMap<String,String> annotationClone = (HashMap<String,String>) annotations.clone();
+		HashMap<String,String> annotationClone = (HashMap<String,String>) ((HashMap<String,String>) annotations).clone();
 		clone.annotations = annotationClone;
         clone.type = getType();
         clone.setKey(getKey());

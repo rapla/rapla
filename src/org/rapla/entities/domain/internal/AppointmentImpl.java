@@ -51,7 +51,7 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
     final public RaplaType<Appointment> getRaplaType() {return TYPE;}
     transient ReservationImpl parent;
     
-    private AppointmentImpl() {
+    public AppointmentImpl() {
     }
 
     public AppointmentImpl(Date start,Date end) {

@@ -13,6 +13,7 @@
 package org.rapla.entities.domain.internal;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
@@ -34,14 +35,19 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     private int number = -1;
     private Date end;
     private RepeatingType repeatingType;
-    private TreeSet<Date> exceptions;
+    private Set<Date> exceptions;
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
-    private Appointment appointment;
-    private long frequency;
+    transient private Appointment appointment;
+    private int frequency;
     boolean monthly;
     boolean yearly;
 
+    public RepeatingImpl()
+    {
+    	
+    }
+    
     RepeatingImpl(RepeatingType type,Appointment appointment) {
         setType(type);
         setAppointment(appointment);

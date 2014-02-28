@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,15 +49,16 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -76,8 +78,12 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.dbrm.EntityList;
+import org.rapla.storage.dbrm.FutureResult;
 import org.rapla.storage.dbrm.RemoteStorage;
+import org.rapla.storage.dbrm.ResultImpl;
 import org.rapla.storage.impl.EntityStore;
+
+import com.google.gwtjsonrpc.common.VoidResult;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -90,8 +96,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
    // RemoteServer server;
     RaplaContext context;
     
-    long repositoryVersion = 0;
-    long cleanupPointVersion = 0;
+    int repositoryVersion = 0;
+    int cleanupPointVersion = 0;
         
     protected AuthenticationStore authenticationStore;
     Logger logger;
@@ -180,11 +186,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         return saveEvent;
     }
     
-    private Map<Entity,Long> updateMap = new HashMap<Entity,Long>();
-    private Map<User,Long> needConflictRefresh = new HashMap<User,Long>();
-    private Map<User,Long> needResourceRefresh = new HashMap<User,Long>();
-    private Map<Entity,Long> removeMap = new HashMap<Entity,Long>();
-    private SortedMap<Long, TimeInterval> invalidateMap = new TreeMap<Long,TimeInterval>();
+    private Map<Entity,Integer> updateMap = new HashMap<Entity,Integer>();
+    private Map<User,Integer> needConflictRefresh = new HashMap<User,Integer>();
+    private Map<User,Integer> needResourceRefresh = new HashMap<User,Integer>();
+    private Map<Entity,Integer> removeMap = new HashMap<Entity,Integer>();
+    private SortedMap<Integer, TimeInterval> invalidateMap = new TreeMap<Integer,TimeInterval>();
    
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
@@ -233,7 +239,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
 	            removeMap.remove( obj );
 	            updateMap.remove( obj );
-	            updateMap.put( obj, new Long( repositoryVersion ) );
+	            updateMap.put( obj, repositoryVersion  );
 	        }
 	        for ( Iterator<Entity>it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
 	        {
@@ -245,7 +251,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
 	            updateMap.remove( obj );
 	            removeMap.remove( obj );
-	            removeMap.put( obj, new Long( repositoryVersion ) );
+	            removeMap.put( obj,  repositoryVersion );
 	        }
 	        
 	        // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
@@ -444,7 +450,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 for ( int i=0;i<keys.length;i++)
                 {
                     Entity key = keys[i];
-                    Long lastVersion =  updateMap.get( key );
+                    Integer lastVersion =  updateMap.get( key );
                     if ( lastVersion.longValue() <= cleanupPointVersion )
                     {
                         updateMap.remove( key );
@@ -456,15 +462,15 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 for ( int i=0;i<keys.length;i++)
                 {
                     Entity key = keys[i];
-                    Long lastVersion = removeMap.get( key );
+                    Integer lastVersion = removeMap.get( key );
                     if ( lastVersion.longValue() <= cleanupPointVersion )
                     {
                         removeMap.remove( key );
                     }
                 }
             }
-            ArrayList<Long> removeList = new ArrayList<Long>(invalidateMap.headMap(cleanupPointVersion).keySet());
-			for ( Long toRemove:removeList)
+            ArrayList<Integer> removeList = new ArrayList<Integer>(invalidateMap.headMap(cleanupPointVersion).keySet());
+			for ( Integer toRemove:removeList)
 			{
 				invalidateMap.remove( toRemove);
 			}
@@ -503,23 +509,35 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     @Override
     public RemoteStorage createService(final RemoteSession session) {
         return new RemoteStorage() {
-            public EntityList getResources() throws RaplaException
+            public FutureResult<UpdateEvent> getResources()
             {
-                checkAuthentified();
-                User user = getSessionUser();
-                getLogger().debug ("A RemoteServer wants to get all resource-objects.");
-                {
-                    Collection<Entity>visibleEntities = operator.getVisibleEntities(user);
-                    EntityList resources = createList(visibleEntities, repositoryVersion);
-                    return resources;
-                }
+            	try
+            	{
+	                checkAuthentified();
+	                User user = getSessionUser();
+	                getLogger().debug ("A RemoteServer wants to get all resource-objects.");
+                
+                    Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
+                    UpdateEvent evt = new UpdateEvent();
+                    evt.setRepositoryVersion(repositoryVersion);
+                    for ( Entity entity: visibleEntities)
+                    {
+                    	evt.putStore(entity);
+                    }
+                    return new ResultImpl<UpdateEvent>( evt);
+            	}
+            	catch (RaplaException ex )
+            	{
+            		return new ResultImpl<UpdateEvent>(ex );
+            	}
             }
 
-            public EntityList getEntityRecursive(String... ids) throws RaplaException {
-                checkAuthentified();
-                User sessionUser = getSessionUser();
+            public FutureResult<UpdateEvent> getEntityRecursive(String... ids) {
                 //synchronized (operator.getLock()) 
+                try
                 {
+                    checkAuthentified();
+                    User sessionUser = getSessionUser();
                     ArrayList<Entity>completeList = new ArrayList<Entity>();
 	                for ( String id:ids)
                 	{
@@ -538,20 +556,30 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //	                        completeList.add( ref );
 //	                    }
                 	}
-                    EntityList list = createList( completeList, repositoryVersion);
-                    return list;
-                }
+	                UpdateEvent evt = new UpdateEvent();
+                    evt.setRepositoryVersion(repositoryVersion);
+                    for ( Entity entity: completeList)
+                    {
+                    	evt.putStore(entity);
+                    }
+	                return new ResultImpl<UpdateEvent>( evt);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<UpdateEvent>(ex );
+	        	}
             }
 			
-            public EntityList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException
+            public FutureResult<List<ReservationImpl>> getReservations(String[] allocatableIds,Date start,Date end)
             {
-                checkAuthentified();
-                User sessionUser = getSessionUser();
-                User user = null;
-                getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
+            	getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
+                try
                 {
-                	// Reservations and appointments
-                    ArrayList<Entity> completeList = new ArrayList<Entity>();
+                	checkAuthentified();
+                    User sessionUser = getSessionUser();
+                    User user = null;
+              	// Reservations and appointments
+                    ArrayList<ReservationImpl> list = new ArrayList<ReservationImpl>();
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
                     for ( String id:allocatableIds)
                     {
@@ -566,33 +594,29 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                     	if (isAllocatablesVisible(sessionUser, res))
                 		{
-                        	completeList.add( (Entity) res);
+                        	ReservationImpl clone = (ReservationImpl) ((ReservationImpl) res).clone();
+                        	checkAndMakeReservationsAnonymous(sessionUser,	clone);
+							list.add( clone);
                 		}
                     	
                     }
-                    for (Reservation r:reservations)
-                    {
-                    	Iterable<Entity>subEntities = ((ParentEntity)r).getSubEntities();
-                        for (Entity appointments:subEntities)
-                        {
-                            completeList.add( appointments);
-                        }
-                    }
-                    EntityList list = createList( completeList, repositoryVersion );
-                    for ( Entity entity:list)
-                    {
-                    	if ( entity.getRaplaType() == Reservation.TYPE)
-                    	{
-                    		checkAndMakeReservationsAnonymous(sessionUser,	entity);
-                    	}
-                    }
-                    getLogger().debug("Get reservations " + start + " " + end + ": "
-                                       + reservations.size() + "," + list.size());
-                    return list;
-                }
+//                    for (Reservation r:reservations)
+//                    {
+//                    	Iterable<Entity>subEntities = ((ParentEntity)r).getSubEntities();
+//                        for (Entity appointments:subEntities)
+//                        {
+//                            completeList.add( appointments);
+//                        }
+                    getLogger().debug("Get reservations " + start + " " + end + ": "  + reservations.size() + "," + list.size());
+                    return new ResultImpl<List<ReservationImpl>>( list);
+            	}
+            	catch (RaplaException ex )
+            	{
+            		return new ResultImpl<List<ReservationImpl>>(ex );
+            	}
             }
-			private void checkAndMakeReservationsAnonymous(User sessionUser,
-					Entity entity) {
+            
+			private void checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {
 				ReservationImpl reservation =(ReservationImpl) entity;
 				boolean canReadFromOthers = facade.canReadReservationsFromOthers(sessionUser);
 				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser, canReadFromOthers);
@@ -621,170 +645,248 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				return true;
 			}
 
-            public void restartServer() throws RaplaException {
-                checkAuthentified();
-                if (!getSessionUser().isAdmin())
-                    throw new RaplaSecurityException("Only admins can restart the server");
-
-                context.lookup(ShutdownService.class).shutdown( true);
+            public FutureResult<VoidResult> restartServer() {
+            	try
+            	{
+	                checkAuthentified();
+	                if (!getSessionUser().isAdmin())
+	                    throw new RaplaSecurityException("Only admins can restart the server");
+	
+	                context.lookup(ShutdownService.class).shutdown( true);
+	                return new ResultImpl<VoidResult>();
+            	}
+            	catch (RaplaException ex )
+            	{
+            		return new ResultImpl<VoidResult>(ex );
+            	}
             }
 
 
-            public String getServerTime() throws RaplaException {
+            public FutureResult<String> getServerTime() {
             	Date raplaTime = operator.getCurrentTimestamp();
             	SerializableDateTimeFormat serializableFormat = raplaLocale.getSerializableFormat();
-            	return serializableFormat.formatTimestamp( raplaTime);
+            	String result= serializableFormat.formatTimestamp( raplaTime);
+                return new ResultImpl<String>( result);
             }
 
-            public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
+            public FutureResult<UpdateEvent> dispatch(UpdateEvent event)
             {
-             //   LocalCache cache = operator.getCache();
-             //   UpdateEvent event = createUpdateEvent( context,xml, cache );
-            	User sessionUser = getSessionUser();
-				getLogger().info("Dispatching change for user " + sessionUser);
-				if ( sessionUser != null)
-				{
-					event.setUserId(sessionUser.getId());
-				}
-            	dispatch_( event);
-                getLogger().info("Change for user " + sessionUser + " dispatched.");
-                UpdateEvent result = createUpdateEvent(Long.valueOf( event.getRepositoryVersion()).longValue());
-                return result;
+            	try
+            	{
+	            	//   LocalCache cache = operator.getCache();
+	             //   UpdateEvent event = createUpdateEvent( context,xml, cache );
+	            	User sessionUser = getSessionUser();
+					getLogger().info("Dispatching change for user " + sessionUser);
+					if ( sessionUser != null)
+					{
+						event.setUserId(sessionUser.getId());
+					}
+	            	dispatch_( event);
+	                getLogger().info("Change for user " + sessionUser + " dispatched.");
+	                UpdateEvent result = createUpdateEvent(Long.valueOf( event.getRepositoryVersion()).longValue());
+	                return new ResultImpl<UpdateEvent>( result);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<UpdateEvent>(ex );
+	        	}
             }
             
-            public boolean canChangePassword() throws RaplaException {
-                checkAuthentified();
-                return operator.canChangePassword();
+            public FutureResult<Boolean> canChangePassword() {
+            	try
+            	{
+	            	checkAuthentified();
+	                boolean result =  operator.canChangePassword();
+	                return new ResultImpl<Boolean>( result);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<Boolean>(ex );
+	        	}
             }
 
-            public void changePassword(String username
+            public FutureResult<VoidResult> changePassword(String username
                                        ,String oldPassword
                                        ,String newPassword
-                                       ) throws RaplaException
+                                       )
             {
-                checkAuthentified();
-                User sessionUser = getSessionUser();
-                
-                if (!sessionUser.isAdmin()) {
-                    if ( authenticationStore != null ) {
-                        throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin." );
-                    }
-                    operator.authenticate(username,new String(oldPassword));
-                }
-                User user = operator.getUser(username);
-                operator.changePassword(user,oldPassword.toCharArray(),newPassword.toCharArray());
+            	try
+            	{
+	            	checkAuthentified();
+	                User sessionUser = getSessionUser();
+	                
+	                if (!sessionUser.isAdmin()) {
+	                    if ( authenticationStore != null ) {
+	                        throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin." );
+	                    }
+	                    operator.authenticate(username,new String(oldPassword));
+	                }
+	                User user = operator.getUser(username);
+	                operator.changePassword(user,oldPassword.toCharArray(),newPassword.toCharArray());
+	                return new ResultImpl<VoidResult>( );
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<VoidResult>(ex );
+	        	}
+
             }
             
-            public void changeName(String username,String newTitle,
-                    String newSurename, String newLastname) throws RaplaException 
+            public FutureResult<VoidResult> changeName(String username,String newTitle,
+                    String newSurename, String newLastname) 
             {
-                User changingUser = getSessionUser();
-                User user = operator.getUser(username);
-                if ( changingUser.isAdmin() || user.equals( changingUser) )
-                {
-                    operator.changeName(user,newTitle,newSurename,newLastname);
-                }
-                else
-                {
-                    throw new RaplaSecurityException("Not allowed to change email from other users");
-                }
+            	try
+            	{
+	                User changingUser = getSessionUser();
+	                User user = operator.getUser(username);
+	                if ( changingUser.isAdmin() || user.equals( changingUser) )
+	                {
+	                    operator.changeName(user,newTitle,newSurename,newLastname);
+	                }
+	                else
+	                {
+	                    throw new RaplaSecurityException("Not allowed to change email from other users");
+	                }
+	                return new ResultImpl<VoidResult>( );
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<VoidResult>(ex );
+	        	}
             }
 
 
-            public void changeEmail(String username,String newEmail)
-                    throws RaplaException 
+            public FutureResult<VoidResult> changeEmail(String username,String newEmail)
+                    
             {
-                User changingUser = getSessionUser();
-                User user = operator.getUser(username);
-                if ( changingUser.isAdmin() || user.equals( changingUser) )
-                {
-                    operator.changeEmail(user,newEmail);
-                }
-                else
-                {
-                    throw new RaplaSecurityException("Not allowed to change email from other users");
-                }
+            	try
+            	{
+	                User changingUser = getSessionUser();
+	                User user = operator.getUser(username);
+	                if ( changingUser.isAdmin() || user.equals( changingUser) )
+	                {
+	                    operator.changeEmail(user,newEmail);
+	                }
+	                else
+	                {
+	                    throw new RaplaSecurityException("Not allowed to change email from other users");
+	                }
+	                return new ResultImpl<VoidResult>( );
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<VoidResult>(ex );
+	        	}
             }
 
-            public void confirmEmail(String username,String newEmail)
-                    throws RaplaException
+            public FutureResult<VoidResult> confirmEmail(String username,String newEmail)
+                   
             {
-            	
-            	User changingUser = getSessionUser();
-                User user = operator.getUser(username);
-                if ( changingUser.isAdmin() || user.equals( changingUser) )
-                {
-                	String subject =  getString("security_code");
-    			    Preferences prefs = operator.getPreferences( null, true );
-    				String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" 
-    	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.getEmail().hashCode()) 
-    	        		+ "\n\n" + getString("send_code_mail_body_3") + "\n\n" + "-----------------------------------------------------------------------------------"
-    	        		+ "\n\n" + getString("send_code_mail_body_4") + prefs.getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title")) + " "
-    	        		+ getString("send_code_mail_body_5");
-    	
-    			
-    	    		final MailInterface mail = context.lookup(MailInterface.class);
-    	            final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
-    	            
-    	            try {
-    					mail.sendMail( defaultSender, newEmail,subject, "" + mailbody);
-    				} catch (MailException e) {
-    					throw new RaplaException( e.getMessage(), e);
-    				}
-                }
-                else
-                {
-                    throw new RaplaSecurityException("Not allowed to change email from other users");
-                }
+            	try
+            	{
+	            	User changingUser = getSessionUser();
+	                User user = operator.getUser(username);
+	                if ( changingUser.isAdmin() || user.equals( changingUser) )
+	                {
+	                	String subject =  getString("security_code");
+	    			    Preferences prefs = operator.getPreferences( null, true );
+	    				String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" 
+	    	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.getEmail().hashCode()) 
+	    	        		+ "\n\n" + getString("send_code_mail_body_3") + "\n\n" + "-----------------------------------------------------------------------------------"
+	    	        		+ "\n\n" + getString("send_code_mail_body_4") + prefs.getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title")) + " "
+	    	        		+ getString("send_code_mail_body_5");
+	    	
+	    			
+	    	    		final MailInterface mail = context.lookup(MailInterface.class);
+	    	            final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
+	    	            
+	    	            try {
+	    					mail.sendMail( defaultSender, newEmail,subject, "" + mailbody);
+	    				} catch (MailException e) {
+	    					throw new RaplaException( e.getMessage(), e);
+	    				}
+	                }
+	                else
+	                {
+	                    throw new RaplaSecurityException("Not allowed to change email from other users");
+	                }
+	                return new ResultImpl<VoidResult>( );
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<VoidResult>(ex );
+	        	}
             }
-            
             
             private String getString(String key) throws RaplaException{
 				return getI18n().getString( key);
 			}
             
-			public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
-                checkAuthentified();
-                //User user =
-                getSessionUser(); //check if authenified
-                String[] simpleIdentifier =operator.createIdentifier(raplaType, count);
-                return simpleIdentifier;
+			public FutureResult<String[]> createIdentifier(String type, int count) {
+				try
+				{
+					RaplaType raplaType = RaplaType.find( type);
+					checkAuthentified();
+		            //User user =
+		            getSessionUser(); //check if authenified
+		            String[] result =operator.createIdentifier(raplaType, count);
+		            return new ResultImpl<String[]>( result);
+				}
+				catch (RaplaException ex )
+				{
+					return new ResultImpl<String[]>(ex );
+				}
             }
 
-            public void authenticate(String username, String password) throws RaplaException
+            public FutureResult<VoidResult> authenticate(String username, String password)
             {
-                getSessionUser(); //check if authenified
-                Logger logger = getLogger().getChildLogger("passwordcheck");
-				if ( authenticationStore != null  )
-                {
-                	logger.info("Checking external authentifiction for user " + username);
-                	try
-                	{
-	                	if (authenticationStore.authenticate( username, password ))
+            	try
+            	{
+	                getSessionUser(); //check if authenified
+	                Logger logger = getLogger().getChildLogger("passwordcheck");
+					if ( authenticationStore != null  )
+	                {
+	                	logger.info("Checking external authentifiction for user " + username);
+	                	try
 	                	{
-	                		return;
+		                	if (authenticationStore.authenticate( username, password ))
+		                	{
+		                		return new ResultImpl<VoidResult>( );
+		                	}
 	                	}
-                	}
-                	catch (Exception ex)
-                	{
-                		getLogger().error("Error with external authentification ", ex);
-                	}
-                	logger.info("Now trying to authenticate with local store" + username);
-                    operator.authenticate( username, password );
-                    // do nothing
-                } // if the authenticationStore can't authenticate the user is checked against the local database
-                else
-                {
-                	logger.info("Check password for " + username);
-                    operator.authenticate( username, password );
-                }
+	                	catch (Exception ex)
+	                	{
+	                		getLogger().error("Error with external authentification ", ex);
+	                	}
+	                	logger.info("Now trying to authenticate with local store" + username);
+	                    operator.authenticate( username, password );
+	                    // do nothing
+	                } // if the authenticationStore can't authenticate the user is checked against the local database
+	                else
+	                {
+	                	logger.info("Check password for " + username);
+	                    operator.authenticate( username, password );
+	                }
+					return new ResultImpl<VoidResult>( );
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<VoidResult>(ex );
+	        	}
             }
             
-            public UpdateEvent refresh(String time) throws RaplaException
+            public FutureResult<UpdateEvent> refresh(String time)
             {
-                checkAuthentified();
-                UpdateEvent event = createUpdateEvent(Long.valueOf( time).longValue());
-                return event;
+            	try
+            	{
+	                checkAuthentified();
+	                UpdateEvent event = createUpdateEvent(Long.valueOf( time).longValue());
+	                return new ResultImpl<UpdateEvent>( event);
+            	}
+            	catch (RaplaException ex )
+            	{
+            		return new ResultImpl<UpdateEvent>(ex );
+            	}
             }
 
             
@@ -873,7 +975,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 try
                 {
 	            	User user = getSessionUser();
-	                long currentVersion = repositoryVersion;
+	                int currentVersion = repositoryVersion;
 	                UpdateEvent safeResultEvent = new UpdateEvent();
 	                safeResultEvent.setRepositoryVersion( currentVersion );
 	                if ( clientRepositoryVersion < currentVersion )
@@ -881,7 +983,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    for ( Iterator<Entity>it = updateMap.keySet().iterator(); it.hasNext(); )
 	                    {
 	                        Entity obj = it.next();
-	                        Long lastVersion = updateMap.get( obj );
+	                        Integer lastVersion = updateMap.get( obj );
 	                        if ( lastVersion.longValue() > clientRepositoryVersion )
 	                        {
 	                        	processClientReadable( user, safeResultEvent, obj, false);
@@ -890,7 +992,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    for ( Iterator<Entity>it = removeMap.keySet().iterator(); it.hasNext(); )
 	                    {
 	                        Entity obj =  it.next();
-	                        Long lastVersion = removeMap.get( obj );
+	                        Integer lastVersion = removeMap.get( obj );
 	                        if ( lastVersion.longValue() > clientRepositoryVersion )
 	                        {
 	                        	processClientReadable( user, safeResultEvent, obj, true);
@@ -898,7 +1000,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    }
 	                    TimeInterval invalidateInterval;
 	                    {
-		                    Long lastVersion = needConflictRefresh.get( user);
+		                    Integer lastVersion = needConflictRefresh.get( user);
 		                    if ( lastVersion != null && lastVersion > clientRepositoryVersion)
 		                    {
 		                    	invalidateInterval = new TimeInterval( null, null);
@@ -910,7 +1012,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    }
 	                    boolean resourceRefresh;
 	                    {
-		                    Long lastVersion = needResourceRefresh.get( user);
+		                    Integer lastVersion = needResourceRefresh.get( user);
 		                    resourceRefresh = ( lastVersion != null && lastVersion > clientRepositoryVersion);
 	                    }
 	                    safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
@@ -960,10 +1062,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 								Appointment appointment2 = conflict.getAppointment2();
 								toAdd.addAll( getDependentObjects(appointment2));
 								
-								for (Entity entity:toAdd)
-								{
-									safeResultEvent.putReference( entity);
-								}
+//								for (Entity entity:toAdd)
+//								{
+//									safeResultEvent.putReference( entity);
+//								}
 				    		}
 				    	}
 				    	else
@@ -1034,73 +1136,104 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			
 			}
 			
-			public EntityList getConflicts() throws RaplaException 
+			public FutureResult<List<ConflictImpl>> getConflicts() 
 			{
-            	Set<Entity>completeList = new HashSet<Entity> ();
-            	User sessionUser = getSessionUser();
-				Collection<Conflict> conflicts = operator.getConflicts( sessionUser);
-				for ( Conflict conflict:conflicts)
+				try
 				{
-					Entity conflictRef = (Entity)conflict;
-					completeList.add(conflictRef);
- 					completeList.addAll( getDependentObjects(conflict.getAppointment1()));
- 					completeList.addAll( getDependentObjects(conflict.getAppointment2()));
-				}
-				EntityList list = createList( completeList, repositoryVersion );
-                return list;
-
+	            	Set<Entity>completeList = new HashSet<Entity> ();
+	            	User sessionUser = getSessionUser();
+					Collection<Conflict> conflicts = operator.getConflicts( sessionUser);
+					List<ConflictImpl> result = new ArrayList<ConflictImpl>();
+					for ( Conflict conflict:conflicts)
+					{
+						result.add( (ConflictImpl) conflict);
+						Entity conflictRef = (Entity)conflict;
+						completeList.add(conflictRef);
+	 					completeList.addAll( getDependentObjects(conflict.getAppointment1()));
+	 					completeList.addAll( getDependentObjects(conflict.getAppointment2()));
+					}
+					//EntityList list = createList( completeList, repositoryVersion );
+				    return new ResultImpl<List<ConflictImpl>>( result);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<List<ConflictImpl>>(ex );
+	        	}
             }
 			@Override
-			public Date getNextAllocatableDate(	String[] allocatableIds, Appointment appointment,String[] reservationIds, Integer worktimestartMinutes, Integer worktimeendMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException 
+			public FutureResult<Date> getNextAllocatableDate(	String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimestartMinutes, Integer worktimeendMinutes, Integer[] excludedDays, Integer rowsPerHour) 
 			{
-                checkAuthentified();
-            	List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
-            	Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-            	return operator.getNextAllocatableDate(allocatables, appointment, ignoreList,  worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
+				try
+				{
+	                checkAuthentified();
+	            	List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+	            	Collection<Reservation> ignoreList = resolveReservations(reservationIds);
+	            	Date result = operator.getNextAllocatableDate(allocatables, appointment, ignoreList,  worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
+	                return new ResultImpl<Date>( result);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<Date>(ex );
+	        	}
 			}
 
 			@Override
-			public Integer[][] getFirstAllocatableBindings(String[] allocatableIds, Appointment[] appointments, String[] reservationIds) throws RaplaException
+			public FutureResult<Map<String,List<String>>> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds)
 			{
-                checkAuthentified();
-                Integer[][] result = new Integer[allocatableIds.length][];
-        		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
-                Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-                
-                Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, Arrays.asList(appointments), ignoreList);
-                for ( int i=0;i<result.length;i++)
-                {
-                	Allocatable alloc = allocatables.get( i);
-                	Collection<Appointment> apps = bindings.get(alloc);
-                	if ( apps == null)
-                	{
-                		apps = Collections.emptyList();
-                	}
-                	Integer[] indexArray = new Integer[apps.size()];
-                	int index = 0;
-                	for ( Appointment app: apps)
-                	{
-                    	for ( int j=0;j<appointments.length;j++)
-                    	{
-                    		if (appointments[j].equals(app ))
-                    		{
-                    			indexArray[index++] = j;
-                    		}
-                    	}
-                	}
-                	result[i] = indexArray;
-                }
-                return result;
-			}
+				try
+				{
+	                checkAuthentified();
+	                //Integer[][] result = new Integer[allocatableIds.length][];
+	        		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+	                Collection<Reservation> ignoreList = resolveReservations(reservationIds);
+	                List<Appointment> asList = cast(appointments.toArray(new AppointmentImpl[] {}));
+					Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
+					Map<String,List<String>> result = new LinkedHashMap<String,List<String>>();
+	                for ( Allocatable alloc:bindings.keySet())
+	                {
+	                	Collection<Appointment> apps = bindings.get(alloc);
+	                	if ( apps == null)
+	                	{
+	                		apps = Collections.emptyList();
+	                	}
+	                	ArrayList<String> indexArray = new ArrayList<String>(apps.size());
+	                	for ( Appointment app: apps)
+	                	{
+	                    	for (Appointment app2:appointments)
+	                    	{
+	                    		if (app2.equals(app ))
+	                    		{
+	                    			indexArray.add ( app.getId());
+	                    		}
+	                    	}
+	                	}
+	                	result.put(alloc.getId(), indexArray);
+	                }
+	                return new ResultImpl<Map<String,List<String>>>( result);
+	        	}
+	        	catch (RaplaException ex )
+	        	{
+	        		return new ResultImpl<Map<String,List<String>>>(ex );
+	        	}
+         	}
 			
-			@Override
-			public EntityList getAllAllocatableBindings(String[] allocatableIds, Appointment[] appointments, String[] reservationIds) throws RaplaException
+			private List<Appointment> cast(AppointmentImpl[] appointments) {
+				List<Appointment> result = new ArrayList<Appointment>(appointments.length);
+				for (Appointment app:appointments)
+				{
+					result.add( app);
+				}
+				return result;
+			}
+
+			public EntityList getAllAllocatableBindings(String[] allocatableIds, AppointmentImpl[] appointments, String[] reservationIds) throws RaplaException
 			{
                 checkAuthentified();
                 Set<Entity>completeList = new HashSet<Entity>();
         		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
                 Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-				Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, Arrays.asList(appointments), ignoreList);
+				List<Appointment> asList = cast(appointments);
+				Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList);
 				for ( Map<Appointment,Collection<Appointment>> appointmentBindings:bindings.values())
 				{
                     for ( Collection<Appointment> bound: appointmentBindings.values())
@@ -1151,7 +1284,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				return ignoreConflictsWith;
 			}
 			
-			public void logEntityNotFound(String logMessage,String... referencedIds)
+			public FutureResult<VoidResult> logEntityNotFound(String logMessage,String... referencedIds)
 			{
 				StringBuilder buf = new StringBuilder();
 				buf.append("{");
@@ -1181,8 +1314,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
 				buf.append("}");
 				getLogger().error("EntityNotFoundFoundExceptionOnClient "+ logMessage + " " + buf.toString());
+				return new ResultImpl<VoidResult>( );
 			}
-
         };
     }
 

@@ -9,6 +9,10 @@ public final class TimeInterval implements Serializable
 	Date start;
 	Date end;
 
+	public TimeInterval()
+	{
+		
+	}
 	public TimeInterval(Date start, Date end) {
 		this.start = start;
 		this.end = end;

@@ -12,40 +12,57 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.ConflictImpl;
 
 public class UpdateEvent implements java.io.Serializable,Cloneable
 {
-	List<PreferencesImpl> preferences;
-	List<AllocatableImpl> allocatable;
-	List<CategoryImpl> categories;
-	List<UserImpl> users;
-	List<DynamicTypeImpl> types;
-	List<ReservationImpl> reservations;
-	List<PeriodImpl> periods;
+	transient Map<Class,List<Entity>> listMap = new HashMap<Class, List<Entity>>(); 
+	transient List<PreferencesImpl> preferences = createList(Preferences.class);
+	List<AllocatableImpl> allocatable = createList(Allocatable.class);
+	List<CategoryImpl> categories = createList(Category.class);
+	List<UserImpl> users = createList(User.class);
+	List<DynamicTypeImpl> types = createList(DynamicType.class);
+	List<ReservationImpl> reservations =  createList(Reservation.class);
+	List<PeriodImpl> periods =  createList(Period.class);
+	List<ConflictImpl> conflicts =  createList(Conflict.class);
 	
+	private Set<String> removeSet = new LinkedHashSet<String>();
+	private Set<String> storeSet = new LinkedHashSet<String>();
 	private static final long serialVersionUID = 1L;
     //List<User> changedUser;
-    transient private Map<String,Entity> removeSet = new LinkedHashMap<String,Entity>();
-    transient private Map<String,Entity> storeSet = new LinkedHashMap<String,Entity>();
-    transient private Map<String,Entity> referenceSet = new LinkedHashMap<String,Entity>();
+    //transient private Map<String,Entity> removeSet = new LinkedHashMap<String,Entity>();
+    //transient private Map<String,Entity> storeSet = new LinkedHashMap<String,Entity>();
+   // transient private Map<String,Entity> referenceSet = new LinkedHashMap<String,Entity>();
 //    RaplaMapImpl<RaplaObject> objMap = new RaplaMapImpl<>();
     private String userId;
-    private long repositoryVersion;
+    private int repositoryVersion;
     
     private boolean needResourcesRefresh = false;
 
@@ -71,7 +88,14 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 //	}
 
 
-    public void setUserId( String userId) {
+    private  <T> List<T> createList(Class<? super T> clazz) {
+		ArrayList<T> list = new ArrayList();
+		listMap.put( clazz, (List<Entity>) list);
+		return list;
+	}
+
+
+	public void setUserId( String userId) {
         this.userId = userId;
     }
     public String getUserId() {
@@ -79,50 +103,101 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     }
     
     private void addRemove(Entity entity) {
-        removeSet.put( entity.getId(),(Entity)entity);
-    }
-    
-    private void addStore(Entity entity) {
-        storeSet.put( entity.getId(), (Entity)entity);
+        removeSet.add( entity.getId());
+        add( entity);
     }
 
-    public Collection<Entity>getRemoveObjects() {
-        return removeSet.values();
+	private void addStore(Entity entity) {
+        storeSet.add( entity.getId());
+        add( entity);
     }
 
-    public Collection<Entity>getStoreObjects() {
-        return storeSet.values();
-    }
-    
-    public void putReference(Entity entity) {
-		referenceSet.put(entity.getId(), entity);
+    private void add(Entity entity) {
+    	Class<? extends RaplaType> class1 = entity.getRaplaType().getClass();
+    	List<Entity> list = listMap.get( class1);
+    	if ( list == null)
+    	{
+    		throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");
+    	}
+    	list.add( entity);
 	}
 
-    public Collection<Entity>getReferenceObjects() {
-        return referenceSet.values();
+    public Collection<Entity> getRemoveObjects()
+    {
+		HashSet<Entity> objects = new HashSet<Entity>();
+		for ( List<Entity> list:listMap.values())
+        {
+        	for ( Entity entity:list)
+        	{
+        		if ( removeSet.contains( entity.getId()))
+        		{
+        			objects.add(entity);
+        		}
+        	}
+        }
+		return objects;
+
     }
+
+    public Collection<Entity> getStoreObjects() 
+    {
+		HashSet<Entity> objects = new HashSet<Entity>();
+		for ( List<Entity> list:listMap.values())
+        {
+        	for ( Entity entity:list)
+        	{
+        		if ( storeSet.contains( entity.getId()))
+        		{
+        			objects.add(entity);
+        		}
+        	}
+        }
+		return objects;
+
+    }
+    
+//    public void putReference(Entity entity) {
+//		referenceSet.put(entity.getId(), entity);
+//	}
+//
+//    public Collection<Entity>getReferenceObjects() {
+//        return referenceSet.values();
+//    }
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putStore(Entity entity) {
        
-        if (storeSet.get(entity.getId()) == null)
+        if (!storeSet.contains(entity.getId()))
             addStore(entity);
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putRemove(Entity entity) {
-        if (removeSet.get(entity.getId()) == null)
+        if (!removeSet.contains(entity.getId()))
             addRemove(entity);
     }
 
     /** find an entity in the update-event that matches the passed original. Returns null
      * if no such entity is found. */
     public Entity findEntity(Entity original) {
-        Entity entity =  storeSet.get( original.getId());
-        if ( entity != null)
-            return entity;
-        entity =  removeSet.get( original.getId());
-        if ( entity != null)
-            return entity;
+        String originalId = original.getId();
+		if (!storeSet.contains( originalId))
+        {
+        	return null;
+        }
+        if (!removeSet.contains( originalId))
+        {
+        	return null;
+        }
+        for ( List<Entity> list:listMap.values())
+        {
+        	for ( Entity entity:list)
+        	{
+        		if ( entity.getId().equals( originalId))
+        		{
+        			return entity;
+        		}
+        	}
+        }
         return null;
     }
 
@@ -133,17 +208,34 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         clone.invalidateInterval = invalidateInterval;
         clone.needResourcesRefresh = needResourcesRefresh;
         clone.userId = userId;
-        clone.removeSet = (Map<String,Entity>) ((LinkedHashMap<String,Entity>) removeSet).clone();
-        clone.storeSet = (Map<String,Entity>) ((LinkedHashMap<String,Entity>) storeSet).clone();
+        clone.removeSet = (Set<String>) ((LinkedHashSet<String>) removeSet).clone();
+        clone.storeSet = (Set<String>) ((LinkedHashSet<String>) storeSet).clone();
+        
+        clone.listMap = new HashMap<Class, List<Entity>>(); 
+        for ( List<Entity> list:listMap.values())
+        {
+        	for ( Entity entity:list)
+        	{
+        		String id = entity.getId();
+				if ( storeSet.contains( id))
+        		{
+        			clone.putStore( entity);
+        		}
+        		if ( removeSet.contains( id))
+        		{
+        			clone.putRemove( entity);
+        		}
+        	}
+        }
         return clone;
     }
 
-    public long getRepositoryVersion()
+    public int getRepositoryVersion()
     {
         return repositoryVersion;
     }
 
-    public void setRepositoryVersion( long repositoryVersion )
+    public void setRepositoryVersion( int repositoryVersion )
     {
         this.repositoryVersion = repositoryVersion;
     }
@@ -168,9 +260,13 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
 	public Collection<Entity> getAllObjects() {
 		HashSet<Entity> objects = new HashSet<Entity>();
-		objects.addAll( storeSet.values());
-		objects.addAll( removeSet.values());
-		objects.addAll( referenceSet.values());
+		for ( List<Entity> list:listMap.values())
+        {
+        	for ( Entity entity:list)
+        	{
+        		objects.add(entity);
+        	}
+        }
 		return objects;
 	}
 	

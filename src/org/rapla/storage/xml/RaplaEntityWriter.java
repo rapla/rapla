@@ -104,132 +104,132 @@ public class RaplaEntityWriter extends RaplaXMLWriter
         closeTag();
     }
 
-    public void printList(UpdateEvent evt ) throws RaplaException, IOException
-    {
-       long repositoryVersion = evt.getRepositoryVersion();
-       TimeInterval invalidateInterval = evt.getInvalidateInterval();
-	   boolean resourcesRefresh = evt.isNeedResourcesRefresh();
-	   printHeader( repositoryVersion, invalidateInterval, resourcesRefresh);
-       
-       Collection<Entity>remove = evt.getRemoveObjects();
-       Collection<Entity>store = evt.getStoreObjects();
-       Collection<Entity>all = evt.getAllObjects();
-       Collection<Entity>reference = evt.getReferenceObjects();
-       
-       printListPrivate( all);
-       openElement("rapla:store");
-       for ( Entity object:store)
-       {
-           openTag("rapla:" + object.getRaplaType().getLocalName());
-           String id = getId( object);
-           att("idref", id);
-           closeElementTag();
-       }
-       closeElement("rapla:store");
-       openElement("rapla:remove");
-       for ( Entity object:remove)
-       {
-           openTag("rapla:" + object.getRaplaType().getLocalName());
-           att("idref", getId( object));
-           closeElementTag();
-       }
-       closeElement("rapla:remove");
-       openElement("rapla:reference");
-       for ( Entity object:reference)
-       {
-           openTag("rapla:" + object.getRaplaType().getLocalName());
-           att("idref", getId( object));
-           closeElementTag();
-       }
-       closeElement("rapla:reference");
-       closeElement("rapla:data");
-    }
-    
-	public void printList(EntityList storeList) throws RaplaException, IOException
-	{
-		long repositoryVersion = storeList.getRepositoryVersion();
-		TimeInterval invalidateInterval = null;
-		boolean resourcesRefresh = false;
-		printHeader( repositoryVersion, invalidateInterval, resourcesRefresh);
-		printListPrivate( storeList);
-	    closeElement("rapla:data");
-	}
-    
-    protected void printListPrivate( Collection<? extends RaplaObject> resources ) throws RaplaException, IOException
-    {
-       HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>(resources);
-       HashMap<User,Preferences> hashMap = new HashMap<User,Preferences>();
-       SortedSet<RaplaObject> set = new TreeSet<RaplaObject>(new RaplaEntityComparator());
-       for ( RaplaObject object:hashSet)
-       {
-    	   RaplaType type = object.getRaplaType();
-           if ( type == Preferences.TYPE)
-           {
-        	   Preferences preferences = (Preferences)object;
-        	   User user = preferences.getOwner();
-        	   if ( user != null )
-        	   {
-        		   if (!hashSet.contains( user))
-        		   {
-        			   set.add( user);
-        		   }
-        		   hashMap.put( user, preferences);
-        	   }
-           }
-       }
-       set.addAll(resources );
-       for ( Iterator<RaplaObject> it = set.iterator();it.hasNext();)
-       {
-           RaplaObject object =  it.next();
-           
-           RaplaType type = object.getRaplaType();
-           RaplaXMLWriter writer;
-           if ( type == Attribute.TYPE || type == Appointment.TYPE)
-           {
-               continue;
-           }
-           try
-           {
-              writer = getWriterFor(type);
-           }
-           catch (RaplaException e)
-           {
-               System.err.println( e.getMessage());
-               continue;
-           }
-           if ( type == Preferences.TYPE)
-           {
-               Preferences preferences= (Preferences)object;
-               User owner = preferences.getOwner();
-               if ( owner != null )
-               {
-                   continue;
-               }
-               writer.writeObject(object);
-           }
-           else if ( type == User.TYPE)
-           {
-               User user = (User)object;
-               Preferences preferences = hashMap.get( user);
-               ((UserWriter)writer).printUser(user, null, preferences );
-           }
-           else if ( type == Category.TYPE)
-           {
-               Category category = (Category)object;
-               if (category.getParent() != null && hashSet.contains(category.getParent()))
-               {
-                   continue;
-               }
-               ((CategoryWriter) writer).printCategory( category, true);
-           }
-           else
-           {
-               writer.writeObject(object);
-           }
-            
-       }
-        
-    }
+//    public void printList(UpdateEvent evt ) throws RaplaException, IOException
+//    {
+//       long repositoryVersion = evt.getRepositoryVersion();
+//       TimeInterval invalidateInterval = evt.getInvalidateInterval();
+//	   boolean resourcesRefresh = evt.isNeedResourcesRefresh();
+//	   printHeader( repositoryVersion, invalidateInterval, resourcesRefresh);
+//       
+//       Collection<Entity>remove = evt.getRemoveObjects();
+//       Collection<Entity>store = evt.getStoreObjects();
+//       Collection<Entity>all = evt.getAllObjects();
+//       Collection<Entity>reference = evt.getReferenceObjects();
+//       
+//       printListPrivate( all);
+//       openElement("rapla:store");
+//       for ( Entity object:store)
+//       {
+//           openTag("rapla:" + object.getRaplaType().getLocalName());
+//           String id = getId( object);
+//           att("idref", id);
+//           closeElementTag();
+//       }
+//       closeElement("rapla:store");
+//       openElement("rapla:remove");
+//       for ( Entity object:remove)
+//       {
+//           openTag("rapla:" + object.getRaplaType().getLocalName());
+//           att("idref", getId( object));
+//           closeElementTag();
+//       }
+//       closeElement("rapla:remove");
+//       openElement("rapla:reference");
+//       for ( Entity object:reference)
+//       {
+//           openTag("rapla:" + object.getRaplaType().getLocalName());
+//           att("idref", getId( object));
+//           closeElementTag();
+//       }
+//       closeElement("rapla:reference");
+//       closeElement("rapla:data");
+//    }
+//    
+//	public void printList(EntityList storeList) throws RaplaException, IOException
+//	{
+//		long repositoryVersion = storeList.getRepositoryVersion();
+//		TimeInterval invalidateInterval = null;
+//		boolean resourcesRefresh = false;
+//		printHeader( repositoryVersion, invalidateInterval, resourcesRefresh);
+//		printListPrivate( storeList);
+//	    closeElement("rapla:data");
+//	}
+//    
+//    protected void printListPrivate( Collection<? extends RaplaObject> resources ) throws RaplaException, IOException
+//    {
+//       HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>(resources);
+//       HashMap<User,Preferences> hashMap = new HashMap<User,Preferences>();
+//       SortedSet<RaplaObject> set = new TreeSet<RaplaObject>(new RaplaEntityComparator());
+//       for ( RaplaObject object:hashSet)
+//       {
+//    	   RaplaType type = object.getRaplaType();
+//           if ( type == Preferences.TYPE)
+//           {
+//        	   Preferences preferences = (Preferences)object;
+//        	   User user = preferences.getOwner();
+//        	   if ( user != null )
+//        	   {
+//        		   if (!hashSet.contains( user))
+//        		   {
+//        			   set.add( user);
+//        		   }
+//        		   hashMap.put( user, preferences);
+//        	   }
+//           }
+//       }
+//       set.addAll(resources );
+//       for ( Iterator<RaplaObject> it = set.iterator();it.hasNext();)
+//       {
+//           RaplaObject object =  it.next();
+//           
+//           RaplaType type = object.getRaplaType();
+//           RaplaXMLWriter writer;
+//           if ( type == Attribute.TYPE || type == Appointment.TYPE)
+//           {
+//               continue;
+//           }
+//           try
+//           {
+//              writer = getWriterFor(type);
+//           }
+//           catch (RaplaException e)
+//           {
+//               System.err.println( e.getMessage());
+//               continue;
+//           }
+//           if ( type == Preferences.TYPE)
+//           {
+//               Preferences preferences= (Preferences)object;
+//               User owner = preferences.getOwner();
+//               if ( owner != null )
+//               {
+//                   continue;
+//               }
+//               writer.writeObject(object);
+//           }
+//           else if ( type == User.TYPE)
+//           {
+//               User user = (User)object;
+//               Preferences preferences = hashMap.get( user);
+//               ((UserWriter)writer).printUser(user, null, preferences );
+//           }
+//           else if ( type == Category.TYPE)
+//           {
+//               Category category = (Category)object;
+//               if (category.getParent() != null && hashSet.contains(category.getParent()))
+//               {
+//                   continue;
+//               }
+//               ((CategoryWriter) writer).printCategory( category, true);
+//           }
+//           else
+//           {
+//               writer.writeObject(object);
+//           }
+//            
+//       }
+//        
+//    }
 
     
 

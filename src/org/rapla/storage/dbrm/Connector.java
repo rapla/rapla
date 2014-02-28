@@ -9,6 +9,6 @@ public interface Connector
 {
     String getInfo();
 
-	Object call(Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args,	RemoteMethodSerialization remoteMethodSerialization) throws IOException, RaplaException;
+	Object call(Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException, RaplaException;
     
 }

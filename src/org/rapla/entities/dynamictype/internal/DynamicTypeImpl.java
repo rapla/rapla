@@ -43,7 +43,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     MultiLanguageName name  = new MultiLanguageName();
     String elementKey = "";
 
-    HashMap<String,ParsedText> annotations = new HashMap<String,ParsedText>();
+    transient HashMap<String,ParsedText> annotations = new HashMap<String,ParsedText>();
 
     public DynamicTypeImpl() {
     }

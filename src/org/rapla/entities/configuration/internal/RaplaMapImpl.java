@@ -47,8 +47,8 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
    private Map<String,String> constants;
    private Map<String,RaplaConfiguration> configurations;
-   private Map<String,RaplaMapImpl> maps;
-   private Map<String,CalendarModelConfigurationImpl> calendars;
+   transient private Map<String,RaplaMapImpl> maps;
+   transient private Map<String,CalendarModelConfigurationImpl> calendars;
 
    private transient Map<String,T> map;
    
@@ -86,6 +86,22 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
    /** This method is only used in storage operations, please dont use it from outside*/
    public void putPrivate(String key, T value)
    {
+	   if ( value == null)
+	   {
+		   if ( links != null)
+		   {
+			   links.remove(key);
+		   }
+		   if ( maps != null)
+		   {
+			   maps.remove( key);
+		   }
+		   if ( map != null)
+		   {
+			   map.remove( key);
+		   }
+		   return;
+	   }
 	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
        {   
        }
@@ -95,6 +111,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
     		   links = new LinkedHashMap<>();
     	   }
     	   links.put(key, Collections.singletonList( ((Entity) value).getId()));
+    	   return;
        }
        else if ( value instanceof RaplaConfiguration) {
     	   configurations.put( key, (RaplaConfiguration) value);
@@ -110,6 +127,11 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
        } else {
     	   throw new IllegalArgumentException("Map type not supported only entities, maps, configuration  or Strings are allowed.");
        }
+       if ( map == null)
+       {
+    	   map = new LinkedHashMap<String,T>();
+       }
+       map.put(key, value);
    }
 
    public Iterable<String> getReferencedIds() {
@@ -172,7 +194,7 @@ public class RaplaMapImpl<T> implements RaplaMap<T>, Serializable,EntityReferenc
 	   this.map.putAll( (Map<? extends String, ? extends T>) map);
    }
 
-public ReferenceHandler getReferenceHandler() {
+   public ReferenceHandler getReferenceHandler() {
        return referenceHandler;
    }
 

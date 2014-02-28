@@ -51,14 +51,37 @@ public class HTTPConnector  implements Connector
         return result;
     }
  
+    class Serializer
+    {
 
-    public Object call(Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args,	RemoteMethodSerialization remoteMethodSerialization) throws IOException, RaplaException 
+		public Map<String, String> serializeArguments(
+				Class<?>[] parameterTypes, Object[] args) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public Object deserializeReturnValue(Class<?> returnType,
+				String resultString) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public RaplaException deserializeException(String classname,
+				String message, String param) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+    	
+    }
+
+    public Object call(Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException, RaplaException 
 	{
 	    if ( service != null)
 	    {
 	        methodName = service.getName() +"/" + methodName; 
 	    }
-	    Map<String, String> argMap = remoteMethodSerialization.serializeArguments(parameterTypes, args);
+	    Serializer remoteMethodSerialization = new Serializer();
+		Map<String, String> argMap = remoteMethodSerialization.serializeArguments(parameterTypes, args);
 
 	    URL methodURL = new URL(server,"rapla/rpc/" + methodName );
         //System.err.println("Calling " + methodURL.toExternalForm() );

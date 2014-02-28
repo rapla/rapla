@@ -42,7 +42,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    // Don't forget to increase the serialVersionUID when you change the fields
    private static final long serialVersionUID = 1;
 
-   RaplaMapImpl<RaplaObject> selected;
+   transient RaplaMapImpl<RaplaObject> selected;
    String title;
    Date startDate;
    Date endDate;

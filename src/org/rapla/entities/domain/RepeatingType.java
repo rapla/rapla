@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,26 +19,23 @@ import java.util.Map;
         <li>weekly</li>
         <li>daily</li>
  */
-public class RepeatingType implements Serializable {
-    //  Don't forget to increase the serialVersionUID when you change the fields
-    private static final long serialVersionUID = 1;
-    
-    private String type;
-    
-    final static public RepeatingType WEEKLY = new RepeatingType("weekly");
-    final static public RepeatingType DAILY = new RepeatingType("daily");
-    final static public RepeatingType MONTHLY = new RepeatingType("monthly");
-    final static public RepeatingType YEARLY = new RepeatingType("yearly");
-    
-    private static Map<String,RepeatingType> types;
+public enum RepeatingType {
+    WEEKLY("weekly"),
+    DAILY("daily"),
+    MONTHLY("monthly"),
+    YEARLY("yearly");
 
-    private RepeatingType(String type) {
+    String type;
+    RepeatingType(String type) {
         this.type = type;
-        if (types == null) {
-            types = new HashMap<String,RepeatingType>();
-        }
-        types.put( type, this);
     }
+//     public RepeatingType WEEKLY = new RepeatingType("weekly");
+//    public RepeatingType DAILY = new RepeatingType("daily");
+//    public RepeatingType MONTHLY = new RepeatingType("monthly");
+//    public RepeatingType YEARLY = new RepeatingType("yearly");
+//    
+   
+    
     
     public boolean is(RepeatingType other) {
         if ( other == null)
@@ -48,23 +44,20 @@ public class RepeatingType implements Serializable {
     }
     
     public static RepeatingType findForString(String string  ) {
-    	RepeatingType type =  types.get( string );
-    	return type;
+    	for (RepeatingType type:values())
+    	{
+    		if ( type.type.equals( string))
+    		{
+    			return type;
+    		}
+    	}
+    	return null;
     }
     
     public String toString() {
         return type;
     }
     
-    public boolean equals( Object other) {
-        if ( !(other instanceof RepeatingType))
-            return false;
-        return is( (RepeatingType)other);
-    }
-    
-    public int hashCode() {
-        return type.hashCode();
-    }
 }
 
 
