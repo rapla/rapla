@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**Currently Rapla supports the following types:
         <li>weekly</li>

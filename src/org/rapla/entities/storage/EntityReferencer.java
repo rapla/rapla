@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage;
 
-import org.rapla.entities.EntityNotFoundException;
 
 /** transforms ids into references to
  * the corresponding objects.

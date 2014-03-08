@@ -18,7 +18,6 @@ import java.util.Date;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.entities.Annotatable;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -71,7 +70,7 @@ public class ReservationReader extends RaplaXMLReader {
             if (lastChanged != null)
                 changeTime = parseTimestamp( lastChanged);
             reservation = new ReservationImpl( createTime, changeTime );
-			reservation.setResolver( resolver );
+			reservation.setResolver( store );
             currentAnnotatable = reservation;
             setId(reservation, atts);
             setVersionIfThere( reservation, atts);

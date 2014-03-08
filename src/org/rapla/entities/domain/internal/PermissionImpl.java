@@ -24,7 +24,6 @@ import java.util.Map;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Period;
@@ -275,7 +274,8 @@ public class PermissionImpl
     public PermissionImpl clone() {
         PermissionImpl clone = new PermissionImpl();
         // This must be done first
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone());
+        clone.links = (Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone();
+		clone.referenceHandler = (ReferenceHandler) referenceHandler.clone(clone.links);
         clone.accessLevel = accessLevel;
         clone.pEnd = pEnd;
         clone.pStart = pStart;

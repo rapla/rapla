@@ -13,6 +13,7 @@
 package org.rapla.facade;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.rapla.entities.Category;
@@ -74,6 +75,8 @@ public interface QueryModule
     Reservation[] getReservations(Allocatable[] allocatables,Date start,Date end) throws RaplaException;
     
     Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
+    
+	List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException;
 
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;

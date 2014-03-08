@@ -51,7 +51,7 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 public class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
     private ClassificationImpl classification;
-    private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>();
+    private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private Date lastChanged;
@@ -314,6 +314,15 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         List<String> restrictionPrivate = getRestrictionPrivate(allocatable.getId());
 		Appointment[] list = new Appointment[restrictionPrivate.size()];
 		int i=0;
+		updateIndex();
+        for (String id:restrictionPrivate)
+        {
+        	list[i++] = appointmentIndex.get( id );
+        }
+		return list;
+    }
+
+	private void updateIndex() {
 		if (appointmentIndex == null)
 		{
 			appointmentIndex = new HashMap<>();
@@ -322,12 +331,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 				appointmentIndex.put( app.getId(), app);
 			}
 		}
-        for (String id:restrictionPrivate)
-        {
-        	list[i++] = appointmentIndex.get( id );
-        }
-		return list;
-    }
+	}
 
 
 	protected void setRestrictionPrivate(Allocatable allocatable,List<String> appointmentIds) {
@@ -455,7 +459,9 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     }
 
     public Appointment findAppointment(Appointment copy) {
-        return (Appointment) super.findEntity((Entity)copy);
+		updateIndex();
+        String id = copy.getId();
+		return (Appointment) appointmentIndex.get( id);
     }
 
 

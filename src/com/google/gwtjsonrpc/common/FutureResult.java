@@ -1,8 +1,6 @@
-package org.rapla.storage.dbrm;
+package com.google.gwtjsonrpc.common;
 
 import org.rapla.framework.RaplaException;
-
-import com.google.gwtjsonrpc.common.AsyncCallback;
 
 public interface FutureResult<T> {
 	public T get() throws RaplaException;

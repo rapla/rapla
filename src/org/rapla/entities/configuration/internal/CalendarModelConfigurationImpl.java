@@ -13,17 +13,17 @@
 package org.rapla.entities.configuration.internal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.iterator.IteratorChain;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaObject;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
-import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
@@ -31,29 +31,22 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.EntityResolver;
 
 
-/**
- *
- * @author ckohlhaas
- * @version 1.00.00
- * @since 2.03.00
- */
 public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter implements CalendarModelConfiguration
 {
    // Don't forget to increase the serialVersionUID when you change the fields
    private static final long serialVersionUID = 1;
-
-   transient RaplaMapImpl<RaplaObject> selected;
+   List<String> selected;
    String title;
    Date startDate;
    Date endDate;
    Date selectedDate;
    String view;
-   RaplaMapImpl<String> optionMap;
+   Map<String,String> optionMap;
    boolean defaultEventTypes;
    boolean defaultResourceTypes;
-
-   @SuppressWarnings("unchecked")
-   public CalendarModelConfigurationImpl( RaplaMap<? extends RaplaObject> selected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,RaplaMap<String> extensionMap) {
+    
+   public CalendarModelConfigurationImpl( Collection<String> selected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
+	   this.selected = selected != null ? new ArrayList<String>(selected) : new ArrayList<String>();
        this.view = view;
        this.defaultEventTypes = defaultEventTypes;
        this.defaultResourceTypes = defaultResourceTypes;
@@ -70,27 +63,19 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	       }
        }
        super.setClassificationFilter( filterList );
-       this.selected = (RaplaMapImpl<RaplaObject>)selected;
-       if (selected == null)
-       {
-           this.selected = new RaplaMapImpl<RaplaObject>();
-       }
-       this.optionMap = (RaplaMapImpl<String>)extensionMap;
+       this.optionMap = extensionMap;
        if (optionMap == null)
        {
-           this.optionMap= new RaplaMapImpl<String>();
+           this.optionMap= new LinkedHashMap<String,String>();
        }
    }
 
-   private CalendarModelConfigurationImpl() {
+   CalendarModelConfigurationImpl() {
    }
 
    public void setResolver( EntityResolver resolver)  {
        super.setResolver( resolver );
-       selected.setResolver( resolver );
-       optionMap.setResolver( resolver );
    }
-
 
     public RaplaType<CalendarModelConfiguration> getRaplaType() {
         return TYPE;
@@ -116,26 +101,29 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         return view;
     }
 
-	public Collection<RaplaObject> getSelected() {
-    	Collection<RaplaObject> values = selected.values();
-    	return Arrays.asList(values.toArray(new RaplaObject[] {}));
+	public Collection<Entity> getSelected() {
+		ArrayList<Entity> result = new ArrayList<Entity>();
+		for ( String id: selected)
+		{
+			Entity entity = resolver.tryResolve(id);
+			if ( entity != null)
+			{
+				result.add( entity);
+			}
+		}
+		return result;
     }
 
-    public RaplaMap<RaplaObject> getSelectedMap() {
-        return selected;
-    }
-
-    
     public Iterable<String> getReferencedIds() {
         Iterable<String> references = super.getReferencedIds();
-		return new IteratorChain<String>(references, selected.getReferencedIds());
+		return new IteratorChain<String>(references, selected);
     }
 
     /**
      * @see org.rapla.entities.storage.EntityReferencer#isRefering(org.rapla.entities.storage.Entity)
      */
     public boolean isRefering(String object) {
-        if ( selected.isRefering( object ) )
+        if ( selected.contains( object ) )
             return true;
         if ( super.isRefering(object)) {
             return true;
@@ -146,20 +134,18 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
     public boolean needsChange(DynamicType type) {
         if ( super.needsChange( type ))
             return true;
-        return selected.needsChange( type );
+        return false;
     }
 
     public void commitChange(DynamicType type) {
         super.commitChange( type );
-        selected.commitChange( type );
     }
     
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException {
         super.commitRemove( type );
-        selected.commitRemove( type );
     }
 
-    public RaplaMap<String> getOptionMap()
+    public Map<String,String> getOptionMap()
     {
         return optionMap;
     }
@@ -189,8 +175,8 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         	 newFilter.add( clone);
          }
          dest.setClassificationFilter(newFilter  );
-         dest.selected = (RaplaMapImpl<RaplaObject>)source.selected.deepClone();
-         dest.optionMap = (RaplaMapImpl<String>)source.optionMap.deepClone();
+         dest.selected = (List<String>)((ArrayList<String>)source.selected).clone();
+         dest.optionMap = (Map<String, String>) ((HashMap)source.optionMap).clone();
     }
 
 	public void copy(CalendarModelConfiguration obj) 
@@ -211,5 +197,9 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	}
 
 
+	public List<String> getSelectedIds()
+	{
+		return selected;
+	}
 
 }

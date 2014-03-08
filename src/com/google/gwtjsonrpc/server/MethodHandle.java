@@ -21,17 +21,15 @@ import java.lang.reflect.Type;
 
 import javax.jws.WebParam;
 
-import com.google.gwtjsonrpc.common.AllowCrossSiteRequest;
-import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.common.FutureResult;
 
 /**
- * Pairing of a specific {@link RemoteJsonService} implementation and method.
+ * Pairing of a specific implementation and method.
  */
 public class MethodHandle {
-  private final RemoteJsonService imp;
+  //private final RemoteJsonService imp;
   private final Method method;
   private final Type[] parameterTypes;
-  private final boolean allowXsrf;
   private String[] parameterNames;
  
   /**
@@ -42,15 +40,13 @@ public class MethodHandle {
    *        of the method must accept an {@link com.google.gwtjsonrpc.common.AsyncCallback}
    *        and the method must return void.
    */
-  MethodHandle(final RemoteJsonService imp, final Method method) {
-    this.imp = imp;
+  MethodHandle( final Method method) {
+    //this.imp = imp;
     this.method = method;
-    this.allowXsrf = method.getAnnotation(AllowCrossSiteRequest.class) != null;
-
     final Type[] args = method.getGenericParameterTypes();
     Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-    parameterNames = new String[args.length - 1];
-    for (int i=0;i<args.length -1;i++)
+    parameterNames = new String[args.length ];
+    for (int i=0;i<args.length;i++)
     {
     	Annotation[] annot= parameterAnnotations[i];
 		String paramterName = null;
@@ -67,7 +63,7 @@ public class MethodHandle {
     		parameterNames[i] = paramterName;
     	}
     }
-    parameterTypes = new Type[args.length - 1];
+    parameterTypes = new Type[args.length ];
    
     System.arraycopy(args, 0, parameterTypes, 0, parameterTypes.length);
   }
@@ -96,27 +92,21 @@ public class MethodHandle {
   	return parameterNames;
   }
 
-  /** @return true if the method can be called cross-site. */
-  public boolean allowCrossSiteRequest() {
-    return allowXsrf;
-  }
-
   /**
    * Invoke this method with the specified arguments, updating the callback.
    * 
    * @param arguments arguments to the method. May be the empty array if no
    *        parameters are declared beyond the AsyncCallback, but must not be
    *        null.
+   * @param imp the implementing object
    * @param callback the callback the implementation will invoke onSuccess or
    *        onFailure on as it performs its work. Only the last onSuccess or
    *        onFailure invocation matters.
    */
-  public void invoke(final Object[] arguments, final ActiveCall callback) {
+  public void invoke(final Object imp,final Object[] arguments,final ActiveCall callback) {
     try {
-      final Object[] p = new Object[arguments.length + 1];
-      System.arraycopy(arguments, 0, p, 0, arguments.length);
-      p[p.length - 1] = callback;
-      method.invoke(imp, p);
+      FutureResult result = (FutureResult) method.invoke(imp, arguments);
+      result.get(callback);
     } catch (InvocationTargetException e) {
       final Throwable c = e.getCause();
       if (c != null) {

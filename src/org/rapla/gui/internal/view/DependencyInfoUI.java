@@ -18,7 +18,7 @@ import java.util.Iterator;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
 
 class DependencyInfoUI extends HTMLInfo<DependencyException> {
     public DependencyInfoUI(RaplaContext sm){
@@ -38,7 +38,7 @@ class DependencyInfoUI extends HTMLInfo<DependencyException> {
             buf.append(") ");
             buf.append( obj );
             buf.append("<br>");
-            if (i >= CachableStorageOperator.MAX_DEPENDENCY && it.hasNext()) { //BJO
+            if (i >= StorageOperator.MAX_DEPENDENCY && it.hasNext()) { //BJO
                 buf.append("...  more"); //BJO
                 break;
             }

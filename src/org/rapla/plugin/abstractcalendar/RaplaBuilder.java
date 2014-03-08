@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
@@ -54,6 +55,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.Conflict.Util;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -93,16 +95,19 @@ public abstract class RaplaBuilder extends RaplaComponent
 
     
     List<AppointmentBlock> preparedBlocks = null;
-    private Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
-	public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
+    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
 
-    public RaplaBuilder(RaplaContext sm) {
+	Map<Appointment,Set<Appointment>> conflictingAppointments;
+    
+	public RaplaBuilder(RaplaContext sm) {
         super(sm);
         buildStrategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
     }
 
     public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
-        conflictsSelected.clear();
+    	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+    	conflictingAppointments = null;
+    	conflictsSelected.clear();
         conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
         Collection<Allocatable> allocatables ;
         List<Reservation> filteredReservations;
@@ -122,7 +127,8 @@ public abstract class RaplaBuilder extends RaplaComponent
     
         if ( !conflictsSelected.isEmpty() )
         {
-        	filteredReservations = Util.getReservations(conflictsSelected);
+        	filteredReservations = getQuery().getReservations( conflictsSelected);
+        	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, filteredReservations);
         }
         else
         {
@@ -494,17 +500,17 @@ public abstract class RaplaBuilder extends RaplaComponent
         if ( isConflictsSelected)
         {
             boolean found = false;
-            for (Conflict conflict:conflictsSelected)
+            Collection<Appointment> collection = conflictingAppointments.get(appointment);
+            if ( collection != null)
             {
-                if (conflict.hasAppointment(appointment))
-                {
-                	Appointment conflictingApp = conflict.getAppointment1().equals( appointment) ? conflict.getAppointment2() : conflict.getAppointment1();
+	            for (Appointment conflictingApp:collection)
+	            {
                 	if ( conflictingApp.overlaps( block))
                 	{
                 		found = true;
                 		break;
                 	}
-                }
+	            }
             }
             if ( !found)
             {
@@ -534,7 +540,7 @@ public abstract class RaplaBuilder extends RaplaComponent
     }
 
     public boolean isConflictsSelected() {
-        return !conflictsSelected.isEmpty();
+        return conflictingAppointments != null;
     }
 
     /** This context contains the shared information for all RaplaBlocks.*/

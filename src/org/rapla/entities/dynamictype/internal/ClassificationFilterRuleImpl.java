@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
@@ -32,14 +34,16 @@ public final class ClassificationFilterRuleImpl
     private static final long serialVersionUID = 1;
     
     String[] operators;
-    Object[] unresolvedRuleValues;
-    boolean[] valueNeedsResolving;
-    transient Object[] ruleValues;
-    Object attributeId;
-    ReferenceHandler referenceHandler = new ReferenceHandler();
+    String[] ruleValues;
+    String attributeId;
+    transient ReferenceHandler referenceHandler = new ReferenceHandler(new LinkedHashMap<String, List<String>>());
 
-    @SuppressWarnings("unchecked")
-	ClassificationFilterRuleImpl(Attribute attribute, String[] operators,Object[] ruleValues) {
+    ClassificationFilterRuleImpl()
+    {
+    	
+    }
+    
+    ClassificationFilterRuleImpl(Attribute attribute, String[] operators,Object[] ruleValues) {
 		attributeId = attribute.getId();
 		DynamicType type = attribute.getDynamicType();
 		if ( type== null)
@@ -48,9 +52,7 @@ public final class ClassificationFilterRuleImpl
 		}
 		referenceHandler.putEntity("dynamictype",type);
         this.operators = operators;
-        this.ruleValues = ruleValues;
-        unresolvedRuleValues = new Object[ruleValues.length];
-        valueNeedsResolving = new boolean[ruleValues.length];
+        this.ruleValues = new String[ruleValues.length];
         RaplaType refType = attribute.getRefType();
         for (int i=0;i<ruleValues.length;i++) {
             Object ruleValue = ruleValues[i];
@@ -58,18 +60,15 @@ public final class ClassificationFilterRuleImpl
             {
                 referenceHandler.putEntity(String.valueOf(i),(Entity)ruleValue);
                 //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
-                valueNeedsResolving[i] = true;
             }
             else if (refType != null && refType.isId(ruleValue))
             {
                 referenceHandler.putId(String.valueOf(i),(String)ruleValue);
-                //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
-                valueNeedsResolving[i] = true;
             }
             else
             {
-                unresolvedRuleValues[i] = ruleValue;
-                valueNeedsResolving[i] = false;
+            	this.ruleValues[i] = ruleValue != null ? ruleValue.toString() : null;
+            	
             }
         }
 	}
@@ -101,7 +100,7 @@ public final class ClassificationFilterRuleImpl
             Object oldValue = ruleValues[i];
             Object newValue = typeAttribute.convertValue(oldValue);
             setValue(i, newValue);
-            ruleValues[i] = newValue;
+         
         }
     }
 
@@ -130,33 +129,31 @@ public final class ClassificationFilterRuleImpl
     }
 
     public Object[] getValues() {
-        if (ruleValues == null)
-            ruleValues = new Object[operators.length];
-        for (int i=0;i<unresolvedRuleValues.length;i++) {
-            if (valueNeedsResolving[i])
-            {
-                ruleValues[i] = referenceHandler.getEntity(String.valueOf(i));
-            }
-            else
-            {
-                ruleValues[i] = unresolvedRuleValues[i];
-            }
+        Object[] result = new Object[operators.length];
+    	for (int i=0;i<operators.length;i++) {
+    		Object value = referenceHandler.getEntity(String.valueOf(i));
+    		if ( value == null)
+    		{
+    			value =  ruleValues[i];
+    		}
+    		result[i] = value;
         }
-        return ruleValues;
+        return result;
     }
     
-    private void setValue(int i, Object value)
+    private void setValue(int i, Object ruleValue)
     {
-    	 if (value instanceof Entity)
+    	 if (ruleValue instanceof Entity)
          {
-    		 valueNeedsResolving[i] = true;
-    		 referenceHandler.putEntity(String.valueOf(i), (Entity)value);
+    		 referenceHandler.putEntity(String.valueOf(i), (Entity)ruleValue);
+    		 ruleValues[i] = null;
          }
          else
          {
-        	 valueNeedsResolving[i] = false;
-             unresolvedRuleValues[i] = value;
+        	 ruleValues[i] = ruleValue != null ? ruleValue.toString() : null;
+        	 referenceHandler.remove( String.valueOf( i));
          }
+
     }
 
    

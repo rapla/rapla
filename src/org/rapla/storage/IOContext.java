@@ -27,8 +27,6 @@ import org.rapla.storage.xml.AllocatableReader;
 import org.rapla.storage.xml.AllocatableWriter;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.CategoryWriter;
-import org.rapla.storage.xml.ConflictReader;
-import org.rapla.storage.xml.ConflictWriter;
 import org.rapla.storage.xml.DynamicTypeReader;
 import org.rapla.storage.xml.DynamicTypeWriter;
 import org.rapla.storage.xml.PeriodReader;
@@ -43,11 +41,8 @@ import org.rapla.storage.xml.RaplaMapReader;
 import org.rapla.storage.xml.RaplaMapWriter;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
-import org.rapla.storage.xml.ReferenceReader;
-import org.rapla.storage.xml.RemoveReader;
 import org.rapla.storage.xml.ReservationReader;
 import org.rapla.storage.xml.ReservationWriter;
-import org.rapla.storage.xml.StoreReader;
 import org.rapla.storage.xml.UserReader;
 import org.rapla.storage.xml.UserWriter;
 
@@ -72,10 +67,7 @@ public class IOContext
         return localnameMap;
     }
  
-    protected void addReaders(Map<Object,RaplaXMLReader> readerMap,RaplaContext context) throws RaplaException {
-        readerMap.put( "remove",new RemoveReader( context));
-        readerMap.put( "reference",new ReferenceReader( context));
-        readerMap.put( "store",new StoreReader( context));
+    protected void addReaders(Map<RaplaType,RaplaXMLReader> readerMap,RaplaContext context) throws RaplaException {
         readerMap.put( Category.TYPE,new CategoryReader( context));
         readerMap.put( Preferences.TYPE, new PreferenceReader(context) );
         readerMap.put( DynamicType.TYPE, new DynamicTypeReader(context) );
@@ -84,9 +76,8 @@ public class IOContext
         readerMap.put( Period.TYPE, new PeriodReader(context) );
         readerMap.put( Reservation.TYPE,new ReservationReader(context));
         readerMap.put( RaplaConfiguration.TYPE, new RaplaConfigurationReader(context));
-        readerMap.put( RaplaMap.TYPE, new RaplaMapReader<Object>(context));
+        readerMap.put( RaplaMap.TYPE, new RaplaMapReader(context));
         readerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsReader(context) );
-        readerMap.put( Conflict.TYPE, new ConflictReader(context) );
     }
 
      protected void addWriters(Map<RaplaType,RaplaXMLWriter> writerMap,RaplaContext context) throws RaplaException {
@@ -101,7 +92,6 @@ public class IOContext
         writerMap.put( RaplaMap.TYPE, new RaplaMapWriter(context) );
         writerMap.put( Preferences.TYPE, new PreferenceWriter(context) );
         writerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsWriter(context) );
-        writerMap.put( Conflict.TYPE, new ConflictWriter(context) );
     }
 
     public RaplaDefaultContext createInputContext(RaplaContext parentContext, EntityStore store, IdTable idTable) throws RaplaException {
@@ -110,7 +100,7 @@ public class IOContext
         ioContext.put(EntityStore.class, store);
         ioContext.put(IdTable.class,idTable);
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
-        Map<Object,RaplaXMLReader> readerMap = new HashMap<Object,RaplaXMLReader>();
+        Map<RaplaType,RaplaXMLReader> readerMap = new HashMap<RaplaType,RaplaXMLReader>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);
         addReaders( readerMap, ioContext);
         return ioContext;

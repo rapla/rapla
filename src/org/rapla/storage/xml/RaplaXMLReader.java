@@ -33,7 +33,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -47,12 +46,12 @@ import org.rapla.storage.impl.EntityStore;
 
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
-    EntityStore resolver;
+    EntityStore store;
     Logger logger;
     IdTable idTable;
     RaplaContext context;
     Map<String,RaplaType> localnameMap;
-    Map<Object,RaplaXMLReader> readerMap;
+    Map<RaplaType,RaplaXMLReader> readerMap;
     SerializableDateTimeFormat dateTimeFormat;
     I18nBundle i18n;
 
@@ -61,7 +60,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         logger = context.lookup( Logger.class );
         this.context = context;
         this.i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-        this.resolver = context.lookup( EntityStore.class); 
+        this.store = context.lookup( EntityStore.class); 
         this.idTable = context.lookup( IdTable.class );
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         dateTimeFormat = raplaLocale.getSerializableFormat();
@@ -270,12 +269,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     
     protected CategoryImpl getSuperCategory()
     {
-        return resolver.getSuperCategory();
+        return store.getSuperCategory();
     }
 
     public DynamicType getDynamicType( String keyref )
     {
-        return resolver.getDynamicType( keyref);
+        return store.getDynamicType( keyref);
     }
 
     protected <T extends RaplaObject> T resolve( RaplaType<T> type, String str ) throws RaplaSAXParseException
@@ -283,7 +282,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         try
         {
             String id = getId( type, str );
-		Entity resolved = resolver.resolve( id );
+		Entity resolved = store.resolve( id );
 			@SuppressWarnings("unchecked")
 			T casted = (T)resolved;
 			return casted;
@@ -307,28 +306,28 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
     
     public void add(Entity entity){
-        resolver.put(entity);
+        store.put(entity);
     }
     
     public void remove(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
         String idObject = getId( type, id );
-        resolver.addRemoveId( idObject );
+        store.addRemoveId( idObject );
     }
     
     public void reference(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
         String idObject = getId( type, id );
-        resolver.addReferenceId( idObject );
+        store.addReferenceId( idObject );
     }
     
     public void store(String localname, String id) throws RaplaSAXParseException
     {
         RaplaType type = getTypeForLocalName( localname);
         String idObject = getId( type, id );
-        resolver.addStoreId( idObject );
+        store.addStoreId( idObject );
     }
     
     protected Category getCategoryFromPath( String path ) throws RaplaSAXParseException 
@@ -363,7 +362,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     
     protected void putPassword( Object userid, String password )
     {
-        resolver.putPassword( userid, password);
+        store.putPassword( userid, password);
     }
 
 	protected void setCurrentTranslations(MultiLanguageName name) {

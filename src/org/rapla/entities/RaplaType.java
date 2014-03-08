@@ -28,15 +28,15 @@ import org.rapla.framework.RaplaException;
  */
 public class RaplaType<T>  {
 
-    private Class<? extends RaplaObject> type;
+    private Class<T> type;
     private String localname;
     private static Map<Class<? extends RaplaObject>,RaplaType> registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
     private static Map<String,RaplaType> registeredTypeNames = new HashMap<String,RaplaType>();
 
 	public RaplaType(Class<T> clazz, String localname) {
-        @SuppressWarnings("unchecked")
-		Class<? extends RaplaObject> clazz2 = (Class<? extends RaplaObject>) clazz;
-		this.type = clazz2;
+//        @SuppressWarnings("unchecked")
+//		Class<? extends RaplaObject> clazz2 = clazz;
+		this.type = clazz;
         this.localname = localname;
         if ( registeredTypes == null)
         {
@@ -46,19 +46,16 @@ public class RaplaType<T>  {
         if ( registeredTypes.get( clazz ) != null) {
             throw new IllegalStateException( "Type already registered");
         }
-        registeredTypes.put( type, this);
-        registeredTypeNames.put( clazz.getName(), this);
+        registeredTypes.put( (Class<? extends RaplaObject>) type, this);
+        registeredTypeNames.put( localname, this);
     }
 
     static public RaplaType find( String typeName) throws RaplaException 
     {
-    	if ( typeName.contains("."))
+    	RaplaType raplaType = registeredTypeNames.get( typeName);
+    	if (raplaType != null)
     	{
-        	RaplaType raplaType = registeredTypeNames.get( typeName);
-        	if (raplaType != null)
-        	{
-        		return raplaType;
-        	}
+    		return raplaType;
     	}
     	throw new RaplaException("Cant find Raplatype for name" + typeName);
     }
@@ -92,6 +89,11 @@ public class RaplaType<T>  {
 
     public int hashCode() {
         return type.hashCode();
+    }
+    
+    public Class<T> getTypeClass()
+    {
+    	return type;
     }
     
     @SuppressWarnings("unchecked")

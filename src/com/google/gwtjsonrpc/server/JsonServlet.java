@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.jws.WebService;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -58,7 +59,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gwtjsonrpc.common.AsyncCallback;
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
 
@@ -87,17 +88,17 @@ public class JsonServlet<CallType extends ActiveCall>  {
   public static final Pattern SAFE_CALLBACK =
       Pattern.compile("^([A-Za-z0-9_$.]|\\[|\\])+$");
 
-  private static final ThreadLocal<ActiveCall> perThreadCall;
-
-  static {
-    perThreadCall = new ThreadLocal<ActiveCall>();
-  }
-
-  /** Get the <code>ActiveCall</code> object for the current call. */
-  @SuppressWarnings("unchecked")
-  public static <CallType extends ActiveCall> CallType getCurrentCall() {
-    return (CallType) perThreadCall.get();
-  }
+//  private static final ThreadLocal<ActiveCall> perThreadCall;
+//
+//  static {
+//    perThreadCall = new ThreadLocal<ActiveCall>();
+//  }
+//
+//  /** Get the <code>ActiveCall</code> object for the current call. */
+//  @SuppressWarnings("unchecked")
+//  public static <CallType extends ActiveCall> CallType getCurrentCall() {
+//    return (CallType) perThreadCall.get();
+//  }
 
   /** Create a default GsonBuilder with some extra types defined. */
   public static GsonBuilder defaultGsonBuilder() {
@@ -121,22 +122,22 @@ public class JsonServlet<CallType extends ActiveCall>  {
   private static final String ENC = "UTF-8";
 
   private Map<String, MethodHandle> myMethods;
-  private SignedToken xsrf;
+  //private SignedToken xsrf;
   Logger logger;
-  public  JsonServlet(final Logger logger,    final RemoteJsonService impl) throws ServletException {
+  public  JsonServlet(final Logger logger,    final Class class1) throws ServletException {
     //super.init(config);
 	 this.logger = logger;
 
-    myMethods = methods(impl);
+    myMethods = methods(class1);
     if (myMethods.isEmpty()) {
       throw new ServletException("No service methods declared");
     }
-
-    try {
-      xsrf = createXsrfSignedToken();
-    } catch (XsrfException e) {
-      throw new ServletException("Cannot initialize XSRF", e);
-    }
+//
+//	    try {
+//	      xsrf = createXsrfSignedToken();
+//	    } catch (XsrfException e) {
+//	      throw new ServletException("Cannot initialize XSRF", e);
+//	    }
   }
 
   /**
@@ -151,28 +152,13 @@ public class JsonServlet<CallType extends ActiveCall>  {
    *         algorithm.
    * @throws XsrfException the XSRF utility could not be created.
    */
-  protected SignedToken createXsrfSignedToken() throws XsrfException {
-    return new SignedToken(4 * 60 * 60 /* seconds */);
-  }
+//  protected SignedToken createXsrfSignedToken() throws XsrfException {
+//    return new SignedToken(4 * 60 * 60 /* seconds */);
+//  }
 
   /** Create a GsonBuilder to parse a request or return a response. */
   protected GsonBuilder createGsonBuilder() {
     return defaultGsonBuilder();
-  }
-
-  /**
-   * Verify the XSRF token submitted is valid.
-   * <p>
-   * By default this method validates the token, and refreshes it with a new
-   * token for the currently authenticated user.
-   *
-   * @param call current RPC being processed.
-   * @return true if the token was supplied and is valid; false otherwise.
-   * @throws XsrfException the token could not be validated due to an error that
-   *         the client cannot recover from.
-   */
-  protected boolean xsrfValidate(final CallType call) throws XsrfException {
-    return call.xsrfValidate();
   }
 
   /**
@@ -200,11 +186,11 @@ public class JsonServlet<CallType extends ActiveCall>  {
 
   /** @return maximum size of a JSON request, in bytes */
   protected int maxRequestSize() {
-    // Our default limit of 10 MB should be sufficient for nearly any
+    // Our default limit of 100 MB should be sufficient for nearly any
     // application. It takes a long time to format this on the client
     // or to upload it.
     //
-    return 10 * 1024 * 1024;
+    return 100 * 1024 * 1024;
   }
 
   /**
@@ -234,20 +220,18 @@ public class JsonServlet<CallType extends ActiveCall>  {
   protected void preInvoke(final CallType call) {
   }
 
-  public void service(final HttpServletRequest req,
-      final HttpServletResponse resp, ServletContext servletContext) throws IOException {
+  public void service(final HttpServletRequest req, final HttpServletResponse resp, ServletContext servletContext,final Object service) throws IOException {
     try {
       final CallType call = createActiveCall(req, resp);
-      call.xsrf = xsrf;
-
+  
       call.noCache();
 //      if (!acceptJSON(call)) {
 //        textError(call, SC_BAD_REQUEST, "Must Accept " + JsonConstants.JSON_TYPE);
 //        return;
 //      }
 
-      perThreadCall.set(call);
-      doService(call);
+      //perThreadCall.set(call);
+      doService(service,call);
 
 	
       final String out = formatResult(call);
@@ -256,7 +240,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
               && out.length() > 256
               && RPCServletUtils.acceptsGzipEncoding(call.httpRequest));
     } finally {
-      perThreadCall.set(null);
+      //perThreadCall.set(null);
     }
   }
 
@@ -296,21 +280,11 @@ public class JsonServlet<CallType extends ActiveCall>  {
     return false;
   }
 
-  private void doService(final CallType call) throws IOException {
+  private void doService(final Object service, final CallType call ) throws IOException {
     try {
       try {
         if ("GET".equals(call.httpRequest.getMethod())) {
           parseGetRequest(call);
-          if (!call.method.allowCrossSiteRequest()) {
-            // Flat out refuse to service a method that requires XSRF
-            // protection when requested over a GET method. Even if we
-            // somehow managed to populate the XSRF token this is a very
-            // insecure request against what must be a secure service method.
-            //
-            call.onFailure(new Exception(JsonConstants.ERROR_INVALID_XSRF));
-            return;
-          }
-
         } else if ("POST".equals(call.httpRequest.getMethod())) {
           parsePostRequest(call);
 
@@ -342,19 +316,9 @@ public class JsonServlet<CallType extends ActiveCall>  {
       return;
     }
 
-    try {
-      call.xsrfValid = xsrfValidate(call);
-    } catch (XsrfException e) {
-      //call.httpRequest.getServletContext().log("Unexpected XSRF validation error", e);
-      call.xsrfValid = false;
-    }
-    if (!call.method.allowCrossSiteRequest() && !call.requireXsrfValid()) {
-      return;
-    }
-
     preInvoke(call);
     if (!call.isComplete()) {
-      call.method.invoke(call.params, call);
+      call.method.invoke(service, call.params, call);
     }
   }
 
@@ -563,9 +527,9 @@ public class JsonServlet<CallType extends ActiveCall>  {
         if (src.id != null) {
           r.add("id", src.id);
         }
-        if (src.xsrfKeyOut != null) {
-          r.addProperty("xsrfKey", src.xsrfKeyOut);
-        }
+//        if (src.xsrfKeyOut != null) {
+//          r.addProperty("xsrfKey", src.xsrfKeyOut);
+//        }
         if (failure != null) {
           final JsonObject error = getError(src, failure);
           r.add("error", error);
@@ -606,7 +570,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
       o.write(call.callback);
       o.write("(");
     }
-    Gson create = gb.create();
+    Gson create = gb.disableHtmlEscaping().create();
 	create.toJson(call, o);
     if (call.callback != null) {
       o.write(");");
@@ -647,8 +611,8 @@ public class JsonServlet<CallType extends ActiveCall>  {
     }
   }
 
-  private static Map<String, MethodHandle> methods(final RemoteJsonService impl) {
-    final Class<? extends RemoteJsonService> d = findInterface(impl.getClass());
+  private static Map<String, MethodHandle> methods(Class class1 ) {
+    final Class d = findInterface(class1);
     if (d == null) {
       return Collections.<String, MethodHandle> emptyMap();
     }
@@ -659,33 +623,33 @@ public class JsonServlet<CallType extends ActiveCall>  {
         continue;
       }
 
-      if (m.getReturnType() != Void.TYPE) {
+      if (m.getReturnType() != FutureResult.class) {
         continue;
       }
 
       final Class<?>[] params = m.getParameterTypes();
-      if (params.length < 1) {
-        continue;
-      }
+//      if (params.length < 1) {
+//        continue;
+//      }
+//
+//      if (!params[params.length - 1].isAssignableFrom(AsyncCallback.class)) {
+//        continue;
+//      }
 
-      if (!params[params.length - 1].isAssignableFrom(AsyncCallback.class)) {
-        continue;
-      }
-
-      final MethodHandle h = new MethodHandle(impl, m);
+      final MethodHandle h = new MethodHandle( m);
       r.put(h.getName(), h);
     }
     return Collections.unmodifiableMap(r);
   }
 
   @SuppressWarnings("unchecked")
-  private static Class<? extends RemoteJsonService> findInterface(Class<?> c) {
+  private static Class findInterface(Class<?> c) {
     while (c != null) {
-      if (c.isInterface() && RemoteJsonService.class.isAssignableFrom(c)) {
-        return (Class<RemoteJsonService>) c;
+      if (c.isInterface() && c.getAnnotation(WebService.class) != null) {
+        return c;
       }
       for (final Class<?> i : c.getInterfaces()) {
-        final Class<? extends RemoteJsonService> r = findInterface(i);
+        final Class r = findInterface(i);
         if (r != null) {
           return r;
         }

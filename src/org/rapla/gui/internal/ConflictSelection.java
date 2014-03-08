@@ -90,23 +90,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         });
     }
 
-    public Date getStartDate(Conflict conflict) {
-        Date today = getQuery().today();
-		Date fromDate = today;
-        Date start1 = conflict.getAppointment1().getStart();
-		if ( start1.before( fromDate))
-        {
-        	fromDate = start1; 
-        }
-        Date start2 = conflict.getAppointment2().getStart();
-		if ( start2.before( fromDate))
-        {
-        	fromDate = start2; 
-        }
-        Date toDate = DateTools.addDays( today, 365 * 10);
-        Date date = conflict.getFirstConflictDate(fromDate, toDate);
-        return date;
-    }
+   
     
     public RaplaTree getTreeSelection() {
         return treeSelection;
@@ -185,7 +169,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
          if (  !selectedConflicts.isEmpty() )
          {
              Conflict conflict = selectedConflicts.iterator().next();
-             Date date = getStartDate(conflict);
+             Date date = conflict.getStartDate();
              if ( date != null)
              {
                  model.setSelectedDate(date);
@@ -254,12 +238,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 
         List<Conflict> result = new ArrayList<Conflict>();
         for (Conflict conflict:conflicts) {
-            User owner1 = conflict.getReservation1().getOwner();
-			User owner2 = conflict.getReservation2().getOwner();
-			if (user != null && !user.equals(owner1) && !user.equals(owner2)) {
-                continue;
-            }
-            result.add(conflict);
+        	if (conflict.isOwner(user))
+        	{
+        		result.add(conflict);
+        	}
         }
         Collections.sort( result, new ConflictStartDateComparator( ));
         return result;
@@ -272,8 +254,8 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
            {
                return 0;
            }
-           Date d1 = getStartDate( c1);
-           Date d2 = getStartDate( c2);
+           Date d1 = c1.getStartDate();
+           Date d2 = c2.getStartDate();
            if ( d1 != null )
            {
                if ( d2 == null)

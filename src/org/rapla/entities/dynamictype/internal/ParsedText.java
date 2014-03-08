@@ -31,56 +31,66 @@ import com.google.gwt.thirdparty.guava.common.annotations.GwtIncompatible;
 public class ParsedText implements Serializable {
     private static final long serialVersionUID = 1;
 
-    /** the terminal format elements*/
-    List<String> nonVariablesList;
-    /** the variable format elements*/
-    List<Function> variablesList ;
-    // used for fast storage of text without variables
-    private String first;
     
-    public ParsedText(String formatString, ParseContext context) throws IllegalAnnotationException 
-    {
-	        variablesList = new ArrayList<Function>();
-	        nonVariablesList = new ArrayList<String>();
-	        int pos = 0;
-	        int length = formatString.length();
-	        List<String> variableContent = new ArrayList<String>();
-	        while (pos < length)
-	        {
-	            int start = formatString.indexOf('{',pos) + 1;
-	            if (start < 1) {
-	                nonVariablesList.add(formatString.substring(pos, length ));
-	                break;
-	            }
-	            int end = formatString.indexOf('}',start);
-	            if (end < 1 )
-	                throw new IllegalAnnotationException("Closing bracket } missing! in " + formatString);
-	
-	            nonVariablesList.add(formatString.substring(pos, start -1));
-	           
-	            String key = formatString.substring(start,end).trim();
-	            variableContent.add( key );
-	           
-	            pos = end + 1;
-	        }
-	        for ( String content: variableContent)
-	        {
-	        	Function func  =parseFunctions(context,content);
-	        	variablesList.add( func);
-	        }
-	        if ( variablesList.isEmpty() )
-	        {
-	            if (nonVariablesList.size()>0)
-	            {
-	                first = nonVariablesList.iterator().next();
-	            }
-	            variablesList = null;
-	            nonVariablesList = null;
-	        }
-	        
-	        
-    }
+    /** the terminal format elements*/
+    transient List<String> nonVariablesList;
+    /** the variable format elements*/
+    transient List<Function> variablesList ;
+    // used for fast storage of text without variables
+    transient private String first;
 
+    String formatString;
+    
+    public ParsedText(String formatString) 
+    {
+    	this.formatString = formatString;
+    }
+    
+    public void init( ParseContext context)  throws IllegalAnnotationException
+    {
+    	variablesList = new ArrayList<Function>();
+        nonVariablesList = new ArrayList<String>();
+        int pos = 0;
+        int length = formatString.length();
+        List<String> variableContent = new ArrayList<String>();
+        while (pos < length)
+        {
+            int start = formatString.indexOf('{',pos) + 1;
+            if (start < 1) {
+                nonVariablesList.add(formatString.substring(pos, length ));
+                break;
+            }
+            int end = formatString.indexOf('}',start);
+            if (end < 1 )
+                throw new IllegalAnnotationException("Closing bracket } missing! in " + formatString);
+
+            nonVariablesList.add(formatString.substring(pos, start -1));
+           
+            String key = formatString.substring(start,end).trim();
+            variableContent.add( key );
+           
+            pos = end + 1;
+        }
+        for ( String content: variableContent)
+        {
+        	Function func  =parseFunctions(context,content);
+        	variablesList.add( func);
+        }
+        if ( variablesList.isEmpty() )
+        {
+            if (nonVariablesList.size()>0)
+            {
+                first = nonVariablesList.iterator().next();
+            }
+            variablesList = null;
+            nonVariablesList = null;
+        }
+    }
+    
+    public void updateFormatString(ParseContext context) {
+    	formatString = getExternalRepresentation(context);
+	}
+    
     public String getExternalRepresentation(ParseContext context) {
         if ( nonVariablesList == null)
         {
@@ -750,6 +760,7 @@ public class ParsedText implements Serializable {
 		}
 		
 	}
+	
 }
 
 

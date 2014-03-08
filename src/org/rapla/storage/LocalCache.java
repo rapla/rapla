@@ -48,6 +48,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ParentEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Provider;
@@ -128,6 +129,15 @@ public class LocalCache implements EntityResolver
 
             entities.remove(entity.getId());
             entitySet.remove( entity );
+            
+            if ( entity instanceof ParentEntity)
+            {
+            	Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
+            	for (Entity child:subEntities)
+            	{
+            		remove( child);
+            	}
+            }
         } else {
             throw new RuntimeException("UNKNOWN TYPE. Can't remove object:" + entity.getRaplaType());
         }
@@ -158,6 +168,14 @@ public class LocalCache implements EntityResolver
         else 
         {
             throw new RuntimeException("UNKNOWN TYPE. Can't store object in cache: " + entity.getRaplaType());
+        }
+        if ( entity instanceof ParentEntity)
+        {
+        	Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
+        	for (Entity child:subEntities)
+        	{
+        		put( child);
+        	}
         }
     }
 

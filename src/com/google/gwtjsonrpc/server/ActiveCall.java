@@ -15,7 +15,6 @@
 package com.google.gwtjsonrpc.server;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -23,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.gson.JsonElement;
 import com.google.gwtjsonrpc.common.AsyncCallback;
-import com.google.gwtjsonrpc.common.JsonConstants;
 
 /** An active RPC call. */
 public class ActiveCall implements AsyncCallback<Object> {
@@ -32,18 +30,13 @@ public class ActiveCall implements AsyncCallback<Object> {
   JsonElement id;
   String versionName;
   JsonElement versionValue;
-  SignedToken xsrf;
-  String xsrfKeyIn;
-  String xsrfKeyOut;
-  boolean xsrfValid;
   MethodHandle method;
   String callback;
   Object[] params;
   Object result;
   Throwable externalFailure;
   Throwable internalFailure;
-  private Map<String, String> cookies;
-
+  
   /**
    * Create a new call.
    *
@@ -71,82 +64,6 @@ public class ActiveCall implements AsyncCallback<Object> {
    */
   public HttpServletResponse getHttpServletResponse() {
     return httpResponse;
-  }
-
-  /**
-   * Get the value of a cookie.
-   *
-   * @param name the name of the cookie.
-   * @return the cookie's value; or null.
-   */
-  public String getCookie(final String name) {
-    if (cookies == null) {
-      cookies = new HashMap<String, String>();
-      final Cookie[] all = httpRequest.getCookies();
-      if (all != null) {
-        for (final Cookie c : all) {
-          cookies.put(c.getName(), c.getValue());
-        }
-      }
-    }
-    return cookies.get(name);
-  }
-
-  /**
-   * Get the value of a cookie, verifying its signature.
-   *
-   * @param name the name of the cookie.
-   * @return the cookie's value; or null.
-   */
-  public ValidToken getCookie(final String name, final SignedToken sig) {
-    final String tokstr = getCookie(name);
-    try {
-      return sig.checkToken(tokstr, null);
-    } catch (XsrfException e) {
-      return null;
-    }
-  }
-
-  /** Remove a cookie from the browser cookie store. */
-  public void removeCookie(final String name) {
-    final Cookie c = new Cookie(name, "");
-    c.setMaxAge(0);
-    c.setPath(getHttpServletRequest().getContextPath());
-    httpResponse.addCookie(c);
-  }
-
-  /**
-   * Set the value of a cookie.
-   * <p>
-   * The cookie is scope to the context path used by this web application.
-   *
-   * @param name name of the cookie.
-   * @param value the value of the cookie.
-   * @param age the age (in seconds) before it expires.
-   */
-  public void setCookie(final String name, final String value, final int age) {
-    final Cookie c = new Cookie(name, value);
-    c.setMaxAge(age);
-    c.setPath(getHttpServletRequest().getContextPath());
-    httpResponse.addCookie(c);
-  }
-
-  /**
-   * Set the value of a cookie to a signed token.
-   * <p>
-   * The cookie value is actually set to the signed token which both includes
-   * (and protects via an HMAC signature) <code>value</code>.s
-   *
-   * @param name name of the cookie.
-   * @param value the data value of the cookie.
-   * @param sig a signature to protect the cookie value.
-   */
-  public void setCookie(final String name, final String value,
-      final SignedToken sig) {
-    try {
-      setCookie(name, sig.newToken(value), sig.getMaxAge());
-    } catch (XsrfException e) {
-    }
   }
 
   /**
@@ -181,35 +98,7 @@ public class ActiveCall implements AsyncCallback<Object> {
     return params;
   }
 
-  public void setXsrfSignedToken(final SignedToken t) {
-    xsrf = t;
-  }
-
-  public final String getXsrfKeyIn() {
-    return xsrfKeyIn;
-  }
-
-  public final void setXsrfKeyOut(final String out) {
-    xsrfKeyOut = out;
-  }
-
-  public final String getXsrfKeyOut() {
-    return xsrfKeyOut;
-  }
-
-  public final boolean isXsrfValid() {
-    return xsrfValid;
-  }
-
-  public final boolean requireXsrfValid() {
-    if (isXsrfValid()) {
-      return true;
-    } else {
-      onFailure(new Exception(JsonConstants.ERROR_INVALID_XSRF));
-      return false;
-    }
-  }
-
+ 
   /**
    * Verify the XSRF token submitted is valid.
    * <p>
@@ -220,22 +109,22 @@ public class ActiveCall implements AsyncCallback<Object> {
    * @throws XsrfException the token could not be validated due to an error that
    *         the client cannot recover from.
    */
-  public boolean xsrfValidate() throws XsrfException {
-    final String username = getUser();
-    final StringBuilder b = new StringBuilder();
-    if (username != null) {
-      b.append("user/");
-      b.append(username);
-    } else {
-      b.append("anonymous");
-    }
-    final String userpath = b.toString();
-    final ValidToken t = xsrf.checkToken(getXsrfKeyIn(), userpath);
-    if (t == null || t.needsRefresh()) {
-      setXsrfKeyOut(xsrf.newToken(userpath));
-    }
-    return t != null;
-  }
+//  public boolean xsrfValidate() throws XsrfException {
+//    final String username = getUser();
+//    final StringBuilder b = new StringBuilder();
+//    if (username != null) {
+//      b.append("user/");
+//      b.append(username);
+//    } else {
+//      b.append("anonymous");
+//    }
+//    final String userpath = b.toString();
+//    final ValidToken t = xsrf.checkToken(getXsrfKeyIn(), userpath);
+//    if (t == null || t.needsRefresh()) {
+//      setXsrfKeyOut(xsrf.newToken(userpath));
+//    }
+//    return t != null;
+//  }
 
   /**
    * @return true if this call has something to send to the client; false if the

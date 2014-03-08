@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.components.util.iterator.NestedIterator;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
@@ -32,12 +31,14 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
 {
     private static final long serialVersionUID = 1L;
     List<ClassificationFilterImpl> classificationFilters;
+    protected transient EntityResolver resolver;
     
     AbstractClassifiableFilter() {
     	classificationFilters = new ArrayList<ClassificationFilterImpl>();
     }
    
     public void setResolver( EntityResolver resolver) {
+    	this.resolver = resolver;
         for (ClassificationFilterImpl filter:classificationFilters) {
             filter.setResolver( resolver );
         }

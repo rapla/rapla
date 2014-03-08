@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
@@ -42,9 +41,10 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
     MultiLanguageName name  = new MultiLanguageName();
     String elementKey = "";
-
-    transient HashMap<String,ParsedText> annotations = new HashMap<String,ParsedText>();
-
+    //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
+    Map<String,ParsedText> annotations = new HashMap<String,ParsedText>();
+    transient DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
+    transient Map<String,AttributeImpl> attributeIndex;
     public DynamicTypeImpl() {
     }
 
@@ -144,10 +144,13 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
     public String getAnnotation(String key) {
+    	if (annotations == null)
+    	{
+    		
+    	}
         ParsedText parsedAnnotation = annotations.get(key);
         if ( parsedAnnotation != null) 
         {
-            DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
 			return parsedAnnotation.getExternalRepresentation(parseContext);
         } 
         else 
@@ -182,18 +185,19 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 
 
     public String getAnnotation(String key, String defaultValue) {
-        String annotation = getAnnotation( key );
+    	String annotation = getAnnotation( key );
         return annotation != null ? annotation : defaultValue;
     }
 
     public void setAnnotation(String key,String annotation) throws IllegalAnnotationException {
         checkWritable();
         if (annotation == null) {
-            annotations.remove(key);
+        	annotations.remove(key);
             return;
         }
-        DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
-		annotations.put(key,new ParsedText(annotation, parseContext));
+        ParsedText parsedText = new ParsedText(annotation);
+        parsedText.init(parseContext);
+        annotations.put(key,parsedText);
     }
 
     public String[] getAnnotationKeys() {
@@ -203,6 +207,10 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     public void setElementKey(String elementKey) {
         checkWritable();
         this.elementKey = elementKey;
+        for ( ParsedText text:annotations.values())
+		{
+			text.updateFormatString(parseContext);
+		}
     }
 
     public String getElementKey() {
@@ -242,6 +250,14 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
 
+    public void keyChanged(AttributeImpl attributeImpl, String key) {
+		attributeIndex = null;
+		for ( ParsedText text:annotations.values())
+		{
+			text.updateFormatString(parseContext);
+		}
+	}
+    
     public void removeAttribute(Attribute attribute) {
         checkWritable();
         String matchingAttributeKey = findAttribute( attribute );
@@ -284,18 +300,18 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
     public AttributeImpl getAttribute(String key) {
-    	// FIXME Performance improvement
-    	for ( AttributeImpl att:attributes)
+    	if ( attributeIndex == null)
     	{
-    		if ( att.getKey().equals( key))
-    		{
-    			return att;
-    		}
+    		attributeIndex = new HashMap<String, AttributeImpl>();
+        	for ( AttributeImpl att:attributes)
+        	{
+        		attributeIndex.put( att.getKey(), att);
+        	}
     	}
-        return null;
+    	return attributeIndex.get( key);
     }
 
-    ParsedText getParsedAnnotation(String key) {
+    public ParsedText getParsedAnnotation(String key) {
         return  annotations.get( key );
     }
     
@@ -315,11 +331,11 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
             ((AttributeImpl)att).setParent(clone);
         }
         clone.annotations = new LinkedHashMap<String, ParsedText>();
+        DynamicTypeParseContext parseContext = new DynamicTypeParseContext(clone);
         for (Map.Entry<String,ParsedText> entry: annotations.entrySet())
         {
             String annotation = entry.getKey();
             ParsedText parsedAnnotation =entry.getValue();
-            DynamicTypeParseContext parseContext = new DynamicTypeParseContext(clone);
             String parsedValue = parsedAnnotation.getExternalRepresentation(parseContext);
             try {
                 clone.setAnnotation(annotation, parsedValue);
@@ -352,7 +368,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 	 * @param newType
 	 * @param attributeId
 	 */
-	public boolean hasAttributeChanged(DynamicTypeImpl newType, Object attributeId) {
+	public boolean hasAttributeChanged(DynamicTypeImpl newType, String attributeId) {
     	Attribute oldAttribute = findAttributeForId(attributeId );
     	Attribute newAttribute = newType.findAttributeForId(attributeId );
     	if ( oldAttribute == null && newAttribute == null)
@@ -363,7 +379,8 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     		return true;
     	}
 		String newKey = newAttribute.getKey();
-        if ( !newKey.equals( oldAttribute.getKey() )) {
+        String oldKey = oldAttribute.getKey();
+		if ( !newKey.equals( oldKey )) {
 			return true;
 		}
 		if ( !newAttribute.getType().equals( oldAttribute.getType())) {
@@ -484,6 +501,9 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 			}
 		}
 	}
+
+
+	
 	
 }
 

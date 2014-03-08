@@ -87,23 +87,23 @@ public class SignedToken {
     return maxAge > 0 ? maxAge * 5 : maxAge;
   }
 
-  /**
-   * Get the text of a signed token which is stored in a cookie.
-   *
-   * @param cookieName the name of the cookie to get the text from.
-   * @return the signed text; null if the cookie is not set or the cookie's
-   *         token was forged.
-   */
-  public String getCookieText(final String cookieName) {
-    final String val = ServletCookieAccess.get(cookieName);
-    boolean ok;
-    try {
-      ok = checkToken(val, null) != null;
-    } catch (XsrfException e) {
-      ok = false;
-    }
-    return ok ? ServletCookieAccess.getTokenText(cookieName) : null;
-  }
+//  /**
+//   * Get the text of a signed token which is stored in a cookie.
+//   *
+//   * @param cookieName the name of the cookie to get the text from.
+//   * @return the signed text; null if the cookie is not set or the cookie's
+//   *         token was forged.
+//   */
+//  public String getCookieText(final String cookieName) {
+//    final String val = ServletCookieAccess.get(cookieName);
+//    boolean ok;
+//    try {
+//      ok = checkToken(val, null) != null;
+//    } catch (XsrfException e) {
+//      ok = false;
+//    }
+//    return ok ? ServletCookieAccess.getTokenText(cookieName) : null;
+//  }
 
   /**
    * Generate a new signed token.
@@ -152,7 +152,8 @@ public class SignedToken {
     final String recvText = tokenString.substring(s + 1);
     final byte[] in;
     try {
-      in = decodeBase64(tokenString.substring(0, s));
+      String substring = tokenString.substring(0, s);
+      in = decodeBase64(substring);
     } catch (RuntimeException e) {
       return null;
     }

@@ -25,7 +25,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
 import org.rapla.entities.Category;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -50,13 +49,16 @@ public final class ClassificationFilterImpl
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
     
-    boolean readOnly;
+    transient boolean readOnly;
     private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
-    LinkedList<ClassificationFilterRuleImpl> list = new LinkedList<ClassificationFilterRuleImpl>();
+    List<ClassificationFilterRuleImpl> list = new LinkedList<ClassificationFilterRuleImpl>();
     transient boolean arrayUpToDate = false;
     transient ClassificationFilterRuleImpl[] rulesArray;
-    ReferenceHandler referenceHandler = new ReferenceHandler(links);
+    transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
 
+    ClassificationFilterImpl() {
+	}
+    
     ClassificationFilterImpl(DynamicTypeImpl dynamicType) {
         referenceHandler.putEntity("parent",dynamicType);
     }
@@ -397,7 +399,7 @@ public final class ClassificationFilterImpl
             	return true;
             }
 
-            Object id = attribute.getId();
+            String id = attribute.getId();
             if (((DynamicTypeImpl)getType()).hasAttributeChanged( (DynamicTypeImpl)newType , id))
             	return true;
             Attribute newAttribute = newType.getAttribute(attribute.getKey());
@@ -443,7 +445,8 @@ public final class ClassificationFilterImpl
 
     public ClassificationFilterImpl clone() {
         ClassificationFilterImpl clone = new ClassificationFilterImpl((DynamicTypeImpl)getType());
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone());
+        clone.links = (Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone();
+		clone.referenceHandler = (ReferenceHandler) referenceHandler.clone(clone.links);
         clone.list = new LinkedList<ClassificationFilterRuleImpl>();
         Iterator<ClassificationFilterRuleImpl> it = list.iterator();
         while (it.hasNext()) {

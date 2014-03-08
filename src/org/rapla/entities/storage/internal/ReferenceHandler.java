@@ -16,11 +16,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -57,20 +57,13 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	private Map<String,List<String>> idmap;
     transient EntityResolver resolver;
 	
-    public ReferenceHandler() {
-    	this( new LinkedHashMap<String,List<String>>());
-    }
-    
     public EntityResolver getResolver()
     {
     	return resolver;
     }
     
     public ReferenceHandler(Map<String,List<String>> idmap) {
-    	if ( idmap == null )
-    	{
-    		idmap = Collections.emptyMap();
-    	}
+    	Assert.notNull( idmap);
     	this.idmap = idmap;
     }
     /**

@@ -19,8 +19,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.MainServlet;
 
-import sun.security.action.GetLongAction;
-
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase extends TestCase
 {

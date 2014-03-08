@@ -28,7 +28,6 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
 import org.rapla.entities.Category;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;

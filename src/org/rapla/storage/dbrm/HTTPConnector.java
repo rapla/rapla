@@ -74,7 +74,7 @@ public class HTTPConnector  implements Connector
     	
     }
 
-    public Object call(Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException, RaplaException 
+    public Object call(String token,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException, RaplaException 
 	{
 	    if ( service != null)
 	    {
@@ -83,7 +83,7 @@ public class HTTPConnector  implements Connector
 	    Serializer remoteMethodSerialization = new Serializer();
 		Map<String, String> argMap = remoteMethodSerialization.serializeArguments(parameterTypes, args);
 
-	    URL methodURL = new URL(server,"rapla/rpc/" + methodName );
+	    URL methodURL = new URL(server,"rapla/json/" + methodName );
         //System.err.println("Calling " + methodURL.toExternalForm() );
         methodURL = addSessionId( methodURL );
         HttpURLConnection conn = (HttpURLConnection)methodURL.openConnection();
@@ -91,7 +91,7 @@ public class HTTPConnector  implements Connector
         conn.setUseCaches( false );
         conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
         conn.setRequestProperty("Cookie","JSESSIONID=" + sessionId);
-        setSessionForRequest( conn );
+        //setSessionForRequest( conn );
         conn.setDoOutput(true);
         
         try
@@ -114,9 +114,9 @@ public class HTTPConnector  implements Connector
         InputStream inputStream = null;
         try
         {
-        	String cookie = conn.getHeaderField("Set-Cookie");
-        	updateSession ( cookie);
-        	
+//        	String cookie = conn.getHeaderField("Set-Cookie");
+//        	updateSession ( cookie);
+//        	
         	String message = conn.getHeaderField("X-Error-Stacktrace");
             if ( message != null)
             {
@@ -182,13 +182,13 @@ public class HTTPConnector  implements Connector
 	    return server;
 	}
 
-    private void setSessionForRequest( HttpURLConnection connection )
-    {
-        if ( sessionId != null)
-        {
-            connection.addRequestProperty("Cookie","JSESSIONID=" + sessionId);
-        }
-    }
+//    private void setSessionForRequest( HttpURLConnection connection )
+//    {
+//        if ( sessionId != null)
+//        {
+//            connection.addRequestProperty("Cookie","JSESSIONID=" + sessionId);
+//        }
+//    }
     
     private void addParams(Appendable writer, Map<String,String> args ) throws IOException
     {
@@ -210,30 +210,30 @@ public class HTTPConnector  implements Connector
         }
     }
 
-    private void updateSession( String entry )
-    {
-        Map<String,String> cookies = new HashMap<String,String>();
-        if ( entry != null)
-        {
-            String[] splitted = entry.split(";");
-            if ( splitted.length > 0)
-            {
-                String[] first = splitted[0].split("=");
-                cookies.put(first[0], first[1]);
-            }
-        }
-        String sessionId = cookies.get("JSESSIONID");
-        if ( sessionId != null)
-        {
-            this.sessionId = sessionId;
-        }
-    }
-    
-    public boolean hasSession()
-    {
-        
-        return sessionId != null;
-    }
+//    private void updateSession( String entry )
+//    {
+//        Map<String,String> cookies = new HashMap<String,String>();
+//        if ( entry != null)
+//        {
+//            String[] splitted = entry.split(";");
+//            if ( splitted.length > 0)
+//            {
+//                String[] first = splitted[0].split("=");
+//                cookies.put(first[0], first[1]);
+//            }
+//        }
+//        String sessionId = cookies.get("JSESSIONID");
+//        if ( sessionId != null)
+//        {
+//            this.sessionId = sessionId;
+//        }
+//    }
+//    
+//    public boolean hasSession()
+//    {
+//        
+//        return sessionId != null;
+//    }
 
     public String getInfo()
     {

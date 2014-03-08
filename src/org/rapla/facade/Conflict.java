@@ -12,11 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
@@ -24,7 +22,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different
@@ -40,23 +37,28 @@ import org.rapla.entities.domain.Reservation;
 public interface Conflict extends Named, Entity<Conflict>
 {
     static public final RaplaType<Conflict> TYPE = new RaplaType<Conflict>(Conflict.class,"conflict");
-    /** @return the first Reservation, that is involved in the conflict.*/
-    public Reservation getReservation1();
-    /** The appointment of the first reservation, that causes the conflict. */
-    public Appointment getAppointment1();
     /** @return the allocatable, allocated for the same time by two different reservations. */
     public Allocatable getAllocatable();
-    /** @return the second Reservation, that is involved in the conflict.*/
-    public Reservation getReservation2();
-    /** @return The User, who created the second Reservation.*/
-    public User getUser2();
+//    /** @return the first Reservation, that is involved in the conflict.*/
+//    public Reservation getReservation1();
+    /** The appointment of the first reservation, that causes the conflict. */
+    public String getAppointment1();
+//    /** @return the second Reservation, that is involved in the conflict.*/
+//    public Reservation getReservation2();
+//    /** @return The User, who created the second Reservation.*/
+//    public User getUser2();
     /** The appointment of the second reservation, that causes the conflict. */
-    public Appointment getAppointment2();
+    public String getAppointment2();
+    String getReservation1();
+    String getReservation2();
     
-    /** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
-    public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
-    public boolean canModify(User user);
+    ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
+    //public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
+    
+    //public boolean canModify(User user);
 
+    public boolean isOwner( User user);
+    
     public static final Conflict[] CONFLICT_ARRAY= new Conflict[] {};
     
     public class Util
@@ -72,23 +74,25 @@ public interface Conflict extends Named, Entity<Conflict>
 		    return allocatables;
 		}
 
-		static public List<Reservation> getReservations(Collection<Conflict> conflicts) {
-			Collection<Reservation> reservations = new LinkedHashSet<Reservation>();
-			for (Conflict conflict:conflicts)
-			{
-				reservations.add(conflict.getReservation1());
-				reservations.add(conflict.getReservation2());
-		
-			}
-			return new ArrayList<Reservation>( reservations);
-		}
-		
+//		static public List<Reservation> getReservations(Collection<Conflict> conflicts) {
+//			Collection<Reservation> reservations = new LinkedHashSet<Reservation>();
+//			for (Conflict conflict:conflicts)
+//			{
+//				reservations.add(conflict.getReservation1());
+//				reservations.add(conflict.getReservation2());
+//		
+//			}
+//			return new ArrayList<Reservation>( reservations);
+//		}
+//		
     	
     }
     
     boolean hasAppointment(Appointment appointment);
     
-    boolean endsBefore(Date date);
+    //boolean endsBefore(Date date);
+    
+    Date getStartDate();
    
 }
 

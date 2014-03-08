@@ -14,13 +14,11 @@
 package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -54,7 +52,7 @@ class DynAttReader extends RaplaXMLReader {
             Classification newClassification = dynamicType.newClassification(false);
             classification = (ClassificationImpl)newClassification;
             classifiable.setClassification(classification);
-            classification.setResolver( resolver);
+            classification.setResolver( store);
        }
 
         if (level > entryLevel) {

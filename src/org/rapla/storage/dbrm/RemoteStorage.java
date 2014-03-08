@@ -23,6 +23,7 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.storage.UpdateEvent;
 
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
 import com.google.gwtjsonrpc.common.VoidResult;
 @WebService
@@ -40,7 +41,6 @@ public interface RemoteStorage extends RemoteJsonService {
     //RemoteMethod CHECK_SERVER_VERSION = new RemoteMethod("checkServerVersion",new String[] {"clientVersion" });
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
-    FutureResult<VoidResult> authenticate(String username,String password);
     FutureResult<Boolean> canChangePassword();
     FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
     FutureResult<VoidResult> changeName(String username, String newTitle,String newSurename,String newLastname);
@@ -64,7 +64,7 @@ public interface RemoteStorage extends RemoteJsonService {
 
     FutureResult<List<ConflictImpl>> getConflicts();
     FutureResult<Map<String,List<String>>> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
-    //List<ConflictImpl> getAllAllocatableBindings(String[] allocatables, Appointment[] appointments, String[] reservationIds);
+    FutureResult<List<ReservationImpl>> getAllAllocatableBindings(String[] allocatables, AppointmentImpl[] appointments, String[] reservationIds);
 
     FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
 	

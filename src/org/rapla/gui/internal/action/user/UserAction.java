@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.rapla.client.ClientService;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;

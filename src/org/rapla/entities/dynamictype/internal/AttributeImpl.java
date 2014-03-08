@@ -192,6 +192,10 @@ public class AttributeImpl extends SimpleEntity implements Attribute
     public void setKey(String key) {
         checkWritable();
         this.key = key;
+        if ( parent != null)
+        {
+        	parent.keyChanged( this, key);
+        }
     }
 
     public  boolean isValid(Object obj) {

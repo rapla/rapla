@@ -55,7 +55,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -220,7 +219,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		Lock readLock = readLock();
 		try
 		{
-			RaplaType type = RaplaType.find(typeClass.getName());
+			RaplaType type = RaplaType.get(typeClass);
 			@SuppressWarnings("unchecked")
 			Collection<T> collection = (Collection<T>) cache.getCollection(type);
 			// We return a clone to avoid synchronization Problems
@@ -315,7 +314,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			try
 			{
 				PreferencesImpl newPref = new PreferencesImpl();
-				newPref.setResolver( cache);
+				newPref.setResolver( this);
 				newPref.setOwner(user);
 				String createIdentifier = createIdentifier(Preferences.TYPE,1)[0];
 				newPref.setId(createIdentifier);
@@ -418,32 +417,60 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
-	public Map<Entity,Entity> getPersistant(Collection<? extends Entity>list) throws RaplaException 
-	{
-    	Lock readLock = readLock();
-		try
+	@Override
+	public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound)	throws RaplaException {
+		Map<String, Entity> result= new LinkedHashMap<String,Entity>();
+		for ( String id:idSet)
 		{
-			Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
-		    for (Entity o:list) 
-		    {
-				Entity persistant = (Entity) cache.tryResolve(o.getId());
-		    	if ( persistant != null)
-		    	{
-		    		result.put( o,persistant);
-		    	}
-		    }
-			return result;
+			Entity persistant = (Entity) (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
+	    	if ( persistant != null)
+	    	{
+	    		result.put( id,persistant);
+	    	}
 		}
-		finally
-		{
-			unlock(readLock);
-		}
+		return result;
 	}
+	
+	@Override
+	  public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
+		{
+	    	Lock readLock = readLock();
+			try
+			{
+				Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
+		        for ( Entity key: list)
+		    	{
+		     		String id =  key.getId().toString();
+		     		idMap.put( id, key);
+		    	}
+		    
+				
+				Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
+	    		Map<String,Entity> resolvedList = getFromId( idMap.keySet(), false);
+		    	for (Entity entity:resolvedList.values())
+		    	{
+		    		String id = entity.getId().toString();
+					Entity key = idMap.get( id);
+					if ( key != null )
+					{
+						result.put( key, entity);
+					}
+		    	}
+		    	return result;
+			}
+			finally
+			{
+				unlock(readLock);
+			}
+		}
+	
+	
+	
 
-	protected void resolveEntities(Collection<? extends Entity> entities,	EntityResolver resolver) throws RaplaException {
+	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
 		List<Entity>readOnlyList = new ArrayList<Entity>();
 		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(resolver);
+			((RefEntity)obj).setResolver(this);
 //			}
 //			catch ( EntityNotFoundException ex)
 //			{
@@ -453,7 +480,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			readOnlyList.add(obj);
 		}
 		// It is important to do the read only later because some resolve might involve write to referenced objects
-		for (Entity entity: readOnlyList) {
+		for (Entity entity: entities) {
 			 ((RefEntity)entity).setReadOnly(true);
 		}
 	}
@@ -469,7 +496,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		for (Entity entity : entities) {
 			for (String referencedIds:((RefEntity)entity).getReferencedIds())
 			{
-				//FIXME add chech later
+				//FIXME add check later
 				//				if (reference instanceof Preferences
 //						|| reference instanceof Conflict
 //						|| (reference instanceof Reservation && !( entity instanceof Appointment)) 
@@ -638,13 +665,14 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 
 			if ( persistantEntity instanceof Appointment  || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
 			{
+				throw new RaplaException( persistantEntity.getRaplaType() + " can only be stored via parent entity ");
 				// we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
 			}
 			else
 			{
 				Entity oldEntity = persistantEntity;
 				oldEntities.put(persistantEntity, oldEntity);
-				addSubentities( oldEntities, oldEntity);
+				//addSubentities( oldEntities, oldEntity);
 			}
 
 		}
@@ -720,7 +748,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		{
 			if  ( !toUpdate.isPersistant())
 			{
-				((EntityReferencer)toUpdate).setResolver(cache);
+				((EntityReferencer)toUpdate).setResolver(this);
 			}
 		}
 		// it is important to set readonly only after a complete resolval of all entities, because it operates recursive and could set an unresolved subentity to read only which is forbidden

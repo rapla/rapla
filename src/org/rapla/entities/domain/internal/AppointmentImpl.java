@@ -38,6 +38,7 @@ import org.rapla.facade.RaplaComponent;
 
 public class AppointmentImpl extends SimpleEntity implements Appointment
 {
+	String id;
     private Date start;
     private Date end;
     private RepeatingImpl repeating;
@@ -72,17 +73,13 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
 
     public void setParent(ReservationImpl parent) {
     	this.parent = parent;
-    	if (parent != null)
-            setOwner(parent.getOwner());
     }
 
     public void removeParent()
     {
     	this.parent = null;
-    	setOwner( null );
     }
 
-    
     public Date getStart() { return start;}
     public Date getEnd() { return end;}
 

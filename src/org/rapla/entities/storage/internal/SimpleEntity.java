@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
@@ -39,7 +38,7 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     private int version = 0;
     //transient protected ReferenceHandler subEntityHandler;
 
-    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>(0);
     transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
     transient boolean readOnly = false;
     transient Integer key;
@@ -126,6 +125,10 @@ public abstract class SimpleEntity implements RefEntity, Comparable
      * @see SimpleIdentifier
      */
     public void setId(String id)  {
+    	if ( id != null)
+    	{
+    		id = id.intern();
+    	}
         this.id= id;
         key = null;
     }
@@ -141,17 +144,15 @@ public abstract class SimpleEntity implements RefEntity, Comparable
      * @see #isIdentical
      */
     final public boolean equals(Object o) {
-        if (!( o instanceof SimpleEntity))
+        if (!( o instanceof Entity))
         {
             return false;
         }
-        @SuppressWarnings("rawtypes")
-		SimpleEntity e2 = (SimpleEntity) o;
-        Object id2 = e2.id; 
+        Entity e2 = (Entity) o;
+        Object id2 = e2.getId(); 
         if ( id2== null || id == null)
             return e2 == this;
         return id.equals( id2);
-
     }
     
     public Integer getIdKey()
@@ -207,8 +208,8 @@ public abstract class SimpleEntity implements RefEntity, Comparable
 
     protected void deepClone(SimpleEntity dest) {
         dest.setId(id);
-        Map<String, List<String>> idmapClone = (Map<String, List<String>>) ((HashMap<String,List<String>>) links).clone();
-    	dest.referenceHandler = (ReferenceHandler) referenceHandler.clone(idmapClone);
+        dest.links = (Map<String, List<String>>) ((HashMap<String,List<String>>) links).clone();
+    	dest.referenceHandler = (ReferenceHandler) referenceHandler.clone(dest.links);
     	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
     	for (Entity entity: getSubEntities())
     	{

@@ -34,6 +34,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
@@ -63,7 +64,6 @@ import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.Conflict.Util;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -181,7 +181,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
       //  viewOptionMap = new TreeMap<String,String>();
         if ( config.getOptionMap() != null)
         {
-            RaplaMap<String> configOptions = config.getOptionMap();
+            Map<String,String> configOptions = config.getOptionMap();
             addOptions(configOptions);
         }
         if (alternativOptions != null )
@@ -326,29 +326,27 @@ public class CalendarModelImpl implements CalendarSelectionModel
     
     private CalendarModelConfiguration createConfiguration(ClassificationFilter[] allocatableFilter, ClassificationFilter[] eventFilter) throws RaplaException {
         String viewName = selectedView;
-        Set<RaplaObject> selected = new HashSet<RaplaObject>( );
+        Set<Entity> selected = new HashSet<Entity>( );
         
         Collection<RaplaObject> selectedObjects = getSelectedObjects();
 		for (RaplaObject object:selectedObjects) {
-			if ( !(object instanceof Conflict)) 
+			if ( !(object instanceof Conflict) && (object instanceof Entity)) 
             {
 				//  throw new RaplaException("Storing the conflict view is not possible with Rapla.");
-				selected.add( object );
+				selected.add( (Entity) object );
             }
         }
 
         final Date selectedDate = getSelectedDate();
         final Date startDate = getStartDate();
         final Date endDate = getEndDate();
-        RaplaMap<RaplaObject> selectedMap = m_facade.newRaplaMap(selected);
-        RaplaMap<String> optionMap_ = m_facade.newRaplaMap(optionMap);
-        return newRaplaCalendarModel( selectedMap, allocatableFilter,eventFilter, title, startDate, endDate, selectedDate, viewName, optionMap_);
+		return newRaplaCalendarModel( selected, allocatableFilter,eventFilter, title, startDate, endDate, selectedDate, viewName, optionMap);
     }
     
-    public CalendarModelConfiguration newRaplaCalendarModel(RaplaMap<? extends RaplaObject> selected,
+    public CalendarModelConfiguration newRaplaCalendarModel(Collection<Entity> selected,
             ClassificationFilter[] allocatableFilter,
             ClassificationFilter[] eventFilter, String title, Date startDate,
-            Date endDate, Date selectedDate, String view, RaplaMap<String> optionMap) throws RaplaException
+            Date endDate, Date selectedDate, String view, Map<String,String> optionMap) throws RaplaException
     {
         boolean defaultResourceTypes;
         boolean defaultEventTypes;
@@ -391,7 +389,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
     
         final ClassificationFilter[] filterArray = filter.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
-        return new CalendarModelConfigurationImpl(selected, filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);
+        List<String> selectedIds = new ArrayList<String>();
+        for (Entity obj:selected)
+        {
+        	selectedIds.add( obj.getId());
+        }
+        CalendarModelConfigurationImpl calendarModelConfigurationImpl = new CalendarModelConfigurationImpl(selectedIds, filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);
+        calendarModelConfigurationImpl.setResolver( m_facade.getOperator());
+		return calendarModelConfigurationImpl;
     }
 
 
@@ -573,7 +578,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         	ParseContext parseContext = new CalendarModelParseContext();
 			ParsedText parsedTitle;
 			try {
-				parsedTitle = new ParsedText( title, parseContext);
+				parsedTitle = new ParsedText( title);
+				parsedTitle.init(parseContext);
 			} catch (IllegalAnnotationException e) {
 				return e.getMessage();
 			}
@@ -818,14 +824,15 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		Collection<Conflict> conflicts = getSelectedConflicts();
 		if ( conflicts.size() > 0)
 		{
-			return Util.getReservations(conflicts);
+			return m_facade.getReservations(conflicts);
 		}
     	
     	Reservation[] reservationArray =m_facade.getReservations(allocatables, start, end);
     	List<Reservation> asList = Arrays.asList( reservationArray );
 		return restrictReservations(asList);
     }
-
+    
+    
 	public List<Reservation> restrictReservations(Collection<Reservation> reservationsToRestrict)
 			throws RaplaException {
 		
@@ -1138,6 +1145,22 @@ public class CalendarModelImpl implements CalendarSelectionModel
             setConfiguration(modelConfig, alternativeOptions);
         }
     }
+    
+    //Set<Appointment> conflictList = new HashSet<Appointment>();
+//	if ( selectedConflicts != null)
+//	{
+//		for (Conflict conflict: selectedConflicts)
+//		{
+//			if ( conflict.getAppointment1().equals( app.getId()))
+//			{
+//				conflictList.add(conflict.getAppointment2());
+//			}
+//			else if ( conflict.getAppointment2().equals( app.getId()))
+//			{
+//				conflictList.add(conflict.getAppointment1());
+//			}
+//		}
+//	}
 
 	public List<AppointmentBlock> getBlocks() throws RaplaException 
 	{
@@ -1148,29 +1171,18 @@ public class CalendarModelImpl implements CalendarSelectionModel
     		selectedAllocatables = null;
     	}
 		Collection<Conflict> selectedConflicts = getSelectedConflicts();
+		List<Reservation> reservations = m_facade.getReservations( selectedConflicts);
+		Map<Appointment,Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts,reservations);
 		for ( Reservation event:getReservations())
         {
         	for (Appointment  app: event.getAppointments())
         	{
-        		Set<Appointment> conflictList = new HashSet<Appointment>();
-        		if ( selectedConflicts != null)
-        		{
-        			for (Conflict conflict: selectedConflicts)
-        			{
-        				if ( conflict.getAppointment1().equals( app))
-        				{
-        					conflictList.add(conflict.getAppointment2());
-        				}
-        				else if ( conflict.getAppointment2().equals( app))
-        				{
-        					conflictList.add(conflict.getAppointment1());
-        				}
-        			}
-        		}
+//        		
         		Allocatable[] allocatablesFor = event.getAllocatablesFor(app);
         		if ( selectedAllocatables == null || containsOne(selectedAllocatables, allocatablesFor))
         		{
-        			if ( conflictList.isEmpty())
+        			Collection<Appointment> conflictList = conflictingAppointments.get( app ); 
+        			if ( conflictList == null || conflictList.isEmpty())
         			{
             			app.createBlocks(getStartDate(), getEndDate(), appointments);
         			}

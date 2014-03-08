@@ -58,7 +58,6 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         views.put( Allocatable.TYPE, new AllocatableInfoUI(sm) );
         views.put( User.TYPE, new UserInfoUI(sm) );
         views.put( Period.TYPE, new PeriodInfoUI(sm) );
-        views.put( Conflict.TYPE, new ConflictInfoUI(sm) );
         views.put( Category.TYPE, new CategoryInfoUI(sm) );
     }
 

@@ -18,17 +18,17 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.entities.configuration.internal.RaplaMapImplementation;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-public class RaplaMapReader<T> extends RaplaXMLReader  {
+public class RaplaMapReader extends RaplaXMLReader  {
 
     String key;
-    RaplaMapImpl<T> entityMap;
+    RaplaMapImplementation entityMap;
     RaplaXMLReader childReader;
 
     public RaplaMapReader(RaplaContext sm) throws RaplaException {
@@ -36,14 +36,13 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-	public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
+    public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
 	        throws RaplaSAXParseException
     {
         if ( !RAPLA_NS.equals(namespaceURI))
             return;
         if (localName.equals(RaplaMap.TYPE.getLocalName())) {
-            entityMap = new RaplaMapImpl<T>();
+            entityMap = new RaplaMapImplementation();
             return;
         }
         if (localName.equals("mapentry")) {
@@ -53,7 +52,7 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
             {
             	try
             	{
-            		entityMap.putPrivate( key,(T) value );
+            		entityMap.putPrivate( key, value );
             	}
             	catch (ClassCastException ex)
             	{
@@ -89,8 +88,7 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-	public void processEnd(String namespaceURI,String localName)
+    public void processEnd(String namespaceURI,String localName)
 		throws RaplaSAXParseException
     {
         if ( !RAPLA_NS.equals(namespaceURI) )
@@ -100,7 +98,7 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
             RaplaObject type = childReader.getType();
             try
         	{
-            	entityMap.putPrivate( key, (T)type);
+            	entityMap.putPrivate( key, type);
         	}
         	catch (ClassCastException ex)
         	{
@@ -110,9 +108,15 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
         childReader = null;
     }
 
-    public RaplaMap<T> getEntityMap() {
+    public Iterable<String> getReferencedIds()
+    {
+    	return entityMap.getReferencedIds();
+    }
+    
+    public RaplaMap getEntityMap() {
         return entityMap;
     }
+    
     public RaplaObject getType() {
         //reservation.getReferenceHandler().put()
         return getEntityMap();

@@ -13,15 +13,19 @@
 
 package org.rapla.storage.xml;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
-import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -34,21 +38,17 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     Date startDate;
     Date endDate;
     ClassificationFilter[] filter;
-    RaplaMapReader<RaplaObject> selectedEntitiesMapReader;
-    RaplaMapReader<String> optionMapReader;
+    RaplaMapReader optionMapReader;
     ClassificationFilterReader classificationFilterHandler;
 
-    RaplaMap<RaplaObject> entityMap;
-    RaplaMap<String> optionMap;
-
+    List<String> idList;
+    Map<String,String> optionMap;
   
     
     public RaplaCalendarSettingsReader(RaplaContext context) throws RaplaException {
         super( context );
-        selectedEntitiesMapReader= new RaplaMapReader<RaplaObject>(context);
-        optionMapReader= new RaplaMapReader<String>(context);
+        optionMapReader= new RaplaMapReader(context);
         classificationFilterHandler = new ClassificationFilterReader(context);
-        addChildHandler( selectedEntitiesMapReader );
         addChildHandler( optionMapReader );
         addChildHandler( classificationFilterHandler );
     }
@@ -67,18 +67,18 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             startDate = getDate( atts, "startdate");
             endDate = getDate( atts, "enddate");
 
-            entityMap = new RaplaMapImpl<RaplaObject>();
-            optionMap = new RaplaMapImpl<String>();
+            idList = Collections.emptyList();
+            optionMap = Collections.emptyMap();
         }
 
         if (localName.equals("selected")) {
-            delegateElement( selectedEntitiesMapReader, namespaceURI, localName, atts);
+        	idList = new ArrayList<String>();
         }
 
         if (localName.equals("options")) {
             delegateElement( optionMapReader, namespaceURI, localName, atts);
         }
-
+        
         if (localName.equals("filter"))
         {
             classificationFilterHandler.clear();
@@ -86,6 +86,19 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         	delegateElement( classificationFilterHandler, namespaceURI, localName, atts);
         }
 
+        String refid = getString( atts, "idref", null);
+        String keyref = getString( atts, "keyref", null);
+        RaplaType raplaType = getTypeForLocalName( localName );
+        if ( refid != null)
+        {
+        	String id = getId( raplaType, refid);
+            idList.add( id);
+        } 
+        else if ( keyref != null)
+        {
+            DynamicType type = getDynamicType( keyref );
+        	idList.add( type.getId());
+        }
     }
 
     private Date getDate(RaplaSAXAttributes atts, String key ) throws RaplaSAXParseException {
@@ -104,11 +117,10 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         if (localName.equals("calendar")) {
             boolean defaultResourceTypes =  classificationFilterHandler.isDefaultResourceTypes();
             boolean defaultEventTypes = classificationFilterHandler.isDefaultEventTypes();
-            settings = new CalendarModelConfigurationImpl( entityMap, filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
+            settings = new CalendarModelConfigurationImpl( idList, filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
         }
 
         if (localName.equals("selected")) {
-            entityMap = selectedEntitiesMapReader.getEntityMap();
         }
 
         if (localName.equals("options")) {

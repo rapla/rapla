@@ -44,7 +44,7 @@ import org.rapla.facade.internal.ConflictImpl;
 public class UpdateEvent implements java.io.Serializable,Cloneable
 {
 	transient Map<Class,List<Entity>> listMap = new HashMap<Class, List<Entity>>(); 
-	transient List<PreferencesImpl> preferences = createList(Preferences.class);
+	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> allocatable = createList(Allocatable.class);
 	List<CategoryImpl> categories = createList(Category.class);
 	List<UserImpl> users = createList(User.class);
@@ -89,7 +89,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
 
     private  <T> List<T> createList(Class<? super T> clazz) {
-		ArrayList<T> list = new ArrayList();
+		ArrayList<T> list = new ArrayList<T>();
 		listMap.put( clazz, (List<Entity>) list);
 		return list;
 	}
@@ -113,10 +113,11 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     }
 
     private void add(Entity entity) {
-    	Class<? extends RaplaType> class1 = entity.getRaplaType().getClass();
+    	Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
     	List<Entity> list = listMap.get( class1);
     	if ( list == null)
     	{
+    		//listMap.put( class1, list);
     		throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");
     	}
     	list.add( entity);
@@ -211,7 +212,6 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         clone.removeSet = (Set<String>) ((LinkedHashSet<String>) removeSet).clone();
         clone.storeSet = (Set<String>) ((LinkedHashSet<String>) storeSet).clone();
         
-        clone.listMap = new HashMap<Class, List<Entity>>(); 
         for ( List<Entity> list:listMap.values())
         {
         	for ( Entity entity:list)
@@ -219,11 +219,11 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         		String id = entity.getId();
 				if ( storeSet.contains( id))
         		{
-        			clone.putStore( entity);
+        			clone.addStore( entity);
         		}
         		if ( removeSet.contains( id))
         		{
-        			clone.putRemove( entity);
+        			clone.addRemove( entity);
         		}
         	}
         }

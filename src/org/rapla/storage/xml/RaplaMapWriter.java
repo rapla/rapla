@@ -15,10 +15,12 @@ package org.rapla.storage.xml;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -30,10 +32,10 @@ public class RaplaMapWriter extends RaplaXMLWriter {
     }
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
-        writeMap((RaplaMap<?>) type );
+        writeMap((RaplaMapImpl) type );
     }
 
-    public void writeMap(RaplaMap<?> map ) throws IOException, RaplaException {
+    public void writeMap(RaplaMapImpl map ) throws IOException, RaplaException {
         openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
         for (Iterator<String> it = map.keySet().iterator();it.hasNext();) {
             Object key = it.next();
@@ -42,6 +44,24 @@ public class RaplaMapWriter extends RaplaXMLWriter {
         }
         closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
     }
+
+    public void writeMap(Map<String,String> map ) throws IOException, RaplaException {
+        openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
+        for (Map.Entry<String,String> entry:map.entrySet()) {
+            String key = entry.getKey();
+            String obj =  entry.getValue();
+            openTag("rapla:mapentry");
+            att("key", key.toString());
+            if ( obj instanceof String)
+            {
+                String value = (String) obj;
+                att("value", value);
+                closeElementTag();
+            }
+        }
+        closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
+    }
+
     
     private void printEntityReference(Object key,Object obj) throws RaplaException, IOException {
         if (obj == null)

@@ -15,6 +15,7 @@ package org.rapla.storage.xml;
 
 import java.util.Map;
 
+import org.rapla.RaplaTestCase;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -27,7 +28,7 @@ import org.rapla.framework.TypedComponentRole;
 
 public class PreferenceReader extends RaplaXMLReader {
     public static final TypedComponentRole<Map<String,RaplaType>> LOCALNAMEMAPENTRY = new TypedComponentRole<Map<String,RaplaType>>("org.rapla.storage.xml.localnameMap");
-    public static final TypedComponentRole<Map<Object,RaplaXMLReader>> READERMAP = new TypedComponentRole<Map<Object,RaplaXMLReader>>("org.rapla.storage.xml.readerMap");
+    public static final TypedComponentRole<Map<RaplaType,RaplaXMLReader>> READERMAP = new TypedComponentRole<Map<RaplaType,RaplaXMLReader>>("org.rapla.storage.xml.readerMap");
     
     PreferencesImpl preferences;
     String configRole;
@@ -53,7 +54,7 @@ public class PreferenceReader extends RaplaXMLReader {
             
         if (localName.equals("preferences")) {
             preferences = new PreferencesImpl();
-            preferences.setResolver( resolver);
+            preferences.setResolver( store);
             String id = atts.getValue("id");
             if ( id!=null) {
                 setId( preferences, atts );

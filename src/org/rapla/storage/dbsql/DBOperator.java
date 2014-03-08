@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -614,8 +615,9 @@ public class DBOperator extends LocalAbstractCachableOperator
         EntityStore entityStore = new EntityStore(null, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore));
         raplaSQLInput.loadAll( connection );
-        resolveEntities( entityStore.getList(), entityStore );
-        cache.putAll( entityStore.getList());
+        Collection<Entity> list = entityStore.getList();
+		cache.putAll( list);
+        resolveEntities( list);
         cache.getSuperCategory().setReadOnly(true);
         for (User user:cache.getCollection(User.class))
         {

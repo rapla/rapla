@@ -31,6 +31,10 @@ public class RaplaConfiguration extends DefaultConfiguration implements RaplaObj
 
    public static final RaplaType<RaplaConfiguration> TYPE = new RaplaType<RaplaConfiguration>(RaplaConfiguration.class, "config");
 
+   public RaplaConfiguration()
+   {
+	   super();
+   }
    
    /** Creates a RaplaConfinguration with one element of the specified name 
 * @param name the element name

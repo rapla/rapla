@@ -44,7 +44,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.entities.configuration.internal.RaplaMapImplementation;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -647,6 +647,17 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return buf.toString();
 	}
 
+	public List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
+	{
+		Collection<String> ids = new ArrayList<String>();
+		for ( Conflict conflict:conflicts)
+		{
+			ids.add(conflict.getReservation1());
+			ids.add(conflict.getReservation2());
+		}
+		Collection<Entity> values = operator.getFromId( ids, true).values();
+		return new ArrayList(values);
+	}
 
 	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
 		//System.gc();
@@ -740,7 +751,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 								Appointment appointment2 = conflictingAppointment;
 								if (ConflictImpl.isConflict(appointment1, appointment2, today))
 		                		{
-		                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2);
+		                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2, today);
 		                		}
 							}
 						}
@@ -1034,11 +1045,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
-		return new RaplaMapImpl<T>(map);
+		return new RaplaMapImplementation<T>(map);
 	}
 
 	public <T> RaplaMap<T> newRaplaMap(Collection<T> col) {
-		return new RaplaMapImpl<T>(col);
+		return new RaplaMapImplementation<T>(col);
 	}
 
 	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {

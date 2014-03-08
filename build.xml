@@ -423,7 +423,8 @@ Definition as published by the Open Source Initiative (OSI).
 	         	<exclude name="se"/>
 	         	<exclude name="se/jiderhamn"/>
 	         	<exclude name="se/jiderhamn/**"/>
-	            <exclude name="org/rapla/storage/dbfile"/>
+	            <exclude name="org/rapla/storage/xml"/>
+                <exclude name="org/rapla/storage/dbfile"/>
             	<exclude name="org/rapla/storage/dbfile/**" />
 	         	<exclude name="org/rapla/storage/dbsql"/>
 	         	<exclude name="org/rapla/storage/dbsql/**" />

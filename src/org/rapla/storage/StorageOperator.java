@@ -44,6 +44,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
 public interface StorageOperator extends EntityResolver {
+	public static final int MAX_DEPENDENCY = 20;
+	   
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();
@@ -57,6 +59,8 @@ public interface StorageOperator extends EntityResolver {
         original, <strong>always</strong> edit the object returned by editObject.*/
     Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
 
+    Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound) throws RaplaException;
+    
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful

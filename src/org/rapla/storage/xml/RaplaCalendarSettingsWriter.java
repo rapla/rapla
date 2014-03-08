@@ -14,10 +14,14 @@
 package org.rapla.storage.xml;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -37,11 +41,11 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
     }
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
-        CalendarModelConfiguration calendar = (CalendarModelConfiguration) type ;
+        CalendarModelConfigurationImpl calendar = (CalendarModelConfigurationImpl) type ;
         openTag("rapla:"  + CalendarModelConfiguration.TYPE.getLocalName());
         att("title", calendar.getTitle());
         att("view", calendar.getView());
-        RaplaMap<String> extensionMap = calendar.getOptionMap();
+        Map<String,String> extensionMap = calendar.getOptionMap();
         final String saveDate = extensionMap != null ? extensionMap.get( CalendarModel.SAVE_SELECTED_DATE) : "false" ;
         boolean saveDateActive = saveDate != null && saveDate.equals("true");
 		if ( calendar.getSelectedDate() != null && saveDateActive) {
@@ -54,12 +58,14 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
             att("enddate", dateTimeFormat.formatDate( calendar.getEndDate()));
         }
         closeTag();
-        RaplaMap<RaplaObject> selectedObjects = calendar.getSelectedMap();
+        Collection<Entity> selectedObjects = calendar.getSelected();
         if (selectedObjects != null && selectedObjects.size() > 0)
         {
             openElement("selected");
-            RaplaMapWriter writer = (RaplaMapWriter)getWriterFor( RaplaMap.TYPE);
-            writer.writeMap( selectedObjects);
+            for ( Entity entity:selectedObjects)
+            {
+            	printReference( entity);
+            }
             closeElement("selected");
         }
         if (extensionMap != null && extensionMap.size() > 0)

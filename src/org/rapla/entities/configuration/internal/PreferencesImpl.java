@@ -129,8 +129,7 @@ public class PreferencesImpl extends SimpleEntity
     public PreferencesImpl clone() {
         PreferencesImpl clone = new PreferencesImpl();
         super.deepClone(clone);
-        clone.map = new RaplaMapImpl<Object>( map);
-        clone.setResolver( getReferenceHandler().getResolver());
+        clone.map = map.deepClone();
         return clone;
     }
 
@@ -219,15 +218,16 @@ public class PreferencesImpl extends SimpleEntity
 	
 	protected void putEntry_(TypedComponentRole<?> role, Object entry) {
 		checkWritable();
-		String id = role.getId();
-        if ( entry == null)
-        {
-            map.remove( id);
-        }
-        else
-        {
-            map.put( id ,entry.toString());
-        }
+		throw new UnsupportedOperationException();
+//		String id = role.getId();
+//        if ( entry == null)
+//        {
+//            map.remove( id);
+//        }
+//        else
+//        {
+//            map.put( id ,entry.toString());
+//        }
 	}
 
 	public String getEntryAsString(TypedComponentRole<String> role,

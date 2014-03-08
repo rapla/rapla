@@ -39,13 +39,16 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
     transient private Appointment appointment;
-    private int frequency;
+    private long frequency;
     boolean monthly;
     boolean yearly;
 
-    public RepeatingImpl()
+    RepeatingImpl()
     {
-    	
+    	if ( repeatingType != null)
+    	{
+    		setType( repeatingType);
+    	}
     }
     
     RepeatingImpl(RepeatingType type,Appointment appointment) {

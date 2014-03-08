@@ -3,13 +3,17 @@ package org.rapla.storage.dbrm;
 import org.rapla.framework.RaplaException;
 
 import com.google.gwtjsonrpc.common.AsyncCallback;
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.VoidResult;
 
 public class ResultImpl<T> implements FutureResult<T>
 {
 
 	RaplaException ex;
 	T result;
-	public ResultImpl()
+	public static ResultImpl<VoidResult> VOID = new ResultImpl<VoidResult>();
+	
+	private ResultImpl()
 	{
 	}
 	
@@ -44,7 +48,10 @@ public class ResultImpl<T> implements FutureResult<T>
 		{
 			callback.onFailure( ex);
 		}
-		callback.onSuccess(result);
+		else
+		{
+			callback.onSuccess(result);
+		}
 	}
 
 }

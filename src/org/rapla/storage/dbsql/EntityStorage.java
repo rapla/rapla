@@ -775,7 +775,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     }
 
     public RaplaXMLReader getReaderFor( RaplaType type) throws RaplaException {
-		Map<Object,RaplaXMLReader> readerMap = lookup( PreferenceReader.READERMAP);
+		Map<RaplaType,RaplaXMLReader> readerMap = lookup( PreferenceReader.READERMAP);
         return readerMap.get( type);
     }
 

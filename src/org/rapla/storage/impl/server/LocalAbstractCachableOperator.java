@@ -72,7 +72,6 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
@@ -98,11 +97,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected IdTable idTable;
 	protected String encryption = "sha-1";
 	private ConflictFinder conflictFinder;
-	Map<Allocatable,SortedSet<Appointment>> appointmentMap;
+	Map<String,SortedSet<Appointment>> appointmentMap;
 	TimeZone configuredTimeZone = TimeZone.getDefault();
 	CommandScheduler scheduler;
 	Cancelable cleanConflictsTask;
 	
+	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
+		super( context, logger);
+		scheduler = context.lookup( CommandScheduler.class);
+	}
+
 	/**
 	 * implement this method to implement the persistent mechanism. By default it
 	 * calls <li>check()</li> <li>update()</li> <li>fireStorageUpdate()</li> <li>
@@ -110,11 +114,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * client. Use storeObjects and removeObjects instead.
 	 */
 	abstract public void dispatch(final UpdateEvent evt) throws RaplaException;
-	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
-		super( context, logger);
-		scheduler = context.lookup( CommandScheduler.class);
-	}
-
+	
 	public String getEncryption() {
 		return encryption;
 	}
@@ -139,7 +139,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			{
 				unlock( readLock);
 			}
-			for (Appointment appointment:AppointmentImpl.getAppointments(appointments,user,start,end, excludeExceptions))
+			SortedSet<Appointment> appointmentSet = AppointmentImpl.getAppointments(appointments,user,start,end, excludeExceptions);
+			for (Appointment appointment:appointmentSet)
 			{
 	            Reservation reservation = appointment.getReservation();
 	            if ( !reservationSet.contains( reservation))
@@ -175,15 +176,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		configuredTimeZone = timeZone;
 	}
 	
-	public void authenticate(String username, String password)
+	public String authenticate(String username, String password)
 			throws RaplaException {
 		Lock readLock = readLock();
 		try {
 			getLogger().info("Check password for User " + username);
 			User user = cache.getUser(username);
-			if (user != null && checkPassword(user.getId(), password)) {
-				return;
-	
+			if (user != null)
+			{
+				String userId = user.getId();
+				if (checkPassword(userId, password)) 
+				{
+					return userId;
+				}
 			}
 			getLogger().warn("Login failed for " + username);
 			throw new RaplaSecurityException(i18n.getString("error.login"));
@@ -344,7 +349,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	protected void initAppointments() {
-		appointmentMap = new HashMap<Allocatable, SortedSet<Appointment>>();
+		appointmentMap = new HashMap<String, SortedSet<Appointment>>();
 		Collection<Appointment> unsortedAppointments = cache.getCollection(Appointment.class);
     	for ( Appointment app:unsortedAppointments)
 		{
@@ -375,7 +380,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			    	return cache.getCollection( Allocatable.class);
 			    }
 		};
-		conflictFinder = new ConflictFinder(allocationMap, today2, getLogger());
+		conflictFinder = new ConflictFinder(allocationMap, today2, getLogger(), this);
 		long delay = DateTools.MILLISECONDS_PER_HOUR;
 		long period = DateTools.MILLISECONDS_PER_HOUR;
 		Command cleanUpConflicts = new Command() {
@@ -395,26 +400,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		for (UpdateOperation operation: result.getOperations())
 		{
 			RaplaObject current = operation.getCurrent();
-			if ( current.getRaplaType() ==  Appointment.TYPE )
+			if ( current.getRaplaType() ==  Reservation.TYPE )
 			{
-				Appointment oldApp = (Appointment) current;
+				if ( operation instanceof UpdateResult.Remove)
+				{
+					Reservation oldReservation = (Reservation) current;
+					for ( Appointment app: oldReservation.getAppointments() )
+					{
+						updateBindings( toUpdate, app, true);
+					}
+				}
 				if ( operation instanceof UpdateResult.Add)
 				{
-					Appointment newApp =(Appointment) ((UpdateResult.Add) operation).getNew();
-					updateBindings( toUpdate, newApp, false);
+					Reservation newReservation = (Reservation) ((UpdateResult.Add) operation).getNew();
+					for ( Appointment app: newReservation.getAppointments() )
+					{
+						updateBindings( toUpdate, app, false);
+					}
 				}
-				else if ( operation instanceof UpdateResult.Remove)
+				if ( operation instanceof UpdateResult.Change)
 				{
-					updateBindings( toUpdate, oldApp, true);	
-				}
-				else if ( operation instanceof UpdateResult.Change)
-				{
-					Appointment newApp =(Appointment) ((UpdateResult.Change) operation).getNew();
-					oldApp =(Appointment) ((UpdateResult.Change) operation).getOld();
-					// remove first
-					updateBindings( toUpdate, oldApp, true);
-					// then add again
-					updateBindings( toUpdate, newApp, false);
+					Reservation oldReservation = (Reservation) ((UpdateResult.Change) operation).getOld();
+					Reservation newReservation =(Reservation) ((UpdateResult.Change) operation).getNew();
+					Appointment[] oldAppointments =  oldReservation.getAppointments();
+					for ( Appointment oldApp: oldAppointments)
+					{
+						updateBindings( toUpdate, oldApp, true);
+					}
+					Appointment[] newAppointments =  newReservation.getAppointments();
+					for ( Appointment newApp: newAppointments)
+					{
+						updateBindings( toUpdate, newApp, false);
+					}
 				}
 			}
 			if ( current.getRaplaType() ==  Allocatable.TYPE )
@@ -457,7 +474,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				Collection<Allocatable> allocatables = cache.getCollection(Allocatable.class);
 				for ( Allocatable allocatable:allocatables)
 				{
-					SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable);
+					SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable.getId());
 					if ( appointmentSet == null)
 					{
 						continue;
@@ -481,13 +498,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			getLogger().error("Appointment without reservation found " + app + " ignoring.");
 		}
 		
-		for ( Allocatable alloc: allocatablesToProcess)
+		for ( Allocatable allocatable: allocatablesToProcess)
 		{
-			Allocatable allocatable; 
 			AllocationChange updateSet;
-			if ( alloc != null)
+			if ( allocatable != null)
 			{
-				allocatable =  getPersistantForUpdate(alloc);
 				updateSet = toUpdate.get( allocatable);
 				if ( updateSet == null)
 				{
@@ -497,7 +512,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 			else
 			{
-				allocatable = alloc;
 				updateSet = null;
 			}
 			if ( remove)
@@ -523,12 +537,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 			else
 			{
-				Appointment persistant = getPersistantForUpdate(app);
 				SortedSet<Appointment> appointmentSet = getAndCreateList(appointmentMap, allocatable);
-				appointmentSet.add(persistant);
+				appointmentSet.add(app);
 				if ( updateSet != null)
 				{
-					updateSet.toChange.add( persistant);
+					updateSet.toChange.add( app);
 				}
 			}
 		}
@@ -537,7 +550,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	static final SortedSet<Appointment> EMPTY_SORTED_SET = Collections.unmodifiableSortedSet( new TreeSet<Appointment>());
 	protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
-		SortedSet<Appointment> s = appointmentMap.get( allocatable);
+		String allocatableId = allocatable != null ? allocatable.getId() : null;
+		SortedSet<Appointment> s = appointmentMap.get( allocatableId);
     	if ( s == null)
     	{
     		return EMPTY_SORTED_SET; 
@@ -545,27 +559,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return Collections.unmodifiableSortedSet(s);
     }
 
-	private SortedSet<Appointment> getAndCreateList(Map<Allocatable,SortedSet<Appointment>> appointmentMap,Allocatable alloc) {
-		SortedSet<Appointment> set = appointmentMap.get( alloc);
+	private SortedSet<Appointment> getAndCreateList(Map<String,SortedSet<Appointment>> appointmentMap,Allocatable alloc) {
+		String allocationId = alloc != null ? alloc.getId() : null;
+		SortedSet<Appointment> set = appointmentMap.get( allocationId);
 		if ( set == null)
 		{
 			set = new TreeSet<Appointment>(new AppointmentStartComparator());
-			appointmentMap.put(alloc, set);
+			appointmentMap.put(allocationId, set);
 		}
 		return set;
 	}
 	
-	protected <T extends Entity<T>> T getPersistantForUpdate(
-			T object) throws RaplaException {
-	Entity app = (Entity)object;
-		T appointment2 = (T) cache.tryResolve( app.getId() );
-		//T appointment2 = getPersistant(Collections.singleton(app)).get( object);
-		if ( appointment2 == null )
-		{
-			throw new RaplaException("Only persistant entities can be added to binding map " + appointment2 );
-		}
-		return appointment2;
-	}
+//	protected <T extends Entity<T>> T getPersistantForUpdate(
+//			T object) throws RaplaException {
+//		Entity app = (Entity)object;
+//		T appointment2 = (T) cache.tryResolve( app.getId() );
+//		//T appointment2 = getPersistant(Collections.singleton(app)).get( object);
+//		if ( appointment2 == null )
+//		{
+//			throw new RaplaException("Only persistant entities can be added to binding map " + appointment2 );
+//		}
+//		return appointment2;
+//	}
 	
     @Override
 	protected UpdateResult update(UpdateEvent evt)
@@ -633,20 +648,20 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			addChangedDynamicTypeDependant(evt, dynamicType, false);
 		}
 		
-		if ( entity instanceof ParentEntity)
-		{
-			ParentEntity parent = (ParentEntity)entity;
-			Iterable<Entity>subEntities = parent.getSubEntities();
-			for (Entity subEntity: subEntities)
-			{
-				addStoreOperationsToClosure(evt, subEntity);
-			}
-		}
+//		if ( entity instanceof ParentEntity)
+//		{
+//			ParentEntity parent = (ParentEntity)entity;
+//			Iterable<Entity>subEntities = parent.getSubEntities();
+//			for (Entity subEntity: subEntities)
+//			{
+//				addStoreOperationsToClosure(evt, subEntity);
+//			}
+//		}
 
-		for (Entity ref:getRemovedEntities(entity))
-		{
-			addRemoveOperationsToClosure(evt, ref);
-		}
+//		for (Entity ref:getRemovedEntities(entity))
+//		{
+//			addRemoveOperationsToClosure(evt, ref);
+//		}
 	}
 
 	private void addRemoveOperationsToClosure(UpdateEvent evt,
@@ -660,57 +675,59 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
 			addChangedDynamicTypeDependant(evt, dynamicType, true);
 		}
-
-		// add the subentities
-		if ( entity instanceof ParentEntity)
-		{
-			ParentEntity parent = (ParentEntity)entity;
-			Iterable<Entity>subEntities = parent.getSubEntities();
-			for (Entity ref:subEntities)
-			{
-				addRemoveOperationsToClosure(evt, ref);
-			}
-		}
-
-		// And also add the SubEntities that have been removed, before storing
-		for ( Entity ref: getRemovedEntities(entity)) {
-			addRemoveOperationsToClosure(evt, ref);
-		}
-
+		
 		// If entity is a user, remove the preference object
 		if (User.TYPE == entity.getRaplaType()) {
 			addRemovedUserDependant(evt, (User) entity);
 		}
 
+		// add the subentities
+//		if ( entity instanceof ParentEntity)
+//		{
+//			ParentEntity parent = (ParentEntity)entity;
+//			Iterable<Entity>subEntities = parent.getSubEntities();
+//			for (Entity ref:subEntities)
+//			{
+//				addRemoveOperationsToClosure(evt, ref);
+//			}
+//		}
+
+		// And also add the SubEntities that have been removed, before storing
+//		for ( Entity ref: getRemovedEntities(entity)) {
+//			addRemoveOperationsToClosure(evt, ref);
+//		}
+
+	
+
 	}
 
-	private Collection<Entity>getRemovedEntities(Entity entity) {
-		Entity original = findInLocalCache(entity);
-		List<Entity> result = null;
-		if (original != null) {
-			if ( original instanceof ParentEntity)
-			{
-				Iterable<Entity>subEntities = ((ParentEntity)original).getSubEntities();
-				for (Entity subEntity:  subEntities)
-				{
-					if (!((ParentEntity)entity).getSubEntities().contains(subEntity)) {
-						// SubEntity not found in the new entity add it to remove
-						// List
-						if (result == null) {
-							result = new ArrayList<Entity>();
-						}
-						result.add(subEntity);
-						// System.out.println( "Removed " + subEntity);
-					}
-				}
-			}
-		}
-		if (result != null) {
-			return result;
-		} else {
-			return Collections.emptySet();
-		}
-	}
+//	private Collection<Entity>getRemovedEntities(Entity entity) {
+//		Entity original = findInLocalCache(entity);
+//		List<Entity> result = null;
+//		if (original != null) {
+//			if ( original instanceof ParentEntity)
+//			{
+//				Iterable<Entity>subEntities = ((ParentEntity)original).getSubEntities();
+//				for (Entity subEntity:  subEntities)
+//				{
+//					if (!((ParentEntity)entity).getSubEntities().contains(subEntity)) {
+//						// SubEntity not found in the new entity add it to remove
+//						// List
+//						if (result == null) {
+//							result = new ArrayList<Entity>();
+//						}
+//						result.add(subEntity);
+//						// System.out.println( "Removed " + subEntity);
+//					}
+//				}
+//			}
+//		}
+//		if (result != null) {
+//			return result;
+//		} else {
+//			return Collections.emptySet();
+//		}
+//	}
 
 	protected void setCache(final LocalCache cache) {
 		super.setCache( cache);
@@ -1289,7 +1306,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			for ( Allocatable allocatable:allocatables)
 			{
-				SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable);
+				SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable.getId());
 				if ( appointmentSet == null)
 				{
 					continue;
@@ -1368,26 +1385,26 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void createDefaultSystem(LocalCache cache) throws RaplaException
 	{
-    	EntityStore list = new EntityStore( null, cache.getSuperCategory() );
+    	EntityStore store = new EntityStore( null, cache.getSuperCategory() );
         
     	DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,"resource");
 		setName(resourceType.getName(), "resource");
-		add(list, resourceType);
+		add(store, resourceType);
 		
 		DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,"person");
 		setName(personType.getName(), "person");
-		add(list, personType);
+		add(store, personType);
 		
 		DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event");
 		setName(eventType.getName(), "event");
-		add(list, eventType);
+		add(store, eventType);
 		
 		String[] userGroups = new String[] {Permission.GROUP_REGISTERER_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
 		CategoryImpl groupsCategory = new CategoryImpl();
 		groupsCategory.setKey("user-groups");
 		setName( groupsCategory.getName(), groupsCategory.getKey());
 		setNew( groupsCategory);
-		list.put( groupsCategory);
+		store.put( groupsCategory);
 		for ( String catName: userGroups)
 		{
 			CategoryImpl group = new CategoryImpl();
@@ -1395,17 +1412,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			setNew(group);
 			setName( group.getName(), group.getKey());
 			groupsCategory.addCategory( group);
-			list.put( group);
+			store.put( group);
 		}
 		cache.getSuperCategory().addCategory( groupsCategory);
 		UserImpl admin = new UserImpl();
 		admin.setUsername("admin");
 		admin.setAdmin( true);
 		setNew(admin);
-		list.put( admin);
+		store.put( admin);
 	
-	    resolveEntities( list.getList(), list );
-	    cache.putAll( list.getList() );
+		Collection<Entity> list = store.getList();
+		cache.putAll( list );
+	    resolveEntities( list );
 	    
     	UserImpl user = cache.getUser("admin");
     	String password ="";

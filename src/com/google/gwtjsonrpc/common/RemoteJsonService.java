@@ -15,7 +15,7 @@
 package com.google.gwtjsonrpc.common;
 
 /**
- * Marker interface for JSON based RPC.
+ * Marker interface for JSON based RPC. Should be replaced with a marker annotation when generator supports annotations
  * <p>
  * Application service interfaces should extend this interface:
  *

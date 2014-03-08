@@ -207,10 +207,6 @@ public class UpdateResult implements ModificationEvent
 			TimeInterval currentInterval) 
 	{
 		RaplaType type = obj.getRaplaType();
-		if ( type == Appointment.TYPE)
-		{
-			currentInterval = invalidateInterval( currentInterval, (Appointment) obj);
-		}
 		if ( type == Reservation.TYPE)
 		{
 			for ( Appointment app:((Reservation)obj).getAppointments())

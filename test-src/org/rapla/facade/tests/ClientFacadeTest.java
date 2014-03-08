@@ -300,8 +300,8 @@ public class ClientFacadeTest extends RaplaTestCase {
         }
     }
     void printConflict(Conflict c) {
-        System.out.println("Conflict: " + c.getReservation1().getName(locale)
-                           + " with " + c.getReservation2().getName(locale));
+        System.out.println("Conflict: " + c.getAppointment1()
+                           + " with " + c.getAppointment2());
         System.out.println("          " + c.getAllocatable().getName(locale)) ;
         System.out.println("          " + c.getAppointment1() + " overlapps " + c.getAppointment2());
     }

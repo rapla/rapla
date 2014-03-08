@@ -15,8 +15,12 @@ package org.rapla.facade.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
@@ -26,14 +30,14 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
-import org.rapla.storage.LocalCache;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different
@@ -47,20 +51,54 @@ import org.rapla.storage.LocalCache;
 
 public class ConflictImpl extends SimpleEntity implements Conflict
 {
-    public ConflictImpl(
+	Date startDate;
+	
+	ConflictImpl() {
+	}
+	    
+	public ConflictImpl(
                     Allocatable allocatable,
                     Appointment app1,
-                    Appointment app2)
+                    Appointment app2,
+                    Date today
+                    )
     {
-    Entity allocEntity = (Entity) allocatable;
-    Entity app1Entity = (Entity) app1;
-    Entity app2entity = (Entity) app2;
-		ReferenceHandler referenceHandler = getReferenceHandler();
-		referenceHandler.putEntity("allocatable", allocEntity);
-		referenceHandler.putEntity("appointment1", app1Entity);
-		referenceHandler.putEntity("appointment2", app2entity);
+		ReferenceHandler referenceHandler  = getReferenceHandler();
+		referenceHandler.putEntity("allocatable", allocatable);
+		startDate = getStartDate_(today, app1, app2);
+		referenceHandler.putEntity("appointment1", app1);
+		referenceHandler.putEntity("appointment2", app2);
+		Reservation reservation1 = app1.getReservation();
+		Reservation reservation2 = app2.getReservation();
+		referenceHandler.putEntity("reservation1", reservation1);
+		referenceHandler.putEntity("reservation2", reservation2);
+		referenceHandler.putEntity("owner1", reservation1.getOwner());
+		referenceHandler.putEntity("owner2", reservation2.getOwner());
+		setResolver( ((AllocatableImpl)allocatable).getReferenceHandler().getResolver());
 		setId( createId());
     }
+	
+	public Date getStartDate()
+	{
+		return startDate;
+	}
+   
+	private Date getStartDate_(Date today,Appointment app1, Appointment app2) {
+		Date fromDate = today;
+		Date start1 = app1.getStart();
+		if ( start1.before( fromDate))
+		{	
+			fromDate = start1; 
+		}
+		Date start2 = app2.getStart();
+		if ( start2.before( fromDate))
+		{
+			fromDate = start2; 
+		}
+		Date toDate = DateTools.addDays( today, 365 * 10);
+		Date date = getFirstConflictDate(fromDate, toDate, app1, app2);
+		return date;
+	}
 
     public String createId()
     {
@@ -73,78 +111,91 @@ public class ConflictImpl extends SimpleEntity implements Conflict
      	buf.append(referenceHandler.getId("appointment2"));
      	return buf.toString();
     }
-    public ConflictImpl() {
-		// TODO Auto-generated constructor stub
-	}
+
+  
     
-	public ConflictImpl(String id) throws RaplaException {
-		String[] split = id.split(";");
-		ReferenceHandler referenceHandler = getReferenceHandler();
-		referenceHandler.putId("allocatable", LocalCache.getId(Allocatable.TYPE,split[0]));
-		referenceHandler.putId("appointment1", LocalCache.getId(Appointment.TYPE,split[1]));
-		referenceHandler.putId("appointment2", LocalCache.getId(Appointment.TYPE,split[2]));
-		setId( id);
-	}
+//	public ConflictImpl(String id) throws RaplaException {
+//		String[] split = id.split(";");
+//		ReferenceHandler referenceHandler = getReferenceHandler();
+//		referenceHandler.putId("allocatable", LocalCache.getId(Allocatable.TYPE,split[0]));
+//		referenceHandler.putId("appointment1", LocalCache.getId(Appointment.TYPE,split[1]));
+//		referenceHandler.putId("appointment2", LocalCache.getId(Appointment.TYPE,split[2]));
+//		setId( id);
+//	}
 	
-	public static boolean isConflictId(String id) {
-		if ( id == null)
-		{
-			return false;
-		}
-		String[] split = id.split(";");
-		if ( split.length != 3)
-		{
-			return false;
-		}
-		try {
-			LocalCache.getId(Allocatable.TYPE,split[0]);
-			LocalCache.getId(Appointment.TYPE,split[1]);
-			LocalCache.getId(Appointment.TYPE,split[2]);
-		} catch (RaplaException e) {
-			return false;
-		}
-		return true;
-	}
+//	public static boolean isConflictId(String id) {
+//		if ( id == null)
+//		{
+//			return false;
+//		}
+//		String[] split = id.split(";");
+//		if ( split.length != 3)
+//		{
+//			return false;
+//		}
+//		try {
+//			LocalCache.getId(Allocatable.TYPE,split[0]);
+//			LocalCache.getId(Appointment.TYPE,split[1]);
+//			LocalCache.getId(Appointment.TYPE,split[2]);
+//		} catch (RaplaException e) {
+//			return false;
+//		}
+//		return true;
+//	}
 
 	/** @return the first Reservation, that is involed in the conflict.*/
-    public Reservation getReservation1() 
-    { 
-    	Appointment appointment1 = getAppointment1();
-		if ( appointment1 == null)
-		{
-			throw new IllegalStateException("Appointment 1 is null resolve not called");
-		}
-    	return appointment1.getReservation(); 
-    }
+//    public Reservation getReservation1() 
+//    { 
+//    	Appointment appointment1 = getAppointment1();
+//		if ( appointment1 == null)
+//		{
+//			throw new IllegalStateException("Appointment 1 is null resolve not called");
+//		}
+//    	return appointment1.getReservation(); 
+//    }
+	
     /** The appointment of the first reservation, that causes the conflict. */
-    public Appointment getAppointment1() 
+    public String getAppointment1() 
     { 
-    	return (Appointment)getReferenceHandler().getEntity("appointment1");
+    	return getReferenceHandler().getId("appointment1");
     }
+    
+    public String getReservation1() 
+    { 
+    	return getReferenceHandler().getId("reservation1");
+    }
+    
+    public String getReservation2() 
+    { 
+    	return getReferenceHandler().getId("reservation2");
+    }
+
+
     /** @return the allocatable, allocated for the same time by two different reservations. */
     public Allocatable getAllocatable() 
     { 
     	return (Allocatable)getReferenceHandler().getEntity("allocatable"); 
     }
-    /** @return the second Reservation, that is involed in the conflict.*/
-    public Reservation getReservation2() 
-    { 
-    	Appointment appointment2 = getAppointment2();
-    	if ( appointment2 == null)
-		{
-			throw new IllegalStateException("Appointment 2 is null resolve not called");
-		}
-		return appointment2.getReservation(); 
-    }
-    /** @return The User, who created the second Reservation.*/
-    public User getUser2() 
-    { 
-    	return getReservation2().getOwner(); 
-    }
+//    /** @return the second Reservation, that is involed in the conflict.*/
+//    public Reservation getReservation2() 
+//    { 
+//    	Appointment appointment2 = getAppointment2();
+//    	if ( appointment2 == null)
+//		{
+//			throw new IllegalStateException("Appointment 2 is null resolve not called");
+//		}
+//		return appointment2.getReservation(); 
+//    }
+//    /** @return The User, who created the second Reservation.*/
+//    public User getUser2() 
+//    { 
+//    	return getReservation2().getOwner(); 
+//    }
+    
     /** The appointment of the second reservation, that causes the conflict. */
-    public Appointment getAppointment2() 
+    public String getAppointment2() 
     { 
-    	return (Appointment)getReferenceHandler().getEntity("appointment2");
+    	return getReferenceHandler().getId("appointment2");
     }
 
     public static final ConflictImpl[] CONFLICT_ARRAY= new ConflictImpl[] {};
@@ -153,25 +204,44 @@ public class ConflictImpl extends SimpleEntity implements Conflict
      * @see org.rapla.entities.Named#getName(java.util.Locale)
      */
     public String getName(Locale locale) {
-        return getReservation1().getName( locale );
+        return getAllocatable().getName( locale );
     }
 
-    public boolean canModify(User user) {
-		Reservation reservation = getReservation1();
-		Reservation overlappingReservation = getReservation2();
-		Allocatable allocatable = getAllocatable();
-		boolean canModifiy = user == null || user.isAdmin() || allocatable.canRead( user ) &&(RaplaComponent.canModify(reservation, user) || RaplaComponent.canModify(overlappingReservation, user));
-		return canModifiy;
+   public boolean isOwner( User user)
+	{
+	    User owner1 = getOwner1();
+		User owner2 = getOwner2();
+		if (user != null && !user.equals(owner1) && !user.equals(owner2)) {
+	        return false;
+	    }
+		return true;
 	}
-    private boolean contains(Appointment appointment) {
-        if ( appointment == null)
+   
+   
+   
+// public Date getFirstConflictDate(final Date  fromDate, Date toDate) {
+// Appointment a1  =getAppointment1();
+// Appointment a2  =getAppointment2();
+// return getFirstConflictDate(fromDate, toDate, a1, a2);
+//}
+    
+    public User getOwner1() {
+    	return (User) getReferenceHandler().getEntity("owner1");
+    }
+
+    public User getOwner2() {
+    	return (User) getReferenceHandler().getEntity("owner2");
+    }
+
+	private boolean contains(String appointmentId) {
+        if ( appointmentId == null)
             return false;
         
-        Appointment app1 = getAppointment1();
-        Appointment app2 = getAppointment2();
-		if  ( app1 != null && app1.equals( appointment))
+        String app1 = getAppointment1();
+        String app2 = getAppointment2();
+		if  ( app1 != null && app1.equals( appointmentId))
             return true;
-        if  ( app2 != null && app2.equals( appointment))
+        if  ( app2 != null && app2.equals( appointmentId))
             return true;
         return false;
     }
@@ -218,28 +288,14 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         buf.append( conflict.getAllocatable());
         buf.append( " " );
         buf.append( conflict.getAppointment1());
-        buf.append( "'" );
-        buf.append( conflict.getReservation1() );
-        buf.append( "'" );
+        buf.append( " " );
         buf.append( "with");
-        buf.append( " '" );
-        buf.append( conflict.getReservation2() );
-        buf.append( "' " );
-        buf.append( " owner ");
-        User user = conflict.getUser2();
-		if ( user != null)
-		{
-			buf.append( user.getUsername());
-		}
+        buf.append( " " );
+        buf.append( conflict.getAppointment2());
+        buf.append( " " );
         return buf.toString();
     }
     
-    public Date getFirstConflictDate(final Date  fromDate, Date toDate) {
-        Appointment a1  =getAppointment1();
-        Appointment a2  =getAppointment2();
-        return getFirstConflictDate(fromDate, toDate, a1, a2);
-    }
-
 	static public Date getFirstConflictDate(final Date fromDate, Date toDate,
 			Appointment a1, Appointment a2) {
 		Date minEnd =  a1.getMaxEnd();
@@ -282,9 +338,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         }
         return null;
     }
-	public static void addConflicts(Collection<Conflict> conflictList, Allocatable allocatable,Appointment appointment1, Appointment appointment2)
+	public static void addConflicts(Collection<Conflict> conflictList, Allocatable allocatable,Appointment appointment1, Appointment appointment2,Date today)
 	{
-        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2 );
+        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today);
         // Rapla 1.4: Don't add conflicts twice
         if (!contains(conflict, conflictList) )
         {
@@ -292,12 +348,18 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         }
 	}
 	
-	public boolean endsBefore(Date date )
-	{
-		Appointment appointment1 = getAppointment1();
-		Appointment appointment2 = getAppointment2();
-		boolean result = endsBefore( appointment1, appointment2, date);
-		return result;
+	public static boolean endsBefore(Appointment appointment1,Appointment appointment2, Date date) {
+		Date maxEnd1 = appointment1.getMaxEnd();
+		Date maxEnd2 = appointment2.getMaxEnd();
+		if (maxEnd1 != null && maxEnd1.before( date))
+		{
+			return true;
+		}
+		if (maxEnd2 != null && maxEnd2.before( date))
+		{
+			return true;
+		}
+		return false;
 	}
 	
 	public static boolean isConflict(Appointment appointment1,Appointment appointment2, Date today) {
@@ -377,19 +439,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		return reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
 	}
 
-	protected static boolean endsBefore(Appointment appointment1,Appointment appointment2, Date date) {
-		Date maxEnd1 = appointment1.getMaxEnd();
-		Date maxEnd2 = appointment2.getMaxEnd();
-		if (maxEnd1 != null && maxEnd1.before( date))
-		{
-			return true;
-		}
-		if (maxEnd2 != null && maxEnd2.before( date))
-		{
-			return true;
-		}
-		return false;
-	}
 	public boolean hasAppointment(Appointment appointment) 
 	{
 		boolean result = getAppointment1().equals( appointment) || getAppointment2().equals( appointment);
@@ -402,6 +451,68 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		ConflictImpl clone = new ConflictImpl();
 		super.deepClone( clone);
 		return clone;
+	}
+
+	static public boolean canModify(Conflict conflict,User user, EntityResolver resolver) {
+		Allocatable allocatable = conflict.getAllocatable();
+		if (user == null || user.isAdmin())
+		{
+			return true;
+		}
+		if (allocatable.canRead( user ))
+		{
+			Entity reservation = resolver.tryResolve(conflict.getReservation1());
+			if ( reservation == null )
+			{
+				// reservation will be deleted, and conflict also so return 
+				return false;
+			}
+			if (RaplaComponent.canModify(reservation, user) )
+			{
+				return true;
+			}
+			Entity overlappingReservation = resolver.tryResolve(conflict.getReservation2());
+			if ( overlappingReservation == null )
+			{
+				return false;
+			}
+			if (RaplaComponent.canModify(overlappingReservation, user))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts,List<Reservation> reservations) 
+	{
+		Map<Appointment, Set<Appointment>> result = new HashMap<Appointment,Set<Appointment>>();
+		Map<String, Appointment> map = new HashMap<String,Appointment>();
+		for ( Reservation reservation:reservations)
+		{
+			for (Appointment app:reservation.getAppointments())
+			{
+				map.put( app.getId(), app);
+			}
+		}
+		for ( Conflict conflict:selectedConflicts)
+		{
+			Appointment app1 = map.get(conflict.getAppointment1());
+			Appointment app2 = map.get(conflict.getAppointment2());
+			add(result, app1, app2);
+			add(result, app2, app1);
+		}
+		return result;
+	}
+
+	private static void add(Map<Appointment, Set<Appointment>> result,Appointment app1, Appointment app2) {
+		Set<Appointment> set = result.get( app1);
+		if ( set == null)
+		{
+			set = new HashSet<Appointment>();
+			result.put(app1,set);
+		}
+		set.add( app2);
 	}
 
 

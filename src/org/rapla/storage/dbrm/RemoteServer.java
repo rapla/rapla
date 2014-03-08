@@ -17,8 +17,12 @@ import javax.jws.WebService;
 
 import org.rapla.framework.RaplaException;
 
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.common.VoidResult;
+
 @WebService
-public interface RemoteServer  {
-    String login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs) throws RaplaException;
-    void logout() throws RaplaException;
+public interface RemoteServer extends RemoteJsonService {
+	FutureResult<String> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs) throws RaplaException;
+	FutureResult<VoidResult> logout() throws RaplaException;
 }

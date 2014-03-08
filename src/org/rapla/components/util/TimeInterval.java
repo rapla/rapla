@@ -9,7 +9,7 @@ public final class TimeInterval implements Serializable
 	Date start;
 	Date end;
 
-	public TimeInterval()
+	TimeInterval()
 	{
 		
 	}

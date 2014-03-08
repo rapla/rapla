@@ -14,7 +14,9 @@ package org.rapla.entities.configuration;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -35,9 +37,8 @@ public interface CalendarModelConfiguration extends RaplaObject<CalendarModelCon
     public Date getSelectedDate();
     public String getTitle();
     public String getView();
-    public Collection<RaplaObject> getSelected();
-    public RaplaMap<RaplaObject> getSelectedMap();
-    public RaplaMap<String> getOptionMap();
+    public Collection<Entity> getSelected();
+    public Map<String,String> getOptionMap();
     //public Configuration get
     public ClassificationFilter[] getFilter();
     

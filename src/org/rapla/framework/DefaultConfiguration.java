@@ -12,6 +12,10 @@ public class DefaultConfiguration implements Configuration {
     String value;
     String name;
     
+    public DefaultConfiguration()
+    {
+    }
+    
     public DefaultConfiguration(String localName) {
         this.name = localName;
     }

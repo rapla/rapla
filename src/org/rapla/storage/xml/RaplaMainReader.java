@@ -92,7 +92,7 @@ public class RaplaMainReader extends RaplaXMLReader
             String repositoryVersion = atts.getValue("repositoryVersion");
             if ( repositoryVersion != null)
             {
-                resolver.setRepositoryVersion( Integer.parseInt( repositoryVersion));
+                store.setRepositoryVersion( Integer.parseInt( repositoryVersion));
             }
             String start = atts.getValue( "startDate");
             String end = atts.getValue( "endDate");

@@ -195,8 +195,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		if ( !newType.getElementKey().equals( type.getElementKey()))
         	return true;
 		
-        for (Object id:map.keySet()) {
-            if (type.hasAttributeChanged( (DynamicTypeImpl)newType , id))
+        for (String key:map.keySet()) {
+        	Attribute attribute = getType().getAttribute(key);
+            String attributeId = attribute.getId();
+			if (type.hasAttributeChanged( (DynamicTypeImpl)newType , attributeId))
             	return true;
         }
         return false;
@@ -207,51 +209,30 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     public void commitChange(DynamicType type) {
-        if ( !hasType (type )) {
+    	if ( !hasType (type )) {
             return;
         }
         
         Collection<String> removedKeys = new ArrayList<String>();
-        Collection<String> removedIds = new ArrayList<String>();
-//        for (String referenceKey : referenceHandler.getReferenceKeys())
-//        {
-//        	if ( referenceKey.equals ("parent") )
-//        		continue;
-//        	Attribute attribute = findAttributeByReferenceKey(type, referenceKey ) ;
-//        	if (attribute != null )
-//        		attributes.add( attribute);
-//        	else
-//        		removedKeys.add( referenceKey );
-//        }
-//       for  (String id:attributeValueMap.keySet()) {
-//            Attribute attribute = findAttributeById(type, id );
-//            if (attribute != null) {
-//            	attributes.add ( attribute );
-//            } else {
-//            	removedIds.add( id );
-//            }
-//        }
-
         Map<Attribute,Attribute> attributeMapping = new HashMap<Attribute,Attribute>();
         for  (String key:map.keySet()) {
-        	Attribute attribute = type.getAttribute(key);
+        	Attribute attribute = getType().getAttribute(key);
 			if ( attribute == null)
 			{
-        		removedKeys.add( key );
         		continue;
 			}
-			String id = attribute.getId();
-			Attribute newAtt = findAttributeById(type, id);
-			if ( newAtt == null)
+			// key now longer availabe so remove it
+			if ( type.getAttribute(key) == null)
 			{
-        		removedKeys.add( key );
-        		continue;
+				removedKeys.add( key );
 			}
-			attributeMapping.put(attribute, newAtt);
-        }
-        for (String key:removedKeys)
-        {
-        	map.remove( key );
+			
+			String attId = attribute.getId();
+			Attribute newAtt = findAttributeById(type, attId);
+			if ( newAtt != null)
+			{
+				attributeMapping.put(attribute, newAtt);
+			}
         }
         for (Attribute attribute: attributeMapping.keySet()) 
         {
@@ -267,6 +248,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     			}
 			}
 			setValues(newAttribute, convertedValues);
+        }
+       
+        for (String key:removedKeys)
+        {
+        	map.remove( key );
         }
         name = null;
         namePlaning = null;

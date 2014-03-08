@@ -5,13 +5,10 @@ import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.servletpages.RaplaPageGenerator;
 
-import com.google.gwtjsonrpc.common.RemoteJsonService;
-
 public interface ServerServiceContainer extends Container 
 {
     <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory);
     <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory, Configuration config);
-    <T extends RemoteJsonService> void addRemoteJsonFactory( Class<T> service, Class<? extends RemoteJsonFactory<T>> factory,Configuration config);
     <T> RemoteMethodFactory<T> getWebservice(Class<T> role) throws RaplaContextException;
     /**
      * You can add arbitrary serlvet pages to your rapla webapp.

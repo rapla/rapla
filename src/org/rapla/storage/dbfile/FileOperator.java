@@ -22,10 +22,12 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.IOUtil;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -215,8 +217,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
             RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, idTable );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             xmlAdapter.read( loadingURL, contentHandler, validate );
-            resolveEntities( entityStore.getList(), entityStore );
-            cache.putAll( entityStore.getList() );
+            Collection<Entity> list = entityStore.getList();
+			cache.putAll( list );
+            resolveEntities( list);
             cache.getSuperCategory().setReadOnly(true);
             for (User user:cache.getCollection(User.class))
             {
@@ -255,17 +258,17 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
         
-    public void dispatch( UpdateEvent evt ) throws RaplaException
+    public void dispatch( final UpdateEvent evt ) throws RaplaException
     {
-    	UpdateResult result;
-    	Lock writeLock = writeLock();
+    	final UpdateResult result;
+    	final Lock writeLock = writeLock();
     	try
         {
-	    	evt = createClosure( evt );
-	        check( evt );
+	    	final UpdateEvent closure = createClosure( evt );
+	        check( closure );
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
-	        result = update( evt);
+	        result = update( closure);
 	        saveData(cache, includeIds);
         }
         finally
