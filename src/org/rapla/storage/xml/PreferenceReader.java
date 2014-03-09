@@ -68,7 +68,7 @@ public class PreferenceReader extends RaplaXMLReader {
                 String ownerid = atts.getValue("ownerid");
                 if ( ownerid != null)
                 {
-                    preferences.getReferenceHandler().putId("owner",getId(User.TYPE, ownerid));
+                    preferences.putId("owner",getId(User.TYPE, ownerid));
                 }
             } 
             else

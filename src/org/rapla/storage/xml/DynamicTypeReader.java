@@ -190,6 +190,7 @@ public class DynamicTypeReader extends RaplaXMLReader
             {
                 addAnnotations( dynamicType, typeAnnotations );
                 setCurrentTranslations(dynamicType.getName());
+                dynamicType.setResolver( store);
                 add( dynamicType );
                 // We ensure the dynamic type is not modified anymore
                 dynamicType.setReadOnly( true );

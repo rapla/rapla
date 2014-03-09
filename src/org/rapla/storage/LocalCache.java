@@ -287,6 +287,7 @@ public class LocalCache implements EntityResolver
 
    public Collection<Entity> getVisibleEntities(final User user) {
 	   Collection<Entity> result = new ArrayList<Entity>();
+	   result.add( getSuperCategory());
 	   for ( Map.Entry<RaplaType,Set<? extends Entity>> entry:entityMap.entrySet() )
 	   {
 		   RaplaType raplaType = entry.getKey();
@@ -295,17 +296,18 @@ public class LocalCache implements EntityResolver
 			   continue;
            }
 		   Set<Entity>set =  (Set<Entity>) entry.getValue();
-		   if (   Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType))
+		   if (   Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType) || Attribute.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
 		   {
-			   for ( Entity obj: set)
-			   {
-            		if ( RaplaComponent.isTemplate(obj))
-            		{
-            			result.add( obj);
-					}
-				}
+			   continue;
+//			   for ( Entity obj: set)
+//			   {
+//            		if ( RaplaComponent.isTemplate(obj))
+//            		{
+//            			result.add( obj);
+//					}
+//				}
             }
-            if (user == null )
+           if (user == null )
             {
             	result.addAll( set);
             }

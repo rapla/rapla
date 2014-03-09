@@ -14,9 +14,12 @@ o//pyright (C) 2006 Christopher Kohlhaas                                  |
 package org.rapla.entities.configuration.internal;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -38,7 +41,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeDependant, RaplaObject {
+public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap {
    //this map stores all objects in the map 
    private Map<String,String> constants;
    private Map<String,RaplaConfiguration> configurations;
@@ -77,9 +80,9 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    }
 
    public RaplaMapImpl( Map<String,?> map) {
-       for ( Iterator<String> it = this.map.keySet().iterator();it.hasNext();) {
+       for ( Iterator<String> it = map.keySet().iterator();it.hasNext();) {
            String key = it.next();
-           Object o = this.map.get(key );
+           Object o = map.get(key );
            putPrivate(key, o);
        }
    }
@@ -88,6 +91,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    /** This method is only used in storage operations, please dont use it from outside*/
    public void putPrivate(String key, Object value)
    {
+	   cachedEntries = null;
 	   if ( value == null)
 	   {
 		   if (links != null)
@@ -102,11 +106,28 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 		   {
 			   map.remove( key);
 		   }
+		   if ( configurations != null)
+		   {
+			   configurations.remove(key);
+		   }
+		   if ( maps != null)
+		   {
+			   maps.remove(key);
+		   }
+		   if ( calendars != null)
+		   {
+			   calendars.remove(key);
+		   }
+		   if ( constants != null)
+		   {
+			   constants.remove(key);
+		   }
 		   return;
 	   }
 	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
        {   
        }
+       getMap().put(key, value);
        if ( value instanceof Entity) 
        {
     	   String id = ((Entity) value).getId();
@@ -114,27 +135,57 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     	   return;
        }
        else if ( value instanceof RaplaConfiguration) {
+    	   if ( configurations == null)
+    	   {
+    		   configurations = new LinkedHashMap<String,RaplaConfiguration>();
+    	   }
     	   configurations.put( key, (RaplaConfiguration) value);
        }
        else if ( value instanceof RaplaMap) {
+    	   if ( maps == null)
+    	   {
+    		   maps = new LinkedHashMap<String,RaplaMapImpl>();
+    	   }
     	   maps.put( key, (RaplaMapImpl) value);
        }
        else if ( value instanceof CalendarModelConfiguration) {
+    	   if ( calendars == null)
+    	   {
+    		   calendars = new LinkedHashMap<String,CalendarModelConfigurationImpl>();
+    	   }
     	   calendars.put( key, (CalendarModelConfigurationImpl) value);
        }
        else if ( value instanceof String) {
+    	   if ( constants == null)
+    	   {
+    		   constants = new LinkedHashMap<String,String>();
+    	   }
     	   constants.put( key , (String) value);
        } else {
     	   throw new IllegalArgumentException("Map type not supported only entities, maps, configuration  or Strings are allowed.");
        }
-       if ( map == null)
-       {
-    	   map = new LinkedHashMap<String,Object>();
-       }
-       map.put(key, value);
    }
+ 
+   private Map<String, Object> getMap() {
+	   if ( map == null)
+	   {
+		   map = new LinkedHashMap<String,Object>();
+		   fillMap(maps);
+		   fillMap(configurations);
+		   fillMap(constants);
+		   fillMap(calendars);
+	   }
+	   return map;
+   }	
 
 
+   private void fillMap(Map<String, ?> map) {
+	   if ( map == null)
+	   {
+		   return;
+	   }
+	   this.map.putAll(  map);
+   }
    public void putIdPrivate(String key, String id) {
 	if ( links == null)
 	   {
@@ -162,7 +213,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
-       return new FilterIterator<EntityReferencer>( map.values()) {
+       return new FilterIterator<EntityReferencer>( getMap().values()) {
            protected boolean isInIterator(Object obj) {
                return obj instanceof EntityReferencer;
            }
@@ -196,29 +247,26 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 	   {
 		   links.setResolver( resolver );
 	   }
-       this.map =  fillMap(resolver);
+	   setResolver( calendars);
+	   setResolver( maps );
    }
 
-   private Map<String, Object> fillMap(EntityResolver resolver)  {
-	   Map<String,Object> map = new LinkedHashMap<String,Object>();
-	   fillMap(maps);
-	   fillMap(configurations);
-	   fillMap(constants);
-	   fillMap(calendars);
-       return map;
-   }
 
-   private void fillMap(Map<String, ?> map) {
+   
+   private void setResolver(Map<String,? extends EntityReferencer> map) {
 	   if ( map == null)
 	   {
 		   return;
 	   }
-	   this.map.putAll(  map);
+	   for (EntityReferencer ref:map.values())
+	   {
+		   ref.setResolver( resolver);
+	   }
    }
 
-   
-   public Object get(Object key) {
-       return  map.get(key);
+
+public Object get(Object key) {
+       return  getMap().get(key);
    }
 
    
@@ -237,39 +285,39 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     * @see java.util.Map#size()
     */
    public int size() {
-       return map.size();
+       return getMap().size();
    }
 
    /**
     * @see java.util.Map#isEmpty()
     */
    public boolean isEmpty() {
-       return map.isEmpty();
+       return getMap().isEmpty();
    }
 
    /**
     * @see java.util.Map#containsKey(java.lang.Object)
     */
    public boolean containsKey(Object key) {
-       return map.containsKey( key);
+       return getMap().containsKey( key);
    }
 
    /**
     * @see java.util.Map#containsValue(java.lang.Object)
     */
    public boolean containsValue(Object key) {
-       return map.containsValue( key);
+       return getMap().containsValue( key);
    }
 
    /**
     * @see java.util.Map#keySet()
     */
    public Set<String> keySet() {
-       return map.keySet();
+       return getMap().keySet();
    }
 
     public boolean needsChange(DynamicType type) {
-        for (Iterator it = map.values().iterator();it.hasNext();) {
+        for (Iterator it = getMap().values().iterator();it.hasNext();) {
             Object obj = it.next();
             if ( obj instanceof DynamicTypeDependant) {
                 if (((DynamicTypeDependant) obj).needsChange( type ))
@@ -280,7 +328,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     }
 
     public void commitChange(DynamicType type) {
-        for (Object obj:map.values()) {
+        for (Object obj:getMap().values()) {
             if ( obj instanceof DynamicTypeDependant) {
                 ((DynamicTypeDependant) obj).commitChange( type );
             }
@@ -288,7 +336,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     }
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException {
-    	for (Object obj:map.values()) {
+    	for (Object obj:getMap().values()) {
     		if ( obj instanceof DynamicTypeDependant) {
                 ((DynamicTypeDependant) obj).commitRemove( type );
             }
@@ -297,7 +345,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
         /** Clones the entity and all subentities*/
     public RaplaMapImpl deepClone()
     {
-    	RaplaMapImpl clone = new RaplaMapImpl(map);
+    	RaplaMapImpl clone = new RaplaMapImpl(getMap());
     	clone.setResolver( resolver );
     	return clone;
     }
@@ -322,7 +370,113 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     }
 
 
+    /**
+     * @see java.util.Map#put(java.lang.Object, java.lang.Object)
+     */
+    public Object put(Object key, Object value) {
+    	throw createReadOnlyException();
+    }
 
+
+    public Object remove(Object arg0) {
+        throw createReadOnlyException();
+    }
+
+    /**
+     * @see java.util.Map#putAll(java.util.Map)
+     */
+	public void putAll(Map m) {
+        throw createReadOnlyException();
+    }
+	
+
+    /**
+     * @see java.util.Map#values()
+     */
+    public Collection values() {
+    	if ( links == null)
+    	{
+    		return  map.values();
+    	}
+    	else
+    	{
+    		List result = new ArrayList();
+    		Iterable<String> values = links.getReferencedIds();
+    		for (String id: values)
+    		{
+				Entity resolved = links.getResolver().tryResolve( id);
+				result.add( resolved);
+    		}
+    		return result;
+    	}
+    }
+
+    
+    class Entry implements Map.Entry<String, Object>
+    {
+    	String key;
+    	String id;
+    	
+    	Entry(String key,String id)
+    	{
+    		this.key = key;
+    		this.id = id;
+    	}
+    	public String getKey() {
+			return key;
+		}
+    	
+		public Object getValue() {
+			if ( id == null)
+			{
+				return null;
+			}
+			Entity resolve = links.getResolver().tryResolve( id );
+			return resolve;
+		}
+
+		public Object setValue(Object value) {
+			throw new UnsupportedOperationException();
+		}
+		
+		public int hashCode() {
+			return key.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return key.equals( ((Entry)  obj).key);
+		}
+    }
+    
+    transient Set<Map.Entry<String, Object>> cachedEntries; 
+    public Set<Map.Entry<String, Object>> entrySet() {
+		if ( links != null)
+    	{
+    		if ( cachedEntries == null)
+    		{
+    			cachedEntries = new HashSet<Map.Entry<String, Object>>();
+    			for (String key:links.getReferenceKeys())
+    			{
+    				String id = links.getId( key);
+					cachedEntries.add(new Entry( key, id));
+    			}
+    		}
+    		return cachedEntries;
+    	}
+    	else
+    	{
+    		if ( cachedEntries == null)
+    		{
+    			cachedEntries = new HashSet<Map.Entry<String, Object>>();
+    			for (Map.Entry<String,Object> entry:map.entrySet())
+    			{
+					cachedEntries.add((Map.Entry<String, Object>) entry);
+    			}
+    		}
+    		return cachedEntries;
+    	}
+	}
 
 
 }

@@ -531,12 +531,15 @@ public class JsonServlet<CallType extends ActiveCall>  {
             final int code = to2_0ErrorCode(src);
             error.addProperty("code", code);
             error.addProperty("message", message);
+            JsonObject errorData = new JsonObject();
 			JsonArray stackTrace = new JsonArray();
 			for ( StackTraceElement el: failure.getStackTrace())
 			{
 				stackTrace.add( new JsonPrimitive(el.toString()));
 			}
-            error.add("data", stackTrace);
+			errorData.addProperty("exception", failure.getClass().getName());
+			errorData.add("stacktrace", stackTrace);
+            error.add("data", errorData);
           } else {
             error.addProperty("name", "JSONRPCError");
             error.addProperty("code", 999);
@@ -551,13 +554,14 @@ public class JsonServlet<CallType extends ActiveCall>  {
       o.write(call.callback);
       o.write("(");
     }
-    Gson create = gb.disableHtmlEscaping().create();
+    Gson create = gb.disableHtmlEscaping().setPrettyPrinting().create();
 	create.toJson(call, o);
     if (call.callback != null) {
       o.write(");");
     }
     o.close();
-    return o.toString();
+    String string = o.toString();
+	return string;
   }
 
   private int to2_0ErrorCode(final ActiveCall src) {

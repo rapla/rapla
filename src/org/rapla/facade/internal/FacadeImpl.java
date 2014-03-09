@@ -44,7 +44,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.RaplaMapImplementation;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -1046,11 +1046,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
-		return new RaplaMapImplementation<T>(map);
+		return (RaplaMap<T>) new RaplaMapImpl(map);
 	}
 
 	public <T> RaplaMap<T> newRaplaMap(Collection<T> col) {
-		return new RaplaMapImplementation<T>(col);
+		return (RaplaMap<T>) new RaplaMapImpl(col);
 	}
 
 	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {
@@ -1290,7 +1290,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public <T extends Entity> T edit(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
-		Collection<T> edit = edit(Collections.singleton( obj));
+		Set<T> singleton = Collections.singleton( obj);
+		Collection<T> edit = edit(singleton);
 		T result = edit.iterator().next();
 		return result;
 	}

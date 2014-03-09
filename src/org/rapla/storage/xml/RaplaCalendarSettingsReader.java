@@ -88,9 +88,9 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
         String refid = getString( atts, "idref", null);
         String keyref = getString( atts, "keyref", null);
-        RaplaType raplaType = getTypeForLocalName( localName );
         if ( refid != null)
         {
+            RaplaType raplaType = getTypeForLocalName( localName );
         	String id = getId( raplaType, refid);
             idList.add( id);
         } 
@@ -121,6 +121,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         }
 
         if (localName.equals("selected")) {
+        	
         }
 
         if (localName.equals("options")) {

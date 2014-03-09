@@ -131,15 +131,15 @@ public class UserImpl extends SimpleEntity implements User
 
     public void addGroup(Category group) {
         checkWritable();
-        if (getReferenceHandler().isRefering(group.getId()))
+        if (isRefering(group.getId()))
             return;
         groupArrayUpToDate = false;
-        getReferenceHandler().add("groups",group);
+        add("groups",group);
     }
 
     public boolean removeGroup(Category group)   {
         checkWritable();
-        return getReferenceHandler().removeId(group.getId());
+        return removeId(group.getId());
     }
 
     public Category[] getGroups()  {
@@ -165,7 +165,7 @@ public class UserImpl extends SimpleEntity implements User
         synchronized ( this )
         {
         	Collection<Category> groupList = new ArrayList<Category>();
-        	for(Entity o:getReferenceHandler().getList("groups"))
+        	for(Entity o:getList("groups"))
        	 	{
         		groupList.add((Category)o);
         	}
@@ -200,10 +200,9 @@ public class UserImpl extends SimpleEntity implements User
     public void setPerson(Allocatable person)
     {
     	checkWritable();
-    	final ReferenceHandler referenceHandler = getReferenceHandler();
-        if ( person == null)
+    	if ( person == null)
         {
-            referenceHandler.putEntity("person", null);
+    		putEntity("person", null);
             return;
         }
         final Classification classification = person.getClassification();
@@ -212,7 +211,7 @@ public class UserImpl extends SimpleEntity implements User
         if ( email != null)
         {
             this.email = email;
-            referenceHandler.putEntity("person", (Entity) person);
+            putEntity("person", (Entity) person);
             setName(person.getClassification().getName(null));
         }
     }
@@ -235,8 +234,7 @@ public class UserImpl extends SimpleEntity implements User
 
     public Allocatable getPerson() 
     {
-        final ReferenceHandler referenceHandler = getReferenceHandler();
-        final Allocatable person = (Allocatable) referenceHandler.getEntity("person");
+        final Allocatable person = (Allocatable) getEntity("person");
         return person;
     }
 

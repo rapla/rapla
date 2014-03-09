@@ -1,5 +1,6 @@
 package org.rapla.storage.dbrm;
 
+import java.beans.ExceptionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +14,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -22,10 +24,13 @@ import org.apache.commons.codec.binary.Base64;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.storage.RaplaSecurityException;
 
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
@@ -34,6 +39,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.internal.ConstructorConstructor;
+import com.google.gson.internal.Excluder;
+import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.server.MapDeserializer;
 import com.google.gwtjsonrpc.server.SqlDateDeserializer;
@@ -95,10 +108,22 @@ public class HTTPConnector  implements Connector
 			return result;
 		}
 
-		public RaplaException deserializeException(JsonObject result) {
+		public RaplaException deserializeExceptionObject(JsonObject result) throws RaplaException {
 			JsonObject errorElement = result.getAsJsonObject("error");
-			JsonArray data = errorElement.getAsJsonArray("data");
+			JsonObject data = errorElement.getAsJsonObject("data");
 			JsonElement message = errorElement.get("message");
+			JsonElement code = errorElement.get("code");
+			if ( data != null)
+			{
+				JsonElement jsonElement = data.get("exception");
+				if ( jsonElement != null)
+				{
+					String classname = jsonElement.getAsString();
+					String param = null;
+					RaplaException ex = deserializeException(classname, message.toString(), param);
+					return ex;
+				}
+			}
 			return new RaplaException( message.toString());
 		}
     	
@@ -201,7 +226,7 @@ public class HTTPConnector  implements Connector
 		    JsonElement errorElement = resultMessage.get("error");
 		    if ( errorElement != null)
 		    {
-		    	throw remoteMethodSerialization.deserializeException(resultMessage);
+		    	throw remoteMethodSerialization.deserializeExceptionObject(resultMessage);
 		    }
 		    JsonElement resultElement = resultMessage.get("result");
 			Object result = remoteMethodSerialization.deserializeReturnValue(returnType, resultElement);
@@ -385,6 +410,12 @@ public class HTTPConnector  implements Connector
 	            return new HashSet<Object>();
 	          }
 	        });
+	    Map<Type, InstanceCreator<?>> instanceCreators = Collections.emptyMap();
+		ConstructorConstructor constructorConstructor = new ConstructorConstructor(instanceCreators);
+	    FieldNamingStrategy fieldNamingPolicy = FieldNamingPolicy.IDENTITY;
+	    Excluder excluder = Excluder.DEFAULT;
+	    final ReflectiveTypeAdapterFactory reflectiveTypeAdapterFactory = new ReflectiveTypeAdapterFactory(constructorConstructor, fieldNamingPolicy, excluder);
+	    gb.registerTypeAdapterFactory(new MyAdaptorFactory(reflectiveTypeAdapterFactory));
 	    gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
 	    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
 	    gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
@@ -394,5 +425,19 @@ public class HTTPConnector  implements Connector
 	  }
 
 
-    
+    static class MyAdaptorFactory implements TypeAdapterFactory
+    {
+    	ReflectiveTypeAdapterFactory reflectiveTypeAdapterFactory;
+    	public MyAdaptorFactory(ReflectiveTypeAdapterFactory reflectiveTypeAdapterFactory) {
+    		this.reflectiveTypeAdapterFactory = reflectiveTypeAdapterFactory;
+    	}
+
+		public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+			Class<? super T> raw = type.getRawType();
+			if (!RaplaMapImpl.class.isAssignableFrom(raw)) {
+			      return null; // it's a primitive!
+			}
+			return reflectiveTypeAdapterFactory.create(gson, type);
+		}
+    }
 }

@@ -55,8 +55,8 @@ Itertor references = referenceHandler.getReferences();
     @see EntityResolver
  */
 public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
-	private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
-    transient EntityResolver resolver;
+	protected Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+    protected transient EntityResolver resolver;
 	
     public EntityResolver getResolver()
     {
@@ -90,7 +90,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 //		}
     }
     
-    public Collection<String> getReferencedIds()
+    public Iterable<String> getReferencedIds()
     {
     	Set<String> result = new HashSet<String>();
     	if (links != null) {
@@ -258,8 +258,15 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
         return removed;
     }
 
-    public boolean isRefering(String id) {
-        return getReferencedIds().contains(id);
+    final public boolean isRefering(String id) {
+    	for (String refId:getReferencedIds())
+    	{
+    		if ( refId.equals( id))
+    		{
+    			return true;
+    		}
+    	}
+    	return false;
     }
 
     public Iterable<String> getReferenceKeys() {
@@ -270,14 +277,10 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     	links.clear();
     }
 
-    @SuppressWarnings("unchecked")
-	public ReferenceHandler clone() {
-        ReferenceHandler clone;
-		clone = new ReferenceHandler();
-		clone.links = (Map<String, List<String>>) ((HashMap)links).clone();
-		clone.resolver = this.resolver;
-		return clone;
-    }
+//    @SuppressWarnings("unchecked")
+//	public ReferenceHandler clone() {
+//        ReferenceHandler clone;
+//    }
 
 
 	public String toString()
@@ -289,6 +292,13 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 			builder.append(",");
 		}
 	    return builder.toString();
+	}
+
+	public ReferenceHandler cloneReferenceHandler() {
+		ReferenceHandler clone = new ReferenceHandler();
+		clone.links = (Map<String, List<String>>) ((HashMap)links).clone();
+		clone.resolver = this.resolver;
+		return clone;
 	}
 
 

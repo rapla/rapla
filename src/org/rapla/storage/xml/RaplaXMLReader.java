@@ -217,7 +217,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         String ownerString = atts.getValue( "owner" );
         if (ownerString != null)
         {
-            ownable.getReferenceHandler().putId("owner", getId( User.TYPE, ownerString ) );
+            ownable.putId("owner", getId( User.TYPE, ownerString ) );
         }
         // No else case as no owner should still be possible and there should be no default owner 
     }

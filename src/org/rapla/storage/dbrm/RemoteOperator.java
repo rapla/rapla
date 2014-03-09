@@ -130,7 +130,7 @@ public class RemoteOperator
 		try {
             RemoteServer serv1 = getRemoteServer();
             accessToken = serv1.login(username,password, connectAs);
-            bSessionActive = true;
+       
     		// today should be the date of the server
     		lastSyncedTimeLocal = System.currentTimeMillis();
     		lastSyncedTime = getServerTime();
@@ -140,6 +140,7 @@ public class RemoteOperator
             throw ex;
         }
         loadData(username);
+        bSessionActive = true;
 	}
    
 	public Date getCurrentTimestamp() {
@@ -341,7 +342,6 @@ public class RemoteOperator
     }
 
     private void loadData(String username) throws RaplaException {
-    	checkConnected();
         cache.clearAll();
         getLogger().debug("Getting Data..");
         // recontextualize Entities
@@ -948,7 +948,7 @@ public class RemoteOperator
 		try {
 			if ( obj instanceof ConflictImpl)
 			{
-				Collection<String> referencedIds = ((ConflictImpl)obj).getReferenceHandler().getReferencedIds();
+				Iterable<String> referencedIds = ((ConflictImpl)obj).getReferencedIds();
 				List<String> ids = new ArrayList<String>();
 				for (String refId:referencedIds)
 				{

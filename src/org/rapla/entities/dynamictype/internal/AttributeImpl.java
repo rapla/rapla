@@ -104,7 +104,7 @@ public class AttributeImpl extends SimpleEntity implements Attribute
         Object oldValue = defaultValue;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            oldValue = getReferenceHandler().getEntity("default.category");
+            oldValue = getEntity("default.category");
         }
         this.type = type;
         defaultValue = convertValue( oldValue);
@@ -135,19 +135,18 @@ public class AttributeImpl extends SimpleEntity implements Attribute
 	public void setContraintWithoutWritableCheck(String key,
 			Object constraint) {
 		if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
-        	ReferenceHandler referenceHandler = getReferenceHandler();
         	String refID = "constraint." + key;
         	if ( constraint == null)
         	{
-        		referenceHandler.removeWithKey( refID);
+        		removeWithKey( refID);
         	} 
         	else if ( constraint instanceof Entity)
         	{
-        		referenceHandler.putEntity(refID,(Entity)constraint);
+        		putEntity(refID,(Entity)constraint);
         	}
         	else if ( constraint instanceof String)
         	{
-        		referenceHandler.putId(refID,(String)constraint);
+        		putId(refID,(String)constraint);
         	}
         }
 	}
@@ -157,13 +156,13 @@ public class AttributeImpl extends SimpleEntity implements Attribute
         defaultValue = object;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            getReferenceHandler().putEntity("default.category",(Entity)object);
+            putEntity("default.category",(Entity)object);
         }
     }
 
     public Object getConstraint(String key) {
         if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
-            return getReferenceHandler().getEntity("constraint." + key);
+            return getEntity("constraint." + key);
         }
         return null;
     }

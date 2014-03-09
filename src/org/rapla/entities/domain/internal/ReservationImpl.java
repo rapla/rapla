@@ -135,6 +135,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     	return appointments;
     }
     
+    @Override
     public Iterable<String> getReferencedIds() {
         return new IteratorChain<String>
             (
@@ -142,12 +143,6 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
              ,classification.getReferencedIds()
             )
             ;
-    }
-
-    public boolean isRefering(String object) {
-        if (super.isRefering(object))
-            return true;
-        return classification.isRefering(object);
     }
 
     public void addAppointment(Appointment appointment) {
@@ -168,13 +163,12 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         appointments.remove( appointment );
         // Remove allocatable if its restricted to the appointment
         String appointmentId = appointment.getId();
-        ReferenceHandler referenceHandler = getReferenceHandler();
         // we clone the list so we can safely remove a refererence it while traversing
-		Collection<String> ids = new ArrayList<String>(referenceHandler.getIds("resources"));
+		Collection<String> ids = new ArrayList<String>(getIds("resources"));
         for (String allocatableId:ids) {
         	List<String> restriction = getRestrictionPrivate(allocatableId);
 			if (restriction.size() == 1 && restriction.get(0).equals(appointmentId)) {
-				getReferenceHandler().removeId(allocatableId);
+				removeId(allocatableId);
 			}
         }
         clearRestrictions(appointment);
@@ -218,16 +212,16 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     }
 
 	private void addAllocatablePrivate(String allocatableId) {
-		if (getReferenceHandler().isRefering(allocatableId))
+		if (isRefering(allocatableId))
             return;
 		synchronized (this) {
-			getReferenceHandler().addId("resources",allocatableId);
+			addId("resources",allocatableId);
 		}
 	}
 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
-        getReferenceHandler().removeId(allocatable.getId());
+        removeId(allocatable.getId());
     }
 
     public Allocatable[] getAllocatables()  {
@@ -249,7 +243,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 
     public Collection<Allocatable> getAllocatables(String annotationType) {
         Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
-   		Collection<Entity> list = getReferenceHandler().getList("resources");
+   		Collection<Entity> list = getList("resources");
 		for (Entity o: list)
     	{
 			Allocatable alloc = (Allocatable) o;
@@ -280,7 +274,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     }
 
     public boolean hasAllocated(Allocatable allocatable) {
-        return getReferenceHandler().isRefering(allocatable.getId());
+        return isRefering(allocatable.getId());
     }
 
     public boolean hasAllocated(Allocatable allocatable,Appointment appointment) {
@@ -418,11 +412,11 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 
     public Allocatable[] getRestrictedAllocatables(Appointment appointment) {
         HashSet<Allocatable> set = new HashSet<Allocatable>();
-        for (String allocatableId: getReferenceHandler().getIds("resources")) {
+        for (String allocatableId: getIds("resources")) {
             for (String restriction:getRestrictionPrivate( allocatableId ))
             {
             	if ( restriction.equals( appointment.getId() ) ) {
-            		Allocatable alloc = (Allocatable) getReferenceHandler().getResolver().tryResolve( allocatableId);
+            		Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
             		set.add( alloc );
                 }
             }
@@ -432,7 +426,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 
     public Allocatable[] getAllocatablesFor(Appointment appointment) {
         HashSet<Allocatable> set = new HashSet<Allocatable>();
-        Collection<String> list = getReferenceHandler().getIds("resources");
+        Collection<String> list = getIds("resources");
         String id = appointment.getId();
         for (String allocatableId:list) {
         	boolean found = false;
@@ -451,7 +445,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
             }
             if (found )
             {
-            	Allocatable alloc = (Allocatable) getReferenceHandler().getResolver().tryResolve( allocatableId);
+            	Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
             	set.add( alloc);
             }
         }
@@ -478,7 +472,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         super.deepClone(clone);
         // First we must invalidate the arrays.
         clone.classification = (ClassificationImpl) classification.clone();
-        for (String resourceId:getReferenceHandler().getIds("resources"))
+        for (String resourceId:getIds("resources"))
         {
         	if ( restrictions != null)
         	{

@@ -118,7 +118,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	
         super( parentContext, config, logger );
     	try {
-			token = new SignedToken(60*60);
+    		// TEN Hours until the token expires
+			token = new SignedToken(60*60 * 10);
 		} catch (Exception e) {
 			throw new RaplaException( e.getMessage(), e);
 		}

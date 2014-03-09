@@ -509,10 +509,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     evt.setRepositoryVersion(repositoryVersion);
                     for ( Entity entity: visibleEntities)
                     {
-                    	if ( entity instanceof Appointment  || entity instanceof Attribute)
-                    	{
-                    		continue;
-                    	}
                     	evt.putStore(entity);
                     }
                     return  evt;

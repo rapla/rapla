@@ -71,7 +71,7 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
 
     public void removeParent()
     {
-        getReferenceHandler().removeWithKey("parent");
+        removeWithKey("parent");
     }
 
     public Category[] getCategories() {

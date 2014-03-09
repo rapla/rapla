@@ -13,12 +13,13 @@
 package org.rapla.framework;
 
 
+
 /** the base-class for all Rapla specific Exceptions */
 public class RaplaException extends Exception {
     private static final long serialVersionUID = 1L;
     
     public RaplaException(String text)  {
-        super(text);
+    	super(text);
     }
 
     public RaplaException(Throwable throwable) {
@@ -28,6 +29,7 @@ public class RaplaException extends Exception {
     public RaplaException(String text,Throwable ex) {
         super(text,ex);
     }
+    
 
 }
 

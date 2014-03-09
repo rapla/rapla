@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.rapla.components.util.iterator.IteratorChain;
+import org.rapla.components.util.iterator.NestedIterator;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
@@ -128,7 +130,10 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
     	}
         ClassificationFilterImpl classificationFilterImpl = new ClassificationFilterImpl(this);
-        classificationFilterImpl.setResolver( getReferenceHandler().getResolver());
+		if ( resolver != null)
+		{
+			classificationFilterImpl.setResolver( resolver);
+		}
         return classificationFilterImpl;
     }
 
@@ -162,15 +167,17 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
         }
     }
     
-    public boolean isRefering(String entity) {
-        for ( AttributeImpl attribute:attributes)
-        {
-            if ( attribute.isRefering( entity))
-            {
-                return true;
+    @Override
+    public Iterable<String> getReferencedIds() 
+    {
+    	return new IteratorChain<String>(super.getReferencedIds(), 
+    			new NestedIterator<String,AttributeImpl>( attributes ) 
+    	{
+    		public Iterable<String> getNestedIterator(AttributeImpl obj) {
+                return obj.getReferencedIds();
             }
         }
-        return super.isRefering(entity);
+    			);
     }
     
     @Override

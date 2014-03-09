@@ -625,7 +625,9 @@ public class RaplaComponent
     }
 
     final public Preferences newEditablePreferences() throws RaplaException {
-        return  getModification().edit(getQuery().getPreferences());
+        Preferences preferences = getQuery().getPreferences();
+		ModificationModule modification = getModification();
+		return  modification.edit(preferences);
     }
     
     /** @deprecated demand webservice in constructor instead*/

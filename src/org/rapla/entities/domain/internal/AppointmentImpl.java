@@ -72,6 +72,10 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
 
     public void setParent(ReservationImpl parent) {
     	this.parent = parent;
+    	if (repeating != null)
+    	{
+    		repeating.setAppointment( this );
+    	}
     }
 
     public void removeParent()

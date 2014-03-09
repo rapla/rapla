@@ -63,7 +63,7 @@ public class UserReader extends RaplaXMLReader
             String groupId = atts.getValue( "idref" );
             if (groupId !=null)
             {
-            	user.getReferenceHandler().addId("groups",getId(Category.TYPE, groupId));
+            	user.addId("groups",getId(Category.TYPE, groupId));
             }
             else
             {

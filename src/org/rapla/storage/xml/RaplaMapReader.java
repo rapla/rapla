@@ -18,7 +18,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.RaplaMapImplementation;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -28,7 +28,7 @@ import org.rapla.framework.RaplaException;
 public class RaplaMapReader extends RaplaXMLReader  {
 
     String key;
-    RaplaMapImplementation entityMap;
+    RaplaMapImpl entityMap;
     RaplaXMLReader childReader;
 
     public RaplaMapReader(RaplaContext sm) throws RaplaException {
@@ -42,7 +42,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
         if ( !RAPLA_NS.equals(namespaceURI))
             return;
         if (localName.equals(RaplaMap.TYPE.getLocalName())) {
-            entityMap = new RaplaMapImplementation();
+            entityMap = new RaplaMapImpl();
             return;
         }
         if (localName.equals("mapentry")) {

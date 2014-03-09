@@ -108,19 +108,13 @@ public class PreferencesImpl extends SimpleEntity
         return map.keySet().iterator();
     }
 
-    public Iterable<String> getReferencedIds() {
+    @Override
+    public Iterable<String> getReferencedIds() 
+    {
     	IteratorChain<String> iteratorChain = new IteratorChain<String>(super.getReferencedIds(),map.getReferencedIds());
 		return iteratorChain;
     }
     
-    public boolean isRefering(String id) {
-    	if ( super.isRefering( id))
-    	{
-    		return true;
-    	}
-        return map.isRefering(id);
-    }
-
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -204,12 +198,12 @@ public class PreferencesImpl extends SimpleEntity
 	}
 
 	public void putEntry(TypedComponentRole<Boolean> role, Boolean entry) {
-		putEntry_(role, entry);
+		putEntry_(role, entry != null ? entry.toString(): null);
 	}
 	
 	public void putEntry(TypedComponentRole<Integer> role, Integer entry) 
 	{
-		putEntry_(role, entry);
+		putEntry_(role, entry != null ? entry.toString() : null);
 	}
 
 	public void putEntry(TypedComponentRole<String> role, String entry) {
@@ -218,8 +212,9 @@ public class PreferencesImpl extends SimpleEntity
 	
 	protected void putEntry_(TypedComponentRole<?> role, Object entry) {
 		checkWritable();
-		throw new UnsupportedOperationException();
-//		String id = role.getId();
+		String key = role.getId();
+		map.putPrivate(key, entry);
+
 //        if ( entry == null)
 //        {
 //            map.remove( id);

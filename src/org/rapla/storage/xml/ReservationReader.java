@@ -149,7 +149,7 @@ public class ReservationReader extends RaplaXMLReader {
         if (localName.equals("allocate")) {
             String id = getString( atts, "idref" );
             allocatableId = getId( Allocatable.TYPE, id);
-            reservation.getReferenceHandler().addId("resources", allocatableId );
+            reservation.addId("resources", allocatableId );
             if ( appointment != null )
             {
                 reservation.addRestrictionForId( allocatableId, appointment.getId());

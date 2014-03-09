@@ -32,10 +32,10 @@ public class RaplaMapWriter extends RaplaXMLWriter {
     }
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
-        writeMap((RaplaMapImpl) type );
+        writeMap_((RaplaMapImpl) type );
     }
 
-    public void writeMap(RaplaMapImpl map ) throws IOException, RaplaException {
+    private void writeMap_(RaplaMapImpl map ) throws IOException, RaplaException {
         openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
         for (Iterator<String> it = map.keySet().iterator();it.hasNext();) {
             Object key = it.next();

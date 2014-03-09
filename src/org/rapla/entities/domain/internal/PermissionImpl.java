@@ -272,7 +272,7 @@ public class PermissionImpl
     public PermissionImpl clone() {
         PermissionImpl clone = new PermissionImpl();
         // This must be done first
-        clone.links = (ReferenceHandler) links.clone();
+        clone.links = links.cloneReferenceHandler();
         clone.accessLevel = accessLevel;
         clone.pEnd = pEnd;
         clone.pStart = pStart;

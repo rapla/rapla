@@ -309,10 +309,12 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
 		}
     }
 
+    @Override
     public Iterable<String> getReferencedIds() {
         return new IteratorChain<String>
             (
-             classification.getReferencedIds()
+             super.getReferencedIds()
+             ,classification.getReferencedIds()
              ,new NestedIterator<String,PermissionImpl>( permissions ) {
                      public Iterable<String> getNestedIterator(PermissionImpl obj) {
                          return obj.getReferencedIds();
@@ -334,19 +336,6 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
         classification.commitRemove(type);
     }
         
-    public boolean isRefering(String object) {
-        if (super.isRefering(object))
-            return true;
-        if (classification.isRefering(object))
-            return true;
-        Permission[] permissions = getPermissions();
-        for ( int i = 0; i < permissions.length; i++ ) {
-            if ( ((PermissionImpl) permissions[i]).isRefering( object ) )
-                return true;
-        }
-        return false;
-    }
-
     public String getAnnotation(String key) {
         return annotations.get(key);
     }

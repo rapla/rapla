@@ -52,6 +52,11 @@ public interface Conflict extends Named, Entity<Conflict>
     String getReservation1();
     String getReservation2();
     
+    String getReservation1Name();
+	
+    String getReservation2Name();
+
+    
     ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
     //public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
     

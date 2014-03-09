@@ -13,16 +13,22 @@
 package org.rapla.components.util.iterator;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /** concatenates two Iterators */
 public class IteratorChain<T> implements Iterator<T>, Iterable<T> {
     protected Iterator<T> firstIt;
     protected Iterator<T> secondIt;
-    boolean isIteratingFirst = true;
+    protected Iterator<T> thirdIt;
 
     public IteratorChain(Iterable<T> firstIt, Iterable<T> secondIt)
     {
     	this( firstIt.iterator(), secondIt.iterator());
+    }
+    
+    public IteratorChain(Iterable<T> firstIt, Iterable<T> secondIt, Iterable<T> thirdIt)
+    {
+    	this( firstIt.iterator(), secondIt.iterator(), thirdIt.iterator());
     }
     
     public IteratorChain(Iterator<T> firstIt, Iterator<T> secondIt) {
@@ -30,10 +36,14 @@ public class IteratorChain<T> implements Iterator<T>, Iterable<T> {
         this.secondIt = secondIt;
     }
 
+    public IteratorChain(Iterator<T> firstIt, Iterator<T> secondIt, Iterator<T> thirdIt) {
+        this.firstIt = firstIt;
+        this.secondIt = secondIt;
+        this.thirdIt  = thirdIt;
+    }
 
     public boolean hasNext() {
-        return  (isIteratingFirst && firstIt.hasNext())
-                || secondIt.hasNext();
+        return  (firstIt!=null && firstIt.hasNext()) || (secondIt != null && secondIt.hasNext()) || (thirdIt != null && thirdIt.hasNext());
     }
 
     public void remove() {
@@ -41,13 +51,27 @@ public class IteratorChain<T> implements Iterator<T>, Iterable<T> {
     }
 
     public T next() {
-        if (isIteratingFirst && !firstIt.hasNext())
-            isIteratingFirst = false;
-
-        if ( isIteratingFirst )
+        if (firstIt!=null  && !firstIt.hasNext())
+        {
+        	firstIt = null;
+        }
+        else if (secondIt!=null  && !secondIt.hasNext())
+        {
+        	secondIt = null;
+        }
+//        else if (thirdIt!=null  && !thirdIt.hasNext())
+//        {
+//        	thirdIt = null;
+//        }
+            
+        if ( firstIt != null )
             return firstIt.next();
-        else
+        else if ( secondIt != null)
             return secondIt.next();
+        else if (thirdIt != null)
+        	return thirdIt.next();
+        else
+        	throw new NoSuchElementException();
     }
 
 	public Iterator<T> iterator() {

@@ -72,7 +72,7 @@ public interface StorageOperator extends EntityResolver {
     <T extends RaplaObject> Collection<T> getObjects(Class<T> raplaType) throws RaplaException;
 
     /** returns all the objects (except reservations)that are visible for the current user */
-    Collection<Entity>getVisibleEntities(User user) throws RaplaException;
+    Collection<Entity> getVisibleEntities(User user) throws RaplaException;
 
     /** returns the user or null if a user with the given username was not found. */
     User getUser(String username) throws RaplaException;

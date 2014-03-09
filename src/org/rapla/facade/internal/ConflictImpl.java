@@ -34,7 +34,6 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -52,7 +51,8 @@ import org.rapla.facade.RaplaComponent;
 public class ConflictImpl extends SimpleEntity implements Conflict
 {
 	Date startDate;
-	
+	String reservation1Name;
+	String reservation2Name;
 	ConflictImpl() {
 	}
 	    
@@ -63,20 +63,29 @@ public class ConflictImpl extends SimpleEntity implements Conflict
                     Date today
                     )
     {
-		ReferenceHandler referenceHandler  = getReferenceHandler();
-		referenceHandler.putEntity("allocatable", allocatable);
+		putEntity("allocatable", allocatable);
 		startDate = getStartDate_(today, app1, app2);
-		referenceHandler.putEntity("appointment1", app1);
-		referenceHandler.putEntity("appointment2", app2);
+		putEntity("appointment1", app1);
+		putEntity("appointment2", app2);
 		Reservation reservation1 = app1.getReservation();
 		Reservation reservation2 = app2.getReservation();
-		referenceHandler.putEntity("reservation1", reservation1);
-		referenceHandler.putEntity("reservation2", reservation2);
-		referenceHandler.putEntity("owner1", reservation1.getOwner());
-		referenceHandler.putEntity("owner2", reservation2.getOwner());
-		setResolver( ((AllocatableImpl)allocatable).getReferenceHandler().getResolver());
+		putEntity("reservation1", reservation1);
+		putEntity("reservation2", reservation2);
+		putEntity("owner1", reservation1.getOwner());
+		putEntity("owner2", reservation2.getOwner());
+		this.reservation1Name = reservation1.getName(Locale.getDefault());
+		this.reservation2Name = reservation2.getName(Locale.getDefault());
+		setResolver( ((AllocatableImpl)allocatable).getResolver());
 		setId( createId());
     }
+	
+	public String getReservation1Name() {
+		return reservation1Name;
+	}
+	
+	public String getReservation2Name() {
+		return reservation2Name;
+	}
 	
 	public Date getStartDate()
 	{
@@ -102,13 +111,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 
     public String createId()
     {
-    	ReferenceHandler referenceHandler = getReferenceHandler();
     	StringBuilder buf = new StringBuilder();
-    	buf.append(referenceHandler.getId("allocatable"));
+    	buf.append(getId("allocatable"));
     	buf.append(";");
-     	buf.append(referenceHandler.getId("appointment1"));
+     	buf.append(getId("appointment1"));
      	buf.append(";");
-     	buf.append(referenceHandler.getId("appointment2"));
+     	buf.append(getId("appointment2"));
      	return buf.toString();
     }
 
@@ -157,24 +165,24 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     /** The appointment of the first reservation, that causes the conflict. */
     public String getAppointment1() 
     { 
-    	return getReferenceHandler().getId("appointment1");
+    	return getId("appointment1");
     }
     
     public String getReservation1() 
     { 
-    	return getReferenceHandler().getId("reservation1");
+    	return getId("reservation1");
     }
     
     public String getReservation2() 
     { 
-    	return getReferenceHandler().getId("reservation2");
+    	return getId("reservation2");
     }
 
 
     /** @return the allocatable, allocated for the same time by two different reservations. */
     public Allocatable getAllocatable() 
     { 
-    	return (Allocatable)getReferenceHandler().getEntity("allocatable"); 
+    	return (Allocatable)getEntity("allocatable"); 
     }
 //    /** @return the second Reservation, that is involed in the conflict.*/
 //    public Reservation getReservation2() 
@@ -195,7 +203,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     /** The appointment of the second reservation, that causes the conflict. */
     public String getAppointment2() 
     { 
-    	return getReferenceHandler().getId("appointment2");
+    	return getId("appointment2");
     }
 
     public static final ConflictImpl[] CONFLICT_ARRAY= new ConflictImpl[] {};
@@ -226,11 +234,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 //}
     
     public User getOwner1() {
-    	return (User) getReferenceHandler().getEntity("owner1");
+    	return (User) getEntity("owner1");
     }
 
     public User getOwner2() {
-    	return (User) getReferenceHandler().getEntity("owner2");
+    	return (User) getEntity("owner2");
     }
 
 	private boolean contains(String appointmentId) {

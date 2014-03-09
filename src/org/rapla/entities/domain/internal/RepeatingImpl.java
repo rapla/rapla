@@ -39,7 +39,7 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
     transient private Appointment appointment;
-    transient private long frequency;
+    private int frequency;
     boolean monthly;
     boolean yearly;
 
@@ -68,20 +68,20 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
         yearly = false;
         if (repeatingType.equals( RepeatingType.WEEKLY ))
         {
-            frequency = 7 * DateTools.MILLISECONDS_PER_DAY;
+            frequency = 7 ;
         }
         else if (repeatingType.equals( RepeatingType.MONTHLY))
         {
-            frequency = 7 * DateTools.MILLISECONDS_PER_DAY;
+            frequency = 7;
             monthly = true;
         } 
         else if (repeatingType.equals( RepeatingType.DAILY))
         {    
-            frequency = DateTools.MILLISECONDS_PER_DAY;
+            frequency = 1;
         }
         else if (repeatingType.equals( RepeatingType.YEARLY))
         {    
-            frequency = DateTools.MILLISECONDS_PER_DAY;
+            frequency = 1;
             yearly = true;
         }
         else
@@ -195,7 +195,7 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
         }
         else
         {
-            long intervalLength = frequency * interval;
+            long intervalLength = getFixedIntervalLength();
             endTime.setTime(DateTools.fillDate( this.appointment.getStart().getTime()
                                            + (this.number -1)* intervalLength
                                            ));
@@ -207,7 +207,8 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     @see #getInterval
     */
     public long getFixedIntervalLength() {
-        return frequency * interval;
+        long intervalDays = frequency * interval;
+		return intervalDays * DateTools.MILLISECONDS_PER_DAY;
     }
 
     public void setNumber(int number) {

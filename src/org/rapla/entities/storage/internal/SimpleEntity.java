@@ -32,13 +32,12 @@ import org.rapla.entities.storage.RefEntity;
  * for deep cloning and serialization of references. {@link ReferenceHandler}
 */
 
-public abstract class SimpleEntity implements RefEntity, Comparable
+public abstract class SimpleEntity extends ReferenceHandler implements RefEntity, Comparable
 {
     private String id;
     private int version = 0;
     //transient protected ReferenceHandler subEntityHandler;
 
-    ReferenceHandler links = new ReferenceHandler();
     transient boolean readOnly = false;
     transient Integer key;
     
@@ -56,7 +55,7 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     }
 
     public void setResolver( EntityResolver resolver)  {
-        links.setResolver( resolver);
+        super.setResolver( resolver);
         Iterable<Entity>subEntities = getSubEntities();
 		for (Entity subEntity :subEntities)
         {
@@ -94,28 +93,24 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     }
 
     public User getOwner() {
-        return (User) links.getEntity("owner");
+        return (User) getEntity("owner");
     }
 
     @SuppressWarnings("unchecked")
 	public void setOwner(User owner) {
-        links.putEntity("owner",(Entity)owner);
+        putEntity("owner",(Entity)owner);
     }
     
 	public User getLastChangedBy() {
-		return (User) links.getEntity("last_changed_by");
+		return (User) getEntity("last_changed_by");
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setLastChangedBy(User user) {
-        links.putEntity("last_changed_by",user);
+        putEntity("last_changed_by",user);
 	}
 
    
-    public ReferenceHandler getReferenceHandler() {
-        return links;
-    }
-
     /** sets the identifier for an object. The identifier should be
      * unique accross all entities (not only accross the entities of a
      * the same type). Once set, the identifier for an object should
@@ -184,15 +179,6 @@ public abstract class SimpleEntity implements RefEntity, Comparable
         return version;
     }
 
-    @Override
-    public Iterable<String> getReferencedIds() {
-    	return links.getReferencedIds();
-    }
-    public boolean isRefering(String entity) {
-        return links.isRefering(entity);
-    }
-
-
     /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
 	public Entity findEntity(Entity copy) {
         for (Entity entity:getSubEntities())
@@ -207,7 +193,8 @@ public abstract class SimpleEntity implements RefEntity, Comparable
 
     protected void deepClone(SimpleEntity dest) {
     	dest.id = id;
-    	dest.links = (ReferenceHandler) links.clone();
+    	dest.links =  (Map<String, List<String>>) ((HashMap)links).clone();
+    	dest.resolver = this.resolver;
     	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
     	for (Entity entity: getSubEntities())
     	{

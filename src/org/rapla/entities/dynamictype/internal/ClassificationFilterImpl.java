@@ -124,7 +124,11 @@ public final class ClassificationFilterImpl
             ruleValues[i] = conditions[i][1];
         }
         ClassificationFilterRuleImpl rule = new ClassificationFilterRuleImpl( attribute, operators, ruleValues);
-        rule.setResolver( referenceHandler.getResolver());
+        EntityResolver resolver = referenceHandler.getResolver();
+		if ( resolver != null)
+		{
+			rule.setResolver( resolver);
+		}
         //      System.out.println("Rule " + index + " for '" + dynamicType + "' added. " + " Attribute " + rule.attribute  + " Params: " + rule.params[0]);
         if (index < list.size() )
             list.set(index, rule);
@@ -441,7 +445,7 @@ public final class ClassificationFilterImpl
 
     public ClassificationFilterImpl clone() {
         ClassificationFilterImpl clone = new ClassificationFilterImpl((DynamicTypeImpl)getType());
-        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
+        clone.referenceHandler = referenceHandler.cloneReferenceHandler();
         clone.list = new LinkedList<ClassificationFilterRuleImpl>();
         Iterator<ClassificationFilterRuleImpl> it = list.iterator();
         while (it.hasNext()) {
