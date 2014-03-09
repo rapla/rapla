@@ -15,6 +15,7 @@ package org.rapla.storage.dbrm;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -62,8 +63,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 import org.rapla.storage.impl.AbstractCachableOperator;
-
-import com.google.gwtjsonrpc.common.FutureResult;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -130,7 +129,7 @@ public class RemoteOperator
         String username = connectInfo.getUsername();
 		try {
             RemoteServer serv1 = getRemoteServer();
-            accessToken = serv1.login(username,password, connectAs).get();
+            accessToken = serv1.login(username,password, connectAs);
             bSessionActive = true;
     		// today should be the date of the server
     		lastSyncedTimeLocal = System.currentTimeMillis();
@@ -267,7 +266,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
     	try
         {
-	        UpdateEvent evt = serv.refresh( clientRepoVersion).get();
+	        UpdateEvent evt = serv.refresh( clientRepoVersion);
 	        refresh( evt);
         }
         catch (EntityNotFoundException ex)
@@ -347,7 +346,7 @@ public class RemoteOperator
         getLogger().debug("Getting Data..");
         // recontextualize Entities
         RemoteStorage serv = getRemoteStorage();
-        UpdateEvent resources = serv.getResources().get();
+        UpdateEvent resources = serv.getResources();
         clientRepositoryVersion = resources.getRepositoryVersion();
         Collection<Entity> storeObjects = resources.getStoreObjects();
 		addToCache(storeObjects );
@@ -384,7 +383,7 @@ public class RemoteOperator
         }
         RemoteStorage serv = getRemoteStorage();
         evt.setRepositoryVersion( clientRepositoryVersion);
-        UpdateEvent serverClosure =serv.dispatch( evt ).get();
+        UpdateEvent serverClosure =serv.dispatch( evt );
         refresh(serverClosure);
     }
     
@@ -395,7 +394,7 @@ public class RemoteOperator
     
     public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
-    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count).get();
+    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count);
     	return id;
     }
 
@@ -403,7 +402,7 @@ public class RemoteOperator
     
     public long getServerTime() throws RaplaException {
     	RemoteStorage remoteMethod = getRemoteStorage();
-        String serverTimeString = remoteMethod.getServerTime().get();
+        String serverTimeString = remoteMethod.getServerTime();
 		Date serverTime;
 		try {
 			serverTime = raplaLocale.getSerializableFormat().parseTimestamp( serverTimeString);
@@ -423,8 +422,8 @@ public class RemoteOperator
 
     public boolean canChangePassword() throws RaplaException  {
         RemoteStorage remoteMethod = getRemoteStorage();
-        FutureResult<Boolean> canChangePassword = remoteMethod.canChangePassword();
-		boolean result = canChangePassword.get();
+        Boolean canChangePassword = remoteMethod.canChangePassword();
+		boolean result = canChangePassword;
         return result;
     }
 
@@ -475,7 +474,7 @@ public class RemoteOperator
      	 Map<String,Entity> result = new HashMap<String,Entity>();
      	try
      	{
-			UpdateEvent entityList = serv.getEntityRecursive( array).get();
+			UpdateEvent entityList = serv.getEntityRecursive( array);
 	    	Collection<Entity> storeObjects = entityList.getStoreObjects();
 			List<Entity>resolvedList = addToCache(storeObjects  );
 			for (Entity entity:resolvedList)
@@ -851,7 +850,7 @@ public class RemoteOperator
 		checkConnected();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableIds = getIdList(allocatables);
-		AppointmentImpl[] appointmentArray = appointments.toArray( new AppointmentImpl[]{});
+		List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray( new AppointmentImpl[]{}));
 		String[] reservationIds = getIdList(ignoreList);
 		List<ReservationImpl> serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get();
 	    Lock readLock = readLock();
@@ -894,7 +893,7 @@ public class RemoteOperator
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableIds = getIdList(allocatables);
 		String[] reservationIds = getIdList(ignoreList);
-		Date result = serv.getNextAllocatableDate(allocatableIds, (AppointmentImpl)appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays, rowsPerHour).get();
+		Date result = serv.getNextAllocatableDate(allocatableIds, (AppointmentImpl)appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays, rowsPerHour);
 		return result;
 	}
 

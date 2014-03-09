@@ -43,7 +43,8 @@ import org.rapla.facade.internal.ConflictImpl;
 
 public class UpdateEvent implements java.io.Serializable,Cloneable
 {
-	transient Map<Class,List<Entity>> listMap = new HashMap<Class, List<Entity>>(); 
+	transient Map listMap;// = new HashMap<Class, List<Entity>>(); 
+	//transient Map<Class,List> lists = new LinkedHashMap<Class,List>();
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> allocatable = createList(Allocatable.class);
 	List<CategoryImpl> categories = createList(Category.class);
@@ -90,7 +91,8 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
     private  <T> List<T> createList(Class<? super T> clazz) {
 		ArrayList<T> list = new ArrayList<T>();
-		listMap.put( clazz, (List<Entity>) list);
+		//lists.put(clazz, list);
+		//listMap.put( clazz, (List<Entity>) list);
 		return list;
 	}
 
@@ -111,10 +113,27 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         storeSet.add( entity.getId());
         add( entity);
     }
+	
+	@SuppressWarnings("unchecked")
+	public Map<Class, Collection<Entity>> getListMap() {
+		if ( listMap == null)
+		{
+			listMap = new HashMap<Class,Collection<Entity>>();
+			listMap.put( Preferences.class,preferences);
+			listMap.put( Allocatable.class,allocatable);
+			listMap.put(Category.class, categories);
+			listMap.put(User.class, users);
+			listMap.put(DynamicType.class, types);
+			listMap.put(Reservation.class, reservations);
+			listMap.put(Period.class, periods);
+			listMap.put(Conflict.class, conflicts);
+		}
+		return listMap;
+	}
 
     private void add(Entity entity) {
     	Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
-    	List<Entity> list = listMap.get( class1);
+    	Collection<Entity> list = getListMap().get( class1);
     	if ( list == null)
     	{
     		//listMap.put( class1, list);
@@ -126,7 +145,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     public Collection<Entity> getRemoveObjects()
     {
 		HashSet<Entity> objects = new HashSet<Entity>();
-		for ( List<Entity> list:listMap.values())
+		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{
@@ -143,7 +162,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     public Collection<Entity> getStoreObjects() 
     {
 		HashSet<Entity> objects = new HashSet<Entity>();
-		for ( List<Entity> list:listMap.values())
+		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{
@@ -189,7 +208,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         {
         	return null;
         }
-        for ( List<Entity> list:listMap.values())
+        for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{
@@ -202,17 +221,16 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-	public UpdateEvent clone() {
+    public UpdateEvent clone() {
         UpdateEvent clone = new UpdateEvent( );
         clone.repositoryVersion = repositoryVersion;
         clone.invalidateInterval = invalidateInterval;
         clone.needResourcesRefresh = needResourcesRefresh;
         clone.userId = userId;
-        clone.removeSet = (Set<String>) ((LinkedHashSet<String>) removeSet).clone();
-        clone.storeSet = (Set<String>) ((LinkedHashSet<String>) storeSet).clone();
+        clone.removeSet = new LinkedHashSet<String>( removeSet);
+        clone.storeSet = new LinkedHashSet<String>( storeSet);
         
-        for ( List<Entity> list:listMap.values())
+        for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{
@@ -260,7 +278,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
 	public Collection<Entity> getAllObjects() {
 		HashSet<Entity> objects = new HashSet<Entity>();
-		for ( List<Entity> list:listMap.values())
+		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{

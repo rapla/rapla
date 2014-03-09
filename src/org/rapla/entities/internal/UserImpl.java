@@ -139,7 +139,7 @@ public class UserImpl extends SimpleEntity implements User
 
     public boolean removeGroup(Category group)   {
         checkWritable();
-        return getReferenceHandler().remove(group.getId());
+        return getReferenceHandler().removeId(group.getId());
     }
 
     public Category[] getGroups()  {

@@ -105,8 +105,8 @@ public class MethodHandle {
    */
   public void invoke(final Object imp,final Object[] arguments,final ActiveCall callback) {
     try {
-      FutureResult result = (FutureResult) method.invoke(imp, arguments);
-      result.get(callback);
+      Object result =  method.invoke(imp, arguments);
+      callback.onSuccess(result);
     } catch (InvocationTargetException e) {
       final Throwable c = e.getCause();
       if (c != null) {

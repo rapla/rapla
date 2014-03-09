@@ -38,8 +38,7 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     private int version = 0;
     //transient protected ReferenceHandler subEntityHandler;
 
-    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>(0);
-    transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
+    ReferenceHandler links = new ReferenceHandler();
     transient boolean readOnly = false;
     transient Integer key;
     
@@ -57,7 +56,7 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     }
 
     public void setResolver( EntityResolver resolver)  {
-        referenceHandler.setResolver( resolver);
+        links.setResolver( resolver);
         Iterable<Entity>subEntities = getSubEntities();
 		for (Entity subEntity :subEntities)
         {
@@ -95,26 +94,26 @@ public abstract class SimpleEntity implements RefEntity, Comparable
     }
 
     public User getOwner() {
-        return (User) referenceHandler.getEntity("owner");
+        return (User) links.getEntity("owner");
     }
 
     @SuppressWarnings("unchecked")
 	public void setOwner(User owner) {
-        referenceHandler.putEntity("owner",(Entity)owner);
+        links.putEntity("owner",(Entity)owner);
     }
     
 	public User getLastChangedBy() {
-		return (User) referenceHandler.getEntity("last_changed_by");
+		return (User) links.getEntity("last_changed_by");
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setLastChangedBy(User user) {
-        referenceHandler.putEntity("last_changed_by",user);
+        links.putEntity("last_changed_by",user);
 	}
 
    
     public ReferenceHandler getReferenceHandler() {
-        return referenceHandler;
+        return links;
     }
 
     /** sets the identifier for an object. The identifier should be
@@ -187,10 +186,10 @@ public abstract class SimpleEntity implements RefEntity, Comparable
 
     @Override
     public Iterable<String> getReferencedIds() {
-    	return referenceHandler.getReferencedIds();
+    	return links.getReferencedIds();
     }
     public boolean isRefering(String entity) {
-        return referenceHandler.isRefering(entity);
+        return links.isRefering(entity);
     }
 
 
@@ -207,9 +206,8 @@ public abstract class SimpleEntity implements RefEntity, Comparable
 
 
     protected void deepClone(SimpleEntity dest) {
-        dest.setId(id);
-        dest.links = (Map<String, List<String>>) ((HashMap<String,List<String>>) links).clone();
-    	dest.referenceHandler = (ReferenceHandler) referenceHandler.clone(dest.links);
+    	dest.id = id;
+    	dest.links = (ReferenceHandler) links.clone();
     	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
     	for (Entity entity: getSubEntities())
     	{

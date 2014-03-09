@@ -399,9 +399,15 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
         buf.append(",");
         buf.append(super.getVersion());
         buf.append("] ");
-        if ( getClassification() != null) {
-            buf.append (getClassification().toString()) ;
-        } 
+        try
+        {
+	        if ( getClassification() != null) {
+	            buf.append (getClassification().toString()) ;
+	        }
+        }
+        catch ( NullPointerException ex)
+        {
+        }
         return buf.toString();
     }
 

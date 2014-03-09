@@ -39,7 +39,7 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
     transient private Appointment appointment;
-    private long frequency;
+    transient private long frequency;
     boolean monthly;
     boolean yearly;
 

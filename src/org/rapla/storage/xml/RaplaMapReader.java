@@ -72,13 +72,13 @@ public class RaplaMapReader extends RaplaXMLReader  {
                 return;
             }
             String id = getId( raplaType, refid);
-            entityMap.getReferenceHandler().putId( key,  id);
+            entityMap.putIdPrivate( key,  id);
         }  else if ( keyref != null) {
             childReader = null;
             DynamicType type = getDynamicType( keyref );
             if ( type != null) {
             	String id = ((Entity) type).getId();
-                entityMap.getReferenceHandler().putId( key,  id);
+                entityMap.putIdPrivate( key,  id);
             }
         } else {
             childReader = getChildHandlerForType( raplaType );

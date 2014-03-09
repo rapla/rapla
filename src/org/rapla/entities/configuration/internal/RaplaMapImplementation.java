@@ -63,7 +63,6 @@ public class RaplaMapImplementation<T> extends RaplaMapImpl implements RaplaMap<
 	public void putAll(Map<? extends String, ? extends T> m) {
         throw createReadOnlyException();
     }
-
 	
 
     /**
@@ -77,15 +76,11 @@ public class RaplaMapImplementation<T> extends RaplaMapImpl implements RaplaMap<
     	else
     	{
     		List<T> result = new ArrayList();
-    		Collection<List<String>> values = links.values();
-    		for (List<String> list: values)
+    		Collection<String> values = links.getReferencedIds();
+    		for (String id: values)
     		{
-    			if ( list!= null && list.size() > 0 )
-    			{
-    				String id = list.get(0);
-    				Entity resolved = getReferenceHandler().getResolver().tryResolve( id);
-    				result.add((T) resolved);
-    			}
+				Entity resolved = links.getResolver().tryResolve( id);
+				result.add((T) resolved);
     		}
     		return result;
     	}
@@ -116,7 +111,7 @@ public class RaplaMapImplementation<T> extends RaplaMapImpl implements RaplaMap<
 			{
 				return null;
 			}
-			Entity resolve = getReferenceHandler().getResolver().tryResolve( id );
+			Entity resolve = links.getResolver().tryResolve( id );
 			return (T) resolve;
 		}
 
@@ -141,11 +136,9 @@ public class RaplaMapImplementation<T> extends RaplaMapImpl implements RaplaMap<
     		if ( cachedEntries != null)
     		{
     			cachedEntries = new HashSet<Map.Entry<String, T>>();
-    			for (Map.Entry<String,List<String>> entry:links.entrySet())
+    			for (String key:links.getReferenceKeys())
     			{
-    				String key = entry.getKey();
-    				List<String> list = entry.getValue();
-    				String id = (list== null || list.size() == 0) ? null: list.get( 0);
+    				String id = links.getId( key);
 					cachedEntries.add(new Entry( key, id));
     			}
     		}
@@ -169,8 +162,10 @@ public class RaplaMapImplementation<T> extends RaplaMapImpl implements RaplaMap<
     public RaplaMapImpl deepClone()
     {
     	RaplaMapImplementation clone = new RaplaMapImplementation(map);
-    	clone.setResolver( getReferenceHandler().getResolver());
+    	clone.setResolver( resolver);
     	return clone;
     }
+
+
 
 }

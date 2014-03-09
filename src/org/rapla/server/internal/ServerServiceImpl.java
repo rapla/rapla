@@ -76,11 +76,8 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
-import org.rapla.storage.dbrm.ResultImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.VoidResult;
 import com.google.gwtjsonrpc.server.JsonServlet;
 import com.google.gwtjsonrpc.server.SignedToken;
 import com.google.gwtjsonrpc.server.ValidToken;
@@ -564,7 +561,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
             /** @Override
              */
-             public FutureResult<VoidResult> logout() throws RaplaException {
+             public void logout() throws RaplaException {
                  
                  if ( session != null)
                  {
@@ -578,10 +575,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                          session.logout();
                      }
                  }
-                 return ResultImpl.VOID;
+                 //return ResultImpl.VOID;
              }
             
-             public FutureResult<String> login( String username, String password, String connectAs ) throws RaplaException
+             public String login( String username, String password, String connectAs ) throws RaplaException
              {
             	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
             	 User user;
@@ -699,7 +696,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                  try {
 						String userId = user.getId();
 						String signedToken = token.newToken( userId);
-						return new ResultImpl<String>(signedToken);
+						return signedToken;
 					} catch (Exception e) {
 						throw new RaplaException(e.getMessage());
 					}

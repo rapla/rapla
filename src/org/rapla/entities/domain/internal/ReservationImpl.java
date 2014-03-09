@@ -174,7 +174,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         for (String allocatableId:ids) {
         	List<String> restriction = getRestrictionPrivate(allocatableId);
 			if (restriction.size() == 1 && restriction.get(0).equals(appointmentId)) {
-				getReferenceHandler().remove(allocatableId);
+				getReferenceHandler().removeId(allocatableId);
 			}
         }
         clearRestrictions(appointment);
@@ -227,7 +227,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
-        getReferenceHandler().remove(allocatable.getId());
+        getReferenceHandler().removeId(allocatable.getId());
     }
 
     public Allocatable[] getAllocatables()  {

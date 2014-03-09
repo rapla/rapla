@@ -41,6 +41,10 @@ public class ParsedText implements Serializable {
 
     String formatString;
     
+    ParsedText()
+    {
+    }
+    
     public ParsedText(String formatString) 
     {
     	this.formatString = formatString;

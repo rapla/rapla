@@ -15,12 +15,13 @@ package org.rapla.entities.storage.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -54,7 +55,7 @@ Itertor references = referenceHandler.getReferences();
     @see EntityResolver
  */
 public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
-	private Map<String,List<String>> idmap;
+	private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
     transient EntityResolver resolver;
 	
     public EntityResolver getResolver()
@@ -62,10 +63,10 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     	return resolver;
     }
     
-    public ReferenceHandler(Map<String,List<String>> idmap) {
-    	Assert.notNull( idmap);
-    	this.idmap = idmap;
+    public ReferenceHandler()
+    {
     }
+    
     /**
      * @see org.rapla.entities.storage.EntityReferencer#setResolver(org.rapla.entities.storage.EntityResolver)
      */
@@ -92,8 +93,8 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     public Collection<String> getReferencedIds()
     {
     	Set<String> result = new HashSet<String>();
-    	if (idmap != null) {
-            for (List<String> entries:idmap.values()) {
+    	if (links != null) {
+            for (List<String> entries:links.values()) {
                 for ( String id: entries)
                 {
 					result.add(id);
@@ -114,11 +115,11 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     public void addId(String key,String id) {
     	synchronized (this) 
         {
-	        List<String> idEntries = idmap.get( key );
+	        List<String> idEntries = links.get( key );
 	        if ( idEntries == null )
 	        {
 	        	idEntries = new ArrayList<String>();
-	        	idmap.put(key, idEntries);
+	        	links.put(key, idEntries);
 	        }
 			idEntries.add(id);
         }
@@ -135,7 +136,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
         synchronized (this) 
         {
 	        if (ids == null || ids.size() == 0) {
-	            idmap.remove(key);
+	            links.remove(key);
 	            return;
 	        }
 	
@@ -144,13 +145,13 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	        {
 	        	entries.add( id);
 	        }
-	        idmap.put(key, entries);
+	        links.put(key, entries);
         }
     }
     
     public String getId(String key)
     {
-    	List<String> entries  = idmap.get(key);
+    	List<String> entries  = links.get(key);
     	if ( entries == null || entries.size() == 0)
     	{
     		return null;
@@ -163,7 +164,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     
 	public Collection<String> getIds(String key) 
 	{
-		List<String> entries  = idmap.get(key);
+		List<String> entries  = links.get(key);
 		if ( entries == null )
 		{
 			return Collections.emptyList();
@@ -175,10 +176,10 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
         synchronized (this) 
         {
 	        if (entity == null) {
-	            idmap.remove(key);
+	            links.remove(key);
 	            return;
 	        }
-	        idmap.put(key, Collections.singletonList(entity.getId()) );
+	        links.put(key, Collections.singletonList(entity.getId()) );
         }
     }
     
@@ -187,7 +188,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
         {
             if (entities == null || entities.size() == 0) 
 	        {
-	            idmap.remove(key);
+	            links.remove(key);
 	            return;
 	        }
 	        List<String> idEntries = new ArrayList<String>();
@@ -196,14 +197,14 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	        	String id = ent.getId();
 				idEntries.add( id);
 	        }
-	        idmap.put(key, idEntries);
+	        links.put(key, idEntries);
         }
     }
     
 
 	public Collection<Entity> getList(String key) 
 	{
-		List<String> ids  = idmap.get(key);
+		List<String> ids  = links.get(key);
 		if ( ids == null )
 		{
 			return Collections.emptyList();
@@ -218,7 +219,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	}	
 
     public Entity getEntity(String key) {
-    	 List<String>entries  = idmap.get(key);
+    	 List<String>entries  = links.get(key);
          if ( entries == null || entries.size() == 0)
          {
          	return null;
@@ -232,7 +233,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	public boolean removeWithKey(String key) {
     	synchronized (this) 
         {
-	        if  ( idmap.remove(key) != null ) {
+	        if  ( links.remove(key) != null ) {
 	            return true;
 	        } else {
 	            return false;
@@ -240,13 +241,13 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	    }
     }
 
-    public boolean remove(String id) {
+    public boolean removeId(String id) {
         boolean removed = false;
     	synchronized (this) 
         {
-        	for (String key: idmap.keySet())
+        	for (String key: links.keySet())
         	{
-				List<String> entries = idmap.get(key);
+				List<String> entries = links.get(key);
 				if ( entries.contains( id))
 				{
 					entries.remove( id);
@@ -262,17 +263,18 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     }
 
     public Iterable<String> getReferenceKeys() {
-        return idmap.keySet();
+        return links.keySet();
     }
     
     public void clearReferences() {
-    	idmap.clear();
+    	links.clear();
     }
 
     @SuppressWarnings("unchecked")
-	public ReferenceHandler clone(Map<String,List<String>> idmapClone) {
+	public ReferenceHandler clone() {
         ReferenceHandler clone;
-		clone = new ReferenceHandler(idmapClone);
+		clone = new ReferenceHandler();
+		clone.links = (Map<String, List<String>>) ((HashMap)links).clone();
 		clone.resolver = this.resolver;
 		return clone;
     }

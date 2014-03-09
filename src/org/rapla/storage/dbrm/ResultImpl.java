@@ -4,16 +4,38 @@ import org.rapla.framework.RaplaException;
 
 import com.google.gwtjsonrpc.common.AsyncCallback;
 import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.VoidResult;
 
 public class ResultImpl<T> implements FutureResult<T>
 {
 
 	RaplaException ex;
 	T result;
-	public static ResultImpl<VoidResult> VOID = new ResultImpl<VoidResult>();
-	
-	private ResultImpl()
+	public static VoidResult VOID = new VoidResult();
+	public static class VoidResult extends ResultImpl<VoidResult>
+	{
+		VoidResult() {
+		
+		}
+		public VoidResult(RaplaException ex)
+		{
+			super( ex);
+		}
+	}
+	public static class StringResult extends ResultImpl<String> 
+	{
+		StringResult() 
+		{
+			super();
+		}
+		public StringResult(RaplaException ex) {
+			super(ex);
+		}
+		public StringResult(String s) {
+			super(s);
+		}
+	}	
+
+	protected ResultImpl()
 	{
 	}
 	

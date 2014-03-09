@@ -15,10 +15,8 @@ package org.rapla.entities.configuration.internal;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -42,21 +40,20 @@ import org.rapla.entities.storage.internal.ReferenceHandler;
 
 public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeDependant, RaplaObject {
    //this map stores all objects in the map 
-   protected Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
    private Map<String,String> constants;
    private Map<String,RaplaConfiguration> configurations;
    private Map<String,RaplaMapImpl> maps;
    private Map<String,CalendarModelConfigurationImpl> calendars;
+   protected ReferenceHandler links;
 
    protected transient Map<String,Object> map;
+   transient EntityResolver resolver;
    
    // this map only stores the references
-   transient private ReferenceHandler referenceHandler;
   
    // this map only stores the child objects (not the references)
    
    public RaplaMapImpl() {
-      	referenceHandler = new ReferenceHandler(links);
    }
    
 
@@ -83,9 +80,8 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
        for ( Iterator<String> it = this.map.keySet().iterator();it.hasNext();) {
            String key = it.next();
            Object o = this.map.get(key );
-          putPrivate(key, o);
+           putPrivate(key, o);
        }
-       	referenceHandler = new ReferenceHandler(links);
    }
 
    
@@ -94,9 +90,9 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    {
 	   if ( value == null)
 	   {
-		   if ( links != null)
+		   if (links != null)
 		   {
-			   links.remove(key);
+			   links.removeWithKey(key);
 		   }
 		   if ( maps != null)
 		   {
@@ -111,12 +107,10 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
        {   
        }
-       if ( value instanceof Entity) {
-    	   if ( links == null)
-    	   {
-    		   links = new LinkedHashMap<>();
-    	   }
-    	   links.put(key, Collections.singletonList( ((Entity) value).getId()));
+       if ( value instanceof Entity) 
+       {
+    	   String id = ((Entity) value).getId();
+    	   putIdPrivate(key, id);
     	   return;
        }
        else if ( value instanceof RaplaConfiguration) {
@@ -140,13 +134,31 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
        map.put(key, value);
    }
 
+
+   public void putIdPrivate(String key, String id) {
+	if ( links == null)
+	   {
+		   links = new ReferenceHandler();
+		   if ( resolver != null)
+		   {
+			   links.setResolver( resolver);
+		   }
+			   
+	   }
+	   links.putId( key,id);
+}
+
    public Iterable<String> getReferencedIds() {
 	   NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
            public Iterable<String> getNestedIterator(EntityReferencer obj) {
                return obj.getReferencedIds();
            }
        };
-       return new IteratorChain<String>( refIt, getReferenceHandler().getReferencedIds());
+       if ( links == null)
+       {
+    	   return refIt;
+       }
+       return new IteratorChain<String>( refIt, links.getReferencedIds());
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
@@ -159,7 +171,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 
 
    public boolean isRefering(String object) {
-       if ( getReferenceHandler().isRefering( object )) {
+       if ( links != null && links.isRefering( object )) {
            return true;
        }
        for (EntityReferencer ref:getEntityReferencers()) {
@@ -179,7 +191,11 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    }*/
 
    public void setResolver( EntityResolver resolver) {
-       referenceHandler.setResolver( resolver );
+	   this.resolver = resolver;
+	   if ( links != null)
+	   {
+		   links.setResolver( resolver );
+	   }
        this.map =  fillMap(resolver);
    }
 
@@ -198,10 +214,6 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 		   return;
 	   }
 	   this.map.putAll(  map);
-   }
-
-   public ReferenceHandler getReferenceHandler() {
-       return referenceHandler;
    }
 
    
@@ -286,7 +298,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     public RaplaMapImpl deepClone()
     {
     	RaplaMapImpl clone = new RaplaMapImpl(map);
-    	clone.setResolver( getReferenceHandler().getResolver());
+    	clone.setResolver( resolver );
     	return clone;
     }
 

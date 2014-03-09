@@ -33,9 +33,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.jws.WebService;
@@ -46,10 +44,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.dbrm.HTTPConnector;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.InstanceCreator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -59,7 +57,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
 
@@ -99,24 +96,6 @@ public class JsonServlet<CallType extends ActiveCall>  {
 //  public static <CallType extends ActiveCall> CallType getCurrentCall() {
 //    return (CallType) perThreadCall.get();
 //  }
-
-  /** Create a default GsonBuilder with some extra types defined. */
-  public static GsonBuilder defaultGsonBuilder() {
-    final GsonBuilder gb = new GsonBuilder();
-    gb.registerTypeAdapter(java.util.Set.class,
-        new InstanceCreator<java.util.Set<Object>>() {
-          @Override
-          public Set<Object> createInstance(final Type arg0) {
-            return new HashSet<Object>();
-          }
-        });
-    gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
-    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
-    gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
-    gb.registerTypeAdapter(java.sql.Timestamp.class,
-        new SqlTimestampDeserializer());
-    return gb;
-  }
 
   static final Object[] NO_PARAMS = {};
   private static final String ENC = "UTF-8";
@@ -158,7 +137,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
 
   /** Create a GsonBuilder to parse a request or return a response. */
   protected GsonBuilder createGsonBuilder() {
-    return defaultGsonBuilder();
+    return HTTPConnector.defaultGsonBuilder();
   }
 
   /**
@@ -351,9 +330,10 @@ public class JsonServlet<CallType extends ActiveCall>  {
 
       try {
         final GsonBuilder gb = createGsonBuilder();
+        
         gb.registerTypeAdapter(ActiveCall.class, //
             new CallDeserializer<CallType>(call, this));
-        gb.create().fromJson(d, ActiveCall.class);
+         gb.create().fromJson(d, ActiveCall.class);
       } catch (JsonParseException err) {
         call.method = null;
         call.params = null;
@@ -491,9 +471,10 @@ public class JsonServlet<CallType extends ActiveCall>  {
       throws UnsupportedEncodingException, IOException {
     try {
       final GsonBuilder gb = createGsonBuilder();
-      gb.registerTypeAdapter(ActiveCall.class, new CallDeserializer<CallType>(
-          call, this));
-      gb.create().fromJson(readBody(call), ActiveCall.class);
+      gb.registerTypeAdapter(ActiveCall.class, new CallDeserializer<CallType>(call, this));
+      Gson builder = gb.disableHtmlEscaping().create();
+      String readBody = readBody(call);
+      builder.fromJson(readBody, ActiveCall.class);
     } catch (JsonParseException err) {
       call.method = null;
       call.params = null;
@@ -623,9 +604,10 @@ public class JsonServlet<CallType extends ActiveCall>  {
         continue;
       }
 
-      if (m.getReturnType() != FutureResult.class) {
-        continue;
-      }
+      Class<?> returnType = m.getReturnType();
+//      if (!FutureResult.class.isAssignableFrom(returnType)) {
+//        continue;
+//      }
 
       final Class<?>[] params = m.getParameterTypes();
 //      if (params.length < 1) {

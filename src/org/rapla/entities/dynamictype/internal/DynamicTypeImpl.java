@@ -54,6 +54,13 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
         {
         	child.setParent( this);
         }
+    	for ( ParsedText annotation: annotations.values())
+    	{
+    		try {
+				annotation.init(parseContext);
+			} catch (IllegalAnnotationException e) {
+			}
+    	}
     }
 
     public RaplaType<DynamicType> getRaplaType() {return TYPE;}
@@ -144,11 +151,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
     public String getAnnotation(String key) {
-    	if (annotations == null)
-    	{
-    		
-    	}
-        ParsedText parsedAnnotation = annotations.get(key);
+    	ParsedText parsedAnnotation = annotations.get(key);
         if ( parsedAnnotation != null) 
         {
 			return parsedAnnotation.getExternalRepresentation(parseContext);

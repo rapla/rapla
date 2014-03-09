@@ -14,12 +14,9 @@ package org.rapla.entities.dynamictype.internal;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IteratorChain;
@@ -50,11 +47,10 @@ public final class ClassificationFilterImpl
     private static final long serialVersionUID = 1;
     
     transient boolean readOnly;
-    private Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
     List<ClassificationFilterRuleImpl> list = new LinkedList<ClassificationFilterRuleImpl>();
     transient boolean arrayUpToDate = false;
     transient ClassificationFilterRuleImpl[] rulesArray;
-    transient ReferenceHandler referenceHandler = new ReferenceHandler(links);
+    ReferenceHandler referenceHandler = new ReferenceHandler();
 
     ClassificationFilterImpl() {
 	}
@@ -445,8 +441,7 @@ public final class ClassificationFilterImpl
 
     public ClassificationFilterImpl clone() {
         ClassificationFilterImpl clone = new ClassificationFilterImpl((DynamicTypeImpl)getType());
-        clone.links = (Map<String, List<String>>) ((HashMap<String, List<String>>)links).clone();
-		clone.referenceHandler = (ReferenceHandler) referenceHandler.clone(clone.links);
+        clone.referenceHandler = (ReferenceHandler) referenceHandler.clone();
         clone.list = new LinkedList<ClassificationFilterRuleImpl>();
         Iterator<ClassificationFilterRuleImpl> it = list.iterator();
         while (it.hasNext()) {

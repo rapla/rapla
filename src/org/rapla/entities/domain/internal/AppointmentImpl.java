@@ -38,8 +38,7 @@ import org.rapla.facade.RaplaComponent;
 
 public class AppointmentImpl extends SimpleEntity implements Appointment
 {
-	String id;
-    private Date start;
+	private Date start;
     private Date end;
     private RepeatingImpl repeating;
     private boolean isWholeDaysSet = false;

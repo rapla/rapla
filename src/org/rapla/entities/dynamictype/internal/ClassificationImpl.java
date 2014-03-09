@@ -143,6 +143,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     public DynamicTypeImpl getType() {
+    	if ( resolver == null)
+    	{
+    		return null;
+    	}
         DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
     	return type;
     }
@@ -404,32 +408,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
      public String toString() {
-         if (getType() == null) {
-             return super.toString();
-         }
-         StringBuffer buf = new StringBuffer();
-         Attribute[] atts = getAttributes();
-         boolean first = true;
-         for ( Attribute att:atts)
-         {
-        	 Collection<Object> values = getValues( att);
-        	 if  ( values.size() == 0)
-        	 {
-        		 continue;
-        	 }
-        	 if ( !first)
-             {
-                 buf.append(", ");
-             }
-             else
-             {
-            	 first = false;
-             }
-             buf.append( att.getKey());
-             buf.append("=");
-             buf.append( values);
-         }
-         return buf.toString();
+         return map.toString();
      }
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 

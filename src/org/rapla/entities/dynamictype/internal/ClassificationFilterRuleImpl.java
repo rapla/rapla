@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
@@ -36,7 +33,7 @@ public final class ClassificationFilterRuleImpl
     String[] operators;
     String[] ruleValues;
     String attributeId;
-    transient ReferenceHandler referenceHandler = new ReferenceHandler(new LinkedHashMap<String, List<String>>());
+    ReferenceHandler referenceHandler = new ReferenceHandler();
 
     ClassificationFilterRuleImpl()
     {
@@ -151,7 +148,7 @@ public final class ClassificationFilterRuleImpl
          else
          {
         	 ruleValues[i] = ruleValue != null ? ruleValue.toString() : null;
-        	 referenceHandler.remove( String.valueOf( i));
+        	 referenceHandler.removeId( String.valueOf( i));
          }
 
     }

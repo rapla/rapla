@@ -336,7 +336,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             advanceLoading(true);
 
             logoutAvailable = true;
-            if ( connectInfo != null)
+            if ( connectInfo != null && connectInfo.getUsername() != null)
             {
                 if (login( connectInfo))
                 {

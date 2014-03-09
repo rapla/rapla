@@ -685,7 +685,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
 		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
 		for (DynamicType type: collection) {
-			if (classificationType.equals(type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))) {
+			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+			if (classificationType.equals(classificationTypeAnno)) {
 				result.add(type);
 			}
 		}
