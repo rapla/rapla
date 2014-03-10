@@ -476,7 +476,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         {
         	if ( restrictions != null)
         	{
-        		if ( clone.restrictions != null)
+        		if ( clone.restrictions == null)
         		{
         			clone.restrictions = new LinkedHashMap<>();
         		}

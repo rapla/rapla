@@ -178,7 +178,6 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 	   return map;
    }	
 
-
    private void fillMap(Map<String, ?> map) {
 	   if ( map == null)
 	   {
@@ -396,7 +395,7 @@ public Object get(Object key) {
     public Collection values() {
     	if ( links == null)
     	{
-    		return  map.values();
+    		return  getMap().values();
     	}
     	else
     	{
@@ -469,7 +468,7 @@ public Object get(Object key) {
     		if ( cachedEntries == null)
     		{
     			cachedEntries = new HashSet<Map.Entry<String, Object>>();
-    			for (Map.Entry<String,Object> entry:map.entrySet())
+    			for (Map.Entry<String,Object> entry:getMap().entrySet())
     			{
 					cachedEntries.add((Map.Entry<String, Object>) entry);
     			}

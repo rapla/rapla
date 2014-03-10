@@ -77,6 +77,7 @@ public class AllocatableReader extends RaplaXMLReader
                 changeTime = parseTimestamp( lastChanged);
 
             allocatable = new AllocatableImpl(createTime, changeTime);
+            allocatable.setResolver( store );
             currentAnnotatable = allocatable;
             setId( allocatable, atts );
             allocatable.setHoldBackConflicts( holdBackConflicts );
@@ -89,7 +90,7 @@ public class AllocatableReader extends RaplaXMLReader
         if (localName.equals( "permission" ))
         {
             PermissionImpl permission = new PermissionImpl();
-
+            permission.setResolver( store );
             // process user
             String userString = atts.getValue( "user" );
             ReferenceHandler referenceHandler = permission.getReferenceHandler();

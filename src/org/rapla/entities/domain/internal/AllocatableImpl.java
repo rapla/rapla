@@ -75,7 +75,10 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
-        classification.setResolver( resolver);
+        if ( classification != null)
+        {
+        	classification.setResolver( resolver);
+        }
         for (Iterator<PermissionImpl> it = permissions.iterator();it.hasNext();)
         {
              it.next().setResolver( resolver);
