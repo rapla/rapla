@@ -42,7 +42,8 @@ public final class ReservationEditTest extends GUITestCase{
         clientService = getClientService();
         reservations = clientService.getFacade().getReservationsForAllocatable(null,null,null,null);
         c = clientService.getContext().lookup(ReservationController.class);
-        window = c.edit(reservations[0]);
+        Reservation reservation = reservations[0];
+		window = c.edit(reservation);
         internalWindow = (ReservationEditImpl) window;
     }
 

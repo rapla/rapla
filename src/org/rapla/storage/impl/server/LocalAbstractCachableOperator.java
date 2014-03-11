@@ -120,7 +120,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end) throws RaplaException {
 		boolean excludeExceptions = false;
-		HashSet<Reservation> reservationSet = new HashSet<Reservation>();
+		LinkedHashSet<Reservation> reservationSet = new LinkedHashSet<Reservation>();
 		if (allocatables == null || allocatables.size() ==0) 
 		{
 			allocatables = Collections.singleton( null);

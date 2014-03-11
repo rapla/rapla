@@ -94,12 +94,30 @@ public class ServerTest extends ServletTestBase {
         super.tearDown();
     }
 
-    public void testLoad() throws Exception {
-        facade1.getAllocatables();
-    }
 
+    public void testGuest() throws Exception
+    {
+    	facade2.logout();
+    	facade2.login("monty", "burns".toCharArray());
+    	ClassificationFilter filter = facade2.getDynamicType("room").newClassificationFilter();
+    	filter.addEqualsRule("name", "erwin");
+    	Allocatable[] allocatables = facade2.getAllocatables(filter.toArray());
+    	Allocatable allocatable = allocatables[0];
+    	Permission[] permissions = allocatable.getPermissions();
+    	Permission guestPermission = permissions[1];
+		User user = guestPermission.getUser();
+    	assertNotNull( user);
+    	assertEquals( facade2.getUser(), user);
+    	assertEquals(Permission.READ,guestPermission.getAccessLevel());
+    	Date start = null;
+		Date end = null;
+		Reservation[] reservations = facade2.getReservations(new Allocatable[] {allocatable}, start, end);
+		assertTrue( reservations.length > 1);
+    }
+    
     public void testChangeReservation() throws Exception {
-        Reservation r1 = facade1.newReservation();
+    	facade1.getAllocatables();
+    	Reservation r1 = facade1.newReservation();
         String typeKey = r1.getClassification().getType().getElementKey();
         r1.getClassification().setValue("name","test-reservation");
         r1.addAppointment( facade1.newAppointment(facade1.today(), new Date()));
@@ -424,7 +442,7 @@ public class ServerTest extends ServletTestBase {
         user.removeGroup( myGroup );
         ClientFacade facade2 = getContainer().lookup(ClientFacade.class , "remote-facade-2");
         facade2.login("homer","duffs".toCharArray());
-        Allocatable testResource =  facade2.edit( facade2.getAllocatables()[0]);
+        Allocatable testResource =  facade2.edit( facade2.getAllocatables()[1]);
         assertTrue( testResource.canAllocate( facade2.getUser("monty") ,null, null,null));
         testResource.removePermission( testResource.getPermissions()[0]);
         Permission newPermission = testResource.newPermission();

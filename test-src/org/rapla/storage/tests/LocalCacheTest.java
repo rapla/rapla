@@ -110,7 +110,7 @@ public class LocalCacheTest extends RaplaTestCase {
             assertEquals(2, reservations.size());
             User user = cache.getUser("homer");
             reservations = storage.getReservations(user,null,null,null);
-            assertEquals(3, reservations.size());
+            assertEquals(4, reservations.size());
             reservations = storage.getReservations(user,null,period.getStart(),period.getEnd());
             assertEquals(2, reservations.size());
         }

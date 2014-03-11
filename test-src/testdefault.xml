@@ -179,6 +179,7 @@
             <dynatt:belongsto>category[key='elementary-springfield']</dynatt:belongsto>
          </dynatt:room>
          <rapla:permission access="allocate"/>
+         <rapla:permission user="user_2" access="read"/>
       </rapla:resource>
       <rapla:resource id="resource_2">
          <dynatt:room>
@@ -254,6 +255,15 @@ and all the rest</dynatt:description>
          </rapla:appointment>
          <rapla:allocate idref="resource_1"/>
          <rapla:allocate idref="resource_4"/>
+      </rapla:reservation>
+      <rapla:reservation id="reservation_4" owner="user_1" created-at="2003-11-21 00:00:00" last-changed="2003-11-21 00:00:00">
+         <dynatt:event>
+            <dynatt:name>Restricted</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment start-date="2014-04-10" start-time="14:00:00" end-date="2014-04-10" end-time="16:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="resource_1"/>
       </rapla:reservation>
    </rapla:reservations>
 
