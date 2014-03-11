@@ -111,14 +111,15 @@ public class ClassificationFilterTest extends RaplaTestCase {
 
     public void testFilter() throws Exception {
         // Test if the new date attribute is used correctly in filters
-        DynamicType dynamicType = queryMod.getDynamicType("room");
         {
+        	DynamicType dynamicType = queryMod.getDynamicType("room");
             DynamicType modifiableType = modificationMod.edit(dynamicType);
             Attribute attribute = modificationMod.newAttribute( AttributeType.DATE);
             attribute.setKey( "date");
             modifiableType.addAttribute(attribute);
             modificationMod.store( modifiableType);
         }
+    	DynamicType dynamicType = queryMod.getDynamicType("room");
         //Issue 235 in rapla: Null date check in filter not working anymore
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
         Allocatable[] allocatablesWithoutFilter = queryMod.getAllocatables( classificationFilter.toArray());

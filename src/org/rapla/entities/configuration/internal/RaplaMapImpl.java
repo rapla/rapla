@@ -16,6 +16,7 @@ package org.rapla.entities.configuration.internal;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -67,8 +68,6 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    public RaplaType getRaplaType() {
        return RaplaMap.TYPE;
    }
-  
-   
 
    private  static <T> Map<String,T> makeMap(Collection<T> list) {
        Map<String,T> map = new TreeMap<String,T>();
@@ -124,15 +123,13 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 		   }
 		   return;
 	   }
-	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
-       {   
-       }
-       getMap().put(key, value);
+//	   if ( ! (value instanceof RaplaObject ) && !(value instanceof String) )
+//       {   
+//       }
        if ( value instanceof Entity) 
        {
     	   String id = ((Entity) value).getId();
     	   putIdPrivate(key, id);
-    	   return;
        }
        else if ( value instanceof RaplaConfiguration) {
     	   if ( configurations == null)
@@ -140,6 +137,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     		   configurations = new LinkedHashMap<String,RaplaConfiguration>();
     	   }
     	   configurations.put( key, (RaplaConfiguration) value);
+           getMap().put(key, value);
        }
        else if ( value instanceof RaplaMap) {
     	   if ( maps == null)
@@ -147,6 +145,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     		   maps = new LinkedHashMap<String,RaplaMapImpl>();
     	   }
     	   maps.put( key, (RaplaMapImpl) value);
+           getMap().put(key, value);
        }
        else if ( value instanceof CalendarModelConfiguration) {
     	   if ( calendars == null)
@@ -154,6 +153,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     		   calendars = new LinkedHashMap<String,CalendarModelConfigurationImpl>();
     	   }
     	   calendars.put( key, (CalendarModelConfigurationImpl) value);
+           getMap().put(key, value);
        }
        else if ( value instanceof String) {
     	   if ( constants == null)
@@ -161,12 +161,21 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     		   constants = new LinkedHashMap<String,String>();
     	   }
     	   constants.put( key , (String) value);
+           getMap().put(key, value);
        } else {
     	   throw new IllegalArgumentException("Map type not supported only entities, maps, configuration  or Strings are allowed.");
        }
    }
  
    private Map<String, Object> getMap() {
+	   if (links != null)
+	   {
+		   return (Map<String,Object>)links.getLinkMap();
+	   }
+	   if ( maps == null && configurations == null && constants == null && calendars == null)
+	   {
+		   return Collections.emptyMap();
+	   }
 	   if ( map == null)
 	   {
 		   map = new LinkedHashMap<String,Object>();
@@ -196,6 +205,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 			   
 	   }
 	   links.putId( key,id);
+	   map  = null;
 }
 
    public Iterable<String> getReferencedIds() {
@@ -248,6 +258,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
 	   }
 	   setResolver( calendars);
 	   setResolver( maps );
+	   map  = null;
    }
 
 
@@ -264,7 +275,11 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    }
 
 
-public Object get(Object key) {
+   public Object get(Object key) {
+	   if (links != null)
+	   {
+		   return links.getEntity((String)key);
+	   }
        return  getMap().get(key);
    }
 
@@ -388,7 +403,6 @@ public Object get(Object key) {
         throw createReadOnlyException();
     }
 	
-
     /**
      * @see java.util.Map#values()
      */

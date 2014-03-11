@@ -40,8 +40,13 @@ import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
@@ -55,6 +60,7 @@ import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
@@ -480,8 +486,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     	Lock writeLock = writeLock();
     	try
         {
-        	evt = createClosure( evt  );
-	        check(evt);
+        	evt = checkAndCreateClosure(evt);
 	        Connection connection = createConnection();
 	        try {
 	             executeEvent(connection,evt);
@@ -527,7 +532,14 @@ public class DBOperator extends LocalAbstractCachableOperator
         // execute updates
         RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
 
-        raplaSQLOutput.store( connection, evt.getStoreObjects());
+        Collection<Entity> storeObjects = evt.getStoreObjects();
+        Collection<Entity> withChildren = new LinkedHashSet<Entity>();
+        // add appointment and sub categories to store
+        for (Entity entity:storeObjects)
+        {
+        	addWithChildren( withChildren, entity);
+        }
+        raplaSQLOutput.store( connection, withChildren);
 
         // execute removes
         for (Entity entityStore: evt.getRemoveObjects()) {
@@ -539,7 +551,27 @@ public class DBOperator extends LocalAbstractCachableOperator
 
     }
 
-    public void removeAll() throws RaplaException {
+    private void addWithChildren(Collection<Entity> withChildren, Entity entity) {
+    	withChildren.add( entity );
+    	RaplaType raplaType = entity.getRaplaType();
+		if ( raplaType == Reservation.TYPE)
+		{
+			for (Appointment app:((Reservation)entity).getAppointments())
+			{
+				withChildren.add( app );
+			}
+		}
+		if ( raplaType == Category.TYPE)
+		{
+			for (Category child:((Category)entity).getCategories())
+			{
+				addWithChildren(withChildren, child);
+			}
+		}
+    	
+	}
+
+	public void removeAll() throws RaplaException {
         Connection connection = createConnection();
         try {
              RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));

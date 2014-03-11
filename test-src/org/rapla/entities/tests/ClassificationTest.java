@@ -20,6 +20,7 @@ import java.util.List;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -33,7 +34,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
-import org.rapla.storage.ReferenceNotFoundException;
 
 public class ClassificationTest extends RaplaTestCase {
     Reservation reserv1;
@@ -84,8 +84,8 @@ public class ClassificationTest extends RaplaTestCase {
 
     	try {
     		modificationMod.store(  type  );
-    		fail("Should throw an ReferenceNotFoundException");
-    	} catch (ReferenceNotFoundException ex) {
+    		fail("Should throw an EntityNotFoundException");
+    	} catch (EntityNotFoundException ex) {
     	}
 		modificationMod.storeObjects( new Entity[] { rootC, type } );
     	type =  modificationMod.getPersistant( type );

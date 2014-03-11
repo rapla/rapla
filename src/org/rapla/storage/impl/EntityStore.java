@@ -25,7 +25,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 
 public class EntityStore implements EntityResolver {
-    HashMap<Object,Entity> entities = new LinkedHashMap<Object,Entity>();
+    HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
     HashSet<String> idsToRemove = new HashSet<String>();
     HashSet<String> idsToStore = new HashSet<String>();
     HashSet<String> idsToReference = new HashSet<String>();
@@ -43,8 +43,8 @@ public class EntityStore implements EntityResolver {
        // put( superCategory);
     }
     
-    public void addAll(Collection<Entity>collection) {
-        Iterator<Entity>it = collection.iterator();
+    public void addAll(Collection<? extends Entity>collection) {
+        Iterator<? extends Entity>it = collection.iterator();
         while (it.hasNext())
         {
             put(it.next());
@@ -52,7 +52,7 @@ public class EntityStore implements EntityResolver {
     }
 
     public void put(Entity entity) {
-        Object id = entity.getId();
+        String id = entity.getId();
         Assert.notNull(id);
         if ( entity.getRaplaType() == DynamicType.TYPE)
         {

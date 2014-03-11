@@ -38,6 +38,7 @@ import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IOContext;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -264,8 +265,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     	final Lock writeLock = writeLock();
     	try
         {
-	    	final UpdateEvent closure = createClosure( evt );
-	        check( closure );
+    	 	final UpdateEvent closure = checkAndCreateClosure(evt);
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
 	        result = update( closure);

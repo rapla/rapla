@@ -45,7 +45,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.Template;
 import org.rapla.entities.dynamictype.Attribute;
@@ -59,7 +58,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -173,7 +171,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	    return toEdit;
 	}
 
-	protected Entity editObject(Entity obj, Entity persistant, User user) {
+	protected Entity editObject(Entity newObj, Entity persistant, User user) {
 		final SimpleEntity clone;
 		if ( persistant != null)
 		{
@@ -181,7 +179,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 		else
 		{
-			clone = (SimpleEntity) obj.clone();
+			clone = (SimpleEntity) newObj.clone();
 		}
 		SimpleEntity refEntity = clone;
 		if (refEntity instanceof ModifiableTimestamp) {
@@ -434,42 +432,39 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 	
 	@Override
-	  public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
+	public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
+	{
+    	Lock readLock = readLock();
+		try
 		{
-	    	Lock readLock = readLock();
-			try
-			{
-				Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
-		        for ( Entity key: list)
-		    	{
-		     		String id =  key.getId().toString();
-		     		idMap.put( id, key);
-		    	}
-		    
-				
-				Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
-	    		Set<String> keySet = idMap.keySet();
-				Map<String,Entity> resolvedList = getFromId( keySet, false);
-		    	for (Entity entity:resolvedList.values())
-		    	{
-		    		String id = entity.getId().toString();
-					Entity key = idMap.get( id);
-					if ( key != null )
-					{
-						result.put( key, entity);
-					}
-		    	}
-		    	return result;
-			}
-			finally
-			{
-				unlock(readLock);
-			}
+			Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
+	        for ( Entity key: list)
+	    	{
+	     		String id =  key.getId().toString();
+	     		idMap.put( id, key);
+	    	}
+	    
+			
+			Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
+    		Set<String> keySet = idMap.keySet();
+			Map<String,Entity> resolvedList = getFromId( keySet, false);
+	    	for (Entity entity:resolvedList.values())
+	    	{
+	    		String id = entity.getId().toString();
+				Entity key = idMap.get( id);
+				if ( key != null )
+				{
+					result.put( key, entity);
+				}
+	    	}
+	    	return result;
 		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
 	
-	
-	
-
 	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
 		List<Entity>readOnlyList = new ArrayList<Entity>();
 		for (Entity obj: entities) {
@@ -488,72 +483,13 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
+	
 	/** override for special log handling
 	 */
 	@SuppressWarnings({ "unused", "unused" })
 	protected void logEntityNotFound(Entity obj,  EntityNotFoundException ex) {
 	}
-
-	/** Check if the objects are consistent, so that they can be safely stored. */
-	protected void checkConsistency(Collection<Entity>entities) throws RaplaException {
-		for (Entity entity : entities) {
-			for (String referencedIds:((RefEntity)entity).getReferencedIds())
-			{
-				Entity reference = tryResolve( referencedIds);
-				if ( reference != null)
-				{
-					if (reference instanceof Preferences
-							|| reference instanceof Conflict
-							|| reference instanceof Reservation
-							|| reference instanceof Appointment
-							)
-					{
-						throw new RaplaException("The current version of Rapla doesn't allow references to objects of type "	+ reference.getRaplaType());
-					}
-				}
-			}
-			// Check if the user group is missing
-			if (Category.TYPE == entity.getRaplaType()) {
-				if (entity.equals(cache.getSuperCategory())) {
-					Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
-					if (userGroups == null) {
-						throw new RaplaException("The category with the key '"
-								+ Permission.GROUP_CATEGORY_KEY
-								+ "' is missing.");
-					}
-				} else {
-					Category category = (Category) entity;
-					Category parent = category.getParent();
-					if (parent == null) {
-						throw new RaplaException("The category " + category
-								+ " needs a parent.");
-					}
-					else 
-					{
-						int i = 0;
-						while ( true)
-						{
-							if ( parent == null)
-							{
-								throw new RaplaException("Category needs to be a child of super category.");
-							} 
-							else if ( parent.equals( cache.getSuperCategory()))
-							{
-								break;
-							}
-							parent = parent.getParent();
-							i++;
-							if ( i>80)
-							{
-								throw new RaplaException("infinite recursion detection for category " + category);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
+	
 	protected String getName(Object object) {
 		if (object == null)
 			return null;
@@ -565,7 +501,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	protected String getString(String key) {
 		return getI18n().getString(key);
 	}
-
 		
 	@Override
 	public Entity resolveEmail(String emailArg)

@@ -44,6 +44,7 @@ import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -86,7 +87,6 @@ import org.rapla.storage.IdTable;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.ReferenceNotFoundException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -339,13 +339,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     
     /** performs Integrity constraints check */
-	protected void check(final UpdateEvent evt) throws RaplaException {
+	protected void check(final UpdateEvent evt, final EntityStore store) throws RaplaException {
 		Set<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
-		Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
-		checkConsistency(storeObjects);
-		checkUnique(storeObjects);
-		checkReferences(storeObjects);
-		checkNoDependencies(removeObjects, storeObjects);
+		//Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
+		checkConsistency(evt, store);
+		checkUnique(evt,store);
+		checkReferences(evt, store);
+		checkNoDependencies(evt, store);
 		checkVersions(storeObjects);
 	}
 	
@@ -614,6 +614,34 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		fireStorageUpdated( result );
     }
 	
+	protected UpdateEvent checkAndCreateClosure(final UpdateEvent evt) throws RaplaException {
+		EntityStore store = new EntityStore(this, this.getSuperCategory());
+    	Collection<Entity>storeObjects = evt.getStoreObjects();
+		store.addAll(storeObjects);
+        for (Entity entity:storeObjects) {
+            if (getLogger().isDebugEnabled())
+                getLogger().debug("Contextualizing " + entity);
+            ((EntityReferencer)entity).setResolver( store);
+            if ( entity instanceof Category)
+            {
+            	Set<Category> children = getAllCategories( (Category)entity);
+            	store.addAll(children);
+            }
+        }
+        Collection<Entity>removeObjects = evt.getRemoveObjects();
+        store.addAll( removeObjects );
+
+		// add all child categories to store
+	
+        for ( Entity entity:removeObjects)
+        {
+            ((EntityReferencer)entity).setResolver( store);
+        }
+		final UpdateEvent closure = createClosure( evt, store );
+		check( closure, store);
+		return closure;
+	}
+
 	/**
 	 * Create a closure for all objects that should be updated. The closure
 	 * contains all objects that are sub-entities of the entities and all
@@ -621,20 +649,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * Classifiables when the DynamicType changes. The method will recursivly
 	 * proceed with all discovered objects.
 	 */
-	protected UpdateEvent createClosure(final UpdateEvent evt)
+	protected UpdateEvent createClosure(final UpdateEvent evt,EntityStore store)
 			throws RaplaException {
 		UpdateEvent closure = evt.clone();
 		Collection<Entity> storeObjects = evt.getStoreObjects();
 		Iterator<Entity>it = storeObjects.iterator();
 		while (it.hasNext()) {
 			Entity object = it.next();
-			addStoreOperationsToClosure(closure, object);
+			addStoreOperationsToClosure(closure, store,object);
 		}
-
 		it = evt.getRemoveObjects().iterator();
 		while (it.hasNext()) {
 			Entity object = it.next();
-			addRemoveOperationsToClosure(closure, object);
+			addRemoveOperationsToClosure(closure, store, object);
 		}
 		for (Entity entity: getDeletedCategories(storeObjects))
 		{
@@ -643,15 +670,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return closure;
 	}
 
-	
-	protected void addStoreOperationsToClosure(UpdateEvent evt, Entity entity) throws RaplaException {
+	protected void addStoreOperationsToClosure(UpdateEvent evt, EntityStore store,Entity entity) throws RaplaException {
 		if (getLogger().isDebugEnabled() && !evt.getStoreObjects().contains(entity)) {
 			getLogger().debug("Adding " + entity + " to store closure");
 		}
 		evt.putStore(entity);
 		if (DynamicType.TYPE == entity.getRaplaType()) {
 			DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
-			addChangedDynamicTypeDependant(evt, dynamicType, false);
+			addChangedDynamicTypeDependant(evt,store, dynamicType, false);
 		}
 		
 //		if ( entity instanceof ParentEntity)
@@ -670,7 +696,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //		}
 	}
 
-	private void addRemoveOperationsToClosure(UpdateEvent evt,
+	private void addRemoveOperationsToClosure(UpdateEvent evt,EntityStore store,
 			Entity entity) throws RaplaException {
 		if (getLogger().isDebugEnabled() && !evt.getRemoveObjects().contains(entity)) {
 			getLogger().debug("Adding " + entity + " to remove closure");
@@ -679,12 +705,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 		if (DynamicType.TYPE == entity.getRaplaType()) {
 			DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
-			addChangedDynamicTypeDependant(evt, dynamicType, true);
+			addChangedDynamicTypeDependant(evt, store,dynamicType, true);
 		}
 		
 		// If entity is a user, remove the preference object
 		if (User.TYPE == entity.getRaplaType()) {
-			addRemovedUserDependant(evt, (User) entity);
+			addRemovedUserDependant(evt, store,(User) entity);
 		}
 		
 		
@@ -703,8 +729,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //		for ( Entity ref: getRemovedEntities(entity)) {
 //			addRemoveOperationsToClosure(evt, ref);
 //		}
-
-	
 
 	}
 
@@ -746,8 +770,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 
-	protected void addChangedDynamicTypeDependant(UpdateEvent evt, DynamicTypeImpl type, boolean toRemove) throws RaplaException {
-		List<Entity>referencingEntities = getReferencingEntities( type);
+	protected void addChangedDynamicTypeDependant(UpdateEvent evt, EntityStore store,DynamicTypeImpl type, boolean toRemove) throws RaplaException {
+		List<Entity> referencingEntities = getReferencingEntities( type, store);
 		Iterator<Entity>it = referencingEntities.iterator();
 		while (it.hasNext()) {
 			Entity entity = it.next();
@@ -769,9 +793,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				if (evt.getUserId() != null) {
 					user = (User) resolveIdWithoutSync(evt.getUserId());
 				}
-				Entity persistant =   cache.tryResolve(entity.getId());
+				Entity persistant = cache.tryResolve(entity.getId());
 				dependant = (DynamicTypeDependant) editObject( entity, persistant, user);
-				addStoreOperationsToClosure(evt, ((Entity) dependant));
+				addStoreOperationsToClosure(evt, store,(Entity) dependant);
 			} 
 			if (toRemove) {
 				try {
@@ -785,12 +809,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
-	protected void addRemovedUserDependant(UpdateEvent evt, User user) throws RaplaException {
+	protected void addRemovedUserDependant(UpdateEvent evt, EntityStore store,User user) throws RaplaException {
 		PreferencesImpl preferences = cache.getPreferences(user);
 		if (preferences != null)
-			addRemoveOperationsToClosure(evt, preferences);
-
-		List<Entity>referencingEntities = getReferencingEntities((Entity) user);
+		{
+			evt.putRemove(preferences);
+		}
+		List<Entity>referencingEntities = getReferencingEntities( user, store);
 		Iterator<Entity>it = referencingEntities.iterator();
 		while (it.hasNext()) {
 			Entity entity = it.next();
@@ -812,12 +837,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					 continue;
 				 }
 			}
-			
-			Entity persistant= cache.tryResolve( entity.getId());
-			Entity dependant = editObject( entity, persistant, user);
-			((SimpleEntity)dependant).setLastChangedBy( null );
-			addStoreOperationsToClosure(evt,  dependant);
-		
+			if (evt.getStoreObjects().contains(entity)) 
+			{
+				((SimpleEntity)evt.findEntity(entity)).setLastChangedBy(null);
+			}
+			else
+			{
+				Entity persistant= cache.tryResolve( entity.getId());
+				Entity dependant = editObject( entity, persistant, user);
+				((SimpleEntity)dependant).setLastChangedBy( null );
+				addStoreOperationsToClosure(evt, store, dependant);
+			}
 		}
 		
 	}
@@ -828,12 +858,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * 
 	 * @param entity
 	 */
-	final protected Set<Entity>getDependencies(Entity entity)  {
+	final protected Set<Entity> getDependencies(Entity entity, EntityStore store)  {
 		HashSet<Entity> dependencyList = new HashSet<Entity>();
 		RaplaType type = entity.getRaplaType();
 		final Collection<Entity>referencingEntities;
 		if (Category.TYPE == type || DynamicType.TYPE == type || Allocatable.TYPE == type || User.TYPE == type) {
-			referencingEntities = getReferencingEntities(entity);
+			referencingEntities = getReferencingEntities(entity, store);
 		} else {
 			referencingEntities = cache.getReferers(Preferences.class, entity);
 		}
@@ -841,7 +871,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return dependencyList;
 	}
 
-	protected List<Entity>getReferencingEntities(Entity entity) {
+	protected List<Entity> getReferencingEntities(Entity entity, EntityStore store) {
 		ArrayList<Entity> list = new ArrayList<Entity>();
 		// Important to use getReferncingReservations here, because the method
 		// getReservations could be overidden in the subclass,
@@ -883,23 +913,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * Check if the references of each entity refers to an object in cache or in
 	 * the passed collection.
 	 */
-	final protected void checkReferences(Collection<Entity>entities)	throws RaplaException {
-		Set<String> idSet = new HashSet<String>();
-		for (Entity entity: entities) {
-			idSet.add( entity.getId());
-		}
-		for (Entity entity: entities) {
+	final protected void checkReferences(UpdateEvent evt, EntityStore store)	throws RaplaException {
+		
+		for (Entity entity: evt.getStoreObjects()) {
 			for (String id: ((RefEntity)entity).getReferencedIds())
 			{				
-				// Reference in cache ?
-				if (cache.tryResolve(id) != null)
+				// Reference in cache or store?
+				if (store.tryResolve(id) != null)
 					continue;
-				// References in collection?
-				if (idSet.contains(id))
-					continue;
-				
 			
-				throw new ReferenceNotFoundException(i18n.format("error.reference_not_stored", id));
+				throw new EntityNotFoundException(i18n.format("error.reference_not_stored", id));
 			}
 		}
 	}
@@ -909,14 +932,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * (different id) with the same unique attributes is found a
 	 * UniqueKeyException will be thrown.
 	 */
-	final protected void checkUnique(Collection<Entity>entities)	throws RaplaException {
-		for (Entity entity : entities) {
+	final protected void checkUnique(final UpdateEvent evt, final EntityStore store)	throws RaplaException {
+		for (Entity entity : evt.getStoreObjects()) {
 			String name = "";
 			Entity entity2 = null;
 			if (DynamicType.TYPE == entity.getRaplaType()) {
 				DynamicType type = (DynamicType) entity;
 				name = type.getElementKey();
-				entity2 = (Entity) cache.getDynamicType(name);
+				entity2 = (Entity) store.getDynamicType(name);
 				if (entity2 != null && !entity2.equals(entity))
 					throwNotUnique(name);
 			}
@@ -941,6 +964,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					String message = i18n.format("error.no_entry_for", getString("username"));
 					throw new RaplaException(message);
 				}
+				// FIXME Replace with store.getUser for the rare case that two users with the same username are stored in one operation
 				entity2 = cache.getUser(name);
 				if (entity2 != null && !entity2.equals(entity))
 					throwNotUnique(name);
@@ -952,9 +976,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		throw new UniqueKeyException(i18n.format("error.not_unique", name));
 	}
 
-
-
-	
 	/**
 	 * compares the version of the cached entities with the versions of the new
 	 * entities. Throws an Exception if the newVersion != cachedVersion
@@ -978,9 +999,69 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 		}
 	}
-
 	
-	protected void checkNoDependencies(Set<Entity> removeEntities, Set<Entity> storeObjects) throws RaplaException {
+	/** Check if the objects are consistent, so that they can be safely stored. */
+	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
+		for (Entity entity : evt.getStoreObjects()) {
+			for (String referencedIds:((RefEntity)entity).getReferencedIds())
+			{
+				Entity reference = store.resolve( referencedIds);
+				if (reference instanceof Preferences
+						|| reference instanceof Conflict
+						|| reference instanceof Reservation
+						|| reference instanceof Appointment
+						)
+				{
+					throw new RaplaException("The current version of Rapla doesn't allow references to objects of type "	+ reference.getRaplaType());
+				}
+			}
+			CategoryImpl superCategory = store.getSuperCategory();
+			if (Category.TYPE == entity.getRaplaType()) {
+				if (entity.equals(superCategory)) {
+					// Check if the user group is missing
+					Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
+					if (userGroups == null) {
+						throw new RaplaException("The category with the key '"
+								+ Permission.GROUP_CATEGORY_KEY
+								+ "' is missing.");
+					}
+				} else {
+					// check if the category to be stored has a parent
+					Category category = (Category) entity;
+					Category parent = category.getParent();
+					if (parent == null) {
+						throw new RaplaException("The category " + category
+								+ " needs a parent.");
+					}
+					else 
+					{
+						int i = 0;
+						while ( true)
+						{
+							if ( parent == null)
+							{
+								throw new RaplaException("Category needs to be a child of super category.");
+							} 
+							else if ( parent.equals( superCategory))
+							{
+								break;
+							}
+							parent = parent.getParent();
+							i++;
+							if ( i>80)
+							{
+								throw new RaplaException("infinite recursion detection for category " + category);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException {
+		Collection<Entity> removeEntities = evt.getRemoveObjects();
+		Collection<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
 		HashSet<Entity> dep = new HashSet<Entity>();
 		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
 		IteratorChain<Entity> iteratorChain = new IteratorChain<Entity>( deletedCategories,removeEntities);
@@ -997,7 +1078,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			// Than we add the dependencies from the cache. It is important that
 			// we don't add the dependencies from the stored object list here,
 			// because a dependency could be removed in a stored object
-			Set<Entity> dependencies = getDependencies(entity);
+			Set<Entity> dependencies = getDependencies(entity, store);
 			for (Entity dependency : dependencies) {
 				if (!storeObjects.contains(dependency)) {
 					// only add the first 21 dependencies;

@@ -63,6 +63,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 import org.rapla.storage.impl.AbstractCachableOperator;
+import org.rapla.storage.impl.EntityStore;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -367,7 +368,6 @@ public class RemoteOperator
    
     public void dispatch(UpdateEvent evt) throws RaplaException {
         checkConnected();
-        check( evt );
         // Store on server
         if (getLogger().isDebugEnabled()) {
             Iterator<Entity>it =evt.getStoreObjects().iterator();
@@ -387,19 +387,12 @@ public class RemoteOperator
         refresh(serverClosure);
     }
     
-	protected void check(final UpdateEvent evt) throws RaplaException {
-		Set<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
-		checkConsistency(storeObjects);
-	}
-    
     public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
     	String[] id = serv.createIdentifier(raplaType.getLocalName(), count);
     	return id;
     }
 
-    
-    
     public long getServerTime() throws RaplaException {
     	RemoteStorage remoteMethod = getRemoteStorage();
         String serverTimeString = remoteMethod.getServerTime();
@@ -641,60 +634,12 @@ public class RemoteOperator
 		Lock writeLock = writeLock();
 		try
         {
-            Collection<Entity> storeObjects = evt.getStoreObjects();
-            Collection<Entity> removeObjects = evt.getRemoveObjects();
-           // Collection<Entity> referenceObjects = evt.getReferenceObjects();
-
-//            for (Iterator<Entity>it = storeObjects.iterator();it.hasNext();)
-//            {
-//                Entity entity =  it.next();
-//                if ( isStorableInCache(entity))
-//                {
-//	                RefEntity cachedVersion = (RefEntity) cache.tryResolve(entity.getId());
-//	                // Ignore object if its not newer than the one in cache.
-//	                if (cachedVersion != null && cachedVersion.getVersion() >= ((RefEntity)entity).getVersion()) {
-//	                    //getLogger().debug("already on client " + entity + " version " + cachedVersion.getVersion());
-//	                    it.remove();
-//	                    continue;
-//	                }
-//                }
-//            }
-//            
-    	
-
-            //Collection<Entity>allObject = evt.getAllObjects();
-            
-			RemoteOperator.super.resolveEntities(   storeObjects   );
-
-//			RemoteOperator.super.resolveEntities
-//            (
-//            		referenceObjects
-//            		,this//createEntityStore(allObject,cache)
-//             );
-			// TODO We ignore references from deleted conflicts. Because they can cause weird problems e.g. when an appointment in a reservation container is deleted resulting in a conflict remove leading to the appointment now without a reservation not correctly transfered to the client side  
-//            List<Entity> removedObjectsWithoutConflicts = new LinkedList<Entity>(removeObjects);
-//            for ( Iterator<Entity> it = removedObjectsWithoutConflicts.iterator();it.hasNext();)
-//            {
-//            	Entity obj = it.next();
-//            	if ( obj instanceof Conflict) 
-//            	{
-//            		it.remove();
-//            	}
-//            }
-//			RemoteOperator.super.resolveEntities
-//                (
-//                	removedObjectsWithoutConflicts
-//                	,createEntityStore(allObject,cache)
-//                 );
-
-            clientRepositoryVersion = evt.getRepositoryVersion();
-            TimeInterval invalidateInterval = evt.getInvalidateInterval();
-			if ( bSessionActive  &&
-                  ( removeObjects.size() > 0
-                 || storeObjects.size() > 0  || invalidateInterval != null)  ) {
+			resolveEntities(evt.getStoreObjects());
+			resolveEntities(evt.getRemoveObjects());
+			clientRepositoryVersion = evt.getRepositoryVersion();
+    		if ( bSessionActive  &&   !evt.isEmpty()  ) {
                 getLogger().debug("Objects updated!");
                 UpdateResult result = update(evt);
-                // now we can set the cache as updated
                 fireStorageUpdated(result);
             }
         }

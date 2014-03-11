@@ -92,47 +92,51 @@ public class ReservationTest extends RaplaTestCase {
     public void testEdit() throws RaplaException {
         // store the reservation to create the id's
         modificationMod.storeObjects(new Entity[] {allocatable1,allocatable2, reserv1});
-        Reservation persistantReservation = modificationMod.getPersistant( reserv1);
-        Appointment oldAppointment= persistantReservation.getAppointments()[0];
-
-        // Clone the reservation
-        Reservation clone =  modificationMod.edit(persistantReservation);
-        assertTrue(persistantReservation.equals(clone));
-        assertTrue(clone.hasAllocated(allocatable1));
-
-        // Modify the cloned appointment
-        Appointment clonedAppointment= clone.getAppointments()[0];
-        cal = Calendar.getInstance(DateTools.getTimeZone());
-        cal.setTime(clonedAppointment.getStart());
-        cal.set(Calendar.HOUR_OF_DAY,12);
-        clonedAppointment.move(cal.getTime());
-
-        // Add a new appointment
-        cal.setTime(clonedAppointment.getStart());
-        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
-        cal.set(Calendar.HOUR_OF_DAY,15);
-        Date startDate2 = cal.getTime();
-        cal.set(Calendar.HOUR_OF_DAY,17);
-        Date endDate2 = cal.getTime();
-        Appointment newAppointment = modificationMod.newAppointment(startDate2, endDate2);
-        clone.addAppointment(newAppointment);
-
-        // Copy clone back to original reservation
-        modificationMod.storeObjects(new Entity[] {clone});
-
-        assertTrue(persistantReservation.hasAllocated(allocatable1));
-        // Check if oldAppointment has been modified
-        cal.setTime(oldAppointment.getStart());
+        String eventId;
+        {
+	        Reservation persistantReservation = modificationMod.getPersistant( reserv1);
+	        eventId = persistantReservation.getId();
+	        Appointment oldAppointment= persistantReservation.getAppointments()[0];
+	
+	        // Clone the reservation
+	        Reservation clone =  modificationMod.edit(persistantReservation);
+	        assertTrue(persistantReservation.equals(clone));
+	        assertTrue(clone.hasAllocated(allocatable1));
+	
+	        // Modify the cloned appointment
+	        Appointment clonedAppointment= clone.getAppointments()[0];
+	        cal = Calendar.getInstance(DateTools.getTimeZone());
+	        cal.setTime(clonedAppointment.getStart());
+	        cal.set(Calendar.HOUR_OF_DAY,12);
+	        clonedAppointment.move(cal.getTime());
+	
+	        // Add a new appointment
+	        cal.setTime(clonedAppointment.getStart());
+	        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
+	        cal.set(Calendar.HOUR_OF_DAY,15);
+	        Date startDate2 = cal.getTime();
+	        cal.set(Calendar.HOUR_OF_DAY,17);
+	        Date endDate2 = cal.getTime();
+	        Appointment newAppointment = modificationMod.newAppointment(startDate2, endDate2);
+	        clone.addAppointment(newAppointment);
+	
+	        // store clone
+	        modificationMod.storeObjects(new Entity[] {clone});
+	    }
+        Reservation persistantReservation = (Reservation) getFacade().getOperator().resolve(eventId);
+		assertTrue(persistantReservation.hasAllocated(allocatable1));
+		// Check if oldAppointment has been modified
+		Appointment[] appointments = persistantReservation.getAppointments();
+        cal.setTime(appointments[0].getStart());
         assertTrue(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY);
         assertTrue(cal.get(Calendar.HOUR_OF_DAY) == 12);
 
         // Check if newAppointment has been added
-        Appointment[] appointments = persistantReservation.getAppointments();
         assertTrue(appointments.length == 2);
-        cal.setTime(appointments[0].getEnd());
+        cal.setTime(appointments[1].getEnd());
         assertEquals(17,cal.get(Calendar.HOUR_OF_DAY));
         assertEquals(Calendar.MONDAY,cal.get(Calendar.DAY_OF_WEEK));
-        cal.setTime(appointments[0].getStart());
+        cal.setTime(appointments[1].getStart());
         assertEquals(15,cal.get(Calendar.HOUR_OF_DAY));
         assertEquals(Calendar.MONDAY,cal.get(Calendar.DAY_OF_WEEK));
     }

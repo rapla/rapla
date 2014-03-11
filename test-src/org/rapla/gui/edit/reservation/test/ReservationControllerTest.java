@@ -56,9 +56,7 @@ public final class ReservationControllerTest extends GUITestCase {
 	}
 
 	public void testMove() throws Exception {
-		//FIXME need to fix testO
-		assertFalse(true);
-		ClientService clientService = getClientService();
+		final ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade().getReservationsForAllocatable(null, null, null, null);
 		final ReservationController c =  clientService.getContext().lookup(ReservationController.class);
 		final Reservation reservation = reservations[0];
@@ -75,9 +73,8 @@ public final class ReservationControllerTest extends GUITestCase {
 				AppointmentBlock appointmentBlock = new AppointmentBlock( appointment);
 				Date newStart = DateTools.addDay(appointment.getStart());
 				try {
-					c.moveAppointment(appointmentBlock, newStart, null, p,
-							keepTime);
-					Appointment app = reservation.getAppointments()[0];
+					c.moveAppointment(appointmentBlock, newStart, null, p,	keepTime);
+					Appointment app = clientService.getFacade().getPersistant(reservation).getAppointments()[0];
 					assertEquals(DateTools.addDay(from), app.getStart());
 					// Now the test can end
 					mutex.release();
@@ -106,9 +103,9 @@ public final class ReservationControllerTest extends GUITestCase {
 		
 		//Testing undo & redo function
 		clientService.getFacade().getCommandHistory().undo();
-		assertEquals(from, reservation.getAppointments()[0].getStart());
+		assertEquals(from, clientService.getFacade().getPersistant(reservation).getAppointments()[0].getStart());
 		clientService.getFacade().getCommandHistory().redo();
-		assertEquals(DateTools.addDay(from), reservation.getAppointments()[0].getStart());
+		assertEquals(DateTools.addDay(from), clientService.getFacade().getPersistant(reservation).getAppointments()[0].getStart());
 	}
 	
 	

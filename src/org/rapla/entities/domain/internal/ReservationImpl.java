@@ -46,6 +46,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
 
 
 public class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
@@ -417,6 +418,10 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
             {
             	if ( restriction.equals( appointment.getId() ) ) {
             		Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
+            		if ( alloc == null)
+            		{
+            			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
+            		}
             		set.add( alloc );
                 }
             }
@@ -446,6 +451,10 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
             if (found )
             {
             	Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
+            	if ( alloc == null)
+        		{
+        			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
+        		}
             	set.add( alloc);
             }
         }

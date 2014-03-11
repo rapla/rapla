@@ -33,6 +33,7 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -145,9 +146,13 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     public DynamicTypeImpl getType() {
     	if ( resolver == null)
     	{
-    		return null;
+    		throw new IllegalStateException("Resolver not set on "+ toString());
     	}
         DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
+        if ( type == null)
+        {
+        	throw new UnresolvableReferenceExcpetion(parentId, toString());
+        }
     	return type;
     }
 

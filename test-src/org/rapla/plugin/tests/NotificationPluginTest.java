@@ -86,7 +86,8 @@ public class NotificationPluginTest extends ServletTestBase
         }
         list.add( allocatable );
         //getLogger().info( "Adding notificationEntry " + allocatable );
-        copy.putEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG, facade1.newRaplaMap( list ) );
+        RaplaMap<Allocatable> newRaplaMap = facade1.newRaplaMap( list );
+		copy.putEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG, newRaplaMap );
         copy.putEntry( NotificationPlugin.NOTIFY_IF_OWNER_CONFIG,  true  );
         facade1.store( copy );
     }
@@ -117,9 +118,15 @@ public class NotificationPluginTest extends ServletTestBase
         System.out.println( ( (RefEntity) r ).getVersion() );
 
         MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class );
-        Thread.sleep( 1000 );
-
-        assertNotNull( mailMock.getMailBody() );
+        for ( int i=0;i<1000;i++ )
+        {
+        	if (mailMock.getMailBody()!= null)
+        	{
+        		break;
+        	}
+        	Thread.sleep( 100 );
+        }
+        
         assertTrue( mailMock.getMailBody().indexOf( reservationName ) >= 0 );
 
        
@@ -161,8 +168,15 @@ public class NotificationPluginTest extends ServletTestBase
         facade1.store( r );
         facade1.remove( r );
 
-        Thread.sleep( 1000 );
         MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class );
+        for ( int i=0;i<1000;i++ )
+        {
+        	if (mailMock.getMailBody()!= null)
+        	{
+        		break;
+        	}
+        	Thread.sleep( 100 );
+        }
         assertEquals( 2, mailMock.getCallCount() );
         String body = mailMock.getMailBody();
         assertTrue( "Body doesnt contain delete text\n" + body, body.indexOf( "gel\u00f6scht" ) >= 0 );

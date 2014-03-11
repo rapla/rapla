@@ -51,7 +51,6 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         {
         	child.setParent( this);
         }
-        parent = getParent();
     }
     @Override
     public void addEntity(Entity entity) {

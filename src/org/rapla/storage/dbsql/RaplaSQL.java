@@ -671,12 +671,13 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     String annotationPrefix = "annotation:";
 	
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        int classifiableIdInt = rset.getInt( 1);
+        Class<? extends Entity> idClass = foreignKeyName.indexOf("RESOURCE")>=0 ? Allocatable.class : Reservation.class;
+		String classifiableId = readId(rset, 1, idClass);
         String attributekey = rset.getString( 2 );
         if ( attributekey.startsWith(annotationPrefix))
         {
         	String annotationKey = attributekey.substring( annotationPrefix.length());
-        	Annotatable annotatable = annotableMap.get(new Integer(classifiableIdInt));
+        	Annotatable annotatable = annotableMap.get(new Integer(classifiableId));
         	if (annotatable != null)
         	{
 	        	String valueAsString = rset.getString( 3);
@@ -691,19 +692,19 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         	}
         	else
         	{
-                getLogger().warn("No resource or reservation found for the id" + classifiableIdInt  + " ignoring.");
+                getLogger().warn("No resource or reservation found for the id " + classifiableId  + " ignoring.");
         	}
         }
         else
         {
-            ClassificationImpl classification = (ClassificationImpl) classificationMap.get(new Integer(classifiableIdInt));
+            ClassificationImpl classification = (ClassificationImpl) classificationMap.get(classifiableId);
             if ( classification == null) {
-                getLogger().warn("No resource or reservation found for the id" + classifiableIdInt  + " ignoring.");
+                getLogger().warn("No resource or reservation found for the id " + classifiableId  + " ignoring.");
                 return;
             }
 	    	Attribute attribute = classification.getType().getAttribute( attributekey );
 	    	if ( attribute == null) {
-	    		getLogger().error("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current allocatable/reservation Id " + classifiableIdInt + ". Ignoring attribute.");
+	    		getLogger().error("DynamicType '" +classification.getType() +"' doesnt have an attribute with the key " + attributekey + " Current allocatable/reservation Id " + classifiableId + ". Ignoring attribute.");
 	    		return;
 	    	}
 	    	String valueAsString = rset.getString( 3);
@@ -743,8 +744,8 @@ class PermissionStorage extends EntityStorage<Allocatable>  {
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        int allocatableIdInt = rset.getInt( 1);
-        Allocatable allocatable = allocatableMap.get(new Integer(allocatableIdInt));
+        String allocatableIdInt = readId(rset, 1, Allocatable.class);
+        Allocatable allocatable = allocatableMap.get(allocatableIdInt);
         if ( allocatable == null)
         {
         	getLogger().warn("Could not find resource object with id "+ allocatableIdInt + " for permission. Maybe the resource was deleted from the database.");

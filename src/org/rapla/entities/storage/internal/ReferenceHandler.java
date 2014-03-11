@@ -67,6 +67,10 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
     {
     }
     
+    public Map<String,?> getLinkMap()
+    {
+    	return links;
+    }
     /**
      * @see org.rapla.entities.storage.EntityReferencer#setResolver(org.rapla.entities.storage.EntityResolver)
      */
@@ -219,7 +223,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 			}
 			else
 			{
-				throw new IllegalStateException("Entity for id " + id + " not found in " + toString() );
+				throw new UnresolvableReferenceExcpetion( id, toString() );
 			}
 		}
 		return entries;
@@ -234,7 +238,12 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
          String id  = entries.get(0);
          if (id == null)
              return null;
- 		return resolver.tryResolve( id );
+ 		Entity resolved = resolver.tryResolve( id );
+		if ( resolved == null)
+		{
+			throw new UnresolvableReferenceExcpetion(id);
+		}
+ 		return resolved;
     }
 
 	public boolean removeWithKey(String key) {

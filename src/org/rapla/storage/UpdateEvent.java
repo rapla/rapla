@@ -287,6 +287,12 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         }
 		return objects;
 	}
+
+
+	public boolean isEmpty() {
+        boolean isEmpty = removeSet.isEmpty() && storeSet.isEmpty() && invalidateInterval == null;
+        return isEmpty;
+	}
 	
     
 }

@@ -334,6 +334,23 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
                 buf.append(AppointmentImpl.fe(end.getTime()));
             }
         }
+        if ( exceptions != null && exceptions.size()>0)
+        {
+        	buf.append(" exceptions=");
+        	boolean first = true;
+            for (Date exception:exceptions)
+        	{
+            	if (!first)
+            	{
+            		buf.append(", ");
+            	}
+            	else
+            	{
+            		first = false;
+            	}
+            	buf.append(exception);
+        	}
+        }
         return buf.toString();
     }
 
