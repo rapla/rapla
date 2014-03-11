@@ -72,7 +72,8 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         }
 
         if (localName.equals("selected")) {
-            delegateElement( selectedEntitiesMapReader, namespaceURI, localName, qName, atts);
+            selectedEntitiesMapReader.clear();
+        	delegateElement( selectedEntitiesMapReader, namespaceURI, localName, qName, atts);
         }
 
         if (localName.equals("options")) {

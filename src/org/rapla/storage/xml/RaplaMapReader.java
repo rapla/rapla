@@ -21,6 +21,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.xml.sax.Attributes;
@@ -31,10 +32,15 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
     String key;
     RaplaMapImpl<T> entityMap;
     RaplaXMLReader childReader;
-
+    int autoKeyIndex = 0;
     public RaplaMapReader(RaplaContext sm) throws RaplaException {
         super(sm);
     }
+
+	public void clear() {
+		autoKeyIndex = 0;
+		entityMap = new RaplaMapImpl<T>();
+	}
 
     @SuppressWarnings("unchecked")
 	public void processElement(String namespaceURI,String localName,String qName,Attributes atts)
@@ -66,6 +72,8 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
         String refid = getString( atts, "idref", null);
         String keyref = getString( atts, "keyref", null);
         RaplaType raplaType = getTypeForLocalName( localName );
+        
+        String key = this.key;
         if ( refid != null) {
             childReader = null;
             // TODO We ignore the old references
@@ -73,13 +81,26 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
                 return;
             }
             Object id = getId( raplaType, refid);
-            entityMap.getReferenceHandler().putId( key,  id);
+            ReferenceHandler referenceHandler = entityMap.getReferenceHandler();
+            if  ( key == null)
+            {
+            	key = ""+ autoKeyIndex;
+            	autoKeyIndex++;
+            }
+            referenceHandler.putId( key,  id);
+
         }  else if ( keyref != null) {
             childReader = null;
             DynamicType type = getDynamicType( keyref );
             if ( type != null) {
                 Object id = ((RefEntity<?>) type).getId();
-                entityMap.getReferenceHandler().putId( key,  id);
+                ReferenceHandler referenceHandler = entityMap.getReferenceHandler();
+                if  ( key == null)
+                {
+                	key = ""+ autoKeyIndex;
+                	autoKeyIndex++;
+                }
+                referenceHandler.putId( key,  id);
             }
         } else {
             childReader = getChildHandlerForType( raplaType );
@@ -116,6 +137,7 @@ public class RaplaMapReader<T> extends RaplaXMLReader  {
         //reservation.getReferenceHandler().put()
         return getEntityMap();
     }
+
 
 
 }
