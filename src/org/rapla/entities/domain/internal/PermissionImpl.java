@@ -289,9 +289,9 @@ public class PermissionImpl
  		if (o == null)
  			return false;
 
- 		Permission perm = (Permission) o;
- 		if (equalValues(this.getUser(), perm.getUser())
- 				&& equalValues(this.getGroup(), perm.getGroup())
+ 		PermissionImpl perm = (PermissionImpl) o;
+ 		if (equalValues(this.getReferenceHandler().getId("user"), perm.getReferenceHandler().getId("user"))
+ 				&& equalValues(this.getReferenceHandler().getId("group"), perm.getReferenceHandler().getId("group"))
  				&& equalValues(this.getStart(), perm.getStart())
  				&& equalValues(this.getEnd(), perm.getEnd())
  				&& equalValues(this.getAccessLevel(), perm.getAccessLevel()))
@@ -302,8 +302,8 @@ public class PermissionImpl
  	
  	public int hashCode() {
  		StringBuilder buf = new StringBuilder();
- 		append( buf,getUser());
-		append( buf,getGroup());
+ 		append( buf,getReferenceHandler().getId("user"));
+		append( buf,getReferenceHandler().getId("group"));
 		append( buf,getStart());
 		append( buf,getEnd());
 		append( buf,getAccessLevel());

@@ -202,12 +202,12 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         String originalId = original.getId();
 		if (!storeSet.contains( originalId))
         {
-        	return null;
+			if (!removeSet.contains( originalId))
+	        {
+	        	return null;
+	        }
         }
-        if (!removeSet.contains( originalId))
-        {
-        	return null;
-        }
+		
         for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
@@ -218,7 +218,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         		}
         	}
         }
-        return null;
+      	throw new IllegalStateException("Entity in store/remove set but not found in list");
     }
 
     public UpdateEvent clone() {

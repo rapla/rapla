@@ -25,7 +25,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 public class UserImpl extends SimpleEntity implements User
@@ -35,7 +34,6 @@ public class UserImpl extends SimpleEntity implements User
     private String name = "";
     private boolean admin = false;
 
-    transient private boolean groupArrayUpToDate = false;
     // The resolved references
     transient private Category[] groups;
 
@@ -133,7 +131,7 @@ public class UserImpl extends SimpleEntity implements User
         checkWritable();
         if (isRefering(group.getId()))
             return;
-        groupArrayUpToDate = false;
+        groups = null;
         add("groups",group);
     }
 
@@ -160,7 +158,7 @@ public class UserImpl extends SimpleEntity implements User
     }
 
     private void updateGroupArray() {
-        if (groupArrayUpToDate)
+        if (groups != null)
             return;
         synchronized ( this )
         {
@@ -170,14 +168,13 @@ public class UserImpl extends SimpleEntity implements User
         		groupList.add((Category)o);
         	}
         	groups = groupList.toArray(Category.CATEGORY_ARRAY);
-        	groupArrayUpToDate = true;
     	}
     }
 
     public User clone() {
         UserImpl clone = new UserImpl();
         super.deepClone(clone);
-        clone.groupArrayUpToDate = false;
+        clone.groups = null;
         clone.username = username;
         clone.name = name;
         clone.email = email;

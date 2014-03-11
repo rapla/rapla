@@ -21,9 +21,14 @@ public class DependencyException extends RaplaException {
     
     Collection<String> dependentObjects;
     public DependencyException(String message,String[] dependentObjectsNames)  {
-        super(message);
-        this.dependentObjects =  Arrays.asList(dependentObjectsNames);
+        this(message, Arrays.asList(dependentObjectsNames));
     }
+    
+    public DependencyException(String message,Collection<String> dependentObjectsNames)  {
+        super(message);
+        this.dependentObjects = dependentObjectsNames ;
+    }
+
 
     public Collection<String> getDependencies() {
         return dependentObjects;

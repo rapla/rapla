@@ -39,7 +39,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     //transient protected ReferenceHandler subEntityHandler;
 
     transient boolean readOnly = false;
-    transient Integer key;
+    transient Integer idKey;
     
     public SimpleEntity() {
 
@@ -124,7 +124,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     		id = id.intern();
     	}
         this.id= id;
-        key = null;
+        idKey = null;
     }
 
     /** @return the identifier of the object.
@@ -151,11 +151,11 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     
     public Integer getIdKey()
     {
-    	if ( key == null && id != null)
+    	if ( idKey == null && id != null)
     	{
-    		key = ((RaplaObject)this).getRaplaType().getKey( id );
+    		idKey = ((RaplaObject)this).getRaplaType().getKey( id );
     	}
-    	return key;
+    	return idKey;
     }
 
     /** The hashcode of the id-object will be returned.
@@ -184,6 +184,17 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         for (Entity entity:getSubEntities())
         {
             if (entity.equals(copy)) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+    /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
+	public Entity findEntityForId(String id) {
+        for (Entity entity:getSubEntities())
+        {
+            if (id.equals(entity.getId())) {
                 return entity;
             }
         }

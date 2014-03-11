@@ -47,12 +47,16 @@ public class PermissionTest extends ServletTestBase {
         locale = Locale.getDefault();
         try
         {
-            Category groups =  adminFacade.edit( adminFacade.getUserGroupsCategory() );
+            Category userGroupsCategory = adminFacade.getUserGroupsCategory();
+			Category groups =  adminFacade.edit( userGroupsCategory );
             Category testGroup = adminFacade.newCategory();
             testGroup.setKey("test-group");
             groups.addCategory( testGroup );
             adminFacade.store( groups );
-    
+            {
+            	Category testGroup2 = adminFacade.getUserGroupsCategory().getCategory("test-group");
+            	assertNotNull( testGroup2);
+            }
             User user = adminFacade.newUser();
             user.setUsername("test");
             user.addGroup( testGroup );
@@ -85,6 +89,7 @@ public class PermissionTest extends ServletTestBase {
         allocatable.removePermission( allocatable.getPermissions()[0] );
         Permission permission = allocatable.newPermission();
         Category testGroup = adminFacade.getUserGroupsCategory().getCategory("test-group");
+        assertNotNull( testGroup);
         permission.setGroup ( testGroup );
         permission.setAccessLevel( Permission.READ );
         allocatable.addPermission( permission );

@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.entities.DependencyException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.dbrm.HTTPConnector;
 
@@ -331,9 +332,8 @@ public class JsonServlet<CallType extends ActiveCall>  {
       try {
         final GsonBuilder gb = createGsonBuilder();
         
-        gb.registerTypeAdapter(ActiveCall.class, //
-            new CallDeserializer<CallType>(call, this));
-         gb.create().fromJson(d, ActiveCall.class);
+        gb.registerTypeAdapter(ActiveCall.class,  new CallDeserializer<CallType>(call, this));
+        gb.create().fromJson(d, ActiveCall.class);
       } catch (JsonParseException err) {
         call.method = null;
         call.params = null;
@@ -489,7 +489,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
       @Override
       public JsonElement serialize(final ActiveCall src, final Type typeOfSrc,
           final JsonSerializationContext context) {
-    	  if (call.internalFailure != null) {
+    	  if (call.externalFailure != null) {
     	        final String msg = "Error in " + call.method.getName();
     	        logger.error(msg, call.internalFailure);
     	  }
@@ -531,14 +531,28 @@ public class JsonServlet<CallType extends ActiveCall>  {
             final int code = to2_0ErrorCode(src);
             error.addProperty("code", code);
             error.addProperty("message", message);
-            JsonObject errorData = new JsonObject();
+           
+			JsonObject errorData = new JsonObject();
+			errorData.addProperty("exception", failure.getClass().getName());
+			
+				
+			if (failure instanceof DependencyException)
+			{
+				JsonArray params = new JsonArray();
+				for (String dep:((DependencyException) failure).getDependencies())
+				{
+					params.add( new JsonPrimitive(dep));
+				}
+				errorData.add("params", params);
+			}
+			
 			JsonArray stackTrace = new JsonArray();
 			for ( StackTraceElement el: failure.getStackTrace())
 			{
 				stackTrace.add( new JsonPrimitive(el.toString()));
 			}
-			errorData.addProperty("exception", failure.getClass().getName());
 			errorData.add("stacktrace", stackTrace);
+			
             error.add("data", errorData);
           } else {
             error.addProperty("name", "JSONRPCError");

@@ -1,6 +1,5 @@
 package org.rapla.storage.dbrm;
 
-import java.beans.ExceptionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,9 +13,11 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,8 +46,6 @@ import com.google.gson.internal.ConstructorConstructor;
 import com.google.gson.internal.Excluder;
 import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.server.MapDeserializer;
 import com.google.gwtjsonrpc.server.SqlDateDeserializer;
@@ -115,12 +114,20 @@ public class HTTPConnector  implements Connector
 			JsonElement code = errorElement.get("code");
 			if ( data != null)
 			{
+				JsonArray paramObj = (JsonArray) data.get("params");
 				JsonElement jsonElement = data.get("exception");
 				if ( jsonElement != null)
 				{
 					String classname = jsonElement.getAsString();
-					String param = null;
-					RaplaException ex = deserializeException(classname, message.toString(), param);
+					List<String> params = new ArrayList<String>();
+					if ( paramObj != null)
+					{
+						for ( JsonElement param:paramObj)
+						{
+							params.add(param.toString());
+						}
+					}
+					RaplaException ex = deserializeException(classname, message.toString(), params);
 					return ex;
 				}
 			}
@@ -190,8 +197,7 @@ public class HTTPConnector  implements Connector
             if ( message != null)
             {
             	String classname = conn.getHeaderField("X-Error-Classname");
-            	String param = conn.getHeaderField("X-Error-Param");
-            	RaplaException ex = deserializeException( classname, message, param);
+            	RaplaException ex = deserializeException( classname, message, null);
             	throw ex;
             }
             inputStream = conn.getInputStream();
@@ -261,7 +267,7 @@ public class HTTPConnector  implements Connector
         }
    }
     
-    public RaplaException deserializeException(String classname, String message, String param) throws RaplaException
+    public RaplaException deserializeException(String classname, String message, List<String> params) throws RaplaException
     {
     	String error = "";
     	if ( message != null)
@@ -297,11 +303,10 @@ public class HTTPConnector  implements Connector
 	            }
 	            else if ( classname.equals( DependencyException.class.getName()))
 	            {
-	//                    if ( param != null)
-	//                    {
-	//                            String[] list = (String[])convertFromString( String[].class, param);
-	//                            return new DependencyException( message,list);
-	//                    }
+	                    if ( params != null)
+	                    {
+	                    	return new DependencyException( message,params);
+	                    }
 	                    //Collection<String> depList = Collections.emptyList();
 	                    return new DependencyException( message, new String[] {});
 	            }

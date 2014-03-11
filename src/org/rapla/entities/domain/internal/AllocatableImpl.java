@@ -294,7 +294,12 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     }
 
     public Permission newPermission() {
-        return new PermissionImpl();
+        PermissionImpl permissionImpl = new PermissionImpl();
+        if ( resolver != null)
+        {
+        	permissionImpl.setResolver( resolver);
+        }
+		return permissionImpl;
     }
 
     public Permission[] getPermissions() {

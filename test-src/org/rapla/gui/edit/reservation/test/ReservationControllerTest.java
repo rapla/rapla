@@ -56,6 +56,8 @@ public final class ReservationControllerTest extends GUITestCase {
 	}
 
 	public void testMove() throws Exception {
+		//FIXME need to fix testO
+		assertFalse(true);
 		ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade().getReservationsForAllocatable(null, null, null, null);
 		final ReservationController c =  clientService.getContext().lookup(ReservationController.class);

@@ -76,6 +76,10 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     		throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
     	}
         final ClassificationImpl classification = new ClassificationImpl(this);
+        if ( resolver != null)
+        {
+        	classification.setResolver( resolver);
+        }
         // Array could not be up todate
         final Attribute[] attributes2 = getAttributes();
         if ( useDefaults)
@@ -274,7 +278,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 		if ( matchingAttributeKey == null) {
             return;
         }
-        attributes.remove( matchingAttributeKey);
+        attributes.remove( attribute);
         if (this.equals(attribute.getDynamicType()))
         {
         	if (((AttributeImpl) attribute).isReadOnly())
@@ -299,6 +303,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     public void addAttribute(Attribute attribute) {
         checkWritable();
         addEntity(attribute);
+        attributeIndex = null;
     }
 
     public boolean hasAttribute(Attribute attribute) {
@@ -318,7 +323,8 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
         		attributeIndex.put( att.getKey(), att);
         	}
     	}
-    	return attributeIndex.get( key);
+    	AttributeImpl attributeImpl = attributeIndex.get( key);
+		return attributeImpl;
     }
 
     public ParsedText getParsedAnnotation(String key) {

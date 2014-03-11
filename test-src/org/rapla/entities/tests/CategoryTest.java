@@ -112,8 +112,8 @@ public class CategoryTest extends RaplaTestCase {
         department.removeCategory( subDepartment);
         modificationMod.store( department );
         try {
-           subDepartment = modificationMod.edit( subDepartment );
-           modificationMod.store( subDepartment );
+           Category subDepartmentEdit = modificationMod.edit( subDepartment );
+           modificationMod.store( subDepartmentEdit );
            fail( "store should throw an exception, when trying to edit a removed entity ");
         } catch ( RaplaException ex) {
         }

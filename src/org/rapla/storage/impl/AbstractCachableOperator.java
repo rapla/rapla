@@ -53,11 +53,13 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -446,7 +448,8 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		    
 				
 				Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
-	    		Map<String,Entity> resolvedList = getFromId( idMap.keySet(), false);
+	    		Set<String> keySet = idMap.keySet();
+				Map<String,Entity> resolvedList = getFromId( keySet, false);
 		    	for (Entity entity:resolvedList.values())
 		    	{
 		    		String id = entity.getId().toString();
@@ -496,15 +499,18 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		for (Entity entity : entities) {
 			for (String referencedIds:((RefEntity)entity).getReferencedIds())
 			{
-				//FIXME add check later
-				//				if (reference instanceof Preferences
-//						|| reference instanceof Conflict
-//						|| (reference instanceof Reservation && !( entity instanceof Appointment)) 
-//						|| (reference instanceof Appointment && !( entity instanceof Reservation)) 
-//						)
-//				{
-//					throw new RaplaException("The current version of Rapla doesn't allow references to objects of type "	+ reference.getRaplaType());
-//				}
+				Entity reference = tryResolve( referencedIds);
+				if ( reference != null)
+				{
+					if (reference instanceof Preferences
+							|| reference instanceof Conflict
+							|| reference instanceof Reservation
+							|| reference instanceof Appointment
+							)
+					{
+						throw new RaplaException("The current version of Rapla doesn't allow references to objects of type "	+ reference.getRaplaType());
+					}
+				}
 			}
 			// Check if the user group is missing
 			if (Category.TYPE == entity.getRaplaType()) {
@@ -517,9 +523,31 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 					}
 				} else {
 					Category category = (Category) entity;
-					if (category.getParent() == null) {
+					Category parent = category.getParent();
+					if (parent == null) {
 						throw new RaplaException("The category " + category
 								+ " needs a parent.");
+					}
+					else 
+					{
+						int i = 0;
+						while ( true)
+						{
+							if ( parent == null)
+							{
+								throw new RaplaException("Category needs to be a child of super category.");
+							} 
+							else if ( parent.equals( cache.getSuperCategory()))
+							{
+								break;
+							}
+							parent = parent.getParent();
+							i++;
+							if ( i>80)
+							{
+								throw new RaplaException("infinite recursion detection for category " + category);
+							}
+						}
 					}
 				}
 			}
@@ -704,6 +732,15 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 					// we clone the entity because it could be modified after calling dispatch
 				}
 				toUpdate = entity;
+				if ( entity instanceof Category)
+				{
+					Category category = (Category)entity;
+					CategoryImpl parent = (CategoryImpl)category.getParent();
+					if ( parent != null)
+					{
+						parent.replace( category);
+					}
+				}
 				cache.put(toUpdate);
 			}
 			else
@@ -833,6 +870,12 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	protected void increaseVersion(Entity entity) {
 		SimpleEntity e = (SimpleEntity) entity;
 		e.setVersion(e.getVersion() + 1);
+		if ( e instanceof ParentEntity){
+			for (Entity child : ((ParentEntity)e).getSubEntities())
+			{
+				increaseVersion(child);
+			}
+		}
 		if (getLogger().isDebugEnabled()) {
 			getLogger().debug("Increasing Version for " + e + " to " + e.getVersion());
 		}

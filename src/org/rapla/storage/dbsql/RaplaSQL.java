@@ -488,7 +488,6 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 	    checkAndAdd( schema, "LAST_CHANGED_BY");
     }
        
-    
 	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
 	  	AllocatableImpl allocatable = (AllocatableImpl) entity;
 	  	String typeKey = allocatable.getClassification().getType().getElementKey();
@@ -513,6 +512,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
     	allocatable.setId( id);
+    	allocatable.setResolver( entityStore);
     	allocatable.setHoldBackConflicts( ignoreConflicts );
     	DynamicType type = null;
     	if ( typeKey != null)
@@ -575,6 +575,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
     	String id = readId(rset,1,Reservation.class);
 		event.setId( id);
+		event.setResolver( entityStore);
 		String typeKey = getString(rset,2,null);
 		DynamicType type = null;
     	if ( typeKey != null)

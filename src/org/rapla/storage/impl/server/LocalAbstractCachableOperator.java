@@ -40,6 +40,7 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
+import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -623,7 +624,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected UpdateEvent createClosure(final UpdateEvent evt)
 			throws RaplaException {
 		UpdateEvent closure = evt.clone();
-		Iterator<Entity>it = evt.getStoreObjects().iterator();
+		Collection<Entity> storeObjects = evt.getStoreObjects();
+		Iterator<Entity>it = storeObjects.iterator();
 		while (it.hasNext()) {
 			Entity object = it.next();
 			addStoreOperationsToClosure(closure, object);
@@ -633,6 +635,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		while (it.hasNext()) {
 			Entity object = it.next();
 			addRemoveOperationsToClosure(closure, object);
+		}
+		for (Entity entity: getDeletedCategories(storeObjects))
+		{
+			closure.putRemove(entity);
 		}
 		return closure;
 	}
@@ -680,7 +686,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		if (User.TYPE == entity.getRaplaType()) {
 			addRemovedUserDependant(evt, (User) entity);
 		}
-
+		
+		
 		// add the subentities
 //		if ( entity instanceof ParentEntity)
 //		{
@@ -975,8 +982,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	protected void checkNoDependencies(Set<Entity> removeEntities, Set<Entity> storeObjects) throws RaplaException {
 		HashSet<Entity> dep = new HashSet<Entity>();
-
-		for (Entity entity : removeEntities) {
+		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
+		IteratorChain<Entity> iteratorChain = new IteratorChain<Entity>( deletedCategories,removeEntities);
+		for (Entity entity : iteratorChain) {
 			// Add dependencies for the entity
 
 			// First we add the dependencies from the stored object list
@@ -1020,6 +1028,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //				}
 //			}
 //		}
+		
 		if (dep.size() > 0) {
 			Collection<String> names = new ArrayList<String>();
 			for (Entity obj: dep)
@@ -1034,6 +1043,35 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
 		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+	}
+
+	private Set<Entity> getDeletedCategories(Iterable<Entity> storeObjects) {
+		Set<Entity> deletedCategories = new HashSet<Entity>();
+		for (Entity entity : storeObjects) {
+			if ( entity.getRaplaType() == Category.TYPE)
+			{
+				Category newCat = (Category) entity;
+				Category old = (Category) findInLocalCache(entity);
+				if ( old != null)
+				{
+					Set<Category> oldSet = getAllCategories( old);
+					Set<Category> newSet = getAllCategories( newCat);
+					oldSet.removeAll( newSet);
+					deletedCategories.addAll( oldSet );
+				}
+			}
+		}
+		return deletedCategories;
+	}
+
+	private Set<Category> getAllCategories(Category old) {
+		HashSet<Category> result = new HashSet<Category>();
+		result.add( old);
+		for (Category child : old.getCategories())
+		{
+			result.addAll( getAllCategories(child));
+		}
+		return result;
 	}
 
 	protected String getDependentName(Entity obj) {

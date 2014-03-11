@@ -39,13 +39,13 @@ public final class PermissionEditTest extends GUITestCase
         PermissionListField editor = new PermissionListField(clientService.getContext(),"permissions");
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];
         Allocatable r = clientService.getFacade().edit( a );
-        Permission p1 = new PermissionImpl();
+        Permission p1 = r.newPermission();
         p1.setUser(clientService.getFacade().getUsers()[0]);
         r.addPermission(p1);
-        Permission p2 = new PermissionImpl();
+        Permission p2 = r.newPermission();
         p2.setUser( clientService.getFacade().getUsers()[1]);
         r.addPermission(p2);
-        Permission p3 = new PermissionImpl();
+        Permission p3 = r.newPermission();
         r.addPermission(p3);
         editor.mapFrom(Collections.singletonList(r));
         testComponent(editor.getComponent(),700,300);

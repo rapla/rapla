@@ -67,10 +67,11 @@ public class LocalCacheTest extends RaplaTestCase {
     }
 
 
-    public AllocatableImpl createResource(int id,DynamicType type,String name) {
+    public AllocatableImpl createResource(LocalCache cache,int id,DynamicType type,String name) {
         Date today = new Date();
         AllocatableImpl resource = new AllocatableImpl(today, today);
         resource.setId(Allocatable.TYPE.getId(id));
+        resource.setResolver( cache);
         Classification classification = type.newClassification();
         classification.setValue("name",name);
         resource.setClassification(classification);
@@ -81,13 +82,14 @@ public class LocalCacheTest extends RaplaTestCase {
         LocalCache cache = new LocalCache();
 
         DynamicTypeImpl type = createDynamicType();
+        type.setResolver( cache);
         type.setReadOnly( true );
         cache.put( type );
-        AllocatableImpl resource1 = createResource(1,type,"Adrian");
+        AllocatableImpl resource1 = createResource(cache,1,type,"Adrian");
         cache.put(resource1);
-        AllocatableImpl resource2 = createResource(2,type,"Beta");
+        AllocatableImpl resource2 = createResource(cache,2,type,"Beta");
         cache.put(resource2);
-        AllocatableImpl resource3 = createResource(3,type,"Ceta");
+        AllocatableImpl resource3 = createResource(cache,3,type,"Ceta");
         cache.put(resource3);
 
         resource1.getClassification().setValue("name","Zeta");

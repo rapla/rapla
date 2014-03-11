@@ -66,7 +66,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     RaplaContext context;
     LocalCache cache;
-    private EntityStore entityStore;
+    protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
     
     Collection<Storage<T>> subStores = new ArrayList<Storage<T>>();

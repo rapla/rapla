@@ -213,7 +213,14 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 		for ( String id:ids)
 		{
 			Entity entity = resolver.tryResolve( id );
-			entries.add( entity );
+			if ( entity != null)
+			{
+				entries.add( entity );
+			}
+			else
+			{
+				throw new IllegalStateException("Entity for id " + id + " not found in " + toString() );
+			}
 		}
 		return entries;
 	}	

@@ -15,6 +15,7 @@ package org.rapla.entities.tests;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import junit.framework.TestSuite;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -67,11 +69,12 @@ public class AppointmentTest extends TestCase {
         Appointment a2 = createAppointment(new Day(2002,5,26),new Time(13,0),new Time(15,0));
         Appointment a3 = createAppointment(new Day(2002,5,25),new Time(13,0),new Time(15,0));
 
+        Comparator<Appointment> comp = new AppointmentStartComparator();
         // First the single Appointments
-        assertTrue(a1.compareTo(a2) == -1);
-        assertTrue(a2.compareTo(a1) == 1);
-        assertTrue(a1.compareTo(a3) == -1);
-        assertTrue(a3.compareTo(a1) == 1);
+        assertTrue(comp.compare(a1,a2) == -1);
+        assertTrue(comp.compare(a2,a1) == 1);
+        assertTrue(comp.compare(a1,a3) == -1);
+        assertTrue(comp.compare(a3,a1) == 1);
         assertTrue(a1.overlaps(a3));
         assertTrue(a3.overlaps(a1));
         assertTrue(!a2.overlaps(a3));

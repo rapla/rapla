@@ -64,7 +64,7 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        app.getRepeating().setType(Repeating.DAILY);
 	        app.getRepeating().setNumber( 10);
 	        app.getRepeating().addException( new Date());
-	        facade.storeObjects( new Entity[] { r,app, app2, resource });
+	        facade.storeObjects( new Entity[] { r, resource });
 	    }
         operator.disconnect();
         operator.connect();
@@ -159,7 +159,7 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        app.getRepeating().setType(Repeating.DAILY);
 	        app.getRepeating().setNumber( 10);
 	        app.getRepeating().addException( new Date());
-	        facade.storeObjects( new Entity[] { r,app, app2, resource });
+	        facade.storeObjects( new Entity[] { r, resource });
         	operator.disconnect();
 	    }
         // einlesen

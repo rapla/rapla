@@ -48,6 +48,7 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	type.addAttribute( att);
 	    	facade.store( type);
 	    	{
+	    		eventType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
 	    		AttributeImpl attributeImpl = (AttributeImpl) eventType.getAttribute(key);
 	    		assertEquals(1 , attributeImpl.getVersion());
 	    	}

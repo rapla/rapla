@@ -131,8 +131,10 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeDynamicType() throws Exception {
-		Allocatable allocatable = facade1.getAllocatables()[0];
-		assertEquals(3, allocatable.getClassification().getAttributes().length);
+		{
+			Allocatable allocatable = facade1.getAllocatables()[0];
+			assertEquals(3, allocatable.getClassification().getAttributes().length);
+		}
 		DynamicType type = facade1.getDynamicType("room");
 		Attribute newAttribute;
 		{
@@ -175,17 +177,21 @@ public class ServerTest extends ServletTestBase {
 					userGroup.getKey());
 			facade2.logout();
 		}
-
-		assertEquals(4, allocatable.getClassification().getAttributes().length);
+		{
+			Allocatable allocatable = facade1.getAllocatables()[0];
+			assertEquals(4, allocatable.getClassification().getAttributes().length);
+		}
 		DynamicType typeEdit2 = facade1.edit(type);
 		Attribute attributeLater = typeEdit2.getAttribute("test");
 		assertTrue("Attributes identy changed after storing ",
 				attributeLater.equals(newAttribute));
 		typeEdit2.removeAttribute(attributeLater);
 		facade1.store(typeEdit2);
-		assertEquals(facade1.getAllocatables().length, 5);
-		assertEquals(3, allocatable.getClassification().getAttributes().length);
-
+		{
+			Allocatable allocatable = facade1.getAllocatables()[0];
+			assertEquals(facade1.getAllocatables().length, 5);
+			assertEquals(3, allocatable.getClassification().getAttributes().length);
+		}
 		User user = facade1.newUser();
 		user.setUsername("test-user");
 		facade1.store(user);
@@ -232,8 +238,7 @@ public class ServerTest extends ServletTestBase {
 		facade2.logout();
 	}
 
-	private Reservation findReservation(ClientFacade facade, String typeKey,
-			String name) throws RaplaException {
+	private Reservation findReservation(ClientFacade facade, String typeKey,String name) throws RaplaException {
 		DynamicType reservationType = facade.getDynamicType(typeKey);
 		ClassificationFilter filter = reservationType.newClassificationFilter();
 		filter.addRule("name", new Object[][] { { "contains", name } });
@@ -246,15 +251,19 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeDynamicType2() throws Exception {
-		DynamicType type = facade1
-				.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
-		DynamicType typeEdit3 = facade1.edit(type);
-		typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
-
-		Allocatable resource1 = facade1.getAllocatables()[0];
-		assertEquals("erwin", resource1.getName(locale));
-		facade1.store(typeEdit3);
-		assertEquals(2, resource1.getClassification().getAttributes().length);
+		{
+			DynamicType type = facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
+			DynamicType typeEdit3 = facade1.edit(type);
+			typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
+			Allocatable resource1 = facade1.getAllocatables()[0];
+			assertEquals("erwin", resource1.getName(locale));
+			facade1.store(typeEdit3);
+		}
+		{
+			Allocatable resource1 = facade1.getAllocatables()[0];
+			assertEquals("erwin", resource1.getName(locale));
+			assertEquals(2, resource1.getClassification().getAttributes().length);
+		}
 	}
 
 	public void testRemoveCategory() throws Exception {
@@ -270,14 +279,12 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeLogin() throws RaplaException {
-		ClientFacade facade2 = getContainer().lookup(ClientFacade.class,
-				"remote-facade-2");
+		ClientFacade facade2 = getContainer().lookup(ClientFacade.class,"remote-facade-2");
 		facade2.login("monty", "burns".toCharArray());
 
 		// boolean canChangePassword = facade2.canChangePassword();
 		User user = facade2.getUser();
-		facade2.changePassword(user, "burns".toCharArray(),
-				"newPassword".toCharArray());
+		facade2.changePassword(user, "burns".toCharArray(),	"newPassword".toCharArray());
 		facade2.logout();
 	}
 
@@ -330,8 +337,7 @@ public class ServerTest extends ServletTestBase {
 				.getCategory("department").getCategory("channel-6");
 		Category testdepartment = facade1.getSuperCategory()
 				.getCategory("department").getCategory("testdepartment");
-		classificationFilter
-				.setRule(0, dynamicType.getAttribute("belongsto"),
+		classificationFilter.setRule(0, dynamicType.getAttribute("belongsto"),
 						new Object[][] { { "is", channel6 },
 								{ "is", testdepartment } });
 		boolean thrown = false;

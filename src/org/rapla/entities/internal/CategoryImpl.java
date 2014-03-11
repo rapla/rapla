@@ -39,8 +39,7 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
     private String key;
     List<CategoryImpl> childs = new ArrayList<CategoryImpl>();
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
-    
-    transient Category parent;
+    private transient Category parent;
     
     public CategoryImpl() {
     }
@@ -52,26 +51,33 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         {
         	child.setParent( this);
         }
+        parent = getParent();
     }
     @Override
     public void addEntity(Entity entity) {
     	childs.add( (CategoryImpl) entity);
     }
 
-
-    public Category getParent() {
-        return parent;
-    }
-
     public RaplaType<Category> getRaplaType() {return TYPE;}
 
 	void setParent(CategoryImpl parent) {
+		putEntity("parent", parent);
 		this.parent = parent;
 	}
 
     public void removeParent()
     {
         removeWithKey("parent");
+        this.parent = null;
+    }
+    
+    public Category getParent()
+    {
+    	if ( parent == null)
+    	{
+    		parent = (Category) getEntity("parent");
+    	}
+		return parent;
     }
 
     public Category[] getCategories() {
@@ -113,7 +119,10 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
                       ,"Category is already attached to a parent");
         
         CategoryImpl categoryImpl = (CategoryImpl)category;
-        Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
+        if ( resolver != null)
+        {
+        	Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
+        }
         addEntity( (Entity) category);
 		categoryImpl.setParent(this);
     }
@@ -147,8 +156,8 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         if ( findCategory( category ) == null)
             return;
         childs.remove(category);
-        if (category.getParent().equals(this))
-            ((CategoryImpl)category).setParent(null);
+        //if (category.getParent().equals(this))
+        ((CategoryImpl)category).setParent(null);
     }
 
     public Category findCategory(Category copy) {
@@ -324,6 +333,7 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         CategoryImpl clone = new CategoryImpl();
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();
+        clone.parent = parent;
         clone.annotations = (HashMap<String,String>) ((HashMap<String,String>)annotations).clone();
         clone.key = key;
         for (Entity ref:clone.getSubEntities())
@@ -388,6 +398,19 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         return super.compareTo( o);
    }
 
+	public void replace(Category category) {
+		String id = category.getId();
+		CategoryImpl existingEntity = (CategoryImpl) findEntityForId(id);
+		if (  existingEntity != null)
+		{
+			ArrayList<CategoryImpl> newChilds = new ArrayList<CategoryImpl>();
+			for ( CategoryImpl child: childs)
+			{
+				newChilds.add(  ( child != existingEntity) ? child: (CategoryImpl)category);
+			}
+			childs = newChilds;
+		}
+	}
 
 
 }
