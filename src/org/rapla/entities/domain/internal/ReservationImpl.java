@@ -44,7 +44,6 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
 
@@ -131,9 +130,10 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         return appointments.toArray(Appointment.EMPTY_ARRAY);
     }
     
-    public Collection<AppointmentImpl> getSubEntities()
+    @SuppressWarnings("unchecked")
+	public Collection<AppointmentImpl> getSubEntities()
     {
-    	return appointments;
+		return appointments;
     }
     
     @Override

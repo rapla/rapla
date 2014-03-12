@@ -50,8 +50,9 @@ public interface RemoteStorage extends RemoteJsonService {
     /** returns the time on the server in string format*/
     String getServerTime() throws RaplaException;
     
-    /** delegates the corresponding method in the StorageOperator. */
-    ReservationList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException;
+    /** delegates the corresponding method in the StorageOperator. 
+     * @param annotationQuery */
+    ReservationList getReservations(String[] allocatableIds,Date start,Date end, Map<String, String> annotationQuery) throws RaplaException;
 
     UpdateEvent getEntityRecursive(String... id) throws RaplaException;
 
@@ -59,6 +60,8 @@ public interface RemoteStorage extends RemoteJsonService {
     
     void restartServer() throws RaplaException;
     UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
+    
+    String[] getTemplateNames() throws RaplaException;
     
     String[] createIdentifier(String raplaType, int count) throws RaplaException;
 
@@ -116,5 +119,6 @@ public interface RemoteStorage extends RemoteJsonService {
 		}
     
     }
-    
+
+	
 }

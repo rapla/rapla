@@ -241,7 +241,9 @@ public class CalendarPrintDialog extends DialogUI
             {
             	blockSizes[i] = String.valueOf(i+1);
             }
-        	endDate= new JComboBox(blockSizes);
+        	@SuppressWarnings("unchecked")
+			JComboBox jComboBox = new JComboBox(blockSizes);
+			endDate= jComboBox;
             endDate.setEditable(true);
             endDate.setPreferredSize( new Dimension(40, 30));
         

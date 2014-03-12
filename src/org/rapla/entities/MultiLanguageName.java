@@ -86,7 +86,6 @@ public class MultiLanguageName implements java.io.Serializable {
             throw new ReadOnlyException("Can't modify this multilanguage name.");
     }
 
-    @SuppressWarnings("unchecked")
 	public void setTo(MultiLanguageName newName) {
         checkWritable();
         mapLocales = new TreeMap<String,String>(newName.mapLocales);

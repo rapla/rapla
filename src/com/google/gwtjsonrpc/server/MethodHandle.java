@@ -21,8 +21,6 @@ import java.lang.reflect.Type;
 
 import javax.jws.WebParam;
 
-import com.google.gwtjsonrpc.common.FutureResult;
-
 /**
  * Pairing of a specific implementation and method.
  */

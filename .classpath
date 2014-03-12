@@ -6,6 +6,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="lib/server/commons-codec-1.8.jar">
 		<accessrules>
+			<accessrule kind="accessible" pattern="org/apache/commons/codec/binary/Base64"/>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
@@ -41,7 +42,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/server/gson-2.2.4.jar">
 		<accessrules>
-			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/logging/slf4j-api-1.7.5.jar">

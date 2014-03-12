@@ -144,7 +144,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			dynamicType = null;
 		oldDynamicType = dynamicType;
 
-		typeSelector = new JComboBox(types);
+		@SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(types);
+		typeSelector = jComboBox;
 		typeSelector.setEnabled( types.length > 1);
 		if (dynamicType != null)
 			// set common dynamicType of the Classifications in ComboBox

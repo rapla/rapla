@@ -53,8 +53,10 @@ import org.rapla.gui.toolkit.RaplaWidget;
 class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 {
 
-    JComboBox sourcePeriodChooser = new JComboBox(new String[] {"a", "b"});
-    JComboBox destPeriodChooser = new JComboBox(new String[] {"a", "b"});
+    @SuppressWarnings("unchecked")
+	JComboBox sourcePeriodChooser = new JComboBox(new String[] {"a", "b"});
+    @SuppressWarnings("unchecked")
+	JComboBox destPeriodChooser = new JComboBox(new String[] {"a", "b"});
     RaplaLocale locale = getRaplaLocale();
     RaplaCalendar destBegin;
     RaplaCalendar sourceBegin; 
@@ -91,14 +93,16 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 			}
 		});
        
-        DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
+        @SuppressWarnings("unchecked")
+		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
         final PeriodImpl customSource = new PeriodImpl(null, null);
         customSource.setName(getString("custom_period"));
         customSource.setStart( getQuery().today());
         customSource.setEnd( getQuery().today());
         sourceModel.insertElementAt(customSource, 0);
         
-        DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
+        @SuppressWarnings("unchecked")
+		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
         final PeriodImpl customDest = new PeriodImpl(getQuery().today(), null);
         {
 	        customDest.setName(getString("custom_period"));

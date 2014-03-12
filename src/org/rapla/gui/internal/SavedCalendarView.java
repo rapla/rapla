@@ -389,6 +389,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 		final FileEntry defaultEntry = new FileEntry(getString("default") ); 
 		defaultEntry.isDefault = true;
 		filenames.add(0,defaultEntry);
+		@SuppressWarnings("unchecked")
 		DefaultComboBoxModel model = new DefaultComboBoxModel(filenames.toArray());
 		selectionBox.setModel(model);
 		return model;
@@ -482,7 +483,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         if(entry != null)
         	saveSelectedDateField.setSelected(entry.equals("true")); 
 
-        final JList list = new JList(filenames.toArray());
+        @SuppressWarnings("unchecked")
+		final JList list = new JList(filenames.toArray());
 
         panel.add( new JScrollPane(list), "0,4,2,1");
         //int selectedIndex = selectionBox.getSelectedIndex();

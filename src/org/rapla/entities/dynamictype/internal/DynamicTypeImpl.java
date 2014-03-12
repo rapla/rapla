@@ -331,7 +331,8 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
         return  annotations.get( key );
     }
     
-    public Collection<AttributeImpl> getSubEntities() {
+    @SuppressWarnings("unchecked")
+	public Collection<AttributeImpl> getSubEntities() {
     	// TODO Auto-generated method stub
     	return attributes;
     }

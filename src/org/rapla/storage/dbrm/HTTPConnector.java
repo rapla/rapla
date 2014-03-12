@@ -11,12 +11,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,6 +109,7 @@ public class HTTPConnector  implements Connector
 			JsonObject errorElement = result.getAsJsonObject("error");
 			JsonObject data = errorElement.getAsJsonObject("data");
 			JsonElement message = errorElement.get("message");
+			@SuppressWarnings("unused")
 			JsonElement code = errorElement.get("code");
 			if ( data != null)
 			{
@@ -355,25 +354,25 @@ public class HTTPConnector  implements Connector
 //        }
 //    }
     
-    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
-    {
-    	writer.append( "v="+URLEncoder.encode(clientVersion,"utf-8"));
-        for (Iterator<String> it = args.keySet().iterator();it.hasNext();)
-        {
-        	writer.append( "&");
-            String key = it.next();
-            String value= args.get( key);
-            {
-                String pair = key;
-                writer.append( pair);
-                if ( value != null)
-                {
-                	writer.append("="+ URLEncoder.encode(value,"utf-8"));
-                }
-            }
-           
-        }
-    }
+//    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
+//    {
+//    	writer.append( "v="+URLEncoder.encode(clientVersion,"utf-8"));
+//        for (Iterator<String> it = args.keySet().iterator();it.hasNext();)
+//        {
+//        	writer.append( "&");
+//            String key = it.next();
+//            String value= args.get( key);
+//            {
+//                String pair = key;
+//                writer.append( pair);
+//                if ( value != null)
+//                {
+//                	writer.append("="+ URLEncoder.encode(value,"utf-8"));
+//                }
+//            }
+//           
+//        }
+//    }
 
 //    private void updateSession( String entry )
 //    {

@@ -71,7 +71,9 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		{
 		    list.insertElementAt(nothingSelected, 0);
 		}
-		field.setModel(new DefaultComboBoxModel(list));
+		@SuppressWarnings("unchecked")
+		DefaultComboBoxModel aModel = new DefaultComboBoxModel(list);
+		field.setModel(aModel);
 	}
 
 	public void setRenderer(ListCellRenderer renderer) {

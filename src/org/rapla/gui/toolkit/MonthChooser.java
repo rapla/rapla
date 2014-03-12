@@ -43,7 +43,9 @@ public final class MonthChooser extends JComboBox
         if ( locale == null )
             return;
         mapper = new MonthMapper( locale );
-        setModel( new DefaultComboBoxModel( mapper.getNames() ) );
+        @SuppressWarnings("unchecked")
+		DefaultComboBoxModel aModel = new DefaultComboBoxModel( mapper.getNames() );
+		setModel( aModel );
     }
 
     public void selectMonth( int month )

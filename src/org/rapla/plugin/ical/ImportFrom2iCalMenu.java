@@ -144,6 +144,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 		panel1.add(fileRadio, "0,2");
 		bg.add(fileRadio);
 
+		@SuppressWarnings("unchecked")
 		final JComboBox comboEventType = new JComboBox(getClientFacade().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION));
         final JLabel labelEventType = new JLabel(getString("reservation_type"));
         panel1.add(labelEventType, "0,4");
@@ -348,7 +349,9 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
                     attributeResult.add(attribute);
                 }
             }
-            result = new DefaultComboBoxModel(attributeResult.toArray());
+            @SuppressWarnings("unchecked")
+			DefaultComboBoxModel defaultComboBoxModel = new DefaultComboBoxModel(attributeResult.toArray());
+			result = defaultComboBoxModel;
         }
         //initialize model
         comboNameAttribute.setModel(result);

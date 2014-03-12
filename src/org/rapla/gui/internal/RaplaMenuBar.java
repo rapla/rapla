@@ -521,7 +521,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	        panel.add(textField, "2,0");
 	        addCopyPaste( textField);
 			final DefaultListModel model = new DefaultListModel();
-	        final JList list = new JList(new SortedListModel(model));
+	        @SuppressWarnings("unchecked")
+			final JList list = new JList(new SortedListModel(model));
 	        Collection<String> templateNames= getQuery().getTemplateNames();
 	        fillModel( model, templateNames);
 	        final RaplaButton deleteButton = new RaplaButton(RaplaButton.SMALL);

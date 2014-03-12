@@ -63,7 +63,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 import org.rapla.storage.impl.AbstractCachableOperator;
-import org.rapla.storage.impl.EntityStore;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -535,11 +534,11 @@ public class RemoteOperator
         }
     }
     
-    public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end) throws RaplaException {
+    public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end, Map<String,String> annotationQuery) throws RaplaException {
         checkConnected();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableId = getIdList(allocatables);
-		List<ReservationImpl> list =serv.getReservations(allocatableId,start, end).get();
+		List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
         synchronized (cache) {
         	resolveEntities( list );
         }
@@ -555,6 +554,13 @@ public class RemoteOperator
         	}
         }
         return result;
+    }
+    
+    public List<String> getTemplateNames() throws RaplaException {
+    	checkConnected();
+    	RemoteStorage serv = getRemoteStorage();
+    	List<String> result = Arrays.asList(serv.getTemplateNames());
+    	return result;
     }
 
 //    public EntityStore get()

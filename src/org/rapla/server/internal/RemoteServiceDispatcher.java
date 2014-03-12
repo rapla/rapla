@@ -5,7 +5,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.server.RemoteSession;
 
 
 public interface RemoteServiceDispatcher {

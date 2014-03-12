@@ -36,7 +36,8 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 	    this.newEntities = new ArrayList<T>();
 		for ( T entity: newEntity)
 		{
-            T clone = (T) entity.clone();
+            @SuppressWarnings("unchecked")
+			T clone = (T) entity.clone();
 			this.newEntities.add(clone);
 		}
 		if (originalEntity !=null)
@@ -48,7 +49,8 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 			this.oldEntities = new ArrayList<T>();
 			for ( T entity: originalEntity)
     		{
-                T clone = (T) entity.clone();
+                @SuppressWarnings("unchecked")
+				T clone = (T) entity.clone();
                 this.oldEntities.add( clone);
     		}
 		}
@@ -78,7 +80,8 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		for ( T entity: newEntities)
 		{
 			Entity newEntity =  entity;
-            T  mutableEntity = (T) entity.clone();
+            @SuppressWarnings("unchecked")
+			T  mutableEntity = (T) entity.clone();
 			if (!isNew)
 			{
 				@SuppressWarnings("null")
@@ -96,11 +99,11 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 	protected void checklastChanged(List<T> entities, Map<T,T> persistantVersions) throws RaplaException,
 			EntityNotFoundException {
 		getUpdateModule().refresh();
-		for ( Entity<T> entity:entities)
+		for ( T entity:entities)
 		{
 			if ( entity instanceof ModifiableTimestamp)
 			{
-				Entity<T> persistant = persistantVersions.get( entity);
+				T persistant = persistantVersions.get( entity);
 				if ( persistant != null) 
 				{
 					User lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
@@ -140,7 +143,8 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 			checklastChanged(oldEntities, oldEntitiesPersistant);
 			for ( T entity: oldEntities)
     		{
-                T mutableEntity = (T) entity.clone();
+                @SuppressWarnings("unchecked")
+				T mutableEntity = (T) entity.clone();
             	T persistantVersion = oldEntitiesPersistant.get( entity);
             	T versionedEntity = newEntities.get( i);
 				copyVersions(versionedEntity, mutableEntity, persistantVersion);

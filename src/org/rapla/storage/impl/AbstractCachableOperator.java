@@ -45,8 +45,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Template;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -153,7 +151,10 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	public <T extends Entity> T editObject(T o, User user)throws RaplaException {
 		Set<Entity>singleton = Collections.singleton( (Entity)o);
 		Collection<Entity> list = editObjects( singleton, user);
-		return (T) list.iterator().next();
+		Entity first = list.iterator().next();
+		@SuppressWarnings("unchecked")
+		T casted = (T) first;
+		return casted;
 	}
 
 	public Collection<Entity> editObjects(Collection<Entity>list, User user)throws RaplaException {
@@ -247,38 +248,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
-	public Map<String, Template> getTemplateMap() {
-        Map<String,Template> templateMap =new LinkedHashMap<String, Template>();
-        Collection<Reservation> reservations;
-    	Lock readLock;
-		try {
-			readLock = readLock();
-		} catch (RaplaException e) {
-			getLogger().error(e.getMessage(), e);
-			return templateMap;
-		}
-		reservations = cache.getCollection(Reservation.class);
-		unlock(readLock);
-
-		//Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
-        
-        for ( Reservation r:reservations)
-        {
-        	String templateName = r.getAnnotation(Reservation.TEMPLATE);
-        	if ( templateName != null)
-        	{
-        		Template template = templateMap.get( templateName);
-        		if ( template == null)
-                {
-                    template = new Template( templateName);
-                    templateMap.put( templateName, template);
-                }
-        		template.add( r);
-        	}
-        }
-        return templateMap;
-	}
-	
 	public User getUser(final String username) throws RaplaException {
 		checkConnected();
 		Lock readLock = readLock();
@@ -292,7 +261,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
 		// Test if user is already stored
@@ -571,7 +539,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public Entity resolve(String id) throws EntityNotFoundException {
 		Lock readLock;
@@ -596,7 +563,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	}
 
 	/** Writes the UpdateEvent in the cache */
-	@SuppressWarnings("unchecked")
 	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
 		HashMap<Entity,Entity> oldEntities = new HashMap<Entity,Entity>();
 		// First make a copy of the old entities
@@ -651,20 +617,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				// do nothing, because the persitantVersion is always read only
 				if (toUpdate == entity) {
 					continue;
-				}
-				if (toUpdate != null) {
-//					if (getLogger().isDebugEnabled())
-//					{
-//						getLogger().debug("Changing: " + entity);
-//					}
-					// FIXME ths line is dangerous because it requires synchronisation in the entities e.g. processing the copy method could cause a temporary inconsistant state 
-					//((Mementable<Entity>) toUpdate).copy(entity);
-				} else {
-//					if (getLogger().isDebugEnabled())
-//					{
-//						getLogger().debug("Adding entity: " + entity);
-//					}
-					// we clone the entity because it could be modified after calling dispatch
 				}
 				toUpdate = entity;
 				if ( entity instanceof Category)
@@ -735,25 +687,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();
 		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
-	}
-
-	private void addSubentities(HashMap<Entity,Entity> oldEntities,	Entity oldEntity) {
-		if (!( oldEntity instanceof ParentEntity))
-		{
-			return;
-		}
-		Iterable<Entity>subEntities = ((ParentEntity)oldEntity).getSubEntities();
-		for (Entity entity: subEntities)
-		{
-			Entity persistantEntity = findInLocalCache(entity);
-			if ( persistantEntity == null)
-			{
-				continue;
-			}
-			oldEntities.put( persistantEntity,entity);
-			addSubentities(oldEntities, entity);
-		}
-
 	}
 
 	protected UpdateResult createUpdateResult(

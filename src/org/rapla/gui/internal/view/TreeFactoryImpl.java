@@ -961,7 +961,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             {
                 return Collections.emptySet();
             }
-            HashSet set = new HashSet();
+            HashSet<Conflict> set = new HashSet<Conflict>();
             for ( int i=0;i<children;i++)
             {
                 TreeNode child = treeNode.getChildAt(i);

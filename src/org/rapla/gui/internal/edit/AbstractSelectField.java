@@ -320,7 +320,9 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     }
 
 	protected T getValue(Object valueObject) {
-		return (T) valueObject;
+		@SuppressWarnings("unchecked")
+		T casted = (T) valueObject;
+		return casted;
 	}
 
 	public abstract TreeModel createModel() throws RaplaException;

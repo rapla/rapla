@@ -221,8 +221,13 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 				categories.addAll(searchCategoryName(category, pattern));
 			}
 		}
-		Collections.sort(categories);
+		sortCategories(categories);
 		return categories;
+	}
+
+	@SuppressWarnings("unchecked")
+	public void sortCategories(List<Category> categories) {
+		Collections.sort(categories);
 	}
 
 	// search users with specified pattern in username
@@ -237,8 +242,13 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 				users.add(user);
 
 		}
-		Collections.sort(users);
+		sort(users);
 		return users;
+	}
+
+	@SuppressWarnings("unchecked")
+	public void sort(List<User> users) {
+		Collections.sort(users);
 	}
 	
 	private void filter() {

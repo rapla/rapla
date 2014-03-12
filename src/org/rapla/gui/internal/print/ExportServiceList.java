@@ -62,7 +62,8 @@ public class ExportServiceList extends RaplaGUIComponent  {
     {
         Collection<ExportService> services = exporters.values();
         Object[] serviceArray = services.toArray();
-        JList list = new JList(serviceArray);
+        @SuppressWarnings("unchecked")
+		JList list = new JList(serviceArray);
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));

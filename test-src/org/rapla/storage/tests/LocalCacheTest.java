@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -109,15 +110,16 @@ public class LocalCacheTest extends RaplaTestCase {
 				{
 		            Iterator<?> it = cache.getCollection(Period.TYPE).iterator();
 		            Period period = (Period) it.next();
-		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
+		            Map<String, String> annotationQuery = null;
+		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),annotationQuery);
 		            assertEquals(0,reservations.size());
 		            period = (Period) it.next();
-		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd());
+		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), annotationQuery);
 		            assertEquals(2, reservations.size());
 		            User user = cache.getUser("homer");
-		            reservations = storage.getReservations(user,null,null,null);
+		            reservations = storage.getReservations(user,null,null,null, annotationQuery);
 		            assertEquals(3, reservations.size());
-		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd());
+		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(), annotationQuery);
 		            assertEquals(2, reservations.size());
 		        }
 		        {
@@ -155,7 +157,8 @@ public class LocalCacheTest extends RaplaTestCase {
         CachableStorageOperator storage =  raplaContainer.lookup(CachableStorageOperator.class, "raplafile");
         User user = null;
 		Collection<Allocatable> allocatables = null;
-		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate);
+		Map<String, String> annotationQuery = null;
+		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, annotationQuery);
         assertEquals( 1, reservations.size());
     }
 }

@@ -433,7 +433,8 @@ public class RaplaComponent
 		if ( type2 == AttributeType.CATEGORY)
 		{
 			 Collection<?> values = classification.getValues( attribute);
-			 Collection<Category> cat = (Collection<Category>) values;
+			 @SuppressWarnings("unchecked")
+			Collection<Category> cat = (Collection<Category>) values;
              if ( cat == null || cat.size() == 0)
              {
                  Category rootCat = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);

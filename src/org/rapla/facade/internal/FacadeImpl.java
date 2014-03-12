@@ -51,7 +51,6 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Template;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PeriodImpl;
@@ -68,7 +67,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.AllocationChangeEvent;
@@ -493,7 +491,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			allocList = Collections.emptyList();
 		}
-		reservations.addAll(operator.getReservations(user,allocList, start, end));
+		reservations.addAll(operator.getReservations(user,allocList, start, end, null));
 		removeFilteredClassifications(reservations, reservationFilters);
 		Iterator<Reservation> it =reservations.iterator();
 		while (it.hasNext()) {
@@ -579,29 +577,19 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public Collection<String> getTemplateNames() throws RaplaException
 	{
-		Map<String, Template> templateMap = operator.getTemplateMap();
-		if ( templateMap != null)
-		{
-			return templateMap.keySet();
-		}
-		else
-		{
-			return Collections.emptyList();
-		}
+		return operator.getTemplateNames();
 	}
 	
 	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException
 	{
-		Map<String, Template> templateMap = operator.getTemplateMap();
-		if (templateMap != null)
-		{
-			Template template = templateMap.get( name);
-			if (template != null)
-			{
-				return template.getReservations();
-			}
-		}
-		return Collections.emptyList();
+		User user = null;
+		Collection<Allocatable> allocList = null;
+		Date start = null;
+		Date end = null;
+		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
+		annotationQuery.put(Reservation.TEMPLATE, name);
+		Collection<Reservation> result = operator.getReservations(user,allocList, start, end, annotationQuery);
+		return result;
 	}
 	
 	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {
@@ -657,7 +645,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			ids.add(conflict.getReservation2());
 		}
 		Collection<Entity> values = operator.getFromId( ids, true).values();
-		return new ArrayList(values);
+		@SuppressWarnings("unchecked")
+		ArrayList<Reservation> converted = new ArrayList(values);
+		return converted;
 	}
 
 	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
@@ -1018,9 +1008,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return aborting || !operator.isConnected();
 	}
 
-	@SuppressWarnings("unchecked")
-	public void changePassword(User user, char[] oldPassword, char[] newPassword)
-			throws RaplaException {
+	public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException {
 		operator.changePassword( user, oldPassword, newPassword);
 	}
 
@@ -1046,10 +1034,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		fireUpdateEvent( updateResult);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
 		return (RaplaMap<T>) new RaplaMapImpl(map);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> RaplaMap<T> newRaplaMap(Collection<T> col) {
 		return (RaplaMap<T>) new RaplaMapImpl(col);
 	}
@@ -1306,9 +1296,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		Collection<Entity> result = operator.editObjects(castedList,	workingUser);
 		List<T> castedResult = new ArrayList<T>();
-		for ( Entity<T> entity:result)
+		for ( Entity entity:result)
 		{
-			castedResult.add( (T) entity);
+			@SuppressWarnings("unchecked")
+			T casted = (T) entity;
+			castedResult.add( casted);
 		}
 		return castedResult;
 	}
@@ -1398,11 +1390,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	}
 
-	@SuppressWarnings({ "unchecked" })
 	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
 	 */
-	private Reservation cloneReservation(Reservation obj)
-			throws RaplaException {
+	private Reservation cloneReservation(Reservation obj) throws RaplaException {
 		// first we do a reservation deep clone
 		Reservation clone =  obj.clone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
@@ -1421,7 +1411,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 
 		// and now a new id for the reservation
-		setNew((Entity) clone, this.workingUser);
+		setNew( clone, this.workingUser);
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.addAppointment(clonedAppointment);
 		}
@@ -1433,7 +1423,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				clone.setRestriction(allocatable, appointments);
 			}
 		}
-
 		return clone;
 	}
 

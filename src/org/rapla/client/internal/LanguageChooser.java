@@ -47,7 +47,9 @@ final public class LanguageChooser implements RaplaWidget
 
         String[] entries = new String[languages.length + 1];
         System.arraycopy( languages, 0, entries, 1, languages.length);
-        jComboBox = new JComboBox(entries);
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox2 = new JComboBox(entries);
+		jComboBox = jComboBox2;
         jComboBox.setRenderer(new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
             public Component getListCellRendererComponent(

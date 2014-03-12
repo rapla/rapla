@@ -19,10 +19,8 @@ import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -80,7 +78,6 @@ import com.google.gwtjsonrpc.common.RemoteJsonService;
  * When supported by the browser/client, the "gzip" encoding is used to compress
  * the resulting JSON, reducing transfer time for the response data.
  */
-@SuppressWarnings("serial")
 public class JsonServlet<CallType extends ActiveCall>  {
   /** Pattern that any safe JSON-in-script callback conforms to. */
   public static final Pattern SAFE_CALLBACK =
@@ -596,19 +593,18 @@ public class JsonServlet<CallType extends ActiveCall>  {
     return -32603 /* Internal error. */;
   }
 
-  private static void textError(final ActiveCall call, final int status,
-      final String message) throws IOException {
-    final HttpServletResponse r = call.httpResponse;
-    r.setStatus(status);
-    r.setContentType("text/plain; charset=" + ENC);
-
-    final Writer w = new OutputStreamWriter(r.getOutputStream(), ENC);
-    try {
-      w.write(message);
-    } finally {
-      w.close();
-    }
-  }
+//  private static void textError(final ActiveCall call, final int status,  final String message) throws IOException {
+//    final HttpServletResponse r = call.httpResponse;
+//    r.setStatus(status);
+//    r.setContentType("text/plain; charset=" + ENC);
+//
+//    final Writer w = new OutputStreamWriter(r.getOutputStream(), ENC);
+//    try {
+//      w.write(message);
+//    } finally {
+//      w.close();
+//    }
+//  }
 
   private static Map<String, MethodHandle> methods(Class class1 ) {
     final Class d = findInterface(class1);
@@ -622,12 +618,12 @@ public class JsonServlet<CallType extends ActiveCall>  {
         continue;
       }
 
-      Class<?> returnType = m.getReturnType();
+//      Class<?> returnType = m.getReturnType();
 //      if (!FutureResult.class.isAssignableFrom(returnType)) {
 //        continue;
 //      }
 
-      final Class<?>[] params = m.getParameterTypes();
+//      final Class<?>[] params = m.getParameterTypes();
 //      if (params.length < 1) {
 //        continue;
 //      }
@@ -642,7 +638,6 @@ public class JsonServlet<CallType extends ActiveCall>  {
     return Collections.unmodifiableMap(r);
   }
 
-  @SuppressWarnings("unchecked")
   private static Class findInterface(Class<?> c) {
     while (c != null) {
       if (c.isInterface() && c.getAnnotation(WebService.class) != null) {

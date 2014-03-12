@@ -37,7 +37,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Template;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -79,8 +78,9 @@ public interface StorageOperator extends EntityResolver {
     Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
     /** returns the reservations of the specified user, sorted by name.
-     * @param allocatables */
-    Collection<Reservation> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end) throws RaplaException;
+     * @param allocatables 
+     * @param annotationQuery */
+    Collection<Reservation> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, Map<String, String> annotationQuery) throws RaplaException;
 
     Category getSuperCategory();
 
@@ -118,8 +118,6 @@ public interface StorageOperator extends EntityResolver {
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 
-    /**@deprecated will be replaced by direct accessors */
-    @Deprecated
-    Map<String, Template> getTemplateMap();
+	Collection<String> getTemplateNames() throws RaplaException;
 
 }

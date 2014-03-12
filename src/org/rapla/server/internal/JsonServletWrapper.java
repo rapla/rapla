@@ -11,7 +11,6 @@ import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 
 import com.google.gwtjsonrpc.server.JsonServlet;
-import com.google.gwtjsonrpc.server.SignedToken;
 
 public class JsonServletWrapper
 {

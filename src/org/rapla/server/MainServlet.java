@@ -12,22 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -41,7 +33,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaMainContainer;
@@ -50,8 +41,6 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
@@ -71,12 +60,9 @@ import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ShutdownService;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
-import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteMethodStub;
-import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public class MainServlet extends HttpServlet {
     private static final String RAPLA_JSON_PATH = "/rapla/json/";
     private static final String RAPLA_RPC_PATH = "/rapla/rpc/";
@@ -820,204 +806,6 @@ public class MainServlet extends HttpServlet {
         }
     }
     
-//    private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
-//    {
-//    	boolean dispatcherExceptionThrown = false;
-//        try
-//        {
-//			handleLogin(request, response, requestURI);
-//			final Map<String,String[]> originalMap = request.getParameterMap();
-//			final Map<String,String> parameterMap = makeSinglesAndRemoveVersion(originalMap);
-//			final ServerServiceContainer serverContainer = getServer();
-//        	RemoteServiceDispatcher serviceDispater=serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
-//            byte[] out;
-//            try
-//            {
-//            	out =null;	
-//            	//out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
-//            }
-//            catch (Exception ex)
-//            {
-//            	dispatcherExceptionThrown = true;
-//            	throw ex;
-//            }
-//            //String test = new String( out);
-//            response.setContentType( "text/html; charset=utf-8");
-//            try
-//        	{
-//            	response.getOutputStream().write( out);
-//            	response.flushBuffer();
-//            	response.getOutputStream().close();
-//            }
-//        	catch (Exception ex)
-//            {
-//            	getLogger().error( " Error writing exception back to client " + ex.getMessage());
-//            }	
-//        }
-//        catch (Exception e)
-//        {
-//        	if ( !dispatcherExceptionThrown)
-//        	{
-//        		getLogger().error(e.getMessage(), e);
-//        	}
-//        	try
-//        	{
-//        		String message = e.getMessage();
-//	            String name = e.getClass().getName();
-//	            if ( message == null )
-//	            {
-//					message = name;
-//	            }
-//	            response.addHeader("X-Error-Stacktrace", message );
-//	            response.addHeader("X-Error-Classname",  name);
-////	            String param = RemoteMethodSerialization.serializeExceptionParam( e);
-////	            if ( param != null)
-////	            {
-////	            	response.addHeader("X-Error-Param",  param);
-////	            }
-//	            response.setStatus( 500);
-//	        }
-//	        catch (Exception ex)
-//	        {
-//	        	getLogger().error( " Error writing exception back to client " + e.getMessage(), ex);
-//	        }
-//        }
-//    }
-
-	private RemoteSession handleLogin(HttpServletRequest request,HttpServletResponse response, String requestURI) throws RaplaContextException, RaplaException, IOException,	EntityNotFoundException 
-	{
-		int rpcIndex=requestURI.indexOf(RAPLA_RPC_PATH) ;
-		
-		int sessionParamIndex = requestURI.indexOf(";");
-		int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 
-		String methodName = requestURI.substring(rpcIndex + RAPLA_RPC_PATH.length(),endIndex);
-		final HttpSession session = request.getSession( true );
-		//String sessionId = session.getId();
-		//response.addCookie(new Cookie("JSESSIONID", sessionId));
-		    	
-		final RaplaContext context = getServer().getContext();
-		final RemoteSession  remoteSession = new RemoteSessionImpl(context, session.getId()){
-			
-			public void logout() throws RaplaException {
-				setUser( null ); 
-			}
-			
-			@Override
-			public void setUser(User user) {
-				super.setUser(user);
-				if (user == null )
-				{
-					session.removeAttribute("userid");
-				}
-				else
-				{
-					session.setAttribute("userid",  user.getId());
-				}
-			}
-		};
-		
-		String clientVersion = request.getParameter("v");
-		if ( clientVersion != null )
-		{
-			if ( !isClientVersionSupported(clientVersion))
-			{
-				String message = getVersionErrorText(request, methodName, clientVersion);
-				response.addHeader("X-Error-Classname",  WrongRaplaVersionException.class.getName());
-				response.addHeader("X-Error-Stacktrace", message );
-				response.setStatus( 500);
-				return null;
-			}
-		}
-		else
-		{
-			//if ( !serverVersion.equals( clientVersion ) )
-			String message = getVersionErrorText(request, methodName, "");
-			response.addHeader("X-Error-Stacktrace", message );
-			RaplaException e1= new RaplaException( message );   
-			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-			ObjectOutputStream exout = new ObjectOutputStream( outStream);
-			exout.writeObject( e1);
-			exout.flush();
-			exout.close();
-			byte[] out = outStream.toByteArray();
-			try
-			{
-				ServletOutputStream outputStream = response.getOutputStream();
-				outputStream.write( out );
-				outputStream.close();
-			}
-			catch (Exception ex)
-			{
-				getLogger().error( " Error writing exception back to client " + ex.getMessage());
-			}
-			response.setStatus( 500);
-			return null;
-		}
-		Object attribute = session.getAttribute("userid");
-		final String userId = attribute != null ? attribute.toString() : null;
-		
-		if ( userId != null)
-		{
-			StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
-			if ( operator.isConnected())
-			{
-				User user = (User) ((CachableStorageOperator)operator).tryResolve( userId);
-				if ( user != null)
-				{
-					((RemoteSessionImpl)remoteSession).setUser( user);
-				}
-				else
-				{
-					throw new EntityNotFoundException("User with id " + userId + " not found.");
-				}
-			}
-			else
-			{
-				response.addHeader("X-Error-Classname",  RaplaConnectException.class.getName());
-				response.addHeader("X-Error-Stacktrace", "RaplaServer is shutting down" );
-				response.setStatus( 500);
-				return null;
-			}
-		}
-		Long sessionstart = (Long)session.getAttribute("serverstarttime");
-		if ( sessionstart != null)
-		{
-			// We have to reset the client because the server restarted
-			if ( sessionstart < serverStartTime )
-			{
-				// this will cause most statefull methods to fail because the user is not set
-				((RemoteSessionImpl)remoteSession).setUser( null);
-			}
-		}
-		if ( methodName.endsWith("login"))
-		{
-			session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
-		}
-		return remoteSession;
-	}
-    
-    private boolean isClientVersionSupported(String clientVersion) {
-		// add/remove supported client versions here 
-		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
-	}
-
-	private String getVersionErrorText(HttpServletRequest request, String methodName, String clientVersion) 
-	{
-		String requestUrl = request.getRequestURL().toString();
-		int indexOf = requestUrl.indexOf( "rpc/"+methodName);
-		if (indexOf>=0 ) 
-		{
-			requestUrl = requestUrl.substring( 0, indexOf) ;
-		}
-		String message;
-		try {
-			I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
-			message = i18n.format("error.wrong_rapla_version", clientVersion, serverVersion, requestUrl);
-		} catch (Exception e) {
-			message = "Update client from " + clientVersion + " to " + serverVersion + " on " + requestUrl + ". Click on the webstart or applet to update.";
-		}
-		return message;
-	}
     
 	/** serverContainerHint is useful when you have multiple server configurations in one config file e.g. in a test environment*/
     public static String serverContainerHint = null;
@@ -1031,30 +819,6 @@ public class MainServlet extends HttpServlet {
     	return raplaContainer.lookup( ServerServiceContainer.class, hint);
     }
 
-    private Map<String,String> makeSinglesAndRemoveVersion( Map<String, String[]> parameterMap )
-    {
-        TreeMap<String,String> singlesMap = new TreeMap<String,String>();
-        for (Iterator<String> it = parameterMap.keySet().iterator();it.hasNext();)
-        {
-            String key = it.next();
-            if ( key.toLowerCase().equals("v"))
-            {
-            	continue;
-            }
-            String[] values =  parameterMap.get( key);
-            if ( values != null && values.length > 0 )
-            {
-                singlesMap.put( key,values[0]);
-            }
-            else
-            {
-                singlesMap.put( key,null);
-            }
-        }
-
-        return singlesMap;
-
-    }
 
     private void stopServer() {
     	if ( raplaContainer == null)
@@ -1106,7 +870,231 @@ public class MainServlet extends HttpServlet {
     	return logger;
 	}
     
+
+//  private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
+//  {
+//  	boolean dispatcherExceptionThrown = false;
+//      try
+//      {
+//			handleLogin(request, response, requestURI);
+//			final Map<String,String[]> originalMap = request.getParameterMap();
+//			final Map<String,String> parameterMap = makeSinglesAndRemoveVersion(originalMap);
+//			final ServerServiceContainer serverContainer = getServer();
+//      	RemoteServiceDispatcher serviceDispater=serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
+//          byte[] out;
+//          try
+//          {
+//          	out =null;	
+//          	//out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
+//          }
+//          catch (Exception ex)
+//          {
+//          	dispatcherExceptionThrown = true;
+//          	throw ex;
+//          }
+//          //String test = new String( out);
+//          response.setContentType( "text/html; charset=utf-8");
+//          try
+//      	{
+//          	response.getOutputStream().write( out);
+//          	response.flushBuffer();
+//          	response.getOutputStream().close();
+//          }
+//      	catch (Exception ex)
+//          {
+//          	getLogger().error( " Error writing exception back to client " + ex.getMessage());
+//          }	
+//      }
+//      catch (Exception e)
+//      {
+//      	if ( !dispatcherExceptionThrown)
+//      	{
+//      		getLogger().error(e.getMessage(), e);
+//      	}
+//      	try
+//      	{
+//      		String message = e.getMessage();
+//	            String name = e.getClass().getName();
+//	            if ( message == null )
+//	            {
+//					message = name;
+//	            }
+//	            response.addHeader("X-Error-Stacktrace", message );
+//	            response.addHeader("X-Error-Classname",  name);
+////	            String param = RemoteMethodSerialization.serializeExceptionParam( e);
+////	            if ( param != null)
+////	            {
+////	            	response.addHeader("X-Error-Param",  param);
+////	            }
+//	            response.setStatus( 500);
+//	        }
+//	        catch (Exception ex)
+//	        {
+//	        	getLogger().error( " Error writing exception back to client " + e.getMessage(), ex);
+//	        }
+//      }
+//  }
+
+//	private RemoteSession handleLogin(HttpServletRequest request,HttpServletResponse response, String requestURI) throws RaplaContextException, RaplaException, IOException,	EntityNotFoundException 
+//	{
+//		int rpcIndex=requestURI.indexOf(RAPLA_RPC_PATH) ;
+//		
+//		int sessionParamIndex = requestURI.indexOf(";");
+//		int endIndex = sessionParamIndex >= 0 ? sessionParamIndex : requestURI.length(); 
+//		String methodName = requestURI.substring(rpcIndex + RAPLA_RPC_PATH.length(),endIndex);
+//		final HttpSession session = request.getSession( true );
+//		//String sessionId = session.getId();
+//		//response.addCookie(new Cookie("JSESSIONID", sessionId));
+//		    	
+//		final RaplaContext context = getServer().getContext();
+//		final RemoteSession  remoteSession = new RemoteSessionImpl(context, session.getId()){
+//			
+//			public void logout() throws RaplaException {
+//				setUser( null ); 
+//			}
+//			
+//			@Override
+//			public void setUser(User user) {
+//				super.setUser(user);
+//				if (user == null )
+//				{
+//					session.removeAttribute("userid");
+//				}
+//				else
+//				{
+//					session.setAttribute("userid",  user.getId());
+//				}
+//			}
+//		};
+//		
+//		String clientVersion = request.getParameter("v");
+//		if ( clientVersion != null )
+//		{
+//			if ( !isClientVersionSupported(clientVersion))
+//			{
+//				String message = getVersionErrorText(request, methodName, clientVersion);
+//				response.addHeader("X-Error-Classname",  WrongRaplaVersionException.class.getName());
+//				response.addHeader("X-Error-Stacktrace", message );
+//				response.setStatus( 500);
+//				return null;
+//			}
+//		}
+//		else
+//		{
+//			//if ( !serverVersion.equals( clientVersion ) )
+//			String message = getVersionErrorText(request, methodName, "");
+//			response.addHeader("X-Error-Stacktrace", message );
+//			RaplaException e1= new RaplaException( message );   
+//			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+//			ObjectOutputStream exout = new ObjectOutputStream( outStream);
+//			exout.writeObject( e1);
+//			exout.flush();
+//			exout.close();
+//			byte[] out = outStream.toByteArray();
+//			try
+//			{
+//				ServletOutputStream outputStream = response.getOutputStream();
+//				outputStream.write( out );
+//				outputStream.close();
+//			}
+//			catch (Exception ex)
+//			{
+//				getLogger().error( " Error writing exception back to client " + ex.getMessage());
+//			}
+//			response.setStatus( 500);
+//			return null;
+//		}
+//		Object attribute = session.getAttribute("userid");
+//		final String userId = attribute != null ? attribute.toString() : null;
+//		
+//		if ( userId != null)
+//		{
+//			StorageOperator operator= context.lookup( ServerService.class).getFacade().getOperator();
+//			if ( operator.isConnected())
+//			{
+//				User user = (User) ((CachableStorageOperator)operator).tryResolve( userId);
+//				if ( user != null)
+//				{
+//					((RemoteSessionImpl)remoteSession).setUser( user);
+//				}
+//				else
+//				{
+//					throw new EntityNotFoundException("User with id " + userId + " not found.");
+//				}
+//			}
+//			else
+//			{
+//				response.addHeader("X-Error-Classname",  RaplaConnectException.class.getName());
+//				response.addHeader("X-Error-Stacktrace", "RaplaServer is shutting down" );
+//				response.setStatus( 500);
+//				return null;
+//			}
+//		}
+//		Long sessionstart = (Long)session.getAttribute("serverstarttime");
+//		if ( sessionstart != null)
+//		{
+//			// We have to reset the client because the server restarted
+//			if ( sessionstart < serverStartTime )
+//			{
+//				// this will cause most statefull methods to fail because the user is not set
+//				((RemoteSessionImpl)remoteSession).setUser( null);
+//			}
+//		}
+//		if ( methodName.endsWith("login"))
+//		{
+//			session.setAttribute("serverstarttime",  new Long(this.serverStartTime));
+//		}
+//		return remoteSession;
+//	}
   
+//  private boolean isClientVersionSupported(String clientVersion) {
+//		// add/remove supported client versions here 
+//		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
+//	}
+//
+//	private String getVersionErrorText(HttpServletRequest request, String methodName, String clientVersion) 
+//	{
+//		String requestUrl = request.getRequestURL().toString();
+//		int indexOf = requestUrl.indexOf( "rpc/"+methodName);
+//		if (indexOf>=0 ) 
+//		{
+//			requestUrl = requestUrl.substring( 0, indexOf) ;
+//		}
+//		String message;
+//		try {
+//			I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+//			message = i18n.format("error.wrong_rapla_version", clientVersion, serverVersion, requestUrl);
+//		} catch (Exception e) {
+//			message = "Update client from " + clientVersion + " to " + serverVersion + " on " + requestUrl + ". Click on the webstart or applet to update.";
+//		}
+//		return message;
+//	}
+
+//    private Map<String,String> makeSinglesAndRemoveVersion( Map<String, String[]> parameterMap )
+//    {
+//        TreeMap<String,String> singlesMap = new TreeMap<String,String>();
+//        for (Iterator<String> it = parameterMap.keySet().iterator();it.hasNext();)
+//        {
+//            String key = it.next();
+//            if ( key.toLowerCase().equals("v"))
+//            {
+//            	continue;
+//            }
+//            String[] values =  parameterMap.get( key);
+//            if ( values != null && values.length > 0 )
+//            {
+//                singlesMap.put( key,values[0]);
+//            }
+//            else
+//            {
+//                singlesMap.put( key,null);
+//            }
+//        }
+//
+//        return singlesMap;
+//
+//    }
+
 	
 }
 

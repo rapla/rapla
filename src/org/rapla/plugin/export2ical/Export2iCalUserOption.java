@@ -69,11 +69,12 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 		panel.removeAll();
         chkExportAttendees = new JCheckBox(getString("export_attendees_of_vevent"));
         chkExportAttendees.addActionListener(this);
-        cbDefaultParticipationsStatusRessourceAttribute = new JComboBox(new String [] {
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(new String [] {
                 "ACCEPTED",
                 "TENTATIVE"
-
         });
+		cbDefaultParticipationsStatusRessourceAttribute = jComboBox;
         cbDefaultParticipationsStatusRessourceAttribute.setSelectedItem(Export2iCalPlugin.DEFAULT_attendee_participation_status);
         cbDefaultParticipationsStatusRessourceAttribute.setToolTipText("Define the default value for participation status");
 

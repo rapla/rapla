@@ -110,7 +110,9 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         DynamicType[] types = getQuery().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         DynamicType dynamicType = classification.getType();
 
-        typeSelector =  new JComboBox( types );
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox( types );
+		typeSelector =  jComboBox;
         typeSelector.setEnabled( types.length > 1);
         typeSelector.setSelectedItem(dynamicType);
         typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));

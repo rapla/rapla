@@ -50,7 +50,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaException;
 
@@ -106,7 +105,6 @@ public class LocalCache implements EntityResolver
         initSuperCategory();
     }
     
-    @SuppressWarnings("unchecked")
 	@Override
     public Entity tryResolve(String id) {
         if (id == null)
@@ -295,6 +293,7 @@ public class LocalCache implements EntityResolver
 		   {
 			   continue;
            }
+		   @SuppressWarnings("unchecked")
 		   Set<Entity>set =  (Set<Entity>) entry.getValue();
 		   if (   Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType) || Attribute.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
 		   {

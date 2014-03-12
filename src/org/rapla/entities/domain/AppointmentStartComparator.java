@@ -23,7 +23,9 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
         if (a1.getStart().after(a2.getStart()))
             return 1;
 
-        return ((Comparable)a1).compareTo( (Comparable)a2 );
+        @SuppressWarnings("unchecked")
+		int compareTo = ((Comparable)a1).compareTo( (Comparable)a2 );
+		return compareTo;
     }
 
 }

@@ -46,7 +46,9 @@ public class RaplaType<T>  {
         if ( registeredTypes.get( clazz ) != null) {
             throw new IllegalStateException( "Type already registered");
         }
-        registeredTypes.put( (Class<? extends RaplaObject>) type, this);
+        @SuppressWarnings("unchecked")
+		Class<? extends RaplaObject> casted = (Class<? extends RaplaObject>) type;
+		registeredTypes.put( casted, this);
         registeredTypeNames.put( localname, this);
     }
 

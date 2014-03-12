@@ -120,7 +120,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return encryption;
 	}
 
-	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end) throws RaplaException {
+	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, Map<String,String> annotationQuery) throws RaplaException {
 		boolean excludeExceptions = false;
 		HashSet<Reservation> reservationSet = new HashSet<Reservation>();
 		if (allocatables == null || allocatables.size() ==0) 
@@ -144,6 +144,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			for (Appointment appointment:appointmentSet)
 			{
 	            Reservation reservation = appointment.getReservation();
+	            if ( annotationQuery != null)
+	            {
+	            	for (String key : annotationQuery.keySet())
+	            	{
+	            		String annotationParam = annotationQuery.get( key);
+	            		String annotation = reservation.getAnnotation( key);
+	            		if ( annotation == null || annotationParam == null)
+	            		{
+	            			if (!( annotation == annotationParam && annotationParam == null))
+	            			{
+	            				continue;
+	            			}
+	            		}
+	            		else
+	            		{
+	            			if ( !annotation.equals(annotationParam))
+	            			{
+	            				continue;
+	            			}
+	            		}
+	            	}
+	            }
 	            if ( !reservationSet.contains( reservation))
 	            {
 	            	reservationSet.add( reservation );
@@ -151,6 +173,31 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
         }
         return new ArrayList<Reservation>(reservationSet);
+	}
+
+	public Collection<String> getTemplateNames() throws RaplaException {
+    	Lock readLock = readLock();
+    	Collection<Reservation> reservations;
+    	try
+    	{
+    		reservations = cache.getCollection(Reservation.class);
+    	}
+    	finally 
+    	{
+    		unlock(readLock);
+    	}    		
+		//Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
+        
+    	List<String> templates = new ArrayList<String>();
+        for ( Reservation r:reservations)
+        {
+        	String templateName = r.getAnnotation(Reservation.TEMPLATE);
+        	if ( templateName != null)
+        	{
+				templates.add( templateName);
+        	}
+        }
+        return templates;
 	}
 
 	
@@ -1091,6 +1138,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 		}
 		
+//		private void addSubentities(HashMap<Entity,Entity> oldEntities,	Entity oldEntity) {
+//		if (!( oldEntity instanceof ParentEntity))
+//		{
+//			return;
+//		}
+//		Iterable<Entity>subEntities = ((ParentEntity)oldEntity).getSubEntities();
+//		for (Entity entity: subEntities)
+//		{
+//			Entity persistantEntity = findInLocalCache(entity);
+//			if ( persistantEntity == null)
+//			{
+//				continue;
+//			}
+//			oldEntities.put( persistantEntity,entity);
+//			addSubentities(oldEntities, entity);
+//		}
+//
+//	}
+
 // CKO We skip this check as the admin should have the possibility to deny a user read to allocatables objects even if he has reserved it prior 
 //		for (Entity entity : storeObjects) {
 //			if ( entity.getRaplaType() == Allocatable.TYPE)

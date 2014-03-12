@@ -52,15 +52,17 @@ public class MailOption extends DefaultPluginOption {
     JCheckBox useSsl = new JCheckBox();
     private boolean listenersEnabled;
 	private boolean externalConfigEnabled;
-    
-    public MailOption(RaplaContext sm)   
+   
+	MailConfigService configService;
+    public MailOption(RaplaContext sm,MailConfigService mailConfigService)   
     {
         super(sm);
+        this.configService = mailConfigService;
     }
 
     protected JPanel createPanel() throws RaplaException {
     	JPanel panel = super.createPanel();
-    	externalConfigEnabled = getWebservice(MailConfigService.class).isExternalConfigEnabled();
+    	externalConfigEnabled = configService.isExternalConfigEnabled();
         mailServer = new JTextField();
     	smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
     	defaultSender = new JTextField();

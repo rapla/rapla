@@ -310,6 +310,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 	    return builder.toString();
 	}
 
+	@SuppressWarnings("unchecked")
 	public ReferenceHandler cloneReferenceHandler() {
 		ReferenceHandler clone = new ReferenceHandler();
 		clone.links = (Map<String, List<String>>) ((HashMap)links).clone();

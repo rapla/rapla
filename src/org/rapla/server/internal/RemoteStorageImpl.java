@@ -51,7 +51,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.ClientFacade;
@@ -518,6 +517,20 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             		throw ex;
             	}
             }
+            
+            public String[] getTemplateNames() throws RaplaException
+            {
+            	try
+            	{
+	                checkAuthentified();
+	                Collection<String> templateNames = operator.getTemplateNames();
+	                return templateNames.toArray( new String[] {});
+            	}
+            	catch (RaplaException ex )
+            	{
+            		throw ex;
+            	}
+            }
 
             public UpdateEvent getEntityRecursive(String... ids) throws RaplaException
             {
@@ -558,7 +571,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
             }
 			
-            public ReservationList getReservations(String[] allocatableIds,Date start,Date end) throws RaplaException
+            public ReservationList getReservations(String[] allocatableIds,Date start,Date end,Map<String,String> annotationQuery) throws RaplaException
             {
             	getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
                 try
@@ -576,8 +589,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    security.checkRead(sessionUser, entity);
 						allocatables.add( allocatable);
                     }
-
-                    Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end );
+					Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end, annotationQuery );
                     for (Reservation res:reservations)
                     {
                     	if (isAllocatablesVisible(sessionUser, res))

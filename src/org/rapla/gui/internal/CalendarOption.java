@@ -45,8 +45,8 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
 {
     JPanel panel = new JPanel();
     JCheckBox showExceptionsField = new JCheckBox();
-    //@SuppressWarnings({ "rawtypes", "unchecked" })
-    JComboBox colorBlocks = new JComboBox( new String[] {
+    @SuppressWarnings("unchecked")
+	JComboBox colorBlocks = new JComboBox( new String[] {
     		 CalendarOptionsImpl.COLOR_NONE	
     		,CalendarOptionsImpl.COLOR_RESOURCES
     		, CalendarOptionsImpl.COLOR_EVENTS
@@ -63,7 +63,7 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
     WeekdayMapper mapper;
     RaplaNumber nTimesField = new RaplaNumber(new Double(1),new Double(1),new Double(365), false);
 
-    //@SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "unchecked" })
     JComboBox nonFilteredEvents = new JComboBox( new String[]
             {
                 CalendarOptionsImpl.NON_FILTERED_EVENTS_TRANSPARENT,
@@ -72,13 +72,11 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
             );
     JLabel worktimeEndError;
     
-    //@SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "unchecked" })
     JComboBox minBlockWidth = new JComboBox( new Integer[] {0,50,100,200});
-    //@SuppressWarnings("rawtypes")
     JComboBox firstDayOfWeek;
     RaplaNumber daysInWeekview;
 
-    //@SuppressWarnings({ "unchecked", "rawtypes" })
     public CalendarOption(RaplaContext sm) {
         super( sm);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);
@@ -119,7 +117,9 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
         panel.add( nonFilteredEvents,"2,10");
         nonFilteredEvents.setRenderer( listRenderer );
         
-        firstDayOfWeek = new JComboBox(mapper.getNames());
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(mapper.getNames());
+		firstDayOfWeek = jComboBox;
         panel.add( new JLabel(getString("day1week")),"0,12");
         panel.add( firstDayOfWeek,"2,12");
 

@@ -15,10 +15,7 @@ package org.rapla.entities.domain.internal;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;

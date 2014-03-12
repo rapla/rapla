@@ -66,7 +66,9 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     JComboBox colorChooser;
     public DynamicTypeEditUI(RaplaContext sm) throws RaplaException {
         super(sm);
-        colorChooser = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
+		colorChooser = jComboBox;
         name = new MultiLanguageField(sm,"name");
         elementKey = new TextField(sm,"elementKey");
         attributeEdit = new AttributeEdit(sm);

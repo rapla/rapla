@@ -56,10 +56,11 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
         RaplaGUIComponent copyPasteWrapper = new RaplaGUIComponent( getContext());
         copyPasteWrapper.addCopyPaste(txtEMailRessourceAttribute);
         txtEMailRessourceAttribute.setToolTipText("Define the key of the attribute containing the email address");
-        cbDefaultParticipationsStatusRessourceAttribute = new JComboBox(new Object [] {
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(new Object [] {
                 "ACCEPTED", "TENTATIVE"
-
         });
+		cbDefaultParticipationsStatusRessourceAttribute = jComboBox;
         cbDefaultParticipationsStatusRessourceAttribute.setSelectedItem(Export2iCalPlugin.DEFAULT_attendee_participation_status);
         cbDefaultParticipationsStatusRessourceAttribute.setToolTipText("Define the default value for participation status");
 

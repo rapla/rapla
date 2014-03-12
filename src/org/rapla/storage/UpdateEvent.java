@@ -132,7 +132,8 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	}
 
     private void add(Entity entity) {
-    	Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
+    	@SuppressWarnings("unchecked")
+		Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
     	Collection<Entity> list = getListMap().get( class1);
     	if ( list == null)
     	{

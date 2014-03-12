@@ -103,7 +103,9 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
         {
             return 0;
         }
-        return appointment.compareTo(other.appointment);
+        @SuppressWarnings("unchecked")
+		int compareTo = appointment.compareTo(other.appointment);
+		return compareTo;
     }
 	
 	public String toString()

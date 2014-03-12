@@ -419,7 +419,9 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
 
         if (attributeSelector != null)
             attributeSelector.removeItemListener(this);
-        attributeSelector = new JComboBox(attributes);
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(attributes);
+		attributeSelector = jComboBox;
 
         attributeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()) {
             private static final long serialVersionUID = 1L;
@@ -804,16 +806,20 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             else if (type.equals(AttributeType.STRING))
                 {
                 field = new TextField(getContext(),key);
-                DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
+                @SuppressWarnings("unchecked")
+				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                 		 getString("filter.contains")
                         ,getString("filter.starts")
                     });
-                operatorComponent = new JComboBox(model);
+                @SuppressWarnings("unchecked")
+				JComboBox jComboBox = new JComboBox(model);
+				operatorComponent = jComboBox;
             }
             else if (type.equals(AttributeType.INT))
             {
                 field = new LongField(getContext(),key);
-                DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
+                @SuppressWarnings("unchecked")
+				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                     getString("filter.is_smaller_than")
                     ,getString("filter.equals")
                     ,getString("filter.is_greater_than")
@@ -821,19 +827,24 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                     ,getString("filter.smaller_or_equals")
                     ,getString("filter.greater_or_equals")
                 });
-                operatorComponent = new JComboBox(model);
+                @SuppressWarnings("unchecked")
+				JComboBox jComboBox = new JComboBox(model);
+				operatorComponent = jComboBox;
                 
             }
             else if (type.equals(AttributeType.DATE))
             {
                 field = new DateField(getContext(),key);
-                DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
+                @SuppressWarnings("unchecked")
+				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                     getString("filter.earlier_than")
                     ,getString("filter.equals")
                     ,getString("filter.later_than")
                     ,getString("filter.not_equals")
                 }); 
-                operatorComponent = new JComboBox(model);            }
+                @SuppressWarnings("unchecked")
+				JComboBox jComboBox = new JComboBox(model);
+				operatorComponent = jComboBox;            }
             else if (type.equals(AttributeType.BOOLEAN))
             {
                 operatorComponent = new JLabel("");

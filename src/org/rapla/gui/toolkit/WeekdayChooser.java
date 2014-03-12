@@ -39,7 +39,9 @@ public final class WeekdayChooser extends JComboBox {
         if (locale == null)
             return;
         mapper = new WeekdayMapper(locale);
-        setModel(new DefaultComboBoxModel(mapper.getNames()));
+        @SuppressWarnings("unchecked")
+		DefaultComboBoxModel aModel = new DefaultComboBoxModel(mapper.getNames());
+		setModel(aModel);
     }
 
     public void selectWeekday(int weekday) {

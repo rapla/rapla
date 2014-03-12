@@ -38,6 +38,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 	private JComboBox cboTimezone;
 	ICalTimezones timezoneService;
 	private JCheckBox ownReservations;
+	
     public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService) throws RaplaException {
         super( context );
         double pre = TableLayout.PREFERRED;
@@ -51,7 +52,9 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
         calendarName.setEnabled(true);
     	String[] timeZoneIDs = getTimeZonesFromResource();
 		panel.add(new JLabel(getString("timezone")), "0,2");
-		cboTimezone = new JComboBox(timeZoneIDs);
+		@SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(timeZoneIDs);
+		cboTimezone = jComboBox;
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
 		panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,4");
@@ -73,7 +76,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     public void show() throws RaplaException {
         String name = preferences.getEntryAsString( RaplaMainContainer.TITLE,"");
         calendarName.setText(name);
-    	String timezoneId = preferences.getEntryAsString( RaplaMainContainer.TIMEZONE,getWebservice(ICalTimezones.class).getDefaultTimezone()); 
+    	String timezoneId = preferences.getEntryAsString( RaplaMainContainer.TIMEZONE,timezoneService.getDefaultTimezone()); 
         cboTimezone.setSelectedItem(timezoneId);
     	boolean selected= preferences.getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true); 
         ownReservations.setSelected( selected);

@@ -161,8 +161,7 @@ public class AllocationChangeFinder
 
         ArrayList<Appointment> oldList = new ArrayList<Appointment>(app1);
         oldList.retainAll(app2);
-        Collections.sort(oldList);
-        
+        sort(oldList);
         
 
         for (int i=0;i<oldList.size();i++) {
@@ -204,6 +203,11 @@ public class AllocationChangeFinder
             }
         }
     }
+
+	@SuppressWarnings("unchecked")
+	public void sort(ArrayList<Appointment> oldList) {
+		Collections.sort(oldList);
+	}
 
     private void addAppointmentAdd(User user,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
         for (Allocatable allocatable:allocatables)

@@ -96,7 +96,8 @@ public class ReservationTest extends RaplaTestCase {
         {
 	        Reservation persistantReservation = modificationMod.getPersistant( reserv1);
 	        eventId = persistantReservation.getId();
-	        Appointment oldAppointment= persistantReservation.getAppointments()[0];
+	        @SuppressWarnings("unused")
+			Appointment oldAppointment= persistantReservation.getAppointments()[0];
 	
 	        // Clone the reservation
 	        Reservation clone =  modificationMod.edit(persistantReservation);

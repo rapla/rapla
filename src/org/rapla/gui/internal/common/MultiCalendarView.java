@@ -165,7 +165,9 @@ public class MultiCalendarView extends RaplaGUIComponent
 
 	private void addTypeChooser( String[] ids )
     {
-        viewChooser = new JComboBox( ids);
+        @SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox( ids);
+		viewChooser = jComboBox;
         viewChooser.setVisible( viewChooser.getModel().getSize() > 0);
         viewChooser.setMaximumRowCount(ids.length);
         viewChooser.setSelectedItem( getModel().getViewId() );

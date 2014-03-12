@@ -83,6 +83,7 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         return childs.toArray(Category.CATEGORY_ARRAY);
     }
 
+	@SuppressWarnings("unchecked")
 	public Collection<CategoryImpl> getSubEntities() {
 		return childs;
 	}
@@ -328,7 +329,8 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
-    public Category clone() {
+    @SuppressWarnings("unchecked")
+	public Category clone() {
         CategoryImpl clone = new CategoryImpl();
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();

@@ -173,7 +173,9 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
         {
             return hashCode() < a2.hashCode() ? -1 : 1;
         }
-        return id1.compareTo( id2);
+        @SuppressWarnings("unchecked")
+		int compareTo = id1.compareTo( id2);
+		return compareTo;
     }
 
     transient Date maxDate;
@@ -739,10 +741,11 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     
-    @SuppressWarnings("unchecked")
 	public void copy(Object obj) {
     	synchronized ( this) {
-            copy((AppointmentImpl) obj,this);			
+    		@SuppressWarnings("unchecked")
+            AppointmentImpl casted = (AppointmentImpl) obj;
+			copy(casted,this);			
 		}
     }
 

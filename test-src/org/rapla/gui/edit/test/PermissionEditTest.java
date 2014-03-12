@@ -20,7 +20,6 @@ import junit.framework.TestSuite;
 import org.rapla.client.ClientService;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.gui.internal.edit.PermissionListField;
 import org.rapla.gui.tests.GUITestCase;
 

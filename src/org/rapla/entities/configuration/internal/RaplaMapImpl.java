@@ -13,7 +13,6 @@ o//pyright (C) 2006 Christopher Kohlhaas                                  |
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +41,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap {
+public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap {
    //this map stores all objects in the map 
    private Map<String,String> constants;
    private Map<String,RaplaConfiguration> configurations;
@@ -61,7 +60,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    }
    
 
-   public RaplaMapImpl( Collection list) {
+   public <T> RaplaMapImpl( Collection<T> list) {
        this( makeMap(list) );
    }
 
@@ -170,7 +169,10 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
    private Map<String, Object> getMap() {
 	   if (links != null)
 	   {
-		   return (Map<String,Object>)links.getLinkMap();
+		   Map<String, ?> linkMap = links.getLinkMap();
+		   @SuppressWarnings("unchecked")
+		   Map<String,Object> casted = (Map<String,Object>)linkMap;
+		   return casted;
 	   }
 	   if ( maps == null && configurations == null && constants == null && calendars == null)
 	   {
@@ -413,7 +415,7 @@ public class RaplaMapImpl implements Serializable,EntityReferencer, DynamicTypeD
     	}
     	else
     	{
-    		List result = new ArrayList();
+    		List<Entity> result = new ArrayList<Entity>();
     		Iterable<String> values = links.getReferencedIds();
     		for (String id: values)
     		{

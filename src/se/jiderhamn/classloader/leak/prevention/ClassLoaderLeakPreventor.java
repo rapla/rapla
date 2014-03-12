@@ -363,6 +363,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void contextDestroyed(ServletContextEvent servletContextEvent) {
     final boolean jvmIsShuttingDown = isJvmShuttingDown();
     if(jvmIsShuttingDown) {
@@ -556,6 +557,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
 	private Method findBeanM;
 	private Method removeBeanM;
 	  
+	@SuppressWarnings("unchecked")
 	public JettyJMXRemover(ClassLoader classLoader) throws Exception
 	{
 	  try 
@@ -686,7 +688,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   protected void deregisterShutdownHooks() {
     // We will not remove known shutdown hooks, since loading the owning class of the hook,
     // may register the hook if previously unregistered 
-    Map<Thread, Thread> shutdownHooks = (Map<Thread, Thread>) getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
+    @SuppressWarnings("unchecked")
+	Map<Thread, Thread> shutdownHooks = (Map<Thread, Thread>) getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
     if(shutdownHooks != null) { // Could be null during JVM shutdown, which we already avoid, but be extra precautious
       // Iterate copy to avoid ConcurrentModificationException
       for(Thread shutdownHook : new ArrayList<Thread>(shutdownHooks.keySet())) {
@@ -734,7 +737,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     else {
       try {
         synchronized (PropertyEditorManager.class) {
-          final Map<Class<?>, Class<?>> registry = (Map) registryField.get(null);
+          @SuppressWarnings("unchecked")
+          final Map<Class<?>, Class<?>> registry = (Map<Class<?>, Class<?>>) registryField.get(null);
           if(registry != null) { // Initialized
             final Set<Class> toRemove = new HashSet<Class>();
             
@@ -834,7 +838,6 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     final Field ibmRunnable = findField(Thread.class, "runnable"); // IBM JRE
 
     for(Thread thread : getAllThreads()) {
-      @SuppressWarnings("RedundantCast") 
       final Runnable runnable = (oracleTarget != null) ? 
           (Runnable) getFieldValue(oracleTarget, thread) : // Sun/Oracle JRE  
           (Runnable) getFieldValue(ibmRunnable, thread);   // IBM JRE
@@ -1030,7 +1033,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     if(beanElResolverClass != null) {
       boolean cleared = false;
       try {
-        final Method purgeBeanClasses = beanElResolverClass.getDeclaredMethod("purgeBeanClasses", ClassLoader.class);
+        @SuppressWarnings("unchecked")
+		final Method purgeBeanClasses = beanElResolverClass.getDeclaredMethod("purgeBeanClasses", ClassLoader.class);
         purgeBeanClasses.setAccessible(true);
         purgeBeanClasses.invoke(beanElResolverClass.newInstance(), getWebApplicationClassLoader());
         cleared = true;
@@ -1125,7 +1129,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   }
   
   /** Shutdown GeoTools cleaner thread as of http://jira.codehaus.org/browse/GEOT-2742 */
-  protected void fixGeoToolsLeak() {
+  @SuppressWarnings("unchecked")
+protected void fixGeoToolsLeak() {
     final Class weakCollectionCleanerClass = findClass("org.geotools.util.WeakCollectionCleaner");
     if(weakCollectionCleanerClass != null) {
       try {
@@ -1138,7 +1143,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   }
 
   /** Clear IntrospectionUtils caches of Tomcat and Apache Commons Modeler */
-  protected void clearIntrospectionUtilsCache() {
+  @SuppressWarnings("unchecked")
+protected void clearIntrospectionUtilsCache() {
     // Tomcat
     final Class tomcatIntrospectionUtils = findClass("org.apache.tomcat.util.IntrospectionUtils");
     if(tomcatIntrospectionUtils != null) {
@@ -1237,15 +1243,18 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
        isWebAppClassLoaderOrChild(thread.getContextClassLoader()); // Running in web application
   }
   
+  @SuppressWarnings("unchecked")
   protected <E> E getStaticFieldValue(Class clazz, String fieldName) {
     Field staticField = findField(clazz, fieldName);
     return (staticField != null) ? (E) getStaticFieldValue(staticField) : null;
   }
 
+  @SuppressWarnings("unchecked")
   protected <E> E getStaticFieldValue(String className, String fieldName) {
     return (E) getStaticFieldValue(className, fieldName, false);
   }
   
+  @SuppressWarnings("unchecked")
   protected <E> E getStaticFieldValue(String className, String fieldName, boolean trySystemCL) {
     Field staticField = findFieldOfClass(className, fieldName, trySystemCL);
     return (staticField != null) ? (E) getStaticFieldValue(staticField) : null;
@@ -1313,6 +1322,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     }
   }
   
+  @SuppressWarnings("unchecked")
   protected <T> T getStaticFieldValue(Field field) {
     try {
       return (T) field.get(null);
@@ -1326,12 +1336,16 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   
   protected <T> T getFieldValue(Object obj, String fieldName) {
     final Field field = findField(obj.getClass(), fieldName);
-    return (T) getFieldValue(field, obj);
+    @SuppressWarnings("unchecked")
+	T fieldValue = (T) getFieldValue(field, obj);
+	return  fieldValue;
   }
   
   protected <T> T getFieldValue(Field field, Object obj) {
     try {
-      return (T) field.get(obj);
+      @SuppressWarnings("unchecked")
+      T fieldValue = (T) field.get(obj);
+      return fieldValue;
     }
     catch (Exception ex) {
       warn(ex);

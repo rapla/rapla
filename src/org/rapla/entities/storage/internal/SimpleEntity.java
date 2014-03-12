@@ -15,7 +15,6 @@ package org.rapla.entities.storage.internal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -105,7 +104,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 		return (User) getEntity("last_changed_by");
 	}
 
-	@SuppressWarnings("unchecked")
 	public void setLastChangedBy(User user) {
         putEntity("last_changed_by",user);
 	}
@@ -202,7 +200,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
 
 
-    protected void deepClone(SimpleEntity dest) {
+    @SuppressWarnings("unchecked")
+	protected void deepClone(SimpleEntity dest) {
     	dest.id = id;
     	dest.links =  (Map<String, List<String>>) ((HashMap)links).clone();
     	dest.resolver = this.resolver;

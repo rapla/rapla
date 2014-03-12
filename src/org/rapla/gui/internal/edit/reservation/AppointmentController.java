@@ -691,10 +691,12 @@ public class AppointmentController extends RaplaGUIComponent
 			endTimeLabel.setText(getString("end_time"));
 			endTime = createRaplaTime();
 			endTime.addDateChangeListener(this);
-			dayChooser = new JComboBox(new String[] {
+			@SuppressWarnings("unchecked")
+			JComboBox jComboBox = new JComboBox(new String[] {
 					getString("appointment.same_day"),
 					getString("appointment.next_day"),
 					getString("appointment.day_x") });
+			dayChooser = jComboBox;
 			dayChooser.addActionListener(this);
 			days.setColumns(2);
 			endTimePanel.setLayout(new TableLayout(new double[][] {
@@ -717,9 +719,11 @@ public class AppointmentController extends RaplaGUIComponent
 			endDate = createRaplaCalendar();
 			endDate.addDateChangeListener(this);
 
-			endingChooser = new JComboBox(new RepeatingEnding[] {
+			@SuppressWarnings("unchecked")
+			JComboBox jComboBox2 = new JComboBox(new RepeatingEnding[] {
 					RepeatingEnding.END_DATE, RepeatingEnding.N_TIMES,
 					RepeatingEnding.FOREVEVER });
+			endingChooser = jComboBox2;
 			endingChooser.addActionListener(this);
 
 			number.setColumns(3);

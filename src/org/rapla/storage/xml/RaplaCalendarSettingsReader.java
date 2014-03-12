@@ -125,7 +125,9 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         }
 
         if (localName.equals("options")) {
-            optionMap = optionMapReader.getEntityMap();
+            @SuppressWarnings("unchecked")
+			Map<String,String> entityMap = optionMapReader.getEntityMap();
+			optionMap = entityMap;
         }
 
         if (localName.equals("filter")) {
