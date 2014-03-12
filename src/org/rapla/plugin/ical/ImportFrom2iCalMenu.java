@@ -169,9 +169,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 		urlRadio.setSelected(true);
 		fileField.setEnabled(false);
 
-        final DefaultListCellRenderer aRenderer = new NamedListCellRenderer();
-        comboEventType.setRenderer(aRenderer);
-        comboNameAttribute.setRenderer(aRenderer);
+        setRenderer(comboEventType, comboNameAttribute);
 
         superpanel.add(panel1, "0,0");
 		superpanel.add(resourceSelection.getComponent(), "0,2");
@@ -311,6 +309,14 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 		dlg.start();
 	}
 
+	@SuppressWarnings("unchecked")
+	private void setRenderer(final JComboBox comboEventType,
+			final JComboBox comboNameAttribute) {
+		final DefaultListCellRenderer aRenderer = new NamedListCellRenderer();
+        comboEventType.setRenderer(aRenderer);
+        comboNameAttribute.setRenderer(aRenderer);
+	}
+
 
     final protected TreeFactory getTreeFactory() {
         return getService(TreeFactory.class);
@@ -333,7 +339,8 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
         }
     }
 
-    private void updateNameAttributes(JComboBox comboEventType, JComboBox comboNameAttribute) {
+    @SuppressWarnings("unchecked")
+	private void updateNameAttributes(JComboBox comboEventType, JComboBox comboNameAttribute) {
         final DynamicType dynamicType = (DynamicType) comboEventType.getSelectedItem();
         ComboBoxModel result;
         if (dynamicType == null) {
@@ -349,7 +356,6 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
                     attributeResult.add(attribute);
                 }
             }
-            @SuppressWarnings("unchecked")
 			DefaultComboBoxModel defaultComboBoxModel = new DefaultComboBoxModel(attributeResult.toArray());
 			result = defaultComboBoxModel;
         }

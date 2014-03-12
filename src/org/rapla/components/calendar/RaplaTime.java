@@ -385,7 +385,7 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
         m_list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         m_list.addMouseListener(this);
         m_list.addMouseMotionListener(this);
-        m_list.setCellRenderer( new DefaultListCellRenderer() {
+        DefaultListCellRenderer cellRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             public Component getListCellRendererComponent( JList list, Object value, int index, boolean isSelected, boolean cellHasFocus )
@@ -403,10 +403,17 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
                 }
                 return component;
             }
-        });
+        };
+		setRenderer(cellRenderer);
     }
 
-    public void setModel(TimeModel model,DateFormat format) {
+	@SuppressWarnings("unchecked")
+	private void setRenderer(DefaultListCellRenderer cellRenderer) {
+		m_list.setCellRenderer( cellRenderer);
+	}
+
+    @SuppressWarnings("unchecked")
+	public void setModel(TimeModel model,DateFormat format) {
         m_timeModel = model;
         m_format = (DateFormat) format.clone();
         Calendar calendar = Calendar.getInstance(m_format.getTimeZone(),model.getLocale());

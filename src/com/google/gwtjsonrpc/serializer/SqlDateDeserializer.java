@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.gwtjsonrpc.server;
+package com.google.gwtjsonrpc.serializer;
 
 import java.lang.reflect.Type;
 
@@ -51,7 +51,7 @@ public class SqlDateDeserializer implements JsonDeserializer<java.sql.Date>,
   public JsonElement serialize(final java.sql.Date src, final Type typeOfSrc,
       final JsonSerializationContext context) {
     if (src == null) {
-      return new JsonNull();
+      return JsonNull.INSTANCE;
     }
     return new JsonPrimitive(src.toString());
   }

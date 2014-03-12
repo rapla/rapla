@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;

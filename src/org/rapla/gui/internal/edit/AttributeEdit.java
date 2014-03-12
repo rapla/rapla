@@ -77,7 +77,13 @@ public class AttributeEdit extends RaplaGUIComponent
         constraintPanel.addChangeListener( listener );
 
         listEdit.getComponent().setBorder( BorderFactory.createTitledBorder( new EmptyLineBorder(),getString("attributes")) );
-        listEdit.getList().setCellRenderer(new DefaultListCellRenderer() {
+        setRender();
+        constraintPanel.setEditKeys( false );
+    }
+
+	@SuppressWarnings("unchecked")
+	private void setRender() {
+		listEdit.getList().setCellRenderer(new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
                 public Component getListCellRendererComponent(JList list,
@@ -94,8 +100,7 @@ public class AttributeEdit extends RaplaGUIComponent
                     return super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus);
                }
             });
-        constraintPanel.setEditKeys( false );
-    }
+	}
 
     public RaplaWidget getConstraintPanel() {
         return constraintPanel;
@@ -154,7 +159,8 @@ public class AttributeEdit extends RaplaGUIComponent
         updateModel();
     }
 
-    private void updateModel() {
+    @SuppressWarnings("unchecked")
+	private void updateModel() {
         Attribute selectedItem = listEdit.getSelectedValue();
         model.clear();
         Attribute[] attributes = dt.getAttributes();
@@ -166,7 +172,8 @@ public class AttributeEdit extends RaplaGUIComponent
             listEdit.getList().setSelectedValue(selectedItem, true );
     }
 
-    public void confirmEdits() throws RaplaException {
+    @SuppressWarnings("unchecked")
+	public void confirmEdits() throws RaplaException {
         if ( getSelectedIndex() < 0 )
             return;
         Attribute attribute =  listEdit.getSelectedValue();
@@ -365,17 +372,7 @@ class DefaultConstraints extends AbstractEditField
         panel.add("3,13,l,t", tabSelect);
 
 
-        DefaultComboBoxModel model = new DefaultComboBoxModel();
-        for ( int i = 0; i < types.length; i++ ) {
-            model.addElement(getString("type." + types[i]));
-        }
-        classSelect.setModel( model );
-
-        model = new DefaultComboBoxModel();
-        for ( int i = 0; i < tabs.length; i++ ) {
-            model.addElement(getString(tabs[i]));
-        }
-        tabSelect.setModel( model );
+        setModel();
 
         nameLabel.setText(getString("name") + ":");
         keyLabel.setText(getString("key") +" *"+ ":");
@@ -419,6 +416,21 @@ class DefaultConstraints extends AbstractEditField
             }
         });
     }
+
+	@SuppressWarnings("unchecked")
+	private void setModel() {
+		DefaultComboBoxModel model = new DefaultComboBoxModel();
+        for ( int i = 0; i < types.length; i++ ) {
+            model.addElement(getString("type." + types[i]));
+        }
+        classSelect.setModel( model );
+
+        model = new DefaultComboBoxModel();
+        for ( int i = 0; i < tabs.length; i++ ) {
+            model.addElement(getString(tabs[i]));
+        }
+        tabSelect.setModel( model );
+	}
 
     public void setEditKeys(boolean editKeys) {
         keyLabel.setVisible( editKeys );

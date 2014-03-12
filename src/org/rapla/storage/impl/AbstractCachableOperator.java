@@ -433,6 +433,9 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
+	/**
+	 * @throws RaplaException  
+	 */
 	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
 		List<Entity>readOnlyList = new ArrayList<Entity>();
 		for (Entity obj: entities) {
@@ -454,7 +457,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	
 	/** override for special log handling
 	 */
-	@SuppressWarnings({ "unused", "unused" })
+	@SuppressWarnings({ "unused" })
 	protected void logEntityNotFound(Entity obj,  EntityNotFoundException ex) {
 	}
 	

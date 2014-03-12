@@ -1,6 +1,5 @@
 package org.rapla.components.util.xml;
 
-import org.rapla.storage.xml.RaplaSAXParseException;
 
 public interface RaplaSAXHandler {
 	public void startElement(String namespaceURI, String localName,

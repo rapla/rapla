@@ -1471,7 +1471,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		storeAndRemove(Entity.ENTITY_ARRAY, obj);
 	}
 
-	@SuppressWarnings("unchecked")
 	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
 		if (storeObjects.length == 0 && removedObjects.length == 0)
 			return;
@@ -1494,10 +1493,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		ArrayList<Entity>storeList = new ArrayList<Entity>();
 		ArrayList<Entity>removeList = new ArrayList<Entity>();
 		for (Entity toStore : storeObjects) {
-			storeList.add((Entity) toStore);
+			storeList.add( toStore);
 		}
 		for (Entity<?> toRemove : removedObjects) {
-			removeList.add((Entity) toRemove);
+			removeList.add( toRemove);
 		}
 		operator.storeAndRemove(storeList, removeList, workingUser);
 	

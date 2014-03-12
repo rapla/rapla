@@ -259,21 +259,18 @@ public class RaplaObjectAction extends RaplaAction {
       
     }
 
-    @SuppressWarnings("unchecked")
 	protected  void newEntity() throws RaplaException {
     	if ( Category.TYPE.is( raplaType )) {
         	Category category = (Category)object;
 			getEditController().editNew(category, parent );
         } else {
-	    	@SuppressWarnings("rawtypes")
 			Entity<? extends Entity> obj = newEntity(raplaType);
 	        getEditController().edit(obj, parent);
         }
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void edit() throws RaplaException {
-        getEditController().edit((Entity)object, parent);
+        getEditController().edit(object, parent);
     }
 
     protected void delete() throws RaplaException {
@@ -328,11 +325,9 @@ public class RaplaObjectAction extends RaplaAction {
  // action which is executed by clicking on the edit button (after
  	// actionPerformed)
  	// chances the selection list in an array and commits it on EditController
- 	@SuppressWarnings("unchecked")
     protected void editSelection() throws RaplaException {
  		if (objectList == null || objectList.size() == 0)
  			return;
- 		@SuppressWarnings("rawtypes")
         Entity[] array = objectList.toArray(Entity.ENTITY_ARRAY);
         getEditController().edit(array, parent);
  	}

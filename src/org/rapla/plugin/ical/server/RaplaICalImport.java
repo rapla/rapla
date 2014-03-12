@@ -168,13 +168,13 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
                 try {
                 	eventsInICal ++;
                 	String uid = null;
-    				Reservation event = null;
+    				Reservation lookupEvent = null;
     				String name = component.getProperty("SUMMARY").getValue();
     				Property uidProperty = component.getProperty("UID");
     				if ( uidProperty != null)
     				{
     				    uid = uidProperty.getValue();
-    				    event = reservationMap.get( uid);
+    				    lookupEvent = reservationMap.get( uid);
     				}
     				if (name == null || name.trim().length() == 0)
     				{
@@ -183,17 +183,18 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 				    	continue;
     				}
 
-                	if ( event == null)
+                	if ( lookupEvent == null)
     				{
     					// create the reservation
     					Classification classification = getClientFacade().getDynamicType(eventTypeKey).newClassification();
-    				    event = getClientFacade().newReservation(classification,user);
+    				    lookupEvent = getClientFacade().newReservation(classification,user);
     				    if ( uid != null)
     				    {
-    				    	event.setAnnotation( Reservation.EXTERNALID, uid);
+    				    	lookupEvent.setAnnotation( Reservation.EXTERNALID, uid);
     				    }
     		            classification.setValue(eventTypeNameAttributeKey, name);
     				}
+                	Reservation event = lookupEvent;
     			    DateProperty startDateProperty = (DateProperty)component.getProperty("DTSTART");
                     Date startdate =  startDateProperty.getDate();
                     Date enddate =  null;
@@ -314,9 +315,9 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 					 */
 		            if (uid  != null)
 				    {
-				        reservationMap.put( uid, event);
+				        reservationMap.put( uid, lookupEvent);
 				    }
-		            eventList.add( event);
+		            eventList.add( lookupEvent);
                 }
                 catch (ParseException ex)
                 {

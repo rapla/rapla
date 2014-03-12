@@ -147,7 +147,8 @@ final public class ErrorDialog extends RaplaComponent {
                     lister.setVisible( false );
                     stackTraceChooser.addActionListener( new ActionListener() {
 
-                        public void actionPerformed(ActionEvent e) {
+                        @SuppressWarnings("unchecked")
+						public void actionPerformed(ActionEvent e) {
                             DefaultListModel model =new DefaultListModel();
                             if (stackTraceChooser.isSelected() ) {
                                 for ( int i=0;i< stackTrace.length;i++) {

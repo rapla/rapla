@@ -14,6 +14,7 @@
 package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;

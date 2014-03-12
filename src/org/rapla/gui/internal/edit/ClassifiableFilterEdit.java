@@ -404,7 +404,8 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         return newPanel;
     }
 
-    public void mapFrom(ClassificationFilter filter) {
+    @SuppressWarnings("unchecked")
+	public void mapFrom(ClassificationFilter filter) {
         getRulesComponent().removeAll();
         ruleList.clear();
         getNewComponent().removeAll();
@@ -419,7 +420,6 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
 
         if (attributeSelector != null)
             attributeSelector.removeItemListener(this);
-        @SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(attributes);
 		attributeSelector = jComboBox;
 
@@ -710,13 +710,16 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             fireFilterChanged();
         }
         
-        RuleRow(Attribute attribute,String operator,Object ruleValue) {
+		RuleRow(Attribute attribute,String operator,Object ruleValue) {
             this.attribute = attribute;
             this.ruleValue = ruleValue;
             ruleLabel = new JLabel();
             ruleLabel.setText(attribute.getName().getName(getI18n().getLang()));
             createField( attribute );
-            ((SetGetField<Object>)field).setValue(ruleValue);
+            // we can cast here, because we tested in createField
+            @SuppressWarnings("unchecked")
+			SetGetField<Object> setGetField = (SetGetField<Object>)field;
+			setGetField.setValue(ruleValue);
             field.addChangeListener( this);
             setOperatorValue(operator);
             
@@ -785,12 +788,17 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             operatorComponent = null;
             AttributeType type = attribute.getType();
             String key = attribute.getKey();
+            // used for static testing of the field type 
+            @SuppressWarnings("unused")
+            SetGetField test;
             if (type.equals(AttributeType.ALLOCATABLE))
             {
                 operatorComponent = new JLabel("");
                 DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-        		
-                field = new AllocatableSelectField(getContext(),key, dynamicTypeConstraint);
+                AllocatableSelectField newField = new AllocatableSelectField(getContext(),key, dynamicTypeConstraint);
+                field = newField;
+                test = newField;
+               
             }
             else if (type.equals(AttributeType.CATEGORY))
             {
@@ -798,14 +806,20 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 if (rootCategory.getDepth() > 2) {
                     Category defaultCategory = (Category) attribute.defaultValue();
-                    field = new CategorySelectField(getContext(),key,rootCategory,defaultCategory);
+                    CategorySelectField newField = new CategorySelectField(getContext(),key,rootCategory,defaultCategory);
+					field = newField;
+					test = newField;
                 } else {
-                    field = new CategoryListField(getContext(),key,rootCategory);
+                    CategoryListField newField = new CategoryListField(getContext(),key,rootCategory);
+					field = newField;
+					test = newField;
                 }
             }
             else if (type.equals(AttributeType.STRING))
-                {
-                field = new TextField(getContext(),key);
+            {
+                TextField newField = new TextField(getContext(),key);
+				field = newField;
+				test = newField;
                 @SuppressWarnings("unchecked")
 				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                 		 getString("filter.contains")
@@ -817,7 +831,9 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.INT))
             {
-                field = new LongField(getContext(),key);
+                LongField newField = new LongField(getContext(),key);
+				field = newField;
+				test = newField;
                 @SuppressWarnings("unchecked")
 				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                     getString("filter.is_smaller_than")
@@ -834,7 +850,9 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.DATE))
             {
-                field = new DateField(getContext(),key);
+                DateField newField = new DateField(getContext(),key);
+				field = newField;
+				test = newField;
                 @SuppressWarnings("unchecked")
 				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                     getString("filter.earlier_than")
@@ -848,7 +866,9 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             else if (type.equals(AttributeType.BOOLEAN))
             {
                 operatorComponent = new JLabel("");
-                field = new BooleanField(getContext(),key);
+                BooleanField newField = new BooleanField(getContext(),key);
+				field = newField;
+				test = newField;
                 ruleValue = new Boolean(false);
             }
            

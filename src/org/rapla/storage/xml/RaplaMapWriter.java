@@ -45,7 +45,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
         closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
     }
 
-    public void writeMap(Map<String,String> map ) throws IOException, RaplaException {
+    public void writeMap(Map<String,String> map ) throws IOException {
         openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
         for (Map.Entry<String,String> entry:map.entrySet()) {
             String key = entry.getKey();

@@ -238,6 +238,10 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
          String id  = entries.get(0);
          if (id == null)
              return null;
+         if ( resolver == null)
+         {
+        	 throw new IllegalStateException("Resover not set");
+         }
  		Entity resolved = resolver.tryResolve( id );
 		if ( resolved == null)
 		{

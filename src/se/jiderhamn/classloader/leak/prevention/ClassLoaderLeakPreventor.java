@@ -1486,6 +1486,10 @@ protected void clearIntrospectionUtilsCache() {
     /**
      * After having detected potential ThreadLocal leak and warned about it, this method is called.
      * Subclasses may override this method to perform further processing, such as clean up. 
+     * @param thread 
+     * @param entry 
+     * @param threadLocal 
+     * @param value 
      */
     protected void processFurther(Thread thread, Reference entry, ThreadLocal<?> threadLocal, Object value) {
       // To be overridden in subclass
@@ -1638,7 +1642,12 @@ protected void clearIntrospectionUtilsCache() {
       
       info(getName() + " about to kill " + jurtThread);
       if(jurtThread.isAlive())
-        jurtThread.stop();
+    	  stop( jurtThread);
     }
+
+	@SuppressWarnings("deprecation")
+	private void stop(Thread thread) {
+		thread.stop();
+	}
   }
 }

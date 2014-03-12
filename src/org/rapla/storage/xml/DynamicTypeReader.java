@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;

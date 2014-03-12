@@ -81,9 +81,9 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 
 		// creation of the ComboBox to choose one of the views
 		// adding the ComboBox to the northPanel
-		cbView = new JComboBox();
-		cbView.addItem(getString("groups"));
-		cbView.addItem(getString("users"));
+		@SuppressWarnings("unchecked")
+		JComboBox jComboBox = new JComboBox(new String[] {getString("groups"), getString("users")});
+		cbView = jComboBox;
 		cbView.addItemListener(this);
 		northPanel.add(cbView);
 
@@ -105,11 +105,16 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 		// creation of the list for the assigned elements
 		assignedElementsList = new JList();
 		assignedElementsListModel = new DefaultListModel();
-		assignedElementsList.setCellRenderer(new CategoryListCellRenderer());
+		setRenderer();
 		// including the list in ScrollPaneListe and adding this to the GUI
 		assignedElementsScrollPane = new JScrollPane(assignedElementsList);
 		centerPanel.add(assignedElementsScrollPane);
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer() {
+		assignedElementsList.setCellRenderer(new CategoryListCellRenderer());
 	}
 
 	public JComponent getComponent() {
@@ -144,6 +149,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 	}
 
 	// selection of one or more elements in the tree
+	@SuppressWarnings("unchecked")
 	public void valueChanged(TreeSelectionEvent event) {
 		try
 		{

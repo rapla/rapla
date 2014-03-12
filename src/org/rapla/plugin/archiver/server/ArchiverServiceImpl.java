@@ -23,8 +23,8 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
 		super(context);
 	}
 	
-	@SuppressWarnings("unused")
-	/** can be overriden to check if user has admin rights when triggered as RemoteService*/
+	/** can be overriden to check if user has admin rights when triggered as RemoteService
+	 * @throws RaplaException */
 	protected void checkAccess() throws RaplaException
 	{
 	}

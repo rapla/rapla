@@ -60,19 +60,19 @@ public class PeriodChooser extends JComboBox implements Disposable
     }
 
 
-    public void setPeriodModel(PeriodModel model) {
+    @SuppressWarnings("unchecked")
+	public void setPeriodModel(PeriodModel model) {
         this.periodModel = model;
         if ( periodModel != null ) {
             try {
                 listenersEnabled = false;
-                @SuppressWarnings("unchecked")
 				DefaultComboBoxModel aModel = new DefaultComboBoxModel(model.getAllPeriods());
 				this.setModel(aModel);
             } finally {
                 listenersEnabled = true;
             }
         }
-        this.setRenderer(new PeriodListCellRenderer());
+        setRenderer(new PeriodListCellRenderer());
         update();
     }
     

@@ -55,7 +55,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     ListField<Integer> accessField;
 
-    public PermissionField(RaplaContext sm,String fieldName) throws RaplaException {
+    @SuppressWarnings("unchecked")
+	public PermissionField(RaplaContext sm,String fieldName) throws RaplaException {
         super( sm);
         setFieldName( fieldName );
 
@@ -169,7 +170,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     }
 
 
-    private DefaultComboBoxModel createSelectionModel() {
+    @SuppressWarnings("unchecked")
+	private DefaultComboBoxModel createSelectionModel() {
         DefaultComboBoxModel model = new DefaultComboBoxModel();
         model.addElement(getString( "open" ) );
         model.addElement(getString( "fixed_date") );

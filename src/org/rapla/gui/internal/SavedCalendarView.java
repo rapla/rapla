@@ -371,6 +371,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     
     }
 
+	@SuppressWarnings("unchecked")
 	protected DefaultComboBoxModel updateModel() throws RaplaException,
 			EntityNotFoundException {
 		final Preferences preferences = getQuery().getPreferences();
@@ -389,7 +390,6 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 		final FileEntry defaultEntry = new FileEntry(getString("default") ); 
 		defaultEntry.isDefault = true;
 		filenames.add(0,defaultEntry);
-		@SuppressWarnings("unchecked")
 		DefaultComboBoxModel model = new DefaultComboBoxModel(filenames.toArray());
 		selectionBox.setModel(model);
 		return model;

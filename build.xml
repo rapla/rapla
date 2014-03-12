@@ -236,6 +236,7 @@ Definition as published by the Open Source Initiative (OSI).
           	<exclude name="org/rapla/bootstrap/*"/>
     		<exclude name="**/Slf4jAdapter**" />
         	<exclude name="**/server/**" />
+        	<exclude name="**/storage/xml/**" />
         	<exclude name="**/storage/dbfile/**" />
         	<exclude name="**/storage/dbsql/**" />
         	<exclude name="**/servletpages/**" />
@@ -424,6 +425,7 @@ Definition as published by the Open Source Initiative (OSI).
 	         	<exclude name="se/jiderhamn"/>
 	         	<exclude name="se/jiderhamn/**"/>
 	            <exclude name="org/rapla/storage/xml"/>
+	            <exclude name="org/rapla/storage/xml/**"/>
                 <exclude name="org/rapla/storage/dbfile"/>
             	<exclude name="org/rapla/storage/dbfile/**" />
 	         	<exclude name="org/rapla/storage/dbsql"/>
@@ -556,7 +558,15 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
+	    <jar jarfile="${webapp.dir}/webclient/gson-2.2.4.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
 	    
+	    	    
         <copy file="${src.dir}/org/rapla/gui/images/tafel.png" tofile="${webapp.dir}/webclient/logo.png" />
       	
         <copy todir="${webapp.dir}/WEB-INF/lib">

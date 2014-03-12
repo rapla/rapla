@@ -37,7 +37,9 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     TreeSet<Period> m_periods = new TreeSet<Period>(new Comparator<Period>() {
             public int compare(Period o1,
                                Period o2) {
-            	return -o1.compareTo(o2);
+            	@SuppressWarnings("unchecked")
+				int compareTo = o1.compareTo(o2);
+				return -compareTo;
             }
         }
                                   );

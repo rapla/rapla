@@ -264,6 +264,10 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
 
+    /**
+	 * @param attributeImpl  
+     * @param key 
+	 */
     public void keyChanged(AttributeImpl attributeImpl, String key) {
 		attributeIndex = null;
 		for ( ParsedText text:annotations.values())

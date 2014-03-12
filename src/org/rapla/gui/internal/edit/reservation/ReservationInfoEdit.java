@@ -115,7 +115,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 		typeSelector =  jComboBox;
         typeSelector.setEnabled( types.length > 1);
         typeSelector.setSelectedItem(dynamicType);
-        typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+        setRenderer();
         typeSelector.addActionListener( this );
 
 
@@ -144,6 +144,11 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         content.validate();
         
     }
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer() {
+		typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+	}
 
     /** registers new ChangeListener for this component.
      *  An ChangeEvent will be fired to every registered ChangeListener

@@ -107,15 +107,13 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
         panel.add( new JLabel(getString("color")),"0,6"  );
         panel.add( colorBlocks,"2,6");
 
-        ListRenderer listRenderer = new ListRenderer();
-        colorBlocks.setRenderer( listRenderer );
         showExceptionsField.setText("");        
         panel.add( new JLabel(getString("display_exceptions")),"0,8");
         panel.add( showExceptionsField,"2,8");
         
         panel.add( new JLabel(getString("events_not_matched_by_filter")),"0,10");
         panel.add( nonFilteredEvents,"2,10");
-        nonFilteredEvents.setRenderer( listRenderer );
+        setRenderer();
         
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(mapper.getNames());
@@ -144,6 +142,13 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
             
         }
     }
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer() {
+		ListRenderer listRenderer = new ListRenderer();
+        nonFilteredEvents.setRenderer( listRenderer );
+        colorBlocks.setRenderer( listRenderer );
+	}
 
     public JComponent getComponent() {
         return panel;

@@ -14,6 +14,7 @@
 package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;

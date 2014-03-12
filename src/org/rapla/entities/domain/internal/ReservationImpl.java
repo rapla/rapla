@@ -320,7 +320,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 	private void updateIndex() {
 		if (appointmentIndex == null)
 		{
-			appointmentIndex = new HashMap<>();
+			appointmentIndex = new HashMap<String,AppointmentImpl>();
 			for (AppointmentImpl app: appointments)
 			{
 				appointmentIndex.put( app.getId(), app);
@@ -487,7 +487,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         	{
         		if ( clone.restrictions == null)
         		{
-        			clone.restrictions = new LinkedHashMap<>();
+        			clone.restrictions = new LinkedHashMap<String,List<String>>();
         		}
         		List<String> list = restrictions.get( resourceId);
 	        	if ( list != null)

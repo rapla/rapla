@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.codec.binary.Base64;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
@@ -45,9 +43,9 @@ import com.google.gson.internal.Excluder;
 import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gwtjsonrpc.common.JsonConstants;
-import com.google.gwtjsonrpc.server.MapDeserializer;
-import com.google.gwtjsonrpc.server.SqlDateDeserializer;
-import com.google.gwtjsonrpc.server.SqlTimestampDeserializer;
+import com.google.gwtjsonrpc.serializer.MapDeserializer;
+import com.google.gwtjsonrpc.serializer.SqlDateDeserializer;
+import com.google.gwtjsonrpc.serializer.SqlTimestampDeserializer;
 
 public class HTTPConnector  implements Connector
 {
@@ -99,13 +97,13 @@ public class HTTPConnector  implements Connector
 			return params;
 		}
 
-		public Object deserializeReturnValue(Class<?> returnType, JsonElement element) throws UnsupportedEncodingException {
+		public Object deserializeReturnValue(Class<?> returnType, JsonElement element) {
 			Gson gson = defaultGsonBuilder().disableHtmlEscaping().create();
 			Object result = gson.fromJson(element, returnType);
 			return result;
 		}
 
-		public RaplaException deserializeExceptionObject(JsonObject result) throws RaplaException {
+		public RaplaException deserializeExceptionObject(JsonObject result) {
 			JsonObject errorElement = result.getAsJsonObject("error");
 			JsonObject data = errorElement.getAsJsonObject("data");
 			JsonElement message = errorElement.get("message");
@@ -147,7 +145,7 @@ public class HTTPConnector  implements Connector
 	    Serializer remoteMethodSerialization = new Serializer();
 		JsonElement params = remoteMethodSerialization.serializeArguments(parameterTypes, args);
 
-	    URL methodURL = new URL(server,"rapla/json/" + serviceUrl +"/" + methodName);
+	    URL methodURL = new URL(server,"/rapla/json/" + serviceUrl +"/" + methodName);
         //System.err.println("Calling " + methodURL.toExternalForm() );
         methodURL = addSessionId( methodURL );
         HttpURLConnection conn = (HttpURLConnection)methodURL.openConnection();
@@ -208,19 +206,16 @@ public class HTTPConnector  implements Connector
 	        {
 	           	parsed = new JsonParser().parse(resultString);
 	        }
-	        catch (JsonParseException e)
+	        catch (JsonParseException ex)
 	        {
-	            final String p = new String(Base64.decodeBase64(resultString), "UTF-8");
-	            try
-	            {
-	            	parsed = new JsonParser().parse(p);
-	            }
-	            catch (JsonParseException ex)
-		        {
-	            	throw new RaplaException(ex.getMessage());
-		        }
-	           	
-	           	
+//	            final String p = new String(Base64.decodeBase64(resultString), "UTF-8");
+//	            try
+//	            {
+//	            	parsed = new JsonParser().parse(p);
+//	            }
+//	            catch (JsonParseException ex)
+//		        {
+	        	throw new RaplaException(ex.getMessage());
 	        }
 		    
 		    if ( !(parsed instanceof JsonObject))
@@ -266,7 +261,7 @@ public class HTTPConnector  implements Connector
         }
    }
     
-    public RaplaException deserializeException(String classname, String message, List<String> params) throws RaplaException
+    public RaplaException deserializeException(String classname, String message, List<String> params) 
     {
     	String error = "";
     	if ( message != null)

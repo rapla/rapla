@@ -118,6 +118,7 @@ public class PermissionListField extends AbstractEditField
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void mapFrom(List<Allocatable> list) {
 		model.clear();
 		Set<Permission> permissions = new LinkedHashSet<Permission>();
@@ -206,6 +207,7 @@ public class PermissionListField extends AbstractEditField
 		listEdit.getList().requestFocus();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void createPermission() {
 		Permission permission = new PermissionImpl();
 		model.addElement(permission);
@@ -227,6 +229,7 @@ public class PermissionListField extends AbstractEditField
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		public void stateChanged(ChangeEvent evt) {
 			// set processed selected Permission in the list
 			model.set(selectedIndex, selectedPermission);

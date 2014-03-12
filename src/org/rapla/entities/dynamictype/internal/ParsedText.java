@@ -611,6 +611,9 @@ public class ParsedText implements Serializable {
 			testMethod();
 		}
 
+		/**
+		 * @throws IllegalAnnotationException  
+		 */
 		private void testMethod() throws IllegalAnnotationException {
 		}
 
@@ -650,6 +653,7 @@ public class ParsedText implements Serializable {
 			testMethod();
 		}
 
+		@SuppressWarnings("unused")
 		private void testMethod() throws IllegalAnnotationException {
 			
 		}

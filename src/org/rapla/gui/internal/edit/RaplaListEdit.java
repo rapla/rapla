@@ -100,7 +100,8 @@ final public class RaplaListEdit<T> implements
     JList list = new JList() {
         private static final long serialVersionUID = 1L;
 
-            public void setModel(ListModel model) {
+            @SuppressWarnings("unchecked")
+			public void setModel(ListModel model) {
                 super.setModel( model );
                 model.addListDataListener(new ListDataListener() {
                         public void contentsChanged(ListDataEvent e) {
@@ -358,7 +359,7 @@ final public class RaplaListEdit<T> implements
         }
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "deprecation" })
 	public Collection<T> getSelectedValues()
     {
     	return (Collection<T>) Arrays.asList(list.getSelectedValues());

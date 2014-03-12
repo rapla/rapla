@@ -69,7 +69,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         newButton.addActionListener( this );
         removeButton.addActionListener( this );
 
-        list.setCellRenderer(new DefaultListCellRenderer() {
+        DefaultListCellRenderer cellRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             public Component getListCellRendererComponent(JList list,
@@ -91,9 +91,14 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
                     }
                     return component;
                 }
-            }
-            );
+            };
+		setRenderer(cellRenderer);
     }
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer(DefaultListCellRenderer cellRenderer) {
+		list.setCellRenderer(cellRenderer );
+	}
 
     public JComponent getComponent() {
         return panel;
@@ -145,6 +150,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     	mapFromList(groups, new HashSet<Category>());
     }
     
+	@SuppressWarnings("unchecked")
 	private void mapFromList(Collection<Category> groups,Set<Category> notToAll) {
 		model.clear();
 		this.notAllList = notToAll;
@@ -190,7 +196,8 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         }
         if ( evt.getSource() ==  removeButton)
         {
-            Object[] selectedValues = list.getSelectedValues();
+            @SuppressWarnings("deprecation")
+			Object[] selectedValues = list.getSelectedValues();
 			for ( Object value: selectedValues)
             {
                 Category group = (Category) value;
@@ -204,7 +211,8 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         
     }
     
-    public void stateChanged(ChangeEvent evt) {
+    @SuppressWarnings("unchecked")
+	public void stateChanged(ChangeEvent evt) {
         Collection<Category> newGroup = newCategory.getValues();
         
         for ( Category group:newGroup)

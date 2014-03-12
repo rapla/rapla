@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.gwtjsonrpc.server;
+package com.google.gwtjsonrpc.serializer;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -82,7 +82,7 @@ public class MapDeserializer implements JsonDeserializer<Map<Object, Object>>,
     final Type vt = ((ParameterizedType) typeOfSrc).getActualTypeArguments()[1];
 
     if (src == null) {
-      return new JsonNull();
+      return JsonNull.INSTANCE;
     }
 
     if (kt == String.class) {

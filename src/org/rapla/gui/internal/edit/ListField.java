@@ -60,22 +60,23 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		field.addActionListener(this);
 		panel.setLayout(new BorderLayout());
 		panel.add(field, BorderLayout.WEST);
-		field.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+		setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
 		nothingSelected = getString("nothing_selected");
 		field.addFocusListener(this);
 	}
 
+	@SuppressWarnings("unchecked")
 	public void setVector(Collection<T> v) {
 		this.list = new Vector<Object>(v);
 		if ( includeNothingSelected)
 		{
 		    list.insertElementAt(nothingSelected, 0);
 		}
-		@SuppressWarnings("unchecked")
 		DefaultComboBoxModel aModel = new DefaultComboBoxModel(list);
 		field.setModel(aModel);
 	}
 
+	@SuppressWarnings("unchecked")
 	public void setRenderer(ListCellRenderer renderer) {
 		field.setRenderer(renderer);
 	}
@@ -171,6 +172,7 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 	}
 
 	// implementation of interface MultiEditField
+	@SuppressWarnings("unchecked")
 	public void setFieldForMultipleValues() {
 		multipleValues = true;
 		// place holder for multiple different values

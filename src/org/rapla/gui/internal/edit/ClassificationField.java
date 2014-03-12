@@ -80,6 +80,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		editUI.mapToObjects();
 	}
 
+	@SuppressWarnings("unchecked")
 	public void mapFrom(List<T> list) throws RaplaException {
 		content.removeAll();
 		List<Classifiable> classifiables = new ArrayList<Classifiable>();
@@ -144,7 +145,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			dynamicType = null;
 		oldDynamicType = dynamicType;
 
-		@SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(types);
 		typeSelector = jComboBox;
 		typeSelector.setEnabled( types.length > 1);

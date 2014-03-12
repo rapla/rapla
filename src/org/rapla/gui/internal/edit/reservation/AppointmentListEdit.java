@@ -85,6 +85,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
     
+	@SuppressWarnings("unchecked")
 	AppointmentListEdit(RaplaContext sm, CommandHistory commandHistory)
 			throws RaplaException {
 		super(sm);
@@ -108,7 +109,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     	return listEdit;
     }
 
-    private void addToModel(Appointment appointment) {
+    @SuppressWarnings("unchecked")
+	private void addToModel(Appointment appointment) {
 		model.addElement( appointment);
 	}
     public JComponent getComponent() {
@@ -217,6 +219,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			}
 			if (evt.getActionCommand().equals("remove")) 
 			{
+				@SuppressWarnings("deprecation")
 				Object[] objects = listEdit.getList().getSelectedValues();
 				RemoveAppointments command = new RemoveAppointments(
 						objects);
@@ -254,7 +257,9 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			else if (evt.getActionCommand().equals("select"))
 			{
 				Collection<Appointment> appointments = new ArrayList<Appointment>();
-		        for ( Object value:listEdit.getList().getSelectedValues())
+				@SuppressWarnings("deprecation")
+				Object[] values = listEdit.getList().getSelectedValues();
+		        for ( Object value:values)
 				{
 					appointments.add( (Appointment)value);
 				}
@@ -264,9 +269,12 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		}
 
+		@SuppressWarnings("unchecked")
 		public void stateChanged(ChangeEvent evt) {
 			Appointment appointment = appointmentController.getAppointment();
-			List<Object> selectedValues = Arrays.asList(listEdit.getList().getSelectedValues());
+			@SuppressWarnings("deprecation")
+			Object[] values = listEdit.getList().getSelectedValues();
+			List<Object> selectedValues = Arrays.asList(values);
 	    	int indexOf = model.indexOf(appointment);
 			if ( indexOf >=0)
 			{

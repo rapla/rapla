@@ -89,7 +89,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 //	}
 
 
-    private  <T> List<T> createList(Class<? super T> clazz) {
+    private  <T> List<T> createList(@SuppressWarnings("unused") Class<? super T> clazz) {
 		ArrayList<T> list = new ArrayList<T>();
 		//lists.put(clazz, list);
 		//listMap.put( clazz, (List<Entity>) list);

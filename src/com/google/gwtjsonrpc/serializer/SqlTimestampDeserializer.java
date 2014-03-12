@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.gwtjsonrpc.server;
+package com.google.gwtjsonrpc.serializer;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -54,7 +54,7 @@ public class SqlTimestampDeserializer implements
   public JsonElement serialize(final java.sql.Timestamp src,
       final Type typeOfSrc, final JsonSerializationContext context) {
     if (src == null) {
-      return new JsonNull();
+      return JsonNull.INSTANCE;
     }
     return new JsonPrimitive(newFormat().format(src) + "000000");
   }

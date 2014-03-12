@@ -124,20 +124,20 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 						int millisToScroll = 40;
 						MenuScroller.setScrollerFor( subMenu, maxItems , millisToScroll);
 					}
-					addTemplates(templateNames, subMenu, set);
+					addTemplates(subMenu, set);
 					item.add( subMenu);
 				}
 			}
 			else
 			{
-				addTemplates(templateNames, item, templateSet);
+				addTemplates( item, templateSet);
 			}
 			element = item;
 		}
 		return element;
 	}
 
-	public void addTemplates(Collection<String> templateMap, RaplaMenu item,
+	public void addTemplates(RaplaMenu item,
 			Set<String> templateSet) {
 		for ( String templateName:templateSet)
 		{

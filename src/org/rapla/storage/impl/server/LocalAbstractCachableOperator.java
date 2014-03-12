@@ -442,7 +442,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	/** updates the bindings of the resources and returns a map with all processed allocation changes*/
-	private void updateBindings(UpdateResult result, Logger logger) throws RaplaException {
+	private void updateBindings(UpdateResult result) {
 		Map<Allocatable,AllocationChange> toUpdate = new HashMap<Allocatable,AllocationChange>();
 		List<Allocatable> removedAllocatables = new ArrayList<Allocatable>();
 		for (UpdateOperation operation: result.getOperations())
@@ -507,7 +507,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkAbandonedAppointments(allocatables);
 	}
 	
-	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Appointment app, boolean remove) throws RaplaException {
+	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Appointment app, boolean remove)  {
 		
 		Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
 		allocatablesToProcess.add( null);
@@ -634,8 +634,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected UpdateResult update(UpdateEvent evt)
 			throws RaplaException {
 		UpdateResult update = super.update(evt);
-	   	Logger logger = getLogger();
-	   	updateBindings(update, logger);
+	   	updateBindings(update);
 		return update;
 	}
     
@@ -1599,6 +1598,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			groupsCategory.addCategory( group);
 			store.put( group);
 		}
+		groupsCategory.setResolver( this);
+		cache.getSuperCategory().setResolver( this);
 		cache.getSuperCategory().addCategory( groupsCategory);
 		UserImpl admin = new UserImpl();
 		admin.setUsername("admin");
@@ -1622,7 +1623,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         allocatable.setClassification(classification);
         setNew(allocatable);
         classification.setValue("name", getString("test_resource"));
+        allocatable.setResolver( this);
         allocatable.setOwner( user);
+        
         cache.put( allocatable);
 	}
     
@@ -1661,12 +1664,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
 		}
+		dynamicType.setResolver( this);
 		return dynamicType;
 	}
 
 	private Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
 		AttributeImpl attribute = new AttributeImpl(attributeType);
 		setNew(attribute);
+		attribute.setResolver( this);
 		return attribute;
 	}
 	

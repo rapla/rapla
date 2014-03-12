@@ -16,6 +16,7 @@ package org.rapla.storage.xml;
 import java.util.Map;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;

@@ -40,7 +40,6 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.IOContext;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter

@@ -743,7 +743,6 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
     
 	public void copy(Object obj) {
     	synchronized ( this) {
-    		@SuppressWarnings("unchecked")
             AppointmentImpl casted = (AppointmentImpl) obj;
 			copy(casted,this);			
 		}

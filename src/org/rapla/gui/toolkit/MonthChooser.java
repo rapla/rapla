@@ -37,13 +37,13 @@ public final class MonthChooser extends JComboBox
         setLocale( locale );
     }
 
-    public void setLocale( Locale locale )
+    @SuppressWarnings("unchecked")
+	public void setLocale( Locale locale )
     {
         super.setLocale( locale );
         if ( locale == null )
             return;
         mapper = new MonthMapper( locale );
-        @SuppressWarnings("unchecked")
 		DefaultComboBoxModel aModel = new DefaultComboBoxModel( mapper.getNames() );
 		setModel( aModel );
     }

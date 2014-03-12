@@ -74,7 +74,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 		}
 		else
 		{
-			@SuppressWarnings("unchecked")
+			//@SuppressWarnings("unchecked")
 			Iterable<Entity>subEntities = ((ParentEntity)this).getSubEntities();
 			return subEntities;
 		}
@@ -95,9 +95,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return (User) getEntity("owner");
     }
 
-    @SuppressWarnings("unchecked")
-	public void setOwner(User owner) {
-        putEntity("owner",(Entity)owner);
+    public void setOwner(User owner) {
+        putEntity("owner",owner);
     }
     
 	public User getLastChangedBy() {

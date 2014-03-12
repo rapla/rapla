@@ -363,8 +363,7 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
         return dest;
     }
 
-	@SuppressWarnings("unchecked")
-    private void copy(RepeatingImpl source, RepeatingImpl dest) 
+	private void copy(RepeatingImpl source, RepeatingImpl dest) 
 	{
 		dest.monthly = source.monthly;
         dest.yearly = source.yearly;

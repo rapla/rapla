@@ -19,6 +19,7 @@ import java.util.Map;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;

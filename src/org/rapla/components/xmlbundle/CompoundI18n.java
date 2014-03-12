@@ -42,6 +42,7 @@ public class CompoundI18n implements I18nBundle {
     	return format(key,array2);
     }
 
+    @Override
     public String format(String key,Object[] obj) {
     	 try {
              return inner.format(key, obj);

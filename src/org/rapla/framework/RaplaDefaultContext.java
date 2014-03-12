@@ -20,7 +20,9 @@ public class RaplaDefaultContext implements RaplaContext
         this.parent = parent;
     }
 
-    @SuppressWarnings("unused")
+	/**
+	 * @throws RaplaContextException  
+	 */
 	protected Object lookup( final String key ) throws RaplaContextException
     {
         return contextObjects.get( key );

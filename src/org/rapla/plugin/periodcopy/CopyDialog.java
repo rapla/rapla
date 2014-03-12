@@ -71,7 +71,8 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     JPanel customSourcePanel = new JPanel();
     JPanel customDestPanel = new JPanel();
     
-    public CopyDialog(RaplaContext sm) throws RaplaException {
+    @SuppressWarnings("unchecked")
+	public CopyDialog(RaplaContext sm) throws RaplaException {
         super(sm);
         locale = getRaplaLocale();
         sourceBegin = createRaplaCalendar();
@@ -93,7 +94,6 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 			}
 		});
        
-        @SuppressWarnings("unchecked")
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
         final PeriodImpl customSource = new PeriodImpl(null, null);
         customSource.setName(getString("custom_period"));
@@ -101,7 +101,6 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         customSource.setEnd( getQuery().today());
         sourceModel.insertElementAt(customSource, 0);
         
-        @SuppressWarnings("unchecked")
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
         final PeriodImpl customDest = new PeriodImpl(getQuery().today(), null);
         {
@@ -245,7 +244,8 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     	destBegin.setEnabled( customDestEnabled);	
     }
     
-    private void updateReservations() throws RaplaException 
+    @SuppressWarnings("unchecked")
+	private void updateReservations() throws RaplaException 
     {
     	DefaultListModel listModel = new DefaultListModel();
     	List<Reservation> reservations = getReservations();

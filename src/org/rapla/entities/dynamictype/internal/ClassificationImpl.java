@@ -45,7 +45,7 @@ import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
 public class ClassificationImpl implements Classification,DynamicTypeDependant, EntityReferencer {
 
 	String parentId;
-	Map<String,List<String>> map = new LinkedHashMap<>();
+	Map<String,List<String>> map = new LinkedHashMap<String,List<String>>();
 	transient boolean readOnly = false;
 
     transient TextCache name;
@@ -331,11 +331,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         namePlaning = null;
     }
 
-    @SuppressWarnings("unchecked")
-	public <T> void addValue(Attribute attribute,T value) {
+    public <T> void addValue(Attribute attribute,T value) {
     	checkWritable();
     	String attributeKey = attribute.getKey();
-        String stringValue = ((AttributeImpl)attribute).toStringValue( value);
+    	String stringValue = ((AttributeImpl)attribute).toStringValue( value);
         if ( stringValue == null)
         {
         	return;

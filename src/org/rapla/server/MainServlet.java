@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -41,6 +43,7 @@ import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
@@ -63,6 +66,7 @@ import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteMethodStub;
+import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public class MainServlet extends HttpServlet {
     private static final String RAPLA_JSON_PATH = "/rapla/json/";
     private static final String RAPLA_RPC_PATH = "/rapla/rpc/";
@@ -333,8 +337,7 @@ public class MainServlet extends HttpServlet {
         }		
 	}
 
-	protected String getFirstAdmin() throws RaplaContextException,
-			RaplaException {
+	protected String getFirstAdmin() throws RaplaContextException,	RaplaException {
 		String username = null;
 		StorageOperator operator = getServer().getContext().lookup(StorageOperator.class);
 		for (User u:operator.getObjects( User.class))
@@ -688,10 +691,10 @@ public class MainServlet extends HttpServlet {
 	            }
 	        }
 	        //String servletPath = request.getServletPath();
-//	        if ( requestURI.indexOf(RAPLA_RPC_PATH) >= 0)  {
-//	            handleRPCCall( request, response, requestURI );
-//	            return;
-//	        }
+	        if ( requestURI.indexOf(RAPLA_RPC_PATH) >= 0)  {
+	        	handleOldRPCCall( request, response );
+	            return;
+	        }
 	        if ( requestURI.indexOf(RAPLA_JSON_PATH)>= 0)  {
 	            handleJSONCall( request, response, requestURI );
 	            return;
@@ -870,6 +873,64 @@ public class MainServlet extends HttpServlet {
     	return logger;
 	}
     
+    
+    
+    private  void handleOldRPCCall( HttpServletRequest request, HttpServletResponse response ) throws IOException
+    {
+    	
+		String clientVersion = request.getParameter("v");
+		if ( clientVersion != null )
+		{
+			String message = getVersionErrorText(request,  clientVersion);
+			response.addHeader("X-Error-Classname",  WrongRaplaVersionException.class.getName());
+			response.addHeader("X-Error-Stacktrace", message );
+			response.setStatus( 500);
+		}
+		else
+		{
+			//if ( !serverVersion.equals( clientVersion ) )
+			String message = getVersionErrorText(request,  "");
+			response.addHeader("X-Error-Stacktrace", message );
+			RaplaException e1= new RaplaException( message );   
+			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+			ObjectOutputStream exout = new ObjectOutputStream( outStream);
+			exout.writeObject( e1);
+			exout.flush();
+			exout.close();
+			byte[] out = outStream.toByteArray();
+			try
+			{
+				ServletOutputStream outputStream = response.getOutputStream();
+				outputStream.write( out );
+				outputStream.close();
+			}
+			catch (Exception ex)
+			{
+				getLogger().error( " Error writing exception back to client " + ex.getMessage());
+			}
+			response.setStatus( 500);
+		}
+    	
+    }
+
+	private String getVersionErrorText(HttpServletRequest request,String clientVersion) 
+	{
+		String requestUrl = request.getRequestURL().toString();
+		int indexOf = requestUrl.indexOf( "rpc/");
+		if (indexOf>=0 ) 
+		{
+			requestUrl = requestUrl.substring( 0, indexOf) ;
+		}
+		String message;
+		try {
+			I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+			message = i18n.format("error.wrong_rapla_version", clientVersion, serverVersion, requestUrl);
+		} catch (Exception e) {
+			message = "Update client from " + clientVersion + " to " + serverVersion + " on " + requestUrl + ". Click on the webstart or applet to update.";
+		}
+		return message;
+	}
+
 
 //  private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
 //  {
@@ -1052,23 +1113,6 @@ public class MainServlet extends HttpServlet {
 //		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
 //	}
 //
-//	private String getVersionErrorText(HttpServletRequest request, String methodName, String clientVersion) 
-//	{
-//		String requestUrl = request.getRequestURL().toString();
-//		int indexOf = requestUrl.indexOf( "rpc/"+methodName);
-//		if (indexOf>=0 ) 
-//		{
-//			requestUrl = requestUrl.substring( 0, indexOf) ;
-//		}
-//		String message;
-//		try {
-//			I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
-//			message = i18n.format("error.wrong_rapla_version", clientVersion, serverVersion, requestUrl);
-//		} catch (Exception e) {
-//			message = "Update client from " + clientVersion + " to " + serverVersion + " on " + requestUrl + ". Click on the webstart or applet to update.";
-//		}
-//		return message;
-//	}
 
 //    private Map<String,String> makeSinglesAndRemoveVersion( Map<String, String[]> parameterMap )
 //    {

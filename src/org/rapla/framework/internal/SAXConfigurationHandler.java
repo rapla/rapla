@@ -5,9 +5,9 @@ import java.util.Stack;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXHandler;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.storage.xml.RaplaSAXParseException;
 
 public class SAXConfigurationHandler implements RaplaSAXHandler 
 {

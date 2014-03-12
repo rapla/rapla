@@ -43,6 +43,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
@@ -769,13 +770,16 @@ public class AppointmentController extends RaplaGUIComponent
 			endDatePeriodPanel.setLayout(new BorderLayout());
 			endDatePeriodPanel.add(endDatePeriod, BorderLayout.CENTER);
 			content.add(numberPanel, "2,8,f,f");
-			endingChooser.setRenderer(new ListRenderer());
+			
+			setRenderer(endingChooser,new ListRenderer());
 			// Rapla 1.4: Initialize the split appointment button
 			convertButton.addActionListener(this);
 
 			// content.add(exceptionLabel,"0,10,l,c");
 			// content.add(exceptionPanel,"2,10,4,10,l,c");
 		}
+
+
 
 		public void dispose() {
 			endDatePeriod.removeActionListener(this);
@@ -1207,7 +1211,7 @@ public class AppointmentController extends RaplaGUIComponent
 			removeButton.setEnabled(false);
 			specialExceptions.setFixedCellWidth(200);
             specialExceptions.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-			specialExceptions.setCellRenderer(new DefaultListCellRenderer() {
+			DefaultListCellRenderer cellRenderer = new DefaultListCellRenderer() {
 				private static final long serialVersionUID = 1L;
 
 				public Component getListCellRendererComponent(JList list,
@@ -1217,7 +1221,8 @@ public class AppointmentController extends RaplaGUIComponent
 						value = getRaplaLocale().formatDateLong((Date) value);
 					return super.getListCellRendererComponent(list, value,	index, isSelected, cellHasFocus);
 				}
-			});
+			};
+			setRenderer(specialExceptions, cellRenderer);
 			specialExceptions.addMouseListener(new MouseAdapter() {
 				public void mouseClicked(MouseEvent evt) {
 					if (evt.getClickCount() > 1) {
@@ -1227,6 +1232,7 @@ public class AppointmentController extends RaplaGUIComponent
 			});
 		}
 
+		@SuppressWarnings("unchecked")
 		public void mapFromAppointment() {
 			if (appointment.getRepeating() == null)
 				specialExceptions.setListData(new Object[0]);
@@ -1257,6 +1263,7 @@ public class AppointmentController extends RaplaGUIComponent
 			commandHistory.storeAndExecute(command);
 		}
 
+		@SuppressWarnings("deprecation")
 		private void removeException() {
 			if (specialExceptions.getSelectedValues() == null)
 				return;
@@ -1294,6 +1301,7 @@ public class AppointmentController extends RaplaGUIComponent
 				this.selectedExceptions = selectedExceptions;
 			}
 
+			@SuppressWarnings("unchecked")
 			public boolean execute()  {
 				Repeating repeating = appointment.getRepeating();
 				if (pressedButton == addButton) {
@@ -1311,6 +1319,7 @@ public class AppointmentController extends RaplaGUIComponent
 				return true;
 			}
 
+			@SuppressWarnings("unchecked")
 			public boolean undo() {
 				Repeating repeating = appointment.getRepeating();
 				if (pressedButton == addButton) {
@@ -1523,5 +1532,13 @@ public class AppointmentController extends RaplaGUIComponent
 		
 	}
 
-  
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer(JComboBox cb,	ListCellRenderer listRenderer) {
+		cb.setRenderer( listRenderer);
+	}
+	@SuppressWarnings("unchecked")
+	private void setRenderer(JList cb,	ListCellRenderer listRenderer) {
+		cb.setCellRenderer( listRenderer);
+	}
 }

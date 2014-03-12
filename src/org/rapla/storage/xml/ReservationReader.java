@@ -17,6 +17,7 @@ import java.util.Date;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Allocatable;

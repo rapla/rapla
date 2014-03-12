@@ -36,13 +36,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.IOContext;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaMainReader;
 import org.rapla.storage.xml.RaplaMainWriter;
 

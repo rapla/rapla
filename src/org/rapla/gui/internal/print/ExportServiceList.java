@@ -69,7 +69,7 @@ public class ExportServiceList extends RaplaGUIComponent  {
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(new JLabel(getString("weekview.print.choose_export")),BorderLayout.NORTH);
         panel.add(list,BorderLayout.CENTER);
-        list.setCellRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+        setRenderer(list);
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         DialogUI dlg = DialogUI.create(getContext(),parentComponent,true,panel,
@@ -88,6 +88,11 @@ public class ExportServiceList extends RaplaGUIComponent  {
         boolean result = selectedService.export(printable,pageFormat, parentComponent);
 		return result;
     }
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer(JList list) {
+		list.setCellRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+	}
 
     public void addService(Object policy,ExportService exportService) {
         exporters.put(policy, exportService);

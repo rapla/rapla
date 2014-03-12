@@ -662,6 +662,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
     }
 
+	@SuppressWarnings("unchecked")
 	private void fillModel(DefaultListModel model,Collection<String> templateNames)  {
 		model.removeAllElements();
 		

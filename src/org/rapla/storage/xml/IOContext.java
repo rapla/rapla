@@ -1,4 +1,4 @@
-package org.rapla.storage;
+package org.rapla.storage.xml;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,29 +22,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.storage.IdTable;
 import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.xml.AllocatableReader;
-import org.rapla.storage.xml.AllocatableWriter;
-import org.rapla.storage.xml.CategoryReader;
-import org.rapla.storage.xml.CategoryWriter;
-import org.rapla.storage.xml.DynamicTypeReader;
-import org.rapla.storage.xml.DynamicTypeWriter;
-import org.rapla.storage.xml.PeriodReader;
-import org.rapla.storage.xml.PeriodWriter;
-import org.rapla.storage.xml.PreferenceReader;
-import org.rapla.storage.xml.PreferenceWriter;
-import org.rapla.storage.xml.RaplaCalendarSettingsReader;
-import org.rapla.storage.xml.RaplaCalendarSettingsWriter;
-import org.rapla.storage.xml.RaplaConfigurationReader;
-import org.rapla.storage.xml.RaplaConfigurationWriter;
-import org.rapla.storage.xml.RaplaMapReader;
-import org.rapla.storage.xml.RaplaMapWriter;
-import org.rapla.storage.xml.RaplaXMLReader;
-import org.rapla.storage.xml.RaplaXMLWriter;
-import org.rapla.storage.xml.ReservationReader;
-import org.rapla.storage.xml.ReservationWriter;
-import org.rapla.storage.xml.UserReader;
-import org.rapla.storage.xml.UserWriter;
 
 public class IOContext
 {

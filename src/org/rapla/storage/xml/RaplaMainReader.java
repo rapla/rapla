@@ -22,6 +22,7 @@ import java.util.Map;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
+import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;

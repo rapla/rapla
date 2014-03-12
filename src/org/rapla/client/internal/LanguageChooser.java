@@ -39,7 +39,6 @@ final public class LanguageChooser implements RaplaWidget
     public LanguageChooser(Logger logger,RaplaContext context) throws RaplaException {
         this.logger = logger;
         this.context = context;
-
         final I18nBundle i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
         final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         country = raplaLocale.getLocale().getCountry();
@@ -50,7 +49,7 @@ final public class LanguageChooser implements RaplaWidget
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox2 = new JComboBox(entries);
 		jComboBox = jComboBox2;
-        jComboBox.setRenderer(new DefaultListCellRenderer() {
+        DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
             public Component getListCellRendererComponent(
                                                           JList list,
@@ -73,9 +72,15 @@ final public class LanguageChooser implements RaplaWidget
                                                           isSelected,
                                                           cellHasFocus);
             }
-            });
+            };
+		setRenderer(aRenderer);
         //jComboBox.setSelectedItem( raplaLocale.getLocale().getLanguage());
     }
+
+	@SuppressWarnings("unchecked")
+	private void setRenderer(DefaultListCellRenderer aRenderer) {
+		jComboBox.setRenderer(aRenderer);
+	}
 
     public JComponent getComponent() {
         return jComboBox;

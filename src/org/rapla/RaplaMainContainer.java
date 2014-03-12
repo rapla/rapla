@@ -41,7 +41,6 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.ServiceListCreator;
 import org.rapla.framework.StartupEnvironment;
@@ -142,7 +141,7 @@ final public class RaplaMainContainer extends ContainerImpl
         initialize();
     }
 
-    private static Logger createRaplaLogger() throws RaplaException
+    private static Logger createRaplaLogger() 
     {
     	Logger logger;
     	try {
