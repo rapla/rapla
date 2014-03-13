@@ -55,6 +55,8 @@ import org.rapla.storage.dbrm.RemoteMethodCaller;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 
+import com.google.gwtjsonrpc.common.FutureResult;
+
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
  */
@@ -687,7 +689,11 @@ public class ContainerImpl implements Container, RemoteServiceCaller
 				 Class<?> returnType = method.getReturnType();
 				 String methodName = method.getName();
 				 RemoteMethodCaller caller = callerProvider != null ? callerProvider.get() : context.lookup( RemoteMethodCaller.class);
-				 Object result = caller.call(a, methodName, parameterTypes, returnType, args);
+				 FutureResult result = caller.call(a, methodName, parameterTypes, returnType, args);
+				 if ( !FutureResult.class.isAssignableFrom(returnType))
+				 {
+					 return result.get();
+				 }
 				 return result;
 			 }
 	     };

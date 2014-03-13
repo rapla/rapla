@@ -13,6 +13,7 @@
 package org.rapla.entities;
 
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.framework.RaplaException;
 
 
 /**
@@ -31,7 +32,7 @@ public interface User extends Entity<User>, Named, Comparable
     /** returns if the user has admin-privilige */
     boolean isAdmin();
     
-    void setPerson(Allocatable person);
+    void setPerson(Allocatable person) throws RaplaException;
     Allocatable getPerson();
 
     void setUsername(String username);

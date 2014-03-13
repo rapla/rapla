@@ -53,6 +53,9 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.ResultImpl;
+
 
 public class RaplaICalImport extends RaplaComponent implements RemoteMethodFactory<ICalImport> {
 	private TimeZone timeZone;
@@ -71,8 +74,11 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 	public ICalImport createService(final RemoteSession remoteSession) {
         return new ICalImport() {
         	@Override
-            public Integer[] importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
-                    List<Allocatable> allocatables = new ArrayList<Allocatable>();
+            public FutureResult<Integer[]> importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey)  
+            {
+                try
+                {
+                	List<Allocatable> allocatables = new ArrayList<Allocatable>();
                     if ( allocatableIds.length > 0)
                     {
                         for ( String id:allocatableIds)
@@ -83,8 +89,12 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
                     }
                     User user = remoteSession.getUser();
                     Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-                    return count;
+                    return new ResultImpl<Integer[]>(count);
+                } catch (RaplaException ex)
+                {
+                	return new ResultImpl<Integer[]>(ex);
                 }
+            }
         };
 	}
 	    

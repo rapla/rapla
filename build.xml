@@ -236,6 +236,7 @@ Definition as published by the Open Source Initiative (OSI).
           	<exclude name="org/rapla/bootstrap/*"/>
     		<exclude name="**/Slf4jAdapter**" />
         	<exclude name="**/server/**" />
+        	<exclude name="**/server/**" />
         	<exclude name="**/storage/xml/**" />
         	<exclude name="**/storage/dbfile/**" />
         	<exclude name="**/storage/dbsql/**" />

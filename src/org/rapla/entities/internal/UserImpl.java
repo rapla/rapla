@@ -18,14 +18,13 @@ import java.util.Locale;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.framework.RaplaException;
 
 public class UserImpl extends SimpleEntity implements User
 {
@@ -77,25 +76,6 @@ public class UserImpl extends SimpleEntity implements User
     public void setEmail(String email)  {
         checkWritable();
         this.email =  email;
-    }
-
-    public void setResolver( EntityResolver resolver)  {
-        super.setResolver(resolver);
-        if ( email != null && email.trim().length() > 0)
-        {
-            try
-            {
-                final Entity person = resolver.resolveEmail(email);
-                if ( person instanceof Allocatable)
-                {
-                    setPerson((Allocatable)person);
-                }
-            }
-            catch (EntityNotFoundException ex)
-            {
-            //    System.out.println("Hallo");
-            }
-        }
     }
    
     public void setUsername(String username)  {
@@ -194,7 +174,7 @@ public class UserImpl extends SimpleEntity implements User
         }
     }
 
-    public void setPerson(Allocatable person)
+    public void setPerson(Allocatable person) throws RaplaException
     {
     	checkWritable();
     	if ( person == null)
@@ -205,7 +185,11 @@ public class UserImpl extends SimpleEntity implements User
         final Classification classification = person.getClassification();
         final Attribute attribute = classification.getAttribute("email");
         final String email = attribute != null ? (String)classification.getValue(attribute) : null;
-        if ( email != null)
+        if ( email == null || email.length() == 0)
+        {
+        	throw new RaplaException("Email of " + person + " not set. Linking to user needs an email ");
+        }
+        else
         {
             this.email = email;
             putEntity("person", (Entity) person);

@@ -203,12 +203,16 @@ class UserEditUI  extends AbstractEditUI<User> {
             
             if ( evt.getSource() ==  removeButton)
             {
-                user.setPerson( null );
-                user.setEmail( null );
-                user.setName(null);
-                nameField.setValue( user.getName());
-                emailField.setValue( user.getEmail());
-                updateButton();
+                try {
+					user.setPerson( null );
+	                user.setEmail( null );
+	                user.setName(null);
+	                nameField.setValue( user.getName());
+	                emailField.setValue( user.getEmail());
+	                updateButton();
+				} catch (RaplaException ex) {
+					showException(ex, getComponent());
+				}
             }
                
         }

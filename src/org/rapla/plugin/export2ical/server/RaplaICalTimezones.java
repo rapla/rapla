@@ -10,11 +10,13 @@ import net.fortuna.ical4j.model.TimeZone;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
+
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.ResultImpl;
 
 public class RaplaICalTimezones extends RaplaComponent implements ICalTimezones, RemoteMethodFactory<ICalTimezones>{
 
@@ -32,7 +34,7 @@ public class RaplaICalTimezones extends RaplaComponent implements ICalTimezones,
 		return this;
 	}
 
-	public String getICalTimezones() throws RaplaException {
+	public FutureResult<String> getICalTimezones()  {
 		StringBuffer buf = new StringBuffer();
 		for (String id:availableIDs)
 		{
@@ -40,14 +42,15 @@ public class RaplaICalTimezones extends RaplaComponent implements ICalTimezones,
 			buf.append(";");
 		}
 		String result = buf.toString();
-		return result;
+		return new ResultImpl<String>( result);
 	}
 
 	//public static final String TIMEZONE = "timezone";
 
-	public String getDefaultTimezone() throws RaplaException 
+	public FutureResult<String> getDefaultTimezone() 
 	{
-		return converter.getImportExportTimeZone().getID();
+		String id = converter.getImportExportTimeZone().getID();
+		return new ResultImpl<String>(id);
 	}
 
 }

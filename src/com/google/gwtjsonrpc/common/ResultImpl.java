@@ -1,22 +1,20 @@
-package org.rapla.storage.dbrm;
+package com.google.gwtjsonrpc.common;
 
-import org.rapla.framework.RaplaException;
 
-import com.google.gwtjsonrpc.common.AsyncCallback;
-import com.google.gwtjsonrpc.common.FutureResult;
+
 
 public class ResultImpl<T> implements FutureResult<T>
 {
 
-	RaplaException ex;
+	Exception ex;
 	T result;
 	public static VoidResult VOID = new VoidResult();
-	public static class VoidResult extends ResultImpl<VoidResult>
+	public static class VoidResult extends ResultImpl<com.google.gwtjsonrpc.common.VoidResult>
 	{
 		VoidResult() {
 		
 		}
-		public VoidResult(RaplaException ex)
+		public VoidResult(Exception ex)
 		{
 			super( ex);
 		}
@@ -27,7 +25,7 @@ public class ResultImpl<T> implements FutureResult<T>
 		{
 			super();
 		}
-		public StringResult(RaplaException ex) {
+		public StringResult(Exception ex) {
 			super(ex);
 		}
 		public StringResult(String s) {
@@ -42,12 +40,13 @@ public class ResultImpl<T> implements FutureResult<T>
 	public ResultImpl(T result) {
 		this.result = result;
 	}
-	public ResultImpl(RaplaException ex)
+	
+	public ResultImpl(Exception ex)
 	{
 		this.ex = ex;
 	}
 	@Override
-	public T get() throws RaplaException {
+	public T get() throws Exception {
 		if ( ex != null)
 		{
 			throw ex;
@@ -56,7 +55,7 @@ public class ResultImpl<T> implements FutureResult<T>
 	}
 
 	@Override
-	public T get(long wait) throws RaplaException {
+	public T get(long wait) throws Exception {
 		if ( ex != null)
 		{
 			throw ex;

@@ -282,7 +282,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
                         return;
                     String eventTypeAttributeNameKey = ((Attribute) selectedItem).getKey();
 
-                    Integer[] status  = importService.importICal(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey);
+                    Integer[] status  = importService.importICal(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey).get();
                     int eventsInICal = status[0];
             		int eventsImported = status[1];
             		int eventsPresent = status[2];
@@ -300,7 +300,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
 					}
 					DialogUI okDlg = DialogUI.create(getContext(), getMainComponent(), false,  title, text);
 					okDlg.start();
-				} catch (RaplaException e1) {
+				} catch (Exception e1) {
 					showException(e1, getMainComponent());
 				}
 

@@ -15,13 +15,16 @@ package org.rapla.storage.dbrm;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
-import org.rapla.framework.RaplaException;
-
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.common.ResultType;
+import com.google.gwtjsonrpc.common.VoidResult;
 
 @WebService
 public interface RemoteServer extends RemoteJsonService {
-	String login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs) throws RaplaException;
-	void logout() throws RaplaException;
+	@ResultType(String.class)
+	FutureResult<String> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> logout();
 	
 }

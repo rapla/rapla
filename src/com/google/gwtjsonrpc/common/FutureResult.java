@@ -1,9 +1,8 @@
 package com.google.gwtjsonrpc.common;
 
-import org.rapla.framework.RaplaException;
 
 public interface FutureResult<T> {
-	public T get() throws RaplaException;
-	public T get(long wait) throws RaplaException;
+	public T get() throws Exception;
+	public T get(long wait) throws Exception;
 	public void get(AsyncCallback<T> callback);
 }

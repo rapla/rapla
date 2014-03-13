@@ -329,6 +329,55 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		storeAndRemove(storeObjects, removeObjects, null);
 	}
+	
+	protected void resolveEmails(Collection<Entity> entities) throws RaplaException
+	{
+		for ( Entity entity: entities)
+		{
+			if ( entity.getRaplaType().getTypeClass() == User.class)
+			{
+				User user = (User)entity;
+				String email = user.getEmail();
+				if ( email != null && email.trim().length() > 0)
+				{
+					Allocatable person = resolveEmail(email);
+					if ( person != null)
+					{
+						boolean readOnly = entity.isPersistant();
+						((RefEntity)entity).setReadOnly(false);
+						user.setPerson(person);
+						((RefEntity)entity).setReadOnly(readOnly);
+					}
+				}
+			}
+		}
+	}
+	
+	protected Allocatable resolveEmail(String emailArg)	throws RaplaException {
+		Lock readLock = readLock();
+		try
+		{
+			Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
+			for (Allocatable entity: allocatables)
+	    	{
+	    		final Classification classification = entity.getClassification();
+	    		final Attribute attribute = classification.getAttribute("email");
+	    		if ( attribute != null)
+	    		{
+	    			final String email = (String)classification.getValue(attribute);
+	    			if ( email != null && email.equals( emailArg))
+	    			{
+	    				return entity;
+	    			}
+	    		}
+	        }
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+		return null;
+	}
 
 	public void confirmEmail(User user, String newEmail)	throws RaplaException {
 		throw new RaplaException("Email confirmation must be done in the remotestorage class");
@@ -1598,8 +1647,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			groupsCategory.addCategory( group);
 			store.put( group);
 		}
-		groupsCategory.setResolver( this);
-		cache.getSuperCategory().setResolver( this);
 		cache.getSuperCategory().addCategory( groupsCategory);
 		UserImpl admin = new UserImpl();
 		admin.setUsername("admin");
@@ -1618,12 +1665,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
         Date now = getCurrentTimestamp();
 		AllocatableImpl allocatable = new AllocatableImpl(now, now);
-	    allocatable.addPermission(allocatable.newPermission());
+		allocatable.setResolver( this);
+		allocatable.addPermission(allocatable.newPermission());
         Classification classification = cache.getDynamicType("resource").newClassification();
         allocatable.setClassification(classification);
         setNew(allocatable);
         classification.setValue("name", getString("test_resource"));
-        allocatable.setResolver( this);
         allocatable.setOwner( user);
         
         cache.put( allocatable);

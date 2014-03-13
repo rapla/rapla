@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -42,7 +43,10 @@ import com.google.gson.internal.ConstructorConstructor;
 import com.google.gson.internal.Excluder;
 import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.JsonConstants;
+import com.google.gwtjsonrpc.common.ResultImpl;
+import com.google.gwtjsonrpc.common.ResultType;
 import com.google.gwtjsonrpc.serializer.MapDeserializer;
 import com.google.gwtjsonrpc.serializer.SqlDateDeserializer;
 import com.google.gwtjsonrpc.serializer.SqlTimestampDeserializer;
@@ -135,7 +139,7 @@ public class HTTPConnector  implements Connector
     
     String token;
 
-    public Object call(String token,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException, RaplaException 
+    public FutureResult call(String token,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException
 	{
 	    String serviceUrl =service.getName();
 //    	if ( service != null)
@@ -166,11 +170,11 @@ public class HTTPConnector  implements Connector
         }
         catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex), ex);
+            return new ResultImpl(new RaplaConnectException(getConnectError(ex), ex));
         }
         catch (UnknownHostException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex), ex);
+            return new ResultImpl(new RaplaConnectException(getConnectError(ex), ex));
         }
          
         Writer wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
@@ -195,7 +199,7 @@ public class HTTPConnector  implements Connector
             {
             	String classname = conn.getHeaderField("X-Error-Classname");
             	RaplaException ex = deserializeException( classname, message, null);
-            	throw ex;
+            	return new ResultImpl(ex);
             }
             inputStream = conn.getInputStream();
             String resultString = readResultToString( inputStream);
@@ -215,42 +219,69 @@ public class HTTPConnector  implements Connector
 //	            }
 //	            catch (JsonParseException ex)
 //		        {
-	        	throw new RaplaException(ex.getMessage());
+	        	return new ResultImpl(new RaplaException(ex.getMessage()));
 	        }
 		    
 		    if ( !(parsed instanceof JsonObject))
 		    {
-		    	throw new RaplaException("Invalid json result");
+		    	return new ResultImpl(new RaplaException("Invalid json result"));
 		    }
 		    JsonObject resultMessage = (JsonObject) parsed;
 		    JsonElement errorElement = resultMessage.get("error");
 		    if ( errorElement != null)
 		    {
-		    	throw remoteMethodSerialization.deserializeExceptionObject(resultMessage);
+		    	return new ResultImpl(remoteMethodSerialization.deserializeExceptionObject(resultMessage));
 		    }
 		    JsonElement resultElement = resultMessage.get("result");
-			Object result = remoteMethodSerialization.deserializeReturnValue(returnType, resultElement);
-			if ( methodName.equalsIgnoreCase("login") && result instanceof String)
+		    final Class resultType;
+		    if ( !FutureResult.class.isAssignableFrom(returnType))
+		    {
+		    	 resultType = returnType;
+		    	//return new ResultImpl(new RaplaException("Method " + service.getName() + "." + methodName + " does not return an instance of " + FutureResult.class ));
+		    }
+		    else
+		    {
+			    Method[] methods = service.getMethods();
+			    Method foundMethod = null;
+			    for (Method method:methods)
+			    {
+			    	if ( method.getName().equals( methodName))
+			    	{
+			    		foundMethod = method;
+			    	}
+			    }
+			    if ( foundMethod == null)
+			    {
+			    	return new ResultImpl(new RaplaException("Method "+ message + " not found in " + service.getClass() ));
+			    }
+			    ResultType annotation = foundMethod.getAnnotation(ResultType.class);
+			    resultType = annotation.value();
+		    }
+			Object resultObject = remoteMethodSerialization.deserializeReturnValue(resultType, resultElement);
+			
+			if ( methodName.equalsIgnoreCase("login") && resultObject instanceof String)
 			{
-				token = result.toString();
+				token = resultObject.toString();
 			}
 			if ( methodName.equalsIgnoreCase("logout"))
 			{
 				token = null;
 			}
-    		return result;
+    		@SuppressWarnings("unchecked")
+			ResultImpl result = new ResultImpl(resultObject);
+			return result;
         } 
         catch (SocketException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex), ex);
+        	return new ResultImpl( new RaplaConnectException(getConnectError(ex), ex));
         }
         catch (UnknownHostException ex)
         {   
-            throw new RaplaConnectException(getConnectError(ex), ex);
+        	return new ResultImpl(new RaplaConnectException(getConnectError(ex), ex));
         }
         catch (IOException ex)
         {
-            throw new RaplaException( ex);
+        	return new ResultImpl(new RaplaException( ex));
         }
         finally
         {

@@ -356,7 +356,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     		}
   	        cache.clearAll();
   	        idTable.setCache(cache);
-  	        readEverythingIntoCache( c );
+  	        loadData( c );
   	        idTable.setCache(cache);
   	        
   	        if ( getLogger().isDebugEnabled())
@@ -641,7 +641,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
 
-    protected void readEverythingIntoCache(Connection connection) throws RaplaException, SQLException {
+    protected void loadData(Connection connection) throws RaplaException, SQLException {
         EntityStore entityStore = new EntityStore(null, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore));
         raplaSQLInput.loadAll( connection );
@@ -655,6 +655,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 			String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }
+        resolveEmails( list );
 	}
 
 	private RaplaDefaultContext createInputContext(  EntityStore store) throws RaplaException {

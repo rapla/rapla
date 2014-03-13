@@ -76,9 +76,21 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     public void show() throws RaplaException {
         String name = preferences.getEntryAsString( RaplaMainContainer.TITLE,"");
         calendarName.setText(name);
-    	String timezoneId = preferences.getEntryAsString( RaplaMainContainer.TIMEZONE,timezoneService.getDefaultTimezone()); 
-        cboTimezone.setSelectedItem(timezoneId);
-    	boolean selected= preferences.getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true); 
+        
+    	try {
+    		String timezoneId = preferences.getEntryAsString( RaplaMainContainer.TIMEZONE,timezoneService.getDefaultTimezone().get());
+			cboTimezone.setSelectedItem(timezoneId);
+		}
+		catch (RaplaException ex)
+		{
+			throw ex;
+		}
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }
+
+        boolean selected= preferences.getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true); 
         ownReservations.setSelected( selected);
     }
 
@@ -109,8 +121,21 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 	 */
 	private String[] getTimeZonesFromResource() throws RaplaException 
 	{
-		String zoneString = timezoneService.getICalTimezones();
-		return zoneString.split(";");
+		try
+		{
+			String zoneString = timezoneService.getICalTimezones().get();
+			return zoneString.split(";");
+		}
+		catch (RaplaException ex)
+		{
+			throw ex;
+		}
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }
+	    	
+
 	}
 
 

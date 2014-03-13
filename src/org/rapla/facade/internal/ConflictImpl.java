@@ -14,6 +14,7 @@ package org.rapla.facade.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,6 +91,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	public Date getStartDate()
 	{
 		return startDate;
+	}
+	
+	@Override
+	public Iterable<String> getReferencedIds() {
+		return Collections.emptyList();
 	}
    
 	private Date getStartDate_(Date today,Appointment app1, Appointment app2) {

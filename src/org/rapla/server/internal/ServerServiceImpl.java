@@ -78,6 +78,9 @@ import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.ResultImpl;
+import com.google.gwtjsonrpc.common.VoidResult;
 import com.google.gwtjsonrpc.server.JsonServlet;
 import com.google.gwtjsonrpc.server.SignedToken;
 import com.google.gwtjsonrpc.server.ValidToken;
@@ -562,146 +565,158 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
             /** @Override
              */
-             public void logout() throws RaplaException {
-                 
-                 if ( session != null)
-                 {
-                     if ( session.isAuthentified())
-                     {
-                         User user = session.getUser();
-                         if ( user != null)
-                         {
-                        	 getLogger().getChildLogger("login").info( "Request Logout " + user.getUsername());
-                         }
-                         session.logout();
-                     }
-                 }
-                 //return ResultImpl.VOID;
+             public FutureResult<VoidResult> logout() 
+             {
+            	 try
+            	 {
+	                 if ( session != null)
+	                 {
+	                     if ( session.isAuthentified())
+	                     {
+	                         User user = session.getUser();
+	                         if ( user != null)
+	                         {
+	                        	 getLogger().getChildLogger("login").info( "Request Logout " + user.getUsername());
+	                         }
+	                         session.logout();
+	                     }
+	                 }
+            	 }
+            	 catch (RaplaException ex)
+            	 {
+            		 return new ResultImpl<VoidResult>(ex);
+            	 }
+                 return ResultImpl.VOID;
              }
             
-             public String login( String username, String password, String connectAs ) throws RaplaException
+             public FutureResult<String> login( String username, String password, String connectAs ) 
              {
-            	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-            	 User user;
-            	 if ( standaloneSession == null)
+            	 try
             	 {
-	            	 Logger logger = getLogger().getChildLogger("login");
-	            	 logger.info( "User '" + username + "' is requesting login."  );
-	            	 if ( authenticationStore != null )
-	                 {
-	                	 logger.info("Checking external authentifiction for user " + username);
-	                	 boolean authenticateExternal;
-	                	 try
-	                	 {
-	                		 authenticateExternal = authenticationStore.authenticate( username, password );
-	                	 }
-	                	 catch (RaplaException ex)
-	                	 {
-	                		 authenticateExternal= false;
-	                		 getLogger().error(ex.getMessage(), ex);
-	                	 }
-	                	 if (authenticateExternal)
-	                	 {
-	                		 logger.info("Successfull for " + username);
-		                	 //@SuppressWarnings("unchecked")
-		                     user = operator.getUser( username );
-		                     if ( user == null )
-		                     {
-		                		 logger.info("User not found in localstore. Creating new Rapla user " + username);
-		                         UserImpl newUser = new UserImpl();
-		                         newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
-		                         user = newUser;
-		                     }
-		                     else
-		                     {
-		                        Set<Entity>singleton = Collections.singleton((Entity)user);
-								Collection<Entity> editList = operator.editObjects( singleton, null );
-								user = (User)editList.iterator().next();
-		                     }
-		                     
-		                     boolean initUser ;
-		                     try
-		                     {
-		                         Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
-		                		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
-		                         initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
-		                     } catch (RaplaSecurityException ex){
-		                         throw new RaplaSecurityException(i18n.getString("error.login"));
-		                     }
-		                     if ( initUser )
-		                     {
-		                		 logger.info("Udating rapla user '" + username + "' from external source.");
-		                    	 List<Entity>storeList = new ArrayList<Entity>(1);
-		                         storeList.add( user);
-		                         List<Entity>removeList = Collections.emptyList();
-		                         
-		                         operator.storeAndRemove( storeList, removeList, null );
-		                     }
-		                     else
-		                     {
-		                		 logger.info("User '" + username  + "' already up to date");
-		                     }
-		                 }
-	                	 else
-	                	 {
-	                		 logger.info("Now trying to authenticate with local store '" + username + "'");
-	                		 operator.authenticate( username, password );
-	                	 }
-	                	 // do nothing
-	                 } // if the authenticationStore can't authenticate the user is checked against the local database
-	                 else
-	                 {
-	                	 logger.info("Check password for " + username);
-	                	 operator.authenticate( username, password );
-	                 }
-	            	 
-	            	 if ( connectAs != null && connectAs.length() > 0)
+	            	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
+	            	 User user;
+	            	 if ( standaloneSession == null)
 	            	 {
-	            		 logger.info("Successfull login for '" + username  +"' acts as user '" + connectAs + "'");
+		            	 Logger logger = getLogger().getChildLogger("login");
+		            	 logger.info( "User '" + username + "' is requesting login."  );
+		            	 if ( authenticationStore != null )
+		                 {
+		                	 logger.info("Checking external authentifiction for user " + username);
+		                	 boolean authenticateExternal;
+		                	 try
+		                	 {
+		                		 authenticateExternal = authenticationStore.authenticate( username, password );
+		                	 }
+		                	 catch (RaplaException ex)
+		                	 {
+		                		 authenticateExternal= false;
+		                		 getLogger().error(ex.getMessage(), ex);
+		                	 }
+		                	 if (authenticateExternal)
+		                	 {
+		                		 logger.info("Successfull for " + username);
+			                	 //@SuppressWarnings("unchecked")
+			                     user = operator.getUser( username );
+			                     if ( user == null )
+			                     {
+			                		 logger.info("User not found in localstore. Creating new Rapla user " + username);
+			                         UserImpl newUser = new UserImpl();
+			                         newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
+			                         user = newUser;
+			                     }
+			                     else
+			                     {
+			                        Set<Entity>singleton = Collections.singleton((Entity)user);
+									Collection<Entity> editList = operator.editObjects( singleton, null );
+									user = (User)editList.iterator().next();
+			                     }
+			                     
+			                     boolean initUser ;
+			                     try
+			                     {
+			                         Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
+			                		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
+			                         initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
+			                     } catch (RaplaSecurityException ex){
+			                         throw new RaplaSecurityException(i18n.getString("error.login"));
+			                     }
+			                     if ( initUser )
+			                     {
+			                		 logger.info("Udating rapla user '" + username + "' from external source.");
+			                    	 List<Entity>storeList = new ArrayList<Entity>(1);
+			                         storeList.add( user);
+			                         List<Entity>removeList = Collections.emptyList();
+			                         
+			                         operator.storeAndRemove( storeList, removeList, null );
+			                     }
+			                     else
+			                     {
+			                		 logger.info("User '" + username  + "' already up to date");
+			                     }
+			                 }
+		                	 else
+		                	 {
+		                		 logger.info("Now trying to authenticate with local store '" + username + "'");
+		                		 operator.authenticate( username, password );
+		                	 }
+		                	 // do nothing
+		                 } // if the authenticationStore can't authenticate the user is checked against the local database
+		                 else
+		                 {
+		                	 logger.info("Check password for " + username);
+		                	 operator.authenticate( username, password );
+		                 }
+		            	 
+		            	 if ( connectAs != null && connectAs.length() > 0)
+		            	 {
+		            		 logger.info("Successfull login for '" + username  +"' acts as user '" + connectAs + "'");
+		            	 }
+		            	 else
+		            	 {
+		            		 logger.info("Successfull login for '" + username + "'");
+		            	 }
+		            	 user = operator.getUser(toConnect);
+		            	 
+		            	 if ( user == null)
+		            	 {
+		            		 throw new RaplaException("User with username '" + toConnect + "' not found");
+		            	 }
+		            	 
+		            	 session.setUser( user);
+						
+	
+		            	 
 	            	 }
 	            	 else
-	            	 {
-	            		 logger.info("Successfull login for '" + username + "'");
-	            	 }
-	            	 user = operator.getUser(toConnect);
-	            	 
-	            	 if ( user == null)
-	            	 {
-	            		 throw new RaplaException("User with username '" + toConnect + "' not found");
-	            	 }
-	            	 
-	            	 session.setUser( user);
-					
-
-	            	 
-            	 }
-            	 else
-                 {
-            		 // don't check passwords in standalone version
-                	 user = operator.getUser( toConnect);
-                	 if ( user == null)
-                	 {
-                		 throw new RaplaSecurityException(i18n.getString("error.login"));
-                	 }
-                	 standaloneSession.setUser( user);
-                 }
-                 if ( connectAs != null && connectAs.length()> 0)
-                 {
-                     if (!operator.getUser( username).isAdmin())
-                     {
-                         throw new SecurityException("Non admin user is requesting change user permission!");
-                     }
-                 }
-                 
-                 
-                 try {
+	                 {
+	            		 // don't check passwords in standalone version
+	                	 user = operator.getUser( toConnect);
+	                	 if ( user == null)
+	                	 {
+	                		 throw new RaplaSecurityException(i18n.getString("error.login"));
+	                	 }
+	                	 standaloneSession.setUser( user);
+	                 }
+	                 if ( connectAs != null && connectAs.length()> 0)
+	                 {
+	                     if (!operator.getUser( username).isAdmin())
+	                     {
+	                         throw new SecurityException("Non admin user is requesting change user permission!");
+	                     }
+	                 }
+	                 try 
+	                 {
 						String userId = user.getId();
 						String signedToken = token.newToken( userId);
-						return signedToken;
-					} catch (Exception e) {
-						throw new RaplaException(e.getMessage());
-					}
+						return new ResultImpl.StringResult(signedToken);
+	                 } catch (Exception e) {
+	                	 throw new RaplaException(e.getMessage());
+	                 }
+	             } catch (RaplaException ex)  {
+	            	 return new ResultImpl<String>(ex);
+	             }
              }
+
         };
     }
     

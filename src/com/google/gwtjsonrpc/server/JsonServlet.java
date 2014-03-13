@@ -56,6 +56,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
 
@@ -276,7 +277,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
           throw (NoSuchRemoteMethodException) err.getCause();
         }
         call.httpResponse.setStatus(SC_BAD_REQUEST);
-        call.onFailure(new Exception("Error parsing request", err));
+        call.onFailure(new Exception("Error parsing request " + err.getMessage(), err));
         return;
       }
     } catch (NoSuchRemoteMethodException err) {
@@ -486,17 +487,34 @@ public class JsonServlet<CallType extends ActiveCall>  {
       public JsonElement serialize(final ActiveCall src, final Type typeOfSrc,
           final JsonSerializationContext context) {
     	  if (call.externalFailure != null) {
-    	        final String msg = "Error in " + call.method.getName();
-    	        logger.error(msg, call.internalFailure);
+    	        final String msg;
+    	        if ( call.method != null)
+    	        {
+    	        	msg = "Error  in " + call.method.getName(); 
+    	        }
+    	        else
+    	        {
+    	        	msg = "Error";
+    	        }
+    	        logger.error(msg, call.externalFailure);
     	  }
 
     	  
     	Throwable failure = src.externalFailure != null ? src.externalFailure : src.internalFailure;
+		Object result = src.result;
+		if ( result instanceof FutureResult)
+		{
+			try {
+				result = ((FutureResult) result).get();
+			} catch (Exception e) {
+				failure = e;
+			}
+		}
 		if (call.callback != null) {
           if (failure != null) {
             return JsonNull.INSTANCE;
           }
-          return context.serialize(src.result);
+          return context.serialize(result);
         }
 
         final JsonObject r = new JsonObject();
@@ -511,7 +529,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
           final JsonObject error = getError(src, failure);
           r.add("error", error);
         } else {
-          r.add("result", context.serialize(src.result));
+          r.add("result", context.serialize(result));
         }
         return r;
       }

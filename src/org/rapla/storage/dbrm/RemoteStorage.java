@@ -24,7 +24,10 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.UpdateEvent;
 
+import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
+import com.google.gwtjsonrpc.common.ResultType;
+import com.google.gwtjsonrpc.common.VoidResult;
 @WebService
 public interface RemoteStorage extends RemoteJsonService {
   //  RemoteMethod GET_RESOURCES = new RemoteMethod("getResources");
@@ -40,38 +43,58 @@ public interface RemoteStorage extends RemoteJsonService {
     //RemoteMethod CHECK_SERVER_VERSION = new RemoteMethod("checkServerVersion",new String[] {"clientVersion" });
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
-    Boolean canChangePassword() throws RaplaException;
-    void changePassword(String username,String oldPassword,String newPassword) throws RaplaException;
-    void changeName(String username, String newTitle,String newSurename,String newLastname) throws RaplaException;
-    void changeEmail(String username,String newEmail) throws RaplaException;
-    void confirmEmail(String username,String newEmail) throws RaplaException;
+	@ResultType(Boolean.class)
+    FutureResult<Boolean> canChangePassword();
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> changeName(String username, String newTitle,String newSurename,String newLastname);
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> changeEmail(String username,String newEmail);
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> confirmEmail(String username,String newEmail);
     
-    UpdateEvent getResources() throws RaplaException;
+	@ResultType(UpdateEvent.class)
+    FutureResult<UpdateEvent> getResources() throws RaplaException;
     /** returns the time on the server in string format*/
-    String getServerTime() throws RaplaException;
+    
+	@ResultType(String.class)
+	FutureResult<String> getServerTime();
     
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
-    ReservationList getReservations(String[] allocatableIds,Date start,Date end, Map<String, String> annotationQuery) throws RaplaException;
+    @ResultType(ReservationList.class)
+    FutureResult<ReservationList> getReservations(String[] allocatableIds,Date start,Date end, Map<String, String> annotationQuery);
 
-    UpdateEvent getEntityRecursive(String... id) throws RaplaException;
+    @ResultType(UpdateEvent.class)
+    FutureResult<UpdateEvent> getEntityRecursive(String... id);
 
-    UpdateEvent refresh(String clientRepoVersion) throws RaplaException;
+    @ResultType(UpdateEvent.class)
+    FutureResult<UpdateEvent> refresh(String clientRepoVersion);
     
-    void restartServer() throws RaplaException;
-    UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
-    
-    String[] getTemplateNames() throws RaplaException;
-    
-    String[] createIdentifier(String raplaType, int count) throws RaplaException;
+	@ResultType(VoidResult.class)
+	FutureResult<VoidResult> restartServer();
 
-    ConflictList getConflicts() throws RaplaException;
-    BindingMap getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds) throws RaplaException;
-    ReservationList getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds) throws RaplaException;
+	@ResultType(UpdateEvent.class)
+	FutureResult<UpdateEvent> dispatch(UpdateEvent event);
+    
+	@ResultType(String[].class)
+	FutureResult<String[]> getTemplateNames();
+    
+	@ResultType(String[].class)
+	FutureResult<String[]> createIdentifier(String raplaType, int count);
 
-    Date getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException;
+	@ResultType(ConflictList.class)
+	FutureResult<ConflictList> getConflicts();
+	@ResultType(BindingMap.class)
+	FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
+	@ResultType(ReservationList.class)
+	FutureResult<ReservationList> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
+
+	@ResultType(Date.class)
+    FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
 	
-    void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
+    //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
     
     public static class BindingMap
     {

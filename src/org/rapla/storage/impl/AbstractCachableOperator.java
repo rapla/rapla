@@ -437,29 +437,38 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	 * @throws RaplaException  
 	 */
 	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
-		List<Entity>readOnlyList = new ArrayList<Entity>();
+		EntityStore store = new EntityStore( this, getSuperCategory());
+		store.addAll( entities);
+		for (Entity obj: entities) {
+			((RefEntity)obj).setResolver(store);
+		}
+		for (Entity obj: entities) {
+			Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
+			for ( String id:referencedIds)
+			{
+				testResolve(store, obj, id);
+			}
+		}
 		for (Entity obj: entities) {
 			((RefEntity)obj).setResolver(this);
-//			}
-//			catch ( EntityNotFoundException ex)
-//			{
-//				logEntityNotFound( obj, ex);
-//				throw ex;
-//			}
-			readOnlyList.add(obj);
 		}
 		// It is important to do the read only later because some resolve might involve write to referenced objects
 		for (Entity entity: entities) {
 			 ((RefEntity)entity).setReadOnly(true);
 		}
 	}
-	
-	
-	/** override for special log handling
-	 */
-	@SuppressWarnings({ "unused" })
-	protected void logEntityNotFound(Entity obj,  EntityNotFoundException ex) {
+
+	private void testResolve(EntityStore store, Entity obj, String id) {
+		try
+		{
+			store.resolve(id);
+		}
+		catch (EntityNotFoundException ex)
+		{
+			getLogger().error("Reference " + id + " not found for " + obj);
+		}
 	}
+	
 	
 	protected String getName(Object object) {
 		if (object == null)
@@ -471,39 +480,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 
 	protected String getString(String key) {
 		return getI18n().getString(key);
-	}
-		
-	@Override
-	public Entity resolveEmail(String emailArg)
-			throws EntityNotFoundException {
-		Lock readLock;
-		try {
-			readLock = readLock();
-		} catch (RaplaException e) {
-			throw new EntityNotFoundException( e.getMessage() + " " +e.getCause());
-		}
-		try
-		{
-			Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
-			for (Allocatable entity: allocatables)
-	    	{
-	    		final Classification classification = entity.getClassification();
-	    		final Attribute attribute = classification.getAttribute("email");
-	    		if ( attribute != null)
-	    		{
-	    			final String email = (String)classification.getValue(attribute);
-	    			if ( email != null && email.equals( emailArg))
-	    			{
-	    				return (Entity)entity;
-	    			}
-	    		}
-	        }
-	    	throw new EntityNotFoundException("Object for email " + emailArg + " not found");
-		}
-		finally
-		{
-			unlock(readLock);
-		}
 	}
 	
 	public DynamicType getDynamicType(String key) {

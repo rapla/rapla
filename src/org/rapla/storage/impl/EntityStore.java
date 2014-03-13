@@ -64,6 +64,13 @@ public class EntityStore implements EntityResolver {
         	Allocatable allocatable = (Allocatable) entity;
             allocatables.add (  allocatable);
         }
+        if ( entity.getRaplaType() == Category.TYPE)
+        {
+        	for (Category child:((Category)entity).getCategories())
+        	{
+        		put( child);
+        	}
+        }
         entities.put(id,entity);
     }
     

@@ -24,7 +24,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 public interface EntityResolver
 {
     public Entity resolve(String id) throws EntityNotFoundException;
-    public Entity resolveEmail(final String emailArg) throws EntityNotFoundException;
     /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
     public Entity tryResolve(String id);
     public DynamicType getDynamicType(String key);

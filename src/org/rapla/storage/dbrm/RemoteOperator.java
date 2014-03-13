@@ -13,7 +13,6 @@
 
 package org.rapla.storage.dbrm;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +32,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -63,6 +61,9 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 import org.rapla.storage.impl.AbstractCachableOperator;
+
+import com.google.gwtjsonrpc.common.FutureResult;
+import com.google.gwtjsonrpc.common.ResultImpl;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -129,7 +130,7 @@ public class RemoteOperator
         String username = connectInfo.getUsername();
 		try {
             RemoteServer serv1 = getRemoteServer();
-            accessToken = serv1.login(username,password, connectAs);
+            accessToken = serv1.login(username,password, connectAs).get();
        
     		// today should be the date of the server
     		lastSyncedTimeLocal = System.currentTimeMillis();
@@ -138,6 +139,9 @@ public class RemoteOperator
         } catch (RaplaException ex){
             disconnect();
             throw ex;
+        } catch (Exception ex){
+            disconnect();
+            throw new RaplaException(ex);
         }
         loadData(username);
         bSessionActive = true;
@@ -267,7 +271,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
     	try
         {
-	        UpdateEvent evt = serv.refresh( clientRepoVersion);
+	        UpdateEvent evt = serv.refresh( clientRepoVersion).get();
 	        refresh( evt);
         }
         catch (EntityNotFoundException ex)
@@ -275,15 +279,35 @@ public class RemoteOperator
         	getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
         	refreshAll();
         }
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
     }
  
     synchronized public void restartServer() throws RaplaException {
     	getLogger().info("Restart in progress ...");
     	String message = i18n.getString("restart_server");
   //      isRestarting = true;
-        RemoteStorage serv = getRemoteStorage();
-        serv.restartServer();
-        fireStorageDisconnected(message);
+    	try
+    	{
+	        RemoteStorage serv = getRemoteStorage();
+	        serv.restartServer().get();
+	        fireStorageDisconnected(message);
+    	}
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
+
     }
    
     synchronized public void disconnect() throws RaplaException { 
@@ -306,12 +330,20 @@ public class RemoteOperator
             RemoteServer serv1 = getRemoteServer();
             try 
             {
-            	serv1.logout();
+            	serv1.logout().get();
             }
             catch (RaplaConnectException ex)
             {
             	getLogger().warn( ex.getMessage());
             }
+    	    catch (RaplaException ex)
+    	    {
+    	    	throw ex;
+    	    }
+    	    catch (Exception ex)
+    	    {
+    	    	throw new RaplaException(ex);
+    	    }		
         	fireStorageDisconnected(message);
         }
     }
@@ -332,13 +364,17 @@ public class RemoteOperator
     }
     
     @Override
-    protected void resolveEntities(Collection<? extends Entity> entities)
-    		throws RaplaException {
+    protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
     	if (context.has(RemoteMethodStub.class))
     	{
     		return;
     	}
     	super.resolveEntities(entities);
+//		Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
+//		for ( String id:referencedIds)
+//		{
+//			resolve(id);
+//		}
     }
 
     private void loadData(String username) throws RaplaException {
@@ -346,17 +382,27 @@ public class RemoteOperator
         getLogger().debug("Getting Data..");
         // recontextualize Entities
         RemoteStorage serv = getRemoteStorage();
-        UpdateEvent resources = serv.getResources();
-        clientRepositoryVersion = resources.getRepositoryVersion();
-        Collection<Entity> storeObjects = resources.getStoreObjects();
-		addToCache(storeObjects );
-        if ( username != null)
+        try
         {
-        	UserImpl user = cache.getUser( username);
-        	userId = user.getId();
+	        UpdateEvent resources = serv.getResources().get();
+	        clientRepositoryVersion = resources.getRepositoryVersion();
+	        Collection<Entity> storeObjects = resources.getStoreObjects();
+			addToCache(storeObjects );
+	        if ( username != null)
+	        {
+	        	UserImpl user = cache.getUser( username);
+	        	userId = user.getId();
+	        }
+	        getLogger().debug("Data flushed");
         }
-        getLogger().debug("Data flushed");
-        
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
     }
 
     protected void checkConnected() throws RaplaException {
@@ -382,26 +428,54 @@ public class RemoteOperator
         }
         RemoteStorage serv = getRemoteStorage();
         evt.setRepositoryVersion( clientRepositoryVersion);
-        UpdateEvent serverClosure =serv.dispatch( evt );
-        refresh(serverClosure);
+        try
+        {
+        	UpdateEvent serverClosure =serv.dispatch( evt ).get();
+        	refresh(serverClosure);
+        } 
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }
     }
     
     public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
-    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count);
-    	return id;
+    	try
+    	{
+	    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count).get();
+	    	return id;
+    	} 
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }
     }
 
     public long getServerTime() throws RaplaException {
     	RemoteStorage remoteMethod = getRemoteStorage();
-        String serverTimeString = remoteMethod.getServerTime();
-		Date serverTime;
-		try {
-			serverTime = raplaLocale.getSerializableFormat().parseTimestamp( serverTimeString);
+    	try
+    	{
+    		String serverTimeString = remoteMethod.getServerTime().get();
+    		Date serverTime = raplaLocale.getSerializableFormat().parseTimestamp( serverTimeString);
 			return serverTime.getTime();
-		} catch (ParseDateException e) {
-			throw new RaplaException(e.getMessage(),e);
-		}
+    	} 
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }
     }
 
 	private RemoteStorage getRemoteStorage() {
@@ -414,9 +488,20 @@ public class RemoteOperator
 
     public boolean canChangePassword() throws RaplaException  {
         RemoteStorage remoteMethod = getRemoteStorage();
-        Boolean canChangePassword = remoteMethod.canChangePassword();
-		boolean result = canChangePassword;
-        return result;
+        try
+        {
+	        Boolean canChangePassword = remoteMethod.canChangePassword().get();
+			boolean result = canChangePassword;
+	        return result;
+        } 
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }
     }
 
     @Override
@@ -424,39 +509,82 @@ public class RemoteOperator
         try {
         	RemoteStorage remoteMethod = getRemoteStorage();
 	        String username = user.getUsername();
-			remoteMethod.changePassword(username, new String(oldPassword),new String(newPassword));
+			remoteMethod.changePassword(username, new String(oldPassword),new String(newPassword)).get();
 		    refresh();
-        } catch (RaplaSecurityException ex) {
-            throw new RaplaSecurityException(i18n.getString("error.wrong_password"));
+        } 
+        catch (RaplaSecurityException ex) 
+        {
+        	throw new RaplaSecurityException(i18n.getString("error.wrong_password"));
+        }
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
         }
     }
     
     @Override
     public void changeEmail(User user, String newEmail) throws RaplaException 
-    		
     {
-    	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.getUsername();
-		remoteMethod.changeEmail(username,newEmail);
-        refresh();
+    	try
+    	{
+	    	RemoteStorage remoteMethod = getRemoteStorage();
+	        String username = user.getUsername();
+			remoteMethod.changeEmail(username,newEmail).get();
+	        refresh();
+    	}
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }		
     }
     
     @Override
 	public void confirmEmail(User user, String newEmail)	throws RaplaException 
 	{
-    	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.getUsername();
-		remoteMethod.confirmEmail(username,newEmail);
+    	try
+    	{
+	    	RemoteStorage remoteMethod = getRemoteStorage();
+	        String username = user.getUsername();
+			remoteMethod.confirmEmail(username,newEmail).get();
+    	}
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }					
 	}
 
     
     @Override
     public void changeName(User user, String newTitle, String newFirstname, String newSurname) throws RaplaException 
     {
-    	RemoteStorage remoteMethod = getRemoteStorage();
-        String username = user.getUsername();
-		remoteMethod.changeName(username,newTitle, newFirstname, newSurname);
-        refresh();
+    	try
+    	{
+	    	RemoteStorage remoteMethod = getRemoteStorage();
+	        String username = user.getUsername();
+			remoteMethod.changeName(username,newTitle, newFirstname, newSurname).get();
+	        refresh();
+    	}
+        catch (RaplaException ex)
+        {
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new RaplaException(ex);
+        }		
+
     }
     
     public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound) throws RaplaException
@@ -466,7 +594,7 @@ public class RemoteOperator
      	 Map<String,Entity> result = new HashMap<String,Entity>();
      	try
      	{
-			UpdateEvent entityList = serv.getEntityRecursive( array);
+			UpdateEvent entityList = serv.getEntityRecursive( array).get();
 	    	Collection<Entity> storeObjects = entityList.getStoreObjects();
 			List<Entity>resolvedList = addToCache(storeObjects  );
 			for (Entity entity:resolvedList)
@@ -480,7 +608,15 @@ public class RemoteOperator
      		{
      			throw ex;
      		}
-     	}
+		}
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
 		return result;
     }
    
@@ -538,29 +674,51 @@ public class RemoteOperator
         checkConnected();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableId = getIdList(allocatables);
-		List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
-        synchronized (cache) {
-        	resolveEntities( list );
-        }
-        List<Reservation> result = new ArrayList<Reservation>();
-        Iterator it = list.iterator();
-        while ( it.hasNext())
-        {
-        	Object object = it.next();
-        	if ( object instanceof Reservation)
-        	{
-        		Reservation next = (Reservation)object;
-        		result.add( next);
-        	}
-        }
-        return result;
+    	try
+    	{
+			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get().get();
+	        synchronized (cache) {
+	        	resolveEntities( list );
+	        }
+	        List<Reservation> result = new ArrayList<Reservation>();
+	        Iterator it = list.iterator();
+	        while ( it.hasNext())
+	        {
+	        	Object object = it.next();
+	        	if ( object instanceof Reservation)
+	        	{
+	        		Reservation next = (Reservation)object;
+	        		result.add( next);
+	        	}
+	        }
+	        return result;
+    	}
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
     }
     
     public List<String> getTemplateNames() throws RaplaException {
     	checkConnected();
     	RemoteStorage serv = getRemoteStorage();
-    	List<String> result = Arrays.asList(serv.getTemplateNames());
-    	return result;
+    	try
+    	{
+    		List<String> result = Arrays.asList(serv.getTemplateNames().get());
+    		return result;
+    	}
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
     }
 
 //    public EntityStore get()
@@ -728,29 +886,31 @@ public class RemoteOperator
     	this.updater = statusUpdater;
     }
 
-    public Object call( Class<?> service, String methodName,Class<?>[] parameterTypes, Class<?> returnType ,Object[] args) throws RaplaException {
+    public FutureResult call( Class<?> service, String methodName,Class<?>[] parameterTypes, Class<?> returnType ,Object[] args)  {
         try {
         	if ( updater != null)
         	{
         		updater.setStatus( Status.BUSY );
         	}
-            Object result =connector.call( accessToken,service, methodName, parameterTypes, returnType , args);
+            FutureResult result =connector.call( accessToken,service, methodName, parameterTypes, returnType , args);
             return result;
-        } catch (IOException ex) {
-            throw new RaplaException(ex);
-        }  catch ( RaplaException ex) {
-            if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))
-            {
-                getLogger().warn(ex.getMessage() + ". Disconnecting from server.");
-                String message = getI18n().format("error.connection_closed", getConnectionName());
-                disconnect(message);
-                throw new RaplaRestartingException();
-            }
-            else
-            {
-                throw ex;
-            }
+        } catch (Exception ex) {
+            return new ResultImpl(new RaplaException(ex));
         }
+        //FIXME implement refresh logic on server restart
+//        }  catch ( RaplaException ex) {
+//            if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))
+//            {
+//                getLogger().warn(ex.getMessage() + ". Disconnecting from server.");
+//                String message = getI18n().format("error.connection_closed", getConnectionName());
+//                disconnect(message);
+//                throw new RaplaRestartingException();
+//            }
+//            else
+//            {
+//                throw ex;
+//            }
+//        }
         finally
         {
         	if ( updater != null)
@@ -774,26 +934,37 @@ public class RemoteOperator
 			appointmentList.add( (AppointmentImpl) app);
 			appointmentMap.put( app.getId(), app);
 		}
-		Map<String, List<String>> resultMap = serv.getFirstAllocatableBindings(allocatableIds, appointmentList, reservationIds).get();
-		HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
-		for ( Allocatable alloc:allocatables)
+		try
 		{
-			List<String> list = resultMap.get( alloc.getId());
-			if ( list != null)
+			Map<String, List<String>> resultMap = serv.getFirstAllocatableBindings(allocatableIds, appointmentList, reservationIds).get().get();
+			HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
+			for ( Allocatable alloc:allocatables)
 			{
-				Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
-				for ( String id:list)
+				List<String> list = resultMap.get( alloc.getId());
+				if ( list != null)
 				{
-					Appointment e = appointmentMap.get( id);
-					if ( e != null)
+					Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
+					for ( String id:list)
 					{
-						appointmentBinding.add( e);
+						Appointment e = appointmentMap.get( id);
+						if ( e != null)
+						{
+							appointmentBinding.add( e);
+						}
 					}
+					result.put( alloc, appointmentBinding);
 				}
-				result.put( alloc, appointmentBinding);
 			}
+			return result;
 		}
-		return result;
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }				
 	}
 
 	@Override
@@ -803,8 +974,20 @@ public class RemoteOperator
     	String[] allocatableIds = getIdList(allocatables);
 		List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray( new AppointmentImpl[]{}));
 		String[] reservationIds = getIdList(ignoreList);
-		List<ReservationImpl> serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get();
-	    Lock readLock = readLock();
+		List<ReservationImpl> serverResult;
+		try
+		{
+			serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get().get();
+		}
+		catch (RaplaException ex)
+		{
+			throw ex;
+		}
+		catch (Exception ex)
+		{
+			throw new RaplaException(ex);
+		}
+		Lock readLock = readLock();
 	    try
 	    {
         	resolveEntities( serverResult);
@@ -844,8 +1027,19 @@ public class RemoteOperator
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableIds = getIdList(allocatables);
 		String[] reservationIds = getIdList(ignoreList);
-		Date result = serv.getNextAllocatableDate(allocatableIds, (AppointmentImpl)appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays, rowsPerHour);
-		return result;
+		try
+		{
+			Date result = serv.getNextAllocatableDate(allocatableIds, (AppointmentImpl)appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays, rowsPerHour).get();
+			return result;
+		}
+	    catch (RaplaException ex)
+	    {
+	    	throw ex;
+	    }
+	    catch (Exception ex)
+	    {
+	    	throw new RaplaException(ex);
+	    }		
 	}
 
 
@@ -867,53 +1061,64 @@ public class RemoteOperator
 	public Collection<Conflict> getConflicts(User user) throws RaplaException {
         checkConnected();
     	RemoteStorage serv = getRemoteStorage();
-    	List<ConflictImpl> list = serv.getConflicts().get();
-        //EntityResolver entityResolver = createEntityStore( list,  cache  );
-        Lock readLock = readLock();
-	    try
-	    {
-        	resolveEntities( list );
-        }
-	    finally
-	    {
-	    	unlock( readLock );
-	    }
-        List<Conflict> result = new ArrayList<Conflict>();
-        Iterator it = list.iterator();
-        while ( it.hasNext())
-        {
-        	Object object = it.next();
-        	if ( object instanceof Conflict)
-        	{
-        		Conflict next = (Conflict)object;
-        		result.add( next);
-        	}
-        }
-        return result;
+    	try
+    	{
+	    	List<ConflictImpl> list = serv.getConflicts().get().get();
+	        //EntityResolver entityResolver = createEntityStore( list,  cache  );
+	        Lock readLock = readLock();
+		    try
+		    {
+	        	resolveEntities( list );
+	        }
+		    finally
+		    {
+		    	unlock( readLock );
+		    }
+	        List<Conflict> result = new ArrayList<Conflict>();
+	        Iterator it = list.iterator();
+	        while ( it.hasNext())
+	        {
+	        	Object object = it.next();
+	        	if ( object instanceof Conflict)
+	        	{
+	        		Conflict next = (Conflict)object;
+	        		result.add( next);
+	        	}
+	        }
+	        return result;
+    	}
+    	catch (RaplaException ex)
+    	{
+    		throw ex;
+    	}
+    	catch (Exception ex)
+    	{
+    		throw new RaplaException(ex);
+    	}		
 	}
 
-	@Override
-	protected void logEntityNotFound(Entity obj, EntityNotFoundException ex) {
-		RemoteStorage serv = getRemoteStorage();
-		Comparable id = ex.getId();
-		try {
-			if ( obj instanceof ConflictImpl)
-			{
-				Iterable<String> referencedIds = ((ConflictImpl)obj).getReferencedIds();
-				List<String> ids = new ArrayList<String>();
-				for (String refId:referencedIds)
-				{
-					ids.add(  refId);
-				}
-				serv.logEntityNotFound( id  + " not found in conflict :",ids.toArray(new  String[0]));
-			}
-			else if ( id != null )
-			{
-				serv.logEntityNotFound("Not found", id.toString() );
-			}
-		} catch (Exception e) {
-			getLogger().error("Can't call server logging for " + ex.getMessage() + " due to " + e.getMessage(), e);
-		}
-	}
+//	@Override
+//	protected void logEntityNotFound(Entity obj, EntityNotFoundException ex) {
+//		RemoteStorage serv = getRemoteStorage();
+//		Comparable id = ex.getId();
+//		try {
+//			if ( obj instanceof ConflictImpl)
+//			{
+//				Iterable<String> referencedIds = ((ConflictImpl)obj).getReferencedIds();
+//				List<String> ids = new ArrayList<String>();
+//				for (String refId:referencedIds)
+//				{
+//					ids.add(  refId);
+//				}
+//				serv.logEntityNotFound( id  + " not found in conflict :",ids.toArray(new  String[0]));
+//			}
+//			else if ( id != null )
+//			{
+//				serv.logEntityNotFound("Not found", id.toString() );
+//			}
+//		} catch (Exception e) {
+//			getLogger().error("Can't call server logging for " + ex.getMessage() + " due to " + e.getMessage(), e);
+//		}
+//	}
 }
 

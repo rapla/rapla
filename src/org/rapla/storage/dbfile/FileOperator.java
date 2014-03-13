@@ -228,6 +228,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 //System.out.println("Storing password in cache" + password);
                 cache.putPassword( id, password );
             }
+            resolveEmails( list );
             // contextualize all Entities
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Entities contextualized" );
@@ -238,6 +239,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 getLogger().info( "Storing the converted file" );
                 saveData(cache, includeIds);
             }
+            
         }
         catch ( FileNotFoundException ex )
         {
