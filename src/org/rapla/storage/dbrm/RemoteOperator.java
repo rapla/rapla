@@ -893,23 +893,24 @@ public class RemoteOperator
         	}
             FutureResult result =connector.call( accessToken,service, methodName, parameterTypes, returnType , args);
             return result;
+//          }  catch ( RaplaException ex) {
+//          if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))
+//          {
+//              getLogger().warn(ex.getMessage() + ". Disconnecting from server.");
+//              String message = getI18n().format("error.connection_closed", getConnectionName());
+//              disconnect(message);
+//              throw new RaplaRestartingException();
+//          }
+//          else
+//          {
+//              throw ex;
+//          }
+//      }
+
         } catch (Exception ex) {
             return new ResultImpl(new RaplaException(ex));
         }
         //FIXME implement refresh logic on server restart
-//        }  catch ( RaplaException ex) {
-//            if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))
-//            {
-//                getLogger().warn(ex.getMessage() + ". Disconnecting from server.");
-//                String message = getI18n().format("error.connection_closed", getConnectionName());
-//                disconnect(message);
-//                throw new RaplaRestartingException();
-//            }
-//            else
-//            {
-//                throw ex;
-//            }
-//        }
         finally
         {
         	if ( updater != null)

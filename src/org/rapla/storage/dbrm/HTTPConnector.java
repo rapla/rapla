@@ -87,7 +87,8 @@ public class HTTPConnector  implements Connector
     class Serializer
     {
 
-		public JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) {	// TODO Auto-generated method stub
+		public JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
+		{	
 			final GsonBuilder gb = defaultGsonBuilder().disableHtmlEscaping();
 			JsonArray params = new JsonArray();
 			Gson serializer = gb.disableHtmlEscaping().create();

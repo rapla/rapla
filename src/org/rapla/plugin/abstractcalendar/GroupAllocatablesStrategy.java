@@ -43,7 +43,6 @@ public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
     @Override
     protected Map<Block, Integer> getBlockMap(CalendarView wv,
     		List<Block> blocks) {
-    	// TODO Auto-generated method stub
     	return super.getBlockMap(wv, blocks);
     }
     

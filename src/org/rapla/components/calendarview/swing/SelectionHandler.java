@@ -40,7 +40,7 @@ public class SelectionHandler extends MouseAdapter {
     AbstractSwingCalendar m_wv;
     public enum SelectionStrategy
     {
-    	FLOW,BLOCK, PERIOD;
+    	FLOW,BLOCK;
     }
     SelectionStrategy selectionStrategy = SelectionStrategy.FLOW;
     
@@ -191,7 +191,6 @@ public class SelectionHandler extends MouseAdapter {
         {
         	case BLOCK:  setSelectionBlock();break;
         	case FLOW: setSelectionFlow();break;
-        	case PERIOD: setSelectionPeriod(); break;
         }
         {
 	        Point location = m_wv.getSlot(slotNr).getLocation();
@@ -295,67 +294,6 @@ public class SelectionHandler extends MouseAdapter {
         start = m_wv.createDate(m_wv.getSlot(startSlot),startRow, true);
         end = m_wv.createDate(m_wv.getSlot(endSlot),endRow, false);
         m_wv.fireSelectionChanged(start,end);
-    }
-
-
-
-    
-    protected void setSelectionPeriod() {
-        int startRow = selectionStart;
-        int endRow = m_wv.getRowsPerDay() -1;
-        
-        for (int i=0;i<startSlot;i++) {
-            DaySlot daySlot = m_wv.getSlot(i);
-			if (daySlot != null) {
-                daySlot.unselectAll();
-            }
-        }
-     
-       int dayCount = m_wv.getDayCount();
-       if ( selectionStart > selectionEnd ) {
-    	   startRow = selectionEnd;
-    	   endRow = selectionStart;
-       } else {
-    	   startRow = selectionStart;
-    	   endRow = selectionEnd;
-       }
-       int startSlotDay = startSlot % 7;
-       int endSlotDay = endSlot % 7;
-       int startDayOfWeek = Math.min(startSlotDay, endSlotDay);
-       int endDayOfWeek = Math.max(startSlotDay, endSlotDay);
-       int maxRow = m_wv.getRowsPerDay();
-       int realEndSlot = (endSlot/7)*7 + endDayOfWeek + 1; 
-       // System.out.println("selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd + " startslot=" + startSlot + " endSlot=" + endSlot + " maxrow=" + maxRow) ;
-       for (int i=(startSlot/7)*7;i<=realEndSlot;i++) {
-       if (m_wv.getSlot(i) == null)
-           continue;
-       int dayOfWeek = i % 7;
-       if ( dayOfWeek < startDayOfWeek
-            || dayOfWeek > endDayOfWeek
-            )
-           m_wv.getSlot(i).unselectAll();
-       else if ( dayOfWeek > startDayOfWeek
-             && dayOfWeek < endDayOfWeek)
-           m_wv.getSlot(i).select(0, 10000); // XXX Excoffier
-       else if ( dayOfWeek == startDayOfWeek
-             && dayOfWeek == endDayOfWeek)
-           m_wv.getSlot(i).select(startRow,endRow);
-       else if ( dayOfWeek == startDayOfWeek
-             && dayOfWeek < endDayOfWeek)
-           m_wv.getSlot(i).select((startRow+7*maxRow) % maxRow,10000); // XXX
-       else if ( dayOfWeek > startDayOfWeek
-             && dayOfWeek == endDayOfWeek)
-           m_wv.getSlot(i).select(0, endRow % maxRow);
-       else
-           System.out.println("Should raise an error"); // XXX
-       }
-       for (int i=realEndSlot;i<dayCount;i++) {
-           if (m_wv.getSlot(i) != null)
-               m_wv.getSlot(i).unselectAll();
-      }
-      start = m_wv.createDate(m_wv.getSlot(startSlot),startRow, true);
-      end = m_wv.createDate(m_wv.getSlot(endSlot),endRow, false);
-      m_wv.fireSelectionChanged(start,end);
     }
 }
 

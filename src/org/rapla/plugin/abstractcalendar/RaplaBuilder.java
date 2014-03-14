@@ -77,7 +77,6 @@ public abstract class RaplaBuilder extends RaplaComponent
     private boolean bResourceVisible = true;
     private boolean bPersonVisible = true;
     private boolean bRepeatingVisible = true;
-    // TODO Christopher Check if this fits most users
     private boolean bTimeVisible = true; //Shows time <from - till> in top of all HTML- and Swing-View Blocks
     private boolean splitByAllocatables = false;
     private HashMap<Allocatable,String> colors = new HashMap<Allocatable,String>(); //This currently only works with HashMap

@@ -379,16 +379,11 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
         // Insert into open ReservationEditWindows, so that
         // we can't edit the same Reservation in different windows
         getPrivateReservationController().addReservationEdit(this);
-        // #TODO this should be done in allocatableEdit
-        //allocatableEdit.content.setDividerLocation(0.5);
-        //frame.requestFocus();
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
     }
 
-    /* (non-Javadoc)
-     * @see org.rapla.gui.edit.reservation.IReservationEdit#getReservation()
-     */
+    @Override
     public Reservation getReservation() {
         return mutableReservation;
     }
@@ -397,6 +392,7 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
 		return original;
 	}
     
+    @Override
     public Collection<Appointment> getSelectedAppointments() {
 		Collection<Appointment> appointments = new ArrayList<Appointment>();
         for ( Appointment value:appointmentEdit.getListEdit().getSelectedValues())
@@ -563,6 +559,7 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
     /* (non-Javadoc)
      * @see org.rapla.gui.edit.reservation.IReservationEdit#save()
      */
+    @Override
     public void save() throws RaplaException {        
         try {
         	frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -587,6 +584,7 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
     /* (non-Javadoc)
      * @see org.rapla.gui.edit.reservation.IReservationEdit#delete()
      */
+    @Override
     public void delete() throws RaplaException {
         try {
             DialogUI dlg = getInfoFactory().createDeleteDialog(new Object[] {mutableReservation}
@@ -622,16 +620,17 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
         }
     }
 
+    @Override
     public void addReservationChangeListener(ChangeListener listener) {
         changeListenerList.add(listener);
     }
 
+    @Override
     public void removeReservationChangeListener(ChangeListener listener) {
         changeListenerList.remove( listener);
         
     }
 
-    
     
     
 }

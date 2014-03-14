@@ -295,8 +295,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     }
 
     public void setRestriction(Allocatable allocatable,Appointment[] appointments) {
-    	// FIXME add checkWritable on this
-    	//checkWritable();
+    	checkWritable();
     	List<String> appointmentIds = new ArrayList<String>();
     	for ( Appointment app:appointments)
     	{

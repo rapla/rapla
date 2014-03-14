@@ -30,12 +30,10 @@ public class RaplaTestLogManager {
     		 @Override
     				protected void writeOut(ILoggingEvent event)
     						throws IOException {
-    					// TODO Auto-generated method stub
     					super.writeOut(event);
     				}
     		 @Override
     				protected void append(ILoggingEvent eventObject) {
-    					// TODO Auto-generated method stub
     					super.append(eventObject);
     				}
     			 };

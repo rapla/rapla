@@ -865,7 +865,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             StringBuffer buf = new StringBuffer();
             buf.append("<html>");
             buf.append( getRaplaLocale().formatTimestamp(conflict.getStartDate()));
-            // FIXME add the rest of conflict
 //            buf.append( getAppointmentFormater().getSummary(conflict.getAppointment1()));
             buf.append( "<br>" );
             buf.append( conflict.getReservation1Name() );
@@ -874,6 +873,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             buf.append( "\n" );
             buf.append( "<br>" );
             buf.append( conflict.getReservation2Name() );
+            // TOD add the rest of conflict
 //            buf.append( ": " );
 //            buf.append( " " );
 //            buf.append( getRaplaLocale().formatTime(conflict.getAppointment1().getStart()));

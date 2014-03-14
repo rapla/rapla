@@ -68,7 +68,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
         RaplaType raplaType = getTypeForLocalName( localName );
         if ( refid != null) {
             childReader = null;
-            // TODO We ignore the old references
+            // We ignore the old references from 1.7
             if ( raplaType.equals( Appointment.TYPE) || raplaType.equals( Reservation.TYPE)) {
                 return;
             }

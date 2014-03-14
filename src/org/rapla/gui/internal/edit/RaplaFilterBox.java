@@ -21,8 +21,6 @@ public class RaplaFilterBox extends RaplaComboBox {
 
         mainPanel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
         ui.setFilter(filterObj);
-
-        // TODO Auto-generated constructor stub
     }
 
     @Override

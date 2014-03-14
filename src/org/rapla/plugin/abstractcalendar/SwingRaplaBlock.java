@@ -525,8 +525,6 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
 
         public void mouseMoved( MouseEvent arg0 )
         {
-        // TODO Auto-generated method stub
-
         }
 
         private void changeLineBorder( boolean active )

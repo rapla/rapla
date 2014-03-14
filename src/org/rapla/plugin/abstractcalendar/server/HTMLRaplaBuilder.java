@@ -40,7 +40,6 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     @Override
     public void setFromModel(CalendarModel model, Date startDate, Date endDate)
     		throws RaplaException {
-    	// TODO Auto-generated method stub
     	super.setFromModel(model, startDate, endDate);
         {
         	String option = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
