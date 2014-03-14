@@ -677,7 +677,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         if ( attributekey.startsWith(annotationPrefix))
         {
         	String annotationKey = attributekey.substring( annotationPrefix.length());
-        	Annotatable annotatable = annotableMap.get(new Integer(classifiableId));
+        	Annotatable annotatable = annotableMap.get(classifiableId);
         	if (annotatable != null)
         	{
 	        	String valueAsString = rset.getString( 3);
