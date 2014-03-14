@@ -28,6 +28,8 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
 
+import javax.swing.InputVerifier;
+import javax.swing.JComponent;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -62,12 +64,27 @@ public abstract class AbstractBlockField extends JTextField {
         addFocusListener(listener);
         addKeyListener(listener);
         addMouseWheelListener( listener );
+        setInputVerifier(new InputVerifier() {
+            public boolean verify(JComponent comp) {
+         		boolean valid = blocksValid();
+         		if ( valid )
+         		{
+         			fireValueChanged();
+         		}
+            	return valid;
+            }
+        });
     }
 
     class Listener implements MouseListener,KeyListener,FocusListener,ActionListener, MouseWheelListener {
         public void mouseReleased(MouseEvent evt) {
         }
         public void mousePressed(MouseEvent evt) {
+        	if ( !isMouseOverComponent())
+        	{
+        		blocksValid();
+            	fireValueChanged();
+            }
         	if ( evt.getButton() != MouseEvent.BUTTON1)
         	{
         		return;
@@ -190,7 +207,7 @@ public abstract class AbstractBlockField extends JTextField {
                 evt.consume();
                 if (blocksValid() && !isMouseOverComponent())
                 {
-                	fireValueChanged();
+//                	fireValueChanged();
                 }
             }
         }
