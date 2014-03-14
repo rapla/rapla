@@ -47,7 +47,6 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Configuration;
