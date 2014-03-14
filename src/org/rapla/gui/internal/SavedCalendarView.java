@@ -407,7 +407,10 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     public void save(final String filename) throws RaplaException 
     {
         Preferences preferences = ((CalendarModelImpl)model).createStorablePreferences(filename);
-        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
+        
+        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );
+        Preferences original = originalMap.get(preferences);
+		Collection<Preferences> originalList = original != null ? Collections.singletonList( original): null;
         Collection<Preferences> newList = Collections.singletonList(preferences);
         String file = (filename != null) ? filename : getString("default");
         String commandoName = getString("save")+ " " + getString("calendar") + " " + file ;

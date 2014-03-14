@@ -80,6 +80,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	protected RaplaLocale raplaLocale;
 	
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
+	Map<String,String> createdPreferenceIds = new HashMap<String,String>(); 
 	protected LocalCache cache;
 	/**
 	 * set encryption if you want to enable password encryption. Possible values
@@ -259,13 +260,15 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
+	// FIXME Find a better solution, as this increments the preferenceIds with each client login or reload
+	// Meanwhile don't use this method to test preferences of a user
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
 		// Test if user is already stored
 		if (user != null) {
 			resolve(user.getId());
 		}
-		Preferences pref;
+		PreferencesImpl pref;
 		Lock readLock = readLock();
 		try
 		{
@@ -292,7 +295,11 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				unlock(writeLock);
 			}
 		}
-
+		// if the preference stored in cache is not persistant yet return null 
+		else if ( pref != null && !pref.isPersistant() && !createIfNotNull)
+		{
+			return null;
+		}
 		return pref;
 	}
 
