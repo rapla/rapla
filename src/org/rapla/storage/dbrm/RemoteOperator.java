@@ -858,7 +858,7 @@ public class RemoteOperator
 	 */
 	protected boolean isAddedToUpdateResult(Entity entity) {
 		RaplaType raplaType = entity.getRaplaType();
-		if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(entity))
+		if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) )
 		{
 			return false;
 		}
@@ -874,7 +874,7 @@ public class RemoteOperator
 		{
 			return false;
 		}
-		else if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(entity))
+		else if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) )
 		{
 			return false;
 		}
