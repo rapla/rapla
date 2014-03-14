@@ -7,7 +7,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.RemoteSession;
-import org.rapla.storage.StorageOperator;
 
 /** Implementation of RemoteStorage as a RemoteService
  * @see org.rapla.storage.dbrm.RemoteStorage
@@ -20,11 +19,9 @@ public abstract class RemoteSessionImpl extends RaplaComponent implements Remote
      */
     User user;
     Logger logger;
-    StorageOperator operator;
     
-    public RemoteSessionImpl(RaplaContext context, String clientName) throws RaplaException {
+    public RemoteSessionImpl(RaplaContext context, String clientName) {
         super( context );
-        operator = context.lookup(StorageOperator.class);
         logger = super.getLogger().getChildLogger(clientName);
     }
 
@@ -39,7 +36,7 @@ public abstract class RemoteSessionImpl extends RaplaComponent implements Remote
     }
 
     public boolean isAuthentified() {
-        return user != null && operator.isConnected();
+        return user != null;
     }
 
     public void setUser( User user)
