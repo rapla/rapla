@@ -72,7 +72,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
     
     public Classification newClassification(boolean useDefaults) {
-    	if ( !isPersistant()) {
+    	if ( !isReadOnly()) {
     		throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
     	}
         final ClassificationImpl classification = new ClassificationImpl(this);
@@ -99,7 +99,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
    
 
     public Classification newClassification(Classification original) {
-        if ( !isPersistant()) {
+        if ( !isReadOnly()) {
             throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
         }
         final ClassificationImpl newClassification = (ClassificationImpl) newClassification(true);
@@ -130,7 +130,7 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
     public ClassificationFilter newClassificationFilter() {
-    	if ( !isPersistant()) {
+    	if ( !isReadOnly()) {
     		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
     	}
         ClassificationFilterImpl classificationFilterImpl = new ClassificationFilterImpl(this);

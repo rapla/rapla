@@ -1030,13 +1030,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
 
         String userId = readId(rset, 1,User.class, true);
         User owner = null;
-        String preferenceId;
-        if ( userId != null){
-            owner = (User) get( userId );
-            preferenceId = Preferences.TYPE.getId( RaplaType.parseId( userId));
-        } else {
-        	preferenceId = Preferences.TYPE.getId( 0);
-        }
+        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
         PreferencesImpl preferences = (PreferencesImpl) get( preferenceId );
         if ( preferences == null) {
         	preferences = new PreferencesImpl();

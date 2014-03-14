@@ -117,8 +117,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
   
     public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
     {
-    	
-	
         super( parentContext, config, logger );
     	try {
     		// TEN Hours until the token expires
@@ -153,7 +151,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( ClientFacade.class, facade );
         addContainerProvidedComponent( SecurityManager.class, SecurityManager.class );
         addRemoteMethodFactory(RemoteStorage.class,RemoteStorageImpl.class, null);
-
         addContainerProvidedComponentInstance( REMOTE_METHOD_FACTORY, this, RemoteServer.class.getName() );
         // adds 5 basic pages to the webapplication
         addWebpage( "server",RaplaStatusPageGenerator.class);
@@ -225,8 +222,13 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 }
             }
         }
-        
         Preferences preferences = operator.getPreferences( null, true );
+//        if ( preferences == null)
+//        {
+//        	
+//        }
+        //RaplaConfiguration encryptionConfig = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class, encryptionConfig);
         RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
     	String importExportTimeZone = TimeZone.getDefault().getID();
 		if ( entry != null)

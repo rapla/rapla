@@ -344,7 +344,7 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
     void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException  {
     	ModificationModule mod = getModification();
         boolean bNew = false;
-        if ( reservation.isPersistant()) {
+        if ( reservation.isReadOnly()) {
             mutableReservation =  mod.edit(reservation);
             original = reservation;
         } else {

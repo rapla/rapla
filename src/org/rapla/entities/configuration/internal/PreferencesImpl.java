@@ -239,6 +239,11 @@ public class PreferencesImpl extends SimpleEntity
 			int defaultValue) {
 		return getEntryAsInteger(role.getId(), defaultValue);
 	}
+
+	public static String getPreferenceIdFromUser(String userId) {
+		String preferenceId = Preferences.TYPE.getId( userId != null ? RaplaType.parseId( userId): 0);
+		return preferenceId.intern();
+	}
 }
 
 

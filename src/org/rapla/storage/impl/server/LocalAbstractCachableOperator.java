@@ -313,7 +313,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 	public void changeEmail(User user, String newEmail)
 			throws RaplaException {
-		User editableUser = user.isPersistant() ? editObject(user, (User) user) : user;
+		User editableUser = user.isReadOnly() ? editObject(user, (User) user) : user;
 		Allocatable personReference = editableUser.getPerson();
 		ArrayList<Entity>arrayList = new ArrayList<Entity>();
 		Collection<Entity>storeObjects = arrayList;
@@ -343,7 +343,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					Allocatable person = resolveEmail(email);
 					if ( person != null)
 					{
-						boolean readOnly = entity.isPersistant();
+						boolean readOnly = entity.isReadOnly();
 						((RefEntity)entity).setReadOnly(false);
 						user.setPerson(person);
 						((RefEntity)entity).setReadOnly(readOnly);
@@ -905,7 +905,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	protected void addRemovedUserDependant(UpdateEvent evt, EntityStore store,User user) throws RaplaException {
-		PreferencesImpl preferences = cache.getPreferences(user);
+		PreferencesImpl preferences = cache.getPreferencesForUserId(user.getId());
 		if (preferences != null)
 		{
 			evt.putRemove(preferences);
@@ -1656,7 +1656,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 		Collection<Entity> list = store.getList();
 		cache.putAll( list );
-	    resolveEntities( list );
+	    resolveEntities( list, true );
 	    
     	UserImpl user = cache.getUser("admin");
     	String password ="";

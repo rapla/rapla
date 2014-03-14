@@ -259,21 +259,12 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    public PreferencesImpl getPreferences(User user) {
-        for (PreferencesImpl pref: preferences)
-        {
-            User owner = pref.getOwner();
-            if ( user == null && owner == null ) {
-                return pref;
-            }
-            if (user!= null && pref.getOwner() != null && user.equals(pref.getOwner())) {
-                return pref;
-            }
-
-        }
-        return null;
+    public PreferencesImpl getPreferencesForUserId(String userId) {
+		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+		PreferencesImpl pref = (PreferencesImpl) tryResolve( preferenceId);
+		return pref; 	
     }
-
+    
    
     public DynamicType getDynamicType(String elementKey) {
         for (DynamicType dt:dynamicTypes) {
@@ -315,14 +306,16 @@ public class LocalCache implements EntityResolver
                 if (   Preferences.TYPE.equals( raplaType )  )
                 {
                 	{
-                		PreferencesImpl preferences = getPreferences( null );
+                		PreferencesImpl preferences = getPreferencesForUserId( null );
                         if ( preferences != null)
                         {
                         	result.add( preferences);
                         }
                     }
                     {
-                        PreferencesImpl preferences = getPreferences( user );
+                        String userId = user.getId();
+                        Assert.notNull( userId);
+						PreferencesImpl preferences = getPreferencesForUserId( userId );
                         if ( preferences != null)
                         {
                             result.add( preferences);

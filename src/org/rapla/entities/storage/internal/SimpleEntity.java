@@ -49,6 +49,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
             throw new ReadOnlyException( this );
     }
     
+    @Deprecated
     public boolean isPersistant() {
         return isReadOnly();
     }

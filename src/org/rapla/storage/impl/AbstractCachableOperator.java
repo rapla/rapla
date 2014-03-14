@@ -50,7 +50,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -260,19 +259,29 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 
-	// FIXME Find a better solution, as this increments the preferenceIds with each client login or reload
-	// Meanwhile don't use this method to test preferences of a user
+	Map<String,PreferencesImpl> emptyPreferencesProxy = new HashMap<String, PreferencesImpl>();
+
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
 		// Test if user is already stored
 		if (user != null) {
 			resolve(user.getId());
 		}
-		PreferencesImpl pref;
+		String userId = user != null ? user.getId() : null;
+		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
 		Lock readLock = readLock();
+		PreferencesImpl pref;
 		try
 		{
-			pref = cache.getPreferences(user);
+			pref = (PreferencesImpl) cache.tryResolve( preferenceId);
+			if (pref == null && createIfNotNull )
+			{
+				PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
+				if ( preferencesImpl != null)
+				{
+					return preferencesImpl;
+				}
+			}
 		}
 		finally
 		{
@@ -285,20 +294,15 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 				PreferencesImpl newPref = new PreferencesImpl();
 				newPref.setResolver( this);
 				newPref.setOwner(user);
-				String createIdentifier = createIdentifier(Preferences.TYPE,1)[0];
-				newPref.setId(createIdentifier);
+				newPref.setId( preferenceId );
+				newPref.setReadOnly( true );
 				pref = newPref;
-				cache.put(newPref);
+				emptyPreferencesProxy.put(preferenceId , pref);
 			}
 			finally
 			{
 				unlock(writeLock);
 			}
-		}
-		// if the preference stored in cache is not persistant yet return null 
-		else if ( pref != null && !pref.isPersistant() && !createIfNotNull)
-		{
-			return null;
 		}
 		return pref;
 	}
@@ -441,17 +445,20 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	/**
 	 * @throws RaplaException  
 	 */
-	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
-		EntityStore store = new EntityStore( this, getSuperCategory());
-		store.addAll( entities);
-		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(store);
-		}
-		for (Entity obj: entities) {
-			Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
-			for ( String id:referencedIds)
-			{
-				testResolve(store, obj, id);
+	protected void resolveEntities(Collection<? extends Entity> entities, boolean test) throws RaplaException {
+		if ( test)
+		{
+			EntityStore store = new EntityStore( this, getSuperCategory());
+			store.addAll( entities);
+			for (Entity obj: entities) {
+				((RefEntity)obj).setResolver(store);
+			}
+			for (Entity obj: entities) {
+				Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
+				for ( String id:referencedIds)
+				{
+					testResolve(store, obj, id);
+				}
 			}
 		}
 		for (Entity obj: entities) {
@@ -646,27 +653,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			}
 		}
 
-
-		/**
-		 * we need to update every reference in the stored entity. So that the
-		 * references in the persistant entities always point to persistant
-		 * entities and never to local working copies. This is done by a call to resolveEntities
-		 */
-		for (Entity toUpdate:updatedEntities) 
-		{
-			if  ( !toUpdate.isPersistant())
-			{
-				((EntityReferencer)toUpdate).setResolver(this);
-			}
-		}
-		// it is important to set readonly only after a complete resolval of all entities, because it operates recursive and could set an unresolved subentity to read only which is forbidden
-		for (Entity toUpdate:updatedEntities) 
-		{
-			if  ( !toUpdate.isPersistant())
-			{
-				((RefEntity)toUpdate).setReadOnly( true);
-			}
-		}
+		resolveEntities(updatedEntities, false);
 
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();

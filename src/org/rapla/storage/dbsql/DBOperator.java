@@ -647,7 +647,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
-        resolveEntities( list);
+        resolveEntities( list, true);
         cache.getSuperCategory().setReadOnly(true);
         for (User user:cache.getCollection(User.class))
         {

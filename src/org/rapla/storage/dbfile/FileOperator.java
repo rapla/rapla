@@ -219,7 +219,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             xmlAdapter.read( loadingURL, contentHandler, validate );
             Collection<Entity> list = entityStore.getList();
 			cache.putAll( list );
-            resolveEntities( list);
+            resolveEntities( list, true);
             cache.getSuperCategory().setReadOnly(true);
             for (User user:cache.getCollection(User.class))
             {

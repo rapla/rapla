@@ -17,7 +17,6 @@ import java.util.Date;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -61,7 +60,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println();
         printDynamicTypes();
         println();
-        ((PreferenceWriter)getWriterFor(Preferences.TYPE)).printPreferences( cache.getPreferences( null ));
+        ((PreferenceWriter)getWriterFor(Preferences.TYPE)).printPreferences( cache.getPreferencesForUserId( null ));
         println();
         printUsers();
         println();
@@ -116,8 +115,9 @@ public class RaplaMainWriter extends RaplaXMLWriter
         UserWriter userWriter = (UserWriter)getWriterFor(User.TYPE);
         println("<!-- Users of the system -->");
         for (User user:cache.getCollection(User.class)) {
-			PreferencesImpl preferences = cache.getPreferences( user);
-			String password = cache.getPassword(((Entity)user).getId());
+        	String userId = user.getId();
+			PreferencesImpl preferences = cache.getPreferencesForUserId( userId);
+			String password = cache.getPassword(userId);
 			userWriter.printUser( user, password, preferences);
         }
         closeElement("rapla:users");
