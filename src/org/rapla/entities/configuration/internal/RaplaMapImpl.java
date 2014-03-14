@@ -462,6 +462,11 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 		public boolean equals(Object obj) {
 			return key.equals( ((Entry)  obj).key);
 		}
+		
+		public String toString()
+		{
+			return key + "=" + getValue();
+		}
     }
     
     transient Set<Map.Entry<String, Object>> cachedEntries; 
@@ -492,6 +497,11 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     		return cachedEntries;
     	}
 	}
+    
+    public String toString()
+    {
+    	return entrySet().toString();
+    }
 
 
 }

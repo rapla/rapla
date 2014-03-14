@@ -202,5 +202,10 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	{
 		return selected;
 	}
+	
+	public String toString()
+	{
+		return super.toString() + ",selected=" + selected; 
+	}
 
 }

@@ -177,7 +177,7 @@ public class PreferencesImpl extends SimpleEntity
     
     public String toString()
     {
-        return map.toString();
+        return super.toString() + " " + map.toString();
     }
 
 	public <T extends RaplaObject> void putEntry(TypedComponentRole<T> role,

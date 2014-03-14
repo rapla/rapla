@@ -14,6 +14,8 @@ This is according to the xschema specification for dates and time.
 */
 public class SerializableDateTimeFormat
 {
+	public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
+	
     private Date parseDate( String date, String time, boolean fillDate ) throws ParseDateException {
     	if( date == null || date.length()==0  )
     	    throwParseDateException("empty" );

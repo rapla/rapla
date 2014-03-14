@@ -107,7 +107,11 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
         return classificationFilters.toArray( ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
     }
     
-    
+    public String toString()
+    {
+    	return classificationFilters.toString();
+    	
+    }
 
 }
 

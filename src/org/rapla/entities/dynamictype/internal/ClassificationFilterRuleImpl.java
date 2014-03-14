@@ -12,9 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import java.util.Date;
+
+import org.rapla.components.util.ParseDateException;
+import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityReferencer;
@@ -64,8 +71,7 @@ public final class ClassificationFilterRuleImpl
             }
             else
             {
-            	this.ruleValues[i] = ruleValue != null ? ruleValue.toString() : null;
-            	
+            	setValue(i, ruleValue);
             }
         }
 	}
@@ -127,34 +133,224 @@ public final class ClassificationFilterRuleImpl
 
     public Object[] getValues() {
         Object[] result = new Object[operators.length];
+		Attribute attribute = getAttribute();
     	for (int i=0;i<operators.length;i++) {
-    		Object value = referenceHandler.getEntity(String.valueOf(i));
-    		if ( value == null)
-    		{
-    			value =  ruleValues[i];
-    		}
+			Object value = getValue(attribute,i);
     		result[i] = value;
         }
         return result;
     }
     
+	private Object getValue(Attribute attribute, int index) {
+			
+		 AttributeType type = attribute.getType();
+		 if (type == AttributeType.CATEGORY || type == AttributeType.ALLOCATABLE)
+		 {
+			 return referenceHandler.getEntity(String.valueOf(index));
+		 }
+		 String stringValue =  ruleValues[index];
+		 if ( stringValue == null)
+		 {
+			 return null;
+		 }
+		 if (type == AttributeType.STRING)
+		 {
+			 return stringValue;
+		 }
+		 else if (type == AttributeType.BOOLEAN)
+		 {
+			 return Boolean.parseBoolean( stringValue);
+		 }
+		 else if (type ==  AttributeType.INT )
+		 {
+			 return Long.parseLong(stringValue);
+		 }
+		 else if (type == AttributeType.DATE)
+		 {
+			 try {
+				return SerializableDateTimeFormat.INSTANCE.parseTimestamp( stringValue);
+			} catch (ParseDateException e) {
+				return null;
+			}
+		 }
+		 else
+		 {
+			 throw new IllegalStateException("Attributetype " + type + " not supported in filter");
+		 }
+
+	}
+
+    
+	
     private void setValue(int i, Object ruleValue)
     {
-    	 if (ruleValue instanceof Entity)
-         {
-    		 referenceHandler.putEntity(String.valueOf(i), (Entity)ruleValue);
-    		 ruleValues[i] = null;
-         }
-         else
-         {
-        	 ruleValues[i] = ruleValue != null ? ruleValue.toString() : null;
-        	 referenceHandler.removeId( String.valueOf( i));
-         }
+    	String newValue;
+    	if (ruleValue instanceof Entity)
+    	{
+    		referenceHandler.putEntity(String.valueOf(i), (Entity)ruleValue);
+    		newValue = null;
+    	}
+    	else if ( ruleValue instanceof Date)
+    	{
+    		Date date = (Date) ruleValue;
+    		newValue= SerializableDateTimeFormat.INSTANCE.formatTimestamp(date);
+    	}
+    	else
+    	{
+    		newValue = ruleValue != null ? ruleValue.toString() : null;
+        	referenceHandler.removeId( String.valueOf( i));
+    	}
+    	ruleValues[i] = newValue;
 
+    }
+    
+    boolean matches(Object value) {
+        //String[] ruleOperators = getOperators();
+		Attribute attribute = getAttribute();
+        for (int i=0;i<operators.length;i++) {
+        	String operator = operators[i];
+            if (matches(attribute,operator,i,value))
+                return true;
+        }
+        return false;
+    }
+    
+    private boolean matches(Attribute attribute,String operator,int index,Object value) {
+        AttributeType type = attribute.getType();
+        Object ruleValue = getValue(attribute, index);
+        if (type == AttributeType.CATEGORY)
+        {
+            Category category = (Category) ruleValue;
+            if (category == null)
+            {
+                return (value == null);
+            }
+            if ( operator.equals("=")  ) 
+            {
+                return value != null && category.isIdentical((Category)value);
+            } 
+            else if ( operator.equals("is") )
+            {
+                return value != null && (category.isIdentical((Category)value)
+                        || category.isAncestorOf((Category)value));
+            }
+        }
+        else if (type == AttributeType.ALLOCATABLE)
+        {
+        	Allocatable allocatable = (Allocatable) ruleValue;
+            if (allocatable == null)
+            {
+                return (value == null);
+            }
+            if ( operator.equals("=")  ) 
+            {
+                return value != null && allocatable.isIdentical((Allocatable)value);
+            } 
+            else if ( operator.equals("is") )
+            {
+                return value != null && (allocatable.isIdentical((Allocatable)value) );
+                   //     || category.isAncestorOf((Category)value));
+            }
+        }
+        else if (type == AttributeType.STRING)
+        {
+            if (ruleValue == null)
+            {
+                return (value == null);
+            }
+            if ( operator.equals("is") || operator.equals("=")) 
+            {
+                return  value != null && value.equals( ruleValue );
+            } 
+            else if ( operator.equals("contains") )
+            {
+                String string = ((String)ruleValue).toLowerCase();
+                if (string == null)
+                    return true;
+                string = string.trim();
+                if (value == null)
+                    return string.length() == 0;
+                return (((String)value).toLowerCase().indexOf(string)>=0);
+            }
+            else if ( operator.equals("starts") )
+            {
+                String string = ((String)ruleValue).toLowerCase();
+                if (string == null)
+                    return true;
+                string = string.trim();
+                if (value == null)
+                    return string.length() == 0;
+                return (((String)value).toLowerCase().startsWith(string));
+            }
+        }
+        else if (type ==  AttributeType.BOOLEAN)
+        {
+            Boolean boolean1 = (Boolean)ruleValue;
+            Boolean boolean2 = (Boolean)value;
+            if (boolean1 == null)
+            {
+                return (boolean2 == null || boolean2.booleanValue());
+            }
+            if (boolean2 == null)
+            {
+                return !boolean1.booleanValue();
+            }
+            return (boolean1.equals(boolean2));
+        }
+        else if (type == AttributeType.INT || type ==AttributeType.DATE)
+        {
+            if(ruleValue == null) {
+                if (operator.equals("<>")) 
+                    if(value == null) 
+                        return false;
+                    else
+                        return true;
+                else if (operator.equals("=")) 
+                    if(value == null) 
+                        return true;
+                    else
+                        return false;
+                else
+                return false;
+            }
+
+            if(value == null) 
+                return false;
+            
+            long long1 = type == AttributeType.INT ? ((Long) value).longValue()     : ((Date) value).getTime();
+            long long2 = type == AttributeType.INT ? ((Long) ruleValue).longValue() : ((Date) ruleValue).getTime();
+
+            if (operator.equals("<")) 
+            {
+                return long1 < long2;
+            }
+            else if (operator.equals("=")) 
+            {
+                return long1 ==  long2;
+            }
+            else if (operator.equals(">")) 
+            {
+                return long1 >  long2;
+            }
+            else if (operator.equals(">=")) 
+            {
+                return long1 >=  long2;
+            }
+            else if (operator.equals("<=")) 
+            {
+                return long1 >=  long2;
+            }
+            else if (operator.equals("<>")) 
+            {
+                return long1 !=  long2;
+            }
+        }
+        
+        return false;
     }
 
    
-    public String toString()
+	public String toString()
     {
     	StringBuilder buf = new StringBuilder();
     	buf.append(getAttribute().getKey());

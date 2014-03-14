@@ -13,7 +13,6 @@
 package org.rapla.entities.dynamictype.internal;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,11 +20,8 @@ import java.util.List;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
-import org.rapla.entities.Category;
 import org.rapla.entities.ReadOnlyException;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
@@ -203,16 +199,16 @@ public final class ClassificationFilterImpl
     public boolean matches(Classification classification) {
         if (!getType().equals(classification.getType()))
             return false;
-        ClassificationFilterRule[] rules = getRules();
+        ClassificationFilterRuleImpl[] rules = getRules();
         for (int i=0;i<rules.length;i++) {
-            ClassificationFilterRule rule = rules[i];
+            ClassificationFilterRuleImpl rule = rules[i];
 			Attribute attribute = rule.getAttribute();
 			if ( attribute != null)
 			{
 				Collection<Object> values = classification.getValues(attribute);
 				if ( values.size() == 0)
 				{
-			        if (!matches(rule, null))
+			        if (!rule.matches( null))
 			        {
 			            return false;
 			        }
@@ -223,7 +219,7 @@ public final class ClassificationFilterImpl
     				boolean matchesOne= false;
     				for (Object value: values)
     				{
-    					if (matches(rule, value))
+    					if (rule.matches( value))
     						matchesOne = true;
     				}
     				if ( !matchesOne )
@@ -234,149 +230,6 @@ public final class ClassificationFilterImpl
 			}
         }
         return true;
-    }
-
-    boolean matches(ClassificationFilterRule rule,Object value) {
-        Object[] ruleValues = rule.getValues();
-        String[] ruleOperators = rule.getOperators();
-        for (int i=0;i<ruleValues.length;i++) {
-            if (matches(rule.getAttribute(),ruleOperators[i],ruleValues[i],value))
-                return true;
-        }
-        return false;
-    }
-
-    private boolean matches(Attribute attribute,String operator,Object ruleValue,Object value) {
-        AttributeType type = attribute.getType();
-        if (type.equals(AttributeType.CATEGORY))
-        {
-            Category category = (Category)ruleValue;
-            if (category == null)
-            {
-                return (value == null);
-            }
-            if ( operator.equals("=")  ) 
-            {
-                return value != null && category.isIdentical((Category)value);
-            } 
-            else if ( operator.equals("is") )
-            {
-                return value != null && (category.isIdentical((Category)value)
-                        || category.isAncestorOf((Category)value));
-            }
-        }
-        else if (type.equals(AttributeType.ALLOCATABLE))
-        {
-        	Allocatable allocatable = (Allocatable)ruleValue;
-            if (allocatable == null)
-            {
-                return (value == null);
-            }
-            if ( operator.equals("=")  ) 
-            {
-                return value != null && allocatable.isIdentical((Allocatable)value);
-            } 
-            else if ( operator.equals("is") )
-            {
-                return value != null && (allocatable.isIdentical((Allocatable)value) );
-                   //     || category.isAncestorOf((Category)value));
-            }
-        }
-        else if (type.equals( AttributeType.STRING))
-        {
-            if (ruleValue == null)
-            {
-                return (value == null);
-            }
-            if ( operator.equals("is") || operator.equals("=")) 
-            {
-                return  value != null && value.equals( ruleValue );
-            } 
-            else if ( operator.equals("contains") )
-            {
-                String string = ((String)ruleValue).toLowerCase();
-                if (string == null)
-                    return true;
-                string = string.trim();
-                if (value == null)
-                    return string.length() == 0;
-                return (((String)value).toLowerCase().indexOf(string)>=0);
-            }
-            else if ( operator.equals("starts") )
-            {
-                String string = ((String)ruleValue).toLowerCase();
-                if (string == null)
-                    return true;
-                string = string.trim();
-                if (value == null)
-                    return string.length() == 0;
-                return (((String)value).toLowerCase().startsWith(string));
-            }
-        }
-        else if (type.equals( AttributeType.BOOLEAN))
-        {
-            Boolean boolean1 = (Boolean)ruleValue;
-            Boolean boolean2 = (Boolean)value;
-            if (boolean1 == null)
-            {
-                return (boolean2 == null || boolean2.booleanValue());
-            }
-            if (boolean2 == null)
-            {
-                return !boolean1.booleanValue();
-            }
-            return (boolean1.equals(boolean2));
-        }
-        else if (type.equals( AttributeType.INT) || type.equals(AttributeType.DATE))
-        {
-            if(ruleValue == null) {
-                if (operator.equals("<>")) 
-                    if(value == null) 
-                        return false;
-                    else
-                        return true;
-                else if (operator.equals("=")) 
-                    if(value == null) 
-                        return true;
-                    else
-                        return false;
-                else
-                return false;
-            }
-
-            if(value == null) 
-                return false;
-            
-            long long1 = type.equals( AttributeType.INT) ? ((Long) value).longValue()     : ((Date) value).getTime();
-            long long2 = type.equals( AttributeType.INT) ? ((Long) ruleValue).longValue() : ((Date) ruleValue).getTime();
-
-            if (operator.equals("<")) 
-            {
-                return long1 < long2;
-            }
-            else if (operator.equals("=")) 
-            {
-                return long1 ==  long2;
-            }
-            else if (operator.equals(">")) 
-            {
-                return long1 >  long2;
-            }
-            else if (operator.equals(">=")) 
-            {
-                return long1 >=  long2;
-            }
-            else if (operator.equals("<=")) 
-            {
-                return long1 >=  long2;
-            }
-            else if (operator.equals("<>")) 
-            {
-                return long1 !=  long2;
-            }
-        }
-        
-        return false;
     }
 
     boolean hasType(DynamicType type) {
