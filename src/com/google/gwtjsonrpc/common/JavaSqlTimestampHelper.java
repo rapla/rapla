@@ -20,9 +20,13 @@ import java.util.Date;
 public class JavaSqlTimestampHelper {
   @SuppressWarnings("deprecation")
   public static java.sql.Timestamp parseTimestamp(final String s) {
-    final String[] components = s.split(" ");
+    // First try ISO8601
+	String[] components = s.split("T");
     if (components.length != 2) {
-      throw new IllegalArgumentException("Invalid escape format: " + s);
+    	components = s.split(" ");
+    	 if (components.length != 2) {
+    		 throw new IllegalArgumentException("Invalid escape format: " + s);
+    	 }
     }
 
     final String[] timeComponents = components[1].split("\\.");

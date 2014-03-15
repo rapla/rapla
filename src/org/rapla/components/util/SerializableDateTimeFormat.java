@@ -10,11 +10,15 @@ import org.rapla.components.util.iterator.IntIterator;
 Provides methods for parsing and formating dates
 and times in the following format: <br>
 <code>2002-25-05</code> for dates and <code>13:00:00</code> for times.
-This is according to the xschema specification for dates and time.
+This is according to the xschema specification for dates and time and
+ISO8601
 */
 public class SerializableDateTimeFormat
 {
 	public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
+	//private final static char DATE_TIME_SEPERATOR = 'T';
+	private final static char DATE_TIME_SEPERATOR = ' ';
+
 	
     private Date parseDate( String date, String time, boolean fillDate ) throws ParseDateException {
     	if( date == null || date.length()==0  )
@@ -30,6 +34,15 @@ public class SerializableDateTimeFormat
     }
 
 	private long  parseTime_(String time) throws ParseDateException {
+		int length = time.length();
+		if ( length <1)
+		{
+		    throwParseTimeException( time );
+		}
+		if ( time.charAt( length-1) == 'Z')
+		{
+			time = time.substring(0,length-1);
+		}
 		IntIterator it = new IntIterator( time, ':' );
 		if ( !it.hasNext() )
 		    throwParseTimeException( time );
@@ -52,10 +65,10 @@ public class SerializableDateTimeFormat
 
 	private long parseDate_(String date, boolean fillDate)
 			throws ParseDateException {
-		int indexOfSpace = date.indexOf( " " );
-		if ( indexOfSpace > 0)
+		int indexOfSeperator = indexOfSeperator(date);
+		if ( indexOfSeperator > 0)
 		{
-		    date = date.substring(0,  indexOfSpace);
+		    date = date.substring(0,  indexOfSeperator);
 		}
 		IntIterator it = new IntIterator(date,'-');
 		if ( !it.hasNext() )
@@ -72,6 +85,17 @@ public class SerializableDateTimeFormat
 			day+=1;
 		}
 		return DateTools.toDate( year, month, day);
+	}
+
+	private int indexOfSeperator(String date) {
+		// First try the new ISO8601
+		int indexOfSeperator = date.indexOf( DATE_TIME_SEPERATOR );
+		if ( indexOfSeperator<0)
+		{
+			//then search for a space
+			indexOfSeperator = date.indexOf( ' ' );
+		}
+		return indexOfSeperator;
 	}
 
     private void throwParseDateException( String date) throws ParseDateException {
@@ -119,10 +143,10 @@ public class SerializableDateTimeFormat
         boolean fillDate = false;
         timestamp = timestamp.trim();
         long millisDate = parseDate_(timestamp, fillDate);
-        int indexOfSpace = timestamp.indexOf(" ");
-        if ( timestamp.indexOf(":") >=  indexOfSpace && indexOfSpace > 0)
+        int indexOfSeperator = indexOfSeperator(timestamp);
+        if ( timestamp.indexOf(':') >=  indexOfSeperator && indexOfSeperator > 0)
         {
-            String timeString = timestamp.substring( indexOfSpace + 1);
+            String timeString = timestamp.substring( indexOfSeperator + 1);
             if  ( timeString.length() > 0)
             {
                 long time = parseTime_(  timeString);
@@ -147,6 +171,7 @@ public class SerializableDateTimeFormat
         append( buf, time.minute, 2 );
         buf.append( ':' );
         append( buf, time.second, 2 );
+        //buf.append(  'Z');
         return buf.toString();
     }
 
@@ -169,7 +194,7 @@ public class SerializableDateTimeFormat
     }
 
     public String formatTimestamp( Date date ) {
-        String timestamp = formatDate( date, false) + " " +formatTime( date);
+		String timestamp = formatDate( date, false) + DATE_TIME_SEPERATOR +formatTime( date);
         return timestamp;
     }
 
