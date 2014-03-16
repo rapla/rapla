@@ -37,6 +37,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentBlockEndComparator;
 import org.rapla.entities.domain.AppointmentBlockStartComparator;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
@@ -66,7 +67,7 @@ class ConflictFinder {
 	
 	private Set<Conflict> updateConflicts(Allocatable allocatable,AllocationChange change, Date today, Set<Conflict> oldList ) 
     {
-		if ( allocatable.isHoldBackConflicts())
+		if ( isConflictIgnored(allocatable))
 		{
 			return Collections.emptySet();
 		}
@@ -138,6 +139,17 @@ class ConflictFinder {
 		}
 		return conflictList;
     }
+
+
+	private boolean isConflictIgnored(Allocatable allocatable) 
+	{
+		String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
+		if ( annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE))
+		{
+			return true;
+		}
+		return false;
+	}
 
 	private void removeConflicts(Set<Conflict> conflictList,
 			Set<Appointment> list) {
@@ -264,7 +276,7 @@ class ConflictFinder {
 				Allocatable newAlloc = (Allocatable) next.getNew();
 				if ( old != null && newAlloc != null )
 				{
-					if (old.isHoldBackConflicts() != newAlloc.isHoldBackConflicts())
+					if (isConflictIgnored(old) != isConflictIgnored(newAlloc))
 					{
 						// add an recalculate all if holdbackconflicts changed
 						toUpdate.put( newAlloc, null);

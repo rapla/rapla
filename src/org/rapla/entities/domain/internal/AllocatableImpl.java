@@ -34,6 +34,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -47,7 +48,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 public class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
     private ClassificationImpl classification;
-    private boolean holdBackConflicts;
     private Set<PermissionImpl> permissions = new LinkedHashSet<PermissionImpl>();
     private Date lastChanged;
     private Date createDate;
@@ -114,13 +114,6 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     public Classification getClassification() { return classification; }
     public void setClassification(Classification classification) {
         this.classification = (ClassificationImpl) classification;
-    }
-
-    public void setHoldBackConflicts(boolean enable) {
-        holdBackConflicts = enable;
-    }
-    public boolean isHoldBackConflicts() {
-        return holdBackConflicts;
     }
 
     public String getName(Locale locale) {
@@ -262,6 +255,17 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
         return hasAccess( user, Permission.READ );
     }
     
+    @Deprecated
+    public boolean isHoldBackConflicts()
+    {
+		String annotation = getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
+		if ( annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE))
+		{
+			return true;
+		}
+		return false;
+    }
+    
     public boolean canReadOnlyInformation(User user) 
     {
         return hasAccess( user, Permission.READ_ONLY_INFORMATION );
@@ -380,7 +384,6 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
             clone.permissions.add(it.next().clone());
         }
 
-        clone.holdBackConflicts = holdBackConflicts;
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
         @SuppressWarnings("unchecked")

@@ -38,9 +38,6 @@ public class AllocatableWriter extends ClassifiableWriter {
         printVersion( allocatable);
         printOwner(allocatable);
         printTimestamp(allocatable );
-        if (allocatable.isHoldBackConflicts()) {
-            att("holdbackconflicts","true");
-        }
         closeTag();
         printAnnotations( allocatable);
         printClassification(allocatable.getClassification());

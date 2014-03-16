@@ -42,6 +42,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationAnnotations;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -200,7 +201,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
     				    lookupEvent = getClientFacade().newReservation(classification,user);
     				    if ( uid != null)
     				    {
-    				    	lookupEvent.setAnnotation( Reservation.EXTERNALID, uid);
+    				    	lookupEvent.setAnnotation( ReservationAnnotations.KEY_EXTERNALID, uid);
     				    }
     		            classification.setValue(eventTypeNameAttributeKey, name);
     				}
@@ -345,7 +346,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
         List<Reservation> toImport = new ArrayList<Reservation>();
 		for (Reservation reservation:eventList)
 		{
-		    String uid = reservation.getAnnotation(Reservation.EXTERNALID);
+		    String uid = reservation.getAnnotation(ReservationAnnotations.KEY_EXTERNALID);
 		    if ( uid == null)
 		    {
 		    	eventsImported++;
@@ -380,7 +381,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 	     Reservation[] reservations = getQuery().getReservations(user, start, end, null);
 	     for ( Reservation r:reservations)
 	     {
-	         String key = r.getAnnotation(Reservation.EXTERNALID);
+	         String key = r.getAnnotation(ReservationAnnotations.KEY_EXTERNALID);
 	         if  ( key != null )
 	         {
 	             List<Entity<Reservation>> list = keyMap.get( key);

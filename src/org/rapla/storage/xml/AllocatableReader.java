@@ -23,6 +23,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.storage.internal.ReferenceHandler;
@@ -63,8 +64,6 @@ public class AllocatableReader extends RaplaXMLReader
         if (!namespaceURI.equals( RAPLA_NS ))
             return;
 
-        String holdBackString = getString( atts, "holdbackconflicts", "false" );
-        boolean holdBackConflicts = Boolean.valueOf( holdBackString ).booleanValue();
         if (localName.equals( "resource" ) || localName.equals( "person" ))
         {
             String createdAt = atts.getValue(  "created-at");
@@ -81,7 +80,18 @@ public class AllocatableReader extends RaplaXMLReader
             allocatable.setResolver( store );
             currentAnnotatable = allocatable;
             setId( allocatable, atts );
-            allocatable.setHoldBackConflicts( holdBackConflicts );
+            // support old holdback conflicts behaviour
+            {
+            	String holdBackString = getString( atts, "holdbackconflicts", "false" );
+                if ( Boolean.valueOf( holdBackString ) )
+            	{
+            		try {
+						allocatable.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+					} catch (IllegalAnnotationException e) {
+						throw createSAXParseException(e.getMessage(),e);
+					}
+            	}
+            }
             setVersionIfThere( allocatable, atts);
             setLastChangedBy(allocatable, atts);
             setOwner(allocatable, atts);

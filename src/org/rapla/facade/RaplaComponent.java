@@ -40,6 +40,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationAnnotations;
 import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -661,7 +662,7 @@ public class RaplaComponent
 		}
 		if ( obj instanceof Annotatable)
 		{
-			String template = ((Annotatable)obj).getAnnotation( Reservation.TEMPLATE);
+			String template = ((Annotatable)obj).getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
 			return template != null;
 		}
 		return false;

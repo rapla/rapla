@@ -223,12 +223,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         }
         Preferences preferences = operator.getPreferences( null, true );
-//        if ( preferences == null)
-//        {
-//        	
-//        }
-        //RaplaConfiguration encryptionConfig = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class, encryptionConfig);
+        //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
+        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class, new DefaultConfiguration("encryption"));
         RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
     	String importExportTimeZone = TimeZone.getDefault().getID();
 		if ( entry != null)

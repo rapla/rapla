@@ -587,7 +587,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     	return raplaLocale.getLocale();
     }
 
-    private String getEntryList(Collection<ColumnDef> entries) {
+    protected String getEntryList(Collection<ColumnDef> entries) {
 		StringBuffer buf = new StringBuffer();
 		for (ColumnDef col: entries) {
 		    if (buf.length() > 0 )
@@ -598,16 +598,19 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 		return buf.toString();
     }
-    private String getMarkerList(int length) {
+    
+    protected String getMarkerList(int length) {
 		StringBuffer buf = new StringBuffer();
 		for (int i=0;i<length; i++) {
 		    buf.append('?');
 		    if (i < length - 1)
-			buf.append(',');
+		    {
+		    	buf.append(',');
+		    }
 		}
 		return buf.toString();
     }
-    private String getUpdateList(Collection<ColumnDef> entries) {
+    protected String getUpdateList(Collection<ColumnDef> entries) {
 		StringBuffer buf = new StringBuffer();
 		for (ColumnDef col: entries) {
 			if (buf.length() > 0 )

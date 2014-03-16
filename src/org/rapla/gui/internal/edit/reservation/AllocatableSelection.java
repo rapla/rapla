@@ -91,6 +91,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -1110,7 +1111,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	private AllocationRendering calcConflictingAppointments(Allocatable allocatable)
 	{
 		AllocationRendering result = new AllocationRendering();
-		final boolean holdBackConflicts = allocatable.isHoldBackConflicts();
+		String annotation = allocatable.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION, null);
+		boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
 		for (int i = 0; i < appointments.length; i++)
 		{
 			Appointment appointment = appointments[i];

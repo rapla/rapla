@@ -51,6 +51,8 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationAnnotations;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PeriodImpl;
@@ -496,7 +498,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Iterator<Reservation> it =reservations.iterator();
 		while (it.hasNext()) {
 			Reservation reservation = it.next();
-			String reservationTemplate = reservation.getAnnotation( Reservation.TEMPLATE);
+			String reservationTemplate = reservation.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
 			if ( reservationTemplate != null )
 			{
 				it.remove();
@@ -587,7 +589,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date start = null;
 		Date end = null;
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
-		annotationQuery.put(Reservation.TEMPLATE, name);
+		annotationQuery.put(ReservationAnnotations.KEY_TEMPLATE, name);
 		Collection<Reservation> result = operator.getReservations(user,allocList, start, end, annotationQuery);
 		return result;
 	}
@@ -723,7 +725,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
 			{
 				Allocatable allocatable= entry.getKey();
-				if (allocatable.isHoldBackConflicts())
+				String annotation = allocatable.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
+				boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+				if ( holdBackConflicts)
 				{
 					continue;
 				}
@@ -1071,7 +1075,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         ReservationImpl reservation = new ReservationImpl(now ,now );
         if ( templateName != null )
         {
-        	reservation.setAnnotation(Reservation.TEMPLATE, templateName);
+        	reservation.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, templateName);
         }
         reservation.setClassification(classification);
         setNew(reservation, user);
@@ -1354,16 +1358,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 			if ( templateName != null )
 			{
-				r.setAnnotation(Reservation.TEMPLATE, templateName);
+				r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, templateName);
 			}
 			else
 			{
-				String originalTemplate = r.getAnnotation( Reservation.TEMPLATE);
+				String originalTemplate = r.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
 				if (originalTemplate != null)
 				{
-					r.setAnnotation(Reservation.TEMPLATE_COPYOF, originalTemplate);
+					r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
 				}
-				r.setAnnotation(Reservation.TEMPLATE, null);
+				r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, null);
 			}
 			// Hack for 1.6 compiler compatibility
 			Object r2 =  r;

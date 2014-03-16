@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 /****************************************************************
@@ -48,7 +49,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         {
             for ( Allocatable alloc:objectList)
             {
-                alloc.setHoldBackConflicts( value);
+            	alloc.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, value  ? ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE  : null); 
             }
         }
     }
@@ -59,7 +60,9 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         Set<Boolean> values = new HashSet<Boolean>();
         for ( Allocatable alloc:objectList)
         {
-            values.add(alloc.isHoldBackConflicts());
+            String annotation = alloc.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
+			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+			values.add(holdBackConflicts);
         }
         if ( values.size() ==  1)
         {

@@ -28,10 +28,12 @@ import org.rapla.entities.dynamictype.Classifiable;
     @see Reservation
  */
 public interface Allocatable extends Entity<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
-    final RaplaType<Allocatable> TYPE = new RaplaType<Allocatable>(Allocatable.class, "resource");
     
-    /** Conflicts for this allocatable should be ignored, if this flag is enabled.*/
-    void setHoldBackConflicts(boolean enable);
+	final RaplaType<Allocatable> TYPE = new RaplaType<Allocatable>(Allocatable.class, "resource");
+    
+    /** Conflicts for this allocatable should be ignored, if this flag is enabled.
+     * @deprecated use getAnnotation(IGNORE_CONFLICTS) instead*/
+	@Deprecated
     boolean isHoldBackConflicts();
     /** Static empty dummy Array. Mainly for using the toArray() method of the collection interface */
     Allocatable[] ALLOCATABLE_ARRAY = new Allocatable[0];

@@ -60,6 +60,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationAnnotations;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -191,7 +193,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     	List<String> templates = new ArrayList<String>();
         for ( Reservation r:reservations)
         {
-        	String templateName = r.getAnnotation(Reservation.TEMPLATE);
+        	String templateName = r.getAnnotation(ReservationAnnotations.KEY_TEMPLATE);
         	if ( templateName != null)
         	{
 				templates.add( templateName);
@@ -1302,7 +1304,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				buf.append(raplaLocale.formatDate(start));
 			}
 			
-			String template = reservation.getAnnotation(Reservation.TEMPLATE);
+			String template = reservation.getAnnotation(ReservationAnnotations.KEY_TEMPLATE);
 			if ( template != null)
 			{
 				buf.append(" in template " + template);
@@ -1423,7 +1425,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Map<Allocatable, Map<Appointment,Collection<Appointment>>> map = new HashMap<Allocatable, Map<Appointment,Collection<Appointment>>>();
         for ( Allocatable allocatable:allocatables)
         {
-			if ( allocatable.isHoldBackConflicts())
+            String annotation = allocatable.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
+			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+			if ( holdBackConflicts)
 			{
 				continue;
 			}

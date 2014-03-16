@@ -18,6 +18,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -49,6 +50,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PeriodImpl;
@@ -467,10 +469,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
     PermissionStorage permissionStorage;
 
-
     public AllocatableStorage(RaplaContext context ) throws RaplaException {
-        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] 
-             	{"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","IGNORE_CONFLICTS INTEGER NOT NULL","OWNER_ID INTEGER","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});  
+        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage( context, allocatableMap);
         addSubStorage(resourceAttributeStorage);
@@ -486,19 +486,96 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 	    checkAndAdd( schema, "CREATION_TIME");
 	    checkAndAdd( schema, "LAST_CHANGED");
 	    checkAndAdd( schema, "LAST_CHANGED_BY");
+	    checkAndConvertIgnoreConflictsField(schema);
     }
+    
+    protected void checkAndConvertIgnoreConflictsField(Map<String, TableDef> schema) throws SQLException, RaplaException {
+    	TableDef tableDef = schema.get(tableName);
+
+		String columnName = "IGNORE_CONFLICTS";
+		if (tableDef.getColumn(columnName) != null) 
+        {
+			getLogger().warn("Patching Database for table " + tableName + " converting " + columnName + " column to conflictCreation annotation in RESOURCE_ATTRIBUTE_VALUE");
+        	Map<String, Boolean> map = new HashMap<String,Boolean>();
+            {
+            	String sql = "SELECT ID," + columnName +" from " + tableName ;
+            	Statement stmt = null;
+            	ResultSet rset = null;
+		        try {
+		            stmt = con.createStatement();
+		            rset = stmt.executeQuery(sql);
+		            while (rset.next ()) {
+		            	String id= readId(rset,1, Allocatable.class);
+		             	Boolean ignoreConflicts = getInt( rset, 2 ) == 1;
+		             	map.put( id, ignoreConflicts);
+		            }
+		        } finally {
+		            if (rset != null)
+		                rset.close();
+		            if (stmt!=null)
+		                stmt.close();
+		        }
+            }
+            {
+            	PreparedStatement stmt = null;
+                try {
+                	String valueString = " (RESOURCE_ID,ATTRIBUTE_KEY,ATTRIBUTE_VALUE)";
+					String table = "RESOURCE_ATTRIBUTE_VALUE";
+					String insertSql = "insert into " + table + valueString + " values (" + getMarkerList(3) + ")";
+                    stmt = con.prepareStatement(insertSql);
+                    int count = 0;
+                    for ( String id:map.keySet())
+                    {
+                    	Boolean entry = map.get( id);
+                    	if ( entry != null && entry == true)
+                    	{
+                    	    int idInt = RaplaType.parseId(id);
+                		    stmt.setInt( 1, idInt );
+                    		setString(stmt,2, AttributeValueStorage.ANNOTATION_PREFIX + ResourceAnnotations.KEY_CONFLICT_CREATION);
+                	     	setString(stmt,3, ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+                	     	stmt.addBatch();
+                    		count++;
+                    	}
+                    }
+                    if ( count > 0)
+                    {
+                        stmt.executeBatch();
+                    } 
+                } catch (SQLException ex) {
+                    throw ex;
+                } finally {
+                    if (stmt!=null)
+                        stmt.close();
+                }
+            }
+            {
+            	String sql = "ALTER TABLE " + tableName + " DROP COLUMN " + columnName;
+                Statement stmt = con.createStatement();
+    			try
+    			{
+    				stmt.execute( sql);
+    			}
+    			finally
+    			{
+    				stmt.close();
+    			}
+            }
+        	con.commit();
+
+        }
+	}
        
+    @Override
 	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
 	  	AllocatableImpl allocatable = (AllocatableImpl) entity;
 	  	String typeKey = allocatable.getClassification().getType().getElementKey();
 		setId(stmt, 1, entity);
 	  	setString(stmt,2, typeKey );
-		setInt(stmt,3, allocatable.isHoldBackConflicts()? 1:0);
 		org.rapla.entities.Timestamp timestamp = allocatable;
-		setId(stmt,4, allocatable.getOwner() );
-		setDate(stmt, 5,timestamp.getCreateTime() );
-		setDate(stmt, 6,timestamp.getLastChangeTime() );
-		setId( stmt,7,timestamp.getLastChangedBy() );
+		setId(stmt,3, allocatable.getOwner() );
+		setDate(stmt, 4,timestamp.getCreateTime() );
+		setDate(stmt, 5,timestamp.getLastChangeTime() );
+		setId( stmt,6,timestamp.getLastChangedBy() );
 		stmt.addBatch();
       	return 1;
     }
@@ -506,14 +583,12 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         String id= readId(rset,1, Allocatable.class);
     	String typeKey = getString(rset,2 , null);
-		boolean ignoreConflicts = getInt( rset, 3 ) == 1;
-		final Date createDate = getDate( rset, 5);
-		final Date lastChanged = getDate( rset, 6);
+		final Date createDate = getDate( rset, 4);
+		final Date lastChanged = getDate( rset, 5);
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
     	allocatable.setId( id);
     	allocatable.setResolver( entityStore);
-    	allocatable.setHoldBackConflicts( ignoreConflicts );
     	DynamicType type = null;
     	if ( typeKey != null)
     	{
@@ -524,8 +599,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
             getLogger().error("Allocatable with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
             return;
         }
-		allocatable.setOwner( resolveFromId(rset, 4, User.class) );
-		allocatable.setLastChangedBy( resolveFromId(rset, 7, User.class) );
+		allocatable.setOwner( resolveFromId(rset, 3, User.class) );
+		allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	Classification classification = type.newClassification(false);
     	allocatable.setClassification( classification );
     	classificationMap.put( id, classification );
@@ -608,7 +683,6 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     }
 }
 
-/** This class should only be used within the ResourceStorage class*/
 class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     Map<String,Classification> classificationMap;
     Map<String,? extends Annotatable> annotableMap;
@@ -660,7 +734,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     	{
     		String valueAsString = annotatable.getAnnotation( key);
     		setId(stmt,1, classifiable);
-	        setString(stmt,2, annotationPrefix + key);
+	        setString(stmt,2, ANNOTATION_PREFIX + key);
 	     	setString(stmt,3, valueAsString);
 	     	stmt.addBatch();
             count++;
@@ -668,15 +742,15 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         return count;
     }
 
-    String annotationPrefix = "annotation:";
+  	public final static String ANNOTATION_PREFIX = "annotation:";
 	
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         Class<? extends Entity> idClass = foreignKeyName.indexOf("RESOURCE")>=0 ? Allocatable.class : Reservation.class;
 		String classifiableId = readId(rset, 1, idClass);
         String attributekey = rset.getString( 2 );
-        if ( attributekey.startsWith(annotationPrefix))
+        if ( attributekey.startsWith(ANNOTATION_PREFIX))
         {
-        	String annotationKey = attributekey.substring( annotationPrefix.length());
+        	String annotationKey = attributekey.substring( ANNOTATION_PREFIX.length());
         	Annotatable annotatable = annotableMap.get(classifiableId);
         	if (annotatable != null)
         	{
@@ -715,8 +789,6 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
             }
         }
     }
-
-
 }
 
 class PermissionStorage extends EntityStorage<Allocatable>  {
@@ -1029,8 +1101,39 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
     	//  no read xml
 
         String userId = readId(rset, 1,User.class, true);
-        User owner = null;
+        User owner ;
+        if  ( userId.equals(User.TYPE.getId(0)) )
+        {
+        	owner = null;
+        }
+        else
+        {
+        	User user = (User) entityStore.tryResolve( userId);
+        	if ( user != null)
+        	{
+        		owner = user;
+        	}
+        	else
+        	{
+        		getLogger().warn("User with id  " + userId + " not found ingnoring preference entry.");
+        		return;
+        	}
+        }
+   
+        String configRole = getString( rset, 2, null);
         String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        if ( configRole == null)
+        {
+        	getLogger().warn("Configuration role for " + preferenceId + " is null. Ignoring preference entry.");
+        	return;
+        }
+        String value = getString( rset,3, null);
+//        if (PreferencesImpl.isServerEntry(configRole))
+//        {
+//        	entityStore.putServerPreferences(owner,configRole, value);
+//        	return;
+//        }
+        
         PreferencesImpl preferences = (PreferencesImpl) get( preferenceId );
         if ( preferences == null) {
         	preferences = new PreferencesImpl();
@@ -1038,12 +1141,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences> {
         	preferences.setOwner(owner);
         	put( preferences );
         }
-        String configRole = getString( rset, 2, null);
-        if ( configRole == null)
-        {
-        	getLogger().warn("Configuration role for " + preferenceId + " is null. Ignoring entry.");
-        }
-        String value = getString( rset,3, null);
+      
         if ( value!= null) {
             preferences.putEntry(configRole, value);
         } else {
@@ -1164,5 +1262,7 @@ class UserGroupStorage extends EntityStorage<User> {
         user.addGroup( category);
     }
 }
+
+
 
 

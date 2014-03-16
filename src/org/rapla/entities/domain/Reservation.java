@@ -38,9 +38,6 @@ import org.rapla.entities.dynamictype.Classifiable;
  */
 public interface Reservation extends Entity<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable
 {
-	final String TEMPLATE = new String( "template"); 
-	final String TEMPLATE_COPYOF = new String( "copyof");
-	final String EXTERNALID = new String( "externalid"); 
 	final RaplaType<Reservation> TYPE = new RaplaType<Reservation>(Reservation.class,"reservation");
 
     public final int MAX_RESERVATION_LENGTH = 100;

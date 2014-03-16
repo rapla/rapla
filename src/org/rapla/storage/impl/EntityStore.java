@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -32,7 +33,7 @@ public class EntityStore implements EntityResolver {
     EntityResolver parent;
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashSet<Allocatable> allocatables = new HashSet<Allocatable>();
-    
+    Map<String,Map<String,String>> serverPreferences = new HashMap<String,Map<String,String>>();
     CategoryImpl superCategory;
     HashMap<Object,String> passwordList = new HashMap<Object,String>();
     int repositoryVersion;
@@ -206,6 +207,18 @@ public class EntityStore implements EntityResolver {
     {
         this.repositoryVersion = repositoryVersion;
     }
+
+//	public void putServerPreferences(User user, String configRole, String value) {
+//		String userId = user != null ? user.getId() : null;
+//		String preferenceIdFromUser = PreferencesImpl.getPreferenceIdFromUser(userId);
+//		Map<String, String> map = serverPreferences.get(preferenceIdFromUser);
+//		if ( map == null)
+//		{
+//			map = new HashMap<String,String>();
+//			serverPreferences.put(preferenceIdFromUser, map);
+//		}
+//		map.put(configRole, value);
+//	}
 
 
 
