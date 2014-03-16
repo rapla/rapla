@@ -41,6 +41,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
+/** Maps can only support one type value at a time. Especially  a mixture out of references and other values is not supported*/ 
 public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap {
    //this map stores all objects in the map 
    private Map<String,String> constants;
@@ -86,7 +87,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    }
 
    
-   /** This method is only used in storage operations, please dont use it from outside*/
+   /** This method is only used in storage operations, please dont use it from outside, as it skips type protection and resolving*/
    public void putPrivate(String key, Object value)
    {
 	   cachedEntries = null;
