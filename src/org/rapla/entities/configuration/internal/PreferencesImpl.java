@@ -244,6 +244,18 @@ public class PreferencesImpl extends SimpleEntity
 		String preferenceId = Preferences.TYPE.getId( userId != null ? RaplaType.parseId( userId): 0);
 		return preferenceId.intern();
 	}
+
+//	public static boolean isServerEntry(String configRole) {
+//		if ( configRole == null)
+//		{
+//			return false;
+//		}
+//		if ( configRole.startsWith("server.") || configRole.contains(".server."))
+//		{
+//			return true;
+//		}
+//		return false;
+//	}
 }
 
 
