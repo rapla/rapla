@@ -7,6 +7,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/server/commons-codec-1.8.jar">
 		<accessrules>
 			<accessrule kind="accessible" pattern="org/apache/commons/codec/binary/Base64"/>
+			<accessrule kind="accessible" pattern="org/apache/commons/codec/binary/BaseNCodec"/>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
@@ -30,7 +31,7 @@
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/ext/hsqldb-2.3.1.jar">
+	<classpathentry kind="lib" path="lib/ext/hsqldb-2.3.2.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
