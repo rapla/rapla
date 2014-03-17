@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.Vector;
 
 import org.rapla.ConnectInfo;
@@ -195,7 +194,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			{
 				try
 				{
-					Iterator<User> it = operator.getObjects(User.class).iterator();
+					Iterator<User> it = operator.getUsers().iterator();
 					User newUser = null;
 					while (it.hasNext()) {
 						User user = it.next();
@@ -627,7 +626,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Period[] getPeriods() throws RaplaException {
-		Period[] result = operator.getObjects(Period.class).toArray(Period.PERIOD_ARRAY);
+		Period[] result = operator.getPeriods().toArray(Period.PERIOD_ARRAY);
 		return result;
 	}
 
@@ -641,7 +640,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
-		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
+		Collection<DynamicType> collection = operator.getDynamicTypes();
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 			// ignore internal types for backward compatibility
@@ -657,20 +656,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public DynamicType getDynamicType(String elementKey) throws RaplaException {
-		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
-		for (Iterator<DynamicType> it = collection.iterator(); it.hasNext();) {
-			DynamicType type = it.next();
-			if (type.getElementKey().equals(elementKey))
-				return type;
-		}
-		throw new EntityNotFoundException("No dynamictype with elementKey "
+		DynamicType dynamicType = operator.getDynamicType(elementKey);
+		if ( dynamicType == null)
+		{
+			throw new EntityNotFoundException("No dynamictype with elementKey "
 				+ elementKey);
+		}
+		return dynamicType;
+		
 	}
 
 	public User[] getUsers() throws RaplaException {
-		Set<User> users = new TreeSet<User>();
-		users.addAll(operator.getObjects(User.class));
-		User[] result = users.toArray(User.USER_ARRAY);
+		User[] result = operator.getUsers().toArray(User.USER_ARRAY);
 		return result;
 	}
 

@@ -408,7 +408,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		
 		// resolve emails
-		Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
 		Map<String,Allocatable> resolvingMap = new HashMap<String,Allocatable>();
 		for (Entity entity: entities)
     	{

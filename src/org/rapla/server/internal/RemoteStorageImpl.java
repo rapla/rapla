@@ -336,7 +336,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        {
 	        	if ( !invalidatePermissions.isEmpty() || ! addAllUsersToConflictRefresh || !! groupsConflictRefresh.isEmpty())
 	        	{
-		        	Collection<User> allUsers = operator.getObjects( User.class);
+		        	Collection<User> allUsers = operator.getUsers();
 			        for ( Permission permission:invalidatePermissions)
 			        {
 			        	User user = permission.getUser();

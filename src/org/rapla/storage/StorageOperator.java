@@ -30,14 +30,15 @@ import java.util.Map;
 import org.rapla.ConnectInfo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -74,8 +75,11 @@ public interface StorageOperator extends EntityResolver {
 
     String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
 
-    <T extends RaplaObject> Collection<T> getObjects(Class<T> raplaType) throws RaplaException;
+    Collection<User> getUsers() throws RaplaException;
 
+    Collection<Period> getPeriods() throws RaplaException;
+    
+	Collection<DynamicType> getDynamicTypes() throws RaplaException;
 
     /** returns the user or null if a user with the given username was not found. */
     User getUser(String username) throws RaplaException;
@@ -126,5 +130,7 @@ public interface StorageOperator extends EntityResolver {
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 
 	Collection<String> getTemplateNames() throws RaplaException;
+
+	
 
 }

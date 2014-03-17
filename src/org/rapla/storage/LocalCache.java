@@ -178,11 +178,7 @@ public class LocalCache implements EntityResolver
     @SuppressWarnings("unchecked")
 	public <T extends Entity> Collection<T> getCollection(RaplaType type) {
         Set<? extends Entity> entities =  entityMap.get(type);
-
-        if ( Period.TYPE.equals( type)) {
-            entities = new TreeSet<Entity>( entities);
-        }
-
+       
         if (entities != null) {
             return (Collection<T>) entities;
         } else {

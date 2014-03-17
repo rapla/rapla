@@ -25,7 +25,6 @@ import junit.framework.TestSuite;
 
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.Entity;
-import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 
@@ -89,7 +88,7 @@ public class FileOperatorDiffTest extends RaplaTestCase {
         String testFile = "test-src/testdefault.xml";
         assertTrue(differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false);
         operator.connect();
-        Entity obj = (Entity)operator.getObjects( User.class).iterator().next();
+        Entity obj = operator.getUsers().iterator().next();
         Set<Entity>singleton = Collections.singleton(obj);
 		Collection<Entity> r = operator.editObjects(singleton, null);
         Entity clone = r.iterator().next();

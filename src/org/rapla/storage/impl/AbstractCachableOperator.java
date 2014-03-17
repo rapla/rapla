@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -38,13 +39,13 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Period;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -190,16 +191,30 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	 */
 	public abstract void dispatch(UpdateEvent evt) throws RaplaException;
 
-	public <T extends RaplaObject> Collection<T> getObjects(Class<T> typeClass)	throws RaplaException {
+
+	public Collection<User> getUsers()	throws RaplaException {
 		checkConnected();
 		Lock readLock = readLock();
 		try
 		{
-			RaplaType type = RaplaType.get(typeClass);
-			@SuppressWarnings("unchecked")
-			Collection<T> collection = (Collection<T>) cache.getCollection(type);
+			Collection<User> collection = cache.getCollection(User.TYPE);
 			// We return a clone to avoid synchronization Problems
-			return new LinkedHashSet<T>(collection);
+			return new LinkedHashSet<User>(collection);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
+
+	public Collection<Period> getPeriods()	throws RaplaException {
+		checkConnected();
+		Lock readLock = readLock();
+		try
+		{
+			Collection<Period> collection =  cache.getCollection(Period.TYPE);
+			// We return a clone to avoid synchronization Problems
+			return new TreeSet<Period>(collection);
 		}
 		finally
 		{
@@ -207,12 +222,37 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 	
+	public Collection<DynamicType> getDynamicTypes() throws RaplaException {
+		checkConnected();
+		Lock readLock = readLock();
+		try
+		{
+			Collection<DynamicType> collection =  cache.getCollection(DynamicType.TYPE);
+			// We return a clone to avoid synchronization Problems
+			return new ArrayList<DynamicType>( collection);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
+
 
 	public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
 	{
-		Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
-		Collection<? extends Allocatable> objects = getObjects( Allocatable.class);
-		allocatables.addAll(objects);
+		Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+		checkConnected();
+		Lock readLock = readLock();
+		try
+		{
+			Collection<Allocatable> collection = cache.getCollection(Allocatable.TYPE);
+			// We return a clone to avoid synchronization Problems
+			allocatables.addAll(collection);
+		}
+		finally
+		{
+			unlock(readLock);
+		}
 		removeFilteredClassifications(allocatables, filters);
 		return allocatables;
 		

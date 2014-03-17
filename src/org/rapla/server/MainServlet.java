@@ -340,7 +340,7 @@ public class MainServlet extends HttpServlet {
 	protected String getFirstAdmin() throws RaplaContextException,	RaplaException {
 		String username = null;
 		StorageOperator operator = getServer().getContext().lookup(StorageOperator.class);
-		for (User u:operator.getObjects( User.class))
+		for (User u:operator.getUsers())
 		{
 		    if ( u.isAdmin())
 		    {
