@@ -49,7 +49,7 @@ public class ReservationReader extends RaplaXMLReader {
     public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
         throws RaplaSAXParseException
     {
-    	if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( RAPLAATT_NS )) 
+    	if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( EXTENSION_NS )) 
         {
             dynAttHandler.setClassifiable(reservation);
             delegateElement(dynAttHandler,namespaceURI,localName,atts);

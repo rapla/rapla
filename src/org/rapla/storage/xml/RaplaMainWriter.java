@@ -12,7 +12,12 @@
 package org.rapla.storage.xml;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
@@ -23,6 +28,7 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
@@ -138,17 +144,27 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println("<!-- resources -->");
         // Print all resources that are not persons
         AllocatableWriter allocatableWriter = (AllocatableWriter)getWriterFor(Allocatable.TYPE);
-        for (Allocatable allocatable:cache.getCollection(Allocatable.class)) {
-            if ( allocatable.isPerson() )
-                continue;
-			allocatableWriter.printAllocatable(allocatable);
+        Collection<Allocatable> allAllocatables = cache.getCollection(Allocatable.class);
+        Map<String,List<Allocatable>> map = new LinkedHashMap<>();
+        
+		for (DynamicType type:cache.getCollection( DynamicType.class)) {
+			map.put( type.getId(), new ArrayList<Allocatable>());
         }
+		for (Allocatable allocatable:allAllocatables) {
+            Classification classification = allocatable.getClassification();
+			String id = classification.getType().getId();
+			List<Allocatable> list = map.get( id);
+			list.add( allocatable);
+        }
+
         // Print all Persons
-        for (Allocatable allocatable:cache.getCollection(Allocatable.class)) {
-        	if ( !allocatable.isPerson() )
-                continue;
-            allocatableWriter.printAllocatable(allocatable);
-        }
+		for ( String id : map.keySet())
+		{
+	        List<Allocatable> list = map.get( id);
+			for (Allocatable allocatable:list) {
+	            allocatableWriter.printAllocatable(allocatable);
+	        }
+		}
         println();
         closeElement("rapla:resources");
 

@@ -20,6 +20,8 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -31,7 +33,25 @@ public class AllocatableWriter extends ClassifiableWriter {
     }
 
     public void printAllocatable(Allocatable allocatable) throws IOException,RaplaException {
-        String tagName = allocatable.isPerson() ? "rapla:person" : "rapla:resource";
+        String tagName;
+        DynamicType type = allocatable.getClassification().getType();
+        String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        if ( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(annotation))
+        {
+        	tagName = "rapla:person";
+        }
+        else if( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(annotation))
+        {
+        	tagName = "rapla:resource";
+        }
+        else if( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE.equals(annotation))
+        {
+        	tagName = "rapla:extension";
+        }
+        else
+        {
+        	throw new RaplaException("No or unknown classification type '" + annotation + "'  set for " + allocatable.toString()  + " ignoring ");
+        }
         openTag(tagName);
         printId(allocatable);
         printVersion( allocatable);

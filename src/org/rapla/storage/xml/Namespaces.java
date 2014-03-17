@@ -17,14 +17,14 @@ public interface Namespaces {
     String RAPLA_NS = "http://rapla.sourceforge.net/rapla";
     String RELAXNG_NS = "http://relaxng.org/ns/structure/1.0";
     String DYNATT_NS = "http://rapla.sourceforge.net/dynamictype";
-    String RAPLAATT_NS = "http://rapla.sourceforge.net/raplatype";
+    String EXTENSION_NS = "http://rapla.sourceforge.net/extension";
     String ANNOTATION_NS = "http://rapla.sourceforge.net/annotation";
 
     String[][] NAMESPACE_ARRAY = {
         {RAPLA_NS,"rapla"}
         ,{RELAXNG_NS,"relax"}
         ,{DYNATT_NS,"dynatt"}
-        ,{RAPLAATT_NS,"att"}
+        ,{EXTENSION_NS,"ext"}
         ,{ANNOTATION_NS,"doc"}
     };
 }

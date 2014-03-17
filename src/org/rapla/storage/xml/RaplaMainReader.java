@@ -55,6 +55,7 @@ public class RaplaMainReader extends RaplaXMLReader
         localnameTable.put( "preferences", readerMap.get( Preferences.TYPE ) );
         localnameTable.put( "resource", readerMap.get( Allocatable.TYPE ) );
         localnameTable.put( "person", readerMap.get( Allocatable.TYPE ) );
+        localnameTable.put( "extension", readerMap.get( Allocatable.TYPE ) );
         localnameTable.put( "period", readerMap.get( Period.TYPE ) );
         localnameTable.put( "reservation", readerMap.get( Reservation.TYPE ) );
         localnameTable.put( "conflict", readerMap.get( Conflict.TYPE ) );

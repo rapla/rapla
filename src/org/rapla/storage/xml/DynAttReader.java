@@ -41,7 +41,7 @@ class DynAttReader extends RaplaXMLReader {
     {
         if (level == entryLevel) {
         	DynamicType dynamicType;
-        	String typeName =  Namespaces.RAPLAATT_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
+        	String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
         	dynamicType = getDynamicType(typeName);
         	if (dynamicType == null)
         		throw createSAXParseException( "Dynanic type with name  '" + typeName + "' not found." );

@@ -50,7 +50,7 @@ public class AllocatableReader extends RaplaXMLReader
         String localName,
         RaplaSAXAttributes atts ) throws RaplaSAXParseException
     {
-        if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( RAPLAATT_NS ))
+        if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( EXTENSION_NS ))
         {
             dynAttHandler.setClassifiable( allocatable );
             delegateElement(
@@ -64,40 +64,6 @@ public class AllocatableReader extends RaplaXMLReader
         if (!namespaceURI.equals( RAPLA_NS ))
             return;
 
-        if (localName.equals( "resource" ) || localName.equals( "person" ))
-        {
-            String createdAt = atts.getValue(  "created-at");
-            String lastChanged = atts.getValue( "last-changed");
-
-            Date createTime = null;
-            Date changeTime = createTime;
-            if (createdAt != null)
-                createTime = parseTimestamp( createdAt);
-            if (lastChanged != null)
-                changeTime = parseTimestamp( lastChanged);
-
-            allocatable = new AllocatableImpl(createTime, changeTime);
-            allocatable.setResolver( store );
-            currentAnnotatable = allocatable;
-            setId( allocatable, atts );
-            // support old holdback conflicts behaviour
-            {
-            	String holdBackString = getString( atts, "holdbackconflicts", "false" );
-                if ( Boolean.valueOf( holdBackString ) )
-            	{
-            		try {
-						allocatable.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-					} catch (IllegalAnnotationException e) {
-						throw createSAXParseException(e.getMessage(),e);
-					}
-            	}
-            }
-            setVersionIfThere( allocatable, atts);
-            setLastChangedBy(allocatable, atts);
-            setOwner(allocatable, atts);
-        }
-
-        
         if (localName.equals( "permission" ))
         {
             PermissionImpl permission = new PermissionImpl();
@@ -162,13 +128,47 @@ public class AllocatableReader extends RaplaXMLReader
             permission.setAccessLevel( matchingLevel );
             allocatable.addPermission( permission );
         }
-        
-        if (localName.equals( "annotation" ) )
+        else if (localName.equals( "annotation" ) )
         {
             annotationKey = atts.getValue( "key" );
             Assert.notNull( annotationKey, "key attribute cannot be null" );
             startContent();
         }
+        else
+        {
+            String createdAt = atts.getValue(  "created-at");
+            String lastChanged = atts.getValue( "last-changed");
+
+            Date createTime = null;
+            Date changeTime = createTime;
+            if (createdAt != null)
+                createTime = parseTimestamp( createdAt);
+            if (lastChanged != null)
+                changeTime = parseTimestamp( lastChanged);
+
+            allocatable = new AllocatableImpl(createTime, changeTime);
+            allocatable.setResolver( store );
+            currentAnnotatable = allocatable;
+            setId( allocatable, atts );
+            // support old holdback conflicts behaviour
+            {
+            	String holdBackString = getString( atts, "holdbackconflicts", "false" );
+                if ( Boolean.valueOf( holdBackString ) )
+            	{
+            		try {
+						allocatable.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+					} catch (IllegalAnnotationException e) {
+						throw createSAXParseException(e.getMessage(),e);
+					}
+            	}
+            }
+            setVersionIfThere( allocatable, atts);
+            setLastChangedBy(allocatable, atts);
+            setOwner(allocatable, atts);
+        }
+
+        
+        
         
     }
 
@@ -178,14 +178,17 @@ public class AllocatableReader extends RaplaXMLReader
         if (!namespaceURI.equals( RAPLA_NS ))
             return;
 
-        if (localName.equals( "resource" ) || localName.equals( "person" ))
+        if (localName.equals( "resource" ) || localName.equals( "person" ) )
         {
             if (allocatable.getPermissions().length == 0)
                 allocatable.addPermission( new PermissionImpl() );
             add( allocatable );
         }
-        
-        if (localName.equals( "annotation" ) && namespaceURI.equals( RAPLA_NS ))
+        else if (localName.equals( "extension" ) )
+        {
+            add( allocatable );
+        }
+        else if (localName.equals( "annotation" ) )
         {
             try
             {

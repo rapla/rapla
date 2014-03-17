@@ -71,7 +71,6 @@ public class LocalCache implements EntityResolver
     
     Map<RaplaType,Set<? extends Entity>> entityMap;
     
-
     public LocalCache() {
         
         entityMap = new LinkedHashMap<RaplaType, Set<? extends Entity>>();
@@ -186,7 +185,7 @@ public class LocalCache implements EntityResolver
                                        +  type);
         }
     }
-
+    
     @SuppressWarnings("unchecked")
     public <T extends RaplaObject> Collection<T> getCollection(Class<T> clazz) {
     	RaplaType type = RaplaType.get(clazz);

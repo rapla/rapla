@@ -46,7 +46,8 @@ public class RaplaKeyStorage extends RaplaComponent
         DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
         ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
         newClassificationFilter.addEqualsRule("name", "root");
-        Allocatable[] store = getQuery().getAllocatables( newClassificationFilter.toArray());
+        ClassificationFilter[] array = newClassificationFilter.toArray();
+		Allocatable[] store = getQuery().getAllocatables( array);
         Allocatable key;
         if ( store.length == 0)
         {
