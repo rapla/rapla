@@ -52,15 +52,7 @@ class ClassifiableWriter extends RaplaXMLWriter {
 		}
 		String elementName = namespacePrefix + elementKey;
         
-		if (isIdOnly()) {
-			String typeElementName = namespacePrefix + "type";
-			openTag(typeElementName);
-            printIdRef(dynamicType);
-            closeTag();
-        } else {
-            openElement(elementName);
-        }
-
+		openElement(elementName);
         Attribute[] attributes = classification.getAttributes();
         for (int i=0;i<attributes.length;i++) {
             Attribute attribute = attributes[i];
@@ -68,30 +60,15 @@ class ClassifiableWriter extends RaplaXMLWriter {
             for ( Object value:values)
             {
             	String attributeName = namespacePrefix + attribute.getKey();
-	            if (isIdOnly()) {
-	            	String typeIdOnlyAttributeName = namespacePrefix + "attribute";
-	            	openTag(typeIdOnlyAttributeName);
-	                printIdRef(attribute);
-	                closeTagOnLine();
-	            } else {
-	                openElementOnLine(attributeName);
-	            }
-	            printAttributeValue(attribute, value);
-	            if (isIdOnly()) {
-	            	String typeIdOnlyAttributeName = namespacePrefix + "attribute";
-	            	closeElementOnLine(typeIdOnlyAttributeName);
-	            } else {
-	                closeElementOnLine(attributeName);
-	            }
-	            println();
+            	openElementOnLine(attributeName);
+	            
+            	printAttributeValue(attribute, value);
+            	closeElementOnLine(attributeName);
+
+            	println();
             }
         }
-        if (isIdOnly()) {
-        	String typeElementName = namespacePrefix + "type";
-            closeElement(typeElementName);
-        }  else {
-            closeElement(elementName);
-        }
+        closeElement(elementName);
     }
     
 
