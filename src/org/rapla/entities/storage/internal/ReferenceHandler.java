@@ -240,7 +240,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
              return null;
          if ( resolver == null)
          {
-        	 throw new IllegalStateException("Resover not set");
+        	 throw new IllegalStateException("Resolver not set");
          }
  		Entity resolved = resolver.tryResolve( id );
 		if ( resolved == null)

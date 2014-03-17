@@ -682,14 +682,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
-		if (classificationType == null) {
-			return operator.getObjects(DynamicType.class).toArray(DynamicType.DYNAMICTYPE_ARRAY);
-		}
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
 		Collection<DynamicType> collection = operator.getObjects(DynamicType.class);
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			if (classificationType.equals(classificationTypeAnno)) {
+			// ignore internal types for backward compatibility
+			if ((( DynamicTypeImpl)type).isInternal())
+			{
+				continue;
+			}
+			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
 				result.add(type);
 			}
 		}

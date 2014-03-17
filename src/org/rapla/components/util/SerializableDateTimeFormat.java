@@ -89,7 +89,7 @@ public class SerializableDateTimeFormat
 
 	private int indexOfSeperator(String date) {
 		// First try the new ISO8601
-		int indexOfSeperator = date.indexOf( DATE_TIME_SEPERATOR );
+		int indexOfSeperator = date.indexOf( 'T' );
 		if ( indexOfSeperator<0)
 		{
 			//then search for a space

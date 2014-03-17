@@ -49,7 +49,6 @@ public interface StorageOperator extends EntityResolver {
 	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
 	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
 	
-
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();

@@ -124,6 +124,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 				type.getName().setName("en", "anonymous");
 				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+				type.setResolver( this);
 				type.setReadOnly( true);
 			}
 			{
@@ -134,6 +135,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 				type.getName().setName("en", "anonymous");
+				type.setResolver( this);
 				type.setReadOnly( true);
 			}
 			{
@@ -143,6 +145,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				type.setId(DynamicType.TYPE.getId( -2));
 				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 				type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+				type.setResolver( this);
 				type.setReadOnly( true);
 			}
 			
@@ -1051,10 +1054,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	// Count dynamic-types to ensure that there is least one dynamic type left
-	private void checkDynamicType(Collection<Entity>entities, String classificationType) throws RaplaException {
+	private void checkDynamicType(Collection<Entity>entities, String[] classificationTypes) throws RaplaException {
+		int count = 0;
+		for ( String classificationType: classificationTypes)
+		{
+			count += countDynamicTypes(entities, classificationType);
+		}
 		Collection<Entity>allTypes = cache.getCollection(DynamicType.TYPE);
-		int count = countDynamicTypes(entities, classificationType);
-		if (count >= 0	&& count >= countDynamicTypes(allTypes, classificationType)) {
+		int countAll = 0;
+		for ( String classificationType: classificationTypes)
+		{
+			countAll = countDynamicTypes(allTypes, classificationType);
+		}
+		if (count >= 0	&& count >= countAll) {
 			throw new RaplaException(i18n.getString("error.one_type_requiered"));
 		}
 	}
@@ -1289,10 +1301,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			throw new DependencyException(getString("error.dependencies"),names.toArray( new String[]{}));
 		}
 		// Count dynamic-types to ensure that there is least one dynamic type
-		// for resources, for persons and for reservations
-		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-		checkDynamicType(removeEntities, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+		// for reservations and one for resources or persons
+		checkDynamicType(removeEntities, new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
+		checkDynamicType(removeEntities, new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON});
 	}
 
 	private Set<Entity> getDeletedCategories(Iterable<Entity> storeObjects) {
