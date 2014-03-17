@@ -54,7 +54,6 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -197,14 +196,6 @@ public class RemoteOperator
 		}
 	}
 	
-    public void saveData(LocalCache cache) throws RaplaException {
-        throw new RaplaException("RemoteOperator doesn't support storing complete cache, yet!");
-    }
-    
-    public String authenticate(String username, String password) throws RaplaException {
-        throw new RaplaException("RemoteOperator only supports login method!");
-    }
-
 //    /** implementation specific. Should be private */
 //    public void serverHangup() {
 //        getLogger().warn("Server hangup");
@@ -631,17 +622,19 @@ public class RemoteOperator
 		{
 			AllocatableImpl unresolved = new AllocatableImpl(null, null);
 			unresolved.setId( id);
-			unresolved.setClassification( getUnresolvedAllocatableType().newClassification());
+			unresolved.setClassification( getDynamicType(UNRESOLVED_RESOURCE_TYPE).newClassification());
 			return unresolved;
 		}
 		// if the type is not found we test if its an anonymous type (key = 0)
 		if ( id.startsWith(DynamicType.TYPE.getLocalName() + "_0"))
 		{
-			DynamicType unresolvedReservation = getAnonymousReservationType();
+			DynamicType unresolvedReservation = getDynamicType(ANONYMOUSEVENT_TYPE);
 			return (Entity) unresolvedReservation;
 		}
 		return null;
     }
+    
+
     
     @Override
     public Entity resolve(String id) throws EntityNotFoundException {

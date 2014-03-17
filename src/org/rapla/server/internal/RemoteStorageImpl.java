@@ -51,7 +51,9 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -72,6 +74,7 @@ import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -219,8 +222,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        for ( Iterator<Entity>it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
 	        {
 	            Entity obj = it.next();
-	        	RaplaType<?> raplaType = obj.getRaplaType();
-	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
+	            if (!isTransferedToClient(obj))
 	        	{
 	        		continue;
 	        	}
@@ -231,8 +233,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        for ( Iterator<Entity>it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
 	        {
 	            Entity obj =  it.next();
-	        	RaplaType<?> raplaType = obj.getRaplaType();
-	        	if ((raplaType == Appointment.TYPE || raplaType == Reservation.TYPE) && !RaplaComponent.isTemplate(obj))
+	        	if (!isTransferedToClient(obj))
 	        	{
 	        		continue;
 	        	}
@@ -257,7 +258,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			{
 				Change operation = operations.next();
 				RaplaObject newObject = operation.getNew();
-				if ( newObject.getRaplaType().is( Allocatable.TYPE))
+				if ( newObject.getRaplaType().is( Allocatable.TYPE) && isTransferedToClient(newObject))
 				{
 					Allocatable newAlloc = (Allocatable) newObject;
 					Allocatable current = (Allocatable) operation.getOld();
@@ -401,7 +402,32 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     	}
     }
 
-    @Override
+    private boolean isTransferedToClient(RaplaObject obj) 
+    {
+    	RaplaType<?> raplaType = obj.getRaplaType();
+    	if (raplaType == Appointment.TYPE || raplaType == Reservation.TYPE)
+    	{
+    		return false;
+    	}
+	    if ( obj instanceof DynamicType)
+	    {
+	    	if (!DynamicTypeImpl.isTransferedToClient(( DynamicType) obj))
+    		{
+    			return false;
+    		}
+	    }
+    	if ( obj instanceof Classifiable)
+    	{
+    		if (!DynamicTypeImpl.isTransferedToClient(( Classifiable) obj))
+    		{
+    			return false;
+    		}
+    	}
+    	return true;
+	
+    }
+
+	@Override
 	public void dispose() {
     	if ( scheduledCleanup != null)
     	{
@@ -512,7 +538,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     evt.setRepositoryVersion(repositoryVersion);
                     for ( Entity entity: visibleEntities)
                     {
-                    	evt.putStore(entity);
+                    	if ( isTransferedToClient(entity))
+                    	{
+                    		evt.putStore(entity);
+                    	}
                     }
                     return new ResultImpl<UpdateEvent>( evt);
             	}
@@ -547,6 +576,20 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                for ( String id:ids)
                 	{
 	                    Entity entity = operator.resolve(id);
+	                    if ( entity instanceof Classifiable)
+	                	{
+	                		if (!DynamicTypeImpl.isTransferedToClient(( Classifiable) entity))
+	                		{
+	                			throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
+	                		}
+	                	}
+	                    if ( entity instanceof DynamicType)
+	                    {
+	                    	if (!DynamicTypeImpl.isTransferedToClient(( DynamicType) entity))
+	                		{
+	                			throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
+	                		}
+	                    }
 	                    if ( entity.getRaplaType() == Reservation.TYPE)
                     	{
                     		checkAndMakeReservationsAnonymous(sessionUser,	entity);
@@ -629,7 +672,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					// we can safely change the reservation info here because we cloned it in transaction safe before
 					reservation.setReadOnly( false);
-					DynamicType anonymousReservationType = operator.getAnonymousReservationType();
+					DynamicType anonymousReservationType = operator.getDynamicType( StorageOperator.ANONYMOUSEVENT_TYPE);
 					reservation.setClassification( anonymousReservationType.newClassification());
 				}
 			}
@@ -1032,8 +1075,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
             
-			protected void processClientReadable(User user,
-					UpdateEvent safeResultEvent, Entity obj, boolean remove) {
+			protected void processClientReadable(User user,UpdateEvent safeResultEvent, Entity obj, boolean remove) {
 				boolean clientStore = true;
 				if (user != null )
 				{

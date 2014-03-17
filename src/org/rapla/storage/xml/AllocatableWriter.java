@@ -31,8 +31,7 @@ public class AllocatableWriter extends ClassifiableWriter {
     }
 
     public void printAllocatable(Allocatable allocatable) throws IOException,RaplaException {
-        String tagName = allocatable.isPerson()?
-            "rapla:person" : "rapla:resource";
+        String tagName = allocatable.isPerson() ? "rapla:person" : "rapla:resource";
         openTag(tagName);
         printId(allocatable);
         printVersion( allocatable);

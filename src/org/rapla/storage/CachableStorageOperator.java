@@ -14,7 +14,10 @@
  */
 package org.rapla.storage;
 
-import org.rapla.entities.dynamictype.DynamicType;
+import java.util.List;
+
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 
 public interface CachableStorageOperator extends StorageOperator {
@@ -24,10 +27,10 @@ public interface CachableStorageOperator extends StorageOperator {
     String authenticate(String username,String password) throws RaplaException;
     void saveData(LocalCache cache) throws RaplaException;
     
-    DynamicType getUnresolvedAllocatableType(); 
+    public List<Entity> getVisibleEntities(final User user) throws RaplaException;
 	
-	DynamicType getAnonymousReservationType();
-	
+    //DynamicType getUnresolvedAllocatableType(); 
+    //DynamicType getAnonymousReservationType();
 	
 }
 

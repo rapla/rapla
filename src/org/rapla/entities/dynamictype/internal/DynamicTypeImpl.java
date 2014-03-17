@@ -27,9 +27,11 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
@@ -66,7 +68,13 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
     }
 
     public RaplaType<DynamicType> getRaplaType() {return TYPE;}
-
+    
+    public boolean isInternal()
+    {
+    	boolean result =elementKey.startsWith("rapla:");
+    	return result;
+    }
+    
     public Classification newClassification() {
     	return newClassification( true );
     }
@@ -430,6 +438,21 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 	}
 
 	
+	public static boolean isInternalType(Classifiable classifiable) {
+		boolean isRaplaType =false;
+		Classification classification = classifiable.getClassification();
+		if ( classification != null )
+		{
+			String classificationType = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+			if ( classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE))
+			{
+				isRaplaType = true;
+			}
+		}
+		return isRaplaType;
+	}
+
+
 	static class DynamicTypeParseContext implements ParseContext {
 		private DynamicTypeImpl type;
 
@@ -520,6 +543,26 @@ public class DynamicTypeImpl extends SimpleEntity implements DynamicType, Parent
 				return "";
 			}
 		}
+	}
+
+
+	public static boolean isTransferedToClient(Classifiable classifiable) {
+		if ( classifiable == null)
+		{
+			return false;
+		}
+		DynamicType type = classifiable.getClassification().getType();
+		boolean result = isTransferedToClient(type);
+		return result;
+	}
+
+	public static boolean isTransferedToClient(DynamicType type) {
+		String annotation = type.getAnnotation( DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT);
+		if ( annotation == null)
+		{
+			return true;
+		}
+		return !annotation.equals( DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
 	}
 
 

@@ -19,6 +19,7 @@ import java.util.Collection;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -31,9 +32,29 @@ class ClassifiableWriter extends RaplaXMLWriter {
         if (classification == null)
             return;
         DynamicType dynamicType = classification.getType();
-        String elementName = "dynatt:" + dynamicType.getElementKey();
-        if (isIdOnly()) {
-            openTag("dynatt:type");
+        boolean internal = ((DynamicTypeImpl)dynamicType).isInternal();
+		String namespacePrefix = internal ? "att:" : "dynatt:";
+		String elementKey = dynamicType.getElementKey();
+		if ( internal )
+		{
+			if (!elementKey.startsWith("rapla:"))
+			{
+				throw new RaplaException("keys for internal type must start with rapla:");
+			}
+			elementKey = elementKey.substring("rapla:".length() );
+		}
+		else
+		{
+			if (elementKey.startsWith("rapla:"))
+			{
+				throw new RaplaException("keys for non internal type can't start with rapla:");
+			}
+		}
+		String elementName = namespacePrefix + elementKey;
+        
+		if (isIdOnly()) {
+			String typeElementName = namespacePrefix + "type";
+			openTag(typeElementName);
             printIdRef(dynamicType);
             closeTag();
         } else {
@@ -46,9 +67,10 @@ class ClassifiableWriter extends RaplaXMLWriter {
             Collection<?> values = classification.getValues(attribute);
             for ( Object value:values)
             {
-	            String attributeName = "dynatt:" + attribute.getKey();
+            	String attributeName = namespacePrefix + attribute.getKey();
 	            if (isIdOnly()) {
-	                openTag("dynatt:attribute");
+	            	String typeIdOnlyAttributeName = namespacePrefix + "attribute";
+	            	openTag(typeIdOnlyAttributeName);
 	                printIdRef(attribute);
 	                closeTagOnLine();
 	            } else {
@@ -56,7 +78,8 @@ class ClassifiableWriter extends RaplaXMLWriter {
 	            }
 	            printAttributeValue(attribute, value);
 	            if (isIdOnly()) {
-	                closeElementOnLine("dynatt:attribute");
+	            	String typeIdOnlyAttributeName = namespacePrefix + "attribute";
+	            	closeElementOnLine(typeIdOnlyAttributeName);
 	            } else {
 	                closeElementOnLine(attributeName);
 	            }
@@ -64,7 +87,8 @@ class ClassifiableWriter extends RaplaXMLWriter {
             }
         }
         if (isIdOnly()) {
-            closeElement("dynatt:type");
+        	String typeElementName = namespacePrefix + "type";
+            closeElement(typeElementName);
         }  else {
             closeElement(elementName);
         }

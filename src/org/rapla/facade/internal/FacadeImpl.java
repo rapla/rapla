@@ -465,6 +465,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				continue;
 			if (!allocatable.canRead(workingUser))
 				it.remove();
+			
 		}
 
 		removeFilteredClassifications(allocatables, filters);
@@ -517,6 +518,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	private void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {
 		if (filters == null)
 		{
+			// remove internal types if not specified in filters to remain backwards compatibility 
+			Iterator<? extends Classifiable> it = list.iterator();
+			while (it.hasNext()) {
+				Classifiable classifiable = it.next();
+				if ( DynamicTypeImpl.isInternalType(classifiable) )
+				{
+					it.remove();
+				}
+			}
 			return;
 		}
 
@@ -1092,7 +1102,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.addPermission(allocatable.newPermission());
         
-        if (!user.isAdmin()) {
+        if (user != null && !user.isAdmin()) {
             Permission permission = allocatable.newPermission();
             permission.setUser(user);
             permission.setAccessLevel(Permission.ADMIN);
@@ -1264,9 +1274,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				getLogger().debug("new " + entity.getId());
 			}
 	
-			if (entity instanceof Ownable) {
+			if (entity instanceof Reservation) {
 				if (user == null)
-					throw new RaplaException("The object " + entity + " needs an owner but user specified is null ");
+					throw new RaplaException("The reservation " + entity + " needs an owner but user specified is null ");
 				((Ownable) entity).setOwner(user);
 			}
 		}

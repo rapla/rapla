@@ -212,8 +212,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
             RaplaInput xmlAdapter = new RaplaInput( getLogger().getChildLogger( "reading" ) );
-
-            EntityStore entityStore = new EntityStore( null, cache.getSuperCategory() );
+            cache.put( this.unresolvedAllocatableType);
+            cache.put( this.taskType);
+            cache.put( this.anonymousReservationType);
+            
+            EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
             RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, idTable );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             xmlAdapter.read( loadingURL, contentHandler, validate );

@@ -28,12 +28,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 
+import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -45,6 +47,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -85,6 +88,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdTable;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.RaplaNewVersionException;
@@ -96,7 +101,7 @@ import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
 
-public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable {
+public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator {
 	protected IdTable idTable;
 	protected String encryption = "sha-1";
 	private ConflictFinder conflictFinder;
@@ -105,18 +110,67 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	CommandScheduler scheduler;
 	Cancelable cleanConflictsTask;
 	
+	protected DynamicTypeImpl unresolvedAllocatableType = new DynamicTypeImpl();
+	protected DynamicTypeImpl anonymousReservationType = new DynamicTypeImpl();
+	protected DynamicTypeImpl taskType = new DynamicTypeImpl();
+    {
+    	try
+    	{
+	    	{
+				DynamicTypeImpl type = unresolvedAllocatableType;
+				String key = UNRESOLVED_RESOURCE_TYPE;
+				type.setElementKey(key);
+				type.setId(DynamicType.TYPE.getId(-1));
+				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+				type.getName().setName("en", "anonymous");
+				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+				type.setReadOnly( true);
+			}
+			{
+				DynamicTypeImpl type = anonymousReservationType;
+				String key = ANONYMOUSEVENT_TYPE;
+				type.setElementKey(key);
+				type.setId(DynamicType.TYPE.getId( 0));
+				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+				type.getName().setName("en", "anonymous");
+				type.setReadOnly( true);
+			}
+			{
+				DynamicTypeImpl type = taskType;
+				String key = SYNCHRONIZATIONTASK_TYPE;
+				type.setElementKey(key);
+				type.setId(DynamicType.TYPE.getId( -2));
+				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+				type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+				type.setReadOnly( true);
+			}
+			
+    	}
+    	catch ( IllegalAnnotationException ex)
+    	{
+    		throw new IllegalStateException( ex.getMessage());
+    	}
+    }
+	
 	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
 		super( context, logger);
 		scheduler = context.lookup( CommandScheduler.class);
 	}
 
-	/**
-	 * implement this method to implement the persistent mechanism. By default it
-	 * calls <li>check()</li> <li>update()</li> <li>fireStorageUpdate()</li> <li>
-	 * fireTriggerEvents()</li> You should not call dispatch directly from the
-	 * client. Use storeObjects and removeObjects instead.
-	 */
-	abstract public void dispatch(final UpdateEvent evt) throws RaplaException;
+	public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
+	{
+		Lock readLock = readLock();
+		try
+		{
+			cmd.execute( cache );
+		}
+		finally
+		{
+			unlock( readLock);
+		}
+	}
+
 	
 	public String getEncryption() {
 		return encryption;
@@ -313,8 +367,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 
-	public void changeEmail(User user, String newEmail)
-			throws RaplaException {
+	public void changeEmail(User user, String newEmail)	throws RaplaException {
 		User editableUser = user.isReadOnly() ? editObject(user, (User) user) : user;
 		Allocatable personReference = editableUser.getPerson();
 		ArrayList<Entity>arrayList = new ArrayList<Entity>();
@@ -1523,7 +1576,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	private boolean isAllocated(Collection<Allocatable> allocatables,
-			Appointment appointment, Collection<Reservation> ignoreList) throws RaplaException {
+			Appointment appointment, Collection<Reservation> ignoreList) throws RaplaException 
+	{
 		Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindings(allocatables, Collections.singleton( appointment) , ignoreList);
 		for (Map.Entry<Allocatable, Collection<Appointment>> entry: firstAllocatableBindings.entrySet())
 		{
@@ -1535,8 +1589,80 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return false;
 	}
 
+    public List<Entity> getVisibleEntities(final User user)throws RaplaException {
+		checkConnected();
+		Lock readLock = readLock();
+		try
+		{
+			List<Entity> result = new ArrayList<Entity>();
+			result.add( getSuperCategory());
+			@SuppressWarnings("deprecation")
+			Set<Entry<RaplaType, Set<? extends Entity>>> entrySet = cache.entrySet();
+			for ( Map.Entry<RaplaType,Set<? extends Entity>> entry:entrySet )
+			{
+				RaplaType raplaType = entry.getKey();
+				if (   Conflict.TYPE.equals( raplaType ))
+				{
+					continue;
+				}
+				@SuppressWarnings("unchecked")
+				Set<Entity>set =  (Set<Entity>) entry.getValue();
+				if ( Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType) || Attribute.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
+				{
+					continue;
+				}
+				if (user == null )
+				{
+					result.addAll( set);
+				}
+				else
+				{
+					if (   Preferences.TYPE.equals( raplaType )  )
+					{
+						{
+							PreferencesImpl preferences = cache.getPreferencesForUserId( null );
+							if ( preferences != null)
+							{
+								result.add( preferences);
+							}
+						}
+						{
+							String userId = user.getId();
+							Assert.notNull( userId);
+							PreferencesImpl preferences = cache.getPreferencesForUserId( userId );
+							if ( preferences != null)
+							{
+								result.add( preferences);
+							}
+						}
+					}
+					else if (   Allocatable.TYPE.equals( raplaType )  )
+					{
+						for ( Entity obj: set)
+						{
+							Allocatable alloc = (Allocatable) obj;
+							if (user.isAdmin() || alloc.canReadOnlyInformation( user))
+							{
+								result.add( obj);
+							}
+						}
+					}
+					else
+					{
+						result.addAll( set);
+					}
+				}
+			}
+			return result;
+		}
+		finally
+		{
+			unlock(readLock);
+		}
+	}
     
-	private void checkAbandonedAppointments(Collection<Allocatable> allocatables) {
+    
+    private void checkAbandonedAppointments(Collection<Allocatable> allocatables) {
 		
 		Logger logger = getLogger().getChildLogger("appointmentcheck");
 		try
@@ -1750,4 +1876,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			
 		}
 	}
+	
+	
+	
 }

@@ -45,10 +45,15 @@ import org.rapla.framework.RaplaLocale;
 public interface StorageOperator extends EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;
 	   
+	public final static String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
+	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
+	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
+	
+
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();
-    /** Refreshes the data. This could be helpfull if the storage
+    /** Refreshes the data. This could be helpful if the storage
      * operator uses a cache and does not support "Active Monitoring"
      * of the original data */
     void refresh() throws RaplaException;
@@ -70,8 +75,6 @@ public interface StorageOperator extends EntityResolver {
 
     <T extends RaplaObject> Collection<T> getObjects(Class<T> raplaType) throws RaplaException;
 
-    /** returns all the objects (except reservations)that are visible for the current user */
-    Collection<Entity> getVisibleEntities(User user) throws RaplaException;
 
     /** returns the user or null if a user with the given username was not found. */
     User getUser(String username) throws RaplaException;

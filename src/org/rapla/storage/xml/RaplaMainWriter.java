@@ -24,6 +24,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
@@ -78,6 +79,10 @@ public class RaplaMainWriter extends RaplaXMLWriter
         openElement("relax:grammar");
     	DynamicTypeWriter dynamicTypeWriter = (DynamicTypeWriter)getWriterFor(DynamicType.TYPE);
         for(  DynamicType type:cache.getCollection(DynamicType.class)) {
+        	if ((( DynamicTypeImpl) type).isInternal())
+        	{
+        		continue;
+        	}
 			dynamicTypeWriter.printDynamicType(type);
             println();
         }
@@ -90,6 +95,10 @@ public class RaplaMainWriter extends RaplaXMLWriter
         openElement("relax:choice");
         for(  DynamicType type:cache.getCollection(DynamicType.class)) 
         {
+        	if ((( DynamicTypeImpl) type).isInternal())
+        	{
+        		continue;
+        	}
             openTag("relax:ref");
             att("name",type.getElementKey());
             closeElementTag();

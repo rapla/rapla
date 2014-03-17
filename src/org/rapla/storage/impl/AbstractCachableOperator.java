@@ -36,7 +36,6 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -46,8 +45,6 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ParentEntity;
@@ -58,9 +55,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -75,7 +71,8 @@ import org.rapla.storage.UpdateResult;
  * @see LocalCache
  */
 
-public abstract class AbstractCachableOperator implements CachableStorageOperator {
+public abstract class AbstractCachableOperator implements StorageOperator {
+
 	protected RaplaLocale raplaLocale;
 	
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
@@ -91,39 +88,7 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	//protected IdTable idTable = new IdTable();
 	
-	DynamicTypeImpl unresolvedAllocatableType = new DynamicTypeImpl();
-    DynamicTypeImpl anonymousReservationType = new DynamicTypeImpl();
-    {
-    	try
-    	{
-	    	{
-				DynamicTypeImpl unresolved = unresolvedAllocatableType;
-				String key = "unresolved_resource";
-				unresolved.setElementKey(key);
-				unresolved.setId(DynamicType.TYPE.getId(-1));
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				unresolved.getName().setName("en", "anonymous");
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-				unresolved.setReadOnly( true);
-			}
-			{
-				DynamicTypeImpl unresolved = anonymousReservationType;
-				String key = "anonymous";
-				unresolved.setElementKey(key);
-				unresolved.setId(DynamicType.TYPE.getId( 0));
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				unresolved.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-				unresolved.getName().setName("en", "anonymous");
-				unresolved.setReadOnly( true);
-			}
-    	}
-    	catch ( IllegalAnnotationException ex)
-    	{
-    		throw new IllegalStateException( ex.getMessage());
-    	}
-    }
-    	
-
+	
 	public AbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
 		this.logger = logger;
 		this.context = context;
@@ -212,6 +177,14 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 		dispatch(evt);
 	}
+	
+	/**
+	 * implement this method to implement the persistent mechanism. By default it
+	 * calls <li>check()</li> <li>update()</li> <li>fireStorageUpdate()</li> <li>
+	 * fireTriggerEvents()</li> You should not call dispatch directly from the
+	 * client. Use storeObjects and removeObjects instead.
+	 */
+	public abstract void dispatch(UpdateEvent evt) throws RaplaException;
 
 	public <T extends RaplaObject> Collection<T> getObjects(Class<T> typeClass)	throws RaplaException {
 		checkConnected();
@@ -223,22 +196,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 			Collection<T> collection = (Collection<T>) cache.getCollection(type);
 			// We return a clone to avoid synchronization Problems
 			return new LinkedHashSet<T>(collection);
-		}
-		finally
-		{
-			unlock(readLock);
-		}
-	}
-
-	public List<Entity> getVisibleEntities(final User user)throws RaplaException {
-		checkConnected();
-		Lock readLock = readLock();
-		try
-		{
-			ArrayList<Entity>list = new ArrayList<Entity>();
-			Collection<Entity>it = cache.getVisibleEntities(user);
-			list.addAll( it );
-			return list;
 		}
 		finally
 		{
@@ -379,19 +336,6 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 
 	protected void setCache(final LocalCache cache) {
 		this.cache = cache;
-	}
-
-	public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
-	{
-		Lock readLock = readLock();
-		try
-		{
-			cmd.execute( cache );
-		}
-		finally
-		{
-			unlock( readLock);
-		}
 	}
 
 	@Override
@@ -720,14 +664,5 @@ public abstract class AbstractCachableOperator implements CachableStorageOperato
 		}
 	}
 	
-	public DynamicType getUnresolvedAllocatableType() 
-	{
-		return unresolvedAllocatableType;
-	}
-
-	public DynamicType getAnonymousReservationType() 
-	{
-		return anonymousReservationType;
-	}
-
+	
 }

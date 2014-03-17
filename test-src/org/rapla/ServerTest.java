@@ -22,6 +22,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -46,6 +47,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekViewFactory;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.storage.StorageOperator;
 
 public class ServerTest extends ServletTestBase {
 	ServerService raplaServer;
@@ -549,6 +551,31 @@ public class ServerTest extends ServletTestBase {
 			assertTrue(description.contains("\n"));
 		}
 
+	}
+	
+	public void testTaskType() throws Exception 
+	{
+		// first test creation on server
+		{
+			ClientFacade facade = this.raplaServer.getFacade();
+			DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
+			Classification classification = dynamicType.newClassification();
+			Allocatable task = facade.newAllocatable(classification, null);
+			facade.store( task);
+		}
+		// then test availability on client
+		try
+		{
+			ClientFacade facade = facade1;
+			@SuppressWarnings("unused")
+			DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
+			fail("Entity not found should have been thrown, because type is only accesible on the server side");
+		} 
+		catch (EntityNotFoundException ex)
+		{
+			
+		}
+		
 	}
 
 	public String getDescriptionOfReservation(ClientFacade facade,

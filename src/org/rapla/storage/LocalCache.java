@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -49,7 +50,6 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
-import org.rapla.facade.Conflict;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaException;
 
@@ -70,7 +70,7 @@ public class LocalCache implements EntityResolver
     Set<PreferencesImpl> preferences;
     
     Map<RaplaType,Set<? extends Entity>> entityMap;
-        
+    
     private CategoryImpl superCategory = new CategoryImpl();
 
     public LocalCache() {
@@ -274,74 +274,6 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-   public Collection<Entity> getVisibleEntities(final User user) {
-	   Collection<Entity> result = new ArrayList<Entity>();
-	   result.add( getSuperCategory());
-	   for ( Map.Entry<RaplaType,Set<? extends Entity>> entry:entityMap.entrySet() )
-	   {
-		   RaplaType raplaType = entry.getKey();
-		   if (   Conflict.TYPE.equals( raplaType ))
-		   {
-			   continue;
-           }
-		   @SuppressWarnings("unchecked")
-		   Set<Entity>set =  (Set<Entity>) entry.getValue();
-		   if (   Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType) || Attribute.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
-		   {
-			   continue;
-//			   for ( Entity obj: set)
-//			   {
-//            		if ( RaplaComponent.isTemplate(obj))
-//            		{
-//            			result.add( obj);
-//					}
-//				}
-            }
-           if (user == null )
-            {
-            	result.addAll( set);
-            }
-            else
-            {
-                if (   Preferences.TYPE.equals( raplaType )  )
-                {
-                	{
-                		PreferencesImpl preferences = getPreferencesForUserId( null );
-                        if ( preferences != null)
-                        {
-                        	result.add( preferences);
-                        }
-                    }
-                    {
-                        String userId = user.getId();
-                        Assert.notNull( userId);
-						PreferencesImpl preferences = getPreferencesForUserId( userId );
-                        if ( preferences != null)
-                        {
-                            result.add( preferences);
-                        }
-                    }
-                }
-                else if (   Allocatable.TYPE.equals( raplaType )  )
-                {
-                	for ( Entity obj: set)
-                	{
-                    	Allocatable alloc = (Allocatable) obj;
-						if (user.isAdmin() || alloc.canReadOnlyInformation( user))
-						{
-	            			result.add( obj);
-						}
-					}
-                }
-                else
-                {
-                	result.addAll( set);
-                }
-            }
-       	}
-	   	return result;
-    }
-
     public  Set<Entity> getAllEntities() 
     {
     	HashSet<Entity> result = new HashSet<Entity>();
@@ -465,6 +397,11 @@ public class LocalCache implements EntityResolver
 	    	}
 	    }
 		return true;
+	}
+
+	@Deprecated
+	public Set<Entry<RaplaType, Set<? extends Entity>>> entrySet() {
+		return entityMap.entrySet();
 	}
 
 }

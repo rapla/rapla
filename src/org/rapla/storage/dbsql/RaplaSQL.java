@@ -62,6 +62,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.framework.RaplaContext;
@@ -687,6 +688,10 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     Map<String,Classification> classificationMap;
     Map<String,? extends Annotatable> annotableMap;
     final String foreignKeyName;
+    // TODO Write conversion script to update all old entries to new entries
+    public final static String OLD_ANNOTATION_PREFIX = "annotation:";
+  	public final static String ANNOTATION_PREFIX = "rapla:";
+	
     public AttributeValueStorage(RaplaContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " INTEGER NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(100)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
@@ -742,13 +747,12 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         return count;
     }
 
-  	public final static String ANNOTATION_PREFIX = "annotation:";
-	
+  	
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         Class<? extends Entity> idClass = foreignKeyName.indexOf("RESOURCE")>=0 ? Allocatable.class : Reservation.class;
 		String classifiableId = readId(rset, 1, idClass);
         String attributekey = rset.getString( 2 );
-        if ( attributekey.startsWith(ANNOTATION_PREFIX))
+        if ( attributekey.startsWith(ANNOTATION_PREFIX) || attributekey.startsWith(OLD_ANNOTATION_PREFIX))
         {
         	String annotationKey = attributekey.substring( ANNOTATION_PREFIX.length());
         	Annotatable annotatable = annotableMap.get(classifiableId);
@@ -1029,6 +1033,10 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
     }
 
 	protected int write(PreparedStatement stmt, DynamicType type) throws SQLException, RaplaException {
+		if (((DynamicTypeImpl) type).isInternal())
+		{
+			return 0;
+		}
         setId(stmt,1,type);
         setString(stmt,2, type.getElementKey());
         setText(stmt,3,  getXML( type) );

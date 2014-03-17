@@ -36,7 +36,7 @@ public class AllocatableReader extends RaplaXMLReader
     private AllocatableImpl allocatable;
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
-
+	
     public AllocatableReader( RaplaContext context ) throws RaplaException
     {
         super( context );
@@ -50,7 +50,7 @@ public class AllocatableReader extends RaplaXMLReader
         String localName,
         RaplaSAXAttributes atts ) throws RaplaSAXParseException
     {
-        if (namespaceURI.equals( DYNATT_NS ))
+        if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( RAPLAATT_NS ))
         {
             dynAttHandler.setClassifiable( allocatable );
             delegateElement(
@@ -163,7 +163,7 @@ public class AllocatableReader extends RaplaXMLReader
             allocatable.addPermission( permission );
         }
         
-        if (localName.equals( "annotation" ) && namespaceURI.equals( RAPLA_NS ))
+        if (localName.equals( "annotation" ) )
         {
             annotationKey = atts.getValue( "key" );
             Assert.notNull( annotationKey, "key attribute cannot be null" );
