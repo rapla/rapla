@@ -136,16 +136,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setReadOnly( true);
 			cache.put( type);
 		}
-		{
-			DynamicTypeImpl type = new DynamicTypeImpl();
-			type.setElementKey(SYNCHRONIZATIONTASK_TYPE);
-			type.setId(DynamicType.TYPE.getId( -2));
-			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-			type.setResolver( this);
-			type.setReadOnly( true);
-			cache.put( type);
-		}
+		
 		
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
@@ -156,6 +147,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.addAttribute(createStringAttributeWithId("name", -4));
 			type.addAttribute(createStringAttributeWithId("publicKey", -5));
 			type.addAttribute(createStringAttributeWithId("privateKey", -6));
+			type.setResolver( this);
+			type.setReadOnly( true);
+			cache.put( type);
+		}
+		{
+			DynamicTypeImpl type = new DynamicTypeImpl();
+			type.setElementKey(SYNCHRONIZATIONTASK_TYPE);
+			type.setId(DynamicType.TYPE.getId( -2));
+			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+			type.addAttribute(createStringAttributeWithId("objectId", -7));
+			type.addAttribute(createStringAttributeWithId("externalObjectId", -8));
+			type.addAttribute(createStringAttributeWithId("status", -9));
 			type.setResolver( this);
 			type.setReadOnly( true);
 			cache.put( type);

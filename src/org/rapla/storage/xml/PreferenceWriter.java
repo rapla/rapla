@@ -19,7 +19,6 @@ import java.util.Map;
 
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.framework.RaplaContext;
@@ -37,17 +36,7 @@ public class PreferenceWriter extends RaplaXMLWriter {
     protected void printPreferences(Preferences preferences) throws IOException,RaplaException {
         if ( preferences != null && !preferences.isEmpty()) {
             openTag("rapla:preferences");
-            if (isIdOnly())
-            {
-                att("id",getId(preferences));
-                User owner = preferences.getOwner();
-                if ( owner != null )
-                {
-                    att("ownerid", getId( owner));
-                }
-            }
-            printVersion( preferences);
-            
+            printVersion( preferences);            
             closeTag();
             PreferencesImpl impl = (PreferencesImpl)preferences;
             Iterator<String> it = impl.getPreferenceEntries();
