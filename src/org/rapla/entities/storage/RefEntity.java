@@ -27,7 +27,7 @@ public interface RefEntity extends EntityReferencer
     int getVersion();
     void setVersion(int version);
 
-    void setReadOnly(boolean enable);
+    void setReadOnly();
     
 }
 

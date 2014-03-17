@@ -157,7 +157,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				((ModifiableTimestamp) refEntity).setLastChangedBy(user);
 			}
 		}
-		refEntity.setReadOnly(false);
 		return (Entity) refEntity;
 	}
 
@@ -307,7 +306,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				newPref.setResolver( this);
 				newPref.setOwner(user);
 				newPref.setId( preferenceId );
-				newPref.setReadOnly( true );
+				newPref.setReadOnly(  );
 				pref = newPref;
 				emptyPreferencesProxy.put(preferenceId , pref);
 			}
@@ -444,28 +443,28 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	/**
 	 * @throws RaplaException  
 	 */
-	protected void resolveEntities(Collection<? extends Entity> entities, boolean test) throws RaplaException {
-		if ( test)
-		{
-			EntityStore store = new EntityStore( this, getSuperCategory());
-			store.addAll( entities);
-			for (Entity obj: entities) {
-				((RefEntity)obj).setResolver(store);
-			}
-			for (Entity obj: entities) {
-				Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
-				for ( String id:referencedIds)
-				{
-					testResolve(store, obj, id);
-				}
-			}
-		}
+	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
 		for (Entity obj: entities) {
 			((RefEntity)obj).setResolver(this);
 		}
 		// It is important to do the read only later because some resolve might involve write to referenced objects
 		for (Entity entity: entities) {
-			 ((RefEntity)entity).setReadOnly(true);
+			 ((RefEntity)entity).setReadOnly();
+		}
+	}
+
+	protected void testResolve(Collection<? extends Entity> entities) {
+		EntityStore store = new EntityStore( this, getSuperCategory());
+		store.addAll( entities);
+		for (Entity obj: entities) {
+			((RefEntity)obj).setResolver(store);
+		}
+		for (Entity obj: entities) {
+			Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
+			for ( String id:referencedIds)
+			{
+				testResolve(store, obj, id);
+			}
 		}
 	}
 
@@ -569,13 +568,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			{
 				continue;
 			}
-			
-			// do nothing, because the persitantVersion is the same as the
-			// stored
-			if (persistantEntity == entity ) 
-			{
-				continue;
-			}
 
 			if (getLogger().isDebugEnabled())
 			{
@@ -639,7 +631,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				persistantVersion = findInLocalCache(entity);
 				if (persistantVersion != null) {
 					cache.remove(persistantVersion);
-					((RefEntity)persistantVersion).setReadOnly(true);
+					((RefEntity)persistantVersion).setReadOnly();
 				}
 			}
 			if  ( persistantVersion == null)
@@ -652,7 +644,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			}
 		}
 
-		resolveEntities(updatedEntities, false);
+		resolveEntities(updatedEntities);
 
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();

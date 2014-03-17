@@ -43,8 +43,8 @@ public class MultiLanguageName implements java.io.Serializable {
     public MultiLanguageName() {
     }
     
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
+    public void setReadOnly() {
+        this.readOnly = true;
     }
     
     public boolean isReadOnly() {
@@ -74,11 +74,7 @@ public class MultiLanguageName implements java.io.Serializable {
 
     public void setName(String language,String translation) {
         checkWritable();
-        if (translation != null && !translation.trim().equals("")) {
-            mapLocales.put(language,translation.trim());
-        } else {
-            mapLocales.remove(language);
-        }
+        setNameWithoutReadCheck(language, translation);
     }
     
     private void checkWritable() {
@@ -104,6 +100,15 @@ public class MultiLanguageName implements java.io.Serializable {
     public String toString() {
         return getName("en");
     }
+    
+    @Deprecated
+	public void setNameWithoutReadCheck(String language, String translation) {
+        if (translation != null && !translation.trim().equals("")) {
+            mapLocales.put(language,translation.trim());
+        } else {
+            mapLocales.remove(language);
+        }
+	}
 }
 
 

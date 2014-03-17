@@ -37,6 +37,7 @@ public interface Entity<T> extends RaplaObject<T> {
     boolean isReadOnly();
     
     public static Entity<?>[] ENTITY_ARRAY = new Entity[0];
+    
 }
 
 

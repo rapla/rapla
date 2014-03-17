@@ -649,15 +649,14 @@ public class DBOperator extends LocalAbstractCachableOperator
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
-        resolveEntities( list, true);
-        cache.getSuperCategory().setReadOnly(true);
+        resolveInitial( list);
+        cache.getSuperCategory().setReadOnly();
         for (User user:cache.getCollection(User.class))
         {
             Object id = ((Entity)user).getId();
 			String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }
-        resolveEmails( list );
 	}
 
 	private RaplaDefaultContext createInputContext(  EntityStore store) throws RaplaException {

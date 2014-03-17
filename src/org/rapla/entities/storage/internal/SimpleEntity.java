@@ -14,10 +14,10 @@ package org.rapla.entities.storage.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.ReadOnlyException;
@@ -81,10 +81,10 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 		}
 	}
 
-	public void setReadOnly(boolean enable) {
-        this.readOnly = enable;
+	public void setReadOnly() {
+        this.readOnly = true;
         for (Entity ref:getSubEntities()) {
-            ((SimpleEntity)ref).setReadOnly(enable);
+            ((SimpleEntity)ref).setReadOnly();
         }
     }
 
@@ -201,23 +201,29 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
 
     @SuppressWarnings("unchecked")
-	protected void deepClone(SimpleEntity dest) {
-    	dest.id = id;
-    	dest.links =  (Map<String, List<String>>) ((HashMap)links).clone();
-    	dest.resolver = this.resolver;
+	protected void deepClone(SimpleEntity clone) {
+    	clone.id = id;
+    	clone.links =  new LinkedHashMap<String,List<String>>();
+    	for ( String key:links.keySet())
+    	{
+    		List<String> idList = links.get( key);
+    		clone.links.put( key, new ArrayList(idList));
+    	}
+    	clone.resolver = this.resolver;
+    	Assert.isTrue(!clone.getSubEntities().iterator().hasNext());
     	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
-    	for (Entity entity: getSubEntities())
+    	Iterable<Entity> oldEntities = getSubEntities();
+    	for (Entity entity: oldEntities)
     	{
     		Entity deepClone = (Entity) entity.clone();
     		newSubEntities.add( deepClone);
     	}
     	for (Entity entity: newSubEntities)
     	{
-    		((ParentEntity)dest).addEntity( entity );
+    		((ParentEntity)clone).addEntity( entity );
     	}
     	// In a copy operation the target/destination object should always be writable
-    	dest.readOnly = false;
-    	dest.setVersion(getVersion());
+    	clone.setVersion(getVersion());
     }
 
 //    @SuppressWarnings("unchecked")

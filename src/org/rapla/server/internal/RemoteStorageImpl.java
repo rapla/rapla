@@ -593,7 +593,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    }
 	                    if ( entity.getRaplaType() == Reservation.TYPE)
                     	{
-                    		checkAndMakeReservationsAnonymous(sessionUser,	entity);
+                    		entity = checkAndMakeReservationsAnonymous(sessionUser,	entity);
                     	}
 	                    security.checkRead(sessionUser, entity);
 	                    completeList.add( entity );
@@ -643,9 +643,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                     	if (isAllocatablesVisible(sessionUser, res))
                 		{
-                        	ReservationImpl clone = (ReservationImpl) ((ReservationImpl) res).clone();
-                        	checkAndMakeReservationsAnonymous(sessionUser,	clone);
-							list.add( clone);
+                        	ReservationImpl safeRes = checkAndMakeReservationsAnonymous(sessionUser,	 res);
+							list.add( safeRes);
                 		}
                     	
                     }
@@ -665,17 +664,23 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	}
             }
             
-			private void checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {
+			private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {
 				ReservationImpl reservation =(ReservationImpl) entity;
 				boolean canReadFromOthers = facade.canReadReservationsFromOthers(sessionUser);
 				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser, canReadFromOthers);
 				// check if the user is allowed to read the reservation info 
 				if ( !reservationVisible )
 				{
+					ReservationImpl clone =  reservation.clone();
 					// we can safely change the reservation info here because we cloned it in transaction safe before
-					reservation.setReadOnly( false);
 					DynamicType anonymousReservationType = operator.getDynamicType( StorageOperator.ANONYMOUSEVENT_TYPE);
-					reservation.setClassification( anonymousReservationType.newClassification());
+					clone.setClassification( anonymousReservationType.newClassification());
+					clone.setReadOnly();
+	            	return clone;
+				}
+				else
+				{
+					return reservation;
 				}
 			}
             

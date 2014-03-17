@@ -85,7 +85,7 @@ public class LocalCacheTest extends RaplaTestCase {
 
         DynamicTypeImpl type = createDynamicType();
         type.setResolver( cache);
-        type.setReadOnly( true );
+        type.setReadOnly(  );
         cache.put( type );
         AllocatableImpl resource1 = createResource(cache,1,type,"Adrian");
         cache.put(resource1);

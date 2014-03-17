@@ -168,9 +168,9 @@ public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
         return name;
     }
 
-    public void setReadOnly(boolean enable) {
-        super.setReadOnly( enable );
-        name.setReadOnly( enable );
+    public void setReadOnly() {
+        super.setReadOnly(  );
+        name.setReadOnly( );
     }
 
     public String getName(Locale locale) {

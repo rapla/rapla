@@ -96,8 +96,8 @@ public class PermissionImpl
         return maxAdvance;
     }
 
-    public void setReadOnly(boolean enable) {
-        this.readOnly = enable;
+    public void setReadOnly() {
+        this.readOnly = true;
     }
 
     public boolean isReadOnly() {

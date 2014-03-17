@@ -86,10 +86,10 @@ public class AppointmentImpl extends SimpleEntity implements Appointment
     public Date getStart() { return start;}
     public Date getEnd() { return end;}
 
-    public void setReadOnly(boolean enable) {
-        super.setReadOnly( enable );
+    public void setReadOnly() {
+        super.setReadOnly( );
         if ( repeating != null )
-            repeating.setReadOnly( enable );
+            repeating.setReadOnly(  );
     }
 
     public void move(Date newStart) {

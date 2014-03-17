@@ -99,8 +99,8 @@ class RepeatingImpl implements Repeating,java.io.Serializable {
         this.appointment = appointment;
     }
 
-    public void setReadOnly(boolean enable) {
-        this.readOnly = enable;
+    public void setReadOnly() {
+        this.readOnly = true;
     }
 
     public boolean isReadOnly() {

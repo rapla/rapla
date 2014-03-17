@@ -342,7 +342,8 @@ public class RemoteOperator
     private List<Entity> addToCache(Collection<Entity> list) throws RaplaException {
         List<Entity> result = new ArrayList<Entity>();
         synchronized (cache) {
-        	resolveEntities( list, true );
+        	testResolve( list);
+        	resolveEntities( list );
             for( Entity entity:list) {
 				if ( isStorableInCache(entity))
 				{
@@ -355,12 +356,12 @@ public class RemoteOperator
     }
     
     @Override
-    protected void resolveEntities(Collection<? extends Entity> entities, boolean test) throws RaplaException {
+    protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
     	if (context.has(RemoteMethodStub.class))
     	{
     		return;
     	}
-    	super.resolveEntities(entities, test);
+    	super.resolveEntities(entities);
 //		Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
 //		for ( String id:referencedIds)
 //		{
@@ -671,7 +672,8 @@ public class RemoteOperator
     	{
 			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get().get();
 	        synchronized (cache) {
-	        	resolveEntities( list, true );
+	        	testResolve( list);
+	        	resolveEntities( list );
 	        }
 	        List<Reservation> result = new ArrayList<Reservation>();
 	        Iterator it = list.iterator();
@@ -791,9 +793,10 @@ public class RemoteOperator
 		Lock writeLock = writeLock();
 		try
         {
-			resolveEntities(evt.getStoreObjects(), true);
+			testResolve(evt.getStoreObjects());
+			resolveEntities(evt.getStoreObjects());
 			// we don't test the references of the removed objects
-			resolveEntities(evt.getRemoveObjects(), false);
+			resolveEntities(evt.getRemoveObjects());
 			clientRepositoryVersion = evt.getRepositoryVersion();
     		if ( bSessionActive  &&   !evt.isEmpty()  ) {
                 getLogger().debug("Objects updated!");
@@ -985,7 +988,8 @@ public class RemoteOperator
 		Lock readLock = readLock();
 	    try
 	    {
-        	resolveEntities( serverResult, true);
+	    	testResolve( serverResult);
+        	resolveEntities( serverResult );
         }
 	    finally
 	    {
@@ -1063,7 +1067,8 @@ public class RemoteOperator
 	        Lock readLock = readLock();
 		    try
 		    {
-	        	resolveEntities( list, true );
+		    	testResolve( list);
+	        	resolveEntities( list);
 	        }
 		    finally
 		    {

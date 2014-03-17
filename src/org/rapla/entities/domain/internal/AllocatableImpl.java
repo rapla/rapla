@@ -85,12 +85,12 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
         }
     }
 
-    public void setReadOnly(boolean enable) {
-        super.setReadOnly( enable );
-        classification.setReadOnly( enable );
+    public void setReadOnly() {
+        super.setReadOnly( );
+        classification.setReadOnly( );
         Iterator<PermissionImpl> it = permissions.iterator();
         while (it.hasNext()) {
-            it.next().setReadOnly(enable);
+            it.next().setReadOnly();
         }
     }
 

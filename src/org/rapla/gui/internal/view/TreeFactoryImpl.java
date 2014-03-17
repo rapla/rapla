@@ -52,6 +52,7 @@ import javax.swing.tree.TreeSelectionModel;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.InverseComparator;
 import org.rapla.entities.Category;
+import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaType;
@@ -419,7 +420,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         return treeNode;
     }
 
-    public DefaultTreeModel createModel(ClassificationFilter[] filter) throws RaplaException 
+    @SuppressWarnings("deprecation")
+	public DefaultTreeModel createModel(ClassificationFilter[] filter) throws RaplaException 
     {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
 
@@ -457,10 +459,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             root.add(categoryRoot);
 
             // set category root name
-            getQuery().getSuperCategory().getName().setReadOnly(false);
-            getQuery().getSuperCategory().getName().setName(getI18n().getLang(), getString("categories"));
-            getQuery().getSuperCategory().getName().setReadOnly(true);
-
+            MultiLanguageName multiLanguageName = (MultiLanguageName)getQuery().getSuperCategory().getName();
+            // TODO try to replace hack
+			multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
+            
             // Add the periods    
             DefaultMutableTreeNode periodRoot = new TypeNode(Period.TYPE, getString("periods"));
             Period[] periodList = getQuery().getPeriods();

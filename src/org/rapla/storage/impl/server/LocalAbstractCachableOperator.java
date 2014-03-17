@@ -121,7 +121,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 			type.setResolver( this);
-			type.setReadOnly( true);
+			type.setReadOnly( );
 			cache.put( type);
 		}
 		{
@@ -133,7 +133,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
 			type.setResolver( this);
-			type.setReadOnly( true);
+			type.setReadOnly( );
 			cache.put( type);
 		}
 		
@@ -148,7 +148,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.addAttribute(createStringAttributeWithId("publicKey", -5));
 			type.addAttribute(createStringAttributeWithId("privateKey", -6));
 			type.setResolver( this);
-			type.setReadOnly( true);
+			type.setReadOnly( );
 			cache.put( type);
 		}
 		{
@@ -161,7 +161,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.addAttribute(createStringAttributeWithId("externalObjectId", -8));
 			type.addAttribute(createStringAttributeWithId("status", -9));
 			type.setResolver( this);
-			type.setReadOnly( true);
+			type.setReadOnly();
 			cache.put( type);
 		}
     }
@@ -400,8 +400,33 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		storeAndRemove(storeObjects, removeObjects, null);
 	}
 	
-	protected void resolveEmails(Collection<Entity> entities) throws RaplaException
-	{
+	protected void resolveInitial(Collection<? extends Entity> entities) throws RaplaException {
+		testResolve(entities);
+		
+		for (Entity obj: entities) {
+			((RefEntity)obj).setResolver(this);
+		}
+		
+		// resolve emails
+		Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
+		Map<String,Allocatable> resolvingMap = new HashMap<String,Allocatable>();
+		for (Entity entity: entities)
+    	{
+			if ( entity instanceof Allocatable)
+			{
+				Allocatable allocatable = (Allocatable) entity;
+	    		final Classification classification = allocatable.getClassification();
+	    		final Attribute attribute = classification.getAttribute("email");
+	    		if ( attribute != null)
+	    		{
+	    			final String email = (String)classification.getValue(attribute);
+	    			if ( email != null )
+	    			{
+	    				resolvingMap.put( email, allocatable);
+	    			}
+	    		}
+			}
+        }	
 		for ( Entity entity: entities)
 		{
 			if ( entity.getRaplaType().getTypeClass() == User.class)
@@ -410,45 +435,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				String email = user.getEmail();
 				if ( email != null && email.trim().length() > 0)
 				{
-					Allocatable person = resolveEmail(email);
+					Allocatable person = resolvingMap.get(email);
 					if ( person != null)
 					{
-						boolean readOnly = entity.isReadOnly();
-						((RefEntity)entity).setReadOnly(false);
 						user.setPerson(person);
-						((RefEntity)entity).setReadOnly(readOnly);
 					}
 				}
 			}
 		}
+
+		// It is important to do the read only later because some resolve might involve write to referenced objects
+		for (Entity entity: entities) {
+			 ((RefEntity)entity).setReadOnly();
+		}
 	}
 	
-	protected Allocatable resolveEmail(String emailArg)	throws RaplaException {
-		Lock readLock = readLock();
-		try
-		{
-			Collection<Allocatable> allocatables = cache.getCollection( Allocatable.class);
-			for (Allocatable entity: allocatables)
-	    	{
-	    		final Classification classification = entity.getClassification();
-	    		final Attribute attribute = classification.getAttribute("email");
-	    		if ( attribute != null)
-	    		{
-	    			final String email = (String)classification.getValue(attribute);
-	    			if ( email != null && email.equals( emailArg))
-	    			{
-	    				return entity;
-	    			}
-	    		}
-	        }
-		}
-		finally
-		{
-			unlock(readLock);
-		}
-		return null;
-	}
-
 	public void confirmEmail(User user, String newEmail)	throws RaplaException {
 		throw new RaplaException("Email confirmation must be done in the remotestorage class");
 	}
@@ -636,29 +637,29 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			Allocatable[] allocatablesFor = reservation.getAllocatablesFor( app);
 			allocatablesToProcess.addAll( Arrays.asList(allocatablesFor));
 			// This double check is very imperformant and will be removed in the future, if it doesnt show in test runs
-			if ( remove)
-			{
-				Collection<Allocatable> allocatables = cache.getCollection(Allocatable.class);
-				for ( Allocatable allocatable:allocatables)
-				{
-					SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable.getId());
-					if ( appointmentSet == null)
-					{
-						continue;
-					}
-					for (Appointment app1:appointmentSet)
-					{
-						if ( app1.equals( app))
-						{
-							if ( !allocatablesToProcess.contains( allocatable))
-							{
-								getLogger().error("Old reservation " + reservation.toString() + " has not the correct allocatable information. Using full search for appointment " + app + " and resource " + allocatable ) ;
-								allocatablesToProcess.add(allocatable);
-							}
-						}
-					}
-				}
-			}
+//			if ( remove)
+//			{
+//				Collection<Allocatable> allocatables = cache.getCollection(Allocatable.class);
+//				for ( Allocatable allocatable:allocatables)
+//				{
+//					SortedSet<Appointment> appointmentSet = this.appointmentMap.get( allocatable.getId());
+//					if ( appointmentSet == null)
+//					{
+//						continue;
+//					}
+//					for (Appointment app1:appointmentSet)
+//					{
+//						if ( app1.equals( app))
+//						{
+//							if ( !allocatablesToProcess.contains( allocatable))
+//							{
+//								getLogger().error("Old reservation " + reservation.toString() + " has not the correct allocatable information. Using full search for appointment " + app + " and resource " + allocatable ) ;
+//								allocatablesToProcess.add(allocatable);
+//							}
+//						}
+//					}
+//				}
+//			}
 		}
 		else
 		{
@@ -736,18 +737,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		return set;
 	}
-	
-//	protected <T extends Entity<T>> T getPersistantForUpdate(
-//			T object) throws RaplaException {
-//		Entity app = (Entity)object;
-//		T appointment2 = (T) cache.tryResolve( app.getId() );
-//		//T appointment2 = getPersistant(Collections.singleton(app)).get( object);
-//		if ( appointment2 == null )
-//		{
-//			throw new RaplaException("Only persistant entities can be added to binding map " + appointment2 );
-//		}
-//		return appointment2;
-//	}
 	
     @Override
 	protected UpdateResult update(UpdateEvent evt)
@@ -878,52 +867,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			addRemovedUserDependant(evt, store,(User) entity);
 		}
 		
-		
-		// add the subentities
-//		if ( entity instanceof ParentEntity)
-//		{
-//			ParentEntity parent = (ParentEntity)entity;
-//			Iterable<Entity>subEntities = parent.getSubEntities();
-//			for (Entity ref:subEntities)
-//			{
-//				addRemoveOperationsToClosure(evt, ref);
-//			}
-//		}
-
-		// And also add the SubEntities that have been removed, before storing
-//		for ( Entity ref: getRemovedEntities(entity)) {
-//			addRemoveOperationsToClosure(evt, ref);
-//		}
-
 	}
-
-//	private Collection<Entity>getRemovedEntities(Entity entity) {
-//		Entity original = findInLocalCache(entity);
-//		List<Entity> result = null;
-//		if (original != null) {
-//			if ( original instanceof ParentEntity)
-//			{
-//				Iterable<Entity>subEntities = ((ParentEntity)original).getSubEntities();
-//				for (Entity subEntity:  subEntities)
-//				{
-//					if (!((ParentEntity)entity).getSubEntities().contains(subEntity)) {
-//						// SubEntity not found in the new entity add it to remove
-//						// List
-//						if (result == null) {
-//							result = new ArrayList<Entity>();
-//						}
-//						result.add(subEntity);
-//						// System.out.println( "Removed " + subEntity);
-//					}
-//				}
-//			}
-//		}
-//		if (result != null) {
-//			return result;
-//		} else {
-//			return Collections.emptySet();
-//		}
-//	}
 
 	protected void setCache(final LocalCache cache) {
 		super.setCache( cache);
@@ -1265,24 +1209,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 		}
 		
-//		private void addSubentities(HashMap<Entity,Entity> oldEntities,	Entity oldEntity) {
-//		if (!( oldEntity instanceof ParentEntity))
-//		{
-//			return;
-//		}
-//		Iterable<Entity>subEntities = ((ParentEntity)oldEntity).getSubEntities();
-//		for (Entity entity: subEntities)
-//		{
-//			Entity persistantEntity = findInLocalCache(entity);
-//			if ( persistantEntity == null)
-//			{
-//				continue;
-//			}
-//			oldEntities.put( persistantEntity,entity);
-//			addSubentities(oldEntities, entity);
-//		}
-//
-//	}
 
 // CKO We skip this check as the admin should have the possibility to deny a user read to allocatables objects even if he has reserved it prior 
 //		for (Entity entity : storeObjects) {
@@ -1809,12 +1735,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 		Collection<Entity> list = store.getList();
 		cache.putAll( list );
-	    resolveEntities( list, true );
+		testResolve( list);
+	    resolveEntities( list);
 	    
     	UserImpl user = cache.getUser("admin");
     	String password ="";
 		cache.putPassword( user.getId(), password );
-		cache.getSuperCategory().setReadOnly(true);
+		cache.getSuperCategory().setReadOnly();
 	
         Date now = getCurrentTimestamp();
 		AllocatableImpl allocatable = new AllocatableImpl(now, now);

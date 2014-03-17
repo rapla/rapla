@@ -100,8 +100,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         this.resolver = resolver;
     }
 
-    public void setReadOnly(boolean enable) {
-        this.readOnly = enable;
+    public void setReadOnly() {
+        this.readOnly = true;
     }
 
     public boolean isReadOnly() {

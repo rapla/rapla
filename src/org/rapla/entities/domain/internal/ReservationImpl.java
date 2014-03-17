@@ -87,15 +87,17 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     }
     
     public void addEntity(Entity entity) {
+        checkWritable();
     	AppointmentImpl app = (AppointmentImpl) entity;
     	app.setParent(this);
 		appointments.add(  app);
+        appointmentIndex = null;
     }
 
 
-    public void setReadOnly(boolean enable) {
-        super.setReadOnly( enable );
-        classification.setReadOnly( enable );
+    public void setReadOnly() {
+        super.setReadOnly(  );
+        classification.setReadOnly( );
     }
 
     final public RaplaType<Reservation> getRaplaType() {return TYPE;}
@@ -145,16 +147,19 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
             )
             ;
     }
+    
+    public void removeAllSubentities() {
+    	appointments.clear();
+    }
 
     public void addAppointment(Appointment appointment) {
-        checkWritable();
         if (appointment.getReservation() != null
             && !this.isIdentical(appointment.getReservation()))
             throw new IllegalStateException("Appointment '" + appointment
                                             + "' belongs to another reservation :"
                                             + appointment.getReservation());
         this.addEntity(appointment);
-        appointmentIndex = null;
+
     }
 
     public void removeAppointment(Appointment appointment)   {
@@ -475,7 +480,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
         classification.commitChange( type );
     }
 
-    public Reservation clone() {
+    public ReservationImpl clone() {
         ReservationImpl clone = new ReservationImpl();
         super.deepClone(clone);
         // First we must invalidate the arrays.

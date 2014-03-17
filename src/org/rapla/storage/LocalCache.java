@@ -71,12 +71,8 @@ public class LocalCache implements EntityResolver
     
     Map<RaplaType,Set<? extends Entity>> entityMap;
     
-    private CategoryImpl superCategory = new CategoryImpl();
 
     public LocalCache() {
-        superCategory.setId(LocalCache.SUPER_CATEGORY_ID);
-        superCategory.setKey("supercategory");
-        superCategory.getName().setName("en", "Root");
         
         entityMap = new LinkedHashMap<RaplaType, Set<? extends Entity>>();
         entities = new HashMap<Object,Entity>();
@@ -144,12 +140,7 @@ public class LocalCache implements EntityResolver
 
     public void put(Entity entity) {
         Assert.notNull(entity);
-        // We don't add the superCategory
-        if (entity == superCategory)
-        {
-        	return;
-        }
-  
+       
         RaplaType raplaType = entity.getRaplaType();
        
         Comparable id = entity.getId();
@@ -219,8 +210,11 @@ public class LocalCache implements EntityResolver
 
     }
     private void initSuperCategory() {
+    	CategoryImpl superCategory = new CategoryImpl();
+        superCategory.setId(LocalCache.SUPER_CATEGORY_ID);
+        superCategory.setKey("supercategory");
+        superCategory.getName().setName("en", "Root");
         entities.put (LocalCache.SUPER_CATEGORY_ID, superCategory);
-        superCategory.setReadOnly( false );
         categories.add( superCategory );
         Category[] childs = superCategory.getCategories();
         for (int i=0;i<childs.length;i++) {

@@ -219,8 +219,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
             xmlAdapter.read( loadingURL, contentHandler, validate );
             Collection<Entity> list = entityStore.getList();
 			cache.putAll( list );
-            resolveEntities( list, true);
-            cache.getSuperCategory().setReadOnly(true);
+	        resolveInitial( list);
+            cache.getSuperCategory().setReadOnly();
             for (User user:cache.getCollection(User.class))
             {
                 String id = user.getId();
@@ -228,7 +228,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 //System.out.println("Storing password in cache" + password);
                 cache.putPassword( id, password );
             }
-            resolveEmails( list );
             // contextualize all Entities
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Entities contextualized" );
