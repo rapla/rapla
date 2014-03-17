@@ -47,7 +47,6 @@ import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -70,6 +69,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
@@ -110,50 +110,56 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	CommandScheduler scheduler;
 	Cancelable cleanConflictsTask;
 	
-	protected DynamicTypeImpl unresolvedAllocatableType = new DynamicTypeImpl();
-	protected DynamicTypeImpl anonymousReservationType = new DynamicTypeImpl();
-	protected DynamicTypeImpl taskType = new DynamicTypeImpl();
+	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
-    	try
-    	{
-	    	{
-				DynamicTypeImpl type = unresolvedAllocatableType;
-				String key = UNRESOLVED_RESOURCE_TYPE;
-				type.setElementKey(key);
-				type.setId(DynamicType.TYPE.getId(-1));
-				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				type.getName().setName("en", "anonymous");
-				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-				type.setResolver( this);
-				type.setReadOnly( true);
-			}
-			{
-				DynamicTypeImpl type = anonymousReservationType;
-				String key = ANONYMOUSEVENT_TYPE;
-				type.setElementKey(key);
-				type.setId(DynamicType.TYPE.getId( 0));
-				type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
-				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-				type.getName().setName("en", "anonymous");
-				type.setResolver( this);
-				type.setReadOnly( true);
-			}
-			{
-				DynamicTypeImpl type = taskType;
-				String key = SYNCHRONIZATIONTASK_TYPE;
-				type.setElementKey(key);
-				type.setId(DynamicType.TYPE.getId( -2));
-				type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-				type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-				type.setResolver( this);
-				type.setReadOnly( true);
-			}
-			
-    	}
-    	catch ( IllegalAnnotationException ex)
-    	{
-    		throw new IllegalStateException( ex.getMessage());
-    	}
+		{
+    		DynamicTypeImpl type = new DynamicTypeImpl();
+			String key = UNRESOLVED_RESOURCE_TYPE;
+			type.setElementKey(key);
+			type.setId(DynamicType.TYPE.getId(-1));
+			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+			type.getName().setName("en", "anonymous");
+			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+			type.setResolver( this);
+			type.setReadOnly( true);
+			cache.put( type);
+		}
+		{
+			DynamicTypeImpl type = new DynamicTypeImpl();
+			String key = ANONYMOUSEVENT_TYPE;
+			type.setElementKey(key);
+			type.setId(DynamicType.TYPE.getId( 0));
+			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+			type.getName().setName("en", "anonymous");
+			type.setResolver( this);
+			type.setReadOnly( true);
+			cache.put( type);
+		}
+		{
+			DynamicTypeImpl type = new DynamicTypeImpl();
+			type.setElementKey(SYNCHRONIZATIONTASK_TYPE);
+			type.setId(DynamicType.TYPE.getId( -2));
+			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+			type.setResolver( this);
+			type.setReadOnly( true);
+			cache.put( type);
+		}
+		
+		{
+			DynamicTypeImpl type = new DynamicTypeImpl();
+			type.setElementKey(CRYPTO_TYPE);
+			type.setId(DynamicType.TYPE.getId( -3));
+			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+			type.addAttribute(createStringAttributeWithId("name", -4));
+			type.addAttribute(createStringAttributeWithId("publicKey", -5));
+			type.addAttribute(createStringAttributeWithId("privateKey", -6));
+			type.setResolver( this);
+			type.setReadOnly( true);
+			cache.put( type);
+		}
     }
 	
 	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
@@ -179,7 +185,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return encryption;
 	}
 
-	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, Map<String,String> annotationQuery) throws RaplaException {
+	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] filters,Map<String,String> annotationQuery) throws RaplaException {
 		boolean excludeExceptions = false;
 		HashSet<Reservation> reservationSet = new HashSet<Reservation>();
 		if (allocatables == null || allocatables.size() ==0) 
@@ -231,7 +237,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	            }
 			}
         }
-        return new ArrayList<Reservation>(reservationSet);
+        ArrayList<Reservation> result = new ArrayList<Reservation>(reservationSet);
+        removeFilteredClassifications(result, filters);
+		return result;
 	}
 
 	public Collection<String> getTemplateNames() throws RaplaException {
@@ -1826,11 +1834,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	private Attribute createStringAttribute(String key, String name) throws RaplaException {
-		Attribute attribute = newAttribute(AttributeType.STRING);
+		Attribute attribute = newAttribute(AttributeType.STRING, null);
 		attribute.setKey(key);
 		setName(attribute.getName(), name);
 		return attribute;
 	}
+	
+	private Attribute createStringAttributeWithId(String key, int id) throws RaplaException {
+		Attribute attribute = newAttribute(AttributeType.STRING, Attribute.TYPE.getId(id));
+		attribute.setKey(key);
+		setName(attribute.getName(), key);
+		return attribute;
+	}
+
 
 	private DynamicTypeImpl newDynamicType(String classificationType, String key) throws RaplaException {
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
@@ -1856,9 +1872,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return dynamicType;
 	}
 
-	private Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
+	private Attribute newAttribute(AttributeType attributeType,String id)	throws RaplaException {
 		AttributeImpl attribute = new AttributeImpl(attributeType);
-		setNew(attribute);
+		if ( id == null)
+		{
+			setNew(attribute);
+		}
+		else
+		{
+			((RefEntity)attribute).setId(id);
+		}
 		attribute.setResolver( this);
 		return attribute;
 	}
@@ -1869,7 +1892,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		RaplaType raplaType = entity.getRaplaType();
 		String id = createIdentifier(raplaType,1)[0];
 		((RefEntity)entity).setId(id);
-		((RefEntity)entity).setVersion(0);
 	}
 	
 	

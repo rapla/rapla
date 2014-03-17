@@ -44,6 +44,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.Conflict;
@@ -662,7 +663,7 @@ public class RemoteOperator
         }
     }
     
-    public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end, Map<String,String> annotationQuery) throws RaplaException {
+    public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
         checkConnected();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableId = getIdList(allocatables);

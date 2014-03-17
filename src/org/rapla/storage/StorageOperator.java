@@ -37,6 +37,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -48,6 +49,7 @@ public interface StorageOperator extends EntityResolver {
 	public final static String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
 	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
 	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
+	public final static String CRYPTO_TYPE = "rapla:crypto";
 	
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
@@ -81,8 +83,11 @@ public interface StorageOperator extends EntityResolver {
 
     /** returns the reservations of the specified user, sorted by name.
      * @param allocatables 
+     * @param reservationFilters 
      * @param annotationQuery */
-    Collection<Reservation> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, Map<String, String> annotationQuery) throws RaplaException;
+    Collection<Reservation> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery) throws RaplaException;
+
+	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
     Category getSuperCategory();
 

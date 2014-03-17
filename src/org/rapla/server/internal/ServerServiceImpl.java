@@ -118,12 +118,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
     {
         super( parentContext, config, logger );
-    	try {
-    		// TEN Hours until the token expires
-			token = new SignedToken(60*60 * 10);
-		} catch (Exception e) {
-			throw new RaplaException( e.getMessage(), e);
-		}
+    	
 
         addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
         i18n =  parentContext.lookup( RaplaComponent.RAPLA_RESOURCES );
@@ -222,9 +217,19 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 }
             }
         }
+        addContainerProvidedComponent(RaplaKeyStorage.class, RaplaKeyStorage.class);
+        
+        try {
+    		RaplaKeyStorage keyStorage = getContext().lookup( RaplaKeyStorage.class);
+    		String secretKey = keyStorage.getRootKeyBase64();
+			// TEN Hours until the token expires
+			token = new SignedToken(60*60 * 10, secretKey);
+		} catch (Exception e) {
+			throw new RaplaException( e.getMessage(), e);
+		}
         Preferences preferences = operator.getPreferences( null, true );
         //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
-        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class, new DefaultConfiguration("encryption"));
+        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
         RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
     	String importExportTimeZone = TimeZone.getDefault().getID();
 		if ( entry != null)

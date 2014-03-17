@@ -54,7 +54,7 @@ public interface QueryModule
 
     /** returns all allocatables that match the passed ClassificationFilter. If null all readable allocatables are returned*/
     Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException;
-
+    
     /** returns all readable allocatables, same as getAllocatables(null)*/
     Allocatable[] getAllocatables() throws RaplaException;
 

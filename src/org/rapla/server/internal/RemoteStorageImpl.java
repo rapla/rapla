@@ -52,6 +52,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
@@ -636,7 +637,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    security.checkRead(sessionUser, entity);
 						allocatables.add( allocatable);
                     }
-					Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end, annotationQuery );
+					ClassificationFilter[] classificationFilters = null;
+					Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end, classificationFilters,annotationQuery );
                     for (Reservation res:reservations)
                     {
                     	if (isAllocatablesVisible(sessionUser, res))

@@ -59,7 +59,6 @@ import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -454,22 +453,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * Query-module *
 	 ******************************/
 	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
-		Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
-		Collection<Allocatable> objects = operator.getObjects(Allocatable.class);
-		allocatables.addAll(objects);
-
-		Iterator<Allocatable> it = allocatables.iterator();
+		Collection<Allocatable> objects = operator.getAllocatables(filters);
+		Iterator<Allocatable> it = objects.iterator();
 		while (it.hasNext()) {
 			Allocatable allocatable = it.next();
 			if (workingUser == null || workingUser.isAdmin())
 				continue;
 			if (!allocatable.canRead(workingUser))
 				it.remove();
-			
 		}
-
-		removeFilteredClassifications(allocatables, filters);
-		return allocatables;
+		return objects;
 	}
 
 	int queryCounter = 0;
@@ -480,7 +473,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Collection<Reservation> reservations = getTemplateReservations( templateName);
 			return reservations;
 		}
-		Collection<Reservation> reservations = new ArrayList<Reservation>();
 		List<Allocatable> allocList;
 		if (allocatables != null)
 		{
@@ -494,18 +486,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			allocList = Collections.emptyList();
 		}
-		reservations.addAll(operator.getReservations(user,allocList, start, end, null));
-		removeFilteredClassifications(reservations, reservationFilters);
-		Iterator<Reservation> it =reservations.iterator();
-		while (it.hasNext()) {
-			Reservation reservation = it.next();
-			String reservationTemplate = reservation.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
-			if ( reservationTemplate != null )
-			{
-				it.remove();
-			}
-		}
-
+		Collection<Reservation> reservations =operator.getReservations(user,allocList, start, end, reservationFilters,null);
 		// Category can_see = getUserGroupsCategory().getCategory(
 		// Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
 		if (getLogger().isDebugEnabled())
@@ -515,33 +496,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return reservations;
 	}
 
-	private void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {
-		if (filters == null)
-		{
-			// remove internal types if not specified in filters to remain backwards compatibility 
-			Iterator<? extends Classifiable> it = list.iterator();
-			while (it.hasNext()) {
-				Classifiable classifiable = it.next();
-				if ( DynamicTypeImpl.isInternalType(classifiable) )
-				{
-					it.remove();
-				}
-			}
-			return;
-		}
-
-		Iterator<? extends Classifiable> it = list.iterator();
-		while (it.hasNext()) {
-			Classifiable classifiable = it.next();
-			if (!ClassificationFilter.Util.matches(filters, classifiable))
-			{
-				it.remove();
-			}
-		}
-	}
-
 	public Allocatable[] getAllocatables() throws RaplaException {
 		return getAllocatables(null);
+		
+		
 	}
 
 	public Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException {
@@ -600,7 +558,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date end = null;
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		annotationQuery.put(ReservationAnnotations.KEY_TEMPLATE, name);
-		Collection<Reservation> result = operator.getReservations(user,allocList, start, end, annotationQuery);
+		Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery);
 		return result;
 	}
 	

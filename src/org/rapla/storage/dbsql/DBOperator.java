@@ -278,6 +278,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
         cache.clearAll();
         idTable.setCache( cache );
+
         // HSQLDB Special
         if ( hsqldb ) 
         {
@@ -356,6 +357,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     		}
   	        cache.clearAll();
   	        idTable.setCache(cache);
+  	        addInternalTypes(cache);
   	        loadData( c );
   	        idTable.setCache(cache);
   	        

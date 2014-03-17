@@ -30,6 +30,7 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
@@ -110,16 +111,17 @@ public class LocalCacheTest extends RaplaTestCase {
 				{
 		            Iterator<?> it = cache.getCollection(Period.TYPE).iterator();
 		            Period period = (Period) it.next();
+		            ClassificationFilter[] filters = null;
 		            Map<String, String> annotationQuery = null;
-		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),annotationQuery);
+		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery);
 		            assertEquals(0,reservations.size());
 		            period = (Period) it.next();
-		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), annotationQuery);
+		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery);
 		            assertEquals(2, reservations.size());
 		            User user = cache.getUser("homer");
-		            reservations = storage.getReservations(user,null,null,null, annotationQuery);
+		            reservations = storage.getReservations(user,null,null,null, filters,annotationQuery);
 		            assertEquals(3, reservations.size());
-		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(), annotationQuery);
+		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery);
 		            assertEquals(2, reservations.size());
 		        }
 		        {
@@ -158,7 +160,8 @@ public class LocalCacheTest extends RaplaTestCase {
         User user = null;
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;
-		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, annotationQuery);
+		ClassificationFilter[] filters = null;
+		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, filters,annotationQuery);
         assertEquals( 1, reservations.size());
     }
 }

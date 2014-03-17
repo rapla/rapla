@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -42,9 +43,13 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ParentEntity;
@@ -200,6 +205,56 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		finally
 		{
 			unlock(readLock);
+		}
+	}
+	
+
+	public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
+	{
+		Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+		Collection<? extends Allocatable> objects = getObjects( Allocatable.class);
+		allocatables.addAll(objects);
+		removeFilteredClassifications(allocatables, filters);
+		return allocatables;
+		
+	}
+
+	
+//	reservations.addAll(operator.getReservations(user,allocList, start, end, reservationFilters,null));
+//	removeFilteredClassifications(reservations, reservationFilters);
+//	Iterator<Reservation> it =reservations.iterator();
+//	while (it.hasNext()) {
+//		Reservation reservation = it.next();
+//		String reservationTemplate = reservation.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
+//		if ( reservationTemplate != null )
+//		{
+//			it.remove();
+//		}
+//	}
+	
+	
+	protected void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {
+		if (filters == null)
+		{
+			// remove internal types if not specified in filters to remain backwards compatibility 
+			Iterator<? extends Classifiable> it = list.iterator();
+			while (it.hasNext()) {
+				Classifiable classifiable = it.next();
+				if ( DynamicTypeImpl.isInternalType(classifiable) )
+				{
+					it.remove();
+				}
+			}
+			return;
+		}
+
+		Iterator<? extends Classifiable> it = list.iterator();
+		while (it.hasNext()) {
+			Classifiable classifiable = it.next();
+			if (!ClassificationFilter.Util.matches(filters, classifiable))
+			{
+				it.remove();
+			}
 		}
 	}
 	

@@ -79,6 +79,9 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             openElement("relax:optional");
         openTag("relax:element");
         att("name",attribute.getKey());
+        if (isIdOnly())
+            att("id",getId(attribute));
+
         printVersion( attribute);
 
         AttributeType type = attribute.getType();
