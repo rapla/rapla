@@ -12,15 +12,42 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+
 public interface AttributeAnnotations
+
 {
-    String KEY_EDIT_VIEW = "edit-view";
-    String KEY_EXPECTED_ROWS = "expected-rows";
-    String KEY_EXPECTED_COLUMNS = "expected-columns";
-    String KEY_MULTI_SELECT = "multi-select";
+//	public enum EDIT_VIEW implements RaplaAnnotation
+//	{
+//		mainView,
+//		additionalView,
+//		noView;
+//		public boolean check(Annotatable annotatable) {
+//			return annotatable instanceof Attribute;
+//		}
+//
+//		public List<String> getValues(Annotatable annotable)
+//				throws RaplaException {
+//			ArrayList<String> values = new ArrayList<String>();
+//			for ( Enum en: values()){
+//				values.add( en.name());
+//			}
+//			return values;
+//		}
+//	}
+
+	String KEY_EDIT_VIEW = "edit-view";
     String VALUE_EDIT_VIEW_MAIN = "main-view";
     String VALUE_EDIT_VIEW_ADDITIONAL = "additional-view";
     String VALUE_EDIT_VIEW_NO_VIEW = "no-view";
+	
+    String KEY_EXPECTED_ROWS = "expected-rows";
+    String KEY_EXPECTED_COLUMNS = "expected-columns";
+    String KEY_MULTI_SELECT = "multi-select";
+    String KEY_COLOR = "color";
+    String KEY_EMAIL = "email";
+    String KEY_CATEGORIZATION = "categorization";
+    String KEY_PERMISSION_MODIFY = "permission_modify";
+    String KEY_PERMISSION_READ = "permission_read";
 }
 
 

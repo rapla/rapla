@@ -269,14 +269,14 @@ public abstract class RaplaBuilder extends RaplaComponent
         	String color =null;
         	if (annotation  == null)
         	{
-        		annotation =  type.getAttribute("color") != null ? DynamicTypeAnnotations.COLORS_COLOR_ATTRIBUTE: DynamicTypeAnnotations.COLORS_AUTOMATED;
+        		annotation =  type.getAttribute("color") != null ? DynamicTypeAnnotations.VALUE_COLORS_COLOR_ATTRIBUTE: DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED;
         	}
         	color = getColorForClassifiable( allocatable );
-            if ( color == null && annotation.equals(DynamicTypeAnnotations.COLORS_AUTOMATED))
+            if ( color == null && annotation.equals(DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED))
             {
             	color = RaplaColors.getResourceColor(i++);
             }
-            else if (  annotation.equals(DynamicTypeAnnotations.COLORS_DISABLED))
+            else if (  annotation.equals(DynamicTypeAnnotations.VALUE_COLORS_DISABLED))
             {
             	color = null;
             }
@@ -292,7 +292,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         Classification c = classifiable.getClassification();
         Attribute colorAttribute = c.getAttribute("color");
         String annotation = c.getType().getAnnotation(DynamicTypeAnnotations.KEY_COLORS);
-        if ( annotation != null && annotation.equals( DynamicTypeAnnotations.COLORS_DISABLED))
+        if ( annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_COLORS_DISABLED))
         {
         	return null;
         }

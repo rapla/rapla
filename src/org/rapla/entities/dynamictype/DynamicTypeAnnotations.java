@@ -24,9 +24,9 @@ public interface DynamicTypeAnnotations
     String VALUE_CLASSIFICATION_TYPE_RAPLATYPE="rapla";
     
     String KEY_COLORS="colors";
-	String COLORS_AUTOMATED = "rapla:automated";
-	String COLORS_COLOR_ATTRIBUTE = "color";
-	String COLORS_DISABLED = "rapla:disabled";
+	String VALUE_COLORS_AUTOMATED = "rapla:automated";
+	String VALUE_COLORS_COLOR_ATTRIBUTE = "color";
+	String VALUE_COLORS_DISABLED = "rapla:disabled";
 	
 	String KEY_CONFLICTS="conflicts";
 	String VALUE_CONFLICTS_NONE="never";
@@ -35,6 +35,8 @@ public interface DynamicTypeAnnotations
 	
 	String KEY_TRANSFERED_TO_CLIENT = "transferedToClient";
 	String VALUE_TRANSFERED_TO_CLIENT_NEVER = "never";
+	
+	String KEY_LOCATION="location";
 }
 
 

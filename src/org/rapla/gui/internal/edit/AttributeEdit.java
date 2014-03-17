@@ -273,6 +273,7 @@ class DefaultConstraints extends AbstractEditField
     JLabel typeLabel = new JLabel();
     JLabel categoryLabel = new JLabel();
     JLabel dynamicTypeLabel = new JLabel();
+    JLabel emailLabel = new JLabel();
     JLabel defaultLabel = new JLabel();
     JLabel multiSelectLabel = new JLabel();
     JLabel tabLabel = new JLabel();
@@ -304,6 +305,7 @@ class DefaultConstraints extends AbstractEditField
     TextField defaultSelectText;
     BooleanField defaultSelectBoolean;
     BooleanField multiSelect;
+    BooleanField emailSelect;
     RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0),null,null, false);
     RaplaCalendar defaultSelectDate ;
     static final Long DEFAULT_ROWS = new Long(1);
@@ -313,6 +315,7 @@ class DefaultConstraints extends AbstractEditField
     RaplaNumber expectedColumns = new RaplaNumber(DEFAULT_COLUMNS,new Long(1),null, false);
     JComboBox tabSelect = new JComboBox();
 
+    boolean emailPossible = false;
     Category rootCategory;
 
     DefaultConstraints(RaplaContext sm) throws RaplaException{
@@ -340,11 +343,12 @@ class DefaultConstraints extends AbstractEditField
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
         multiSelect = new BooleanField(sm,"multiselect");
+        emailSelect = new BooleanField(sm,"email");
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]
             {{5, pre, 5, fill },  // Columns
-             {5, pre ,5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5,pre, 5}} // Rows
+             {5, pre ,5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5,pre, 5, pre, 5}} // Rows
                                           ));
         panel.add("1,1,l,f", nameLabel);
         panel.add("3,1,f,f", name.getComponent() );
@@ -352,31 +356,33 @@ class DefaultConstraints extends AbstractEditField
         panel.add("3,3,f,f", key.getComponent() );
         panel.add("1,5,l,f", typeLabel);
         panel.add("3,5,l,f", classSelect);
+        panel.add("1,7,l,t", emailLabel);
+        panel.add("3,7,l,t", emailSelect.getComponent());
         panel.add("1,7,l,t", categoryLabel);
         panel.add("3,7,l,t", categorySelect.getComponent());
         panel.add("1,7,l,t", dynamicTypeLabel);
         panel.add("3,7,l,t", dynamicTypeSelect.getComponent());
-        panel.add("1,7,l,t", expectedRowsLabel);
-        panel.add("3,7,l,t", expectedRows);
-        panel.add("1,9,l,t", expectedColumnsLabel);
-        panel.add("3,9,l,t", expectedColumns);
+        panel.add("1,9,l,t", expectedRowsLabel);
+        panel.add("3,9,l,t", expectedRows);
         panel.add("1,9,l,t", multiSelectLabel);
         panel.add("3,9,l,t", multiSelect.getComponent());
-        panel.add("1,11,l,t", defaultLabel);
-        panel.add("3,11,l,t", defaultSelectCategory.getComponent());
-        panel.add("3,11,l,t", defaultSelectText.getComponent());
-        panel.add("3,11,l,t", defaultSelectBoolean.getComponent());
-        panel.add("3,11,l,t", defaultSelectDate);
-        panel.add("3,11,l,t", defaultSelectNumber);
-        panel.add("1,13,l,t", tabLabel);
-        panel.add("3,13,l,t", tabSelect);
-
+        panel.add("1,11,l,t", expectedColumnsLabel);
+        panel.add("3,11,l,t", expectedColumns);
+        panel.add("1,13,l,t", defaultLabel);
+        panel.add("3,13,l,t", defaultSelectCategory.getComponent());
+        panel.add("3,13,l,t", defaultSelectText.getComponent());
+        panel.add("3,13,l,t", defaultSelectBoolean.getComponent());
+        panel.add("3,13,l,t", defaultSelectDate);
+        panel.add("3,13,l,t", defaultSelectNumber);
+        panel.add("1,15,l,t", tabLabel);
+        panel.add("3,15,l,t", tabSelect);
 
         setModel();
 
         nameLabel.setText(getString("name") + ":");
         keyLabel.setText(getString("key") +" *"+ ":");
         typeLabel.setText(getString("type") + ":");
+        emailLabel.setText(getString("email") + ":");
         categoryLabel.setText(getString("root") + ":");
         dynamicTypeLabel.setText(getString("root") + ":");
         expectedRowsLabel.setText(getString("expected_rows") + ":");
@@ -458,6 +464,8 @@ class DefaultConstraints extends AbstractEditField
         try {
             mapping = true;
             clearValues();
+            String classificationType = attribute.getDynamicType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+			emailPossible = classificationType != null && (classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON) || classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE));
             name.setValue( attribute.getName());
             key.setValue( attribute.getKey());
             final AttributeType attributeType = attribute.getType();
@@ -476,6 +484,21 @@ class DefaultConstraints extends AbstractEditField
             else if (attributeType.equals(AttributeType.STRING)) 
             {
                 defaultSelectText.setValue( (String)attribute.defaultValue());
+                String value = attribute.getAnnotation(AttributeAnnotations.KEY_EMAIL);
+                final boolean emailValue;
+                if ( value != null )
+                {
+                	emailValue = value.equals("true");
+                }
+                else if ( attribute.getKey().equalsIgnoreCase("email"))
+                {
+                	emailValue =  true;
+                }
+                else
+                {
+                	emailValue = false;
+                }
+				emailSelect.setValue( emailValue);
             }
             else if (attributeType.equals(AttributeType.BOOLEAN)) 
             {
@@ -498,7 +521,7 @@ class DefaultConstraints extends AbstractEditField
             expectedRows.setNumber( rows );
             Long columns = new Long(attribute.getAnnotation(AttributeAnnotations.KEY_EXPECTED_COLUMNS, String.valueOf(TextField.DEFAULT_LENGTH)));
             expectedColumns.setNumber( columns );
-            
+            //String selectedTab = attribute.getAnnotation(AttributeAnnotations.EDIT_VIEW.class,AttributeAnnotations);//KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             tabSelect.setSelectedItem(getString(selectedTab));
             update();
@@ -548,7 +571,7 @@ class DefaultConstraints extends AbstractEditField
         else
         {
         	attribute.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, null);
-        	String value = multiSelect.getValue()? "true":"false";
+        	String value = multiSelect.getValue()? "true":null;
         	attribute.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, value);
         }
         
@@ -583,6 +606,25 @@ class DefaultConstraints extends AbstractEditField
             	defaultValue = null;
             }
             attribute.setDefaultValue( defaultValue);
+
+            Boolean emailValue = emailSelect.getValue();
+			String value;
+			if ( emailValue)
+			{
+				value = "true";
+			}
+			else
+			{
+				if ( attribute.getKey().equalsIgnoreCase("email"))
+				{
+					value = "false";
+				}
+				else
+				{
+					value = null;
+				}
+			}
+        	attribute.setAnnotation(AttributeAnnotations.KEY_EMAIL, value);
             attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_ROWS ,  newRows);
             attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_COLUMNS,  newColumns);
         } else {
@@ -608,6 +650,9 @@ class DefaultConstraints extends AbstractEditField
         final boolean dateVisible  = type.equals(AttributeType.DATE);
         boolean expectedRowsVisible = textVisible;
         boolean expectedColumnsVisible = textVisible;
+        boolean emailVisible = textVisible && emailPossible;
+		emailLabel.setVisible( emailVisible );
+        emailSelect.getComponent().setVisible( emailVisible );
         categoryLabel.setVisible( categoryVisible );
         categorySelect.getComponent().setVisible( categoryVisible );
         dynamicTypeLabel.setVisible( allocatableVisible);

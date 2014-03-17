@@ -16,6 +16,8 @@ package org.rapla.entities;
 
 public interface Annotatable {
     void setAnnotation(String key, String annotation) throws IllegalAnnotationException;
+    //<T extends RaplaAnnotation> String getAnnotation(Class<T> annotation);
+    //<T extends RaplaAnnotation> String  getAnnotation(Class<T> annotation, T defaultValue);
     String getAnnotation(String key);
     String getAnnotation(String key, String defaultValue);
     String[] getAnnotationKeys();
