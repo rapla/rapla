@@ -45,11 +45,11 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 {
 	transient Map listMap;// = new HashMap<Class, List<Entity>>(); 
 	//transient Map<Class,List> lists = new LinkedHashMap<Class,List>();
+	List<CategoryImpl> categories = createList(Category.class);
+	List<DynamicTypeImpl> types = createList(DynamicType.class);
+	List<UserImpl> users = createList(User.class);
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> allocatable = createList(Allocatable.class);
-	List<CategoryImpl> categories = createList(Category.class);
-	List<UserImpl> users = createList(User.class);
-	List<DynamicTypeImpl> types = createList(DynamicType.class);
 	List<ReservationImpl> reservations =  createList(Reservation.class);
 	List<PeriodImpl> periods =  createList(Period.class);
 	List<ConflictImpl> conflicts =  createList(Conflict.class);

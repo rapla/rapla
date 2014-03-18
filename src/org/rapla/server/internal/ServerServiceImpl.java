@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2013 Christopher Kohlhaas              |
+ | Copyright (C) 2013 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -55,6 +55,7 @@ import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
@@ -217,7 +218,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 }
             }
         }
-        addContainerProvidedComponent(RaplaKeyStorage.class, RaplaKeyStorage.class);
+        addContainerProvidedComponent(RaplaKeyStorage.class, RaplaKeyStorageImpl.class);
         
         try {
     		RaplaKeyStorage keyStorage = getContext().lookup( RaplaKeyStorage.class);
@@ -596,95 +597,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
              {
             	 try
             	 {
-	            	 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
 	            	 User user;
+	            	 
 	            	 if ( standaloneSession == null)
 	            	 {
-		            	 Logger logger = getLogger().getChildLogger("login");
-		            	 logger.info( "User '" + username + "' is requesting login."  );
-		            	 if ( authenticationStore != null )
-		                 {
-		                	 logger.info("Checking external authentifiction for user " + username);
-		                	 boolean authenticateExternal;
-		                	 try
-		                	 {
-		                		 authenticateExternal = authenticationStore.authenticate( username, password );
-		                	 }
-		                	 catch (RaplaException ex)
-		                	 {
-		                		 authenticateExternal= false;
-		                		 getLogger().error(ex.getMessage(), ex);
-		                	 }
-		                	 if (authenticateExternal)
-		                	 {
-		                		 logger.info("Successfull for " + username);
-			                	 //@SuppressWarnings("unchecked")
-			                     user = operator.getUser( username );
-			                     if ( user == null )
-			                     {
-			                		 logger.info("User not found in localstore. Creating new Rapla user " + username);
-			                         UserImpl newUser = new UserImpl();
-			                         newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
-			                         user = newUser;
-			                     }
-			                     else
-			                     {
-			                        Set<Entity>singleton = Collections.singleton((Entity)user);
-									Collection<Entity> editList = operator.editObjects( singleton, null );
-									user = (User)editList.iterator().next();
-			                     }
-			                     
-			                     boolean initUser ;
-			                     try
-			                     {
-			                         Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
-			                		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
-			                         initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
-			                     } catch (RaplaSecurityException ex){
-			                         throw new RaplaSecurityException(i18n.getString("error.login"));
-			                     }
-			                     if ( initUser )
-			                     {
-			                		 logger.info("Udating rapla user '" + username + "' from external source.");
-			                    	 List<Entity>storeList = new ArrayList<Entity>(1);
-			                         storeList.add( user);
-			                         List<Entity>removeList = Collections.emptyList();
-			                         
-			                         operator.storeAndRemove( storeList, removeList, null );
-			                     }
-			                     else
-			                     {
-			                		 logger.info("User '" + username  + "' already up to date");
-			                     }
-			                 }
-		                	 else
-		                	 {
-		                		 logger.info("Now trying to authenticate with local store '" + username + "'");
-		                		 operator.authenticate( username, password );
-		                	 }
-		                	 // do nothing
-		                 } // if the authenticationStore can't authenticate the user is checked against the local database
-		                 else
-		                 {
-		                	 logger.info("Check password for " + username);
-		                	 operator.authenticate( username, password );
-		                 }
-		            	 
-		            	 if ( connectAs != null && connectAs.length() > 0)
-		            	 {
-		            		 logger.info("Successfull login for '" + username  +"' acts as user '" + connectAs + "'");
-		            	 }
-		            	 else
-		            	 {
-		            		 logger.info("Successfull login for '" + username + "'");
-		            	 }
-		            	 user = operator.getUser(toConnect);
-		            	 
-		            	 if ( user == null)
-		            	 {
-		            		 throw new RaplaException("User with username '" + toConnect + "' not found");
-		            	 }
-		            	 
+	            		 Logger logger = getLogger().getChildLogger("login");
+	            		 user = authenticate(username, password, connectAs,	logger);
 		            	 session.setUser( user);
 						
 	
@@ -692,6 +610,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	 }
 	            	 else
 	                 {
+	            		 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
 	            		 // don't check passwords in standalone version
 	                	 user = operator.getUser( toConnect);
 	                	 if ( user == null)
@@ -719,8 +638,105 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	 return new ResultImpl<String>(ex);
 	             }
              }
-
+			
         };
+    }
+    
+    public User authenticate(String username, String password,String connectAs, Logger logger) throws RaplaException,RaplaSecurityException {
+		User user;
+		String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
+		 logger.info( "User '" + username + "' is requesting login."  );
+		 if ( authenticationStore != null )
+		 {
+			 logger.info("Checking external authentifiction for user " + username);
+			 boolean authenticateExternal;
+			 try
+			 {
+				 authenticateExternal = authenticationStore.authenticate( username, password );
+			 }
+			 catch (RaplaException ex)
+			 {
+				 authenticateExternal= false;
+				 getLogger().error(ex.getMessage(), ex);
+			 }
+			 if (authenticateExternal)
+			 {
+				 logger.info("Successfull for " + username);
+		    	 //@SuppressWarnings("unchecked")
+		         user = operator.getUser( username );
+		         if ( user == null )
+		         {
+		    		 logger.info("User not found in localstore. Creating new Rapla user " + username);
+		             UserImpl newUser = new UserImpl();
+		             newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
+		             user = newUser;
+		         }
+		         else
+		         {
+		            Set<Entity>singleton = Collections.singleton((Entity)user);
+					Collection<Entity> editList = operator.editObjects( singleton, null );
+					user = (User)editList.iterator().next();
+		         }
+		         
+		         boolean initUser ;
+		         try
+		         {
+		             Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
+		    		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
+		             initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
+		         } catch (RaplaSecurityException ex){
+		             throw new RaplaSecurityException(i18n.getString("error.login"));
+		         }
+		         if ( initUser )
+		         {
+		    		 logger.info("Udating rapla user '" + username + "' from external source.");
+		        	 List<Entity>storeList = new ArrayList<Entity>(1);
+		             storeList.add( user);
+		             List<Entity>removeList = Collections.emptyList();
+		             
+		             operator.storeAndRemove( storeList, removeList, null );
+		         }
+		         else
+		         {
+		    		 logger.info("User '" + username  + "' already up to date");
+		         }
+		     }
+			 else
+			 {
+				 logger.info("Now trying to authenticate with local store '" + username + "'");
+				 operator.authenticate( username, password );
+			 }
+			 // do nothing
+		 } // if the authenticationStore can't authenticate the user is checked against the local database
+		 else
+		 {
+			 logger.info("Check password for " + username);
+			 operator.authenticate( username, password );
+		 }
+		 
+		 if ( connectAs != null && connectAs.length() > 0)
+		 {
+			 logger.info("Successfull login for '" + username  +"' acts as user '" + connectAs + "'");
+		 }
+		 else
+		 {
+			 logger.info("Successfull login for '" + username + "'");
+		 }
+		 user = operator.getUser(toConnect);
+		 
+		 if ( user == null)
+		 {
+			 throw new RaplaException("User with username '" + toConnect + "' not found");
+		 }
+		return user;
+	}
+
+    
+    public User getUserWithoutPassword(String username) throws RaplaException
+    {
+    	String connectAs = null;
+		User user = authenticate(username, "", connectAs, getLogger());
+    	return user;
     }
     
     public User getUser(String tokenString) throws RaplaException

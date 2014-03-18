@@ -14,4 +14,6 @@ public interface RemoteServiceDispatcher {
 	JsonServletWrapper getJsonServlet(HttpServletRequest request) throws ServletException, RaplaException;
 
 	User getUser(String token) throws RaplaException;
+
+	User getUserWithoutPassword(String username) throws RaplaException;
 }

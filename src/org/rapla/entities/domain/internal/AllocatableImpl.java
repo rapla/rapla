@@ -51,7 +51,7 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     private Set<PermissionImpl> permissions = new LinkedHashSet<PermissionImpl>();
     private Date lastChanged;
     private Date createDate;
-    private Map<String,String> annotations = new LinkedHashMap<String,String>();
+    private Map<String,String> annotations;
     
     transient private boolean permissionArrayUpToDate = false;
     transient private PermissionImpl[] permissionArray;
@@ -349,6 +349,10 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     }
         
     public String getAnnotation(String key) {
+    	if ( annotations == null)
+    	{
+    		return null;
+    	}
         return annotations.get(key);
     }
 
@@ -359,6 +363,10 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
 
     public void setAnnotation(String key,String annotation) throws IllegalAnnotationException {
         checkWritable();
+        if ( annotations == null)
+        {
+        	annotations = new LinkedHashMap<String, String>(1);
+        }
         if (annotation == null) {
             annotations.remove(key);
             return;
@@ -367,6 +375,10 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
     }
 
     public String[] getAnnotationKeys() {
+    	if ( annotations == null)
+    	{
+    		return RaplaObject.EMPTY_STRING_ARRAY;
+    	}
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
@@ -387,7 +399,7 @@ public class AllocatableImpl extends SimpleEntity implements Allocatable,Dynamic
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
         @SuppressWarnings("unchecked")
-    	Map<String,String> annotationClone = (Map<String, String>) ((HashMap<String,String>) annotations).clone();
+    	Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  ((HashMap<String,String>)(annotations)).clone() : null);
         clone.annotations = annotationClone;
         return clone;
     }

@@ -782,6 +782,15 @@ public class MainServlet extends HttpServlet {
 			{
 				token = request.getParameter("access_token");
 			}
+			User user = null;
+			if ( token == null)
+			{
+				String username = request.getParameter("username");
+				if ( username != null)
+				{
+					user = serviceDispater.getUserWithoutPassword(username);
+				}
+			}
 //			Enumeration<String> headerNames = request.getHeaderNames();
 //			List<String> list  = new ArrayList<>();
 //			while (headerNames.hasMoreElements())
@@ -789,7 +798,10 @@ public class MainServlet extends HttpServlet {
 //				String header= headerNames.nextElement();
 //				list.add( header);
 //			}
-	    	User user = serviceDispater.getUser( token);
+			if ( user == null)
+			{
+				user = serviceDispater.getUser( token);
+			}
 	    	
 	    	RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous") {
 				
