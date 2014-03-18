@@ -145,8 +145,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
 			type.addAttribute(createStringAttributeWithId("name", -4));
-			type.addAttribute(createStringAttributeWithId("publicKey", -5));
-			type.addAttribute(createStringAttributeWithId("privateKey", -6));
+			type.addAttribute(createStringAttributeWithId("public", -5));
+			type.addAttribute(createStringAttributeWithId("secret", -6));
 			type.setResolver( this);
 			type.setReadOnly( );
 			cache.put( type);

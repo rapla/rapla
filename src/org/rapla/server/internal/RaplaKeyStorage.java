@@ -7,6 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -69,12 +70,27 @@ public class RaplaKeyStorage extends RaplaComponent
 //        	key.setClassification( newClassification);
 //        	getModification().store(obj);
         }
-    	rootKey = (String) key.getClassification().getValue( "privateKey");
-    	rootPublicKey = (String) key.getClassification().getValue( "publicKey");
+    	rootKey = (String) key.getClassification().getValue( "secret");
+    	rootPublicKey = (String) key.getClassification().getValue( "public");
     	if ( rootKey == null || rootPublicKey == null)
     	{
     		throw new RaplaException("Masterkey is empty. Remove resource with id " + key.getId() + " to reset key generation. ");
     	}
+    }
+    
+    public static class LoginInfo
+    {
+    	String login;
+    	String secret;
+    }
+    
+    public LoginInfo getSecrets(User user)
+    {
+    	return new LoginInfo();
+    }
+    
+    public void storeLoginInfo(User user,String login,String secret)
+    {
     }
 
 	private Classification generateRootKeyStorage(DynamicType dynamicType)	throws NoSuchAlgorithmException {
@@ -89,8 +105,8 @@ public class RaplaKeyStorage extends RaplaComponent
 		PrivateKey privateKeyObj = keyPair.getPrivate();
 		String publicKey =base64.encodeAsString(publicKeyObj.getEncoded());
 		String privateKey = base64.encodeAsString(privateKeyObj.getEncoded());
-		newClassification.setValue("publicKey", publicKey);
-		newClassification.setValue("privateKey", privateKey);
+		newClassification.setValue("public", publicKey);
+		newClassification.setValue("secret", privateKey);
 		return newClassification;
 	}
 

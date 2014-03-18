@@ -22,23 +22,15 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 
 
 public class RaplaConfigurationWriter extends RaplaXMLWriter {
-
-    private boolean ignoreConfigurationPasswords;
-    public static final TypedComponentRole<Boolean> Ignore_Configuration_Passwords = new TypedComponentRole<Boolean>("ignoreConfigurationPasswords");
 
     public RaplaConfigurationWriter(RaplaContext sm) throws RaplaException {
         super(sm);
     }
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
-        if (context.has(Ignore_Configuration_Passwords))
-        {
-            this.ignoreConfigurationPasswords = context.lookup(Ignore_Configuration_Passwords);
-        }
         RaplaConfiguration raplaConfig = (RaplaConfiguration) type ;
         openElement("rapla:" + RaplaConfiguration.TYPE.getLocalName());
         try {
@@ -66,12 +58,6 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
             for( int i = 0; i < attrNames.length; i++ )
             {
                 String key = attrNames[ i ];
-                String lowerCase = key.toLowerCase();
-				boolean containsPassword = lowerCase.indexOf("password")>=0 || key.indexOf("urlEncKey") >=0;
-                if ( ignoreConfigurationPasswords && containsPassword )
-                {
-                    continue;
-                }
                 String value = element.getAttribute( attrNames[ i ], "" );
                 attr.put( key, value);
             }
@@ -100,11 +86,7 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
             else
             {
                 closeTagOnLine();
-                boolean containsPassword = qName.toLowerCase().indexOf("password")>=0;
-                if ( !ignoreConfigurationPasswords || !containsPassword )
-                {
-                    print(value);
-                }
+                print(value);
                 closeElementOnLine(qName);
                 println();
             }

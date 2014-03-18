@@ -45,6 +45,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
@@ -61,11 +62,13 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
@@ -107,7 +110,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     RaplaLocale raplaLocale;
     CommandScheduler commandQueue;
     Cancelable scheduledCleanup;
-    
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
@@ -541,6 +543,15 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                     	if ( isTransferedToClient(entity))
                     	{
+                    		if ( entity instanceof Preferences)
+                    		{
+                    			Preferences preferences = (Preferences)entity;
+								User owner = preferences.getOwner();
+                    			if ( owner == null && !user.isAdmin())
+                    			{
+                    				entity = removeServerOnlyPreferences(preferences);
+                    			}
+                    		}
                     		evt.putStore(entity);
                     	}
                     }
@@ -552,7 +563,35 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	}
             }
             
-            public FutureResult<String[]> getTemplateNames()
+        	private Preferences removeServerOnlyPreferences(Preferences preferences) 
+            {
+            	Preferences clone = preferences.clone();
+            	{
+            		List<String> adminOnlyPreferences = new ArrayList<String>();
+            		adminOnlyPreferences.add(MailPlugin.class.getCanonicalName());
+            		adminOnlyPreferences.add(JNDIPlugin.class.getCanonicalName());
+                	
+            		RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+	                RaplaConfiguration newConfig = entry.clone();
+	            	for ( String className: adminOnlyPreferences)
+            		{
+	            	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
+		                if ( pluginConfig != null)
+		                {
+			                newConfig.removeChild( pluginConfig);
+			                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
+			                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
+			                newPluginConfig.setAttribute("enabled", enabled);
+			                newPluginConfig.setAttribute("class", className);
+			                newConfig.addChild( newPluginConfig);
+		                }
+            		}
+	                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
+            	}
+                return clone;
+			}
+
+			public FutureResult<String[]> getTemplateNames()
             {
             	try
             	{

@@ -342,7 +342,10 @@ public class DefaultConfiguration implements Configuration {
                 if (!first)
                 {
                     buf.append( ", ");
-                    first  =false;
+                }
+                else
+                {
+                	first = false;
                 }
                 buf.append(entry.getKey());
                 buf.append( "='");
