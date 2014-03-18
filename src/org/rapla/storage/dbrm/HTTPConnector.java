@@ -8,7 +8,6 @@ import java.io.Writer;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -18,6 +17,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.DependencyException;
@@ -53,7 +55,6 @@ import com.google.gwtjsonrpc.serializer.SqlTimestampDeserializer;
 
 public class HTTPConnector  implements Connector
 {
-    String sessionId;
     URL server;
     I18nBundle i18n;
     String clientVersion;
@@ -152,19 +153,16 @@ public class HTTPConnector  implements Connector
 
 	    URL methodURL = new URL(server,"/rapla/json/" + serviceUrl +"/" + methodName);
         //System.err.println("Calling " + methodURL.toExternalForm() );
-        methodURL = addSessionId( methodURL );
         HttpURLConnection conn = (HttpURLConnection)methodURL.openConnection();
         conn.setRequestMethod("POST");
         conn.setUseCaches( false );
+        conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
         conn.setRequestProperty("Content-Type", JsonConstants.JSON_TYPE + ";charset=utf-8");
-        conn.setRequestProperty("Cookie","JSESSIONID=" + sessionId);
         if ( token != null)
         {
         	conn.setRequestProperty("Authorization",token);
         }
-        //setSessionForRequest( conn );
         conn.setDoOutput(true);
-        
         try
         {
             conn.connect();
@@ -192,9 +190,6 @@ public class HTTPConnector  implements Connector
         InputStream inputStream = null;
         try
         {
-//        	String cookie = conn.getHeaderField("Set-Cookie");
-//        	updateSession ( cookie);
-//        	
         	String message = conn.getHeaderField("X-Error-Stacktrace");
             if ( message != null)
             {
@@ -202,7 +197,18 @@ public class HTTPConnector  implements Connector
             	RaplaException ex = deserializeException( classname, message, null);
             	return new ResultImpl(ex);
             }
-            inputStream = conn.getInputStream();
+            
+            String encoding = conn.getContentEncoding();
+			if (encoding != null && encoding.equalsIgnoreCase("gzip")) 
+			{
+				inputStream = new GZIPInputStream(conn.getInputStream());
+			}
+			else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
+            	 inputStream = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
+			}
+			else {
+				inputStream = conn.getInputStream();
+			}
             String resultString = readResultToString( inputStream);
             inputStream.close();
 
@@ -345,18 +351,6 @@ public class HTTPConnector  implements Connector
     }
 
 
-	private URL addSessionId(URL methodURL) throws MalformedURLException {
-		if ( sessionId != null)
-		{
-			String query = methodURL.getQuery();
-			String externalForm = methodURL.toExternalForm();
-			String path =  query != null ? externalForm.substring(externalForm.indexOf('?') + 1) : externalForm;
-			String newURL = path + ";jsessionid=" +sessionId + (query != null ? "?" + query : "");
-			return new URL(newURL);
-		}
-		return methodURL;
-	}
-
 	protected String getConnectError(Throwable ex2) {
 		try
 		{
@@ -373,13 +367,6 @@ public class HTTPConnector  implements Connector
 	    return server;
 	}
 
-//    private void setSessionForRequest( HttpURLConnection connection )
-//    {
-//        if ( sessionId != null)
-//        {
-//            connection.addRequestProperty("Cookie","JSESSIONID=" + sessionId);
-//        }
-//    }
     
 //    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
 //    {
@@ -399,31 +386,6 @@ public class HTTPConnector  implements Connector
 //            }
 //           
 //        }
-//    }
-
-//    private void updateSession( String entry )
-//    {
-//        Map<String,String> cookies = new HashMap<String,String>();
-//        if ( entry != null)
-//        {
-//            String[] splitted = entry.split(";");
-//            if ( splitted.length > 0)
-//            {
-//                String[] first = splitted[0].split("=");
-//                cookies.put(first[0], first[1]);
-//            }
-//        }
-//        String sessionId = cookies.get("JSESSIONID");
-//        if ( sessionId != null)
-//        {
-//            this.sessionId = sessionId;
-//        }
-//    }
-//    
-//    public boolean hasSession()
-//    {
-//        
-//        return sessionId != null;
 //    }
 
     public String getInfo()

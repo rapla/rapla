@@ -582,7 +582,13 @@ public class JsonServlet<CallType extends ActiveCall>  {
       o.write(call.callback);
       o.write("(");
     }
-    Gson create = gb.disableHtmlEscaping().setPrettyPrinting().create();
+    GsonBuilder builder = gb.disableHtmlEscaping();
+    String parameter = call.httpRequest.getParameter("pretty");
+	if ( parameter != null && !parameter.equals("false"))
+    {
+    	builder = builder.setPrettyPrinting();
+    }
+	Gson create = builder.create();
 	create.toJson(call, o);
     if (call.callback != null) {
       o.write(");");
