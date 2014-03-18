@@ -15,14 +15,26 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 	public void testKeyStore() throws RaplaException
 	{
 		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(getContext());
-		User user = getFacade().getUser();
+		User user = getFacade().newUser();
+		user.setUsername("testuser");
+		getFacade().store( user);
+		
 		String tagName = "test";
 		String login ="username";
 		String secret = "secret";
 		storage.storeLoginInfo(user, tagName, login, secret);
+		{
+			LoginInfo secrets = storage.getSecrets(user, tagName);
+			assertEquals( login,secrets.login);
+			assertEquals( secret,secrets.secret);
+		}
+		
+		getFacade().remove( user);
+		
 		LoginInfo secrets = storage.getSecrets(user, tagName);
-		assertEquals( login,secrets.login);
-		assertEquals( secret,secrets.secret);
+		{
+			assertNull( secrets);
+		}
 	}
 
 }

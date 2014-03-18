@@ -68,6 +68,7 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -852,8 +853,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //		}
 	}
 
-	private void addRemoveOperationsToClosure(UpdateEvent evt,EntityStore store,
-			Entity entity) throws RaplaException {
+	private void addRemoveOperationsToClosure(UpdateEvent evt,EntityStore store,Entity entity) throws RaplaException {
 		if (getLogger().isDebugEnabled() && !evt.getRemoveObjects().contains(entity)) {
 			getLogger().debug("Adding " + entity + " to remove closure");
 		}
@@ -930,34 +930,47 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Iterator<Entity>it = referencingEntities.iterator();
 		while (it.hasNext()) {
 			Entity entity = it.next();
-			if (!(entity instanceof Timestamp)) {
-				continue;
-			}
-			Timestamp timestamp = (Timestamp) entity;
-			User lastChangedBy = timestamp.getLastChangedBy();
-			if ( lastChangedBy == null || !lastChangedBy.equals( user) )
+			// Remove internal resources automatically if the owner is deleted
+			if ( entity instanceof Classifiable  && entity instanceof Ownable)
 			{
-				continue;
+				DynamicType type = ((Classifiable) entity).getClassification().getType();
+				if (((DynamicTypeImpl)type).isInternal())
+				{
+					User owner = ((Ownable)entity).getOwner();
+					if ( owner != null && owner.equals( user))
+					{
+						evt.putRemove( entity);
+						continue;
+					}
+				}
 			}
-			if ( entity instanceof Ownable  )
-			{
-				 User owner = ((Ownable) entity).getOwner();
-				 // we do nothing if the user is also owner,  that dependencies need to be resolved manually
-				 if ( owner != null && owner.equals(user))
-				 {
-					 continue;
-				 }
-			}
-			if (evt.getStoreObjects().contains(entity)) 
-			{
-				((SimpleEntity)evt.findEntity(entity)).setLastChangedBy(null);
-			}
-			else
-			{
-				Entity persistant= cache.tryResolve( entity.getId());
-				Entity dependant = editObject( entity, persistant, user);
-				((SimpleEntity)dependant).setLastChangedBy( null );
-				addStoreOperationsToClosure(evt, store, dependant);
+			if (entity instanceof Timestamp) {
+				Timestamp timestamp = (Timestamp) entity;
+				User lastChangedBy = timestamp.getLastChangedBy();
+				if ( lastChangedBy == null || !lastChangedBy.equals( user) )
+				{
+					continue;
+				}
+				if ( entity instanceof Ownable  )
+				{
+					 User owner = ((Ownable)entity).getOwner();
+					 // we do nothing if the user is also owner,  that dependencies need to be resolved manually
+					 if ( owner != null && owner.equals(user))
+					 {
+						 continue;
+					 }
+				}
+				if (evt.getStoreObjects().contains(entity)) 
+				{
+					((SimpleEntity)evt.findEntity(entity)).setLastChangedBy(null);
+				}
+				else
+				{
+					Entity persistant= cache.tryResolve( entity.getId());
+					Entity dependant = editObject( entity, persistant, user);
+					((SimpleEntity)dependant).setLastChangedBy( null );
+					addStoreOperationsToClosure(evt, store, dependant);
+				}
 			}
 		}
 		
@@ -977,6 +990,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			referencingEntities = getReferencingEntities(entity, store);
 		} else {
 			referencingEntities = cache.getReferers(Preferences.class, entity);
+		}
+		if ( entity instanceof User)
+		{
 		}
 		dependencyList.addAll(referencingEntities);
 		return dependencyList;
@@ -1200,7 +1216,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			// because a dependency could be removed in a stored object
 			Set<Entity> dependencies = getDependencies(entity, store);
 			for (Entity dependency : dependencies) {
-				if (!storeObjects.contains(dependency)) {
+				if (!storeObjects.contains(dependency) && !removeEntities.contains( dependency)) {
 					// only add the first 21 dependencies;
 					if (dep.size() > MAX_DEPENDENCY )
 					{
