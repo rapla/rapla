@@ -54,7 +54,6 @@ import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -252,8 +251,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
         return null;
     }
 
-    public void setFilter(CalendarSelectionModel o) throws RaplaException {
-        CalendarSelectionModel filter =  o;
+    public void setFilter(ClassifiableFilter filter) throws RaplaException {
 
         List<DynamicType> list = new ArrayList<DynamicType>();
         if ( !isResourceSelection) {
@@ -266,15 +264,11 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
         }
         setTypes( list.toArray( DynamicType.DYNAMICTYPE_ARRAY));
 
-        mapFrom( filter );
+        mapFromIntern(filter, false);
     }
 
-    public void mapFrom(ClassifiableFilter classifiableFilter) throws RaplaException {
-        mapFromIntern(classifiableFilter, false);
-    }
 
-	private void mapFromIntern(ClassifiableFilter classifiableFilter, boolean deselectAllIfFilterIsNull)
-			throws RaplaException {
+	private void mapFromIntern(ClassifiableFilter classifiableFilter, boolean deselectAllIfFilterIsNull) throws RaplaException {
 		final ClassificationFilter[] filters;
         if ( classifiableFilter != null)
         {

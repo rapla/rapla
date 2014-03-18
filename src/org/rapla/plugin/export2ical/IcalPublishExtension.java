@@ -23,7 +23,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 {
 	JPanel panel = new JPanel();
 	CalendarSelectionModel model;
-	final JCheckBox icalCheck;
+	final JCheckBox checkbox;
     final JTextField icalURL;
 	 
 	public IcalPublishExtension(RaplaContext context, CalendarSelectionModel model) {
@@ -34,22 +34,22 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED       }}));
         icalURL = new JTextField();
 
-    	icalCheck = new JCheckBox("ICAL " + getString("publish"));
+    	checkbox = new JCheckBox("ICAL " + getString("publish"));
     	final JPanel statusICal = createStatus( icalURL);
-    	icalCheck.addChangeListener(new ChangeListener()
+    	checkbox.addChangeListener(new ChangeListener()
     	{
            public void stateChanged(ChangeEvent e)
            {
-               boolean icalEnabled = icalCheck.isSelected() ;
+               boolean icalEnabled = checkbox.isSelected() ;
                statusICal.setEnabled( icalEnabled);
            }
     	});
-        panel.add(icalCheck,"0,0");
+        panel.add(checkbox,"0,0");
         panel.add( statusICal, "2,2,4,1");
         
         final String entry = model.getOption(Export2iCalPlugin.ICAL_EXPORT);
         boolean selected = entry != null && entry.equals("true");
-		icalCheck.setSelected( selected);
+		checkbox.setSelected( selected);
 		statusICal.setEnabled( selected);
 	}
 	
@@ -98,7 +98,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 
 	public void mapOptionTo() 
 	{
-		 final String icalSelected = icalCheck.isSelected() ? "true" : "false";
+		 final String icalSelected = checkbox.isSelected() ? "true" : "false";
          model.setOption( Export2iCalPlugin.ICAL_EXPORT, icalSelected);
 	}
 	

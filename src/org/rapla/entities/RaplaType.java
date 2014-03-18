@@ -99,7 +99,7 @@ public class RaplaType<T>  {
     }
     
     @SuppressWarnings("unchecked")
-	public static  <T extends RaplaObject> Set<T> retainObjects(Collection<RaplaObject> set,Collection<T> col) {
+	public static  <T extends RaplaObject> Set<T> retainObjects(Collection<? extends RaplaObject> set,Collection<T> col) {
 	    HashSet<RaplaObject> tempSet = new HashSet<RaplaObject>(set.size());
 	    tempSet.addAll(set);
 	    tempSet.retainAll(col);

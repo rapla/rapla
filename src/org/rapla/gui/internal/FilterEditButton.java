@@ -1,5 +1,7 @@
 package org.rapla.gui.internal;
 
+import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -10,7 +12,7 @@ import javax.swing.JWindow;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.ClassifiableFilterEdit;
@@ -22,7 +24,7 @@ public class FilterEditButton extends RaplaGUIComponent
     JWindow popup;
     ClassifiableFilterEdit ui;
         
-    public FilterEditButton(final RaplaContext context,final CalendarSelectionModel model, final ChangeListener listener, final boolean  isResourceSelection) 
+    public FilterEditButton(final RaplaContext context,final ClassifiableFilter filter, final ChangeListener listener, final boolean  isResourceSelection) 
     {
         super(context);
         filterButton = new RaplaArrowButton('v');
@@ -40,19 +42,30 @@ public class FilterEditButton extends RaplaGUIComponent
                     return;
                 }
                 try {
-                    if ( ui != null)
+                    if ( ui != null && listener != null)
                     {
                         ui.removeChangeListener( listener);
                     }
                     ui = new ClassifiableFilterEdit( context, isResourceSelection);
-                    ui.addChangeListener(listener);
-                    ui.setFilter( model);
+                    if ( listener != null)
+                    {
+                    	ui.addChangeListener(listener);
+                    }
+                    ui.setFilter( filter);
                     final Point locationOnScreen = filterButton.getLocationOnScreen();
                     final int y = locationOnScreen.y + 18;
                     final int x = locationOnScreen.x;
                     if ( popup == null)
                     {
-                    	popup = new JWindow((Frame)DialogUI.getOwnerWindow(filterButton));
+                    	Component ownerWindow = DialogUI.getOwnerWindow(filterButton);
+                    	if ( ownerWindow instanceof Frame)
+                    	{
+                    		popup = new JWindow((Frame)ownerWindow);
+                    	}
+                    	else if ( ownerWindow instanceof Dialog)
+                    	{
+                    		popup = new JWindow((Dialog)ownerWindow);
+                    	}
                     }
                     JComponent content = ui.getComponent();
 					popup.setContentPane(content );

@@ -32,8 +32,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
@@ -332,7 +332,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
             
         updateActions();
-		RaplaObject preferences = getQuery().getPreferences();
+		Entity preferences = getQuery().getPreferences();
 		UpdateResult modificationEvt = new UpdateResult( getUser());
         modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
         resourceSelection.dataChanged(modificationEvt);

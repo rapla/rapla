@@ -31,7 +31,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.Category;
-import org.rapla.entities.RaplaObject;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.facade.CalendarModel;
@@ -111,7 +111,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		    	model.setOption( CalendarModel.ONLY_MY_EVENTS, isSelected ? "false":"true");
 		    	updateOwnReservationsSelected();
 		    	try {
-	               	RaplaObject preferences = getQuery().getPreferences();
+	               	Entity preferences = getQuery().getPreferences();
 	   		    	UpdateResult modificationEvt = new UpdateResult( getUser());
 	   		    	modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
 	   				resourceSelection.dataChanged(modificationEvt);

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -43,7 +44,7 @@ public class UpdateResult implements ModificationEvent
         if ( operation == null)
             throw new IllegalStateException( "Operation can't be null" );
         operations.add(operation);
-        RaplaObject current = operation.getCurrent();
+        Entity current = operation.getCurrent();
         if ( current != null)
         {
         	RaplaType raplaType = current.getRaplaType();
@@ -55,15 +56,15 @@ public class UpdateResult implements ModificationEvent
         return user;
     }
     
-    public Set<RaplaObject> getRemoved() {
+    public Set<Entity> getRemoved() {
         return getObject( Remove.class);
     }
 
-    public Set<RaplaObject> getChangeObjects() {
+    public Set<Entity> getChangeObjects() {
         return getObject( Change.class);
     }
 
-    public Set<RaplaObject> getAddObjects() {
+    public Set<Entity> getAddObjects() {
         return getObject( Add.class);
     }
     
@@ -90,28 +91,28 @@ public class UpdateResult implements ModificationEvent
     	return Collections.unmodifiableCollection(operations);
     }
 
-    protected <T extends UpdateOperation> Set<RaplaObject> getObject( final Class<T> operationClass ) {
-        Set<RaplaObject> set = new HashSet<RaplaObject>();
+    protected <T extends UpdateOperation> Set<Entity> getObject( final Class<T> operationClass ) {
+        Set<Entity> set = new HashSet<Entity>();
         if ( operationClass == null)
             throw new IllegalStateException( "OperationClass can't be null" );
         Iterator<? extends UpdateOperation> it= getOperations( operationClass);
         while (it.hasNext() ) {
             UpdateOperation next = it.next();
-            RaplaObject current = next.getCurrent();
+            Entity current = next.getCurrent();
 			set.add( current);
         }
         return set;
     }
     
     static public class Add implements UpdateOperation {
-    	RaplaObject newObj; // the object in the state when it was added
-        public Add( RaplaObject newObj) {
+    	Entity newObj; // the object in the state when it was added
+        public Add( Entity newObj) {
             this.newObj = newObj;
         }
-        public RaplaObject getCurrent() {
+        public Entity getCurrent() {
             return newObj;
         }
-        public RaplaObject getNew() {
+        public Entity getNew() {
             return newObj;
         }
         
@@ -122,11 +123,11 @@ public class UpdateResult implements ModificationEvent
     }
 
     static public class Remove implements UpdateOperation {
-    	RaplaObject currentObj; // the actual represantation of the object
-        public Remove(RaplaObject currentObj) {
+    	Entity currentObj; // the actual represantation of the object
+        public Remove(Entity currentObj) {
             this.currentObj = currentObj;
         }
-        public RaplaObject getCurrent() {
+        public Entity getCurrent() {
             return currentObj;
         }
         public String toString()
@@ -137,19 +138,19 @@ public class UpdateResult implements ModificationEvent
     }
     
     static public class Change implements UpdateOperation{
-    	RaplaObject newObj; // the object in the state when it was changed
-    	RaplaObject oldObj; // the object in the state before it was changed
-        public Change( RaplaObject newObj, RaplaObject oldObj) {
+    	Entity newObj; // the object in the state when it was changed
+    	Entity oldObj; // the object in the state before it was changed
+        public Change( Entity newObj, Entity oldObj) {
             this.newObj = newObj;
             this.oldObj = oldObj;
         }
-        public RaplaObject getCurrent() {
+        public Entity getCurrent() {
             return newObj;
         }
-        public RaplaObject getNew() {
+        public Entity getNew() {
             return newObj;
         }
-        public RaplaObject getOld() {
+        public Entity getOld() {
             return oldObj;
         }
         
@@ -225,15 +226,15 @@ public class UpdateResult implements ModificationEvent
     	return interval;
     }
 
-	public boolean hasChanged(RaplaObject object) {
+	public boolean hasChanged(Entity object) {
 		return getChanged().contains(object);
 	}
 
-	public boolean isRemoved(RaplaObject object) {
+	public boolean isRemoved(Entity object) {
 		return getRemoved().contains( object);
 	}
 
-	public boolean isModified(RaplaObject object) 
+	public boolean isModified(Entity object) 
 	{
 		return hasChanged(object) || isRemoved( object);
 	}
@@ -250,8 +251,8 @@ public class UpdateResult implements ModificationEvent
         return RaplaType.retainObjects(getRemoved(),col);
     }
 
-	public Set<RaplaObject> getChanged() {
-		Set<RaplaObject> result  = new HashSet<RaplaObject>(getAddObjects());
+	public Set<Entity> getChanged() {
+		Set<Entity> result  = new HashSet<Entity>(getAddObjects());
 		result.addAll(getChangeObjects());
 		return result;
 	}

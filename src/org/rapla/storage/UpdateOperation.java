@@ -1,7 +1,7 @@
 package org.rapla.storage;
 
-import org.rapla.entities.RaplaObject;
+import org.rapla.entities.Entity;
 
 public interface UpdateOperation {
-    public RaplaObject getCurrent();
+    public Entity getCurrent();
 }

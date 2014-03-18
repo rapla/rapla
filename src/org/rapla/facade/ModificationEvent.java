@@ -15,30 +15,30 @@ package org.rapla.facade;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.RaplaObject;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 
 /** Encapsulate the changes that are made in the backend-store.*/
 public interface ModificationEvent
 {
     /** returns if the objects has changed.*/
-    boolean hasChanged(RaplaObject object);
+    boolean hasChanged(Entity object);
 
     /** returns if the objects was removed.*/
-    boolean isRemoved(RaplaObject object);
+    boolean isRemoved(Entity object);
     /** returns if the objects has changed or was removed.*/
-    boolean isModified(RaplaObject object);
+    boolean isModified(Entity object);
     
     /** returns if any object of the specified type has changed or was removed.*/
     boolean isModified(RaplaType raplaType);
     
     /** returns all removed objects .*/
-    Set<RaplaObject> getRemoved();
+    Set<Entity> getRemoved();
 
     /** returns all changed object .*/
-    Set<RaplaObject> getChanged();
+    Set<Entity> getChanged();
 
-	Set<RaplaObject> getAddObjects();
+	Set<Entity> getAddObjects();
     
     TimeInterval getInvalidateInterval();
 

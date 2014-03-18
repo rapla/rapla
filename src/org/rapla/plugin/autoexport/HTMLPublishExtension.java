@@ -27,7 +27,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 	 final JCheckBox showNavField;
      final JCheckBox saveSelectedDateField;
      final JTextField htmlURL;
-     final JCheckBox htmlCheck;
+     final JCheckBox checkbox;
      final JTextField titleField;
      final JPanel statusHtml;
      final JCheckBox onlyAllocationInfoField;
@@ -47,11 +47,11 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
         saveSelectedDateField = new JCheckBox();
         onlyAllocationInfoField = new JCheckBox();
         htmlURL = new JTextField();
-        htmlCheck = new JCheckBox("HTML " + getString("publish"));
+        checkbox = new JCheckBox("HTML " + getString("publish"));
         statusHtml = createStatus( htmlURL);
-        panel.add(htmlCheck,"0,0");
+        panel.add(checkbox,"0,0");
        
-        htmlCheck.addChangeListener(new ChangeListener()
+        checkbox.addChangeListener(new ChangeListener()
     	{
            public void stateChanged(ChangeEvent e)
            {
@@ -73,7 +73,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
         
         {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
-            htmlCheck.setSelected( entry != null && entry.equals("true"));
+            checkbox.setSelected( entry != null && entry.equals("true"));
         }
         {
             final String entry = model.getOption(CalendarModel.SHOW_NAVIGATION_ENTRY);
@@ -95,7 +95,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 	
 	 protected void updateCheck() 
 	 {
-			boolean htmlEnabled = htmlCheck.isSelected() && htmlCheck.isEnabled();
+			boolean htmlEnabled = checkbox.isSelected() && checkbox.isEnabled();
             titleField.setEnabled( htmlEnabled);
             showNavField.setEnabled( htmlEnabled);
             saveSelectedDateField.setEnabled( htmlEnabled);
@@ -162,7 +162,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 		String onlyAlloactionInfo = onlyAllocationInfoField.isSelected() ? "true" : "false";
 		model.setOption( CalendarModel.ONLY_ALLOCATION_INFO, onlyAlloactionInfo);
 	   
-		final String htmlSelected = htmlCheck.isSelected() ? "true" : "false";
+		final String htmlSelected = checkbox.isSelected() ? "true" : "false";
 		model.setOption( AutoExportPlugin.HTML_EXPORT, htmlSelected);
 	}
 	

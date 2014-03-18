@@ -261,7 +261,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     	{
     		return;
     	}
-    	Set<RaplaObject> removed = evt.getRemoved();
+    	Set<Entity> removed = evt.getRemoved();
     	if ( removed != null)
     	{
 	    	Collection<RaplaObject> newSelection = new ArrayList<RaplaObject>();

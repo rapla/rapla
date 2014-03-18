@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -52,8 +53,8 @@ public class AllocationChangeFinder
         }
         for (Iterator<UpdateResult.Change> it = updateResult.getOperations( UpdateResult.Change.class );it.hasNext();) {
             UpdateResult.Change changeOp =  it.next();
-            RaplaObject old =  changeOp.getOld();
-            RaplaObject newObj = changeOp.getNew();
+            Entity old =  changeOp.getOld();
+            Entity newObj = changeOp.getNew();
             changed(old , newObj, user );
         }
     }
@@ -97,7 +98,7 @@ public class AllocationChangeFinder
         }
     }
 
-    private void changed(RaplaObject oldEntity,RaplaObject newEntity, User user) {
+    private void changed(Entity oldEntity,Entity newEntity, User user) {
         RaplaType raplaType = oldEntity.getRaplaType();
         if (raplaType ==  Reservation.TYPE ) {
             if (getLogger().isDebugEnabled())
