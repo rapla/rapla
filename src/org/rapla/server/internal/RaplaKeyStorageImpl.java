@@ -15,9 +15,10 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.server.RaplaKeyStorage;
 import org.rapla.storage.StorageOperator;
 
-public class RaplaKeyStorage extends RaplaComponent 
+public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStorage
 {
 	private static final String ASYMMETRIC_ALGO = "RSA";
 
@@ -25,6 +26,7 @@ public class RaplaKeyStorage extends RaplaComponent
 	private String rootPublicKey;
 
 	private Base64 base64;
+	CryptoHandler cryptoHandler;
 	
     public String getRootKeyBase64() 
 	{
@@ -40,20 +42,16 @@ public class RaplaKeyStorage extends RaplaComponent
      * @param config
      * @throws RaplaException
      */
-    public RaplaKeyStorage(RaplaContext context) throws RaplaException {
+    public RaplaKeyStorageImpl(RaplaContext context) throws RaplaException {
         super(context);
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
-        DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
-        ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
-        newClassificationFilter.addEqualsRule("name", "root");
-        ClassificationFilter[] array = newClassificationFilter.toArray();
-		Allocatable[] store = getQuery().getAllocatables( array);
-        Allocatable key;
-        if ( store.length == 0)
+        Allocatable key = getAllocatable( null, "root");
+        if ( key == null)
         {
         	Classification newClassification;
 			try {
+		        DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
 				newClassification = generateRootKeyStorage(dynamicType);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RaplaException( e.getMessage());
@@ -61,36 +59,76 @@ public class RaplaKeyStorage extends RaplaComponent
         	key = getModification().newAllocatable(newClassification, null );
         	getModification().store( key);
         }
-        else
-        {
-        	key = store[0];
-        
-//        	Classification newClassification = generateRootKeyStorage(dynamicType);
-//        	key = getModification().edit( key);
-//        	key.setClassification( newClassification);
-//        	getModification().store(obj);
-        }
-    	rootKey = (String) key.getClassification().getValue( "secret");
+        rootKey = (String) key.getClassification().getValue( "secret");
     	rootPublicKey = (String) key.getClassification().getValue( "public");
+    	cryptoHandler = new CryptoHandler( rootKey);
     	if ( rootKey == null || rootPublicKey == null)
     	{
     		throw new RaplaException("Masterkey is empty. Remove resource with id " + key.getId() + " to reset key generation. ");
     	}
     }
     
-    public static class LoginInfo
+    public LoginInfo getSecrets(User user, String tagName) throws RaplaException
     {
-    	String login;
-    	String secret;
+    	Allocatable key = getAllocatable(user, tagName);
+    	if ( key == null)
+    	{
+    		return null;
+    	}
+    	LoginInfo loginInfo = new LoginInfo();
+    	loginInfo.login = (String) key.getClassification().getValue( "public");
+    	loginInfo.secret = cryptoHandler.decrypt((String) key.getClassification().getValue( "secret"), loginInfo.login);
+		return loginInfo;
     }
     
-    public LoginInfo getSecrets(User user)
+    public void storeLoginInfo(User user,String tagName,String login,String secret) throws RaplaException
     {
-    	return new LoginInfo();
+    	Allocatable key= getAllocatable(user, tagName);
+    	Classification classification;
+		if ( key == null)
+    	{
+    	    DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
+    	    classification = dynamicType.newClassification();
+    			
+    	}
+    	else
+    	{
+    		classification = key.getClassification();
+    	}
+		classification.setValue("name", tagName);
+		classification.setValue("public", login);
+		classification.setValue("secret", cryptoHandler.encrypt(secret, login));
     }
     
-    public void storeLoginInfo(User user,String login,String secret)
+    Allocatable getAllocatable(User user,String tagName) throws RaplaException
     {
+    	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
+        ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
+        newClassificationFilter.addEqualsRule("name", tagName);
+        ClassificationFilter[] array = newClassificationFilter.toArray();
+		Allocatable[] store = getQuery().getAllocatables( array);
+		if ( store.length > 0)
+		{
+			for ( Allocatable all:store)
+			{
+				User owner = all.getOwner();
+				if ( user == null)
+				{
+					if ( owner == null )
+					{
+						return all;
+					}
+				}
+				else
+				{
+					if ( owner != null && user.equals( owner))
+					{
+						return all;
+					}
+				}
+			}
+		}
+		return null;
     }
 
 	private Classification generateRootKeyStorage(DynamicType dynamicType)	throws NoSuchAlgorithmException {
