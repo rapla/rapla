@@ -61,7 +61,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         }
         rootKey = (String) key.getClassification().getValue( "secret");
     	rootPublicKey = (String) key.getClassification().getValue( "public");
-    	cryptoHandler = new CryptoHandler( rootKey);
+    	cryptoHandler = new CryptoHandler( context,rootKey);
     	if ( rootKey == null || rootPublicKey == null)
     	{
     		throw new RaplaException("Masterkey is empty. Remove resource with id " + key.getId() + " to reset key generation. ");
@@ -77,27 +77,37 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	}
     	LoginInfo loginInfo = new LoginInfo();
     	loginInfo.login = (String) key.getClassification().getValue( "public");
-    	loginInfo.secret = cryptoHandler.decrypt((String) key.getClassification().getValue( "secret"), loginInfo.login);
+    	String encryptedPassword = (String) key.getClassification().getValue( "secret");
+		String login = loginInfo.login;
+		loginInfo.secret = cryptoHandler.decrypt(encryptedPassword);
 		return loginInfo;
     }
     
     public void storeLoginInfo(User user,String tagName,String login,String secret) throws RaplaException
     {
     	Allocatable key= getAllocatable(user, tagName);
+    	
     	Classification classification;
 		if ( key == null)
     	{
     	    DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
     	    classification = dynamicType.newClassification();
-    			
+			key = getModification().newAllocatable(classification, null );
+			if ( user != null)
+			{
+				key.setOwner( user);
+			}
+			key.setClassification( classification);
     	}
     	else
     	{
+			key = getModification().edit( key);
     		classification = key.getClassification();
     	}
 		classification.setValue("name", tagName);
 		classification.setValue("public", login);
-		classification.setValue("secret", cryptoHandler.encrypt(secret, login));
+		classification.setValue("secret", cryptoHandler.encrypt(secret));
+		getModification().store( key);
     }
     
     Allocatable getAllocatable(User user,String tagName) throws RaplaException

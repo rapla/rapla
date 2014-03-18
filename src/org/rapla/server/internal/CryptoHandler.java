@@ -1,87 +1,71 @@
 package org.rapla.server.internal;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.codec.binary.Base64;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-/**
- * This class is used for en- and decrypting the password of a user.<br>
- * <b>Note: </b>The String in <i>PEPPER</i> should be changed to a random string before building
- * the application for a productive environment!
- * 
- * @author lutz
- *
- */
-public class CryptoHandler {
-	private static final String ENCODING = "ISO-8859-1";
-	String pepper;
-	public CryptoHandler( String pepper)
+
+public class CryptoHandler extends RaplaComponent {
+	
+    String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
+    private Cipher encryptionCipher;
+    private Cipher decryptionCipher;
+    private Base64 base64;
+	private static final String ENCODING = "UTF-8";
+
+	public CryptoHandler( RaplaContext context,String pepper) throws RaplaException
 	{
-		this.pepper = pepper;
+		super( context);
+		try {
+	        byte[] linebreake = {};
+			this.base64 = new Base64(64, linebreake, true);
+	        initializeCiphers( pepper);
+		} catch (Exception e) {
+			throw new RaplaException( e.getMessage(),e);
+		}
 	}
 
-	/**
-	 * This method encrypts a passed {@link String}
-	 * 
-	 * @param toBeEncrypted : {@link String} which needs to be encrypted
-	 * @param additive : {@link String} which is permanently associated with toBeEncrypted
-	 * @return {@link String}
-	 * @throws Exception
-	 */
-	public  String encrypt(String toBeEncrypted, String additive) throws RaplaException{
-		return crypt(toBeEncrypted, additive, Cipher.ENCRYPT_MODE);
-	}
-	/**
-	 * This method decrypts a passed {@link String}
-	 * 
-	 * @param toDeEncrypted : {@link String} which needs to be decrypted
-	 * @param additive : {@link String} which is permanently associated with toDeEncrypted
-	 * @return {@link String}
-	 * @throws Exception
-	 */
-	public  String decrypt(String toBeDecrypted, String additive) throws RaplaException{
-		return crypt(toBeDecrypted, additive, Cipher.DECRYPT_MODE);
-	}
-	/**
-	 * This method contains the en- and decryption logic - it uses <b>AES-128Bit</b>
-	 * 
-	 * @param toBeEncrypted : {@link String}
-	 * @param additive : {@link String}
-	 * @param cryptMode : {@link Integer}
-	 * @return {@link String}
-	 * @throws Exception
-	 */
-	private  String crypt(String toBeEncrypted , String additive, int cryptMode) throws RaplaException{
-		try
-		{
-			String returnVal = null;
-			MessageDigest sha = MessageDigest.getInstance("SHA-256");
-			
-			byte[] key = pepper.getBytes(ENCODING);
-			byte[] additiveBytes = additive.getBytes(ENCODING);
-			key = sha.digest(key);
-			additiveBytes = sha.digest(additiveBytes);	
+	 private void initializeCiphers(String pepper) throws InvalidKeyException, UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException {
+    	byte[] key = pepper.getBytes("UTF-8");
+    	MessageDigest sha = MessageDigest.getInstance("SHA-1");
+    	key = sha.digest(key);
+    	key = Arrays.copyOf(key, 16); // use only first 128 bit
+        Key specKey = new SecretKeySpec(key, "AES");
+		this.encryptionCipher = Cipher.getInstance(syncEncryptionAlg);
+        this.encryptionCipher.init(Cipher.ENCRYPT_MODE, specKey);
+
+        this.decryptionCipher = Cipher.getInstance(syncEncryptionAlg);
+        this.decryptionCipher.init(Cipher.DECRYPT_MODE, specKey);
+    }
+
 	
-			byte[] sessionKey =Arrays.copyOf(key, 16); // use only first 128 bit			
-			byte[] iv =Arrays.copyOf(additiveBytes, 16); // use only first 128 bit		
-			byte[] plaintext = toBeEncrypted.getBytes(ENCODING);
-			
-			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			cipher.init(cryptMode, new SecretKeySpec(sessionKey, "AES"), new IvParameterSpec(iv));
-			byte[]resultBytes = cipher.doFinal(plaintext);		
-			returnVal =  new String(resultBytes, ENCODING);
-	//		returnVal = resultBytes.toString();
-			return returnVal;
-		} catch ( Exception ex)
-		{
-			throw new RaplaException(ex.getMessage(), ex);
+	public  String encrypt(String toBeEncrypted) throws RaplaException{
+		try {
+			return base64.encodeToString(this.encryptionCipher.doFinal(toBeEncrypted.getBytes(ENCODING)));
+		} catch (Exception e) {
+			throw new RaplaException(e.getMessage(), e);
 		}
-		
 	}
+
+	public  String decrypt(String toBeDecryptedBase64) throws RaplaException{
+		try {
+			return new String(this.decryptionCipher.doFinal(base64.decode(toBeDecryptedBase64.getBytes(ENCODING))));
+		} catch (Exception e) {
+			throw new RaplaException(e.getMessage(), e);
+		}
+	}
+	
 
 }
