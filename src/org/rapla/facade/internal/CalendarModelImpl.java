@@ -13,6 +13,8 @@
 
 package org.rapla.facade.internal;
 
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +46,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -69,13 +70,12 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class CalendarModelImpl implements CalendarSelectionModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
-    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<RaplaMap<CalendarModelConfiguration>>("org.rapla.plugin.autoexport");
-	private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical"+ ".selected";
+    private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical"+ ".selected";
 	private static final String HTML_EXPORT_ENABLED = EXPORT_ENTRY + ".selected";
 	Date startDate;
     Date endDate;
@@ -134,9 +134,42 @@ public class CalendarModelImpl implements CalendarSelectionModel
         setOption(HTML_EXPORT_ENABLED, "false");
         setOption(ICAL_EXPORT_ENABLED, "false");                       
     }
+    
+    public boolean isMatchingSelectionAndFilter( Appointment appointment) throws RaplaException
+    {
+    	Reservation reservation = appointment.getReservation();
+    	if ( reservation == null)
+    	{
+    		return false;
+    	}
+		Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
+		HashSet hashSet = new HashSet( Arrays.asList(allocatables));
+		Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
+		hashSet.retainAll( selectedObjectsAndChildren);
+		boolean matchesAllotables =  hashSet.size() != 0;
+		if ( !matchesAllotables)
+		{
+			return false;
+		}
+		
+		Classification classification = reservation.getClassification();
+		if ( isDefaultEventTypes())
+		{
+			return true;
+		}
+		
+		ClassificationFilter[] reservationFilter = getReservationFilter();
+		for ( ClassificationFilter filter:reservationFilter)
+		{
+			if (filter.matches(classification))
+			{
+				return true;
+			}
+		}
+		return false;
+    }
 
-
-    private boolean setConfiguration(CalendarModelConfiguration config, final Map<String,String> alternativOptions) throws RaplaException {
+    public boolean setConfiguration(CalendarModelConfiguration config, final Map<String,String> alternativOptions) throws RaplaException {
     	ArrayList<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
         allocatableFilter.clear();
         reservationFilter.clear();
@@ -211,6 +244,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
             setEndDate(  DateTools.addYear(getStartDate()));
         }
         selectedObjects.addAll( config.getSelected());
+        if ( config.isResourceRootSelected())
+        {
+        	selectedObjects.add( ALLOCATABLES_ROOT);
+        }
         
         Set<User> selectedUsers = getSelected(User.TYPE);
         User currentUser = getUser();
@@ -340,10 +377,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
         final Date selectedDate = getSelectedDate();
         final Date startDate = getStartDate();
         final Date endDate = getEndDate();
-		return newRaplaCalendarModel( selected, allocatableFilter,eventFilter, title, startDate, endDate, selectedDate, viewName, optionMap);
+		boolean resourceRootSelected = selectedObjects.contains( ALLOCATABLES_ROOT);
+		return newRaplaCalendarModel( selected,resourceRootSelected, allocatableFilter,eventFilter, title, startDate, endDate, selectedDate, viewName, optionMap);
     }
     
     public CalendarModelConfiguration newRaplaCalendarModel(Collection<Entity> selected,
+    		boolean resourceRootSelected,
             ClassificationFilter[] allocatableFilter,
             ClassificationFilter[] eventFilter, String title, Date startDate,
             Date endDate, Date selectedDate, String view, Map<String,String> optionMap) throws RaplaException
@@ -394,7 +433,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
         	selectedIds.add( obj.getId());
         }
-        CalendarModelConfigurationImpl calendarModelConfigurationImpl = new CalendarModelConfigurationImpl(selectedIds, filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);
+        
+		CalendarModelConfigurationImpl calendarModelConfigurationImpl = new CalendarModelConfigurationImpl(selectedIds, resourceRootSelected,filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);
         calendarModelConfigurationImpl.setResolver( m_facade.getOperator());
 		return calendarModelConfigurationImpl;
     }
@@ -908,7 +948,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	 * @see org.rapla.calendarview.CalendarModel#getAllocatables()
 	 */
     public Allocatable[] getSelectedAllocatables() throws RaplaException {
-        Collection<Allocatable> result = new HashSet<Allocatable>();
+        Collection<Allocatable> result = getSelectedAllocatablesAsList();
+         return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
+   }
+
+	protected Collection<Allocatable> getSelectedAllocatablesAsList()
+			throws RaplaException {
+		Collection<Allocatable> result = new HashSet<Allocatable>();
         for(RaplaObject object:getSelectedObjectsAndChildren()) {
             if ( object.getRaplaType() ==  Conflict.TYPE ) {
                 result.add( ((Conflict)object).getAllocatable() );
@@ -925,8 +971,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         Collection<Allocatable> filteredAllocatables = getFilteredAllocatables();
         result.retainAll( filteredAllocatables);
-         return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
-   }
+		return result;
+	}
 
 
     public Collection<Conflict> getSelectedConflicts()  {
@@ -1091,43 +1137,19 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public void load(final String filename)  throws RaplaException, EntityNotFoundException, CalendarNotFoundExeption {
         final CalendarModelConfiguration modelConfig;
-        final Preferences preferences = m_facade.getPreferences(user);
-        final boolean isDefault = filename == null ;
-        if ( isDefault )
-        {
-            modelConfig = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
-        }
-        else if ( filename != null && !isDefault)
-        {
-            Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(EXPORT_ENTRY);
-            final CalendarModelConfiguration config;
-            if ( exportMap != null)
-            {
-            	config = exportMap.get(filename);
-            }
-            else
-            {
-            	config = null;
-            }
-            if ( config == null && isOldDefaultNameBehavoir(filename) )
-            {
-                modelConfig = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
-            }
-            else
-            {
-            	modelConfig = config;
-            }            
-        }
-        else
-        {
-        	modelConfig = null;
-        }
-        if ( modelConfig == null && filename != null && !isDefault)
+        boolean createIfNotNull =false;
+		
+		{
+			final Preferences preferences = m_facade.getPreferences(user, createIfNotNull);
+			modelConfig = getModelConfig(filename, preferences);
+	    }
+        if ( modelConfig == null && filename != null )
         {
             throw new CalendarNotFoundExeption("Calendar with name " +  filename + " not found.");
         }
         else
         {
+        	final boolean isDefault = filename == null ;
             Map<String,String> alternativeOptions = new HashMap<String,String>();
             if (modelConfig != null && modelConfig.getOptionMap() != null)
             {
@@ -1145,6 +1167,48 @@ public class CalendarModelImpl implements CalendarSelectionModel
             setConfiguration(modelConfig, alternativeOptions);
         }
     }
+
+    public CalendarModelConfiguration getModelConfig(final String filename,final Preferences preferences) {
+		final CalendarModelConfiguration modelConfig;
+		if (preferences != null)
+		{
+		    final boolean isDefault = filename == null ;
+		    if ( isDefault )
+		    {
+		        modelConfig = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
+		    }
+		    else if ( filename != null && !isDefault)
+		    {
+		        Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(EXPORT_ENTRY);
+		        final CalendarModelConfiguration config;
+		        if ( exportMap != null)
+		        {
+		        	config = exportMap.get(filename);
+		        }
+		        else
+		        {
+		        	config = null;
+		        }
+		        if ( config == null && isOldDefaultNameBehavoir(filename) )
+		        {
+		            modelConfig = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
+		        }
+		        else
+		        {
+		        	modelConfig = config;
+		        }            
+		    }
+		    else
+		    {
+		    	modelConfig = null;
+		    }
+		}
+		else
+		{
+			modelConfig = null;
+		}
+		return modelConfig;
+	}
     
     //Set<Appointment> conflictList = new HashSet<Appointment>();
 //	if ( selectedConflicts != null)
@@ -1296,6 +1360,18 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	public void setMarkedAllocatables(Collection<Allocatable> allocatables) {
 		this.markedAllocatables = allocatables;
 	}
+
+	public Collection<Appointment> getAppointments(TimeInterval interval) throws RaplaException 
+	{
+		Date startDate = interval.getStart();
+		Date endDate = interval.getEnd();
+		List<Reservation> reservations = getReservationsAsList(startDate, endDate);
+		Collection<Allocatable> allocatables =getSelectedAllocatablesAsList();
+		List<Appointment> result = RaplaBuilder.getAppointments(reservations, allocatables);
+		return result;
+	}
+
+	
 
 	
 }

@@ -30,8 +30,10 @@ import org.rapla.framework.TypedComponentRole;
  */
 public interface CalendarModelConfiguration extends RaplaObject<CalendarModelConfiguration>
 {
+	
     public static final RaplaType<CalendarModelConfiguration> TYPE = new RaplaType<CalendarModelConfiguration>(CalendarModelConfiguration.class, "calendar");
     public static final TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.DefaultSelection");
+    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<RaplaMap<CalendarModelConfiguration>>("org.rapla.plugin.autoexport");
     public Date getStartDate();
     public Date getEndDate();
     public Date getSelectedDate();
@@ -45,4 +47,5 @@ public interface CalendarModelConfiguration extends RaplaObject<CalendarModelCon
     public boolean isDefaultEventTypes();
     public boolean isDefaultResourceTypes(); 
 
+    public boolean isResourceRootSelected();
 }
