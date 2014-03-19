@@ -644,7 +644,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     protected void loadData(Connection connection) throws RaplaException, SQLException {
-        EntityStore entityStore = new EntityStore(null, cache.getSuperCategory());
+        EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore));
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
