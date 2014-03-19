@@ -78,7 +78,6 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	LoginInfo loginInfo = new LoginInfo();
     	loginInfo.login = (String) key.getClassification().getValue( "public");
     	String encryptedPassword = (String) key.getClassification().getValue( "secret");
-		String login = loginInfo.login;
 		loginInfo.secret = cryptoHandler.decrypt(encryptedPassword);
 		return loginInfo;
     }
@@ -108,6 +107,14 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 		classification.setValue("public", login);
 		classification.setValue("secret", cryptoHandler.encrypt(secret));
 		getModification().store( key);
+    }
+    
+    public void removeLoginInfo(User user, String tagName) throws RaplaException {
+    	Allocatable key= getAllocatable(user, tagName);
+    	if ( key != null)
+    	{
+    		getModification().remove( key);
+    	}
     }
     
     Allocatable getAllocatable(User user,String tagName) throws RaplaException
