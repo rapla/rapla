@@ -44,10 +44,12 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    Map<String,String> optionMap;
    boolean defaultEventTypes;
    boolean defaultResourceTypes;
+   boolean resourceRootSelected;
     
-   public CalendarModelConfigurationImpl( Collection<String> selected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
+   public CalendarModelConfigurationImpl( Collection<String> selected,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
 	   this.selected = selected != null ? new ArrayList<String>(selected) : new ArrayList<String>();
        this.view = view;
+       this.resourceRootSelected = resourceRootSelected;
        this.defaultEventTypes = defaultEventTypes;
        this.defaultResourceTypes = defaultResourceTypes;
        this.title = title;
@@ -71,6 +73,11 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    }
 
    CalendarModelConfigurationImpl() {
+   }
+   
+   @Override
+   public boolean isResourceRootSelected() {
+	   return resourceRootSelected;
    }
 
    public void setResolver( EntityResolver resolver)  {
@@ -169,6 +176,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
          dest.startDate = source.startDate;
          dest.endDate = source.endDate;
          dest.selectedDate = source.selectedDate;
+         dest.resourceRootSelected = source.resourceRootSelected;
          List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>();
          for ( ClassificationFilterImpl f: source.classificationFilters)
          {

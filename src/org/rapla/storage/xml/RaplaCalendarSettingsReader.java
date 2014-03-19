@@ -38,6 +38,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     Date selectedDate;
     Date startDate;
     Date endDate;
+    boolean resourceRootSelected;
     ClassificationFilter[] filter;
     RaplaMapReader optionMapReader;
     ClassificationFilterReader classificationFilterHandler;
@@ -67,7 +68,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             selectedDate = getDate( atts, "date");
             startDate = getDate( atts, "startdate");
             endDate = getDate( atts, "enddate");
-
+            resourceRootSelected = getString(atts, "rootSelected", "false").equalsIgnoreCase("true");
             idList = Collections.emptyList();
             optionMap = Collections.emptyMap();
         }
@@ -118,7 +119,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         if (localName.equals("calendar")) {
             boolean defaultResourceTypes =  classificationFilterHandler.isDefaultResourceTypes();
             boolean defaultEventTypes = classificationFilterHandler.isDefaultEventTypes();
-            settings = new CalendarModelConfigurationImpl( idList, filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
+            settings = new CalendarModelConfigurationImpl( idList, resourceRootSelected,filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
         }
 
         if (localName.equals("selected")) {

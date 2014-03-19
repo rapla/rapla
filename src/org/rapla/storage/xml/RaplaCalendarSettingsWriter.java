@@ -57,6 +57,10 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
         if ( calendar.getEndDate() != null && saveDateActive) {
             att("enddate", dateTimeFormat.formatDate( calendar.getEndDate()));
         }
+        if ( calendar.isResourceRootSelected())
+        {
+        	att("rootSelected","true");
+        }
         closeTag();
         Collection<Entity> selectedObjects = calendar.getSelected();
         if (selectedObjects != null && selectedObjects.size() > 0)

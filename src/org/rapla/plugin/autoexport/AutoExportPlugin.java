@@ -18,7 +18,6 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
@@ -28,7 +27,7 @@ public class AutoExportPlugin implements PluginDescriptor<ClientServiceContainer
 {
 	public static final String CALENDAR_GENERATOR = "calendar";
     public static final TypedComponentRole<I18nBundle> AUTOEXPORT_PLUGIN_RESOURCE = new TypedComponentRole<I18nBundle>( AutoExportPlugin.class.getPackage().getName() + ".AutoExportResources");
-    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> PLUGIN_ENTRY = CalendarModelImpl.EXPORT_ENTRY;
+    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> PLUGIN_ENTRY = CalendarModelConfiguration.EXPORT_ENTRY;
     public static final String HTML_EXPORT= PLUGIN_ENTRY + ".selected";
     public static final String SHOW_CALENDAR_LIST_IN_HTML_MENU = "show_calendar_list_in_html_menu";
     public static final boolean ENABLE_BY_DEFAULT = true;
