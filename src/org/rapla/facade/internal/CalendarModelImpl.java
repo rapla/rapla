@@ -143,7 +143,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     		return false;
     	}
 		Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
-		HashSet hashSet = new HashSet( Arrays.asList(allocatables));
+		HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>( Arrays.asList(allocatables));
 		Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
 		hashSet.retainAll( selectedObjectsAndChildren);
 		boolean matchesAllotables =  hashSet.size() != 0;
