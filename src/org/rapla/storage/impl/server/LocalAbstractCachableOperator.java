@@ -161,6 +161,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.addAttribute(createStringAttributeWithId("objectId", -7));
 			type.addAttribute(createStringAttributeWithId("externalObjectId", -8));
 			type.addAttribute(createStringAttributeWithId("status", -9));
+			type.addAttribute(createStringAttributeWithId("retries", -10));
 			type.setResolver( this);
 			type.setReadOnly();
 			cache.put( type);
