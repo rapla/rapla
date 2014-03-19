@@ -533,16 +533,22 @@ public class DBOperator extends LocalAbstractCachableOperator
         RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
 
         Collection<Entity> storeObjects = evt.getStoreObjects();
-        Collection<Entity> withChildren = new LinkedHashSet<Entity>();
+        Collection<Entity> storeChildren = new LinkedHashSet<Entity>();
         // add appointment and sub categories to store
         for (Entity entity:storeObjects)
         {
-        	addWithChildren( withChildren, entity);
+        	addWithChildren( storeChildren, entity);
         }
-        raplaSQLOutput.store( connection, withChildren);
-
+        raplaSQLOutput.store( connection, storeChildren);
+        Collection<Entity> removeObjects = evt.getRemoveObjects();
+        Collection<Entity> removeChildren = new LinkedHashSet<Entity>();
+        for (Entity entity:removeObjects)
+        {
+        	addWithChildren( removeChildren, entity);
+        }
         // execute removes
-        for (Entity entityStore: evt.getRemoveObjects()) {
+        
+        for (Entity entityStore: removeChildren) {
              Comparable id = entityStore.getId();
              Entity entity = cache.get(id);
              if (entity != null)
