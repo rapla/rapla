@@ -65,8 +65,15 @@ import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.HTTPConnector;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.WrongRaplaVersionException;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gwtjsonrpc.server.JsonServlet;
+import com.google.gwtjsonrpc.server.RPCServletUtils;
 public class MainServlet extends HttpServlet {
     private static final String RAPLA_JSON_PATH = "/rapla/json/";
     private static final String RAPLA_RPC_PATH = "/rapla/rpc/";
@@ -810,8 +817,30 @@ public class MainServlet extends HttpServlet {
 				}
 			};
 			remoteSession.setUser( (User) user);
-	    	JsonServletWrapper servlet = serviceDispater.getJsonServlet( request);
 	    	ServletContext servletContext = getServletContext();
+	    	JsonServletWrapper servlet;
+	    	try
+	    	{
+	    		servlet = serviceDispater.getJsonServlet( request);
+	    	}
+	    	catch (RaplaException ex)
+	    	{
+	    		getLogger().error(ex.getMessage(), ex);
+	    		final JsonObject r = new JsonObject();
+	    		String versionName = "jsonrpc";
+	    		int code = -32603;
+	    		r.add(versionName, new JsonPrimitive("2.0"));
+	    		String id = null;
+    	        if (id != null) {
+    	          r.add("id", new JsonPrimitive(id));
+    	        }
+    	        final JsonObject error = JsonServlet.getError(versionName, code, ex);
+    	        r.add("error", error);
+    	        GsonBuilder builder = HTTPConnector.defaultGsonBuilder().disableHtmlEscaping();
+    	        String out = builder.create().toJson( r);
+    	        RPCServletUtils.writeResponse(servletContext, response,  out, false);
+    	        return;
+	    	}
 			//RemoteSession remoteSession = handleLogin(request, response, requestURI);
 			servlet.service(request, response, servletContext, remoteSession);
         }

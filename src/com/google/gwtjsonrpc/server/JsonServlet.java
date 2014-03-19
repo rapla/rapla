@@ -107,7 +107,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
 
     myMethods = methods(class1);
     if (myMethods.isEmpty()) {
-      throw new ServletException("No service methods declared");
+      throw new ServletException("No service methods declared in " + class1 + " Did you forget the javax.jws.WebService annotation?");
     }
 //
 //	    try {
@@ -526,55 +526,15 @@ public class JsonServlet<CallType extends ActiveCall>  {
 //          r.addProperty("xsrfKey", src.xsrfKeyOut);
 //        }
         if (failure != null) {
-          final JsonObject error = getError(src, failure);
-          r.add("error", error);
+            final int code = to2_0ErrorCode(src);
+            final JsonObject error = getError(src.versionName, code, failure);
+            r.add("error", error);
         } else {
           r.add("result", context.serialize(result));
         }
         return r;
       }
 
-	public JsonObject getError(final ActiveCall src, Throwable failure) {
-		final JsonObject error = new JsonObject();
-          String message = failure.getMessage();
-          if ( message == null)
-          {
-        	  message = failure.toString();
-          }
-		  if ("jsonrpc".equals(src.versionName)) {
-            final int code = to2_0ErrorCode(src);
-            error.addProperty("code", code);
-            error.addProperty("message", message);
-           
-			JsonObject errorData = new JsonObject();
-			errorData.addProperty("exception", failure.getClass().getName());
-			
-				
-			if (failure instanceof DependencyException)
-			{
-				JsonArray params = new JsonArray();
-				for (String dep:((DependencyException) failure).getDependencies())
-				{
-					params.add( new JsonPrimitive(dep));
-				}
-				errorData.add("params", params);
-			}
-			
-			JsonArray stackTrace = new JsonArray();
-			for ( StackTraceElement el: failure.getStackTrace())
-			{
-				stackTrace.add( new JsonPrimitive(el.toString()));
-			}
-			errorData.add("stacktrace", stackTrace);
-			
-            error.add("data", errorData);
-          } else {
-            error.addProperty("name", "JSONRPCError");
-            error.addProperty("code", 999);
-            error.addProperty("message", message);
-          }
-		return error;
-	}
     });
 
     final StringWriter o = new StringWriter();
@@ -628,6 +588,47 @@ public class JsonServlet<CallType extends ActiveCall>  {
 //      w.close();
 //    }
 //  }
+
+	public static JsonObject getError(String version,int code, Throwable failure) {
+		final JsonObject error = new JsonObject();
+          String message = failure.getMessage();
+          if ( message == null)
+          {
+        	  message = failure.toString();
+          }
+		  if ("jsonrpc".equals(version)) {
+            error.addProperty("code", code);
+            error.addProperty("message", message);
+           
+			JsonObject errorData = new JsonObject();
+			errorData.addProperty("exception", failure.getClass().getName());
+			
+				
+			if (failure instanceof DependencyException)
+			{
+				JsonArray params = new JsonArray();
+				for (String dep:((DependencyException) failure).getDependencies())
+				{
+					params.add( new JsonPrimitive(dep));
+				}
+				errorData.add("params", params);
+			}
+			
+			JsonArray stackTrace = new JsonArray();
+			for ( StackTraceElement el: failure.getStackTrace())
+			{
+				stackTrace.add( new JsonPrimitive(el.toString()));
+			}
+			errorData.add("stacktrace", stackTrace);
+			
+            error.add("data", errorData);
+          } else {
+            error.addProperty("name", "JSONRPCError");
+            error.addProperty("code", 999);
+            error.addProperty("message", message);
+          }
+		return error;
+	}
 
   private static Map<String, MethodHandle> methods(Class class1 ) {
     final Class d = findInterface(class1);
