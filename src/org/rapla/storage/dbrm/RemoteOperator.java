@@ -680,12 +680,10 @@ public class RemoteOperator
 	        while ( it.hasNext())
 	        {
 	        	Object object = it.next();
-	        	if ( object instanceof Reservation)
-	        	{
-	        		Reservation next = (Reservation)object;
-	        		result.add( next);
-	        	}
+	        	Reservation next = (Reservation)object;
+	        	result.add( next);
 	        }
+	        removeFilteredClassifications(result, filters);
 	        return result;
     	}
 	    catch (RaplaException ex)
