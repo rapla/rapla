@@ -33,7 +33,7 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -44,13 +44,14 @@ import org.rapla.entities.storage.internal.UnresolvableReferenceExcpetion;
  */
 public class ClassificationImpl implements Classification,DynamicTypeDependant, EntityReferencer {
 
-	String parentId;
-	Map<String,List<String>> map = new LinkedHashMap<String,List<String>>();
-	transient boolean readOnly = false;
+	private String parentId;
+	private String type;
+	private Map<String,List<String>> map = new LinkedHashMap<String,List<String>>();
+	private transient boolean readOnly = false;
 
-    transient TextCache name;
-    transient TextCache namePlaning;
-    transient EntityResolver resolver;
+	private transient TextCache name;
+	private transient TextCache namePlaning;
+	private transient EntityResolver resolver;
     
     /** stores the nonreference values like integers,boolean and string.*/
     //HashMap<String,Object> attributeValueMap = new HashMap<String,Object>(1);
@@ -93,6 +94,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
     ClassificationImpl(DynamicTypeImpl dynamicType) {
         parentId = dynamicType.getId();
+        type = dynamicType.getElementKey();
     }
 
     public void setResolver( EntityResolver resolver)
@@ -119,12 +121,14 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 	*/
 
     public boolean isRefering(String id) {
-        return id.equals(parentId) || map.containsKey( id );
+        String parentId = getParentId();
+		return id.equals(parentId) || map.containsKey( id );
     }
 
     public Iterable<String> getReferencedIds() {
     	List<String> result = new ArrayList<String>();
-    	result.add( parentId );
+    	String parentId = getParentId();
+		result.add( parentId );
     	DynamicTypeImpl type = getType();
     	for ( Map.Entry<String,List<String>> entry:map.entrySet())
     	{
@@ -143,12 +147,30 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	return result;
     }
 
+	private String getParentId() {
+		if  (parentId != null)
+			return parentId;
+		if (type == null)
+		{
+			throw new UnresolvableReferenceExcpetion( "type and parentId are both not set");
+		}
+		DynamicType dynamicType = resolver.getDynamicType( type);
+		if ( dynamicType == null)
+		{
+			throw new UnresolvableReferenceExcpetion( type);
+		}
+		parentId = dynamicType.getId();
+		return parentId;
+			
+	}
+
     public DynamicTypeImpl getType() {
     	if ( resolver == null)
     	{
     		throw new IllegalStateException("Resolver not set on "+ toString());
     	}
-        DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
+        String parentId = getParentId();
+		DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
         if ( type == null)
         {
         	throw new UnresolvableReferenceExcpetion(parentId, toString());
@@ -263,6 +285,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
         	map.remove( key );
         }
+        this.type = type.getElementKey();
         name = null;
         namePlaning = null;
     }
@@ -404,7 +427,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			clone.map.put(key, value);
         }
         clone.resolver = resolver;
-        clone.parentId = parentId;
+        clone.parentId = getParentId();
+        clone.type = type;
         clone.name = null;
         clone.namePlaning = null;
         clone.readOnly = false;// clones are always writable

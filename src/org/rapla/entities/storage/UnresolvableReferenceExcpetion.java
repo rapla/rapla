@@ -1,4 +1,4 @@
-package org.rapla.entities.storage.internal;
+package org.rapla.entities.storage;
 
 public class UnresolvableReferenceExcpetion extends RuntimeException {
 

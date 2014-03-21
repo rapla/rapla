@@ -20,6 +20,8 @@ import org.rapla.storage.StorageOperator;
 
 public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStorage
 {
+	//private static final String USER_KEYSTORE = "keystore";
+
 	private static final String ASYMMETRIC_ALGO = "RSA";
 
     private String rootKey;
@@ -46,7 +48,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         super(context);
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
-        Allocatable key = getAllocatable( null, "root");
+        Allocatable key = getAllocatable( null, "rootkeystore");
         if ( key == null)
         {
         	Classification newClassification;
@@ -70,21 +72,27 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     
     public LoginInfo getSecrets(User user, String tagName) throws RaplaException
     {
-    	Allocatable key = getAllocatable(user, tagName);
+    	Allocatable key = getAllocatable(user, null);
     	if ( key == null)
     	{
     		return null;
     	}
     	LoginInfo loginInfo = new LoginInfo();
-    	loginInfo.login = (String) key.getClassification().getValue( "public");
-    	String encryptedPassword = (String) key.getClassification().getValue( "secret");
-		loginInfo.secret = cryptoHandler.decrypt(encryptedPassword);
+    	String annotation = key.getAnnotation(tagName);
+    	if ( annotation == null)
+    	{
+    		return null;
+    	}
+    	String decrypt = cryptoHandler.decrypt(annotation);
+    	String[] split = decrypt.split(":",2);
+    	loginInfo.login = split[0];
+    	loginInfo.secret = split[1];
 		return loginInfo;
     }
     
     public void storeLoginInfo(User user,String tagName,String login,String secret) throws RaplaException
     {
-    	Allocatable key= getAllocatable(user, tagName);
+    	Allocatable key= getAllocatable(user, null);
     	
     	Classification classification;
 		if ( key == null)
@@ -103,9 +111,9 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 			key = getModification().edit( key);
     		classification = key.getClassification();
     	}
-		classification.setValue("name", tagName);
-		classification.setValue("public", login);
-		classification.setValue("secret", cryptoHandler.encrypt(secret));
+		String loginPair = login +":" + secret;
+		String encrypted = cryptoHandler.encrypt( loginPair);
+		key.setAnnotation(tagName, encrypted);
 		getModification().store( key);
     }
     
@@ -121,7 +129,10 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     {
     	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
         ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
-        newClassificationFilter.addEqualsRule("name", tagName);
+        if ( tagName != null)
+        {
+        	newClassificationFilter.addEqualsRule("name", tagName);
+        }
         ClassificationFilter[] array = newClassificationFilter.toArray();
 		Allocatable[] store = getQuery().getAllocatables( array);
 		if ( store.length > 0)

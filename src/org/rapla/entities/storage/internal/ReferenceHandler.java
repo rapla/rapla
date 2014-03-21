@@ -25,6 +25,7 @@ import java.util.Set;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
