@@ -134,7 +134,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
 			type.setResolver( this);
-			type.setReadOnly( );
 			cache.put( type);
 		}
 		
@@ -142,12 +141,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			type.setElementKey(CRYPTO_TYPE);
-			type.setId(DynamicType.TYPE.getId( -3));
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-			type.addAttribute(createStringAttributeWithId("name", -4));
-			type.addAttribute(createStringAttributeWithId("public", -5));
-			type.addAttribute(createStringAttributeWithId("secret", -6));
+
+			type.setId(DynamicType.TYPE.getId( -3));
 			type.setResolver( this);
 			type.setReadOnly( );
 			cache.put( type);
@@ -1013,7 +1010,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return list;
 	}
 
-	private int countDynamicTypes(Collection<? extends RaplaObject> entities, String classificationType) {
+	private int countDynamicTypes(Collection<? extends RaplaObject> entities, String classificationType) throws RaplaException {
 		Iterator<? extends RaplaObject> it = entities.iterator();
 		int count = 0;
 		while (it.hasNext()) {
@@ -1021,7 +1018,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			if (DynamicType.TYPE != entity.getRaplaType())
 				continue;
 			DynamicType type = (DynamicType) entity;
-			if (type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE).equals(	classificationType)) {
+			String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+			if ( annotation == null)
+			{
+				throw new RaplaException(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE + " not set for " + type);
+			}
+			if (annotation.equals(	classificationType)) {
 				count++;
 			}
 		}

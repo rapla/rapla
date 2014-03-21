@@ -7,6 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Classification;
@@ -23,6 +24,10 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 	//private static final String USER_KEYSTORE = "keystore";
 
 	private static final String ASYMMETRIC_ALGO = "RSA";
+
+	private static final String PUBLIC_KEY = "publicKey";
+
+	private static final String PRIVATE_KEY = "privateKey";
 
     private String rootKey;
 	private String rootPublicKey;
@@ -48,21 +53,21 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         super(context);
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
-        Allocatable key = getAllocatable( null, "rootkeystore");
+        Allocatable key = getAllocatable( null);
         if ( key == null)
         {
-        	Classification newClassification;
+        	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
+        	Classification newClassification = dynamicType.newClassification();
+        	key = getModification().newAllocatable(newClassification, null );
 			try {
-		        DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
-				newClassification = generateRootKeyStorage(dynamicType);
+		        generateRootKeyStorage(key);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RaplaException( e.getMessage());
 			}
-        	key = getModification().newAllocatable(newClassification, null );
         	getModification().store( key);
         }
-        rootKey = (String) key.getClassification().getValue( "secret");
-    	rootPublicKey = (String) key.getClassification().getValue( "public");
+        rootKey =  key.getAnnotation(PRIVATE_KEY);
+    	rootPublicKey = key.getAnnotation(PUBLIC_KEY);
     	cryptoHandler = new CryptoHandler( context,rootKey);
     	if ( rootKey == null || rootPublicKey == null)
     	{
@@ -72,7 +77,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     
     public LoginInfo getSecrets(User user, String tagName) throws RaplaException
     {
-    	Allocatable key = getAllocatable(user, null);
+    	Allocatable key = getAllocatable(user );
     	if ( key == null)
     	{
     		return null;
@@ -92,8 +97,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     
     public void storeLoginInfo(User user,String tagName,String login,String secret) throws RaplaException
     {
-    	Allocatable key= getAllocatable(user, null);
-    	
+    	Allocatable key= getAllocatable(user);
     	Classification classification;
 		if ( key == null)
     	{
@@ -118,21 +122,19 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     }
     
     public void removeLoginInfo(User user, String tagName) throws RaplaException {
-    	Allocatable key= getAllocatable(user, tagName);
+    	Allocatable key= getAllocatable(user);
     	if ( key != null)
     	{
-    		getModification().remove( key);
+    		key = getModification().edit( key );
+    		key.setAnnotation(tagName, null);
+    		getModification().store( key);
     	}
     }
     
-    Allocatable getAllocatable(User user,String tagName) throws RaplaException
+    Allocatable getAllocatable(User user) throws RaplaException
     {
     	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
         ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
-        if ( tagName != null)
-        {
-        	newClassificationFilter.addEqualsRule("name", tagName);
-        }
         ClassificationFilter[] array = newClassificationFilter.toArray();
 		Allocatable[] store = getQuery().getAllocatables( array);
 		if ( store.length > 0)
@@ -159,10 +161,10 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 		return null;
     }
 
-	private Classification generateRootKeyStorage(DynamicType dynamicType)	throws NoSuchAlgorithmException {
+	private void generateRootKeyStorage(Allocatable alloc)	throws NoSuchAlgorithmException, IllegalAnnotationException {
 		getLogger().info("Generating new root key. This can take a while.");
-		Classification newClassification = dynamicType.newClassification();
-		newClassification.setValue("name", "root");
+		//Classification newClassification = dynamicType.newClassification();
+		//newClassification.setValue("name", "root");
 		KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance( ASYMMETRIC_ALGO );
 		keyPairGen.initialize( 2048);
 		KeyPair keyPair = keyPairGen.generateKeyPair();
@@ -171,9 +173,8 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 		PrivateKey privateKeyObj = keyPair.getPrivate();
 		String publicKey =base64.encodeAsString(publicKeyObj.getEncoded());
 		String privateKey = base64.encodeAsString(privateKeyObj.getEncoded());
-		newClassification.setValue("public", publicKey);
-		newClassification.setValue("secret", privateKey);
-		return newClassification;
+		alloc.setAnnotation(PUBLIC_KEY, publicKey);
+		alloc.setAnnotation(PRIVATE_KEY, privateKey);
 	}
 
 

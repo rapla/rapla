@@ -52,8 +52,15 @@ class ClassifiableWriter extends RaplaXMLWriter {
 		}
 		String elementName = namespacePrefix + elementKey;
         
-		openElement(elementName);
-        Attribute[] attributes = classification.getAttributes();
+		Attribute[] attributes = classification.getAttributes();
+		if ( attributes.length == 0)
+		{
+			openTag(elementName);
+		}
+		else
+		{
+			openElement(elementName);
+		}
         for (int i=0;i<attributes.length;i++) {
             Attribute attribute = attributes[i];
             Collection<?> values = classification.getValues(attribute);
@@ -68,8 +75,15 @@ class ClassifiableWriter extends RaplaXMLWriter {
             	println();
             }
         }
-        closeElement(elementName);
-    }
+		if ( attributes.length == 0)
+		{
+			closeElementTag();
+		}
+		else
+		{
+			closeElement(elementName);
+		}
+	}
     
 
 }
