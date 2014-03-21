@@ -28,10 +28,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public class PermissionImpl
-    implements
-        Permission
-        ,EntityReferencer
+public final class PermissionImpl implements Permission,EntityReferencer
 {
     transient boolean readOnly = false;
     ReferenceHandler links = new ReferenceHandler();

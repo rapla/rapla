@@ -24,7 +24,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 
-class RepeatingImpl implements Repeating,java.io.Serializable {
+final class RepeatingImpl implements Repeating,java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
     

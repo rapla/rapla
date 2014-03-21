@@ -217,7 +217,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 		List<Entity> entries = new ArrayList<Entity>(ids.size());
 		for ( String id:ids)
 		{
-			Entity entity = resolver.tryResolve( id );
+			Entity entity = tryResolve(id);
 			if ( entity != null)
 			{
 				entries.add( entity );
@@ -228,6 +228,11 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 			}
 		}
 		return entries;
+	}
+
+	protected Entity tryResolve(String id) 
+	{
+		return resolver.tryResolve( id );
 	}	
 
     public Entity getEntity(String key) {
@@ -243,7 +248,7 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
          {
         	 throw new IllegalStateException("Resolver not set");
          }
- 		Entity resolved = resolver.tryResolve( id );
+ 		Entity resolved = tryResolve(id);
 		if ( resolved == null)
 		{
 			throw new UnresolvableReferenceExcpetion(id);

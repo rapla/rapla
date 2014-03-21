@@ -39,7 +39,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity
+final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity
 {
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();

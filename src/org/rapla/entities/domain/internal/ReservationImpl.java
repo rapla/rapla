@@ -48,7 +48,7 @@ import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 
-public class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
+public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
     private ClassificationImpl classification;
     private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>(1);
@@ -61,6 +61,9 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     public static final String PERMISSION_READ = "permission_read";
 	public static final String PERMISSION_MODIFY = "permission_modify";
         
+	// this is only used when you add a resource that is not yet stored, so the resolver won't find it
+	transient Map<String,AllocatableImpl> nonpersistantAllocatables;
+	
     ReservationImpl() {
         this (null, null);
     }
@@ -215,6 +218,14 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
     public void addAllocatable(Allocatable allocatable) {
         checkWritable();
         addAllocatablePrivate(allocatable.getId());
+        if ( !allocatable.isReadOnly())
+        {
+        	if ( nonpersistantAllocatables == null)
+        	{
+        		nonpersistantAllocatables = new LinkedHashMap<String,AllocatableImpl>();
+        	}
+        	nonpersistantAllocatables.put( allocatable.getId(), (AllocatableImpl) allocatable);
+        }
     }
 
 	private void addAllocatablePrivate(String allocatableId) {
@@ -245,8 +256,16 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 		return 	allocatables.toArray(new Allocatable[allocatables.size()]);
     }
     
+    @Override
+    protected Entity tryResolve(String id) {
+    	Entity entity = super.tryResolve(id);
+    	if ( entity == null && nonpersistantAllocatables != null)
+    	{
+    		entity = nonpersistantAllocatables.get( id);
+    	}
+		return entity;
+    }
     
-
     public Collection<Allocatable> getAllocatables(String annotationType) {
         Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
    		Collection<Entity> list = getList("resources");
@@ -337,7 +356,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
 		String id = allocatable.getId();
         if ( !hasAllocated( allocatable))
         {
-            addAllocatablePrivate( allocatable.getId());
+            addAllocatable( allocatable);
         }
         Assert.notNull(id,"Allocatable object has no ID");
         setRestrictionForId(id,appointmentIds);
@@ -351,7 +370,7 @@ public class ReservationImpl extends SimpleEntity implements Reservation, Modifi
             String allocatableId = alloc.getId();
 			if ( !hasAllocated( alloc))
             {
-                addAllocatablePrivate( allocatableId);
+                addAllocatable( alloc);
             }
             else
             {

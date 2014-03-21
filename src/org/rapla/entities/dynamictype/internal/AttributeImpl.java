@@ -40,7 +40,7 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
 
-public class AttributeImpl extends SimpleEntity implements Attribute
+final public class AttributeImpl extends SimpleEntity implements Attribute
 {
 	public static final MultiLanguageName TRUE_TRANSLATION = new MultiLanguageName();
 	public static final MultiLanguageName FALSE_TRANSLATION = new MultiLanguageName();

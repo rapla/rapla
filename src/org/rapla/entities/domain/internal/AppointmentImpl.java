@@ -36,7 +36,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 
-public class AppointmentImpl extends SimpleEntity implements Appointment
+public final class AppointmentImpl extends SimpleEntity implements Appointment
 {
 	private Date start;
     private Date end;

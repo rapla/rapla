@@ -33,7 +33,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
+final public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
 {
     private MultiLanguageName name = new MultiLanguageName();
     private String key;

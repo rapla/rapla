@@ -495,8 +495,7 @@ public class ServerTest extends ServletTestBase {
 		facade1.store(r);
 		r = facade1.getPersistant(r);
 		facade1.remove(r);
-		Reservation[] allRes = facade1.getReservationsForAllocatable(null,
-				null, null, new ClassificationFilter[] { f });
+		Reservation[] allRes = facade1.getReservationsForAllocatable(null,	null, null, new ClassificationFilter[] { f });
 		assertEquals(0, allRes.length);
 	}
 
@@ -583,14 +582,13 @@ public class ServerTest extends ServletTestBase {
 		User user = null;
 		Date start = null;
 		Date end = null;
-		ClassificationFilter filter = facade.getDynamicType("event")
-				.newClassificationFilter();
+		ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
 		filter.addEqualsRule("name", reservationName);
-		Reservation[] reservations = facade.getReservations(user, start, end,
-				filter.toArray());
+		Reservation[] reservations = facade.getReservations(user, start, end, filter.toArray());
 		Reservation bowling = reservations[0];
-		String description = bowling.getClassification()
-				.getValue("description").toString();
+		Classification classification = bowling.getClassification();
+		Object descriptionValue = classification.getValue("description");
+		String description = descriptionValue.toString();
 		return description;
 	}
 }
