@@ -13,6 +13,7 @@
 package org.rapla.entities.dynamictype.internal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,12 +36,16 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity
+final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
+    private Date lastChanged;
+    private Date createDate;
+
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
     MultiLanguageName name  = new MultiLanguageName();
@@ -50,6 +55,12 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     transient DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
     transient Map<String,AttributeImpl> attributeIndex;
     public DynamicTypeImpl() {
+    	this( new Date(),new Date());
+    }
+    
+    public DynamicTypeImpl(Date createDate, Date lastChanged) {
+    	this.createDate = createDate;
+    	this.lastChanged = lastChanged;
     }
 
     public void setResolver( EntityResolver resolver) {
@@ -177,6 +188,25 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         {
             return null;
         }
+    }
+    
+    @Deprecated
+    public Date getLastChangeTime() {
+        return lastChanged;
+    }
+    
+    @Override
+    public Date getLastChanged() {
+    	return lastChanged;
+    }
+
+    public Date getCreateTime() {
+        return createDate;
+    }
+
+    public void setLastChanged(Date date) {
+        checkWritable();
+    	lastChanged = date;
     }
     
     @Override
@@ -351,7 +381,8 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public DynamicTypeImpl clone() {
         DynamicTypeImpl clone = new DynamicTypeImpl();
         super.deepClone(clone);
-        
+        clone.lastChanged = lastChanged;
+        clone.createDate = createDate;
         clone.name = (MultiLanguageName) name.clone();
         clone.elementKey = elementKey;
         for (AttributeImpl att:clone.getSubEntities())

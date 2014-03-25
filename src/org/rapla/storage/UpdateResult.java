@@ -28,6 +28,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.ModificationEvent;
 
 public class UpdateResult implements ModificationEvent
@@ -210,7 +211,7 @@ public class UpdateResult implements ModificationEvent
 		RaplaType type = obj.getRaplaType();
 		if ( type == Reservation.TYPE)
 		{
-			for ( Appointment app:((Reservation)obj).getAppointments())
+			for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
 			{
 				currentInterval = invalidateInterval( currentInterval, app);
 			}

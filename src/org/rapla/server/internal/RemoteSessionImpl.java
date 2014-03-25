@@ -4,7 +4,6 @@ import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.RemoteSession;
 
@@ -13,7 +12,7 @@ import org.rapla.server.RemoteSession;
  * @see org.rapla.server.internal.org.rapla.server.rpc.RemoteServiceDispatcher
  *
  */
-public abstract class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
+public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
     /**
      *
      */
@@ -44,7 +43,9 @@ public abstract class RemoteSessionImpl extends RaplaComponent implements Remote
         this.user = user;
     }
 
-    public abstract void logout() throws RaplaException;
+    public void logout() {
+    	this.setLogger( null);
+    }
 
 
 

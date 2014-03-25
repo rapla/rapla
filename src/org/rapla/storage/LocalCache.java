@@ -34,11 +34,9 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -62,8 +60,6 @@ public class LocalCache implements EntityResolver
     Set<UserImpl> users;
     Set<AllocatableImpl> resources;
     Set<ReservationImpl> reservations;
-    Set<PeriodImpl> periods;
-
     Set<CategoryImpl> categories;
     Set<AppointmentImpl> appointments;
     Set<AttributeImpl> attributes;
@@ -77,7 +73,6 @@ public class LocalCache implements EntityResolver
         entities = new HashMap<Object,Entity>();
         // top-level-entities
         reservations = new TreeSet<ReservationImpl>();
-        periods = new TreeSet<PeriodImpl>();
         users = new TreeSet<UserImpl>();
         resources = new TreeSet<AllocatableImpl>();
         dynamicTypes = new TreeSet<DynamicTypeImpl>();
@@ -93,7 +88,6 @@ public class LocalCache implements EntityResolver
         entityMap.put(Category.TYPE, categories);
         entityMap.put(Allocatable.TYPE,resources);
         entityMap.put(User.TYPE,users);
-        entityMap.put(Period.TYPE,periods);
         entityMap.put(Reservation.TYPE,reservations);
         entityMap.put(Appointment.TYPE,appointments);
         entityMap.put(Preferences.TYPE, preferences);
@@ -117,8 +111,6 @@ public class LocalCache implements EntityResolver
                 bResult = false;
             if (entity.getId() == null)
                 return false;
-
-
 
             entities.remove(entity.getId());
             entitySet.remove( entity );
@@ -146,6 +138,17 @@ public class LocalCache implements EntityResolver
         if (id == null)
             throw new IllegalStateException("ID can't be null");
 
+        // first remove the old children from the map
+        Entity oldEntity = entities.get( entity);
+        if (oldEntity != null && oldEntity instanceof ParentEntity)
+        {
+        	Collection<Entity> subEntities = ((ParentEntity) oldEntity).getSubEntities();
+        	for (Entity child:subEntities)
+        	{
+        		remove( child);
+        	}
+        }
+        
         @SuppressWarnings("unchecked")
 		Set<Entity>entitySet =  (Set<Entity>) entityMap.get(raplaType);
         if (entitySet != null) {
@@ -157,6 +160,7 @@ public class LocalCache implements EntityResolver
         {
             throw new RuntimeException("UNKNOWN TYPE. Can't store object in cache: " + entity.getRaplaType());
         }
+        // then put the new children
         if ( entity instanceof ParentEntity)
         {
         	Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
@@ -175,7 +179,7 @@ public class LocalCache implements EntityResolver
     }
 
     @SuppressWarnings("unchecked")
-	public <T extends Entity> Collection<T> getCollection(RaplaType type) {
+    <T extends Entity> Collection<T> getCollection(RaplaType type) {
         Set<? extends Entity> entities =  entityMap.get(type);
        
         if (entities != null) {
@@ -187,13 +191,12 @@ public class LocalCache implements EntityResolver
     }
     
     @SuppressWarnings("unchecked")
-    public <T extends RaplaObject> Collection<T> getCollection(Class<T> clazz) {
+    private <T extends RaplaObject> Collection<T> getCollection(Class<T> clazz) {
     	RaplaType type = RaplaType.get(clazz);
 		Collection<T> collection = (Collection<T>) getCollection(type);
 		return new LinkedHashSet(collection);
     }
 	
-
     public void clearAll() {
         passwords.clear();
         for (Set<? extends Entity> set: entityMap.values() )
@@ -202,10 +205,10 @@ public class LocalCache implements EntityResolver
         }
         entities.clear();
         initSuperCategory();
-
     }
+    
     private void initSuperCategory() {
-    	CategoryImpl superCategory = new CategoryImpl();
+    	CategoryImpl superCategory = new CategoryImpl(null, null);
         superCategory.setId(LocalCache.SUPER_CATEGORY_ID);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
@@ -218,7 +221,9 @@ public class LocalCache implements EntityResolver
     }
 
     public static String SUPER_CATEGORY_ID = Category.TYPE.getId(0);
-    public CategoryImpl getSuperCategory() {
+    
+    public CategoryImpl getSuperCategory() 
+    {
         return (CategoryImpl) get(SUPER_CATEGORY_ID);
     }
 
@@ -327,17 +332,6 @@ public class LocalCache implements EntityResolver
 		};
 	}
 	
-	static public String getId(String string) throws RaplaException {
-		int index = string.lastIndexOf("_") + 1;
-		if ( index <= 0)
-		{
-            throw new RaplaException("invalid rapla-id '" + string + "' Type is missing and not passed as argument.");
-		}
-		String typeName = string.substring(0, index -1);
-		RaplaType raplaType = RaplaType.find(typeName);
-		return getId( raplaType, string);
-	}
-
 	 static public String getId(RaplaType type,String str) throws RaplaException {
 	    	if (str == null)
 	    		throw new RaplaException("Id string for " + type + " can't be null");
@@ -368,8 +362,6 @@ public class LocalCache implements EntityResolver
 	    return idContent;
 	}
 
-
-
 	static public boolean isNumeric(String text)
 	{
 		int length = text.length();
@@ -391,6 +383,23 @@ public class LocalCache implements EntityResolver
 	@Deprecated
 	public Set<Entry<RaplaType, Set<? extends Entity>>> entrySet() {
 		return entityMap.entrySet();
+	}
+	
+	public Collection<User> getUsers() 
+	{
+		return getCollection(User.class);
+	}
+
+	public Collection<Allocatable> getAllocatables() {
+		return getCollection(Allocatable.class);
+	}
+
+	public Collection<Reservation> getReservations() {
+		return getCollection( Reservation.class);
+	}
+
+	public Collection<DynamicType> getDynamicTypes() {
+		return getCollection( DynamicType.class);
 	}
 
 }

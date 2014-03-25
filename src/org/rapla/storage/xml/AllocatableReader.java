@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
@@ -136,17 +134,8 @@ public class AllocatableReader extends RaplaXMLReader
         }
         else
         {
-            String createdAt = atts.getValue(  "created-at");
-            String lastChanged = atts.getValue( "last-changed");
-
-            Date createTime = null;
-            Date changeTime = createTime;
-            if (createdAt != null)
-                createTime = parseTimestamp( createdAt);
-            if (lastChanged != null)
-                changeTime = parseTimestamp( lastChanged);
-
-            allocatable = new AllocatableImpl(createTime, changeTime);
+        	TimestampDates ts = readTimestamps( atts);
+            allocatable = new AllocatableImpl(ts.createTime, ts.changeTime);
             allocatable.setResolver( store );
             currentAnnotatable = allocatable;
             setId( allocatable, atts );
@@ -162,7 +151,6 @@ public class AllocatableReader extends RaplaXMLReader
 					}
             	}
             }
-            setVersionIfThere( allocatable, atts);
             setLastChangedBy(allocatable, atts);
             setOwner(allocatable, atts);
         }

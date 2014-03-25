@@ -72,7 +72,8 @@ public class DynamicTypeReader extends RaplaXMLReader
             {
                 isDynamictypeActive = true;
                 typeAnnotations.clear();
-                dynamicType = new DynamicTypeImpl();
+                TimestampDates ts = readTimestamps( atts);
+                dynamicType = new DynamicTypeImpl(ts.createTime, ts.changeTime);
                  if (atts.getValue( "id" )!=null)
                 {
                     setId( dynamicType, atts );
@@ -84,7 +85,7 @@ public class DynamicTypeReader extends RaplaXMLReader
 
                 currentName = dynamicType.getName();
                 dynamicType.setElementKey( name );
-                setVersionIfThere( dynamicType, atts);
+                
                 // because the dynamic types refered in the constraints could be loaded after their first reference we resolve all prior unresolved constraint bindings to that type  when the type is loaded
                 Map<Attribute,String> constraintMap = unresolvedDynamicTypeConstraints.get( name );
                 if ( constraintMap != null)
@@ -114,7 +115,6 @@ public class DynamicTypeReader extends RaplaXMLReader
                 {
                     setNewId( attribute );
                 }
-                setVersionIfThere( attribute, atts);
                 attributeAnnotations.clear();
             }
         }
@@ -249,13 +249,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 boolean idContent = LocalCache.isTextId( DynamicType.TYPE, content );
                 if (idContent)
                 {
-                	Comparable id;
-					try {
-						id = LocalCache.getId( DynamicType.TYPE, content );
-					} catch (RaplaException e) {
-						throw new RaplaSAXParseException(e.getMessage(), e.getCause());
-					}
-					constraint = id;
+					constraint = content.trim();
                 }
                 else
                 {

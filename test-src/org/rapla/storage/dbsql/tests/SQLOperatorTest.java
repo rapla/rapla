@@ -24,12 +24,14 @@ import junit.framework.TestSuite;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.dbsql.DBOperator;
@@ -78,16 +80,25 @@ public class SQLOperatorTest extends AbstractOperatorTest {
     	facade.login("homer", "duffs".toCharArray() );
         Date start = DateTools.cutDate( new Date());
         Date end = new Date( start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
-        Period period = facade.newPeriod();
-        period.setName( "TEST PERIOD");
-        period.setStart( start );
-        period.setEnd( end );
+        Allocatable period = facade.newPeriod();
+        Classification c = period.getClassification();
+        String name = "TEST PERIOD";
+		c.setValue("name", name);
+        c.setValue("start", start );
+        c.setValue("end", end );
         facade.store( period);
         operator.refresh();
         
-		Period period1 = (Period) operator.getPersistant( Collections.singleton( period )).get( period);
-        assertEquals( period1.getStart(), period.getStart());
-        assertEquals( period1.getEnd(), period1.getEnd());
+		//Allocatable period1 = (Allocatable) operator.getPersistant( Collections.singleton( period )).get( period);
+        Period[] periods = facade.getPeriods();
+        for ( Period period1:periods)
+        {
+        	if ( period.getName( null).equals(name))
+        	{
+        		assertEquals( period1.getStart(), start);
+        		assertEquals( period1.getEnd(), end);
+        	}
+        }
     }
     
     public void testCategoryChange() throws RaplaException {

@@ -25,16 +25,20 @@ import junit.framework.TestSuite;
 
 import org.rapla.client.ClientService;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.tests.GUITestCase;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.storage.StorageOperator;
 
 public final class ReservationControllerTest extends GUITestCase {
 	public ReservationControllerTest(String name) {
@@ -110,8 +114,10 @@ public final class ReservationControllerTest extends GUITestCase {
 	
 	
 	public void testPeriodChange() throws Exception {
-		Period[] periods = getFacade().getPeriods();
-		getFacade().removeObjects(periods);
+		ClientFacade facade = getFacade();
+		ClassificationFilter[] filters = facade.getDynamicType(StorageOperator.PERIOD_TYPE).newClassificationFilter().toArray();
+		Allocatable[] periods = facade.getAllocatables(filters);
+		facade.removeObjects(periods);
 		Thread.sleep(500);
 		ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade()
@@ -123,11 +129,12 @@ public final class ReservationControllerTest extends GUITestCase {
 		Date startDate = new Date();
 		editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));
 		editor.save();
-		Period period = getFacade().newPeriod();
-		period.setStart(startDate);
-		period.setEnd(new Date(startDate.getTime() + 3
+		Allocatable period = facade.newPeriod();
+		Classification classification = period.getClassification();
+		classification.setValue("start",startDate);
+		classification.setValue("start",new Date(startDate.getTime() + 3
 				* DateTools.MILLISECONDS_PER_DAY));
-		getFacade().store(period);
+		facade.store(period);
 		Thread.sleep(500);
 	}
 

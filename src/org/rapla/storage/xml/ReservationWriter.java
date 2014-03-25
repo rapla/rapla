@@ -33,7 +33,6 @@ public class ReservationWriter extends ClassifiableWriter {
     protected void printReservation(Reservation r) throws IOException,RaplaException {
         openTag("rapla:reservation");
         printId(r);
-        printVersion( r);
         printOwner(r);
         printTimestamp(r);
         closeTag();
@@ -70,11 +69,10 @@ public class ReservationWriter extends ClassifiableWriter {
 
     public void printAppointment(Appointment appointment, boolean includeAllocations) throws IOException {
         openTag("rapla:appointment");
-        if (isIdOnly()) {
+        // always print the id
+        //if (isPrintId()) {
             printId( appointment );
-        } 
-        printVersion( appointment);
-
+        //} 
         att("start-date",dateTimeFormat.formatDate( appointment.getStart()));
 
         if (appointment.isWholeDaysSet()) {

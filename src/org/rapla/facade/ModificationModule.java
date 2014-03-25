@@ -23,7 +23,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -76,7 +75,7 @@ public interface ModificationModule {
     /** Shortcut for newAllocatble(classification,getUser()*/
     Allocatable newAllocatable( Classification classification) throws RaplaException;
     
-    Period newPeriod() throws RaplaException;
+    Allocatable newPeriod() throws RaplaException;
     Category newCategory() throws RaplaException;
     Attribute newAttribute(AttributeType attributeType) throws RaplaException;
     DynamicType newDynamicType(String classificationType) throws RaplaException;

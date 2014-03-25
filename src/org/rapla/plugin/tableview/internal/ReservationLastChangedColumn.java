@@ -24,7 +24,7 @@ public class ReservationLastChangedColumn extends RaplaComponent implements Rese
 	}
 	
 	public Object getValue(Reservation reservation) {
-		return reservation.getLastChangeTime();
+		return reservation.getLastChanged();
 	}
 	
 	public String getColumnName() {
@@ -38,7 +38,7 @@ public class ReservationLastChangedColumn extends RaplaComponent implements Rese
 	public String getHtmlValue(Reservation reservation) 
 	{
 		RaplaLocale raplaLocale = getRaplaLocale();
-		final Date lastChangeTime = reservation.getLastChangeTime();
+		final Date lastChangeTime = reservation.getLastChanged();
 		String lastChanged= raplaLocale.formatDateLong(lastChangeTime);
 		return lastChanged;
 	}

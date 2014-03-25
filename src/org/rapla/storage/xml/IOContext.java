@@ -65,7 +65,6 @@ public class IOContext
         writerMap.put( DynamicType.TYPE,new DynamicTypeWriter(context));
         writerMap.put( User.TYPE, new UserWriter(context) );
         writerMap.put( Allocatable.TYPE, new AllocatableWriter(context) );
-        writerMap.put( Period.TYPE, new PeriodWriter(context) );
         writerMap.put( Reservation.TYPE,new ReservationWriter(context));
         writerMap.put( RaplaConfiguration.TYPE,new RaplaConfigurationWriter(context) );
         writerMap.put( RaplaMap.TYPE, new RaplaMapWriter(context) );
@@ -84,20 +83,15 @@ public class IOContext
         addReaders( readerMap, ioContext);
         return ioContext;
      }
-    public static TypedComponentRole<Boolean> IDONLY = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
-    public static TypedComponentRole<Boolean> PRINTVERSIONS = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".printversion");
+    public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
     public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<Provider<Category>>( IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultContext createOutputContext(RaplaContext parentContext, Provider<Category> superCategory,boolean includeIds, boolean includeVersions) throws RaplaException {
+    public RaplaDefaultContext createOutputContext(RaplaContext parentContext, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
         
         RaplaDefaultContext ioContext = new RaplaDefaultContext( parentContext);
         if ( includeIds)
         {
-            ioContext.put(IDONLY, Boolean.TRUE);
-        }
-        if ( includeVersions)
-        {
-            ioContext.put(PRINTVERSIONS, Boolean.TRUE);
+            ioContext.put(PRINTID, Boolean.TRUE);
         }
         if ( superCategory != null)
         {

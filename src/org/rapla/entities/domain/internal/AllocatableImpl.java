@@ -94,6 +94,11 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         }
     }
 
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+    
+    @Deprecated
     public Date getLastChangeTime() {
         return lastChanged;
     }
@@ -103,7 +108,8 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
 
     public void setLastChanged(Date date) {
-        lastChanged = date;
+        checkWritable();
+    	lastChanged = date;
     }
     
     public RaplaType<Allocatable> getRaplaType() {
@@ -408,8 +414,6 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         StringBuffer buf = new StringBuffer();
         buf.append(" [");
         buf.append(super.toString());
-        buf.append(",");
-        buf.append(super.getVersion());
         buf.append("] ");
         try
         {

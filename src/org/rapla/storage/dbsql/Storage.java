@@ -28,7 +28,7 @@ interface Storage<T extends Entity<T>> {
     void save( Collection<T> entities) throws SQLException,RaplaException ;
     void insert( Collection<T> entities) throws SQLException,RaplaException ;
    // void update( Collection<Entity>> entities) throws SQLException,RaplaException ;
-    void delete(Collection<T> entities) throws SQLException,RaplaException ;
+    void deleteIds(Collection<String> ids) throws SQLException,RaplaException ;
     public List<String> getCreateSQL();
 	void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException;
 }

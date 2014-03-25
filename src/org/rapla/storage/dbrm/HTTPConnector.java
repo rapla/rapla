@@ -27,6 +27,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
+import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 
 import com.google.gson.FieldNamingPolicy;
@@ -141,7 +142,7 @@ public class HTTPConnector  implements Connector
     
     String token;
 
-    public FutureResult call(String token,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException
+    public FutureResult call(FutureResult<String> authExpiredCommand, String token,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException
 	{
 	    String serviceUrl =service.getName();
 //    	if ( service != null)
@@ -160,7 +161,7 @@ public class HTTPConnector  implements Connector
         conn.setRequestProperty("Content-Type", JsonConstants.JSON_TYPE + ";charset=utf-8");
         if ( token != null)
         {
-        	conn.setRequestProperty("Authorization",token);
+        	conn.setRequestProperty("Authorization", "Bearer "  + token);
         }
         conn.setDoOutput(true);
         try
@@ -186,7 +187,7 @@ public class HTTPConnector  implements Connector
 		String body = gson.toJson( element);
         wr.write( body);
         wr.flush();
-        
+        String resultString;
         InputStream inputStream = null;
         try
         {
@@ -209,75 +210,9 @@ public class HTTPConnector  implements Connector
 			else {
 				inputStream = conn.getInputStream();
 			}
-            String resultString = readResultToString( inputStream);
+            resultString = readResultToString( inputStream);
             inputStream.close();
-
-    	    JsonElement parsed;
-		    try 
-	        {
-	           	parsed = new JsonParser().parse(resultString);
-	        }
-	        catch (JsonParseException ex)
-	        {
-//	            final String p = new String(Base64.decodeBase64(resultString), "UTF-8");
-//	            try
-//	            {
-//	            	parsed = new JsonParser().parse(p);
-//	            }
-//	            catch (JsonParseException ex)
-//		        {
-	        	return new ResultImpl(new RaplaException(ex.getMessage()));
-	        }
-		    
-		    if ( !(parsed instanceof JsonObject))
-		    {
-		    	return new ResultImpl(new RaplaException("Invalid json result"));
-		    }
-		    JsonObject resultMessage = (JsonObject) parsed;
-		    JsonElement errorElement = resultMessage.get("error");
-		    if ( errorElement != null)
-		    {
-		    	return new ResultImpl(remoteMethodSerialization.deserializeExceptionObject(resultMessage));
-		    }
-		    JsonElement resultElement = resultMessage.get("result");
-		    final Class resultType;
-		    if ( !FutureResult.class.isAssignableFrom(returnType))
-		    {
-		    	 resultType = returnType;
-		    	//return new ResultImpl(new RaplaException("Method " + service.getName() + "." + methodName + " does not return an instance of " + FutureResult.class ));
-		    }
-		    else
-		    {
-			    Method[] methods = service.getMethods();
-			    Method foundMethod = null;
-			    for (Method method:methods)
-			    {
-			    	if ( method.getName().equals( methodName))
-			    	{
-			    		foundMethod = method;
-			    	}
-			    }
-			    if ( foundMethod == null)
-			    {
-			    	return new ResultImpl(new RaplaException("Method "+ message + " not found in " + service.getClass() ));
-			    }
-			    ResultType annotation = foundMethod.getAnnotation(ResultType.class);
-			    resultType = annotation.value();
-		    }
-			Object resultObject = remoteMethodSerialization.deserializeReturnValue(resultType, resultElement);
-			
-			if ( methodName.equalsIgnoreCase("login") && resultObject instanceof String)
-			{
-				token = resultObject.toString();
-			}
-			if ( methodName.equalsIgnoreCase("logout"))
-			{
-				token = null;
-			}
-    		@SuppressWarnings("unchecked")
-			ResultImpl result = new ResultImpl(resultObject);
-			return result;
-        } 
+        }
         catch (SocketException ex)
         {   
         	return new ResultImpl( new RaplaConnectException(getConnectError(ex), ex));
@@ -297,6 +232,87 @@ public class HTTPConnector  implements Connector
         		inputStream.close();
         	}
         }
+
+	    JsonElement parsed;
+	    try 
+        {
+           	parsed = new JsonParser().parse(resultString);
+        }
+        catch (JsonParseException ex)
+        {
+//	            final String p = new String(Base64.decodeBase64(resultString), "UTF-8");
+//	            try
+//	            {
+//	            	parsed = new JsonParser().parse(p);
+//	            }
+//	            catch (JsonParseException ex)
+//		        {
+        	return new ResultImpl(new RaplaException(ex.getMessage()));
+        }
+	    
+	    if ( !(parsed instanceof JsonObject))
+	    {
+	    	return new ResultImpl(new RaplaException("Invalid json result"));
+	    }
+	    JsonObject resultMessage = (JsonObject) parsed;
+	    JsonElement errorElement = resultMessage.get("error");
+	    if ( errorElement != null)
+	    {
+	    	RaplaException ex = remoteMethodSerialization.deserializeExceptionObject(resultMessage);
+	    	// if authorization expired
+        	if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) && authExpiredCommand != null )
+        	{
+    	    	// try to get a new one
+        		String newAuthCode;
+				try {
+					newAuthCode = authExpiredCommand.get();
+				} catch (Exception e) {
+					return new ResultImpl( e);
+				}
+				// try the same call again with the new result
+        		FutureResult newResult = call( null, newAuthCode,service,methodName,parameterTypes,returnType, args);
+				return newResult;
+        	}
+			return new ResultImpl(ex);
+	    }
+	    JsonElement resultElement = resultMessage.get("result");
+	    final Class resultType;
+	    if ( !FutureResult.class.isAssignableFrom(returnType))
+	    {
+	    	 resultType = returnType;
+	    	//return new ResultImpl(new RaplaException("Method " + service.getName() + "." + methodName + " does not return an instance of " + FutureResult.class ));
+	    }
+	    else
+	    {
+		    Method[] methods = service.getMethods();
+		    Method foundMethod = null;
+		    for (Method method:methods)
+		    {
+		    	if ( method.getName().equals( methodName))
+		    	{
+		    		foundMethod = method;
+		    	}
+		    }
+		    if ( foundMethod == null)
+		    {
+		    	return new ResultImpl(new RaplaException("Method "+ methodName + " not found in " + service.getClass() ));
+		    }
+		    ResultType annotation = foundMethod.getAnnotation(ResultType.class);
+		    resultType = annotation.value();
+	    }
+		Object resultObject = remoteMethodSerialization.deserializeReturnValue(resultType, resultElement);
+		
+		if ( methodName.equalsIgnoreCase("login") && resultObject instanceof String)
+		{
+			token = resultObject.toString();
+		}
+		if ( methodName.equalsIgnoreCase("logout"))
+		{
+			token = null;
+		}
+		@SuppressWarnings("unchecked")
+		ResultImpl result = new ResultImpl(resultObject);
+		return result;
    }
     
     public RaplaException deserializeException(String classname, String message, List<String> params) 
@@ -308,44 +324,48 @@ public class HTTPConnector  implements Connector
     	}
 	    if ( classname != null)
 	    {
-	            if ( classname.equals( WrongRaplaVersionException.class.getName()))
-	            {
-	                    return new WrongRaplaVersionException( message);
-	            }
-	            else if ( classname.equals( RaplaSecurityException.class.getName()))
-	            {
-	                    return new RaplaSecurityException( message);
-	            }
-	            else if ( classname.equals( RaplaSynchronizationException.class.getName()))
-	            {
-	                    return new RaplaSynchronizationException( message);
-	            }
-	            else if ( classname.equals( RaplaConnectException.class.getName()))
-	            {
-	                    return new RaplaConnectException( message);
-	            }
-	            else if ( classname.equals( EntityNotFoundException.class.getName()))
-	            {
-	//                    if ( param != null)
-	//                    {
-	//                            String id = (String)convertFromString( String.class, param);
-	//                            return new EntityNotFoundException( message, id);
-	//                    }
-	                    return new EntityNotFoundException( message);
-	            }
-	            else if ( classname.equals( DependencyException.class.getName()))
-	            {
-	                    if ( params != null)
-	                    {
-	                    	return new DependencyException( message,params);
-	                    }
-	                    //Collection<String> depList = Collections.emptyList();
-	                    return new DependencyException( message, new String[] {});
-	            }
-	            else
-	            {
-	                    error = classname + " " + error;
-	            }
+            if ( classname.equals( WrongRaplaVersionException.class.getName()))
+            {
+                    return new WrongRaplaVersionException( message);
+            }
+            else if ( classname.equals(RaplaNewVersionException.class.getName()))
+            {
+                    return new RaplaNewVersionException( message);
+            }
+            else if ( classname.equals( RaplaSecurityException.class.getName()))
+            {
+                    return new RaplaSecurityException( message);
+            }
+            else if ( classname.equals( RaplaSynchronizationException.class.getName()))
+            {
+                    return new RaplaSynchronizationException( message);
+            }
+            else if ( classname.equals( RaplaConnectException.class.getName()))
+            {
+                    return new RaplaConnectException( message);
+            }
+            else if ( classname.equals( EntityNotFoundException.class.getName()))
+            {
+//                    if ( param != null)
+//                    {
+//                            String id = (String)convertFromString( String.class, param);
+//                            return new EntityNotFoundException( message, id);
+//                    }
+                    return new EntityNotFoundException( message);
+            }
+            else if ( classname.equals( DependencyException.class.getName()))
+            {
+                    if ( params != null)
+                    {
+                    	return new DependencyException( message,params);
+                    }
+                    //Collection<String> depList = Collections.emptyList();
+                    return new DependencyException( message, new String[] {});
+            }
+            else
+            {
+                    error = classname + " " + error;
+            }
 	    }
 	    return new RaplaException( error);
     }

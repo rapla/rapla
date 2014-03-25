@@ -13,27 +13,72 @@
 package org.rapla.plugin.mail.server;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.MailConfigService;
+import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.storage.RaplaSecurityException;
 
-public class RaplaConfigServiceImpl extends RaplaComponent implements MailConfigService, RemoteMethodFactory<MailConfigService>
+public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMethodFactory<MailConfigService>
 {
-        public RaplaConfigServiceImpl( RaplaContext context)  {
-            super( context );
-        }
+	private static final String MAILSERVER_KEYSTORE = "mailserver";
+	RaplaKeyStorage keyStore;
+	public RaplaConfigServiceImpl( RaplaContext context) throws RaplaContextException  {
+		super( context );
+		keyStore = context.lookup( RaplaKeyStorage.class);
+	}
         
-        public MailConfigService createService(RemoteSession remoteSession) {
-            return this;
-        }
-
-        public boolean isExternalConfigEnabled() throws RaplaException 
+	public MailConfigService createService(final RemoteSession remoteSession) {
+		return new MailConfigService()
 		{
-			return getContext().has(RaplaMainContainer.ENV_RAPLAMAIL);
-		}
+			public boolean isExternalConfigEnabled() throws RaplaException 
+			{
+				return getContext().has(RaplaMainContainer.ENV_RAPLAMAIL);
+			}
+
+			@Override
+			public LoginInfo getLoginInfo() throws RaplaException {
+				User user = remoteSession.getUser();
+				if ( user == null || !user.isAdmin())
+				{
+					throw new RaplaSecurityException("Only admins can get mailserver login info");
+				}
+				org.rapla.server.RaplaKeyStorage.LoginInfo secrets = keyStore.getSecrets( null, MAILSERVER_KEYSTORE);
+				LoginInfo result = new LoginInfo();
+				if ( secrets != null)
+				{
+					result.username = secrets.login;
+					result.password = secrets.secret;
+				}
+				return result;
+			}
+
+			@Override
+			public void setLogin(String username, String password) throws RaplaException {
+				User user = remoteSession.getUser();
+				if ( user == null || !user.isAdmin())
+				{
+					throw new RaplaSecurityException("Only admins can set mailserver login info");
+				}
+				if ( username.length() == 0 && password.length() == 0)
+				{
+					keyStore.removeLoginInfo(null, MAILSERVER_KEYSTORE);
+				}
+				else
+				{
+					keyStore.storeLoginInfo( null, MAILSERVER_KEYSTORE, username, password);
+				}
+			}
+			
+		};
+				
+	}
+
 
 		
   

@@ -25,7 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -45,7 +44,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -53,7 +51,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
@@ -153,7 +151,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		SimpleEntity refEntity = clone;
 		if (refEntity instanceof ModifiableTimestamp) {
-			((ModifiableTimestamp) refEntity).setLastChanged(getCurrentTimestamp());
 			if (user != null) {
 				((ModifiableTimestamp) refEntity).setLastChangedBy(user);
 			}
@@ -197,24 +194,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Lock readLock = readLock();
 		try
 		{
-			Collection<User> collection = cache.getCollection(User.TYPE);
+			Collection<User> collection = cache.getUsers();
 			// We return a clone to avoid synchronization Problems
 			return new LinkedHashSet<User>(collection);
-		}
-		finally
-		{
-			unlock(readLock);
-		}
-	}
-
-	public Collection<Period> getPeriods()	throws RaplaException {
-		checkConnected();
-		Lock readLock = readLock();
-		try
-		{
-			Collection<Period> collection =  cache.getCollection(Period.TYPE);
-			// We return a clone to avoid synchronization Problems
-			return new TreeSet<Period>(collection);
 		}
 		finally
 		{
@@ -227,7 +209,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Lock readLock = readLock();
 		try
 		{
-			Collection<DynamicType> collection =  cache.getCollection(DynamicType.TYPE);
+			Collection<DynamicType> collection =  cache.getDynamicTypes();
 			// We return a clone to avoid synchronization Problems
 			return new ArrayList<DynamicType>( collection);
 		}
@@ -245,7 +227,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Lock readLock = readLock();
 		try
 		{
-			Collection<Allocatable> collection = cache.getCollection(Allocatable.TYPE);
+			Collection<Allocatable> collection = cache.getAllocatables();
 			// We return a clone to avoid synchronization Problems
 			allocatables.addAll(collection);
 		}
@@ -342,7 +324,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Lock writeLock = writeLock();
 			try
 			{
-				PreferencesImpl newPref = new PreferencesImpl();
+				Date now = getCurrentTimestamp();
+				PreferencesImpl newPref = new PreferencesImpl(now,now);
 				newPref.setResolver( this);
 				newPref.setOwner(user);
 				newPref.setId( preferenceId );
@@ -434,45 +417,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 	@Override
 	public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound)	throws RaplaException {
-		Map<String, Entity> result= new LinkedHashMap<String,Entity>();
-		for ( String id:idSet)
-		{
-			Entity persistant = (Entity) (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
-	    	if ( persistant != null)
-	    	{
-	    		result.put( id,persistant);
-	    	}
-		}
-		return result;
-	}
-	
-	@Override
-	public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
-	{
     	Lock readLock = readLock();
 		try
 		{
-			Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
-	        for ( Entity key: list)
-	    	{
-	     		String id =  key.getId().toString();
-	     		idMap.put( id, key);
-	    	}
-	    
-			
-			Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
-    		Set<String> keySet = idMap.keySet();
-			Map<String,Entity> resolvedList = getFromId( keySet, false);
-	    	for (Entity entity:resolvedList.values())
-	    	{
-	    		String id = entity.getId().toString();
-				Entity key = idMap.get( id);
-				if ( key != null )
-				{
-					result.put( key, entity);
-				}
-	    	}
-	    	return result;
+			Map<String, Entity> result= new LinkedHashMap<String,Entity>();
+			for ( String id:idSet)
+			{
+				Entity persistant = (Entity) (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
+		    	if ( persistant != null)
+		    	{
+		    		result.put( id,persistant);
+		    	}
+			}
+			return result;
 		}
 		finally
 		{
@@ -480,12 +437,38 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 	
+	@Override
+	public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
+	{
+		Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
+        for ( Entity key: list)
+    	{
+     		String id =  key.getId().toString();
+     		idMap.put( id, key);
+    	}
+    
+		
+		Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
+		Set<String> keySet = idMap.keySet();
+		Map<String,Entity> resolvedList = getFromId( keySet, false);
+    	for (Entity entity:resolvedList.values())
+    	{
+    		String id = entity.getId().toString();
+			Entity key = idMap.get( id);
+			if ( key != null )
+			{
+				result.put( key, entity);
+			}
+    	}
+    	return result;
+	}
+	
 	/**
 	 * @throws RaplaException  
 	 */
-	protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
+	protected void setResolver(Collection<? extends Entity> entities) throws RaplaException {
 		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(this);
+			((EntityReferencer)obj).setResolver(this);
 		}
 		// It is important to do the read only later because some resolve might involve write to referenced objects
 		for (Entity entity: entities) {
@@ -497,10 +480,10 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		EntityStore store = new EntityStore( this, getSuperCategory());
 		store.addAll( entities);
 		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(store);
+			((EntityReferencer)obj).setResolver(store);
 		}
 		for (Entity obj: entities) {
-			Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
+			Iterable<String> referencedIds = ((EntityReferencer)obj).getReferencedIds();
 			for ( String id:referencedIds)
 			{
 				testResolve(store, obj, id);
@@ -586,8 +569,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 	
-	protected Entity resolveIdWithoutSync(String id)
-			throws EntityNotFoundException {
+	protected Entity resolveIdWithoutSync(String id) throws EntityNotFoundException {
 		return cache.resolve(id);
 	}
 
@@ -623,7 +605,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			{
 				Entity oldEntity = persistantEntity;
 				oldEntities.put(persistantEntity, oldEntity);
-				//addSubentities( oldEntities, oldEntity);
 			}
 
 		}
@@ -635,9 +616,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			if ( storableInCache)
 			{
 				increaseVersion(entity);
-				toUpdate = findInLocalCache(entity);
+				Entity persistant = findInLocalCache(entity);
 				// do nothing, because the persitantVersion is always read only
-				if (toUpdate == entity) {
+				if (persistant == entity) {
 					continue;
 				}
 				toUpdate = entity;
@@ -667,7 +648,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Entity persistantVersion = null;
 			if ( isStorableInCache(entity))
 			{
-				increaseVersion(entity);
 				persistantVersion = findInLocalCache(entity);
 				if (persistantVersion != null) {
 					cache.remove(persistantVersion);
@@ -684,7 +664,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			}
 		}
 
-		resolveEntities(updatedEntities);
+		setResolver(updatedEntities);
 
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();
@@ -737,17 +717,24 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 	abstract protected boolean isStorableInCache(Entity entity);
 
-	protected void increaseVersion(Entity entity) {
+	protected void increaseVersion(Entity entity) throws RaplaException {
 		SimpleEntity e = (SimpleEntity) entity;
-		e.setVersion(e.getVersion() + 1);
-		if ( e instanceof ParentEntity){
-			for (Entity child : ((ParentEntity)e).getSubEntities())
+		Date currentTime = getCurrentTimestamp();
+		
+		if ( e instanceof ModifiableTimestamp)
+		{
+			Date lastChangeTime = ((ModifiableTimestamp)e).getLastChanged();
+			if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
 			{
-				increaseVersion(child);
+				// wait 1 ms to increase timestamp
+				try {
+					Thread.class.wait(1);
+				} catch (InterruptedException e1) {
+					throw new RaplaException( e1.getMessage(), e1);
+				}
+				currentTime = getCurrentTimestamp();
 			}
-		}
-		if (getLogger().isDebugEnabled()) {
-			getLogger().debug("Increasing Version for " + e + " to " + e.getVersion());
+			((ModifiableTimestamp)e).setLastChanged( currentTime);
 		}
 	}
 	

@@ -54,12 +54,19 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
         Allocatable key = getAllocatable( null);
-        if ( key == null)
+        if ( key == null || key.getAnnotation(PRIVATE_KEY) == null)
         {
-        	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
-        	Classification newClassification = dynamicType.newClassification();
-        	key = getModification().newAllocatable(newClassification, null );
-			try {
+        	if ( key == null)
+        	{
+	        	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
+	        	Classification newClassification = dynamicType.newClassification();
+	        	key = getModification().newAllocatable(newClassification, null );
+        	}
+        	else
+        	{
+        		key = getModification().edit( key);
+        	}
+        	try {
 		        generateRootKeyStorage(key);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RaplaException( e.getMessage());
@@ -67,7 +74,8 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         	getModification().store( key);
         }
         rootKey =  key.getAnnotation(PRIVATE_KEY);
-    	rootPublicKey = key.getAnnotation(PUBLIC_KEY);
+        rootPublicKey = key.getAnnotation(PUBLIC_KEY);
+    	
     	cryptoHandler = new CryptoHandler( context,rootKey);
     	if ( rootKey == null || rootPublicKey == null)
     	{
@@ -127,7 +135,15 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	{
     		key = getModification().edit( key );
     		key.setAnnotation(tagName, null);
-    		getModification().store( key);
+    		// remove when no more annotations set
+    		if (key.getAnnotationKeys().length == 0)
+    		{
+    			getModification().remove( key);
+    		}
+    		else
+    		{
+    			getModification().store( key);
+    		}
     	}
     }
     

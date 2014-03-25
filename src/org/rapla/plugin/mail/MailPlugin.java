@@ -18,7 +18,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.plugin.mail.internal.MailOption;
+import org.rapla.plugin.mail.client.MailOption;
 import org.rapla.plugin.mail.internal.RaplaMailToUserOnServer;
 /** Provides the MailToUserInterface and the MailInterface for sending mails.
  * The MailInterface can only be used on a machine that can connect to the mailserver.

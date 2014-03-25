@@ -264,7 +264,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param event
      */
     private void addDateStampToEvent(Appointment appointment, PropertyList properties) {
-        Date lastChange = appointment.getReservation().getLastChangeTime();
+        Date lastChange = appointment.getReservation().getLastChanged();
         properties.add(new LastModified(convertRaplaLocaleToUTC(lastChange)));
     }
 
@@ -277,7 +277,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param event
      */
     private void addLastModifiedDateToEvent(Appointment appointment, PropertyList properties) {
-        Date lastChange = appointment.getReservation().getLastChangeTime();
+        Date lastChange = appointment.getReservation().getLastChanged();
         properties.add(new DtStamp(convertRaplaLocaleToUTC(lastChange)));
     }
 

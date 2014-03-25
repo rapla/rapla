@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.mail.internal;
+package org.rapla.plugin.mail.client;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.plugin.mail.MailConfigService;
+import org.rapla.plugin.mail.MailConfigService.LoginInfo;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.MailToUserInterface;
 
@@ -122,12 +123,14 @@ public class MailOption extends DefaultPluginOption {
         if(mailid.length() == 0) {
         	send.setText("Send to " +  getUser()+ " : Provide email in user profile");
         	send.setEnabled(false);
-			send.setBackground(Color.RED);
+        	//java.awt.Font font = send.getFont();
+        	//send.setFont( font.deriveFont( Font.BOLD));
+			
         }
         else {
         	send.setText("Send to " +  getUser()+ " : " + mailid);
         	send.setEnabled(true);
-			send.setBackground(Color.GREEN);
+			//send.setBackground(Color.GREEN);
         }
         useSsl.addActionListener( new ActionListener() {
 			
@@ -188,8 +191,7 @@ public class MailOption extends DefaultPluginOption {
 					String mailBody ="If you receive this mail the rapla mail settings are successfully configured.";
 					try
 					{
-					    send.setBackground(Color.RED);
-					    
+						send.setBackground(new Color(255,100,100, 255));
 					    MailToUserInterface test = getService(MailToUserInterface.class);
 					    String username = getUser().getUsername();
 					    test.sendMail(username, subject, mailBody);
@@ -233,20 +235,20 @@ public class MailOption extends DefaultPluginOption {
 	        newConfig.addChild( smtpServer );
 	        newConfig.addChild( ssl );
 	
-	        DefaultConfiguration username = new DefaultConfiguration("username");
-	        DefaultConfiguration password = new DefaultConfiguration("password");
-	        String usernameValue = this.username.getText();
-	        if ( usernameValue != null && usernameValue.trim().length() > 0)
-	        {
-	            username.setValue( usernameValue);
-	        } 
-	        newConfig.addChild( username );
-	        String passwordString = new String(this.password.getPassword());
-	        if ( passwordString.trim().length() > 0 )
-	        {
-	            password.setValue( passwordString);
-	        }
-	        newConfig.addChild( password );
+//	        DefaultConfiguration username = new DefaultConfiguration("username");
+//	        DefaultConfiguration password = new DefaultConfiguration("password");
+//	        String usernameValue = this.username.getText();
+//	        if ( usernameValue != null && usernameValue.trim().length() > 0)
+//	        {
+//	            username.setValue( usernameValue);
+//	        } 
+//	        newConfig.addChild( username );
+//	        String passwordString = new String(this.password.getPassword());
+//	        if ( passwordString.trim().length() > 0 )
+//	        {
+//	            password.setValue( passwordString);
+//	        }
+//	        newConfig.addChild( password );
     	}
     }
 
@@ -257,8 +259,6 @@ public class MailOption extends DefaultPluginOption {
 	        useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false));
 	        mailServer.setText( config.getChild("smtp-host").getValue("localhost"));
 	        smtpPortField.setNumber( new Integer(config.getChild("smtp-port").getValueAsInteger(25)));
-	        username.setText( config.getChild("username").getValue(""));
-	        password.setText( config.getChild("password").getValue(""));
     	} 
     	finally
     	{
@@ -268,12 +268,40 @@ public class MailOption extends DefaultPluginOption {
 
     public void show() throws RaplaException  {
         super.show();
+        listenersEnabled = false;
+    	try
+    	{
+    		LoginInfo loginInfo = configService.getLoginInfo();
+    		String username;
+    		String password;
+    		if ( loginInfo != null)
+    		{
+    			username = loginInfo.username;
+    			password = loginInfo.password;
+    		}
+    		else
+    		{
+    			username = "";
+    			password = "";
+    		}
+    		this.username.setText( username);
+	        this.password.setText( password);
+    	}
+    	finally
+    	{
+    		listenersEnabled = true;
+    	}
         defaultSender.setText( preferences.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY,"rapla@domainname"));
     }
   
     public void commit() throws RaplaException {
     	super.commit();
-        preferences.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, defaultSender.getText() );
+    	
+    	String username = this.username.getText();
+    	String password = new String(this.password.getPassword());
+        configService.setLogin(username, password);
+    	preferences.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, defaultSender.getText() );
+        
     }
 
 

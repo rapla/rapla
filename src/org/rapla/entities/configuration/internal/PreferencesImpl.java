@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -23,6 +24,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
@@ -32,13 +34,41 @@ import org.rapla.framework.TypedComponentRole;
 public class PreferencesImpl extends SimpleEntity
     implements
         Preferences
+        ,ModifiableTimestamp
         , DynamicTypeDependant
 {
+	private Date lastChanged;
+    private Date createDate;
+    
 	RaplaMapImpl map = new RaplaMapImpl();
     final public RaplaType<Preferences> getRaplaType() {return TYPE;}
     
-    public PreferencesImpl() {
+    PreferencesImpl() {
+    	this(null,null);
+    }
+    
+    public PreferencesImpl(Date createDate,Date lastChanged ) {
     	super();
+    	this.createDate = createDate;
+    	this.lastChanged = lastChanged;
+    }
+    
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+    
+    @Deprecated
+    public Date getLastChangeTime() {
+        return lastChanged;
+    }
+
+    public Date getCreateTime() {
+        return createDate;
+    }
+
+    public void setLastChanged(Date date) {
+        checkWritable();
+    	lastChanged = date;
     }
     
     @Override
@@ -124,6 +154,8 @@ public class PreferencesImpl extends SimpleEntity
         PreferencesImpl clone = new PreferencesImpl();
         super.deepClone(clone);
         clone.map = map.deepClone();
+        clone.createDate = createDate;
+        clone.lastChanged = lastChanged;
         return clone;
     }
 

@@ -40,12 +40,8 @@ import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
@@ -256,7 +252,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     	getLogger().debug("Connecting: " + getConnectionName());
         loadData();
-        initAppointments();
+        initIndizes();
         isConnected = true;
     	getLogger().debug("Connected");
     }
@@ -533,49 +529,15 @@ public class DBOperator extends LocalAbstractCachableOperator
         RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
 
         Collection<Entity> storeObjects = evt.getStoreObjects();
-        Collection<Entity> storeChildren = new LinkedHashSet<Entity>();
-        // add appointment and sub categories to store
-        for (Entity entity:storeObjects)
-        {
-        	addWithChildren( storeChildren, entity);
-        }
-        raplaSQLOutput.store( connection, storeChildren);
+        raplaSQLOutput.store( connection, storeObjects);
         Collection<Entity> removeObjects = evt.getRemoveObjects();
-        Collection<Entity> removeChildren = new LinkedHashSet<Entity>();
-        for (Entity entity:removeObjects)
-        {
-        	addWithChildren( removeChildren, entity);
-        }
-        // execute removes
-        
-        for (Entity entityStore: removeChildren) {
+        for (Entity entityStore: removeObjects) {
              Comparable id = entityStore.getId();
              Entity entity = cache.get(id);
              if (entity != null)
                  raplaSQLOutput.remove( connection, entity);
         }
-
     }
-
-    private void addWithChildren(Collection<Entity> withChildren, Entity entity) {
-    	withChildren.add( entity );
-    	RaplaType raplaType = entity.getRaplaType();
-		if ( raplaType == Reservation.TYPE)
-		{
-			for (Appointment app:((Reservation)entity).getAppointments())
-			{
-				withChildren.add( app );
-			}
-		}
-		if ( raplaType == Category.TYPE)
-		{
-			for (Category child:((Category)entity).getCategories())
-			{
-				addWithChildren(withChildren, child);
-			}
-		}
-    	
-	}
 
 	public void removeAll() throws RaplaException {
         Connection connection = createConnection();
@@ -657,7 +619,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 		cache.putAll( list);
         resolveInitial( list);
         cache.getSuperCategory().setReadOnly();
-        for (User user:cache.getCollection(User.class))
+        for (User user:cache.getUsers())
         {
             Object id = ((Entity)user).getId();
 			String password = entityStore.getPassword( id);
@@ -673,7 +635,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
     
     private RaplaDefaultContext createOutputContext(LocalCache cache) throws RaplaException {
-        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(context, cache.getSuperCategoryProvider(),true,false);
+        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(context, cache.getSuperCategoryProvider(),true);
         outputContext.put( LocalCache.class, cache);
         return outputContext;
         
@@ -703,7 +665,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out ) throws IOException, RaplaException
     {
-    	RaplaContext outputContext = new IOContext().createOutputContext( context,cache.getSuperCategoryProvider(), true, true );
+    	RaplaContext outputContext = new IOContext().createOutputContext( context,cache.getSuperCategoryProvider(), true );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding(backupEncoding);
         BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,backupEncoding));

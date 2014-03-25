@@ -10,8 +10,10 @@ import org.rapla.RaplaMainContainer;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.MailException;
+import org.rapla.server.RaplaKeyStorage;
+import org.rapla.server.RaplaKeyStorage.LoginInfo;
 
 public class MailapiClient  implements MailInterface
 {
@@ -22,7 +24,7 @@ public class MailapiClient  implements MailInterface
     String password;
     RaplaContext context;
     Object lookup;
-    public MailapiClient(Configuration config, RaplaContext context) throws ConfigurationException, RaplaContextException {
+    public MailapiClient(Configuration config, RaplaContext context) throws ConfigurationException, RaplaException {
     	this.context = context;
     	if (  context.has(RaplaMainContainer.ENV_RAPLAMAIL))
     	{
@@ -33,32 +35,18 @@ public class MailapiClient  implements MailInterface
 	    	// get the configuration entry text with the default-value "Welcome"
 	        setPort(config.getChild("smtp-port").getValueAsInteger(25));
 	        setSmtpHost(config.getChild("smtp-host").getValue());
-	        String username = config.getChild("username").getValue(null);
-	        if ( username != null && username.length() >0)
+	        RaplaKeyStorage keystorage = context.lookup( RaplaKeyStorage.class);
+	        LoginInfo secrets = keystorage.getSecrets( null, "mailserver");
+	        if ( secrets != null)
 	        {
-	        	setUsername( username);
+	        	String username = secrets.login;
+		        if ( username.length() >0)
+		        {
+		        	setUsername( username);
+		        	setPassword( secrets.secret);
+		        }
 	        }
-	        else
-	        {
-	        	setUsername( null);
-	        }
-	        String value2 = config.getChild("password").getValue(null);
-	        if ( username!= null && username.length() > 0)
-	        {
-	        	if ( value2 != null)
-	        	{
-	        		setPassword( value2);
-	        	}
-	        	else
-	        	{
-	        		setPassword( "");
-	        	}
-	        }
-	        else
-	        {
-	        	setPassword( null);
-	        }
-	        setSsl( config.getChild("ssl").getValueAsBoolean(false));
+		    setSsl( config.getChild("ssl").getValueAsBoolean(false));
     	}      
     }
     

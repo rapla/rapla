@@ -16,12 +16,13 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 
 /** In rapla it is possible to dynamicly classify a reservation, resource or person with
     customized attributes. You can for example define a dynamicType called <em>room</em> with the
     attributes <em>name</em> and <em>seats</em> and classify all your room-resources as <em>room</em>.
  */
-public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Annotatable
+public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Annotatable, Timestamp
 {
     final RaplaType<DynamicType> TYPE = new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
     

@@ -31,10 +31,7 @@ class ClassificationFilterWriter extends RaplaXMLWriter {
 
     public void printClassificationFilter(ClassificationFilter f) throws IOException,RaplaException {
         openTag("rapla:classificationfilter");
-        if (isIdOnly())
-            att("dynamictypeidref", getId(f.getType()));
-        else
-            att("dynamictype", f.getType().getElementKey());
+        att("dynamictype", f.getType().getElementKey());
         closeTag();
         for (Iterator<? extends ClassificationFilterRule> it = f.ruleIterator();it.hasNext();) {
             ClassificationFilterRule rule = it.next();
@@ -49,10 +46,7 @@ class ClassificationFilterWriter extends RaplaXMLWriter {
         String[] operators = rule.getOperators();
         Object[] values = rule.getValues();
         openTag("rapla:rule");
-        if (isIdOnly())
-            att("attributeidref", getId(attribute));
-        else
-            att("attribute", attribute.getKey());
+        att("attribute", attribute.getKey());
         closeTag();
         for (int i=0;i<operators.length;i++) {
             openTag("rapla:orCond");

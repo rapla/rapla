@@ -9,6 +9,6 @@ public interface Connector
 {
     String getInfo();
 
-	FutureResult call(String accessToken,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException;
+	FutureResult call(FutureResult<String> authFailedCommand, String accessToken,Class<?> service, String methodName, Class<?>[] parameterTypes,	Class<?> returnType, Object[] args) throws IOException;
     
 }

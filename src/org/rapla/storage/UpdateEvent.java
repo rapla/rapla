@@ -14,6 +14,7 @@ package org.rapla.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.rapla.components.util.ParseDateException;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -29,10 +32,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -51,7 +52,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> allocatable = createList(Allocatable.class);
 	List<ReservationImpl> reservations =  createList(Reservation.class);
-	List<PeriodImpl> periods =  createList(Period.class);
+	//List<PeriodImpl> periods =  createList(Period.class);
 	List<ConflictImpl> conflicts =  createList(Conflict.class);
 	
 	private Set<String> removeSet = new LinkedHashSet<String>();
@@ -63,12 +64,13 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
    // transient private Map<String,Entity> referenceSet = new LinkedHashMap<String,Entity>();
 //    RaplaMapImpl<RaplaObject> objMap = new RaplaMapImpl<>();
     private String userId;
-    private int repositoryVersion;
+    //private int repositoryVersion;
     
     private boolean needResourcesRefresh = false;
 
 	private TimeInterval invalidateInterval;
-    
+    private String lastValidated;
+	
     public UpdateEvent() {
     }
 
@@ -125,7 +127,6 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 			listMap.put(User.class, users);
 			listMap.put(DynamicType.class, types);
 			listMap.put(Reservation.class, reservations);
-			listMap.put(Period.class, periods);
 			listMap.put(Conflict.class, conflicts);
 		}
 		return listMap;
@@ -224,7 +225,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
     public UpdateEvent clone() {
         UpdateEvent clone = new UpdateEvent( );
-        clone.repositoryVersion = repositoryVersion;
+        clone.lastValidated = lastValidated;
         clone.invalidateInterval = invalidateInterval;
         clone.needResourcesRefresh = needResourcesRefresh;
         clone.userId = userId;
@@ -249,14 +250,13 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         return clone;
     }
 
-    public int getRepositoryVersion()
+    public void setLastValidated( Date serverTime )
     {
-        return repositoryVersion;
-    }
-
-    public void setRepositoryVersion( int repositoryVersion )
-    {
-        this.repositoryVersion = repositoryVersion;
+    	if ( serverTime == null)
+    	{
+    		this.lastValidated = null;
+    	}
+        this.lastValidated = SerializableDateTimeFormat.INSTANCE.formatTimestamp(serverTime);
     }
 
 	public void setInvalidateInterval(TimeInterval invalidateInterval) 
@@ -293,6 +293,19 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	public boolean isEmpty() {
         boolean isEmpty = removeSet.isEmpty() && storeSet.isEmpty() && invalidateInterval == null;
         return isEmpty;
+	}
+
+	public Date getLastValidated() 
+	{
+		if ( lastValidated == null)
+		{
+			return null;
+		}
+		try {
+			return SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastValidated);
+		} catch (ParseDateException e) {
+			throw new IllegalStateException(e.getMessage());
+		}
 	}
 	
     

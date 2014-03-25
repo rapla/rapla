@@ -26,7 +26,6 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.server.MailInterface;
@@ -111,11 +110,11 @@ public class NotificationPluginTest extends ServletTestBase
         r.addAllocatable( allocatable2 );
 
         
-        System.out.println( ( (RefEntity) r ).getVersion() );
+        System.out.println( r.getLastChanged() );
 
         facade1.store( r );
 
-        System.out.println( ( (RefEntity) r ).getVersion() );
+        System.out.println( r.getLastChanged() );
 
         MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class );
         for ( int i=0;i<1000;i++ )
@@ -138,7 +137,7 @@ public class NotificationPluginTest extends ServletTestBase
         r.getAppointments()[0].move( new Date( new Date().getTime() + DateTools.MILLISECONDS_PER_HOUR ) );
         facade1.store( r );
 
-        System.out.println( ( (RefEntity) r ).getVersion() );
+        System.out.println( r.getLastChanged() );
 
         Thread.sleep( 1000 );
         assertEquals( 4, mailMock.getCallCount() );

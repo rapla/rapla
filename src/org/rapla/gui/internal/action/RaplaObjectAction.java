@@ -204,10 +204,9 @@ public class RaplaObjectAction extends RaplaAction {
        if ( Category.TYPE.is( raplaType ))
             return m.newCategory(); //will probably never happen
        if ( User.TYPE.is( raplaType ))
-                    return m.newUser();
+    	   return m.newUser();
        if ( Period.TYPE.is( raplaType ))
              return m.newPeriod();
-
        throw new RaplaException("Can't create Entity for " + raplaType + "!");
     }
 

@@ -60,11 +60,11 @@ public class CategoryReader extends RaplaXMLReader
         {
             String key = atts.getValue( "key" );
             Assert.notNull( key );
-            CategoryImpl category = new CategoryImpl();
+            TimestampDates ts = readTimestamps( atts);
+            CategoryImpl category = new CategoryImpl(ts.createTime, ts.changeTime );
             category.setKey( key );
             currentName = category.getName();
             currentAnnotatable = category;
-            setVersionIfThere( category, atts);
             if (atts.getValue( "id" )!=null)
             {
                 setId( category, atts );

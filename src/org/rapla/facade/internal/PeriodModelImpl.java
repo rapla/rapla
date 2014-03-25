@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -22,14 +21,20 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
+import org.rapla.entities.Entity;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.internal.PeriodImpl;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.StorageOperator;
 
 
 class PeriodModelImpl implements PeriodModel,ModificationListener
@@ -43,30 +48,77 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             }
         }
                                   );
-    QueryModule query;
+    ClientFacade facade;
     Period defaultPeriod;
 
     PeriodModelImpl( ClientFacade query ) throws RaplaException {
-        this.query = query;
+        this.facade = query;
         update();
     }
 
     public void update() throws RaplaException {
-        Period[] periodArray = getQuery().getPeriods();
         m_periods.clear();
-        m_periods.addAll(Arrays.asList(periodArray));
+        DynamicType type = facade.getDynamicType(StorageOperator.PERIOD_TYPE);
+        ClassificationFilter[] filters = type.newClassificationFilter().toArray();
+        Collection<Allocatable> allocatables = facade.getOperator().getAllocatables( filters);
+        for ( Allocatable alloc:allocatables)
+        {
+        	Classification classification = alloc.getClassification();
+        	String name = (String)classification.getValue("name");
+			Date start = (Date) classification.getValue("start");
+			Date end = (Date) classification.getValue("end");
+			PeriodImpl period = new PeriodImpl(name,start,end);
+        	m_periods.add(period);
+        }
     }
 
 	public void dataChanged(ModificationEvent evt) throws RaplaException 
 	{
-    	if (evt.isModified(Period.TYPE))
+    	if (isPeriodModified(evt))
     	{
     		update();
     	}
 	}
+
+	protected boolean isPeriodModified(ModificationEvent evt) {
+		for (Entity changed:evt.getChanged())
+		{
+			if ( isPeriod( changed))
+			{
+				return true;
+			}
+		}
+		
+		for (Entity changed:evt.getRemoved())
+		{
+			if ( isPeriod( changed))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
     
-    protected QueryModule getQuery() {
-        return query;
+    private boolean isPeriod(Entity entity) {
+    	if  ( entity.getRaplaType() != Allocatable.TYPE)
+    	{
+    		return false;
+    	}
+    	Allocatable alloc = (Allocatable) entity;
+    	Classification classification = alloc.getClassification();
+    	if ( classification == null)
+    	{
+    		return false;
+    	}
+    	if (!classification.getType().getElementKey().equals(StorageOperator.PERIOD_TYPE))
+    	{
+    		return false;
+    	}
+    	return true;
+	}
+
+	protected QueryModule getQuery() {
+        return facade;
     }
 
 
@@ -74,8 +126,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     public Period getPeriodFor(Date date) {
         if (date == null)
             return null;
-        PeriodImpl comparePeriod = new PeriodImpl(date,date);
-        comparePeriod.setId(Period.TYPE.getId( -1));
+        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date);
         Iterator<Period> it = m_periods.tailSet(comparePeriod).iterator();
         while (it.hasNext()) {
             Period period = it.next();
@@ -163,8 +214,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         if (date == null)
             return list;
 
-        PeriodImpl comparePeriod = new PeriodImpl(date,date);
-        comparePeriod.setId( Period.TYPE.getId( -1));
+        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date);
         SortedSet<Period> set = m_periods.tailSet(comparePeriod);
         Iterator<Period> it = set.iterator();
         while (it.hasNext()) {

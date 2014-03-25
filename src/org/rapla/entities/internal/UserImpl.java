@@ -14,6 +14,7 @@ package org.rapla.entities.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Locale;
 
 import org.rapla.entities.Category;
@@ -26,18 +27,50 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 
-public class UserImpl extends SimpleEntity implements User
+public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 {
     private String username = "";
     private String email = "";
     private String name = "";
     private boolean admin = false;
+    
+    private Date lastChanged;
+    private Date createDate;
 
     // The resolved references
     transient private Category[] groups;
 
     final public RaplaType<User> getRaplaType() {return TYPE;}
 
+    UserImpl() {
+    	this(null,null);
+	}
+    
+    public UserImpl(Date createDate,Date lastChanged)
+    {
+        this.createDate = createDate;
+        this.lastChanged = lastChanged;
+    }
+    
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+    
+    @Deprecated
+    public Date getLastChangeTime() {
+        return lastChanged;
+    }
+
+    public Date getCreateTime() {
+        return createDate;
+    }
+
+    public void setLastChanged(Date date) {
+        checkWritable();
+    	lastChanged = date;
+    }
+
+    
     public boolean isAdmin() {return admin;}
     public String getName() 
     {
@@ -48,6 +81,7 @@ public class UserImpl extends SimpleEntity implements User
         }
         return name;
     }
+    
     public String getEmail() {
         final Allocatable person = getPerson();
         if ( person != null)
@@ -159,6 +193,8 @@ public class UserImpl extends SimpleEntity implements User
         clone.name = name;
         clone.email = email;
         clone.admin = admin;
+        clone.lastChanged = lastChanged;
+        clone.createDate = createDate;
         return clone;
     }
 

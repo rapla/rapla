@@ -289,7 +289,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 
 		for (Reservation r:reservations) 
 		{
-			Date lastMod = r.getLastChangeTime();
+			Date lastMod = r.getLastChanged();
 
 			if (lastMod != null && maxDate.before(lastMod)) {
 				maxDate = lastMod;

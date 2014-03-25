@@ -36,7 +36,7 @@ public class PreferenceWriter extends RaplaXMLWriter {
     protected void printPreferences(Preferences preferences) throws IOException,RaplaException {
         if ( preferences != null && !preferences.isEmpty()) {
             openTag("rapla:preferences");
-            printVersion( preferences);            
+            printTimestamp( preferences);            
             closeTag();
             PreferencesImpl impl = (PreferencesImpl)preferences;
             Iterator<String> it = impl.getPreferenceEntries();

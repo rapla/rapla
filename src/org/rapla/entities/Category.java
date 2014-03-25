@@ -17,7 +17,7 @@ import java.util.Locale;
  * Categories can be used as attribute values.
  *   @see org.rapla.entities.dynamictype.Attribute
  */
-public interface Category extends MultiLanguageNamed,Entity<Category>, Annotatable, Comparable
+public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp, Annotatable, Comparable
 {
     final RaplaType<Category> TYPE = new RaplaType<Category>(Category.class, "category");
     

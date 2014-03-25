@@ -17,6 +17,7 @@ import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 import org.rapla.framework.TypedComponentRole;
 
 /** Preferences store user-specific Information.
@@ -24,7 +25,7 @@ import org.rapla.framework.TypedComponentRole;
     Each role can contain 1-n configuration entries.
     @see org.rapla.entities.User
  */
-public interface Preferences extends Entity<Preferences>,Ownable, Named {
+public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Named {
     final RaplaType<Preferences> TYPE = new RaplaType<Preferences>(Preferences.class, "preferences");
     /** puts a new configuration entry to the role.*/
     /** returns if there are any preference-entries */

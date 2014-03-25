@@ -13,11 +13,15 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Date;
+
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
-import org.rapla.entities.domain.internal.PeriodImpl;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.StorageOperator;
 
 public class PeriodReader extends DynAttReader {
     public PeriodReader(RaplaContext context) throws RaplaException {
@@ -29,12 +33,16 @@ public class PeriodReader extends DynAttReader {
         throws RaplaSAXParseException
     {
         if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {
-            PeriodImpl period = new PeriodImpl();
-            setId(period, atts);
-            setVersionIfThere( period, atts);
-            period.setName(getString(atts,"name"));
-            period.setStart(parseDate(getString(atts,"start"),false));
-            period.setEnd(parseDate(getString(atts,"end"),true));
+        	AllocatableImpl period = new AllocatableImpl(new Date(), new Date());
+        	Classification classification = store.getDynamicType(StorageOperator.PERIOD_TYPE).newClassification();
+            classification.setValue("name", getString(atts,"name"));
+            classification.setValue("start",parseDate(getString(atts,"start"),false));
+            classification.setValue("end",parseDate(getString(atts,"end"),true));
+            String id = atts.getValue("id");
+            if ( id != null)
+            {
+            	period.setId(id);
+            }
             add(period);
         }
 

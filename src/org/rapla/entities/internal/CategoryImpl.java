@@ -14,6 +14,7 @@ package org.rapla.entities.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -33,15 +34,24 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-final public class CategoryImpl extends SimpleEntity implements Category, ParentEntity
+final public class CategoryImpl extends SimpleEntity implements Category, ParentEntity, ModifiableTimestamp
 {
     private MultiLanguageName name = new MultiLanguageName();
     private String key;
     List<CategoryImpl> childs = new ArrayList<CategoryImpl>();
+    private Date lastChanged;
+    private Date createDate;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
     private transient Category parent;
+   
+    CategoryImpl()
+    {
+    	
+    }
     
-    public CategoryImpl() {
+    public CategoryImpl(Date createDate, Date lastChanged) {
+    	this.createDate = createDate;
+    	this.lastChanged = lastChanged;
     }
 
     @Override
@@ -55,6 +65,28 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     @Override
     public void addEntity(Entity entity) {
     	childs.add( (CategoryImpl) entity);
+    }
+    
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+    
+    @Deprecated
+    public Date getLastChangeTime() {
+        return lastChanged;
+    }
+
+    public Date getCreateTime() {
+        return createDate;
+    }
+
+    public void setLastChanged(Date date) {
+        checkWritable();
+    	lastChanged = date;
+    	for ( CategoryImpl child:childs)
+    	{
+    		child.setLastChanged( date);
+    	}
     }
 
     public RaplaType<Category> getRaplaType() {return TYPE;}
@@ -337,6 +369,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         clone.parent = parent;
         clone.annotations = (HashMap<String,String>) ((HashMap<String,String>)annotations).clone();
         clone.key = key;
+        clone.lastChanged = lastChanged;
+        clone.createDate = createDate;
         for (Entity ref:clone.getSubEntities())
         {
             ((CategoryImpl)ref).setParent(clone);

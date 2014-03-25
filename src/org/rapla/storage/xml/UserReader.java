@@ -43,9 +43,10 @@ public class UserReader extends RaplaXMLReader
 
         if (localName.equals( "user" ))
         {
-            user = new UserImpl();
+            TimestampDates ts = readTimestamps( atts);
+            user = new UserImpl(ts.createTime, ts.changeTime);
             Object id = setId( user, atts );
-            setVersionIfThere( user, atts);
+            
             user.setUsername( getString( atts, "username", "" ) );
             user.setName( getString( atts, "name", "" ) );
             user.setEmail( getString( atts, "email", "" ) );

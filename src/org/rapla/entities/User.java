@@ -19,7 +19,7 @@ import org.rapla.framework.RaplaException;
 /**
 The User-Class is mainly for authentication-purpose
 */
-public interface User extends Entity<User>, Named, Comparable
+public interface User extends Entity<User>, Named, Comparable, Timestamp
 {
     final RaplaType<User> TYPE = new RaplaType<User>(User.class,"user");
 

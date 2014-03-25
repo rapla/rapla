@@ -30,36 +30,25 @@ import com.google.gwtjsonrpc.common.ResultType;
 import com.google.gwtjsonrpc.common.VoidResult;
 @WebService
 public interface RemoteStorage extends RemoteJsonService {
-  //  RemoteMethod GET_RESOURCES = new RemoteMethod("getResources");
-//    RemoteMethod GET_RESERVATIONS= new RemoteMethod("getReservations", new String[] {"start","end"});
-    //RemoteMethod GET_ENTITY_RECURSIVE= new RemoteMethod("getEntityRecursive", new String[] {"id"});
-    //RemoteMethod DISPATCH= new RemoteMethod("dispatch", new String[] {"evt"});
-    //RemoteMethod CREATE_IDENTIFIER= new RemoteMethod("createIdentifier", new String[] {"raplaType"});
-    
-    // These Methods belong to the server
-    //RemoteMethod RESTART_SERVER = new RemoteMethod("restartServer",new String[] { });
-    //RemoteMethod REFRESH = new RemoteMethod("refresh",new String[] {"clientRepositoryVersion" });
-    //RemoteMethod LOGIN = new RemoteMethod("login",new String[] { "username", "password"});
-    //RemoteMethod CHECK_SERVER_VERSION = new RemoteMethod("checkServerVersion",new String[] {"clientVersion" });
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
 	@ResultType(Boolean.class)
     FutureResult<Boolean> canChangePassword();
+
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
+	
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> changeName(String username, String newTitle,String newSurename,String newLastname);
+	
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> changeEmail(String username,String newEmail);
+	
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> confirmEmail(String username,String newEmail);
     
 	@ResultType(UpdateEvent.class)
     FutureResult<UpdateEvent> getResources() throws RaplaException;
-    /** returns the time on the server in string format*/
-    
-	@ResultType(String.class)
-	FutureResult<String> getServerTime();
     
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
@@ -86,8 +75,10 @@ public interface RemoteStorage extends RemoteJsonService {
 
 	@ResultType(ConflictList.class)
 	FutureResult<ConflictList> getConflicts();
+	
 	@ResultType(BindingMap.class)
 	FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
+	
 	@ResultType(ReservationList.class)
 	FutureResult<ReservationList> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
 
@@ -142,6 +133,5 @@ public interface RemoteStorage extends RemoteJsonService {
 		}
     
     }
-
 	
 }

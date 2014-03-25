@@ -14,6 +14,8 @@
  */
 package org.rapla.storage;
 
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.rapla.entities.Entity;
@@ -29,6 +31,7 @@ public interface CachableStorageOperator extends StorageOperator {
     
     public List<Entity> getVisibleEntities(final User user) throws RaplaException;
 	
+    public Collection<Entity> getUpdatedEntities(Date timestamp) throws RaplaException;
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
 	

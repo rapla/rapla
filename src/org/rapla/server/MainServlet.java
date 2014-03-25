@@ -84,7 +84,6 @@ public class MainServlet extends HttpServlet {
     private ContainerImpl raplaContainer;
     public final static String DEFAULT_CONFIG_NAME = "raplaserver.xconf";
 
-    private long serverStartTime;
     private Logger logger = null;
 	private String startupMode =null;
    	private String startupUser = null;
@@ -429,7 +428,6 @@ public class MainServlet extends HttpServlet {
 			}
 			else if ( startupMode.equals("server") || startupMode.equals("standalone") )
     		{
-				serverStartTime = System.currentTimeMillis();
 				//lookup shutdownService
 				if ( startupMode.equals("server"))
     		    {
@@ -440,11 +438,7 @@ public class MainServlet extends HttpServlet {
 					// We start the standalone server before the client to prevent jndi lookup failures 
 					ServerServiceImpl server = (ServerServiceImpl)getServer();
 					raplaContainer.addContainerProvidedComponentInstance(RemoteMethodStub.class, server);
-					RemoteSessionImpl standaloneSession = new RemoteSessionImpl(server.getContext(), "session") {
-						public void logout() throws RaplaException {
-						}
-						
-					};
+					RemoteSessionImpl standaloneSession = new RemoteSessionImpl(server.getContext(), "session");
 					server.setStandalonSession( standaloneSession);
 				
 				}
@@ -785,7 +779,16 @@ public class MainServlet extends HttpServlet {
 	        final RaplaContext context = serverContainer.getContext();
 	    	RemoteServiceDispatcher serviceDispater= context.lookup( RemoteServiceDispatcher.class);
 			String token = request.getHeader("Authorization");
-			if ( token == null)
+			if ( token != null)
+			{
+				String bearerStr = "bearer";
+				int bearer = token.toLowerCase().indexOf(bearerStr);
+				if ( bearer >= 0)
+				{
+					token = token.substring( bearer + bearerStr.length()).trim();
+				}
+			}
+			else
 			{
 				token = request.getParameter("access_token");
 			}
@@ -810,12 +813,7 @@ public class MainServlet extends HttpServlet {
 				user = serviceDispater.getUser( token);
 			}
 	    	
-	    	RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous") {
-				
-				public void logout() throws RaplaException {
-					setUser(null);
-				}
-			};
+	    	RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous");
 			remoteSession.setUser( (User) user);
 	    	ServletContext servletContext = getServletContext();
 	    	JsonServletWrapper servlet;
@@ -830,7 +828,7 @@ public class MainServlet extends HttpServlet {
 	    		String versionName = "jsonrpc";
 	    		int code = -32603;
 	    		r.add(versionName, new JsonPrimitive("2.0"));
-	    		String id = null;
+	    		String id = request.getParameter("id");
     	        if (id != null) {
     	          r.add("id", new JsonPrimitive(id));
     	        }

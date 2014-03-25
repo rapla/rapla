@@ -15,7 +15,9 @@ package org.rapla.storage.xml;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
@@ -41,6 +43,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.IdTable;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
@@ -55,6 +58,11 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     Map<RaplaType,RaplaXMLReader> readerMap;
     SerializableDateTimeFormat dateTimeFormat;
     I18nBundle i18n;
+    public static class TimestampDates
+    {
+    	public Date createTime;
+    	public Date changeTime;
+    }
 
     public RaplaXMLReader( RaplaContext context ) throws RaplaException
     {
@@ -68,6 +76,42 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );
     }
+    
+    public TimestampDates readTimestamps(RaplaSAXAttributes atts) throws RaplaSAXParseException
+    {
+	    String createdAt = atts.getValue( "", "created-at");
+	    String lastChanged = atts.getValue( "", "last-changed");
+	    Date createTime = null;
+	    Date changeTime = createTime;
+	    if (createdAt != null)
+	    {
+	        createTime = parseTimestamp( createdAt);
+	    }
+	    else
+	    {
+	    	createTime = getCurrentTimestamp();
+	    }
+	    if (lastChanged != null)
+	    {
+	    	changeTime = parseTimestamp( lastChanged);
+	    }
+	    else
+	    {
+	    	changeTime = createTime;
+	    }
+	    TimestampDates result = new TimestampDates();
+	    result.createTime = createTime;
+	    result.changeTime = changeTime;
+	    return result;
+    }
+    
+    public Date getCurrentTimestamp() {
+		long time = System.currentTimeMillis();
+		TimeZone systemTimeZone = TimeZone.getDefault();
+		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
+		Date raplaTime = new Date(time + offset);
+		return raplaTime;
+	}
 
     public RaplaType getTypeForLocalName( String localName )
         throws RaplaSAXParseException
@@ -180,21 +224,6 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         String id = getId( entity.getRaplaType(), idString );
         ((SimpleEntity)entity).setId( id );
         return id;
-    }
-
-    protected void setVersionIfThere( SimpleEntity entity, RaplaSAXAttributes atts )
-    {
-        String  version= atts.getValue( "version" );
-        if ( version != null)
-        {
-            try {
-                entity.setVersion( Integer.parseInt( version));
-            } 
-            catch (NumberFormatException ex)
-            {
-                createSAXParseException( "Error parsing version-string '" + version + "'");
-            }
-        }
     }
 
     /** return the new id */

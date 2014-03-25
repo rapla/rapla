@@ -14,13 +14,14 @@ package org.rapla.entities.storage.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.ReadOnlyException;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -34,11 +35,7 @@ import org.rapla.entities.storage.RefEntity;
 public abstract class SimpleEntity extends ReferenceHandler implements RefEntity, Comparable
 {
     private String id;
-    private int version = 0;
-    //transient protected ReferenceHandler subEntityHandler;
-
     transient boolean readOnly = false;
-    transient Integer idKey;
     
     public SimpleEntity() {
 
@@ -122,7 +119,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     		id = id.intern();
     	}
         this.id= id;
-        idKey = null;
     }
 
     /** @return the identifier of the object.
@@ -147,15 +143,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return id.equals( id2);
     }
     
-    public Integer getIdKey()
-    {
-    	if ( idKey == null && id != null)
-    	{
-    		idKey = ((RaplaObject)this).getRaplaType().getKey( id );
-    	}
-    	return idKey;
-    }
-
     /** The hashcode of the id-object will be returned.
      * @return the hashcode of the id.
      * @throws IllegalStateException if no id is set.
@@ -167,14 +154,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
             throw new IllegalStateException("Id not set. You must set an Id before you can use the hashCode method."
                                             );
         }
-    }
-
-    public void setVersion(int version)  {
-        this.version= version;
-    }
-
-    public int getVersion()  {
-        return version;
     }
 
     /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
@@ -222,15 +201,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     	{
     		((ParentEntity)clone).addEntity( entity );
     	}
-    	// In a copy operation the target/destination object should always be writable
-    	clone.setVersion(getVersion());
     }
-
-//    @SuppressWarnings("unchecked")
-//	public T cast()
-//    {
-//    	return (T) this;
-//    }
 
     public String toString() {
         if (id != null)
@@ -248,10 +219,25 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             return 0;
         }
-        Integer id1 = o1.getIdKey();
-        Integer id2 = o2.getIdKey();
         if ( o1.equals( o2))
             return 0;
+ 
+        // first try to compare the entities with their create time
+        if ( o1 instanceof Timestamp && o2 instanceof Timestamp)
+        {
+        	Date c1 = ((Timestamp)o1).getCreateTime();
+           	Date c2 = ((Timestamp)o2).getCreateTime();
+           	if ( c1 != null && c2 != null)
+           	{
+           		int result = c1.compareTo( c2);
+           		if ( result != 0)
+           		{
+           			return result;
+           		}
+           	}
+        }
+        String id1 = o1.getId();
+        String id2 = o2.getId();
         if ( id1 == null)
         {
        	 if ( id2 == null)
@@ -268,9 +254,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
        	 	return 1;
         }
         return id1.compareTo( id2 );
-        //Integer key1 = o1.getRaplaType().getKey( id1 );
-        //Integer key2  = o2.getRaplaType().getKey( id2 );
-        //return key1.compareTo( key2);        
     }
 
 }

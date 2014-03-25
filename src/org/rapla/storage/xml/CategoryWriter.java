@@ -35,8 +35,8 @@ public class CategoryWriter extends RaplaXMLWriter {
     
     public void printCategory(Category category,boolean printSubcategories) throws IOException,RaplaException {
         openTag("rapla:category");
-        printVersion( category);
-        if (isIdOnly())
+        printTimestamp( category);
+        if (isPrintId())
         {
             printId(category);
             Category parent = category.getParent();

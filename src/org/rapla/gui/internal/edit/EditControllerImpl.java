@@ -28,7 +28,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
@@ -75,8 +74,6 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 			ui =  new DynamicTypeEditUI(getContext());
 		} else if (User.TYPE.equals(type)) {
 			ui =  new UserEditUI(getContext());
-		} else if (Period.TYPE.equals(type)) {
-			ui =  new PeriodEditUI(getContext());
 		} else if (Category.TYPE.equals(type)) {
 			ui = new CategoryEditUI(getContext(), createNew);
 		} else if (Preferences.TYPE.equals(type)) {

@@ -82,8 +82,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private final String encoding;
     protected boolean isConnected = false;
     final boolean includeIds ;
-    /** Warning use this only for development purpose. Versions are temporary and will be lost during import/export */  
-    private final boolean includeVersions;
     private final boolean validate;
 
     public FileOperator( RaplaContext context,Logger logger, Configuration config ) throws RaplaException
@@ -152,8 +150,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
         encoding = config.getChild( "encoding" ).getValue( "utf-8" );
         validate = config.getChild( "validate" ).getValueAsBoolean( false );
         includeIds = config.getChild( "includeIds" ).getValueAsBoolean( false );
-        // Warning use this only for development purpose. Versions are temporary and will be lost during import/export  
-        includeVersions = config.getChild( "includeVersions" ).getValueAsBoolean( false );
     } 
 
     public String getURL()
@@ -173,7 +169,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             return;
     	getLogger().info("Connecting: " + getURL()); 
         loadData();
-        initAppointments();
+        initIndizes();
         isConnected = true;
     	getLogger().debug("Connected"); 	
     }
@@ -221,7 +217,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 			cache.putAll( list );
 	        resolveInitial( list);
             cache.getSuperCategory().setReadOnly();
-            for (User user:cache.getCollection(User.class))
+            for (User user:cache.getUsers())
             {
                 String id = user.getId();
                 String password = entityStore.getPassword( id );
@@ -315,7 +311,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out, LocalCache cache, boolean includeIds ) throws IOException, RaplaException
     {
-        RaplaContext outputContext = new IOContext().createOutputContext( context, cache.getSuperCategoryProvider(), includeIds, includeVersions );
+        RaplaContext outputContext = new IOContext().createOutputContext( context, cache.getSuperCategoryProvider(), includeIds );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
         BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,encoding));

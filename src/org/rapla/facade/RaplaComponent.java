@@ -361,7 +361,7 @@ public class RaplaComponent
 		return checkClassifiablePermissions(object, user, ReservationImpl.PERMISSION_READ, true);
 	}
     
- 	static Category dummyCategory = new CategoryImpl();
+ 	static Category dummyCategory = new CategoryImpl(new Date(), new Date());
     // The dummy category is used if no permission attribute is found. Use permissionNotFoundReturns to set whether this means permssion granted or not
     private static boolean checkClassifiablePermissions(Object object, User user, String permissionKey, boolean permssionNotFoundReturnsYesCategory) {
     	Collection<Category> cat = getPermissionGroups(object, dummyCategory,permissionKey, permssionNotFoundReturnsYesCategory);

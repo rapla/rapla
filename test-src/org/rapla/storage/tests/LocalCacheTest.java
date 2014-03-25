@@ -96,7 +96,7 @@ public class LocalCacheTest extends RaplaTestCase {
 
         resource1.getClassification().setValue("name","Zeta");
         cache.put(resource1);
-        Allocatable[] resources = cache.getCollection( Allocatable.TYPE).toArray(Allocatable.ALLOCATABLE_ARRAY);
+        Allocatable[] resources = cache.getAllocatables().toArray(Allocatable.ALLOCATABLE_ARRAY);
         assertEquals(3, resources.length);
         assertTrue(resources[1].getName(locale).equals("Beta"));
     }
@@ -104,18 +104,16 @@ public class LocalCacheTest extends RaplaTestCase {
     public void test2() throws Exception {
         final CachableStorageOperator storage = raplaContainer.lookup(CachableStorageOperator.class , "raplafile");
         storage.connect();
+        final Period period = getFacade().getPeriods()[0];
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
 			
 			@Override
 			public void execute(LocalCache cache) throws RaplaException {
 				{
-		            Iterator<?> it = cache.getCollection(Period.TYPE).iterator();
-		            Period period = (Period) it.next();
 		            ClassificationFilter[] filters = null;
 		            Map<String, String> annotationQuery = null;
 		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery);
 		            assertEquals(0,reservations.size());
-		            period = (Period) it.next();
 		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery);
 		            assertEquals(2, reservations.size());
 		            User user = cache.getUser("homer");
@@ -125,7 +123,7 @@ public class LocalCacheTest extends RaplaTestCase {
 		            assertEquals(2, reservations.size());
 		        }
 		        {
-		            Iterator<Allocatable> it = cache.getCollection(Allocatable.class).iterator();
+		            Iterator<Allocatable> it = cache.getAllocatables().iterator();
 		            assertEquals("erwin",it.next().getName(locale));
 		            assertEquals("Room A66",it.next().getName(locale));
 		        }		

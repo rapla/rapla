@@ -54,7 +54,6 @@ import org.rapla.entities.domain.ReservationAnnotations;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -626,7 +625,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Period[] getPeriods() throws RaplaException {
-		Period[] result = operator.getPeriods().toArray(Period.PERIOD_ARRAY);
+		Period[] result = getPeriodModel().getAllPeriods();
 		return result;
 	}
 
@@ -1105,11 +1104,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return newAllocatable(classification, user);
 	}
 
-	public Period newPeriod() throws RaplaException {
-		PeriodImpl period = new PeriodImpl();
+	public Allocatable newPeriod() throws RaplaException {
+		DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
+		Classification classification = periodType.newClassification();
+		classification.setValue("name", "");
 		Date today = today();
-		period.setStart(DateTools.cutDate(today));
-		period.setEnd(DateTools.fillDate(today));
+		classification.setValue("start", DateTools.cutDate(today));
+		classification.setValue("end", DateTools.addDays(DateTools.fillDate(today),7));
+		Allocatable period = newAllocatable(classification);
 		setNew(period);
 		return period;
 	}
@@ -1119,7 +1121,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public Category newCategory() throws RaplaException {
-		CategoryImpl category = new CategoryImpl();
+		Date now = operator.getCurrentTimestamp();
+        CategoryImpl category = new CategoryImpl(now, now);
 		setNew(category);
 		return category;
 	}
@@ -1132,7 +1135,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
-		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
+		Date now = operator.getCurrentTimestamp();
+		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
 		dynamicType.setAnnotation("classification-type", classificationType);
 		dynamicType.setElementKey(createDynamicTypeKey(classificationType));
 		setNew(dynamicType);
@@ -1161,7 +1165,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public User newUser() throws RaplaException {
-		UserImpl user = new UserImpl();
+		Date now = operator.getCurrentTimestamp();
+		UserImpl user = new UserImpl( now, now);
 		setNew(user);
 		String[] defaultGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS};
 		for ( String groupKey: defaultGroups)
@@ -1227,7 +1232,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			String id = ids[i++];
 			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id);
-			entity.setVersion(0);
 			entity.setResolver(operator);
 			if (getLogger() != null && getLogger().isDebugEnabled()) {
 				getLogger().debug("new " + entity.getId());

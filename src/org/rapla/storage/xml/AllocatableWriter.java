@@ -54,7 +54,6 @@ public class AllocatableWriter extends ClassifiableWriter {
         }
         openTag(tagName);
         printId(allocatable);
-        printVersion( allocatable);
         printOwner(allocatable);
         printTimestamp(allocatable );
         closeTag();
@@ -78,11 +77,7 @@ public class AllocatableWriter extends ClassifiableWriter {
         if ( p.getUser() != null ) {
             att("user", getId( p.getUser() ));
         } else if ( p.getGroup() != null ) {
-            if ( isIdOnly() ) {
-                att( "groupidref", getId( p.getGroup() ) );
-            } else {
-                att( "group", getGroupPath( p.getGroup() ) );
-            }
+        	att( "group", getGroupPath( p.getGroup() ) );
         }
         if ( p.getMinAdvance() != null ) {
             att ( "min-advance", p.getMinAdvance().toString() );

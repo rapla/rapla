@@ -39,11 +39,11 @@ public class DynamicTypeWriter extends RaplaXMLWriter
 
         openTag("relax:element");
         att("name","dynatt:" + type.getElementKey());
-        if (isIdOnly())
+        if (isPrintId())
         {
             att("id",getId(type));
         }
-        printVersion( type);
+        printTimestamp( type );
 
         closeTag();
 
@@ -62,8 +62,6 @@ public class DynamicTypeWriter extends RaplaXMLWriter
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
     	printDynamicType( (DynamicType) type );
     }
-        
-
 
     private String getCategoryPath( Category category) throws EntityNotFoundException {
         Category rootCategory = getSuperCategory();
@@ -79,10 +77,8 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             openElement("relax:optional");
         openTag("relax:element");
         att("name",attribute.getKey());
-        if (isIdOnly())
+        if (isPrintId())
             att("id",getId(attribute));
-
-        printVersion( attribute);
 
         AttributeType type = attribute.getType();
         closeTag();
@@ -104,19 +100,11 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             closeTagOnLine();
             if ( constraint instanceof Category) {
                 Category category = (Category) constraint;
-                if (isIdOnly()) {
-                    print( getId(category) );
-                } else {
-                    print( getCategoryPath( category ) );
-                }
+                print( getCategoryPath( category ) );
             }
             else if ( constraint instanceof DynamicType) {
                 DynamicType dynamicType = (DynamicType) constraint;
-                if (isIdOnly()) {
-                    print( getId(dynamicType) );
-                } else {
-                    print( dynamicType.getElementKey() );
-                }
+                print( dynamicType.getElementKey() );
             }
             else if ( constraint instanceof Date) {
                 final String formatDate = dateTimeFormat.formatDate( (Date) constraint);
@@ -134,11 +122,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             closeTagOnLine();
             if ( defaultValue instanceof Category) {
                 Category category = (Category) defaultValue;
-                if (isIdOnly()) {
-                    print( getId(category) );
-                } else {
-                    print( getCategoryPath( category ) );
-                }
+                print( getCategoryPath( category ) );
             }  else if ( defaultValue instanceof Date) {
                 final String formatDate = dateTimeFormat.formatDate( (Date) defaultValue);
                 print( formatDate);

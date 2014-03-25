@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -582,7 +583,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	                         {
 	                        	 getLogger().getChildLogger("login").info( "Request Logout " + user.getUsername());
 	                         }
-	                         session.logout();
+	                         ((RemoteSessionImpl)session).logout();
 	                     }
 	                 }
             	 }
@@ -603,10 +604,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	            	 {
 	            		 Logger logger = getLogger().getChildLogger("login");
 	            		 user = authenticate(username, password, connectAs,	logger);
-		            	 session.setUser( user);
-						
-	
-		            	 
+		            	 ((RemoteSessionImpl)session).setUser( user);
 	            	 }
 	            	 else
 	                 {
@@ -667,7 +665,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		         if ( user == null )
 		         {
 		    		 logger.info("User not found in localstore. Creating new Rapla user " + username);
-		             UserImpl newUser = new UserImpl();
+		             Date now = operator.getCurrentTimestamp();
+		             UserImpl newUser = new UserImpl(now,now);
 		             newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
 		             user = newUser;
 		         }

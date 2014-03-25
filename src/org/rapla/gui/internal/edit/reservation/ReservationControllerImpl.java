@@ -46,7 +46,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -662,9 +661,9 @@ public class ReservationControllerImpl extends RaplaGUIComponent
 					try
 					{
 						Reservation persistant = getModification().getPersistant( original);
-						long version = ((RefEntity)persistant).getVersion();
-						long originalVersion = ((RefEntity)original).getVersion();
-						if ( originalVersion < version)
+						Date version = persistant.getLastChanged();
+						Date originalVersion = original.getLastChanged();
+						if ( originalVersion != null && version!= null && originalVersion.before( version))
 						{
 							c.updateReservation(persistant);
 						}

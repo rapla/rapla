@@ -52,7 +52,6 @@ import org.rapla.gui.toolkit.RaplaWidget;
  all reservations of the user.*/
 class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 {
-
     @SuppressWarnings("unchecked")
 	JComboBox sourcePeriodChooser = new JComboBox(new String[] {"a", "b"});
     @SuppressWarnings("unchecked")
@@ -66,7 +65,7 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     JLabel label = new JLabel();
     JList  selectedReservations = new JList();
     BooleanField singleChooser;
-    PeriodImpl customPeriod = new PeriodImpl(null, null);
+    PeriodImpl customPeriod = new PeriodImpl("", null, null);
 
     JPanel customSourcePanel = new JPanel();
     JPanel customDestPanel = new JPanel();
@@ -95,16 +94,13 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 		});
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customSource = new PeriodImpl(null, null);
-        customSource.setName(getString("custom_period"));
-        customSource.setStart( getQuery().today());
-        customSource.setEnd( getQuery().today());
+		Date today = getQuery().today();
+        final PeriodImpl customSource = new PeriodImpl(getString("custom_period"), today, today);
         sourceModel.insertElementAt(customSource, 0);
         
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customDest = new PeriodImpl(getQuery().today(), null);
+        final PeriodImpl customDest = new PeriodImpl(getString("custom_period"),today, null);
         {
-	        customDest.setName(getString("custom_period"));
 	        destModel.insertElementAt(customDest, 0);
         }
         

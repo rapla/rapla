@@ -58,15 +58,15 @@ public class MainFrame extends RaplaGUIComponent
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
         	
-        getUpdateModule().addModificationListener(this);
         CalendarSelectionModel model =  getService( CalendarSelectionModel.class);
         cal = new CalendarEditor(sm,model);
+        getUpdateModule().addModificationListener(this);
 
         JMenuBar menuBar = getService( InternMenus.MENU_BAR);
         menuBar.add(Box.createHorizontalGlue());
         menuBar.add(statusBar);
         menuBar.add(Box.createHorizontalStrut(5));
-         frame.setJMenuBar( menuBar );
+        frame.setJMenuBar( menuBar );
 
         getContentPane().setLayout( new BorderLayout() );
       //  getContentPane().add ( statusBar, BorderLayout.SOUTH);

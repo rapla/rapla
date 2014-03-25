@@ -17,24 +17,20 @@ import java.util.Locale;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.storage.internal.SimpleEntity;
 
-public class PeriodImpl extends SimpleEntity
-    implements
-        Period
+public class PeriodImpl implements Period
 {
     private final static long WEEK_MILLIS= DateTools.MILLISECONDS_PER_WEEK;
-
     String name;
     Date start;
     Date end;
 
     public PeriodImpl() {
-
     }
 
-    public PeriodImpl(Date start, Date end) {
-        this.start = start;
+    public PeriodImpl(String name,Date start, Date end) {
+        this.name = name;
+    	this.start = start;
         this.end = end;
     }
 
@@ -44,17 +40,8 @@ public class PeriodImpl extends SimpleEntity
         return start;
     }
 
-    public void setStart(Date start) {
-        checkWritable();
-        this.start = start;
-    }
-
     public Date getEnd() {
         return end;
-    }
-    public void setEnd(Date end) {
-        checkWritable();
-        this.end = end;
     }
 
     public int getWeeks()
@@ -73,11 +60,6 @@ public class PeriodImpl extends SimpleEntity
 
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        checkWritable();
-        this.name = name;
     }
 
     public boolean contains(Date date) {
@@ -106,15 +88,19 @@ public class PeriodImpl extends SimpleEntity
         return (hashCode() < period.hashCode()) ? -1 : 1;
     }
 
-    public PeriodImpl clone() {
-        PeriodImpl clone = new PeriodImpl();
-        super.deepClone(clone);
-    	clone.start = start;
-        clone.end = end;
-        clone.name = name;
-        return clone;
+
+    public PeriodImpl clone()
+    {
+    	return new PeriodImpl(name, start, end);
     }
 
+	public void setStart(Date start) {
+		this.start = start;
+	}
+
+	public void setEnd(Date end) {
+		this.end = end;
+	}
 }
 
 

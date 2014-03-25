@@ -14,24 +14,20 @@ package org.rapla.entities.domain;
 
 import java.util.Date;
 
-import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 /**
 Most universities and schools are planning for fixed periods/terms
 rather than arbitrary dates. Rapla provides support for this periods.
 */
-public interface Period extends Entity<Period>,Comparable,Named {
+public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
     final RaplaType<Period> TYPE = new RaplaType<Period>(Period.class, "period");
     
     Date getStart();
     Date getEnd();
     int getWeeks();
     String getName();
-
-    void setStart(Date start);
-    void setEnd(Date end);
-    void setName(String name);
 
     boolean contains(Date date);
     String toString();

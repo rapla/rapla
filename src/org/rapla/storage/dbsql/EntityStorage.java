@@ -23,11 +23,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
@@ -124,6 +126,24 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		Date returned = new Date(time + offset);
 		return returned;
 	}
+	
+	protected Date getDateOrNow(ResultSet rset, int column) throws SQLException {
+		Date date = getDate(rset, column);
+		if ( date != null)
+		{
+			return date;
+		}
+		return getCurrentTimestamp();
+	}
+
+	public Date getCurrentTimestamp() {
+		long time = System.currentTimeMillis();
+		TimeZone systemTimeZone = getSystemTimeZone();
+		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
+		Date raplaTime = new Date(time + offset);
+		return raplaTime;
+	}
+
 
 	protected TimeZone getSystemTimeZone() {
 		return TimeZone.getDefault();
@@ -559,6 +579,25 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	    }
 	}
     
+    protected void checkAndDrop(Map<String, TableDef> schema, String columnName) throws SQLException {
+    	TableDef tableDef = schema.get(tableName);
+		if (tableDef.getColumn(columnName) != null) 
+        {
+			String sql = "ALTER TABLE " + tableName + " DROP COLUMN " + columnName;
+		    Statement stmt = con.createStatement();
+			try
+			{
+				stmt.execute( sql);
+			}
+			finally
+			{
+				stmt.close();
+			}
+		}
+		con.commit();
+	}
+
+    
     protected void addSubStorage(Storage<T> subStore) {
     	subStores.add(subStore);
     }
@@ -736,23 +775,32 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //    }
 
     public void save( Collection<T> entities ) throws RaplaException, SQLException{
-        delete( entities );
+        deleteEntities( entities );
         insert( entities );
     }
 	
-    public void delete(Collection<T> entities) throws SQLException, RaplaException {
-        for (Storage<T> storage: subStores) {
-            storage.delete( entities );
+    public void deleteEntities(Collection<T> entities) throws SQLException, RaplaException {
+        Set<String> ids = new HashSet<String>();
+        for ( T entity: entities)
+        {
+        	ids.add( entity.getId());
         }
-        PreparedStatement stmt = null;
+        deleteIds(ids);
+    }
+
+	public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
+    	for (Storage<T> storage: subStores) {
+            storage.deleteIds( ids);
+        }
+		PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);
-            for ( T entity: entities)
+            for ( String id: ids)
             {
-                stmt.setInt(1,getId( entity));
+                stmt.setInt(1,RaplaType.parseId(id));
                 stmt.addBatch();
             }
-            if ( entities.size() > 0)
+            if ( ids.size() > 0)
             {
                 stmt.executeBatch();
             }
@@ -760,7 +808,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             if (stmt!=null)
                 stmt.close();
         }
-    }
+	}
 
     public void deleteAll() throws SQLException {
 		for (Storage<T> subStore: subStores)

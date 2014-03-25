@@ -35,7 +35,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -50,6 +49,8 @@ public interface StorageOperator extends EntityResolver {
 	public final static String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
 	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
 	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
+	public final static String PERIOD_TYPE = "rapla:period";
+	
 	public final static String CRYPTO_TYPE = "rapla:crypto";
 	
     void connect() throws RaplaException;
@@ -77,8 +78,6 @@ public interface StorageOperator extends EntityResolver {
 
     Collection<User> getUsers() throws RaplaException;
 
-    Collection<Period> getPeriods() throws RaplaException;
-    
 	Collection<DynamicType> getDynamicTypes() throws RaplaException;
 
     /** returns the user or null if a user with the given username was not found. */

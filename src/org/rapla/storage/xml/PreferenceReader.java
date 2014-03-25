@@ -53,10 +53,9 @@ public class PreferenceReader extends RaplaXMLReader {
         }
             
         if (localName.equals("preferences")) {
-            preferences = new PreferencesImpl();
+        	TimestampDates ts = readTimestamps(atts);
+            preferences = new PreferencesImpl(ts.createTime, ts.changeTime);
             preferences.setResolver( store);
-            setVersionIfThere( preferences, atts);
-
             if ( owner == null )
             {
             	preferences.setId( Preferences.TYPE.getId( 0));

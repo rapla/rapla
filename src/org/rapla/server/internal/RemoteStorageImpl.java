@@ -26,14 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaMainContainer;
-import org.rapla.components.util.Cancelable;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -60,7 +59,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
@@ -83,6 +81,7 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
+import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -101,20 +100,16 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
    // RemoteServer server;
     RaplaContext context;
     
-    int repositoryVersion = 0;
     int cleanupPointVersion = 0;
         
     protected AuthenticationStore authenticationStore;
     Logger logger;
     ClientFacade facade;
     RaplaLocale raplaLocale;
-    CommandScheduler commandQueue;
-    Cancelable scheduledCleanup;
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
         this.logger = context.lookup( Logger.class);
-        commandQueue = context.lookup( CommandScheduler.class);
         facade = context.lookup( ClientFacade.class);
         raplaLocale = context.lookup( RaplaLocale.class);
         operator = (CachableStorageOperator)facade.getOperator();
@@ -132,7 +127,17 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
             }
         }
-        initEventCleanup();
+        
+        Long repositoryVersion = operator.getCurrentTimestamp().getTime();
+		// Invalidate all clients
+        for ( User user:operator.getUsers())
+        {
+        	String userId = user.getId();
+			needResourceRefresh.put( userId, repositoryVersion);
+        	needConflictRefresh.put( userId, repositoryVersion);
+        }
+    	
+        invalidateMap.put( repositoryVersion, new TimeInterval( null, null));
     }
     
     public Logger getLogger() {
@@ -179,11 +184,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         return saveEvent;
     }
     
-    private Map<Entity,Integer> updateMap = new HashMap<Entity,Integer>();
-    private Map<User,Integer> needConflictRefresh = new HashMap<User,Integer>();
-    private Map<User,Integer> needResourceRefresh = new HashMap<User,Integer>();
-    private Map<Entity,Integer> removeMap = new HashMap<Entity,Integer>();
-    private SortedMap<Integer, TimeInterval> invalidateMap = new TreeMap<Integer,TimeInterval>();
+    private Map<String,Long> needConflictRefresh = new HashMap<String,Long>();
+    private Map<String,Long> needResourceRefresh = new HashMap<String,Long>();
+    private SortedMap<Long, TimeInterval> invalidateMap = new TreeMap<Long,TimeInterval>();
    
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
@@ -212,12 +215,28 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     		getLogger().error(ex.getMessage(), ex);
     		return;
     	}
+    	long repositoryVersion = operator.getCurrentTimestamp().getTime();
     	try
     	{
 	        // notify the client for changes
-	        repositoryVersion++;
 	        TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
-	        invalidateMap.put(repositoryVersion, invalidateInterval);
+	        if ( invalidateInterval != null)
+	        {
+	        	long oneHourAgo = repositoryVersion - DateTools.MILLISECONDS_PER_HOUR;
+	        	// clear the entries that are older than one hour and replace them with a clear_all
+	        	// that is set one hour in the past, to refresh all clients that have not been connected in the past hour on the next connect
+				SortedMap<Long, TimeInterval> headMap = invalidateMap.headMap( oneHourAgo);
+	        	if ( !headMap.isEmpty())
+	        	{
+	        		Set<Long> toDelete  = new TreeSet<Long>(headMap.keySet());
+	        		for ( Long key:toDelete)
+	        		{
+		        		invalidateMap.remove(key);
+	        		}
+	        		invalidateMap.put(oneHourAgo, new TimeInterval( null, null));
+	        	}
+	        	invalidateMap.put(repositoryVersion, invalidateInterval);
+	        }
 	    	
 	        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent( evt );
 	        if ( getLogger().isDebugEnabled() )
@@ -229,38 +248,47 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	{
 	        		continue;
 	        	}
-	            removeMap.remove( obj );
-	            updateMap.remove( obj );
-	            updateMap.put( obj, repositoryVersion  );
-	        }
-	        for ( Iterator<Entity>it = safeResultEvent.getRemoveObjects().iterator(); it.hasNext(); )
-	        {
-	            Entity obj =  it.next();
-	        	if (!isTransferedToClient(obj))
-	        	{
-	        		continue;
-	        	}
-	            updateMap.remove( obj );
-	            removeMap.remove( obj );
-	            removeMap.put( obj,  repositoryVersion );
 	        }
 	        
 	        // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
 	        // someone changes the permissions on one or more resource and that affects  the visibility of that resource to a user, 
 	        // so its either pushed to the client or removed from it.
-	        //
+	        Set<Permission> invalidatePermissions = new HashSet<Permission>();
+	        Set<User> usersResourceRefresh = new HashSet<User>();
+	        {
+				Iterator<Remove> operations = evt.getOperations(UpdateResult.Remove.class);
+		        while ( operations.hasNext())
+		        {
+		        	Remove operation = operations.next();
+					Entity obj =  operation.getCurrent();
+		        	if ( obj instanceof User)
+		        	{
+		        		String userId = obj.getId();
+		        		needConflictRefresh.remove( userId);
+		        		needResourceRefresh.remove( userId);
+		        	}
+		        	if (!isTransferedToClient(obj))
+		        	{
+		        		continue;
+		        	}
+		        	if ( obj instanceof Allocatable)
+		        	{
+		        		Permission[] oldPermissions = ((Allocatable)obj).getPermissions();
+						invalidatePermissions.addAll( Arrays.asList( oldPermissions));	
+		        	}
+		        }
+	        }
+	        
 	        // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
 	        // If that is the case we trigger an invalidate of the conflicts for a user
-	        Set<User> usersResourceRefresh = new HashSet<User>();
 	        Category superCategory = operator.getSuperCategory();
 			Set<Category> groupsConflictRefresh = new HashSet<Category>();
 			Set<User> usersConflictRefresh = new HashSet<User>();
 			Iterator<Change> operations = evt.getOperations(UpdateResult.Change.class);
-	        Set<Permission> invalidatePermissions = new HashSet<Permission>();
 	        while ( operations.hasNext())
 			{
 				Change operation = operations.next();
-				RaplaObject newObject = operation.getNew();
+				Entity newObject = operation.getNew();
 				if ( newObject.getRaplaType().is( Allocatable.TYPE) && isTransferedToClient(newObject))
 				{
 					Allocatable newAlloc = (Allocatable) newObject;
@@ -387,15 +415,17 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        {
 	        	if ( !user.isAdmin())
 	        	{
-	        		needResourceRefresh.put( user, repositoryVersion);
-	        		needConflictRefresh.put( user, repositoryVersion);
+	        		String userId = user.getId(); 
+	        		needResourceRefresh.put( userId, repositoryVersion);
+	        		needConflictRefresh.put( userId, repositoryVersion);
 	        	}
 	        }
 	        for ( User user:usersConflictRefresh)
 	        {
 	        	if ( !user.isAdmin())
 	        	{
-	        		needConflictRefresh.put( user, repositoryVersion);
+	        		String userId = user.getId(); 
+					needConflictRefresh.put( userId, repositoryVersion);
 	        	}
 	        }
     	}
@@ -432,90 +462,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 
 	@Override
 	public void dispose() {
-    	if ( scheduledCleanup != null)
-    	{
-    		scheduledCleanup.cancel();
-    	}
 	}
     
-	/** regulary removes all old update messages that are older than the updateInterval ( factor 10) and at least 1 hour old */
-    private final void initEventCleanup()
-    {
-    	Lock writeLock;
-    	try
-    	{
-    		writeLock = writeLock();
-    	}
-        catch (RaplaException ex)
-        {
-        	getLogger().error("Can't cleanup due to ", ex);
-        	return;
-        }
- 
-    	Command cleanupTask = new Command()
-        {
-            public void execute()
-            {
-                initEventCleanup();
-            }
-        };
-        try
-        {
- 	    	{
-                Entity[] keys = updateMap.keySet().toArray(new Entity[] {});
-                for ( int i=0;i<keys.length;i++)
-                {
-                    Entity key = keys[i];
-                    Integer lastVersion =  updateMap.get( key );
-                    if ( lastVersion.longValue() <= cleanupPointVersion )
-                    {
-                        updateMap.remove( key );
-                    }
-                }
-            }
-            {
-                Entity[] keys = removeMap.keySet().toArray(new Entity[] {});
-                for ( int i=0;i<keys.length;i++)
-                {
-                    Entity key = keys[i];
-                    Integer lastVersion = removeMap.get( key );
-                    if ( lastVersion.longValue() <= cleanupPointVersion )
-                    {
-                        removeMap.remove( key );
-                    }
-                }
-            }
-            ArrayList<Integer> removeList = new ArrayList<Integer>(invalidateMap.headMap(cleanupPointVersion).keySet());
-			for ( Integer toRemove:removeList)
-			{
-				invalidateMap.remove( toRemove);
-			}
-            
-            cleanupPointVersion = repositoryVersion;
-        }
-        finally
-        {
-        	unlock( writeLock );
-        }
-        int delay = 10000;
-        if ( operator.isConnected() )
-        {
-            try
-            {
-                delay = operator.getPreferences( null, true ).getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY,  delay );
-            }
-            catch ( RaplaException e )
-            {
-                getLogger().error( "Error during cleanup.", e );
-            }
-        }
-        long scheduleDelay = Math.max( DateTools.MILLISECONDS_PER_HOUR, delay * 10 );
-        //scheduleDelay = 30000;
-        scheduledCleanup = commandQueue.schedule( cleanupTask,  scheduleDelay);
-    }
-
-    
-    public void updateError(RaplaException ex) {
+	public void updateError(RaplaException ex) {
     }
 
     public void storageDisconnected(String disconnectionMessage) {
@@ -535,10 +484,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                checkAuthentified();
 	                User user = getSessionUser();
 	                getLogger().debug ("A RemoteServer wants to get all resource-objects.");
-                
+                    Date serverTime = operator.getCurrentTimestamp();
                     Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
                     UpdateEvent evt = new UpdateEvent();
-                    evt.setRepositoryVersion(repositoryVersion);
+                    // FIXME comment in
+                    //evt.setRepositoryVersion(repositoryVersion);
                     for ( Entity entity: visibleEntities)
                     {
                     	if ( isTransferedToClient(entity))
@@ -555,6 +505,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     		evt.putStore(entity);
                     	}
                     }
+					evt.setLastValidated(serverTime);
                     return new ResultImpl<UpdateEvent>( evt);
             	}
             	catch (RaplaException ex )
@@ -611,7 +562,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 try
                 {
                     checkAuthentified();
+                    Date repositoryVersion = operator.getCurrentTimestamp();
                     User sessionUser = getSessionUser();
+                    
                     ArrayList<Entity>completeList = new ArrayList<Entity>();
 	                for ( String id:ids)
                 	{
@@ -637,15 +590,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    security.checkRead(sessionUser, entity);
 	                    completeList.add( entity );
 	                    getLogger().debug("Get entity " + entity);
-	                    // FIXME check if the client has the permission to read the entity
-//	                    Iterable<Entity>subEntities = entity.getSubEntities();
-//						for (Entity ref:subEntities)
-//	                    {
-//	                        completeList.add( ref );
-//	                    }
                 	}
 	                UpdateEvent evt = new UpdateEvent();
-                    evt.setRepositoryVersion(repositoryVersion);
+					evt.setLastValidated(repositoryVersion);
                     for ( Entity entity: completeList)
                     {
                     	evt.putStore(entity);
@@ -754,13 +701,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	}
             }
 
-			public FutureResult<String> getServerTime() {
-            	Date raplaTime = operator.getCurrentTimestamp();
-            	SerializableDateTimeFormat serializableFormat = raplaLocale.getSerializableFormat();
-            	String result= serializableFormat.formatTimestamp( raplaTime);
-            	return new ResultImpl<String>( result);
-            }
-
 			public FutureResult<UpdateEvent> dispatch(UpdateEvent event)
             {
             	try
@@ -775,8 +715,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					}
 	            	dispatch_( event);
 	                getLogger().info("Change for user " + sessionUser + " dispatched.");
-	                int clientVersion = Integer.valueOf( event.getRepositoryVersion()).intValue();
-					UpdateEvent result = createUpdateEvent(clientVersion);
+	                Date clientVersion =  event.getLastValidated();
+	                if ( clientVersion == null)
+	                {
+	                	throw new RaplaException("client sync time is missing");
+	                }
+					UpdateEvent result = createUpdateEvent( clientVersion );
 					return new ResultImpl<UpdateEvent>(result );
 	        	}
 	        	catch (RaplaException ex )
@@ -972,18 +916,23 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //	        	}
 //            }
             
-            public FutureResult<UpdateEvent> refresh(String time)
+            public FutureResult<UpdateEvent> refresh(String lastSyncedTime)
             {
             	try
             	{
 	                checkAuthentified();
-	                UpdateEvent event = createUpdateEvent(Integer.valueOf( time).intValue());
+	                Date clientRepoVersion = SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime);
+	                UpdateEvent event = createUpdateEvent(clientRepoVersion);
 	                return new ResultImpl<UpdateEvent>( event);
             	}
             	catch (RaplaException ex )
             	{
             		return new ResultImpl<UpdateEvent>(ex );
-            	}
+            	} 
+            	catch (ParseDateException e) 
+            	{
+            		return new ResultImpl<UpdateEvent>(new RaplaException( e.getMessage()) );
+				}
             }
 
             
@@ -1064,54 +1013,45 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
             }
             
-            private UpdateEvent createUpdateEvent( int clientRepositoryVersion ) throws RaplaException
+            private UpdateEvent createUpdateEvent( Date lastSynced ) throws RaplaException
             {
             	Lock readLock = readLock();
                 try
                 {
 	            	User user = getSessionUser();
-	                int currentVersion = repositoryVersion;
+	                Date currentVersion = operator.getCurrentTimestamp();
 	                UpdateEvent safeResultEvent = new UpdateEvent();
-	                safeResultEvent.setRepositoryVersion( currentVersion );
-	                if ( clientRepositoryVersion < currentVersion )
+	                safeResultEvent.setLastValidated(  currentVersion);
+	                if ( lastSynced.before( currentVersion ))
 	                {
-	                    for ( Iterator<Entity>it = updateMap.keySet().iterator(); it.hasNext(); )
-	                    {
-	                        Entity obj = it.next();
-	                        Integer lastVersion = updateMap.get( obj );
-	                        if ( lastVersion.longValue() > clientRepositoryVersion )
-	                        {
-	                        	processClientReadable( user, safeResultEvent, obj, false);
-	                        }
-	                    }
-	                    for ( Iterator<Entity>it = removeMap.keySet().iterator(); it.hasNext(); )
-	                    {
-	                        Entity obj =  it.next();
-	                        Integer lastVersion = removeMap.get( obj );
-	                        if ( lastVersion.longValue() > clientRepositoryVersion )
-	                        {
-	                        	processClientReadable( user, safeResultEvent, obj, true);
-	                        }
-	                    }
 	                    TimeInterval invalidateInterval;
 	                    {
-		                    Integer lastVersion = needConflictRefresh.get( user);
-		                    if ( lastVersion != null && lastVersion > clientRepositoryVersion)
+		                    Long lastVersion = needConflictRefresh.get( user);
+		                    if ( lastVersion != null && lastVersion > lastSynced.getTime())
 		                    {
 		                    	invalidateInterval = new TimeInterval( null, null);
 		                    }
 		                    else
 		                    {
-		                    	invalidateInterval = getInvalidateInterval( clientRepositoryVersion, currentVersion);
+		                    	invalidateInterval = getInvalidateInterval( lastSynced.getTime(), currentVersion.getTime());
 		                    }
 	                    }
 	                    boolean resourceRefresh;
 	                    {
-		                    Integer lastVersion = needResourceRefresh.get( user);
-		                    resourceRefresh = ( lastVersion != null && lastVersion > clientRepositoryVersion);
+		                    Long lastVersion = needResourceRefresh.get( user);
+		                    resourceRefresh = ( lastVersion != null && lastVersion > lastSynced.getTime());
 	                    }
 	                    safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
 	                    safeResultEvent.setInvalidateInterval( invalidateInterval);
+	                }
+
+	                if ( !safeResultEvent.isNeedResourcesRefresh())
+	                {
+		            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(new Date( lastSynced.getTime() - 1));
+	                    for ( Entity obj: updatedEntities )
+	                    {
+	                    	processClientReadable( user, safeResultEvent, obj, false);
+	                    }
 	                }
 	                return safeResultEvent;
                 }
@@ -1122,6 +1062,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             }
             
 			protected void processClientReadable(User user,UpdateEvent safeResultEvent, Entity obj, boolean remove) {
+				if ( !isTransferedToClient(obj))
+				{
+					return;
+				}
 				boolean clientStore = true;
 				if (user != null )
 				{
@@ -1196,14 +1140,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //			}
 //			
 
-			private TimeInterval getInvalidateInterval(
-				 int clientRepositoryVersion, int currentVersion) 
+			private TimeInterval getInvalidateInterval( long clientRepositoryVersion, long currentVersion) 
 			{
 				TimeInterval interval = null;
-				for ( int version = clientRepositoryVersion;version<=currentVersion;version++)
+				
+				for ( TimeInterval current:invalidateMap.subMap( clientRepositoryVersion-1, currentVersion).values())
 				{
-					TimeInterval current = invalidateMap.get( version);
-					
 					if ( current != null)
 					{
 						interval = current.union( interval);

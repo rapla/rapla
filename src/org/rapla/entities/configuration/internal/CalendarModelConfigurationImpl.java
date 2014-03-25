@@ -25,9 +25,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
-import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.EntityResolver;
 
 
@@ -136,20 +134,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
             return true;
         }
         return false;
-    }
-
-    public boolean needsChange(DynamicType type) {
-        if ( super.needsChange( type ))
-            return true;
-        return false;
-    }
-
-    public void commitChange(DynamicType type) {
-        super.commitChange( type );
-    }
-    
-    public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException {
-        super.commitRemove( type );
     }
 
     public Map<String,String> getOptionMap()

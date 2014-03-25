@@ -32,6 +32,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -118,48 +119,47 @@ public class RemoteOperator
     	}
     }
 
-	long lastSyncedTimeLocal;
-	long lastSyncedTime;
+	Date lastSyncedTimeLocal;
+	Date lastSyncedTime;
 	String accessToken;
+	ConnectInfo connectInfo;
 	
    private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
 		doConnect();
-        String connectAs = connectInfo.getConnectAs();
-        String password = new String( connectInfo.getPassword());
-        String username = connectInfo.getUsername();
-		try {
-            RemoteServer serv1 = getRemoteServer();
-            accessToken = serv1.login(username,password, connectAs).get();
-       
-    		// today should be the date of the server
-    		lastSyncedTimeLocal = System.currentTimeMillis();
-    		lastSyncedTime = getServerTime();
-            getLogger().info("login successfull");
-        } catch (RaplaException ex){
-            disconnect();
-            throw ex;
-        } catch (Exception ex){
-            disconnect();
-            throw new RaplaException(ex);
-        }
+		this.connectInfo = connectInfo;
+		String username = this.connectInfo.getUsername();
+		this.accessToken = login();
         loadData(username);
         bSessionActive = true;
 	}
+
+	protected String login() throws RaplaException {
+		String connectAs = this.connectInfo.getConnectAs();
+		String password = new String( this.connectInfo.getPassword());
+		String username = this.connectInfo.getUsername();
+		try {
+		    RemoteServer serv1 = getRemoteServer();
+		    String accessToken = serv1.login(username,password, connectAs).get();
+		    getLogger().info("login successfull");
+		    return accessToken;
+		} catch (RaplaException ex){
+		    disconnect();
+		    throw ex;
+		} catch (Exception ex){
+		    disconnect();
+		    throw new RaplaException(ex);
+		}
+  }
    
 	public Date getCurrentTimestamp() {
-		long passedMillis =  System.currentTimeMillis()- lastSyncedTimeLocal;
-//		if (passedMillis >= DateTools.MILLISECONDS_PER_HOUR * 2	|| passedMillis <= 0) {
-//			updateToday();
-//			passedMillis = lastSyncedTimeLocal - System.currentTimeMillis();
-//		}
-		long correctTime = this.lastSyncedTime + passedMillis;
+		long passedMillis =  System.currentTimeMillis()- lastSyncedTimeLocal.getTime();
+		long correctTime = this.lastSyncedTime.getTime() + passedMillis;
 		Date date = new Date(correctTime);
 		return date;
 	}
 
-   
-   Cancelable timerTask;
-   private final void initRefresh() 
+	Cancelable timerTask;
+	private final void initRefresh() 
 	{
 		Command refreshTask = new Command() {
 			public void execute() {
@@ -258,7 +258,7 @@ public class RemoteOperator
     }
 
     synchronized public void refresh() throws RaplaException {
-        String clientRepoVersion = String.valueOf(clientRepositoryVersion);
+        String clientRepoVersion = SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
         RemoteStorage serv = getRemoteStorage();
     	try
         {
@@ -339,47 +339,39 @@ public class RemoteOperator
         }
     }
 
-    private List<Entity> addToCache(Collection<Entity> list) throws RaplaException {
-        List<Entity> result = new ArrayList<Entity>();
-        synchronized (cache) {
-        	testResolve( list);
-        	resolveEntities( list );
-            for( Entity entity:list) {
-				if ( isStorableInCache(entity))
-				{
-					cache.put(entity);
-				}
-				result.add( entity);
-            }
-        }
-        return result;
-    }
     
     @Override
-    protected void resolveEntities(Collection<? extends Entity> entities) throws RaplaException {
+    protected void setResolver(Collection<? extends Entity> entities) throws RaplaException {
+    	// don't resolve entities in standalone mode
     	if (context.has(RemoteMethodStub.class))
     	{
     		return;
     	}
-    	super.resolveEntities(entities);
-//		Iterable<String> referencedIds = ((RefEntity)obj).getReferencedIds();
-//		for ( String id:referencedIds)
-//		{
-//			resolve(id);
-//		}
+    	super.setResolver(entities);
     }
 
     private void loadData(String username) throws RaplaException {
-        cache.clearAll();
         getLogger().debug("Getting Data..");
-        // recontextualize Entities
         RemoteStorage serv = getRemoteStorage();
         try
         {
-	        UpdateEvent resources = serv.getResources().get();
-	        clientRepositoryVersion = resources.getRepositoryVersion();
-	        Collection<Entity> storeObjects = resources.getStoreObjects();
-			addToCache(storeObjects );
+	        UpdateEvent evt = serv.getResources().get();
+			if ( evt.getLastValidated() == null)
+			{
+				throw new RaplaException("Server sync time is missing");
+			}
+	        lastSyncedTimeLocal = new Date(System.currentTimeMillis());
+			lastSyncedTime = evt.getLastValidated();
+	        Collection<Entity> storeObjects = evt.getStoreObjects();
+        	cache.clearAll();
+        	testResolve( storeObjects);
+        	setResolver( storeObjects );
+            for( Entity entity:storeObjects) {
+				if ( isStorableInCache(entity))
+				{
+					cache.put(entity);
+				}
+	        }
 	        if ( username != null)
 	        {
 	        	UserImpl user = cache.getUser( username);
@@ -419,7 +411,7 @@ public class RemoteOperator
             }
         }
         RemoteStorage serv = getRemoteStorage();
-        evt.setRepositoryVersion( clientRepositoryVersion);
+        evt.setLastValidated(lastSyncedTime);
         try
         {
         	UpdateEvent serverClosure =serv.dispatch( evt ).get();
@@ -441,24 +433,6 @@ public class RemoteOperator
     	{
 	    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count).get();
 	    	return id;
-    	} 
-        catch (RaplaException ex)
-        {
-        	throw ex;
-        }
-        catch (Exception ex)
-        {
-        	throw new RaplaException(ex);
-        }
-    }
-
-    public long getServerTime() throws RaplaException {
-    	RemoteStorage remoteMethod = getRemoteStorage();
-    	try
-    	{
-    		String serverTimeString = remoteMethod.getServerTime().get();
-    		Date serverTime = raplaLocale.getSerializableFormat().parseTimestamp( serverTimeString);
-			return serverTime.getTime();
     	} 
         catch (RaplaException ex)
         {
@@ -583,15 +557,19 @@ public class RemoteOperator
     {
      	RemoteStorage serv = getRemoteStorage();
      	String[] array = idSet.toArray(new String[] {});
-     	 Map<String,Entity> result = new HashMap<String,Entity>();
+     	Map<String,Entity> result = new HashMap<String,Entity>();
      	try
      	{
 			UpdateEvent entityList = serv.getEntityRecursive( array).get();
+			refresh( entityList);
 	    	Collection<Entity> storeObjects = entityList.getStoreObjects();
-			List<Entity>resolvedList = addToCache(storeObjects  );
-			for (Entity entity:resolvedList)
+			for (Entity entity:storeObjects)
 			{
-				result.put( entity.getId(), entity);
+				String id = entity.getId();
+				if ( idSet.contains( id ))
+				{
+					result.put( id, entity);
+				}
 			}
      	} 
      	catch (EntityNotFoundException ex)
@@ -636,44 +614,23 @@ public class RemoteOperator
 		return null;
     }
     
-
-    
-    @Override
-    public Entity resolve(String id) throws EntityNotFoundException {
-    	try {
-            return super.resolve(id);
-        } catch (EntityNotFoundException ex) {
-//            try {
-//            	String castedId = id.toString();
-//            	//String idS = castedId.getTypeName() + "_" + String.valueOf(castedId.getKey());
-//            	RemoteStorage serv = getRemoteStorage();
-//            	UpdateEvent resolved = serv.getEntityRecursive( new String[] { castedId });
-//            	Collection<Entity> storeObjects = resolved.getStoreObjects();
-//				addToCache(storeObjects  );
-//            	for ( Entity entity: storeObjects)
-//            	{
-//            		if ( id.equals(entity.getId()))
-//            		{
-//            			return entity;
-//            		}
-//            	}
-//            } catch (RaplaException rex) {
-            	throw new EntityNotFoundException("Object for id " + id.toString() + " not found due to " + ex.getMessage());
-            //}
-            //return super.resolve(id);
-        }
-    }
-    
     public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
-        checkConnected();
+    	// first we do a refresh to ensure that all the resources are in place
+    	refresh();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableId = getIdList(allocatables);
     	try
     	{
 			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get().get();
-	        synchronized (cache) {
+	        Lock lock = readLock();
+			try 
+	        {
 	        	testResolve( list);
-	        	resolveEntities( list );
+	        	setResolver( list );
+	        } 
+			finally
+	        {
+				unlock(lock);
 	        }
 	        List<Reservation> result = new ArrayList<Reservation>();
 	        Iterator it = list.iterator();
@@ -764,7 +721,6 @@ public class RemoteOperator
 //		return resolver;
 //	}
 
-    
 	protected String[] getIdList(Collection<? extends Entity> entities) {
 		List<String> idList = new ArrayList<String>();
     	if ( entities != null )
@@ -779,10 +735,15 @@ public class RemoteOperator
 		return ids;
 	}
    
-    int clientRepositoryVersion = 0;
-
     synchronized private void refresh(UpdateEvent evt) throws RaplaException
     {
+    	if ( evt.getLastValidated() == null)
+		{
+			throw new RaplaException("Server sync time is missing ");
+		}
+    	lastSyncedTimeLocal = new Date(System.currentTimeMillis());
+		lastSyncedTime = evt.getLastValidated();
+		
     	if ( evt.isNeedResourcesRefresh())
     	{
     		refreshAll();
@@ -792,10 +753,9 @@ public class RemoteOperator
 		try
         {
 			testResolve(evt.getStoreObjects());
-			resolveEntities(evt.getStoreObjects());
+			setResolver(evt.getStoreObjects());
 			// we don't test the references of the removed objects
-			resolveEntities(evt.getRemoveObjects());
-			clientRepositoryVersion = evt.getRepositoryVersion();
+			setResolver(evt.getRemoveObjects());
     		if ( bSessionActive  &&   !evt.isEmpty()  ) {
                 getLogger().debug("Objects updated!");
                 UpdateResult result = update(evt);
@@ -845,7 +805,7 @@ public class RemoteOperator
     
     @Override
     protected void increaseVersion(Entity e) {
-    	// To nothing here versions are increased on the server
+    	// Do nothing here versions are increased on the server
     }
     
     /**
@@ -887,26 +847,26 @@ public class RemoteOperator
         	{
         		updater.setStatus( Status.BUSY );
         	}
-            FutureResult result =connector.call( accessToken,service, methodName, parameterTypes, returnType , args);
+            FutureResult<String> authFailedCommand;
+            if ( !service.equals(RemoteServer.class) && !methodName.equals("login"))
+            {
+            	authFailedCommand = new ResultImpl<String>() {
+				
+            		@Override
+            		public String get() throws Exception {
+            			return login();
+            		}
+            	};
+            }
+            else
+            {
+            	authFailedCommand = null;
+            }
+			FutureResult result =connector.call(authFailedCommand, accessToken,service, methodName, parameterTypes, returnType , args);
             return result;
-//          }  catch ( RaplaException ex) {
-//          if ( ex.getMessage() != null && ex.getMessage().equals( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED))
-//          {
-//              getLogger().warn(ex.getMessage() + ". Disconnecting from server.");
-//              String message = getI18n().format("error.connection_closed", getConnectionName());
-//              disconnect(message);
-//              throw new RaplaRestartingException();
-//          }
-//          else
-//          {
-//              throw ex;
-//          }
-//      }
-
         } catch (Exception ex) {
             return new ResultImpl(new RaplaException(ex));
         }
-        //FIXME implement refresh logic on server restart
         finally
         {
         	if ( updater != null)
@@ -987,7 +947,7 @@ public class RemoteOperator
 	    try
 	    {
 	    	testResolve( serverResult);
-        	resolveEntities( serverResult );
+        	setResolver( serverResult );
         }
 	    finally
 	    {
@@ -996,10 +956,7 @@ public class RemoteOperator
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
         for ( ReservationImpl reservation: serverResult)
         {
-        	for ( Appointment app:reservation.getAppointments())
-        	{
-        		allAppointments.add(  app);        		
-        	}
+        	allAppointments.addAll(reservation.getAppointmentList());
         }
 		Map<Allocatable, Map<Appointment,Collection<Appointment>>> result = new HashMap<Allocatable, Map<Appointment,Collection<Appointment>>>();
 		for ( Allocatable alloc:allocatables)
@@ -1061,12 +1018,11 @@ public class RemoteOperator
     	try
     	{
 	    	List<ConflictImpl> list = serv.getConflicts().get().get();
-	        //EntityResolver entityResolver = createEntityStore( list,  cache  );
 	        Lock readLock = readLock();
 		    try
 		    {
 		    	testResolve( list);
-	        	resolveEntities( list);
+	        	setResolver( list);
 	        }
 		    finally
 		    {

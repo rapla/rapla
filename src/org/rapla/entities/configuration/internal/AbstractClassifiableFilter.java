@@ -90,17 +90,20 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
     {
+    	boolean removed = false;
         List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>( classificationFilters);
         for (Iterator<ClassificationFilterImpl> f=newFilter.iterator();f.hasNext();) {
             ClassificationFilterImpl filter = f.next();
             if (filter.getType().equals(type))
             {
+            	removed = true;
                 f.remove();
-                break;
             }
         }
-        classificationFilters = newFilter;
- 
+        if ( removed)
+        {
+        	classificationFilters = newFilter;
+        }
     }
 
     public ClassificationFilter[] getFilter() {

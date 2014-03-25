@@ -35,7 +35,7 @@ public class UserWriter extends RaplaXMLWriter {
        
         openTag("rapla:user");
         printId(user);
-        printVersion( user);
+        printTimestamp( user);
         att("username",user.getUsername());
         if ( password != null )
         {
@@ -52,15 +52,10 @@ public class UserWriter extends RaplaXMLWriter {
         for ( int i = 0; i < groups.length; i++ ) {
             Category group = groups[i];
             String groupPath = getGroupPath( group );
-            String id = getId( group );
             try
             {
 	            openTag("rapla:group");
-	            if ( isIdOnly() ) {
-					att( "idref", id );
-	            } else {
-					att( "key", groupPath );
-	            }
+	            att( "key", groupPath );
 	            closeElementTag();
             }
             catch (Exception ex)

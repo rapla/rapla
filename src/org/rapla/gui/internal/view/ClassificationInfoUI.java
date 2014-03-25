@@ -114,7 +114,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     
     protected void insertModificationRow( Timestamp timestamp, StringBuffer buf ) {
         final Date createTime = timestamp.getCreateTime();
-        final Date lastChangeTime = timestamp.getLastChangeTime();
+        final Date lastChangeTime = timestamp.getLastChanged();
         if ( lastChangeTime != null)
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");

@@ -2,6 +2,7 @@ package org.rapla.gui.internal.edit;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,9 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.ParentEntity;
-import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -79,14 +80,14 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		}
 		for ( T entity: newEntities)
 		{
-			Entity newEntity =  entity;
             @SuppressWarnings("unchecked")
 			T  mutableEntity = (T) entity.clone();
 			if (!isNew)
 			{
 				@SuppressWarnings("null")
 				Entity persistant = (Entity) newEntitiesPersistant.get( entity);
-				copyVersions(newEntity, mutableEntity, persistant);
+				checkConsistency( mutableEntity );
+				setNewTimestamp( mutableEntity, persistant);
 			}
 			toStore.add( mutableEntity);
 		}
@@ -138,7 +139,6 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 			getModification().removeObjects(array);
 		} else {
 			List<T> toStore = new ArrayList<T>();
-			int i=0;
 			Map<T,T> oldEntitiesPersistant = getModification().getPersistant(oldEntities);
 			checklastChanged(oldEntities, oldEntitiesPersistant);
 			for ( T entity: oldEntities)
@@ -146,8 +146,8 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
                 @SuppressWarnings("unchecked")
 				T mutableEntity = (T) entity.clone();
             	T persistantVersion = oldEntitiesPersistant.get( entity);
-            	T versionedEntity = newEntities.get( i);
-				copyVersions(versionedEntity, mutableEntity, persistantVersion);
+            	checkConsistency( mutableEntity);
+            	setNewTimestamp( mutableEntity, persistantVersion);
 				toStore.add( mutableEntity);
     		}
 			@SuppressWarnings("unchecked")
@@ -158,27 +158,34 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		return true;
 	}
 	
-	// FIXME this method is dangerous, because dynamic type changes can be overwritten.
-	 private  void copyVersions(Entity source, Entity dest, Entity persistant) {
-		if ( source instanceof ParentEntity)
+	private void checkConsistency(Entity entity) throws EntityNotFoundException {
+		// this will also be checked by the server but we try to avoid
+		
+		if ( entity instanceof SimpleEntity)
 		{
-			for (Entity next:((ParentEntity)source).getSubEntities())
+			Iterable<String> referencedIds = ((SimpleEntity) entity).getReferencedIds();
+			for ( String id: referencedIds)
 			{
-				RefEntity foundEntity = (RefEntity) ((ParentEntity)persistant).findEntity( next);
-				if ( foundEntity != null)
-				{
-					int version = foundEntity.getVersion();
-					RefEntity refEntity = (RefEntity) ((ParentEntity)dest).findEntity(next);
-					if ( refEntity != null)
-					{
-						refEntity.setVersion(version);
-					}
-				}
+				getClientFacade().getOperator().resolve( id);
+			}
+		}
+		if ( entity instanceof Classifiable)
+		{
+			Date lastChanged = ((Classifiable) entity).getClassification().getType().getLastChanged();
+			if ( lastChanged != null)
+			{
+				
 			}
 		}
 		
-		int version = ((RefEntity)persistant).getVersion();
-		((RefEntity)dest).setVersion(version);
+	}
+	
+	private  void setNewTimestamp( Entity dest, Entity persistant) {
+		 if ( persistant instanceof ModifiableTimestamp)
+		 {
+			 Date version = ((ModifiableTimestamp)persistant).getLastChanged();
+			 ((ModifiableTimestamp)dest).setLastChanged(version);
+		 }
 	 }
 	 
 	 public String getCommandoName() 

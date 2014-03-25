@@ -14,7 +14,6 @@ package org.rapla.server;
 
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 /** An interface to access the SessionInformation. An implementation of
@@ -25,6 +24,4 @@ public interface RemoteSession
 	boolean isAuthentified();
 	User getUser() throws RaplaContextException;
 	Logger getLogger();
-	void logout() throws RaplaException;
-	void setUser(User user);
 }

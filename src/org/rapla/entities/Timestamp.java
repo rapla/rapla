@@ -18,6 +18,9 @@ public interface Timestamp {
     /** returns the creation date of the object. */
     Date getCreateTime();
     /** returns the date of last change of the object. */
+    Date getLastChanged();
+    /**@deprecated use getLastChanged instead */
     Date getLastChangeTime();
     User getLastChangedBy();
+    String getId();
 }

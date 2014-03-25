@@ -34,7 +34,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -47,8 +46,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
 {
 
     //protected NamespaceSupport namespaceSupport = new NamespaceSupport();
-    private boolean isIdOnly;
-    private boolean printVersion;
+    private boolean isPrintId;
 
     private Map<String,RaplaType> localnameMap;
     Logger logger;
@@ -64,8 +62,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
         RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup(PreferenceReader.LOCALNAMEMAPENTRY);
-        this.isIdOnly = context.has(IOContext.IDONLY);
-        this.printVersion = context.has(IOContext.PRINTVERSIONS);
+        this.isPrintId = context.has(IOContext.PRINTID);
         this.superCategory = context.lookup( IOContext.SUPERCATEGORY);
 
 //        namespaceSupport.pushContext();
@@ -94,7 +91,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
  
     protected void printTimestamp(Timestamp stamp) throws IOException {
         final Date createTime = stamp.getCreateTime();
-        final Date lastChangeTime = stamp.getLastChangeTime();
+        final Date lastChangeTime = stamp.getLastChanged();
         if ( createTime != null)
         {
             att("created-at", dateTimeFormat.formatTimestamp( createTime));
@@ -164,20 +161,16 @@ abstract public class RaplaXMLWriter extends XMLWriter
     	else if (type.equals(AttributeType.CATEGORY))
         {
             CategoryImpl rootCategory = (CategoryImpl) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-            if (isIdOnly()) {
-                print(getId((Entity)value));
-            } else {
-                if ( !(value instanceof Category))
-                {
-                    throw new RaplaException("Wrong attribute value Category expected but was " + value.getClass());
-                }
-                Category categoryValue = (Category)value;
-                List<String> pathForCategory = rootCategory.getPathForCategory(categoryValue, false );
-                if ( pathForCategory != null)
-                {
-                    String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
-					print( keyPathString);
-                }
+            if ( !(value instanceof Category))
+            {
+                throw new RaplaException("Wrong attribute value Category expected but was " + value.getClass());
+            }
+            Category categoryValue = (Category)value;
+            List<String> pathForCategory = rootCategory.getPathForCategory(categoryValue, false );
+            if ( pathForCategory != null)
+            {
+                String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
+				print( keyPathString);
             }
         }
         else if (type.equals(AttributeType.DATE) )
@@ -207,7 +200,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
     protected void printReference(Entity entity) throws IOException {
         String localName = entity.getRaplaType().getLocalName();
         openTag("rapla:" + localName);
-        if ( entity.getRaplaType() == DynamicType.TYPE && !isIdOnly()) {
+        if ( entity.getRaplaType() == DynamicType.TYPE) {
             att("keyref", ((DynamicType)entity).getElementKey());
         } else {
             att("idref",getId( entity));
@@ -219,11 +212,6 @@ abstract public class RaplaXMLWriter extends XMLWriter
     protected String getId(Entity entity) {
         Comparable id2 = entity.getId();
         return id2.toString();
-    }
-
-    protected long getVersion(RaplaObject entity) {
-        long version = ((RefEntity) entity).getVersion();
-        return version;
     }
 
     protected RaplaXMLWriter getWriterFor(RaplaType raplaType) throws RaplaException {
@@ -240,21 +228,14 @@ abstract public class RaplaXMLWriter extends XMLWriter
         att("id", getId( entity ));
     }
 
-    protected void printVersion(Entity entity) throws IOException {
-        if ( printVersion)
-        {
-            att("version", String.valueOf(getVersion( entity )));
-        }
-    }
-
     protected void printIdRef(Entity entity) throws IOException {
         att("idref", getId( entity ) );
     }
 
     /** Returns if the ids should be saved, even when keys are
      * available. */
-    public boolean isIdOnly() {
-        return isIdOnly;
+    public boolean isPrintId() {
+        return isPrintId;
     }
 
     /**

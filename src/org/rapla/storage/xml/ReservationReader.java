@@ -61,20 +61,11 @@ public class ReservationReader extends RaplaXMLReader {
 
         if ( localName.equals( "reservation" ) ) 
         {
-            String createdAt = atts.getValue( "", "created-at");
-            String lastChanged = atts.getValue( "", "last-changed");
-
-            Date createTime = null;
-            Date changeTime = createTime;
-            if (createdAt != null)
-                createTime = parseTimestamp( createdAt);
-            if (lastChanged != null)
-                changeTime = parseTimestamp( lastChanged);
-            reservation = new ReservationImpl( createTime, changeTime );
+            TimestampDates ts = readTimestamps( atts);
+            reservation = new ReservationImpl( ts.createTime, ts.changeTime );
 			reservation.setResolver( store );
             currentAnnotatable = reservation;
             setId(reservation, atts);
-            setVersionIfThere( reservation, atts);
             setLastChangedBy( reservation, atts);
             setOwner(reservation, atts);
         }
@@ -113,7 +104,6 @@ public class ReservationReader extends RaplaXMLReader {
             {
                 setNewId(appointment);
             }
-            setVersionIfThere( appointment, atts);
             addAppointment(appointment);
         }
 

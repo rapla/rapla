@@ -119,6 +119,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return c.getName(locale);
     }
 
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+    
     public Date getLastChangeTime() {
         return lastChanged;
     }
@@ -128,11 +132,17 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public void setLastChanged(Date date) {
+    	checkWritable();
         lastChanged = date;
     }
 
     public Appointment[] getAppointments()   {
         return appointments.toArray(Appointment.EMPTY_ARRAY);
+    }
+    
+    public Collection<AppointmentImpl> getAppointmentList()
+    {
+    	return appointments;
     }
     
     @SuppressWarnings("unchecked")
