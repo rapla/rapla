@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
@@ -187,7 +186,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	 * client. Use storeObjects and removeObjects instead.
 	 */
 	public abstract void dispatch(UpdateEvent evt) throws RaplaException;
-
 
 	public Collection<User> getUsers()	throws RaplaException {
 		checkConnected();
@@ -399,10 +397,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	public Date today() {
-		return DateTools.cutDate( getCurrentTimestamp());
-	}
-
+	
 	// End of StorageOperator interface
 	protected void checkConnected() throws RaplaException {
 		if (!isConnected())

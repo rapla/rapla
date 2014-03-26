@@ -127,7 +127,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return returned;
 	}
 	
-	protected Date getDateOrNow(ResultSet rset, int column) throws SQLException {
+	protected Date getTimestampOrNow(ResultSet rset, int column) throws SQLException {
 		Date date = getDate(rset, column);
 		if ( date != null)
 		{
@@ -138,10 +138,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
 	public Date getCurrentTimestamp() {
 		long time = System.currentTimeMillis();
-		TimeZone systemTimeZone = getSystemTimeZone();
-		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
-		Date raplaTime = new Date(time + offset);
-		return raplaTime;
+		return new Date( time);
 	}
 
 
@@ -150,6 +147,21 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	}
 	
 	protected void setDate(PreparedStatement stmt,int column, Date time) throws SQLException {
+    	if ( time != null) 
+        {
+    		TimeZone systemTimeZone = getSystemTimeZone();
+    		// same as TimeZoneConverterImpl.fromRaplaTime
+    		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
+            long timeInMillis = time.getTime() - offset;
+			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
+        }
+        else
+        {
+            stmt.setObject(column, null, Types.TIMESTAMP);
+        }
+	}
+	
+	protected void setTimestamp(PreparedStatement stmt,int column, Date time) throws SQLException {
     	if ( time != null) 
         {
     		TimeZone systemTimeZone = getSystemTimeZone();

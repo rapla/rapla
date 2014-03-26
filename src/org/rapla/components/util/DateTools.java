@@ -367,9 +367,10 @@ public abstract class DateTools
 	   public int hour;
 	   public int minute;
 	   public int second;
+	   public int milliseconds;
 	   public String toString()
 	   {
-		   return hour+":" +minute + ":" + second;
+		   return hour+":" +minute + ":" + second + "." + milliseconds;
 	   }
    }
    
@@ -380,13 +381,19 @@ public abstract class DateTools
 	   result.hour = (int) (millisInDay / MILLISECONDS_PER_HOUR); 
 	   result.minute = (int) ((millisInDay % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE); 
 	   result.second = (int) ((millisInDay % MILLISECONDS_PER_MINUTE) / 1000);
+	   result.milliseconds = (int) (millisInDay % 1000 );
 	   return result;
    }
    
    public static long toTime(int hour, int minute, int second) {
+	   return toTime(hour, minute, second, 0);
+	}
+   
+   public static long toTime(int hour, int minute, int second, int millisecond) {
 	   long millis = hour * MILLISECONDS_PER_HOUR;
 	   millis += minute * MILLISECONDS_PER_MINUTE;
 	   millis += second * 1000;
+	   millis += millisecond;
 	   return millis;
 	}
 

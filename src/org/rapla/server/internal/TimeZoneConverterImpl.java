@@ -50,9 +50,9 @@ public class TimeZoneConverterImpl implements TimeZoneConverter
 		return new Date( toRaplaTime(timeZone, time.getTime()));
 	}
 
-	public static long getOffset(TimeZone zone1,TimeZone zone2,long time) {
-		long offsetRapla = zone1.getOffset(time);
-		long offsetSystem  =  zone2.getOffset(time);
+	public static int getOffset(TimeZone zone1,TimeZone zone2,long time) {
+		int offsetRapla = zone1.getOffset(time);
+		int offsetSystem  =  zone2.getOffset(time);
 		return offsetSystem - offsetRapla;
 	}
 	

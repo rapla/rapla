@@ -112,7 +112,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private ConflictFinder conflictFinder;
 	private Map<String,SortedSet<Appointment>> appointmentMap;
 	private SortedSet<Timestamp> timestampSet;
-	private TimeZone configuredTimeZone = TimeZone.getDefault();
+	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
 	
@@ -293,16 +293,26 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return ids;
     }
 	
+	public Date today() {
+		long time = getCurrentTimestamp().getTime();
+		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
+		Date raplaTime = new Date(time + offset);
+		return DateTools.cutDate( raplaTime);
+	}
+	
 	public Date getCurrentTimestamp() {
 		long time = System.currentTimeMillis();
-		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), configuredTimeZone, time);
-		Date raplaTime = new Date(time + offset);
-		return raplaTime; 
+		return new Date( time); 
 	}
 
 	public void setTimeZone( TimeZone timeZone)
 	{
-		configuredTimeZone = timeZone;
+		systemTimeZone = timeZone;
+	}
+	
+	public TimeZone getTimeZone()
+	{
+		return systemTimeZone;
 	}
 	
 	public String authenticate(String username, String password)
@@ -1949,8 +1959,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return attribute;
 	}
 	
-
-
 	private DynamicTypeImpl newDynamicType(String classificationType, String key) throws RaplaException {
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
 		dynamicType.setAnnotation("classification-type", classificationType);

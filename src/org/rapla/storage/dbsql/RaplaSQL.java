@@ -638,8 +638,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 	  	setString(stmt,2, typeKey );
 		org.rapla.entities.Timestamp timestamp = allocatable;
 		setId(stmt,3, allocatable.getOwner() );
-		setDate(stmt, 4,timestamp.getCreateTime() );
-		setDate(stmt, 5,timestamp.getLastChanged() );
+		setTimestamp(stmt, 4,timestamp.getCreateTime() );
+		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
 		stmt.addBatch();
       	return 1;
@@ -648,8 +648,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         String id= readId(rset,1, Allocatable.class);
     	String typeKey = getString(rset,2 , null);
-		final Date createDate = getDateOrNow( rset, 4);
-		final Date lastChanged = getDateOrNow( rset, 5);
+		final Date createDate = getTimestampOrNow( rset, 4);
+		final Date lastChanged = getTimestampOrNow( rset, 5);
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
     	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
@@ -728,8 +728,8 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
       	setString(stmt,2, typeKey );
     	setId(stmt,3, event.getOwner() );
     	org.rapla.entities.Timestamp timestamp = event;
-        setDate( stmt,4,timestamp.getCreateTime());
-        setDate( stmt,5,timestamp.getLastChanged());
+        setTimestamp( stmt,4,timestamp.getCreateTime());
+        setTimestamp( stmt,5,timestamp.getLastChanged());
         setId(stmt, 6, timestamp.getLastChangedBy());
         stmt.addBatch();
         return 1;
@@ -737,8 +737,8 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	final Date createDate = getDateOrNow(rset,4);
-        final Date lastChanged = getDateOrNow(rset,5);
+    	final Date createDate = getTimestampOrNow(rset,4);
+        final Date lastChanged = getTimestampOrNow(rset,5);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
     	String id = readId(rset,1,Reservation.class);
 		event.setId( id);
@@ -1392,8 +1392,6 @@ class UserStorage extends RaplaTypeStorage<User> {
 	    checkAndAdd( schema, "CREATION_TIME");
 	    checkAndAdd( schema, "LAST_CHANGED");
     }
-
-        
     
 	@Override
 	void insertAll() throws SQLException, RaplaException {
@@ -1409,8 +1407,8 @@ class UserStorage extends RaplaTypeStorage<User> {
     	stmt.setString(4,user.getName());
     	stmt.setString(5,user.getEmail());
     	stmt.setInt(6,user.isAdmin()?1:0);
-    	setDate(stmt, 7, user.getCreateTime() );
-   		setDate(stmt, 8, user.getLastChanged() );
+    	setTimestamp(stmt, 7, user.getCreateTime() );
+   		setTimestamp(stmt, 8, user.getLastChanged() );
 
    		stmt.addBatch();
    		return 1;
@@ -1429,8 +1427,8 @@ class UserStorage extends RaplaTypeStorage<User> {
         String name = getString(rset,4,"");
         String email = getString(rset,5,"");
         boolean isAdmin = rset.getInt(6) == 1;
-        Date createDate = getDateOrNow( rset, 7);
-		Date lastChanged = getDateOrNow( rset, 8);
+        Date createDate = getTimestampOrNow( rset, 7);
+		Date lastChanged = getTimestampOrNow( rset, 8);
      	
         UserImpl user = new UserImpl(createDate, lastChanged);
         user.setId( userId );

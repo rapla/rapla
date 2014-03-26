@@ -69,6 +69,12 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	public LocaleSelector getLocaleSelector() {
         return localeSelector;
     }
+	
+	public Date fromUTCTimestamp(Date date)
+	{
+		Date raplaTime = toRaplaTime( importExportTimeZone,date );
+		return raplaTime;
+	}
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getAvailableLanguages()

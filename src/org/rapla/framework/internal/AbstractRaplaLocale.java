@@ -10,18 +10,21 @@ import org.rapla.framework.RaplaLocale;
 public abstract class AbstractRaplaLocale implements RaplaLocale {
     public String formatTimestamp( Date date ) 
     {
+    	Date raplaDate = fromUTCTimestamp(date);
         StringBuffer buf = new StringBuffer();
 		{
-    		String formatDate= formatDate( date );
+    		String formatDate= formatDate( raplaDate );
 			buf.append( formatDate);
         }
         buf.append(" ");
         {
-    		String formatTime = formatTime( date );
+    		String formatTime = formatTime( raplaDate );
 			buf.append( formatTime);
         }
         return buf.toString();
     }
+    
+    
 
 	/* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#toDate(java.util.Date, boolean)

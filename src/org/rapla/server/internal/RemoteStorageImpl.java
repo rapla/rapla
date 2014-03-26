@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
@@ -1022,6 +1023,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                Date currentVersion = operator.getCurrentTimestamp();
 	                UpdateEvent safeResultEvent = new UpdateEvent();
 	                safeResultEvent.setLastValidated(  currentVersion);
+	                TimeZone systemTimeZone = operator.getTimeZone();
+	        		int timezoneOffset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, currentVersion.getTime());
+	                safeResultEvent.setTimezoneOffset( timezoneOffset );
 	                if ( lastSynced.before( currentVersion ))
 	                {
 	                    TimeInterval invalidateInterval;

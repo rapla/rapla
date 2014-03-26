@@ -41,7 +41,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 
 public interface StorageOperator extends EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;
@@ -113,9 +112,7 @@ public interface StorageOperator extends EntityResolver {
     /** returns the beginning of the current day. Uses getCurrentTimstamp. */
     Date today();
 
-    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Note that this is not the system time. Its the time converted to rapla time (GMT+0) 
-     * see {@link RaplaLocale.toRaplaTime} 
-     * @throws RaplaException */
+    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Note that this is always the utc time */ 
     Date getCurrentTimestamp();
     
     boolean supportsActiveMonitoring();

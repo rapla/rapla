@@ -17,6 +17,7 @@ package org.rapla.storage;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -32,6 +33,8 @@ public interface CachableStorageOperator extends StorageOperator {
     public List<Entity> getVisibleEntities(final User user) throws RaplaException;
 	
     public Collection<Entity> getUpdatedEntities(Date timestamp) throws RaplaException;
+    
+    TimeZone getTimeZone();
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
 	

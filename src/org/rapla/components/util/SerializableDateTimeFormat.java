@@ -16,8 +16,9 @@ ISO8601
 public class SerializableDateTimeFormat
 {
 	public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
-	//private final static char DATE_TIME_SEPERATOR = 'T';
-	private final static char DATE_TIME_SEPERATOR = ' ';
+	// we ommit T
+	private final static char DATE_TIME_SEPERATOR = 'T';
+	//private final static char DATE_TIME_SEPERATOR = ' ';
 
 	
     private Date parseDate( String date, String time, boolean fillDate ) throws ParseDateException {
@@ -43,7 +44,7 @@ public class SerializableDateTimeFormat
 		{
 			time = time.substring(0,length-1);
 		}
-		IntIterator it = new IntIterator( time, ':' );
+		IntIterator it = new IntIterator( time, new char[]{':','.',','} );
 		if ( !it.hasNext() )
 		    throwParseTimeException( time );
 		int hour = it.next();
@@ -59,7 +60,16 @@ public class SerializableDateTimeFormat
 		{
 			second = 0;
 		}
-		long result = DateTools.toTime( hour, minute,second);
+		int millisecond;
+		if ( it.hasNext() )
+		{
+			millisecond = it.next();
+		}
+		else
+		{
+			millisecond = 0;
+		}
+		long result = DateTools.toTime( hour, minute,second, millisecond);
 		return result;
 	}
 
@@ -160,20 +170,29 @@ public class SerializableDateTimeFormat
 
    /** returns the time object in the following format:  <strong>13:00:00</strong>. <br> */
     public String formatTime( Date date ) {
-        StringBuilder buf = new StringBuilder();
-        if ( date == null)
-        {
-            date = new Date();
-        }
-        TimeWithoutTimezone time = DateTools.toTime( date.getTime());
-        append( buf, time.hour, 2 );
-        buf.append( ':' );
-        append( buf, time.minute, 2 );
-        buf.append( ':' );
-        append( buf, time.second, 2 );
-        //buf.append(  'Z');
-        return buf.toString();
+        return formatTime(date, false);
     }
+
+    private String formatTime(Date date, boolean includeMilliseconds) {
+		StringBuilder buf = new StringBuilder();
+		if ( date == null)
+		{
+		    date = new Date();
+		}
+		TimeWithoutTimezone time = DateTools.toTime( date.getTime());
+		append( buf, time.hour, 2 );
+		buf.append( ':' );
+		append( buf, time.minute, 2 );
+		buf.append( ':' );
+		append( buf, time.second, 2 );
+		if ( includeMilliseconds)
+		{
+			buf.append('.');
+			append( buf, time.milliseconds, 4 );
+		}
+		//buf.append(  'Z');
+		return buf.toString();
+	}
 
     /** returns the date object in the following format:  <strong>2001-10-21</strong>. <br>
     @param adaptDay if the flag is set 2001-10-21 will be stored as 2001-10-20.
@@ -190,11 +209,15 @@ public class SerializableDateTimeFormat
         buf.append( '-' );
         append( buf, splitDate.day, 2 );
         return buf.toString();
-
     }
 
     public String formatTimestamp( Date date ) {
-		String timestamp = formatDate( date, false) + DATE_TIME_SEPERATOR +formatTime( date);
+    	StringBuilder builder = new StringBuilder();
+    	builder.append(formatDate( date, false));
+    	builder.append( DATE_TIME_SEPERATOR);
+    	builder.append( formatTime( date , true));
+    	builder.append( 'Z');
+		String timestamp = builder.toString();;
         return timestamp;
     }
 

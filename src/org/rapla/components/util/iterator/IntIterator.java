@@ -20,78 +20,88 @@ import java.util.NoSuchElementException;
 public class IntIterator {
     int parsePosition = 0;
     String text;
-    char delimiter;
+    char[] delimiter;
     int len;
     int next;
     boolean hasNext=false;
     char endingDelimiter;
   
     public IntIterator(String text,char delimiter) {
-	this.text = text;
-	len = text.length();
-	this.delimiter = delimiter;
-	parsePosition = 0;
-	parseNext();
+    	this(text,new char[] {delimiter});
+    }
+    
+    public IntIterator(String text,char[] delimiter) {
+    	this.text = text;
+    	len = text.length();
+    	this.delimiter = delimiter;
+    	parsePosition = 0;
+    	parseNext();
     }
   
     public boolean hasNext() {
-	return hasNext;
+    	return hasNext;
     }
 
     public int next() {
-	if (!hasNext()) 
-	    throw new NoSuchElementException();
-	int result = next;
-	parseNext();
-	return result;
+		if (!hasNext()) 
+		    throw new NoSuchElementException();
+		int result = next;
+		parseNext();
+		return result;
     }
   
     private void parseNext() {
-	boolean isNegative = false;
-	int relativePos = 0;
-
-	next = 0;
-
-	if (parsePosition == len) {
-	    hasNext = false;
-	    return;
-	}
-    
-	while (parsePosition< len) {
-	    char c = text.charAt(parsePosition );
-	    if (relativePos == 0 && c=='-') {
-		isNegative = true;
-		parsePosition++;
-		continue;
-	    }
+		boolean isNegative = false;
+		int relativePos = 0;
 	
-	    if (c == delimiter ) {
-		parsePosition++;
-		break;
+		next = 0;
+	
+		if (parsePosition == len) {
+		    hasNext = false;
+		    return;
+		}
+	    
+		while (parsePosition< len) {
+		    char c = text.charAt(parsePosition );
+		    if (relativePos == 0 && c=='-') {
+			isNegative = true;
+			parsePosition++;
+			continue;
+		    }
+		
+		    boolean delimiterFound = false;
+		    for ( char d:delimiter)
+		    {
+			    if (c == d ) {
+			    	parsePosition++;
+			    	delimiterFound = true;
+			    	break;
+			    }
+		    }
+		    
+	        if (delimiterFound || c == endingDelimiter ) {
+		        break;
+		    }
+	      
+		    int digit = c-'0';
+		    if (digit<0 || digit>9) {
+			hasNext = false;
+			return;
+		    }
+	      
+		    next *= 10;
+		    next += digit;
+		    parsePosition++;
+		    relativePos++;
+		} 
+	
+		if (isNegative)
+		    next *= -1; 
+	
+		hasNext = parsePosition > 0;
 	    }
-        if (c == endingDelimiter ) {
-	        break;
-	    }
-      
-	    int digit = c-'0';
-	    if (digit<0 || digit>9) {
-		hasNext = false;
-		return;
-	    }
-      
-	    next *= 10;
-	    next += digit;
-	    parsePosition++;
-	    relativePos++;
-	} 
-
-	if (isNegative)
-	    next *= -1; 
-
-	hasNext = parsePosition > 0;
-    }
-    public int getPos() {
-	return parsePosition;
+	    public int getPos() {
+		return parsePosition;
     }
 }
     

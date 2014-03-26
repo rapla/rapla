@@ -542,7 +542,7 @@ public class JsonServlet<CallType extends ActiveCall>  {
       o.write(call.callback);
       o.write("(");
     }
-    GsonBuilder builder = gb.disableHtmlEscaping();
+    GsonBuilder builder = gb;
     String parameter = call.httpRequest.getParameter("pretty");
 	if ( parameter != null && !parameter.equals("false"))
     {

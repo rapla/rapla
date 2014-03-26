@@ -32,6 +32,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
@@ -74,9 +75,7 @@ import com.google.gwtjsonrpc.common.ResultImpl;
    &lt;/remote-storate>
   </pre>
 */
-public class RemoteOperator
-    extends
-        AbstractCachableOperator
+public class RemoteOperator  extends  AbstractCachableOperator
     implements
     RestartServer,Disposable, RemoteMethodCaller
 {
@@ -121,10 +120,11 @@ public class RemoteOperator
 
 	Date lastSyncedTimeLocal;
 	Date lastSyncedTime;
+	int timezoneOffset;
 	String accessToken;
 	ConnectInfo connectInfo;
 	
-   private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
+	private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
 		doConnect();
 		this.connectInfo = connectInfo;
 		String username = this.connectInfo.getUsername();
@@ -149,13 +149,24 @@ public class RemoteOperator
 		    disconnect();
 		    throw new RaplaException(ex);
 		}
-  }
+	}
    
 	public Date getCurrentTimestamp() {
+		// no matter what the client clock says we always sync to the server clock
 		long passedMillis =  System.currentTimeMillis()- lastSyncedTimeLocal.getTime();
+		if ( passedMillis < 0)
+		{
+			passedMillis = 0;
+		}
 		long correctTime = this.lastSyncedTime.getTime() + passedMillis;
 		Date date = new Date(correctTime);
 		return date;
+	}
+	
+	public Date today() {
+		long time = getCurrentTimestamp().getTime();
+		Date raplaTime = new Date(time + timezoneOffset);
+		return DateTools.cutDate( raplaTime);
 	}
 
 	Cancelable timerTask;
@@ -356,12 +367,7 @@ public class RemoteOperator
         try
         {
 	        UpdateEvent evt = serv.getResources().get();
-			if ( evt.getLastValidated() == null)
-			{
-				throw new RaplaException("Server sync time is missing");
-			}
-	        lastSyncedTimeLocal = new Date(System.currentTimeMillis());
-			lastSyncedTime = evt.getLastValidated();
+			updateTimestamps(evt);
 	        Collection<Entity> storeObjects = evt.getStoreObjects();
         	cache.clearAll();
         	testResolve( storeObjects);
@@ -388,6 +394,18 @@ public class RemoteOperator
 	    	throw new RaplaException(ex);
 	    }		
     }
+
+	public void updateTimestamps(UpdateEvent evt) throws RaplaException {
+		if ( evt.getLastValidated() == null)
+		{
+			throw new RaplaException("Server sync time is missing");
+		}
+		lastSyncedTimeLocal = new Date(System.currentTimeMillis());
+		lastSyncedTime = evt.getLastValidated();
+		timezoneOffset = evt.getTimezoneOffset();
+		//long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
+
+	}
 
     protected void checkConnected() throws RaplaException {
         if ( !bSessionActive ) {
@@ -737,13 +755,7 @@ public class RemoteOperator
    
     synchronized private void refresh(UpdateEvent evt) throws RaplaException
     {
-    	if ( evt.getLastValidated() == null)
-		{
-			throw new RaplaException("Server sync time is missing ");
-		}
-    	lastSyncedTimeLocal = new Date(System.currentTimeMillis());
-		lastSyncedTime = evt.getLastValidated();
-		
+    	updateTimestamps(evt);		
     	if ( evt.isNeedResourcesRefresh())
     	{
     		refreshAll();
@@ -768,8 +780,7 @@ public class RemoteOperator
 		}
     }
 
-	protected void refreshAll() throws RaplaException,
-			EntityNotFoundException {
+	protected void refreshAll() throws RaplaException,EntityNotFoundException {
 		UpdateResult result;
 		Lock writeLock = writeLock();
 		try

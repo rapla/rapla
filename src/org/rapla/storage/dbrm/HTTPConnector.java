@@ -88,7 +88,6 @@ public class HTTPConnector  implements Connector
  
     class Serializer
     {
-
 		public JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
 		{	
 			final GsonBuilder gb = defaultGsonBuilder().disableHtmlEscaping();
@@ -432,9 +431,9 @@ public class HTTPConnector  implements Connector
 	    gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
 	    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
 	    gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
-	    gb.registerTypeAdapter(java.sql.Timestamp.class,
-	        new SqlTimestampDeserializer());
-	    return gb;
+	    gb.registerTypeAdapter(java.sql.Timestamp.class, new SqlTimestampDeserializer());
+	    GsonBuilder configured = gb.disableHtmlEscaping().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	    return configured;
 	  }
 
 

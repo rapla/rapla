@@ -70,8 +70,9 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 
 	private TimeInterval invalidateInterval;
     private String lastValidated;
-	
-    public UpdateEvent() {
+	private int timezoneOffset;
+
+	public UpdateEvent() {
     }
 
 
@@ -308,5 +309,14 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 		}
 	}
 	
-    
+	public int getTimezoneOffset() 
+	{
+		return timezoneOffset;
+	}
+
+	public void setTimezoneOffset(int timezoneOffset) 
+	{
+		this.timezoneOffset = timezoneOffset;
+	}
+
 }
