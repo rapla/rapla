@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -138,9 +138,7 @@ class RaplaSQL {
     synchronized public void removeAll(Connection con)
     throws SQLException
     {
-        ListIterator<RaplaTypeStorage> listIt = stores.listIterator(stores.size());
-        while (listIt.hasPrevious()) {
-            Storage storage =  listIt.previous();
+		for (RaplaTypeStorage storage: stores) {
             storage.setConnection(con);
             try
             {
@@ -711,14 +709,28 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	}
 
 	@Override
-	public void insert(Collection<Reservation> entities) throws SQLException,RaplaException {
-		super.insert(entities);
+	public void save(Collection<Reservation> entities) throws RaplaException,
+			SQLException {
+		super.save(entities);
 		Collection<Appointment> appointments = new ArrayList<Appointment>();
 		for (Reservation r: entities)
 		{
 			appointments.addAll( Arrays.asList(r.getAppointments()));
 		}
 		appointmentStorage.insert( appointments );
+	}
+	
+
+	@Override
+	public void insert(Collection<Reservation> entities) throws SQLException,RaplaException {
+		super.insert(entities);
+	
+	}
+	
+	@Override
+	public void setConnection(Connection con) throws SQLException {
+		super.setConnection(con);
+		appointmentStorage.setConnection(con);
 	}
 
     @Override
@@ -774,13 +786,17 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	classificationMap.clear();
     	super.loadAll();
     }
-    
+
     @Override
-    public void deleteEntities(Collection<Reservation> entities) throws SQLException, RaplaException {
-    
+    public void deleteEntities(Collection<Reservation> entities)
+    		throws SQLException, RaplaException {
     	super.deleteEntities(entities);
-    	// get all appointment ids
-    	Set<String> ids = new HashSet<String>();
+    	deleteAppointments(entities);
+    }
+
+	private void deleteAppointments(Collection<Reservation> entities)
+			throws SQLException, RaplaException {
+		Set<String> ids = new HashSet<String>();
 		String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
 		for (Reservation entity:entities)
 		{
@@ -789,7 +805,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	        try {
 	            stmt = con.prepareStatement(sql);
 	            stmt.setInt(1, getId( entity));
-	            rset = stmt.executeQuery(sql);
+	            rset = stmt.executeQuery();
 	            while (rset.next ()) {
 	            	String id = readId(rset, 1, Appointment.class);
 	            	ids.add( id);
@@ -803,7 +819,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 		}
 		// and delete them
 		appointmentStorage.deleteIds( ids);
-    }
+	}
 }
 
 class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
@@ -988,7 +1004,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 	@Override
 	void insertAll() throws SQLException, RaplaException {
 		Collection<Reservation> reservations = cache.getReservations();
-		Collection<Appointment> appointments = new ArrayList<Appointment>();
+		Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
 		for (Reservation r: reservations)
 		{
 			appointments.addAll( Arrays.asList(r.getAppointments()));

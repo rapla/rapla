@@ -33,6 +33,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
@@ -335,7 +336,14 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         }
     }
     
-    public void add(Entity entity){
+    public void add(Entity entity) throws RaplaSAXParseException{
+    	 if ( entity instanceof Classifiable)
+         {
+         	if ((( Classifiable) entity).getClassification() == null)
+         	{
+         		throw createSAXParseException("Classification can't be null");
+         	}
+         }
         store.put(entity);
     }
     

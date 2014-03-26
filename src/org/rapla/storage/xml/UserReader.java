@@ -89,7 +89,7 @@ public class UserReader extends RaplaXMLReader
     }
     
     @Override
-    public void processEnd( String namespaceURI, String localName )
+    public void processEnd( String namespaceURI, String localName ) throws RaplaSAXParseException
     {
         if (!namespaceURI.equals( RAPLA_NS ))
             return;

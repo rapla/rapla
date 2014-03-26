@@ -28,6 +28,8 @@ public class PeriodReader extends DynAttReader {
         super(context);
     }
 
+    // FIXME please replace with proper id solution
+    static int big = 100000000;
     @Override
     public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
         throws RaplaSAXParseException
@@ -38,10 +40,11 @@ public class PeriodReader extends DynAttReader {
             classification.setValue("name", getString(atts,"name"));
             classification.setValue("start",parseDate(getString(atts,"start"),false));
             classification.setValue("end",parseDate(getString(atts,"end"),true));
+            period.setClassification( classification);
             String id = atts.getValue("id");
             if ( id != null)
             {
-            	period.setId(id);
+            	period.setId("resource_"+ big++);
             }
             add(period);
         }

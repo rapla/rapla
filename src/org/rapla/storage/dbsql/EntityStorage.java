@@ -523,7 +523,10 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		{
 			if ( type.equals("TIMESTAMP"))
 			{
-				buf.append( " DEFAULT " + "'2000-01-01 00:00:00'");
+				if ( !isHsqldb() && !isH2())
+				{
+					buf.append( " DEFAULT " + "'2000-01-01 00:00:00'");
+				}
 			}
 			else if ( col.getDefaultValue() != null)
 			{
@@ -618,7 +621,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return subStores;
 	}
 
-    final public void setConnection(Connection con) throws SQLException {
+    public void setConnection(Connection con) throws SQLException {
 		this.con= con;
 		for (Storage<T> subStore: subStores) {
 		    subStore.setConnection(con);
@@ -804,7 +807,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     	for (Storage<T> storage: subStores) {
             storage.deleteIds( ids);
         }
-		PreparedStatement stmt = null;
+    	PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);
             for ( String id: ids)
