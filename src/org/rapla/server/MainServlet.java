@@ -64,6 +64,7 @@ import org.rapla.server.internal.ShutdownService;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.HTTPConnector;
 import org.rapla.storage.dbrm.RemoteMethodStub;
@@ -841,6 +842,10 @@ public class MainServlet extends HttpServlet {
 	    	}
 			//RemoteSession remoteSession = handleLogin(request, response, requestURI);
 			servlet.service(request, response, servletContext, remoteSession);
+        }
+        catch ( RaplaSecurityException ex)
+        {
+        	getLogger().error(ex.getMessage());
         }
         catch ( RaplaException ex)
         {
