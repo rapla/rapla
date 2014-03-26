@@ -46,7 +46,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
 	private String parentId;
 	private String type;
-	private Map<String,List<String>> map = new LinkedHashMap<String,List<String>>();
+	private Map<String,List<String>> data = new LinkedHashMap<String,List<String>>();
 	private transient boolean readOnly = false;
 
 	private transient TextCache name;
@@ -122,7 +122,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
     public boolean isRefering(String id) {
         String parentId = getParentId();
-		return id.equals(parentId) || map.containsKey( id );
+		return id.equals(parentId) || data.containsKey( id );
     }
 
     public Iterable<String> getReferencedIds() {
@@ -130,7 +130,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	String parentId = getParentId();
 		result.add( parentId );
     	DynamicTypeImpl type = getType();
-    	for ( Map.Entry<String,List<String>> entry:map.entrySet())
+    	for ( Map.Entry<String,List<String>> entry:data.entrySet())
     	{
     		String key = entry.getKey();
     		Attribute attribute = type.getAttribute(key);
@@ -226,7 +226,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		if ( !newType.getElementKey().equals( type.getElementKey()))
         	return true;
 		
-        for (String key:map.keySet()) {
+        for (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
             String attributeId = attribute.getId();
 			if (type.hasAttributeChanged( (DynamicTypeImpl)newType , attributeId))
@@ -246,7 +246,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         
         Collection<String> removedKeys = new ArrayList<String>();
         Map<Attribute,Attribute> attributeMapping = new HashMap<Attribute,Attribute>();
-        for  (String key:map.keySet()) {
+        for  (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
 			if ( attribute == null)
 			{
@@ -283,7 +283,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
        
         for (String key:removedKeys)
         {
-        	map.remove( key );
+        	data.remove( key );
         }
         this.type = type.getElementKey();
         name = null;
@@ -336,7 +336,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String attributeKey = attribute.getKey();
 		if ( values == null || values.isEmpty())
         {
-			map.remove(attributeKey);
+			data.remove(attributeKey);
         	return;
         }
 		ArrayList<String> newValues = new ArrayList<String>();
@@ -348,7 +348,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 				newValues.add(stringValue);
 			}
         }
-		map.put(attributeKey,newValues);
+		data.put(attributeKey,newValues);
         //isNameUpToDate = false;
         name = null;
         namePlaning = null;
@@ -362,11 +362,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
         	return;
         }
-    	List<String> l = map.get(attributeKey);
+    	List<String> l = data.get(attributeKey);
     	if ( l == null) 
     	{
     		l = new ArrayList<String>();
-    		map.put(attributeKey, l);
+    		data.put(attributeKey, l);
     	}
     	l.add(stringValue);
     }
@@ -377,7 +377,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	}
     	String attributeKey = attribute.getKey();
     	// first lookup in attribute map
-        List<String> list = map.get(attributeKey);
+        List<String> list = data.get(attributeKey);
         if ( list == null || list.size() == 0)
         {
         	return Collections.emptyList();
@@ -401,7 +401,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	}
     	String attributeKey = attribute.getKey();
         // first lookup in attribute map
-        List<String> o = map.get(attributeKey);
+        List<String> o = data.get(attributeKey);
         if ( o == null  || o.size() == 0)
         {
         	return null;
@@ -420,11 +420,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         ClassificationImpl clone = new ClassificationImpl((DynamicTypeImpl)getType());
         //clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)data).clone());
         //clone.attributeValueMap = (HashMap<String,Object>) attributeValueMap.clone();
-        for ( Map.Entry<String,List<String>> entry: map.entrySet())
+        for ( Map.Entry<String,List<String>> entry: data.entrySet())
         {
         	String key = entry.getKey();
 			List<String> value = new ArrayList<String>(entry.getValue());
-			clone.map.put(key, value);
+			clone.data.put(key, value);
         }
         clone.resolver = resolver;
         clone.parentId = getParentId();
@@ -436,7 +436,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
      public String toString() {
-         return map.toString();
+         return data.toString();
      }
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 

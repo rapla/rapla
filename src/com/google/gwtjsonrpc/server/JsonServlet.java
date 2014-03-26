@@ -30,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -41,6 +42,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.components.util.ParseDateException;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.dbrm.HTTPConnector;
@@ -56,6 +59,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
 import com.google.gwtjsonrpc.common.FutureResult;
 import com.google.gwtjsonrpc.common.JsonConstants;
 import com.google.gwtjsonrpc.common.RemoteJsonService;
@@ -378,6 +382,12 @@ public class JsonServlet<CallType extends ActiveCall>  {
 	          r[i] = null;
 	        } else if (type == String.class) {
 	        	r[i] = v;
+	        } else if (type == Date.class) {
+	        	try {
+					r[i] = SerializableDateTimeFormat.INSTANCE.parseTimestamp( v);
+				} catch (ParseDateException e) {
+					throw new JsonSyntaxException(v, e);
+				}
 	        } else if (type instanceof Class<?> && ((Class<?>) type).isPrimitive()) {
 				  // Primitive type, use the JSON representation of that type.
 				  //
@@ -386,7 +396,8 @@ public class JsonServlet<CallType extends ActiveCall>  {
 				  // Assume it is like a java.sql.Timestamp or something and treat
 				  // the value as JSON string.
 				  //
-	        	JsonElement parsed = new JsonParser().parse(v);
+	        	JsonParser parser = new JsonParser();
+	        	JsonElement parsed = parser.parse(v);
 	        	r[i] = gs.fromJson(parsed, type);
 			}
          }

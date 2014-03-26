@@ -11,22 +11,18 @@ import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
@@ -450,30 +446,24 @@ public class HTTPConnector  implements Connector
 	  }
 	  
 	  private static class GmtDateTypeAdapter implements JsonSerializer<Date>, JsonDeserializer<Date> {
-			private final DateFormat dateFormat;
 			
 			private GmtDateTypeAdapter() {
-				dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-				dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 			}
 
 			@Override
-			public synchronized JsonElement serialize(Date date, Type type,
-					JsonSerializationContext jsonSerializationContext) {
-				synchronized (dateFormat) {
-					String dateFormatAsString = dateFormat.format(date);
-					return new JsonPrimitive(dateFormatAsString);
-				}
+			public synchronized JsonElement serialize(Date date, Type type,	JsonSerializationContext jsonSerializationContext) {
+				String timestamp = SerializableDateTimeFormat.INSTANCE.formatTimestamp(date);
+				return new JsonPrimitive(timestamp);
 			}
 
 			@Override
 			public synchronized Date deserialize(JsonElement jsonElement, Type type,JsonDeserializationContext jsonDeserializationContext) {
+				String asString = jsonElement.getAsString();
 				try {
-					synchronized (dateFormat) {
-						return dateFormat.parse(jsonElement.getAsString());
-					}
-				} catch (ParseException e) {
-					throw new JsonSyntaxException(jsonElement.getAsString(), e);
+					Date timestamp = SerializableDateTimeFormat.INSTANCE.parseTimestamp(asString);
+					return timestamp;
+				} catch (Exception e) {
+					throw new JsonSyntaxException(asString, e);
 				}
 			}
 		}
