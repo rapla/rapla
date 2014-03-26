@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -81,16 +81,10 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
 	Map<String,String> createdPreferenceIds = new HashMap<String,String>(); 
 	protected LocalCache cache;
-	/**
-	 * set encryption if you want to enable password encryption. Possible values
-	 * are "sha" or "md5".
-	 */
 	protected I18nBundle i18n;
 	protected RaplaContext context;
 	Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
-	//protected IdTable idTable = new IdTable();
-	
 	
 	public AbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
 		this.logger = logger;
@@ -238,20 +232,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		
 	}
 
-	
-//	reservations.addAll(operator.getReservations(user,allocList, start, end, reservationFilters,null));
-//	removeFilteredClassifications(reservations, reservationFilters);
-//	Iterator<Reservation> it =reservations.iterator();
-//	while (it.hasNext()) {
-//		Reservation reservation = it.next();
-//		String reservationTemplate = reservation.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
-//		if ( reservationTemplate != null )
-//		{
-//			it.remove();
-//		}
-//	}
-	
-	
 	protected void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {
 		if (filters == null)
 		{

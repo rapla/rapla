@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Christopher Kohlhaas                                  |
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -108,6 +108,10 @@ import org.rapla.storage.impl.EntityStore;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator {
 	protected IdTable idTable;
+	/**
+	 * set encryption if you want to enable password encryption. Possible values
+	 * are "sha" or "md5".
+	 */
 	private  String encryption = "sha-1";
 	private ConflictFinder conflictFinder;
 	private Map<String,SortedSet<Appointment>> appointmentMap;

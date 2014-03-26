@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Christopher Kohlhaas, Frithjof Kurtz                  |
+ | Copyright (C) 2014 Christopher Kohlhaas, Frithjof Kurtz                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
