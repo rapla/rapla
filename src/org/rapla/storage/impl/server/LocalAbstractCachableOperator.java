@@ -838,7 +838,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				Collection<Appointment> appointmentSet = getAndCreateList(appointmentMap,allocatable);
 				// binary search could fail if the appointment has changed since the last add, which should not 
 				// happen as we only put and search immutable objects in the map. But the method is left here as a failsafe 
-				// with a log message
+				// with a log messaget
 				if (!appointmentSet.remove( app)) 
 				{
 					getLogger().error("Appointent has changed, so its not found in indexed binding map. Removing via full search");
