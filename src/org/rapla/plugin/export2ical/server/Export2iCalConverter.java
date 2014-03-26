@@ -52,11 +52,13 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
@@ -70,12 +72,21 @@ public class Export2iCalConverter extends RaplaComponent {
     private String exportAttendeesParticipationStatus;
     private boolean doExportAsMeeting;
     TimeZoneConverter timezoneConverter;
-
-    public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences, Configuration config) throws RaplaContextException {
+    boolean hasLocationType;
+    
+    public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences, Configuration config) throws RaplaException {
         super(context);
         timezoneConverter = context.lookup( TimeZoneConverter.class);
         calendar = context.lookup(RaplaLocale.class).createCalendar();
         doExportAsMeeting = false;
+        DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        for ( DynamicType type:dynamicTypes)
+        {
+        	if (type.getAnnotation( DynamicTypeAnnotations.KEY_LOCATION) != null)
+        	{
+        		hasLocationType = true;
+        	}
+        }
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
         if (config != null)
         {
@@ -443,16 +454,23 @@ public class Export2iCalConverter extends RaplaComponent {
      */
     private void addLocationToEvent(Appointment appointment, PropertyList properties) {
         Allocatable[] allocatables = appointment.getReservation().getAllocatablesFor(appointment);
-
         StringBuffer buffer = new StringBuffer();
-        for (int i = 0; i < allocatables.length; i++) {
-            if (allocatables[i].isPerson())
+        for (Allocatable alloc:allocatables) {
+            if ( hasLocationType)
+            {
+        		if (alloc.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_LOCATION) == null )
+        		{
+        			continue;
+        		}
+            }
+            else  if (alloc.isPerson())
+            {
                 continue;
-
+            }
             if (buffer.length() > 0) {
                 buffer.append(", ");
             }
-            buffer.append(allocatables[i].getName(Locale.getDefault()));
+            buffer.append(alloc.getName(Locale.getDefault()));
         }
 
         properties.add(new Location(buffer.toString()));
