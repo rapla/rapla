@@ -632,12 +632,15 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
               	// Reservations and appointments
                     ArrayList<ReservationImpl> list = new ArrayList<ReservationImpl>();
                     List<Allocatable> allocatables = new ArrayList<Allocatable>();
-                    for ( String id:allocatableIds)
+                    if ( allocatableIds != null )
                     {
-                    	Entity entity = operator.resolve(id);
-                    	Allocatable allocatable = (Allocatable) entity;
-	                    security.checkRead(sessionUser, entity);
-						allocatables.add( allocatable);
+	                    for ( String id:allocatableIds)
+	                    {
+	                    	Entity entity = operator.resolve(id);
+	                    	Allocatable allocatable = (Allocatable) entity;
+		                    security.checkRead(sessionUser, entity);
+							allocatables.add( allocatable);
+	                    }
                     }
 					ClassificationFilter[] classificationFilters = null;
 					Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end, classificationFilters,annotationQuery );

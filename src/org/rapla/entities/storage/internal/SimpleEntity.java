@@ -179,14 +179,13 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
 
 
-    @SuppressWarnings("unchecked")
-	protected void deepClone(SimpleEntity clone) {
+    protected void deepClone(SimpleEntity clone) {
     	clone.id = id;
     	clone.links =  new LinkedHashMap<String,List<String>>();
     	for ( String key:links.keySet())
     	{
     		List<String> idList = links.get( key);
-    		clone.links.put( key, new ArrayList(idList));
+    		clone.links.put( key, new ArrayList<String>(idList));
     	}
     	clone.resolver = this.resolver;
     	Assert.isTrue(!clone.getSubEntities().iterator().hasNext());

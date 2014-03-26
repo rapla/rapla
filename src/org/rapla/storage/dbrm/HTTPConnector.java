@@ -11,12 +11,18 @@ import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -36,10 +42,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.internal.ConstructorConstructor;
@@ -431,10 +443,40 @@ public class HTTPConnector  implements Connector
 	    gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
 	    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
 	    gb.registerTypeAdapter(java.sql.Date.class, new SqlDateDeserializer());
+	    gb.registerTypeAdapter(java.util.Date.class, new GmtDateTypeAdapter());
 	    gb.registerTypeAdapter(java.sql.Timestamp.class, new SqlTimestampDeserializer());
-	    GsonBuilder configured = gb.disableHtmlEscaping().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	    GsonBuilder configured = gb.disableHtmlEscaping();
 	    return configured;
 	  }
+	  
+	  private static class GmtDateTypeAdapter implements JsonSerializer<Date>, JsonDeserializer<Date> {
+			private final DateFormat dateFormat;
+			
+			private GmtDateTypeAdapter() {
+				dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+				dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+			}
+
+			@Override
+			public synchronized JsonElement serialize(Date date, Type type,
+					JsonSerializationContext jsonSerializationContext) {
+				synchronized (dateFormat) {
+					String dateFormatAsString = dateFormat.format(date);
+					return new JsonPrimitive(dateFormatAsString);
+				}
+			}
+
+			@Override
+			public synchronized Date deserialize(JsonElement jsonElement, Type type,JsonDeserializationContext jsonDeserializationContext) {
+				try {
+					synchronized (dateFormat) {
+						return dateFormat.parse(jsonElement.getAsString());
+					}
+				} catch (ParseException e) {
+					throw new JsonSyntaxException(jsonElement.getAsString(), e);
+				}
+			}
+		}
 
 
     static class MyAdaptorFactory implements TypeAdapterFactory

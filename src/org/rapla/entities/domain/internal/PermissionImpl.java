@@ -13,8 +13,11 @@
 
 package org.rapla.entities.domain.internal;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 
 import org.rapla.components.util.DateTools;
@@ -22,31 +25,24 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public final class PermissionImpl implements Permission,EntityReferencer
+public final class PermissionImpl extends ReferenceHandler implements Permission,EntityReferencer
 {
     transient boolean readOnly = false;
-    ReferenceHandler links = new ReferenceHandler();
     Date pEnd = null;
     Date pStart = null;
     Integer maxAdvance = null;
     Integer minAdvance = null;
     int accessLevel = ALLOCATE_CONFLICTS;
 
-    public void setResolver( EntityResolver resolver)  {
-        links.setResolver( resolver );
-    }
-
     public void setUser(User user) {
         checkWritable();
         if (user != null)
-            links.putEntity("group",null);
-        links.putEntity("user",(Entity)user);
+        	putEntity("group",null);
+        putEntity("user",(Entity)user);
     }
 
     public void setEnd(Date end) {
@@ -160,37 +156,21 @@ public final class PermissionImpl implements Permission,EntityReferencer
     }
 
     public User getUser() {
-        return (User) links.getEntity("user");
+        return (User) getEntity("user");
     }
 
     public void setGroup(Category group) {
         if (group != null)
-            links.putEntity("user",null);
-        links.putEntity("group",(Entity)group);
-    }
-
-    public Period getPeriod() {
-        return (Period) links.getEntity("period");
-    }
-
-    public void setPeriod(Period period) {
-        links.putEntity("period",(Entity)period);
+            putEntity("user",null);
+        putEntity("group",(Entity)group);
     }
 
     public ReferenceHandler getReferenceHandler() {
-        return links;
-    }
-
-    public Iterable<String> getReferencedIds() {
-        return links.getReferencedIds();
-    }
-
-    public boolean isRefering( String object ) {
-        return links.isRefering( object );
+        return this;
     }
 
     public Category getGroup() {
-        return (Category) links.getEntity("group");
+        return (Category) getEntity("group");
     }
 
     public Date getMinAllowed(Date today) {
@@ -265,8 +245,14 @@ public final class PermissionImpl implements Permission,EntityReferencer
 
     public PermissionImpl clone() {
         PermissionImpl clone = new PermissionImpl();
+    	clone.links =  new LinkedHashMap<String,List<String>>();
+    	for ( String key:links.keySet())
+    	{
+    		List<String> idList = links.get( key);
+    		clone.links.put( key, new ArrayList<String>(idList));
+    	}
+    	clone.resolver = this.resolver;
         // This must be done first
-        clone.links = links.cloneReferenceHandler();
         clone.accessLevel = accessLevel;
         clone.pEnd = pEnd;
         clone.pStart = pStart;

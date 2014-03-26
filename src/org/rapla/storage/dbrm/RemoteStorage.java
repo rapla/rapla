@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import javax.jws.WebParam;
 import javax.jws.WebService;
 
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -53,7 +54,7 @@ public interface RemoteStorage extends RemoteJsonService {
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
     @ResultType(ReservationList.class)
-    FutureResult<ReservationList> getReservations(String[] allocatableIds,Date start,Date end, Map<String, String> annotationQuery);
+    FutureResult<ReservationList> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
 
     @ResultType(UpdateEvent.class)
     FutureResult<UpdateEvent> getEntityRecursive(String... id);

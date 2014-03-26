@@ -50,7 +50,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	List<DynamicTypeImpl> types = createList(DynamicType.class);
 	List<UserImpl> users = createList(User.class);
 	List<PreferencesImpl> preferences = createList(Preferences.class);
-	List<AllocatableImpl> allocatable = createList(Allocatable.class);
+	List<AllocatableImpl> resources = createList(Allocatable.class);
 	List<ReservationImpl> reservations =  createList(Reservation.class);
 	//List<PeriodImpl> periods =  createList(Period.class);
 	List<ConflictImpl> conflicts =  createList(Conflict.class);
@@ -123,7 +123,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 		{
 			listMap = new HashMap<Class,Collection<Entity>>();
 			listMap.put( Preferences.class,preferences);
-			listMap.put( Allocatable.class,allocatable);
+			listMap.put( Allocatable.class,resources);
 			listMap.put(Category.class, categories);
 			listMap.put(User.class, users);
 			listMap.put(DynamicType.class, types);
