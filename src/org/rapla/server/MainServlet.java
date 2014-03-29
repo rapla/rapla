@@ -56,7 +56,6 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaJDKLoggingAdapter;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ShutdownService;
 import org.rapla.servletpages.RaplaPageGenerator;

@@ -16,26 +16,11 @@ public class FutureResultImpl<T> implements FutureResult<T> {
 		throw new UnsupportedOperationException();
 	}
 
-	public void get(AsyncCallback<T> callback)
+	@SuppressWarnings("unchecked")
+    public void get(AsyncCallback<T> callback)
 	{
 		call.send(callback);
 	}
-
-//	public void onFailure(Throwable invocationException) {
-//		if ( invocationException instanceof Exception)
-//		{
-//			ex = (Exception) invocationException;
-//		}
-//		else
-//		{
-//			ex = new Exception( invocationException);
-//		}
-//	}
-//	
-//	public void onSuccess(T result)
-//	{
-//		this.result = result;
-//	}
 	
 	public void setCall( JsonCall call)
 	{

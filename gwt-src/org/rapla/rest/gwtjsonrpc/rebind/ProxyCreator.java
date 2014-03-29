@@ -95,7 +95,7 @@ class ProxyCreator {
   }
 
   private void checkMethods(final TreeLogger logger,
-      final GeneratorContext context) throws UnableToCompleteException {
+      @SuppressWarnings("unused") final GeneratorContext context) throws UnableToCompleteException {
     final Set<String> declaredNames = new HashSet<String>();
     final JMethod[] methodList = svcInf.getOverridableMethods();
     for (final JMethod m : methodList) {
@@ -251,7 +251,7 @@ class ProxyCreator {
     return cf.createSourceWriter(ctx, pw);
   }
 
-  private void generateProxyConstructor(final TreeLogger logger,
+  private void generateProxyConstructor(@SuppressWarnings("unused") final TreeLogger logger,
       final SourceWriter w) {
     final RemoteServiceRelativePath relPath =
         svcInf.getAnnotation(RemoteServiceRelativePath.class);
@@ -313,7 +313,7 @@ class ProxyCreator {
     }
   }
 
-  private void generateProxyMethod(final TreeLogger logger,
+  private void generateProxyMethod(@SuppressWarnings("unused") final TreeLogger logger,
       final JMethod method, final SourceWriter w) {
     final JParameter[] params = method.getParameters();
     final JType callback = method.getReturnType();// params[params.length - 1];

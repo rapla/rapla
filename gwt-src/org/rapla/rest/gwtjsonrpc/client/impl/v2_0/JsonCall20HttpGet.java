@@ -15,7 +15,6 @@
 package org.rapla.rest.gwtjsonrpc.client.impl.v2_0;
 
 import org.rapla.rest.gwtjsonrpc.client.impl.AbstractJsonProxy;
-import org.rapla.rest.gwtjsonrpc.client.impl.FutureResultImpl;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
 

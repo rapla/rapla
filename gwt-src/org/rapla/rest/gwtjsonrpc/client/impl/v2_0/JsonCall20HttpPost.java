@@ -15,11 +15,9 @@
 package org.rapla.rest.gwtjsonrpc.client.impl.v2_0;
 
 import org.rapla.rest.gwtjsonrpc.client.impl.AbstractJsonProxy;
-import org.rapla.rest.gwtjsonrpc.client.impl.FutureResultImpl;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
 
-import com.google.gwt.core.client.JsonUtils;
 import com.google.gwt.http.client.RequestBuilder;
 
 /** JsonCall implementation for JsonRPC version 2.0 over HTTP POST */
