@@ -337,6 +337,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
         resourceSelection.dataChanged(modificationEvt);
         calendarContainer.update(modificationEvt);
+        calendarContainer.getSelectedCalendar().scrollToStart();
     }
 
 	public void closeFilter() {
