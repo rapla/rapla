@@ -56,15 +56,14 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.dbrm.StatusUpdater.Status;
 import org.rapla.storage.impl.AbstractCachableOperator;
-
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.ResultImpl;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -75,27 +74,56 @@ import com.google.gwtjsonrpc.common.ResultImpl;
    &lt;/remote-storate>
   </pre>
 */
-public class RemoteOperator  extends  AbstractCachableOperator
-    implements
-    RestartServer,Disposable, RemoteMethodCaller
+public class RemoteOperator  extends  AbstractCachableOperator implements  RestartServer,Disposable
 {
     private boolean bSessionActive = false;
-//    private boolean isRestarting;
-    Connector connector;
-    //RemoteMethodSerialization remoteMethodSerialization;
     String userId;
 	RemoteServer remoteServer;
 	RemoteStorage remoteStorage;
 	protected CommandScheduler commandQueue;
 	
-    public RemoteOperator(RaplaContext context, Logger logger,Configuration config, RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaException {
+	Date lastSyncedTimeLocal;
+    Date lastSyncedTime;
+    int timezoneOffset;
+    ConnectInfo connectInfo;
+    Configuration config;
+    RemoteConnectionInfo connectionFactory;
+	
+    public RemoteOperator(RaplaContext context, Logger logger, Configuration config, RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionFactory) throws RaplaException {
         super( context, logger );
+        this.config = config;
         this.remoteServer = remoteServer;
         this.remoteStorage = remoteStorage;
-        ConnectorFactory connectorFatory = context.lookup(ConnectorFactory.class);
-        connector = connectorFatory.create( config);
-        //remoteMethodSerialization = new RemoteMethodSerialization(context,  this);
     	commandQueue = context.lookup( CommandScheduler.class);
+    	this.connectionFactory = connectionFactory;
+    	if ( config != null)
+    	{
+    	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");
+    	    final String serverURL= ContextTools.resolveContext(serverConfig, context );
+    	    connectionFactory.setServerURL(serverURL);
+    	}
+    	connectionFactory.setRefreshCommand(new FutureResult<String>() {
+
+            @Override
+            public String get() throws Exception {
+                return login();
+            }
+
+            @Override
+            public String get(long wait) throws Exception {
+                return get();
+            }
+
+            @Override
+            public void get(AsyncCallback<String> callback) {
+               try {
+                   String string = get();
+                   callback.onSuccess(string);
+               } catch (Exception e) {
+                   callback.onFailure(e);
+               } 
+            }
+        });
     }
     
     synchronized public void connect(ConnectInfo connectInfo) throws RaplaException {
@@ -118,18 +146,13 @@ public class RemoteOperator  extends  AbstractCachableOperator
     	}
     }
 
-	Date lastSyncedTimeLocal;
-	Date lastSyncedTime;
-	int timezoneOffset;
-	String accessToken;
-	ConnectInfo connectInfo;
 	
 	private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
-		doConnect();
 		this.connectInfo = connectInfo;
 		String username = this.connectInfo.getUsername();
-		this.accessToken = login();
-        loadData(username);
+		String accessToken = login();
+        connectionFactory.setAccessToken(accessToken );
+		loadData(username);
         bSessionActive = true;
 	}
 
@@ -139,7 +162,8 @@ public class RemoteOperator  extends  AbstractCachableOperator
 		String username = this.connectInfo.getUsername();
 		try {
 		    RemoteServer serv1 = getRemoteServer();
-		    String accessToken = serv1.login(username,password, connectAs).get();
+		    LoginTokens loginToken = serv1.login(username,password, connectAs).get();
+            String accessToken = loginToken.getAccessToken();
 		    getLogger().info("login successfull");
 		    return accessToken;
 		} catch (RaplaException ex){
@@ -208,57 +232,28 @@ public class RemoteOperator  extends  AbstractCachableOperator
 		}
 	}
 	
-//    /** implementation specific. Should be private */
-//    public void serverHangup() {
-//        getLogger().warn("Server hangup");
-//        final String message;
-//        if (!isRestarting) {
-//            message = getI18n().format("error.connection_closed",getConnectionName());
-//            getLogger().error(message);
-//        }
-//        else
-//        {
-//            message = getI18n().getString("restart_server");
-//        }
-//        isRestarting = false;
-//        commandQueue.schedule(new Command()
-//        {
+//    public String getConnectionName() {
+//    	if ( connector != null)
+//    	{
+//    		return connector.getInfo();
+//    	}
+//    	else
+//    	{
+//    		return "standalone";
+//    	}
+//    }
 //
-//			public void execute() throws Exception {
-//                fireStorageDisconnected(message);
-//			}
-//        	
+//    private void doConnect() throws RaplaException {
+//        boolean bFailed = true;
+//        try {
+//            bFailed = false;
+//        } catch (Exception e) {
+//            throw new RaplaException(i18n.format("error.connect",getConnectionName()),e);
+//        } finally {
+//            if (bFailed)
+//                disconnect();
 //        }
-//        , 0);
 //    }
-    
-//    public void serverDisconnected()  {
-//        bSessionActive = false;
-//    }
-
-
-    public String getConnectionName() {
-    	if ( connector != null)
-    	{
-    		return connector.getInfo();
-    	}
-    	else
-    	{
-    		return "standalone";
-    	}
-    }
-
-    private void doConnect() throws RaplaException {
-        boolean bFailed = true;
-        try {
-            bFailed = false;
-        } catch (Exception e) {
-            throw new RaplaException(i18n.format("error.connect",getConnectionName()),e);
-        } finally {
-            if (bFailed)
-                disconnect();
-        }
-    }
 
     public boolean isConnected() {
         return bSessionActive;
@@ -313,7 +308,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
     }
    
     synchronized public void disconnect() throws RaplaException { 
-    	accessToken = null;
+    	connectionFactory.setAccessToken( null);
         disconnect("Disconnection from Server initiated");
     }
     
@@ -449,8 +444,8 @@ public class RemoteOperator  extends  AbstractCachableOperator
     	RemoteStorage serv = getRemoteStorage();
     	try
     	{
-	    	String[] id = serv.createIdentifier(raplaType.getLocalName(), count).get();
-	    	return id;
+	    	List<String> id = serv.createIdentifier(raplaType.getLocalName(), count).get();
+	    	return id.toArray(new String[] {});
     	} 
         catch (RaplaException ex)
         {
@@ -474,8 +469,8 @@ public class RemoteOperator  extends  AbstractCachableOperator
         RemoteStorage remoteMethod = getRemoteStorage();
         try
         {
-	        Boolean canChangePassword = remoteMethod.canChangePassword().get();
-			boolean result = canChangePassword;
+	        String canChangePassword = remoteMethod.canChangePassword().get();
+			boolean result = canChangePassword != null && canChangePassword.equalsIgnoreCase("true");
 	        return result;
         } 
         catch (RaplaException ex)
@@ -639,7 +634,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
     	String[] allocatableId = getIdList(allocatables);
     	try
     	{
-			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get().get();
+			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
 	        Lock lock = readLock();
 			try 
 	        {
@@ -676,7 +671,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
     	RemoteStorage serv = getRemoteStorage();
     	try
     	{
-    		List<String> result = Arrays.asList(serv.getTemplateNames().get());
+    		List<String> result = serv.getTemplateNames().get();
     		return result;
     	}
 	    catch (RaplaException ex)
@@ -688,56 +683,6 @@ public class RemoteOperator  extends  AbstractCachableOperator
 	    	throw new RaplaException(ex);
 	    }		
     }
-
-//    public EntityStore get()
-//    {
-//    	Collection<Entity>emptyList = Collections.emptyList();
-//		EntityStore store = createEntityStore(emptyList, cache);
-//		return store;
-//    }
-    /**
-	 * Entities will be resolved against resolveableEntities. If not found the
-	 * ParentResolver will be used.
-	 */
-//	private EntityStore createEntityStore(Collection<? extends Entity>resolveableEntities, LocalCache parentCache) {
-//		EntityStore resolver = new EntityStore(parentCache, cache.getSuperCategory())
-//		{
-//			@Override
-//			public Entity resolve(String id) {
-//				Entity refEntity = super.tryResolve(id);
-//				if ( refEntity == null)
-//				{
-//					{
-//						if ( id.startsWith(Allocatable.TYPE.getLocalName()))
-//						{
-//							AllocatableImpl unresolved = new AllocatableImpl(null, null);
-//							unresolved.setId( id);
-//							unresolved.setClassification( getUnresolvedAllocatableType().newClassification());
-//							return unresolved;
-//						}
-//						// if the type is not found we test if its an anonymous type (key = 0)
-//						if ( id.startsWith(DynamicType.TYPE.getLocalName() + "_0"))
-//						{
-//							DynamicType unresolvedReservation = getAnonymousReservationType();
-//							return (Entity) unresolvedReservation;
-//						}
-//					}
-//				}
-//				return refEntity;
-//			}
-//			
-//			public DynamicType getDynamicType(String key) {
-//				DynamicType unresolvedReservation = getAnonymousReservationType();
-//				if ( key.equals(unresolvedReservation.getElementKey()))
-//				{
-//					return unresolvedReservation;
-//				}
-//				return super.getDynamicType(key);
-//			}
-//		};
-//		resolver.addAll(resolveableEntities);
-//		return resolver;
-//	}
 
 	protected String[] getIdList(Collection<? extends Entity> entities) {
 		List<String> idList = new ArrayList<String>();
@@ -847,46 +792,6 @@ public class RemoteOperator  extends  AbstractCachableOperator
 		return true;
 	}
 
-    StatusUpdater updater;
-    public void setStatusUpdater(StatusUpdater statusUpdater) {
-    	this.updater = statusUpdater;
-    }
-
-    public FutureResult call( Class<?> service, String methodName,Class<?>[] parameterTypes, Class<?> returnType ,Object[] args)  {
-        try {
-        	if ( updater != null)
-        	{
-        		updater.setStatus( Status.BUSY );
-        	}
-            FutureResult<String> authFailedCommand;
-            if ( !service.equals(RemoteServer.class) && !methodName.equals("login"))
-            {
-            	authFailedCommand = new ResultImpl<String>() {
-				
-            		@Override
-            		public String get() throws Exception {
-            			return login();
-            		}
-            	};
-            }
-            else
-            {
-            	authFailedCommand = null;
-            }
-			FutureResult result =connector.call(authFailedCommand, accessToken,service, methodName, parameterTypes, returnType , args);
-            return result;
-        } catch (Exception ex) {
-            return new ResultImpl(new RaplaException(ex));
-        }
-        finally
-        {
-        	if ( updater != null)
-        	{
-        		updater.setStatus( Status.READY );
-        	}
-        }
-    }
-
 	@Override
 	public Map<Allocatable, Collection<Appointment>> getFirstAllocatableBindings( Collection<Allocatable> allocatables,	Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException {
 		checkConnected();
@@ -944,7 +849,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
 		List<ReservationImpl> serverResult;
 		try
 		{
-			serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get().get();
+			serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get();
 		}
 		catch (RaplaException ex)
 		{
@@ -1028,7 +933,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
     	RemoteStorage serv = getRemoteStorage();
     	try
     	{
-	    	List<ConflictImpl> list = serv.getConflicts().get().get();
+	    	List<ConflictImpl> list = serv.getConflicts().get();
 	        Lock readLock = readLock();
 		    try
 		    {
@@ -1061,6 +966,7 @@ public class RemoteOperator  extends  AbstractCachableOperator
     		throw new RaplaException(ex);
     	}		
 	}
+
 
 //	@Override
 //	protected void logEntityNotFound(Entity obj, EntityNotFoundException ex) {

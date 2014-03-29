@@ -1,15 +1,18 @@
 package org.rapla.server;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
 import org.rapla.servletpages.RaplaPageGenerator;
 
 public interface ServerServiceContainer extends Container 
 {
     <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory);
     <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory, Configuration config);
-    <T> RemoteMethodFactory<T> getWebservice(Class<T> role) throws RaplaContextException;
+
     /**
      * You can add arbitrary serlvet pages to your rapla webapp.
      *
@@ -28,6 +31,9 @@ public interface ServerServiceContainer extends Container
     /** @return null when the server doesn't have the webpage 
      * @throws RaplaContextException */
 	RaplaPageGenerator getWebpage(String page) throws RaplaContextException;
+	
+    <T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
+    boolean hasWebservice(String interfaceName);
 
 	
 }

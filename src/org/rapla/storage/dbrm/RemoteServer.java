@@ -15,16 +15,25 @@ package org.rapla.storage.dbrm;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.RemoteJsonService;
-import com.google.gwtjsonrpc.common.ResultType;
-import com.google.gwtjsonrpc.common.VoidResult;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.rest.gwtjsonrpc.common.ResultType;
+import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 
 @WebService
 public interface RemoteServer extends RemoteJsonService {
-	@ResultType(String.class)
-	FutureResult<String> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
+	@ResultType(LoginTokens.class)
+	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
+	
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> logout();
 	
+	@ResultType(String.class)
+    FutureResult<String> getRefreshToken();
+	
+	@ResultType(String.class)
+    FutureResult<String> regenerateRefreshToken();
+	
+	@ResultType(String.class)
+    FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
 }

@@ -2,8 +2,9 @@
 <rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
  xmlns:relax="http://relaxng.org/ns/structure/1.0"
  xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
  xmlns:doc="http://rapla.sourceforge.net/annotation"
- version="1.0">
+ version="1.1">
    <rapla:categories>
       <rapla:category key="department">
          <doc:name lang="de">Abteilung</doc:name>
@@ -203,7 +204,14 @@
          </dynatt:lecturer>
          <rapla:permission/>
       </rapla:person>
-
+      
+ 	 <rapla:extension id="resource_6" created-at="2014-03-21T14:36:28.0000Z" last-changed="2014-03-22T16:59:35.0000Z">
+         <doc:annotations>
+            <rapla:annotation key="publicKey">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArCy7H6wrGlHdzdJlu7gaURlQIqIdqUg-xVZcq2z-hBin-P04sTeeaAvbXe7e3aty4ru9nuu4TGWzUjx8UWBqnIsfW3_bLAjuSwhS8ig7pGMhvtI1Zn2SecuqpZLcDbMRzrR8GS2wLqsvdq4UwMAIvuAAO9CueVCD3NfFTqbNNPDgNHf95dKJM0xO9FDfy4KrPH0wZAFvvGkyqSY3HFcPClEB8Yk8fNQQWVPCjuqEpSO1_8yaH8RfXZKA-v2CH2tNC6ez2avbqC17EB9qp3ViW39h5R4EKnO7m4dWIlFugt9uQlVLCeASuxSUGQEz3mVZypoGxkMGE8rHq0cmhZq5mwIDAQAB</rapla:annotation>
+            <rapla:annotation key="privateKey">MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCsLLsfrCsaUd3N0mW7uBpRGVAioh2pSD7FVlyrbP6EGKf4_TixN55oC9td7t7dq3Liu72e67hMZbNSPHxRYGqcix9bf9ssCO5LCFLyKDukYyG-0jVmfZJ5y6qlktwNsxHOtHwZLbAuqy92rhTAwAi-4AA70K55UIPc18VOps008OA0d_3l0okzTE70UN_Lgqs8fTBkAW-8aTKpJjccVw8KUQHxiTx81BBZU8KO6oSlI7X_zJofxF9dkoD6_YIfa00Lp7PZq9uoLXsQH2qndWJbf2HlHgQqc7ubh1YiUW6C325CVUsJ4BK7FJQZATPeZVnKmgbGQwYTyserRyaFmrmbAgMBAAECggEAcv4RIG9B_nstE_lw3vZwBThN0EPMYbKR0gUDMa9DMgCxt1eQlLQcBUveAJe4m_6VZZ-UXt76oXPPV550PXmS2ukEUX1MadWxKcXueDOs2fcno6YL6l72BIileZ5jgHbX7uGWfM6J_DFzKuXLkIzximJbZZfT38yJtWcbLZO0PKWHqgj5uCXUfc_GDin4dsXpSAJcO7WI3hI1zo7Kzw-YHbeyyv6NWZlPXGAAY_wFJP7-ORKNY2GLouAFhysMULv0aYNvBRNfVsvpphza0I6OrfXL1hhU5BJgpLaOhSxN4-LSiLzaH3kPQRFyP05XhMGuMdAafkWZ9F03Kort3wqSoQKBgQDb-oFe2k6_CndQpXQhi-ipjNp_byUdGkb0iH77Hq_35bbKtsGBTcV-RBWIJ7DYWD6Xd1gn8LFAAPF71L7uSZtwuX6od36H69TLBTw90rUcFekeSP-WLM0DAqdtdtW3uTGm2JP0GYEGPE1z7U7Ik69SjntHqr1kHFPEJ7jLp5DliwKBgQDIXkqP5vUsVKj3O0lrJxl6GpLkh3soAUpV8EsZTzKaNXERVRRVnCQ78kKmrEiNGo4bqTVdr1La1kDI19idmopa0WpgVO15qzzc-LN64-QXDwi6iU2I1uiOCUWz57mfDZDBcbmCVXUxey1FHi1mKvmq-E831SIfd3GEzg-kY_meMQKBgG_hdLL9bVeUxyJpRCtbsTWqweZWbRXkK3prgcnOzcjTOKjZUomlOHEDx7-8ECG4n_0BYgDOVhgrYqaMiZ9AKKKodVbRj7UpqMypGP6IkDx8mFgi4HtMxehmDSmLax9KPYqSVI2t-wVk3i-73nn9QwpGFUVZ_YFRNvlpCn_p9bQJAoGAIV1aKyY5Uz1xuWF880PagTOlnDpXLq0wVKkjyD4g3f7iKhGxxiOvAPBxWtG7bwup-D8v7L7CHECrHwaaQnw2Z7MRdKMPvD_gbadYM7F5DMHrISy15YBrzyMKIVAH381hemTWkDZswmWRfz3sL2QemPKqNlDeUsEP_R5XCne_XDECgYACeyv4q8ayNF33NoBgmqa49jbFY95bazZnJvS4clnAIzOECQNe8u2nv6iJygkWD-M0FVcvtTSqSVLI72_nJsOoDRjTlvKmq7nclVToufYH1oA78m3whBYNGXlkfS0GeF-IEYSjbG6u8R7Csh41H6j3ukPuXEz9yS97xv9Qa9vUuw</rapla:annotation>
+         </doc:annotations>
+         <ext:crypto/>
+      </rapla:extension>
    </rapla:resources>
 
    <rapla:periods>

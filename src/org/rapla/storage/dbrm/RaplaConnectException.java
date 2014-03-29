@@ -10,8 +10,8 @@ public class RaplaConnectException extends RaplaException {
         super(text, null);
     }
     
-    public RaplaConnectException(String text, Throwable cause) {
-        super(text, cause);
+    public RaplaConnectException( Throwable cause) {
+        super(cause.getMessage(), cause);
     }
 
 }

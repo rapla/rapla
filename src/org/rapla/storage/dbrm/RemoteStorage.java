@@ -23,18 +23,17 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.rest.gwtjsonrpc.common.ResultType;
+import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
-
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.RemoteJsonService;
-import com.google.gwtjsonrpc.common.ResultType;
-import com.google.gwtjsonrpc.common.VoidResult;
 @WebService
 public interface RemoteStorage extends RemoteJsonService {
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
-	@ResultType(Boolean.class)
-    FutureResult<Boolean> canChangePassword();
+	@ResultType(String.class)
+    FutureResult<String> canChangePassword();
 
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
@@ -53,8 +52,8 @@ public interface RemoteStorage extends RemoteJsonService {
     
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
-    @ResultType(ReservationList.class)
-    FutureResult<ReservationList> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+    @ResultType(value=ReservationImpl.class,container=List.class)
+    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
 
     @ResultType(UpdateEvent.class)
     FutureResult<UpdateEvent> getEntityRecursive(String... id);
@@ -68,20 +67,20 @@ public interface RemoteStorage extends RemoteJsonService {
 	@ResultType(UpdateEvent.class)
 	FutureResult<UpdateEvent> dispatch(UpdateEvent event);
     
-	@ResultType(String[].class)
-	FutureResult<String[]> getTemplateNames();
+	@ResultType(value=String.class,container=List.class)
+	FutureResult<List<String>> getTemplateNames();
     
-	@ResultType(String[].class)
-	FutureResult<String[]> createIdentifier(String raplaType, int count);
+	@ResultType(value=String.class,container=List.class)
+	FutureResult<List<String>> createIdentifier(String raplaType, int count);
 
-	@ResultType(ConflictList.class)
-	FutureResult<ConflictList> getConflicts();
+	@ResultType(value=ConflictImpl.class,container=List.class)
+	FutureResult<List<ConflictImpl>> getConflicts();
 	
 	@ResultType(BindingMap.class)
 	FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
 	
-	@ResultType(ReservationList.class)
-	FutureResult<ReservationList> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
+	@ResultType(value=ReservationImpl.class,container=List.class)
+	FutureResult<List<ReservationImpl>> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
 
 	@ResultType(Date.class)
     FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
@@ -103,36 +102,6 @@ public interface RemoteStorage extends RemoteJsonService {
 		}
     }
     
-    public static class ReservationList
-    {
-    	List<ReservationImpl> reservations;
-    	ReservationList() {
-		}
-    	public ReservationList(List<ReservationImpl> reservations)
-    	{
-    		this.reservations = reservations;
-    	}
-    	
-    	public List<ReservationImpl> get() {
-			return reservations;
-		}
-    }
     
-    public static class ConflictList
-    {
-    	List<ConflictImpl> conflicts;
-    	ConflictList()
-    	{
-    	}
-    	public ConflictList(List<ConflictImpl> conflicts)
-    	{
-    		this.conflicts = conflicts;
-    	}
-    	
-    	public List<ConflictImpl> get() {
-			return conflicts;
-		}
-    
-    }
 	
 }

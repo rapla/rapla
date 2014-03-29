@@ -18,7 +18,7 @@ public class SimpleConnectorStartupEnvironment implements StartupEnvironment
     Logger logger;
     public SimpleConnectorStartupEnvironment(final String host, final Logger logger) throws MalformedURLException 
     {
-        this( host, 8051, "/",true, logger);
+        this( host, 8051, "/",false, logger);
     }
    
     public SimpleConnectorStartupEnvironment(final String host, final int hostPort, String contextPath,boolean isSecure, final Logger logger) throws MalformedURLException {

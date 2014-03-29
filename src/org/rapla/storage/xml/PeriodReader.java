@@ -34,7 +34,7 @@ public class PeriodReader extends DynAttReader {
     public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
         throws RaplaSAXParseException
     {
-        if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {
+        if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {	 
         	AllocatableImpl period = new AllocatableImpl(new Date(), new Date());
         	Classification classification = store.getDynamicType(StorageOperator.PERIOD_TYPE).newClassification();
             classification.setValue("name", getString(atts,"name"));

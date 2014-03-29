@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +54,12 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
+import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.rest.gwtjsonrpc.server.SignedToken;
+import org.rapla.rest.gwtjsonrpc.server.ValidToken;
+import org.rapla.rest.gwtjsonrpc.server.XsrfException;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaServerExtensionPoints;
@@ -64,10 +69,12 @@ import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.DefaultHTMLMenuEntry;
+import org.rapla.servletpages.RaplaAPIPage;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
 import org.rapla.servletpages.RaplaJNLPPageGenerator;
 import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.servletpages.RaplaResourcesRestPage;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
 import org.rapla.storage.CachableStorageOperator;
@@ -75,18 +82,11 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.ResultImpl;
-import com.google.gwtjsonrpc.common.VoidResult;
-import com.google.gwtjsonrpc.server.JsonServlet;
-import com.google.gwtjsonrpc.server.SignedToken;
-import com.google.gwtjsonrpc.server.ValidToken;
-import com.google.gwtjsonrpc.server.XsrfException;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
@@ -103,7 +103,7 @@ import com.google.gwtjsonrpc.server.XsrfException;
  @see ServerService
  */
 
-public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService,RemoteServiceDispatcher, RemoteMethodFactory<RemoteServer>,RemoteMethodStub
+public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService, RemoteMethodFactory<RemoteServer>,RemoteMethodStub
 {
     @SuppressWarnings("rawtypes")
     public static Class<RemoteMethodFactory> REMOTE_METHOD_FACTORY = RemoteMethodFactory.class;
@@ -115,13 +115,16 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     ClientFacade facade;
     private AuthenticationStore authenticationStore;
-	SignedToken token;	
-  
+	SignedToken accessTokenSigner;
+	SignedToken refreshTokenSigner;
+    RemoteSessionImpl standaloneSession;
+    ShutdownService shutdownService;
+    // 1 Hour until the token expires
+    int accessTokenValiditySeconds = 60 * 60;
     public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
     {
         super( parentContext, config, logger );
     	
-
         addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
         i18n =  parentContext.lookup( RaplaComponent.RAPLA_RESOURCES );
         Configuration login = config.getChild( "login" );
@@ -142,7 +145,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( ServerService.class, this);
         addContainerProvidedComponentInstance( ShutdownService.class, this);
         addContainerProvidedComponentInstance( ServerServiceContainer.class, this);
-        addContainerProvidedComponentInstance( RemoteServiceDispatcher.class, this);
         addContainerProvidedComponentInstance( CachableStorageOperator.class, operator );
         addContainerProvidedComponentInstance( StorageOperator.class, operator );
         addContainerProvidedComponentInstance( ClientFacade.class, facade );
@@ -151,6 +153,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( REMOTE_METHOD_FACTORY, this, RemoteServer.class.getName() );
         // adds 5 basic pages to the webapplication
         addWebpage( "server",RaplaStatusPageGenerator.class);
+        addWebpage( "json",RaplaAPIPage.class);
+        addWebpage( "resources",RaplaResourcesRestPage.class);
         addWebpage( "index",RaplaIndexPageGenerator.class );
         addWebpage( "raplaclient.jnlp",RaplaJNLPPageGenerator.class );
         addWebpage( "raplaclient",RaplaJNLPPageGenerator.class );
@@ -166,6 +170,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context,i18n.getString( "start_rapla_with_applet" ),"rapla?page=raplaapplet") );
         addContainerProvidedComponentInstance( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context,i18n.getString( "server_status" ),"rapla?page=server") );
 
+        standaloneSession = new RemoteSessionImpl(getContext(), "session");
         
         operator.addStorageUpdateListener( this );
         if ( username != null  )
@@ -224,8 +229,9 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         try {
     		RaplaKeyStorage keyStorage = getContext().lookup( RaplaKeyStorage.class);
     		String secretKey = keyStorage.getRootKeyBase64();
-			// TEN Hours until the token expires
-			token = new SignedToken(60*60 * 10, secretKey);
+			
+			accessTokenSigner = new SignedToken(accessTokenValiditySeconds , secretKey);
+			refreshTokenSigner = new SignedToken(-1 , secretKey);
 		} catch (Exception e) {
 			throw new RaplaException( e.getMessage(), e);
 		}
@@ -298,11 +304,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponent(REMOTE_METHOD_FACTORY,factory, role.getName(), configuration);
     }
     
-    @SuppressWarnings("unchecked")
-	@Override
-	public <T> RemoteMethodFactory<T> getWebservice(Class<T> role) throws RaplaContextException {
-		return  (RemoteMethodFactory<T>) getRemoteMethod( role.getName());
-	}
+    
     
     protected RemoteMethodFactory<?> getRemoteMethod(String interfaceName) throws RaplaContextException {
 		RemoteMethodFactory<?> factory = lookup( REMOTE_METHOD_FACTORY ,interfaceName);
@@ -568,38 +570,38 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                     return ServerServiceImpl.this.getLogger();
                 }
             }
-            /** @Override
-             */
-             public FutureResult<VoidResult> logout() 
-             {
-            	 try
-            	 {
-	                 if ( session != null)
-	                 {
-	                     if ( session.isAuthentified())
-	                     {
-	                         User user = session.getUser();
-	                         if ( user != null)
-	                         {
-	                        	 getLogger().getChildLogger("login").info( "Request Logout " + user.getUsername());
-	                         }
-	                         ((RemoteSessionImpl)session).logout();
-	                     }
-	                 }
-            	 }
-            	 catch (RaplaException ex)
-            	 {
-            		 return new ResultImpl<VoidResult>(ex);
-            	 }
-                 return ResultImpl.VOID;
-             }
             
-             public FutureResult<String> login( String username, String password, String connectAs ) 
+            @Override
+            public FutureResult<VoidResult> logout() 
+            {
+                try
+                {
+                    if ( session != null)
+                    {
+                        if ( session.isAuthentified())
+                        {
+                            User user = session.getUser();
+                            if ( user != null)
+                            {
+                                getLogger().getChildLogger("login").info( "Request Logout " + user.getUsername());
+                            }
+                            ((RemoteSessionImpl)session).logout();
+                        }
+                    }
+                }
+                catch (RaplaException ex)
+                {
+                    return new ResultImpl<VoidResult>(ex);
+                }
+                return ResultImpl.VOID;
+            }
+            
+            @Override
+            public FutureResult<LoginTokens> login( String username, String password, String connectAs ) 
              {
             	 try
             	 {
 	            	 User user;
-	            	 
 	            	 if ( standaloneSession == null)
 	            	 {
 	            		 Logger logger = getLogger().getChildLogger("login");
@@ -624,19 +626,92 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	                         throw new SecurityException("Non admin user is requesting change user permission!");
 	                     }
 	                 }
-	                 try 
-	                 {
-						String userId = user.getId();
-						String signedToken = token.newToken( userId);
-						return new ResultImpl.StringResult(signedToken);
-	                 } catch (Exception e) {
-	                	 throw new RaplaException(e.getMessage());
-	                 }
+	                 FutureResult<LoginTokens> generateAccessToken = generateAccessToken(user);
+	                 return generateAccessToken;
 	             } catch (RaplaException ex)  {
-	            	 return new ResultImpl<String>(ex);
+	            	 return new ResultImpl<LoginTokens>(ex);
 	             }
              }
-			
+
+            private FutureResult<LoginTokens> generateAccessToken(User user) throws RaplaException {
+                try 
+                {
+                	String userId = user.getId();
+                	Date now = operator.getCurrentTimestamp();
+                    Date validUntil = new Date(now.getTime() + 1000 * accessTokenValiditySeconds);
+                	String signedToken = accessTokenSigner.newToken( userId,  now);
+                    return new ResultImpl<LoginTokens>(new LoginTokens( signedToken, validUntil));
+                } catch (Exception e) {
+                    throw new RaplaException(e.getMessage());
+                }
+            }
+             
+             @Override
+             public FutureResult<String> getRefreshToken() 
+             {
+                 try
+                 {
+                     User user = getValidUser(session);
+                     RaplaKeyStorage keyStore = getContext().lookup(RaplaKeyStorage.class);
+                     Collection<String> apiKeys = keyStore.getAPIKeys(user);
+                     String refreshToken;
+                     if ( apiKeys.size() == 0)
+                     {
+                         refreshToken = null;
+                     }
+                     else
+                     {
+                         refreshToken = apiKeys.iterator().next();
+                     }
+                     return new ResultImpl<String>(refreshToken);
+                 } catch (RaplaException ex)  {
+                     return new ResultImpl<String>(ex);
+                 }
+             }
+             
+             @Override
+             public FutureResult<String> regenerateRefreshToken() 
+             {
+                 try
+                 {
+                     User user = getValidUser(session);
+                     RaplaKeyStorage keyStore = getContext().lookup(RaplaKeyStorage.class);
+                     Date now = operator.getCurrentTimestamp();
+                     String generatedAPIKey = refreshTokenSigner.newToken(user.getId(), now);
+                     keyStore.storeAPIKey(user, "refreshToken",generatedAPIKey);
+                     return new ResultImpl<String>(generatedAPIKey);
+                 } catch (Exception ex)  {
+                     return new ResultImpl<String>(ex);
+                 }
+             }
+
+             @Override
+             public FutureResult<LoginTokens> refresh(String refreshToken) 
+             {
+                 try
+                 {
+                     User user = getUser(refreshToken, refreshTokenSigner);
+                     RaplaKeyStorage keyStore = getContext().lookup(RaplaKeyStorage.class);
+                     Collection<String> apiKeys = keyStore.getAPIKeys(user);
+                     if ( !apiKeys.contains( refreshToken))
+                     {
+                         throw new RaplaSecurityException("refreshToken not valid");
+                     }
+                     FutureResult<LoginTokens> generateAccessToken = generateAccessToken(user);
+                     return generateAccessToken;
+                 } catch (RaplaException ex)  {
+                     return new ResultImpl<LoginTokens>(ex);
+                 }
+             }
+
+            public User getValidUser(final RemoteSession session) throws RaplaContextException, RaplaSecurityException {
+                User user = session.getUser();
+                 if ( user == null)
+                 {
+                     throw new RaplaSecurityException(i18n.getString("error.login"));
+                 }
+                return user;
+            }
         };
     }
     
@@ -730,56 +805,14 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		return user;
 	}
 
-    
-    public User getUserWithoutPassword(String username) throws RaplaException
-    {
-    	String connectAs = null;
-		User user = authenticate(username, "", connectAs, getLogger());
-    	return user;
-    }
-    
-    public User getUser(String tokenString) throws RaplaException
-    {
-    	if ( tokenString == null)
-    	{
-    		return null;
-    	}
-    	 final int s = tokenString.indexOf('$');
-    	 if (s <= 0) {
-    		 return null;
-    	 }
-
-    	final String recvText = tokenString.substring(s + 1);
-    	try {
-			ValidToken checkToken = this.token.checkToken(tokenString, recvText);
-			if ( checkToken == null)
-			{
-				throw new RaplaException("InvalidToken " + tokenString);
-			}
-		} catch (XsrfException e) {
-			throw new RaplaException(e.getMessage(), e);
-		}
-    	String userId = recvText;
-    	User user = (User) operator.resolve( userId);
-    	return user;
-
-    }
-    
-    RemoteSessionImpl standaloneSession;
-  	public void setStandalonSession( RemoteSessionImpl standaloneSession)
-  	{
-  		this.standaloneSession = standaloneSession;
-  	}
-  	ShutdownService shutdownService;
   	
   	public void setShutdownService(ShutdownService shutdownService) {
   		this.shutdownService = shutdownService;
   	}
   	
-  	public <T> T getWebserviceLocalStub(final Class<T> a)
-  			throws RaplaContextException {
+  	public <T> T getWebserviceLocalStub(final Class<T> a) throws RaplaContextException {
   		@SuppressWarnings("unchecked")
-		RemoteMethodFactory<T> factory =lookup( ServerServiceImpl.REMOTE_METHOD_FACTORY ,a.getName());
+		RemoteMethodFactory<T> factory =lookup( REMOTE_METHOD_FACTORY ,a.getName());
   		T service = factory.createService( standaloneSession);
   		return service;
   	}
@@ -793,59 +826,97 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		{
 			getLogger().error("Shutdown service not set");
 		}
-		
 	}
 
-	Map<String,JsonServletWrapper> servletMap = new HashMap<String, JsonServletWrapper>();
-	@Override
-	public JsonServletWrapper getJsonServlet(HttpServletRequest request) throws RaplaException {
-		String classAndMethodName = (String) request.getAttribute("jsonmethod");
-		String interfaceNameNonFinal = "org.rapla.plugin.freiraum.common.RaplaJsonService";
-		if  ( classAndMethodName != null) {
-			int indexRole = classAndMethodName.indexOf( "/" );
-			if ( indexRole > 0 )
-			{
-				interfaceNameNonFinal = classAndMethodName.substring( 0, indexRole );
-//				String methodName = classAndMethodName.substring( indexRole + 1 );
-			}
-			else
-			{
-				// special case for compatibility
-				if (!classAndMethodName.equalsIgnoreCase("RaplaJsonService"))
-				{
-					interfaceNameNonFinal = classAndMethodName;
-				}
-			}
-		} 
-		final String interfaceName = interfaceNameNonFinal;
-		JsonServletWrapper servletWrapper = servletMap.get( interfaceName);
-		if ( servletWrapper == null)
-		{
-			RemoteMethodFactory factory = lookup( REMOTE_METHOD_FACTORY,interfaceName); ;
-//			Collection<RemoteJsonFactory> allServicesForThisContainer = getAllServicesForThisContainer( RemoteJsonFactory.class);
-//			
-//			if ( allServicesForThisContainer.size() > 0)
-//			{
-//				factory = allServicesForThisContainer.iterator().next();
-//			}
-//			else
-//			{
-//				
-//			}
-			try
-			{
-				Class interfaceClass =  Class.forName(interfaceName, true,factory.getClass().getClassLoader());
-				JsonServlet servlet = new JsonServlet(getLogger(), interfaceClass);
-				servletWrapper = new JsonServletWrapper( factory, servlet);
-			}
-			catch (Exception ex)
-			{
-				throw new RaplaException( ex.getMessage(), ex);
-			}
-			servletMap.put( interfaceName, servletWrapper);
-		}
-		return servletWrapper;
+	private RemoteSession getRemoteSession(HttpServletRequest request) throws RaplaException {
+	    String token = request.getHeader("Authorization");
+	    if ( token != null)
+	    {
+	        String bearerStr = "bearer";
+	        int bearer = token.toLowerCase().indexOf(bearerStr);
+	        if ( bearer >= 0)
+	        {
+	            token = token.substring( bearer + bearerStr.length()).trim();
+	        }
+	    }
+	    else
+	    {
+	        token = request.getParameter("access_token");
+	    }
+	    User user = null;
+	    if ( token == null)
+	    {
+	        String username = request.getParameter("username");
+	        if ( username != null)
+	        {
+	            user = getUserWithoutPassword(username);
+	        }
+	    }
+	    if ( user == null)
+	    {
+	        user = getUser( token, accessTokenSigner);
+        }
+
+	    RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous");
+	    remoteSession.setUser( (User) user);
+	    remoteSession.setAccessToken( token );
+	    return remoteSession;
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+    public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
+    {
+        RemoteMethodFactory<T> remoteMethod = (RemoteMethodFactory<T>) getRemoteMethod( role.getName());
+        RemoteSession remoteSession = getRemoteSession(request);
+        return  remoteMethod.createService(remoteSession);
+    }
+	
+	@Override
+	public boolean hasWebservice(String interfaceName) {
+	    try {
+            lookup( REMOTE_METHOD_FACTORY ,interfaceName);
+        } catch (RaplaContextException e) {
+            return false;
+        }
+	    return true;
+	   
+	}
+	 
+	private User getUserWithoutPassword(String username) throws RaplaException
+	{
+		String connectAs = null;
+		User user = authenticate(username, "", connectAs, getLogger());
+		return user;
+	}
+	    
+    private User getUser(String tokenString,SignedToken tokenSigner) throws RaplaException
+    {
+    	if ( tokenString == null)
+    	{
+    		return null;
+    	}
+    	 final int s = tokenString.indexOf('$');
+    	 if (s <= 0) {
+    		 return null;
+    	 }
+
+    	final String recvText = tokenString.substring(s + 1);
+    	try {
+    	    Date now = operator.getCurrentTimestamp();
+			ValidToken checkToken = tokenSigner.checkToken(tokenString, recvText, now);
+			if ( checkToken == null)
+			{
+				throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED + " InvalidToken " + tokenString);
+			}
+		} catch (XsrfException e) {
+			throw new RaplaSecurityException(e.getMessage(), e);
+		}
+    	String userId = recvText;
+    	User user = (User) operator.resolve( userId);
+    	return user;
+
+    }
       
 
 }

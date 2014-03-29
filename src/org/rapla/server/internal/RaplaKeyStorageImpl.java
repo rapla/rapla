@@ -5,6 +5,8 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.IllegalAnnotationException;
@@ -22,11 +24,11 @@ import org.rapla.storage.StorageOperator;
 public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStorage
 {
 	//private static final String USER_KEYSTORE = "keystore";
-
+    
 	private static final String ASYMMETRIC_ALGO = "RSA";
 
 	private static final String PUBLIC_KEY = "publicKey";
-
+	private static final String APIKEY = "refreshToken";
 	private static final String PRIVATE_KEY = "privateKey";
 
     private String rootKey;
@@ -52,6 +54,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     public RaplaKeyStorageImpl(RaplaContext context) throws RaplaException {
         super(context);
         byte[] linebreake = {};
+        // we use an url safe encoder for the keys
         this.base64 = new Base64(64, linebreake, true);
         Allocatable key = getAllocatable( null);
         if ( key == null || key.getAnnotation(PRIVATE_KEY) == null)
@@ -83,6 +86,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	}
     }
     
+    @Override
     public LoginInfo getSecrets(User user, String tagName) throws RaplaException
     {
     	Allocatable key = getAllocatable(user );
@@ -90,27 +94,98 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	{
     		return null;
     	}
-    	LoginInfo loginInfo = new LoginInfo();
     	String annotation = key.getAnnotation(tagName);
     	if ( annotation == null)
     	{
     		return null;
     	}
-    	String decrypt = cryptoHandler.decrypt(annotation);
+    	return decrypt(annotation);
+    }
+
+    public LoginInfo decrypt(String encrypted) throws RaplaException {
+        LoginInfo loginInfo = new LoginInfo();
+    	String decrypt = cryptoHandler.decrypt(encrypted);
     	String[] split = decrypt.split(":",2);
     	loginInfo.login = split[0];
     	loginInfo.secret = split[1];
 		return loginInfo;
     }
     
+    @Override
+    public void storeAPIKey(User user,String clientId, String newApiKey) throws RaplaException {
+        Allocatable key = getOrCreate(user);
+        key.setAnnotation(APIKEY, newApiKey);
+        getModification().store( key);
+    }
+
+    @Override
+    public Collection<String> getAPIKeys(User user) throws RaplaException {
+        Allocatable key= getAllocatable(user);
+        if ( key == null)
+        {
+            return Collections.emptyList();
+        }
+        
+        String annotation = key.getAnnotation(APIKEY);
+        if (annotation == null)
+        {
+            return Collections.emptyList();
+        }
+        Collection<String> keyList = Collections.singleton( annotation );
+        return keyList;
+    }
+
+    @Override
+    public void removeAPIKey(User user, String apikey) throws RaplaException {
+        throw new UnsupportedOperationException();
+//        Allocatable key= getAllocatable(user);
+//        if ( key != null )
+//        {
+//            Collection<String> keyList = parseList(key.getAnnotation(APIKEY));
+//            if (keyList == null || !keyList.contains(apikey))
+//            {
+//                return;
+//            }
+//            key = getModification().edit( key );
+//            keyList.remove( apikey);
+//            if ( keyList.size() > 0)
+//            {
+//                key.setAnnotation(APIKEY, null);
+//            }
+//            else
+//            {
+//                key.setAnnotation(APIKEY, serialize(keyList));
+//            }
+//            // remove when no more annotations set
+//            if (key.getAnnotationKeys().length == 0)
+//            {
+//                getModification().remove( key);
+//            }
+//            else
+//            {
+//                getModification().store( key);
+//            }
+//        }        
+    }
+    
+   
+
+    @Override
     public void storeLoginInfo(User user,String tagName,String login,String secret) throws RaplaException
     {
-    	Allocatable key= getAllocatable(user);
-    	Classification classification;
+    	Allocatable key = getOrCreate(user);
+		String loginPair = login +":" + secret;
+		String encrypted = cryptoHandler.encrypt( loginPair);
+		key.setAnnotation(tagName, encrypted);
+		getModification().store( key);
+    }
+
+    public Allocatable getOrCreate(User user) throws RaplaException {
+        Allocatable key= getAllocatable(user);
 		if ( key == null)
     	{
     	    DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
-    	    classification = dynamicType.newClassification();
+    	    Classification classification = dynamicType.newClassification();
 			key = getModification().newAllocatable(classification, null );
 			if ( user != null)
 			{
@@ -121,12 +196,8 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     	else
     	{
 			key = getModification().edit( key);
-    		classification = key.getClassification();
     	}
-		String loginPair = login +":" + secret;
-		String encrypted = cryptoHandler.encrypt( loginPair);
-		key.setAnnotation(tagName, encrypted);
-		getModification().store( key);
+        return key;
     }
     
     public void removeLoginInfo(User user, String tagName) throws RaplaException {
@@ -149,11 +220,8 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
     
     Allocatable getAllocatable(User user) throws RaplaException
     {
-    	DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.CRYPTO_TYPE);
-        ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
-        ClassificationFilter[] array = newClassificationFilter.toArray();
-		Allocatable[] store = getQuery().getAllocatables( array);
-		if ( store.length > 0)
+        Collection<Allocatable> store = getAllocatables();
+		if ( store.size() > 0)
 		{
 			for ( Allocatable all:store)
 			{
@@ -177,6 +245,16 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 		return null;
     }
 
+    public Collection<Allocatable> getAllocatables() throws RaplaException 
+    {
+        StorageOperator operator = getClientFacade().getOperator();
+    	DynamicType dynamicType = operator.getDynamicType( StorageOperator.CRYPTO_TYPE);
+        ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
+        ClassificationFilter[] array = newClassificationFilter.toArray();
+		Collection<Allocatable> store = operator.getAllocatables( array);
+        return store;
+    }
+
 	private void generateRootKeyStorage(Allocatable alloc)	throws NoSuchAlgorithmException, IllegalAnnotationException {
 		getLogger().info("Generating new root key. This can take a while.");
 		//Classification newClassification = dynamicType.newClassification();
@@ -192,6 +270,8 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
 		alloc.setAnnotation(PUBLIC_KEY, publicKey);
 		alloc.setAnnotation(PRIVATE_KEY, privateKey);
 	}
+
+   
 
 
 

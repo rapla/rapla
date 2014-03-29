@@ -2,9 +2,9 @@ package org.rapla.plugin.export2ical;
 
 import javax.jws.WebService;
 
-import com.google.gwtjsonrpc.common.FutureResult;
-import com.google.gwtjsonrpc.common.RemoteJsonService;
-import com.google.gwtjsonrpc.common.ResultType;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.rest.gwtjsonrpc.common.ResultType;
 
 @WebService
 public interface ICalTimezones extends RemoteJsonService

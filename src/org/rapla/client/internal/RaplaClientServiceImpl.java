@@ -107,7 +107,7 @@ import org.rapla.gui.toolkit.RaplaMenubar;
 import org.rapla.gui.toolkit.RaplaSeparator;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteMethodCaller;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RestartServer;
 import org.rapla.storage.dbrm.StatusUpdater;
 
@@ -263,6 +263,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         }
         //Add this service to the container
         addContainerProvidedComponentInstance(ClientService.class, this);
+        
     }
 
 	protected Runnable createTask(final Command command) {
@@ -279,6 +280,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 		return timerTask;
 	}
 
+	/** override to synchronize tasks with the swing event queue*/
 	class AWTWrapper implements CommandScheduler
 	{
 		DefaultScheduler parent;
@@ -317,10 +319,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
             ClientFacade facade = getFacade();
             facade.addUpdateErrorListener(this);
-            StorageOperator operator = facade.getOperator();
-            if ( operator instanceof RemoteMethodCaller)
-            {
-	            ((RemoteMethodCaller)operator).setStatusUpdater( new StatusUpdater()
+            RemoteConnectionInfo remoteConnection = getContext().lookup(RemoteConnectionInfo.class);
+            remoteConnection.setStatusUpdater( new StatusUpdater()
 	    		{
 	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
 	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
@@ -332,7 +332,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 	    			
 	    		}
 	    		);
-            }
             advanceLoading(true);
 
             logoutAvailable = true;
@@ -383,20 +382,16 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
      */
     private void beginRaplaSession() throws RaplaException {
         initLanguage();
-         
+        ClientFacade facade = getFacade();
+        addContainerProvidedComponentInstance( ClientFacade.class, facade);
+
         final CalendarSelectionModel model = createCalendarModel();
         addContainerProvidedComponentInstance( CalendarModel.class, model );
         addContainerProvidedComponentInstance( CalendarSelectionModel.class, model );
-        ClientFacade facade = getFacade();
-		addContainerProvidedComponentInstance( ClientFacade.class, facade);
         StorageOperator operator = facade.getOperator();
 		if ( operator instanceof RestartServer)
 		{
 			addContainerProvidedComponentInstance(RestartServer.class, (RestartServer)operator);
-		}
-		if ( operator instanceof RemoteMethodCaller)
-		{
-			addContainerProvidedComponentInstance(RemoteMethodCaller.class, (RemoteMethodCaller)operator);
 		}
         ((FacadeImpl)facade).addDirectModificationListener( new ModificationListener() {
 			

@@ -9,8 +9,6 @@ import org.rapla.server.RemoteSession;
 
 /** Implementation of RemoteStorage as a RemoteService
  * @see org.rapla.storage.dbrm.RemoteStorage
- * @see org.rapla.server.internal.org.rapla.server.rpc.RemoteServiceDispatcher
- *
  */
 public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
     /**
@@ -18,6 +16,7 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
      */
     User user;
     Logger logger;
+    private String accessToken;
     
     public RemoteSessionImpl(RaplaContext context, String clientName) {
         super( context );
@@ -28,12 +27,13 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
     	return logger;
     }
 
+    @Override
     public User getUser() throws RaplaContextException {
     	if (user == null)
     	    throw new RaplaContextException("No user found in session.");
     	return user;
     }
-
+    @Override
     public boolean isAuthentified() {
         return user != null;
     }
@@ -42,9 +42,19 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
     {
         this.user = user;
     }
+    
+    public void setAccessToken( String token)
+    {
+        this.accessToken = token;
+    }
+    
+    @Override
+    public String getAccessToken() {
+        return accessToken;
+    }
 
     public void logout() {
-    	this.setLogger( null);
+    	this.setUser( null);
     }
 
 

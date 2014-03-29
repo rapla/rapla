@@ -37,7 +37,7 @@ import org.rapla.storage.LocalCache;
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class RaplaMainWriter extends RaplaXMLWriter
 {
-    protected final static String OUTPUT_FILE_VERSION="1.0";
+    protected final static String OUTPUT_FILE_VERSION="1.1";
 	String encoding = "utf-8";
     protected LocalCache cache;
 

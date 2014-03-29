@@ -24,4 +24,5 @@ public interface RemoteSession
 	boolean isAuthentified();
 	User getUser() throws RaplaContextException;
 	Logger getLogger();
+	String getAccessToken();
 }

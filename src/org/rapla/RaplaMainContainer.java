@@ -15,6 +15,10 @@ package org.rapla;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -40,6 +44,7 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.ServiceListCreator;
@@ -52,8 +57,15 @@ import org.rapla.framework.internal.RaplaJDKLoggingAdapter;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.dbrm.ConnectorFactory;
-import org.rapla.storage.dbrm.HTTPConnectorFactory;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
+import org.rapla.storage.dbrm.HTTPConnector;
+import org.rapla.storage.dbrm.RaplaConnectException;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.RemoteMethodStub;
+import org.rapla.storage.dbrm.RemoteServiceCaller;
+import org.rapla.storage.dbrm.StatusUpdater;
+import org.rapla.storage.dbrm.StatusUpdater.Status;
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
 The rapla container has only one instance at runtime. Configuration of the RaplaMainContainer is done in the rapla*.xconf
@@ -114,15 +126,23 @@ final public class RaplaMainContainer extends ContainerImpl
     	this(  env,context,createRaplaLogger());
     }
     
+    RemoteConnectionInfo remoteConnectionStore = new RemoteConnectionInfo();
     CommandScheduler commandQueue;
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
         super( context, env.getStartupConfiguration(),logger );
         addContainerProvidedComponentInstance( StartupEnvironment.class, env);
         addContainerProvidedComponentInstance( DOWNLOAD_SERVER, env.getDownloadURL().getHost());
         addContainerProvidedComponentInstance( DOWNLOAD_URL,  env.getDownloadURL());
-        addContainerProvidedComponent(ConnectorFactory.class, HTTPConnectorFactory.class);
         commandQueue = createCommandQueue();
 		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
+		addContainerProvidedComponentInstance( RemoteConnectionInfo.class, remoteConnectionStore);
+		addContainerProvidedComponentInstance( RemoteServiceCaller.class, new RemoteServiceCaller() {
+            
+            @Override
+            public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException {
+                return RaplaMainContainer.this.getRemoteMethod(getContext(), a);
+            }
+        } );
 
         if (env.getContextRootURL() != null)
         {
@@ -255,5 +275,96 @@ final public class RaplaMainContainer extends ContainerImpl
         }
         super.dispose();
     }
+	
+
+    public <T> T getRemoteMethod(final RaplaContext context,final Class<T> a) throws RaplaContextException  
+    {
+        if (context.has( RemoteMethodStub.class))
+        {
+            RemoteMethodStub server =  context.lookup(RemoteMethodStub.class);
+            return server.getWebserviceLocalStub(a);
+        }  
+        T proxyInstance = getRemoteMethod(context, a, remoteConnectionStore);
+        return proxyInstance;
+    }
+    
+    /** static method for testing purpose */
+    public static <T> T  getRemoteMethod(final RaplaContext context,final Class<T> a, final  RemoteConnectionInfo remoteConnectionStore)
+    {
+        InvocationHandler proxy = new InvocationHandler() 
+        {
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
+            {
+                Class<?> returnType = method.getReturnType();
+                String methodName = method.getName();
+                final URL server;
+                try 
+                {
+                    server = new URL( remoteConnectionStore.getServerURL());
+                } 
+                catch (MalformedURLException e) 
+                {
+                   throw new RaplaContextException(e.getMessage());
+                }
+                StatusUpdater statusUpdater = remoteConnectionStore.getStatusUpdater();
+                if ( statusUpdater != null)
+                {
+                    statusUpdater.setStatus( Status.BUSY );
+                }  
+                FutureResult result;
+                try
+                {
+                    result = call(context,server, a, methodName, args, remoteConnectionStore);
+                }
+                finally
+                {
+                    if ( statusUpdater != null)
+                    {
+                        statusUpdater.setStatus( Status.READY );
+                    }
+                }
+                if ( !FutureResult.class.isAssignableFrom(returnType))
+                {
+                    return result.get();
+                }
+                return result;
+            }
+        };
+        ClassLoader classLoader = a.getClassLoader();
+        @SuppressWarnings("unchecked")
+        Class<T>[] interfaces = new Class[] {a};
+        @SuppressWarnings("unchecked")
+        T proxyInstance = (T)Proxy.newProxyInstance(classLoader, interfaces, proxy);
+        return proxyInstance;
+    }
+    
+   
+
+    static private FutureResult call( RaplaContext context,URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
+         HTTPConnector connector = new HTTPConnector();
+         try {
+             FutureResult result =connector.call(service, methodName, args, connectionInfo);
+             return result;
+         } catch (RaplaConnectException ex) {
+             return new ResultImpl(getConnectError(context,ex, server.toString()));
+         } catch (Exception ex) {
+             return new ResultImpl(ex);
+         }
+     }
+
+     static private RaplaConnectException getConnectError(RaplaContext context,RaplaConnectException ex2, String server) {
+         try
+         {
+             String message = context.lookup(RaplaComponent.RAPLA_RESOURCES).format("error.connect", server);
+             return new RaplaConnectException(message);
+         }
+         catch (Exception ex)
+         {
+             return new RaplaConnectException("Connection error with server " + server + ": " + ex2.getMessage());
+         }
+     }
+     
+	     
+	        
  }
 

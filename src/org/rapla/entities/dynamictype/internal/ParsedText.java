@@ -21,8 +21,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
-
-import com.google.gwt.thirdparty.guava.common.annotations.GwtIncompatible;
+import org.rapla.rest.GwtIncompatible;
 /** 
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
  * Also some functions like {substring(name,1,2)} are available for simple text processing  

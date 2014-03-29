@@ -34,6 +34,10 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
     public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException
     {
+        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/"))
+        {
+            response.sendRedirect("../rapla");
+        }
 		response.setContentType("text/html; charset=ISO-8859-1");
 		java.io.PrintWriter out = response.getWriter();
 		String linkPrefix = request.getPathTranslated() != null ? "../": "";

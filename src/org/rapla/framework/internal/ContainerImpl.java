@@ -13,9 +13,6 @@
 package org.rapla.framework.internal;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,26 +39,19 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.Container;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.dbrm.RemoteMethodCaller;
-import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
-
-import com.google.gwtjsonrpc.common.FutureResult;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
  */
-@SuppressWarnings("deprecation")
-public class ContainerImpl implements Container, RemoteServiceCaller
+public class ContainerImpl implements Container
 {
     protected Container m_parent;
     protected RaplaDefaultContext m_context;
@@ -121,8 +111,6 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         }
         throw new RaplaContextException(  key );     
     }
-    
-    
 
 
     public Logger getLogger() 
@@ -134,8 +122,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         configure( m_config );
         addContainerProvidedComponentInstance( Container.class, this );
         addContainerProvidedComponentInstance( Logger.class, getLogger());
-        addContainerProvidedComponentInstance( RemoteServiceCaller.class, this );
-    }
+	}
 
     public StartupEnvironment getStartupEnvironment() {
         try
@@ -578,7 +565,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-	static Constructor findDependantConstructor(Class componentClass) {
+    Constructor findDependantConstructor(Class componentClass) {
         Constructor[] constructors= componentClass.getConstructors();
         TreeMap<Integer,Constructor> constructorMap = new TreeMap<Integer, Constructor>();
         for (Constructor constructor:constructors) {
@@ -586,7 +573,7 @@ public class ContainerImpl implements Container, RemoteServiceCaller
             boolean compatibleParameters = true;
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
-                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class))) 
+                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class) || getContext().has( type))) 
                 {
                     compatibleParameters = false;
                 }
@@ -619,39 +606,30 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         }
 		Constructor c = findDependantConstructor( componentClass );
         Object[] params = null;
-        SimpleProvider<RemoteMethodCaller> callerProvider = null;
         if ( c != null) {
             Class[] types = c.getParameterTypes();
             params = new Object[ types.length ];
-            Class unknownParameter = null;
             for (int i=0; i< types.length; i++ ) {
                 Class type = types[i];
+                Object p;
                 if ( type.isAssignableFrom( RaplaContext.class)) {
-                    params[i] = context;
+                    p = context;
                 } else  if ( type.isAssignableFrom( Configuration.class)) {
-                    params[i] = config;
+                    p = config;
                 } else if ( type.isAssignableFrom( Logger.class)) {
-                    params[i] = logger;
-                } 
-                else if ( type.isAnnotationPresent(WebService.class)) 
-                {
-                	if ( RemoteMethodCaller.class.isAssignableFrom( componentClass ) && callerProvider == null)
-                	{
-                		callerProvider = new SimpleProvider<RemoteMethodCaller>();
-                	}
-					params[i] = getRemoteMethod(context, type, callerProvider); 
+                    p = logger;
+                } else if ( type.isAnnotationPresent(WebService.class)) {
+					RemoteServiceCaller lookup = context.lookup(RemoteServiceCaller.class);
+                    p = lookup.getRemoteMethod( type); 
                 } else {
-                    Class guessedRole = type.getClass();
+                    Class guessedRole = type;
                     if ( context.has( guessedRole )) {
-                        params[i] = context.lookup( guessedRole );
+                        p = context.lookup( guessedRole );
                     } else {
-                        unknownParameter = type;
-                        break;
+                        throw new RaplaContextException(componentClass, "Can't statisfy constructor dependency " + type.getName() );
                     }
                 }
-            }
-            if ( unknownParameter != null) {
-                throw new RaplaContextException(componentClass, "Can't statisfy constructor dependency " + unknownParameter.getName() );
+                params[i] = p;
             }
         }
         try {
@@ -661,10 +639,6 @@ public class ContainerImpl implements Container, RemoteServiceCaller
             } else {
                 component = componentClass.newInstance();
             }
-            if ( callerProvider != null)
-            {
-            	callerProvider.setValue( (RemoteMethodCaller) component);
-            }
             return component;
         } 
         catch (Exception e)
@@ -672,36 +646,8 @@ public class ContainerImpl implements Container, RemoteServiceCaller
             throw new RaplaContextException(componentClassName + " could not be initialized due to " + e.getMessage(), e);
         }
     }
-    
-	 @SuppressWarnings("unchecked")
-	 static public <T> T getRemoteMethod(final RaplaContext context,final Class<T> a,final Provider<RemoteMethodCaller> callerProvider) throws RaplaContextException 
-	 {
-		 if (context.has( RemoteMethodStub.class))
-		 {
-			 RemoteMethodStub server =  context.lookup(RemoteMethodStub.class);
-			 return server.getWebserviceLocalStub(a);
-		 }	
-	     InvocationHandler proxy = new InvocationHandler() 
-	     {
-			 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
-			 {
-				 Class<?>[] parameterTypes = method.getParameterTypes();
-				 Class<?> returnType = method.getReturnType();
-				 String methodName = method.getName();
-				 RemoteMethodCaller caller = callerProvider != null ? callerProvider.get() : context.lookup( RemoteMethodCaller.class);
-				 FutureResult result = caller.call(a, methodName, parameterTypes, returnType, args);
-				 if ( !FutureResult.class.isAssignableFrom(returnType))
-				 {
-					 return result.get();
-				 }
-				 return result;
-			 }
-	     };
-		 ClassLoader classLoader = a.getClassLoader();
-		 Class<T>[] interfaces = new Class[] {a};
-		 Object proxyInstance = Proxy.newProxyInstance(classLoader, interfaces, proxy);
-		 return (T) proxyInstance;
-	 }
+   
+
 	   
     protected class ComponentHandler implements Disposable {
         protected Configuration config;
@@ -800,12 +746,6 @@ public class ContainerImpl implements Container, RemoteServiceCaller
         	return super.toString();
         }
     }
-
-	@Override
-	public <T> T getRemoteMethod(Class<T> a) throws RaplaException 
-	{
-		return getRemoteMethod(m_context, a, null);
-	}
 
 	
 	protected Runnable createTask(final Command command) {

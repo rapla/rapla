@@ -2,7 +2,7 @@ package org.rapla.plugin.ical;
 
 import javax.jws.WebService;
 
-import com.google.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 
 @WebService
 public interface ICalImport  {

@@ -11,11 +11,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.storage.dbrm.RemoteMethodCaller;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -125,13 +123,13 @@ public class CommunicatorTest extends ServletTestBase
         DefaultConfiguration serverParam = new DefaultConfiguration("server");
         serverParam.setValue("http://localhost:8052/");
         remoteConfig.addChild( serverParam );
+     
+        RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
         for ( int i=0;i<clientNum;i++)
         {
-        	SimpleProvider<RemoteMethodCaller> callerProvider = new SimpleProvider<RemoteMethodCaller>(); 
-			RemoteServer remoteServer = ContainerImpl.getRemoteMethod( context, RemoteServer.class, callerProvider);
-			RemoteStorage remoteStorage = ContainerImpl.getRemoteMethod(context, RemoteStorage.class, callerProvider);
-			RemoteOperator opt = new RemoteOperator(context,new ConsoleLogger(),remoteConfig, remoteServer, remoteStorage );
-			callerProvider.setValue( opt);
+			RemoteServer remoteServer = RaplaMainContainer.getRemoteMethod( context, RemoteServer.class, connectionInfo);
+			RemoteStorage remoteStorage = RaplaMainContainer.getRemoteMethod(context, RemoteStorage.class, connectionInfo);
+			RemoteOperator opt = new RemoteOperator(context,new ConsoleLogger(),remoteConfig, remoteServer, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

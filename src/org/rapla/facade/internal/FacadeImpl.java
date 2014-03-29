@@ -141,7 +141,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		String storeSelector = ContextTools.resolveContext(configEntry, context ).toString();
 		logger.info("Using rapladatasource " +storeSelector);
 		try {
-			StorageOperator operator =  context.lookup(Container.class).lookup(StorageOperator.class, storeSelector);
+			Container container = context.lookup(Container.class);
+            StorageOperator operator =  container.lookup(StorageOperator.class, storeSelector);
 			return operator;
 		} 
 		catch (RaplaContextException ex) {
@@ -151,7 +152,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 	
-	public FacadeImpl(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException {
+	public static FacadeImpl create(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException
+	{
+	    return new FacadeImpl(context, operator, logger);
+	}
+	
+	private FacadeImpl(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException {
 		this.operator = operator;
 		this.logger = logger;
 	    i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);

@@ -13,15 +13,14 @@
 
 package org.rapla.storage.dbrm;
 
-import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaContextException;
 
 
 /** provides a mechanism to invoke a remote service on the server.
  * The server must provide a RemoteService for the specified serviceName.
  * The RemoteOperator provides the Service RemoteServiceCaller   
  * @request the webservices in the constructor instead. see RemoteOperator for an example*/
-@Deprecated 
 public interface RemoteServiceCaller {
-   <T> T getRemoteMethod(Class<T> a) throws RaplaException;
+   <T> T getRemoteMethod(Class<T> a ) throws RaplaContextException;
 }
     

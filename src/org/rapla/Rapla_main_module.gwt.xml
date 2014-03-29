@@ -33,5 +33,5 @@
   <source path='' includes="ConnectInfo.java"/> 
   <source path='' includes="AppointmentFormaterImpl.java"/> 
   <!-- Specify the paths for translatable code                    -->
-  <inherits name='com.google.gwtjsonrpc.GWTJSONRPC'/>
+  <inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/>
 </module>
