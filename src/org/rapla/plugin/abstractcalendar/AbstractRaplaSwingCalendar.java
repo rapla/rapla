@@ -134,8 +134,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public void dateChanged(DateChangeEvent evt) {
         try {
-            Date date = evt.getDate();
-            //model.setSelectedDate( date );
+            // FIXME why is that
+            //Date date = evt.getDate();
+    //        model.setSelectedDate( date );
             update();
         } catch (RaplaException ex) {
             showException(ex, view.getComponent());

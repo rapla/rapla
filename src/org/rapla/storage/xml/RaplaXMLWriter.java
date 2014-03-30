@@ -37,7 +37,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.Provider;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
@@ -52,15 +51,13 @@ abstract public class RaplaXMLWriter extends XMLWriter
     Logger logger;
     Map<RaplaType,RaplaXMLWriter> writerMap;
     protected RaplaContext context;
-    public SerializableDateTimeFormat dateTimeFormat;
+    protected SerializableDateTimeFormat dateTimeFormat = SerializableDateTimeFormat.INSTANCE;
     Provider<Category> superCategory;
     
     public RaplaXMLWriter( RaplaContext context) throws RaplaException {
         this.context = context;
         enableLogging( context.lookup( Logger.class));
         this.writerMap =context.lookup( PreferenceWriter.WRITERMAP );
-        RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
-        dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup(PreferenceReader.LOCALNAMEMAPENTRY);
         this.isPrintId = context.has(IOContext.PRINTID);
         this.superCategory = context.lookup( IOContext.SUPERCATEGORY);
@@ -94,11 +91,11 @@ abstract public class RaplaXMLWriter extends XMLWriter
         final Date lastChangeTime = stamp.getLastChanged();
         if ( createTime != null)
         {
-            att("created-at", dateTimeFormat.formatTimestamp( createTime));
+            att("created-at", SerializableDateTimeFormat.INSTANCE.formatTimestamp( createTime));
 		}
         if ( lastChangeTime != null)
         {
-            att("last-changed", dateTimeFormat.formatTimestamp( lastChangeTime));
+            att("last-changed", SerializableDateTimeFormat.INSTANCE.formatTimestamp( lastChangeTime));
         }
         User user = stamp.getLastChangedBy();
         if ( user != null) 

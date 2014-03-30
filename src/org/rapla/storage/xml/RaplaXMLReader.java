@@ -15,9 +15,7 @@ package org.rapla.storage.xml;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
 
-import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
@@ -44,7 +42,6 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.IdTable;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
@@ -59,6 +56,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     Map<RaplaType,RaplaXMLReader> readerMap;
     SerializableDateTimeFormat dateTimeFormat;
     I18nBundle i18n;
+    Date now;
     public static class TimestampDates
     {
     	public Date createTime;
@@ -76,6 +74,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );
+        now = new Date();
     }
     
     public TimestampDates readTimestamps(RaplaSAXAttributes atts) throws RaplaSAXParseException
@@ -90,7 +89,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	    }
 	    else
 	    {
-	    	createTime = getCurrentTimestamp();
+	    	createTime = now;
 	    }
 	    if (lastChanged != null)
 	    {
@@ -100,20 +99,22 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	    {
 	    	changeTime = createTime;
 	    }
+	    if ( changeTime.after( now) )
+	    {
+	        getLogger().warn("Last changed is in the future " +lastChanged  + ". Taking current time as new timestamp.");
+	        changeTime = now;
+	    }
+	    if ( createTime.after( now) )
+	    {
+	        getLogger().warn("Create time is in the future " +createTime  + ". Taking current time as new timestamp.");
+	        createTime = now;
+	    }
 	    TimestampDates result = new TimestampDates();
-	    result.createTime = createTime;
-	    result.changeTime = changeTime;
-	    return result;
+        result.createTime = createTime;
+        result.changeTime = changeTime;
+        return result;
     }
     
-    public Date getCurrentTimestamp() {
-		long time = System.currentTimeMillis();
-		TimeZone systemTimeZone = TimeZone.getDefault();
-		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
-		Date raplaTime = new Date(time + offset);
-		return raplaTime;
-	}
-
     public RaplaType getTypeForLocalName( String localName )
         throws RaplaSAXParseException
     {

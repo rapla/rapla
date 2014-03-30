@@ -1389,6 +1389,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					dep.add(obj);
 				}
 			}
+			if ( entity instanceof User)
+			{
+			    String eventUserId = evt.getUserId();
+                if (eventUserId != null && eventUserId.equals( entity.getId()))
+                {
+                    List<String> emptyList = Collections.emptyList();
+                    throw new DependencyException("User can't delete himself", emptyList);
+                }
+			}
 
 			// Than we add the dependencies from the cache. It is important that
 			// we don't add the dependencies from the stored object list here,

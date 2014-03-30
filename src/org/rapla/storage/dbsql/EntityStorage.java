@@ -127,13 +127,27 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return returned;
 	}
 	
+	// Always use gmt for storing timestamps
 	protected Date getTimestampOrNow(ResultSet rset, int column) throws SQLException {
-		Date date = getDate(rset, column);
-		if ( date != null)
+	    Date currentTimestamp = getCurrentTimestamp();
+	    java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
+        if (rset.wasNull() || timestamp == null)
+        {
+            return currentTimestamp;
+        }
+        Date date = new Date( timestamp.getTime());
+        if ( date != null)
 		{
-			return date;
+		    if ( date.after( currentTimestamp))
+		    {
+		        getLogger().error("Timestamp in table " + tableName + " in the future. Ignoring.");
+		    }
+		    else
+		    {
+		        return date;
+		    }
 		}
-		return getCurrentTimestamp();
+        return currentTimestamp;
 	}
 
 	public Date getCurrentTimestamp() {
