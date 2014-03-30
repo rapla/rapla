@@ -728,7 +728,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
 					if ( !reservation.hasAllocated(newAllocatable))
 					{
 						AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
-						AllocatableExchangeCommand cmd = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, sourceComponent, point);
+						AllocatableExchangeCommand cmd = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable,null, sourceComponent, point);
 						reservation = cmd.getModifiedReservationForExecute();
 						appointment = reservation.getAppointments()[0];
 					}
@@ -790,10 +790,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
         return saveCommand.hasSaved();
     }  
     
-    boolean save(Reservation reservation
-              ,Component sourceComponent
-              ,Command saveCommand
-              ) throws RaplaException {
+    boolean save(Reservation reservation,Component sourceComponent,Command saveCommand) throws RaplaException {
         Collection<ReservationCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK);
         for (ReservationCheck check:checkers)
         {
@@ -829,10 +826,11 @@ public class ReservationControllerImpl extends RaplaGUIComponent
         }
     }
 
-    public void exchangeAllocatable(final AppointmentBlock appointmentBlock,final Allocatable oldAllocatable,final Allocatable newAllocatable,final Component sourceComponent, final Point point)
+    @Override
+    public void exchangeAllocatable(final AppointmentBlock appointmentBlock,final Allocatable oldAllocatable,final Allocatable newAllocatable,final Date newStart,final Component sourceComponent, final Point point)
 			 throws RaplaException 
 	{
-        AllocatableExchangeCommand command = exchangeAllocatebleCmd( appointmentBlock, oldAllocatable, newAllocatable, sourceComponent, point);
+        AllocatableExchangeCommand command = exchangeAllocatebleCmd( appointmentBlock, oldAllocatable, newAllocatable,newStart, sourceComponent, point);
         if ( command != null)
         {
         	CommandHistory commandHistory = getModification().getCommandHistory();
@@ -840,10 +838,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
         }
 	}
 
-	protected AllocatableExchangeCommand exchangeAllocatebleCmd(
-			AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,
-			final Allocatable newAllocatable, final Component sourceComponent,
-			final Point point) throws RaplaException {
+	protected AllocatableExchangeCommand exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,final Allocatable newAllocatable, Date newStart,final Component sourceComponent,	final Point point) throws RaplaException {
 		Map<Allocatable,Appointment[]> newRestrictions = new HashMap<Allocatable, Appointment[]>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
@@ -875,6 +870,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
             cal.set(Calendar.MINUTE, minute);
             copy.move(cal.getTime());
         }
+     
         if (result == DialogAction.EVENT && includeEvent )
         {
             removeAllocatable = true;
@@ -972,7 +968,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent
 				}
 			}
         }
-        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded);
+        if ( newStart != null)
+        {
+            long offset = newStart.getTime() - appointmentBlock.getStart();
+            Appointment app= addAppointment != null ? addAppointment : appointment;
+            newStart = new Date( app.getStart().getTime()+ offset);
+        }
+        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable,newStart, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded);
 		return command;
 	}
 
@@ -988,13 +990,15 @@ public class ReservationControllerImpl extends RaplaGUIComponent
         boolean addAllocatable;
         Appointment addAppointment;
         List<Date> exceptionsAdded;
+        Date newStart;
         
-        AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, Map<Allocatable, Appointment[]> newRestrictions, boolean removeAllocatable, boolean addAllocatable, Appointment addAppointment,
+        AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, Date newStart,Map<Allocatable, Appointment[]> newRestrictions, boolean removeAllocatable, boolean addAllocatable, Appointment addAppointment,
             List<Date> exceptionsAdded)  
         {
             this.appointment = appointment;
             this.oldAllocatable = oldAllocatable;
             this.newAllocatable = newAllocatable;
+            this.newStart = newStart;
             this.newRestrictions = newRestrictions;
             this.removeAllocatable = removeAllocatable;
             this.addAllocatable = addAllocatable;
@@ -1051,6 +1055,27 @@ public class ReservationControllerImpl extends RaplaGUIComponent
                 }
                 modifiableReservation.setRestriction(alloc, foundAppointments.toArray( Appointment.EMPTY_ARRAY));
             }
+            if ( newStart != null)
+            {
+                if ( addAppointment != null)
+                {
+                    addAppointment.move( newStart);
+                } 
+                else if (existingAppointment != null)
+                {
+                    existingAppointment.move( newStart);
+                }
+            }
+//            long startTime = (dialogResult == DialogAction.SINGLE) ? sourceStart.getTime() : ap.getStart().getTime();
+//            
+//            changeStart = new Date(startTime + offset);
+//            
+//            if (resizing) {
+//                changeEnd = new Date(changeStart.getTime() + (destEnd.getTime() - destStart.getTime()));
+//                ap.move(changeStart, changeEnd);
+//            } else {
+//                ap.move(changeStart);
+//            }
 			return modifiableReservation;
 		}
         
@@ -1080,6 +1105,11 @@ public class ReservationControllerImpl extends RaplaGUIComponent
                 for ( Date exception: exceptionsAdded)
                 {
                     existingAppointment.getRepeating().removeException( exception );
+                }
+                if ( newStart != null)
+                {
+                    Date oldStart = appointment.getStart();
+                    existingAppointment.move( oldStart);
                 }
             }
             if ( removeAllocatable)

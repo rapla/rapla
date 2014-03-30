@@ -87,7 +87,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;

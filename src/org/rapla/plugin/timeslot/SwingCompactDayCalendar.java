@@ -223,44 +223,45 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 					 Allocatable newAlloc = selectedAllocatables.get(column);
 					 AbstractRaplaBlock raplaBlock = (AbstractRaplaBlock)block;
 					 Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
+					 int rowIndex = index/columns;
+                     Timeslot timeslot = timeslots.get(rowIndex);
+                     int time = timeslot.minuteOfDay;
+                     Calendar cal = getRaplaLocale().createCalendar();                          
+                     int lastMinuteOfDay;
+                     cal.setTime ( block.getStart() );
+                     lastMinuteOfDay = cal.get( Calendar.HOUR_OF_DAY)  * 60 +       cal.get( Calendar.MINUTE);
+                     boolean sameTimeSlot = true;
+                     if ( lastMinuteOfDay < time)
+                     {
+                        sameTimeSlot = false;
+                     }
+                     if ( rowIndex +1 < timeslots.size())
+                     {
+                        Timeslot nextTimeslot = timeslots.get(rowIndex+1);
+                        if ( lastMinuteOfDay >= nextTimeslot.minuteOfDay )
+                        {
+                            sameTimeSlot = false;
+                        }
+                     }
+                     
+                     cal.setTime ( newStart );
+                     if ( sameTimeSlot)
+                     {
+                         time = lastMinuteOfDay;
+                     }
+                     
+                     cal.set( Calendar.HOUR_OF_DAY, time /60);
+                     cal.set( Calendar.MINUTE, time %60);
+                        
+                     newStart = cal.getTime();
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
 						 AppointmentBlock appointmentBlock= raplaBlock.getAppointmentBlock();
-						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, getMainComponent(),p);
+						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart, getMainComponent(),p);
 					 }
 					 else
 					 {
-						 int rowIndex = index/columns;
-						 Timeslot timeslot = timeslots.get(rowIndex);
-						 int time = timeslot.minuteOfDay;
-						 Calendar cal = getRaplaLocale().createCalendar();							
-						 int lastMinuteOfDay;
-						 cal.setTime ( block.getStart() );
-						 lastMinuteOfDay = cal.get( Calendar.HOUR_OF_DAY)  * 60 +   	cal.get( Calendar.MINUTE);
-						 boolean sameTimeSlot = true;
-						 if ( lastMinuteOfDay < time)
-						 {
-		            		sameTimeSlot = false;
-						 }
-						 if ( rowIndex +1 < timeslots.size())
-						 {
-		            		Timeslot nextTimeslot = timeslots.get(rowIndex+1);
-		            		if ( lastMinuteOfDay >= nextTimeslot.minuteOfDay )
-		            		{
-		            			sameTimeSlot = false;
-		            		}
-						 }
 						 
-						 cal.setTime ( newStart );
-						 if ( sameTimeSlot)
-						 {
-							 time = lastMinuteOfDay;
-						 }
-						 
-						 cal.set( Calendar.HOUR_OF_DAY, time /60);
-						 cal.set( Calendar.MINUTE, time %60);
-					        
-						 newStart = cal.getTime();
 			             moved( block,p ,newStart);
 					 }
 				 } 

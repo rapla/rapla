@@ -53,7 +53,7 @@ public interface ReservationController
      * @param keepTime when moving only the date part and not the time part is modified*/
     void resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, Component sourceComponent, Point p, boolean keepTime ) throws RaplaException;
     
-	void exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc, Component sourceComponent, Point p) throws RaplaException;
+	void exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, Component sourceComponent, Point p) throws RaplaException;
 	
 	boolean isAppointmentOnClipboard();
 	

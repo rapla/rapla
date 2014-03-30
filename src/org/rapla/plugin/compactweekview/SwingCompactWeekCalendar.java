@@ -165,7 +165,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
 						 AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
-						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, getMainComponent(),p);
+						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart,getMainComponent(),p);
 					 }
 					 else
 					 {
