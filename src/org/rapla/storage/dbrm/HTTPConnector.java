@@ -74,7 +74,7 @@ public class HTTPConnector
 		Gson serializer = gb.disableHtmlEscaping().create();
 		for ( int i=0;i< parameterTypes.length;i++)
 		{
-			Class type = parameterTypes[i];
+			Class<?> type = parameterTypes[i];
 			Object arg = args[i];
 			JsonElement jsonTree = serializer.toJsonTree(arg, type);
 			params.add( jsonTree);
@@ -83,14 +83,14 @@ public class HTTPConnector
 	}
 
 	private Object deserializeReturnValue(Class<?> returnType, JsonElement element) {
-		Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+		Gson gson = createParser();
 		
 		Object result = gson.fromJson(element, returnType);
 		return result;
 	}
 	
 	private List deserializeReturnList(Class<?> returnType, JsonArray list) {
-        Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+        Gson gson = createParser();
         List<Object> result = new ArrayList<Object>();
         for (JsonElement element:list )
         {
@@ -99,8 +99,13 @@ public class HTTPConnector
         }
         return result;
     }
-	private Set deserializeReturnSet(Class<?> returnType, JsonArray list) {
+
+    public Gson createParser() {
         Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+        return gson;
+    }
+	private Set deserializeReturnSet(Class<?> returnType, JsonArray list) {
+        Gson gson = createParser();
         Set<Object> result = new LinkedHashSet<Object>();
         for (JsonElement element:list )
         {
@@ -111,7 +116,7 @@ public class HTTPConnector
     }
 
 	private Map deserializeReturnMap(Class<?> returnType, JsonObject map) {
-	    Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+	    Gson gson = createParser();
 	    Map<String,Object> result = new LinkedHashMap<String,Object>();
 	    for (Entry<String, JsonElement> entry:map.entrySet() )
 	    {
@@ -133,6 +138,7 @@ public class HTTPConnector
 		{
 			JsonArray paramObj = (JsonArray) data.get("params");
 			JsonElement jsonElement = data.get("exception");
+			 JsonElement stacktrace = data.get("stacktrace");
 			if ( jsonElement != null)
 			{
 				String classname = jsonElement.getAsString();
@@ -145,6 +151,23 @@ public class HTTPConnector
 					}
 				}
 				RaplaException ex = deserializeException(classname, message.toString(), params);
+				try
+				{
+    				if ( stacktrace != null)
+    				{
+    				    List<StackTraceElement> trace = new ArrayList<StackTraceElement>();
+    				    for (JsonElement element:stacktrace.getAsJsonArray())
+    				    {
+    				        StackTraceElement ste = createParser().fromJson( element, StackTraceElement.class);
+    				        trace.add( ste);
+    				    }
+    				    ex.setStackTrace( trace.toArray( new StackTraceElement[] {}));
+    				}
+				}
+				catch (Exception ex3) 
+				{
+				    // Can't get stacktrace
+				}
 				return ex;
 			}
 		}
@@ -269,7 +292,7 @@ public class HTTPConnector
         if ( requestMethod.equals("PUT") ||requestMethod.equals("POST"))
         {
             Writer wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-            Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+            Gson gson = createParser();
     		String body = gson.toJson( jsonObject);
             wr.write( body);
             wr.flush();

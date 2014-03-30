@@ -398,7 +398,15 @@ public class JsonServlet {
     }
 
     private String formatResult(final ActiveCall call) throws UnsupportedEncodingException, IOException {
-        final GsonBuilder gb = createGsonBuilder();
+        String parameter = call.httpRequest.getParameter("pretty");
+        boolean pretty =  (parameter != null && !parameter.equals("false"));
+        GsonBuilder builder = createGsonBuilder();
+        if ( pretty)
+        {
+            builder = builder.setPrettyPrinting();
+        }
+        final GsonBuilder gb = builder;
+       
         gb.registerTypeAdapter(call.getClass(), new JsonSerializer<ActiveCall>() {
             @Override
             public JsonElement serialize(final ActiveCall src, final Type typeOfSrc, final JsonSerializationContext context) {
@@ -429,7 +437,7 @@ public class JsonServlet {
                 }
                 if (failure != null) {
                     final int code = to2_0ErrorCode(src);
-                    final JsonObject error = getError(src.versionName, code, failure);
+                    final JsonObject error = getError(src.versionName, code, failure, gb);
                     r.add("error", error);
                 } else {
                     r.add("result", context.serialize(result));
@@ -438,14 +446,9 @@ public class JsonServlet {
             }
 
         });
-
+        Gson create = gb.create();
         final StringWriter o = new StringWriter();
-        GsonBuilder builder = gb;
-        String parameter = call.httpRequest.getParameter("pretty");
-        if (parameter != null && !parameter.equals("false")) {
-            builder = builder.setPrettyPrinting();
-        }
-        Gson create = builder.create();
+       
         create.toJson(call, o);
         o.close();
         String string = o.toString();
@@ -482,12 +485,13 @@ public class JsonServlet {
     // }
     // }
 
-    public static JsonObject getError(String version, int code, Throwable failure) {
+    public static JsonObject getError(String version, int code, Throwable failure, GsonBuilder gb) {
         final JsonObject error = new JsonObject();
         String message = failure.getMessage();
         if (message == null) {
             message = failure.toString();
         }
+        Gson gson = gb.create();
         if ("jsonrpc".equals(version)) {
             error.addProperty("code", code);
             error.addProperty("message", message);
@@ -507,7 +511,8 @@ public class JsonServlet {
 
             JsonArray stackTrace = new JsonArray();
             for (StackTraceElement el : failure.getStackTrace()) {
-                stackTrace.add(new JsonPrimitive(el.toString()));
+                JsonElement jsonRep = gson.toJsonTree(el);
+                stackTrace.add( jsonRep);
             }
             errorData.add("stacktrace", stackTrace);
 

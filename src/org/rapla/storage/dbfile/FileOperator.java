@@ -27,6 +27,10 @@ import java.util.concurrent.locks.Lock;
 
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.util.xml.RaplaContentHandler;
+import org.rapla.components.util.xml.RaplaErrorHandler;
+import org.rapla.components.util.xml.RaplaSAXHandler;
+import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.framework.Configuration;
@@ -45,6 +49,11 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaMainReader;
 import org.rapla.storage.xml.RaplaMainWriter;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.XMLReader;
 
 /** Use this Operator to keep the data stored in an XML-File.
  * <p>Sample configuration:
@@ -82,7 +91,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private final String encoding;
     protected boolean isConnected = false;
     final boolean includeIds ;
-    private final boolean validate;
 
     public FileOperator( RaplaContext context,Logger logger, Configuration config ) throws RaplaException
     {
@@ -148,8 +156,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        }
         }
         encoding = config.getChild( "encoding" ).getValue( "utf-8" );
-        validate = config.getChild( "validate" ).getValueAsBoolean( false );
+        boolean validate = config.getChild( "validate" ).getValueAsBoolean( false );
+        if ( validate )
+        {
+            getLogger().error("Validation currently not supported");
+        }
         includeIds = config.getChild( "includeIds" ).getValueAsBoolean( false );
+        
     } 
 
     public String getURL()
@@ -208,11 +221,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
-            RaplaInput xmlAdapter = new RaplaInput( getLogger().getChildLogger( "reading" ) );
             EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
             RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, idTable );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
-            xmlAdapter.read( loadingURL, contentHandler, validate );
+            parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();
 			cache.putAll( list );
 	        resolveInitial( list);
@@ -228,13 +240,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Entities contextualized" );
 
-            // save the converted file;
-            if ( xmlAdapter.wasConverted() )
-            {
-                getLogger().info( "Storing the converted file" );
-                saveData(cache, includeIds);
-            }
-            
         }
         catch ( FileNotFoundException ex )
         {
@@ -254,6 +259,38 @@ final public class FileOperator extends LocalAbstractCachableOperator
             throw new RaplaException( ex );
         }
     }
+    
+    private void parseData( RaplaSAXHandler reader)  throws RaplaException,IOException {
+            ContentHandler contentHandler = new RaplaContentHandler( reader);
+            try {
+                InputSource source = new InputSource( loadingURL.toString() );
+                XMLReader parser = XMLReaderAdapter.createXMLReader(false);
+                RaplaErrorHandler errorHandler = new RaplaErrorHandler(getLogger().getChildLogger( "reading" ));
+                parser.setContentHandler(contentHandler);
+                parser.setErrorHandler(errorHandler);
+                parser.parse(source);
+            } catch (SAXException ex) {
+                Throwable cause = ex.getCause();
+                while (cause != null && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+                if (ex instanceof SAXParseException) {
+                    throw new RaplaException("Line: " + ((SAXParseException)ex).getLineNumber()
+                                             + " Column: "+ ((SAXParseException)ex).getColumnNumber() + " "
+                                             +  ((cause != null) ? cause.getMessage() : ex.getMessage())
+                                             ,(cause != null) ? cause : ex );
+                }
+                if (cause == null) {
+                    throw new RaplaException( ex);
+                }
+                if (cause instanceof RaplaException)
+                    throw (RaplaException) cause;
+                else
+                    throw new RaplaException( cause);
+            }
+            /*  End of Exception Handling */
+        }
+        
         
     public void dispatch( final UpdateEvent evt ) throws RaplaException
     {

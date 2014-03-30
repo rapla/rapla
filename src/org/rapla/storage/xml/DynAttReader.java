@@ -41,10 +41,16 @@ class DynAttReader extends RaplaXMLReader {
     {
         if (level == entryLevel) {
         	DynamicType dynamicType;
-        	String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
-        	dynamicType = getDynamicType(typeName);
-        	if (dynamicType == null)
-        		throw createSAXParseException( "Dynanic type with name  '" + typeName + "' not found." );
+            String id = atts.getValue("idref");
+            if ( id!= null) {
+                dynamicType = resolve(DynamicType.TYPE,id);
+            } else {
+                String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
+                dynamicType = getDynamicType(typeName);
+                if (dynamicType == null)
+                    throw createSAXParseException( "Dynanic type with name  '" + typeName + "' not found." );
+
+            }
 
         	Classification newClassification = dynamicType.newClassification(false);
             classification = (ClassificationImpl)newClassification;
@@ -53,7 +59,12 @@ class DynAttReader extends RaplaXMLReader {
        }
 
         if (level > entryLevel) {
-        	attribute = classification.getAttribute(localName);
+            String id = atts.getValue("idref");
+            if ( id != null) {
+                attribute = resolve(Attribute.TYPE,id);
+            } else {
+                attribute = classification.getAttribute(localName);
+            }
 
             if (attribute == null) //ignore attributes not found in the classification
                 return;

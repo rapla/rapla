@@ -87,6 +87,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -227,7 +228,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			for (Appointment appointment:appointmentSet)
 			{
 	            Reservation reservation = appointment.getReservation();
-                if ( !match(reservation, annotationQuery))
+                if ( !match(reservation, annotationQuery) )
+                {
+                    continue;
+                } // Ignore Templates if not explicitly requested
+                // FIXME this special case should be refactored, so one can get all reservations in one method
+                else if ( RaplaComponent.isTemplate( reservation) &&  (annotationQuery == null || !annotationQuery.containsKey(ReservationAnnotations.KEY_TEMPLATE) ))
                 {
                     continue;
                 }
@@ -281,7 +287,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     	}    		
 		//Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
         
-    	List<String> templates = new ArrayList<String>();
+    	Set<String> templates = new LinkedHashSet<String>();
         for ( Reservation r:reservations)
         {
         	String templateName = r.getAnnotation(ReservationAnnotations.KEY_TEMPLATE);

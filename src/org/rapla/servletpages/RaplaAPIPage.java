@@ -100,7 +100,8 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
                 if (id != null) {
                   r.add("id", new JsonPrimitive(id));
                 }
-                final JsonObject error = JsonServlet.getError(versionName, code, ex);
+                GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder();
+                final JsonObject error = JsonServlet.getError(versionName, code, ex, gb);
                 r.add("error", error);
                 GsonBuilder builder = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping();
                 String out = builder.create().toJson( r);

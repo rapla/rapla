@@ -1,15 +1,14 @@
 package org.rapla.rest.gwtjsonrpc.common;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.rest.gwtjsonrpc.serializer.MapDeserializer;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.FieldNamingStrategy;
@@ -27,6 +26,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.internal.ConstructorConstructor;
 import com.google.gson.internal.Excluder;
+import com.google.gson.internal.bind.MapTypeAdapterFactory;
 import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 
@@ -42,18 +42,25 @@ public class JSONParserWrapper {
 	            return new HashSet<Object>();
 	          }
 	        });
-	    Map<Type, InstanceCreator<?>> instanceCreators = Collections.emptyMap();
+	    Map<Type, InstanceCreator<?>> instanceCreators = new LinkedHashMap<Type,InstanceCreator<?>>();
+	    instanceCreators.put(Map.class, new InstanceCreator<Map>() {
+
+            public Map createInstance(Type type) {
+                return new LinkedHashMap();
+            }
+        });
 		ConstructorConstructor constructorConstructor = new ConstructorConstructor(instanceCreators);
 	    FieldNamingStrategy fieldNamingPolicy = FieldNamingPolicy.IDENTITY;
 	    Excluder excluder = Excluder.DEFAULT;
 	    final ReflectiveTypeAdapterFactory reflectiveTypeAdapterFactory = new ReflectiveTypeAdapterFactory(constructorConstructor, fieldNamingPolicy, excluder);
+	    gb.registerTypeAdapterFactory(new MapTypeAdapterFactory(constructorConstructor, false));
 	    gb.registerTypeAdapterFactory(new MyAdaptorFactory(reflectiveTypeAdapterFactory));
-	    gb.registerTypeAdapter(java.util.Map.class, new MapDeserializer());
-	    //gb.registerTypeAdapter(ReferenceHandler.class, new ReferenceHandlerDeserializer());
 	    gb.registerTypeAdapter(java.util.Date.class, new GmtDateTypeAdapter());
+	   
 	    GsonBuilder configured = gb.disableHtmlEscaping();
 	    return configured;
 	  }
+	  
 	  
 	  public static class GmtDateTypeAdapter implements JsonSerializer<Date>, JsonDeserializer<Date> {
 			
@@ -93,5 +100,10 @@ public class JSONParserWrapper {
 				return reflectiveTypeAdapterFactory.create(gson, type);
 			}
 	    }
+	  
+	
 
 }
+
+
+

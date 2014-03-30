@@ -22,15 +22,15 @@ import java.net.URL;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
+import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.xml.RaplaMainReader;
-import org.rapla.storage.xml.WrongXMLVersionException;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
+import org.xml.sax.XMLReader;
 
 /** Reads the data in xml format from an InputSource into the
     LocalCache and converts it to a newer version if necessary.
@@ -78,19 +78,20 @@ public final class RaplaInput {
                ,IOException {
     	ContentHandler contentHandler = new RaplaContentHandler( reader);
         try {
-            RaplaSAXPipeline pipeline = new RaplaSAXPipeline(getLogger());
+            InputSource source = getNewSource();
             if (validate) {
-                validate( getNewSource(), "org/rapla/storage/xml/rapla.rng"); 
+                validate( source, "org/rapla/storage/xml/rapla.rng"); 
             } 
-            pipeline.parse( contentHandler, getNewSource() );
+
+            XMLReader parser = XMLReaderAdapter.createXMLReader(false);
+            RaplaErrorHandler errorHandler = new RaplaErrorHandler(logger);
+            parser.setContentHandler(contentHandler);
+            parser.setErrorHandler(errorHandler);
+            parser.parse(source);
         } catch (SAXException ex) {
             Throwable cause = ex.getCause();
             while (cause != null && cause.getCause() != null) {
                 cause = cause.getCause();
-            }
-            if (cause instanceof WrongXMLVersionException) {
-                convertData( getNewSource(),contentHandler,((WrongXMLVersionException)cause).getVersion());
-                return;
             }
             if (ex instanceof SAXParseException) {
                 throw new RaplaException("Line: " + ((SAXParseException)ex).getLineNumber()
@@ -159,71 +160,6 @@ public final class RaplaInput {
         if ( url == null )
             throw new RaplaException("Resource " + name + " not found");
         return url;
-    }
-    private void convertData(InputSource inputSource,ContentHandler handler,String versionString)
-        throws RaplaException,IOException
-    {
-        double version;
-        try {
-            version = new Double(versionString).doubleValue();
-        } catch (NumberFormatException ex) {
-            throw new RaplaException("Invalid version tag (double-value expected)!");
-        }
-        // get the version number of the data-schema
-        if (version > new Double(RaplaMainReader.INPUT_FILE_VERSION).doubleValue())
-            throw new RaplaException("This version of Rapla cannot read files with a version-number"
-                                     + " greater than " + RaplaMainReader.INPUT_FILE_VERSION
-                                     + ", try out the latest version.");
-
-        try {
-            RaplaSAXPipeline pipeline = new RaplaSAXPipeline(getLogger());
-            if (version < 0.4) {
-                throw new RaplaException("Rapla 0.7, 0.6 or rapla 0.5 files are not supported in this version\n"
-                                         + " Please use rapla version 0.8.2 to convert this file: Load file, edit and save something!");
-            }
-            if (version < 0.5) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_4to0_5.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-            if (version < 0.6) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_5to0_6.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-            if (version < 0.7) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_6to0_7.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-            if (version < 0.8) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_7to0_8.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-            if (version < 0.9) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_8to0_9.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-            
-            if (version < 1.0) {
-                URL stylesheet = getResource( "org/rapla/storage/dbfile/convert0_9to1_0.xsl" );
-                pipeline.addTransformer(stylesheet,new String[][] {});
-            }
-
-            getLogger().info("Start conversion");
-            //pipeline.parse(new DefaultHandler(), inputSource);
-            
-            pipeline.parse(handler, inputSource);
-            getLogger().info("Conversion successful");
-            wasConverted = true;
-        } catch (SAXException ex) {
-            Throwable cause = ex.getException();
-            if (cause == null)
-                throw new RaplaException( ex);
-
-            if (cause instanceof RaplaException) {
-                throw (RaplaException)cause;
-            } else {
-                throw new RaplaException( cause );
-            }
-        }
     }
 
 }
