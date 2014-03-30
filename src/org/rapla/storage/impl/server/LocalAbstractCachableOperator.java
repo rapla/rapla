@@ -228,28 +228,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			for (Appointment appointment:appointmentSet)
 			{
 	            Reservation reservation = appointment.getReservation();
-	            if ( annotationQuery != null)
-	            {
-	            	for (String key : annotationQuery.keySet())
-	            	{
-	            		String annotationParam = annotationQuery.get( key);
-	            		String annotation = reservation.getAnnotation( key);
-	            		if ( annotation == null || annotationParam == null)
-	            		{
-	            			if (!( annotation == annotationParam && annotationParam == null))
-	            			{
-	            				continue;
-	            			}
-	            		}
-	            		else
-	            		{
-	            			if ( !annotation.equals(annotationParam))
-	            			{
-	            				continue;
-	            			}
-	            		}
-	            	}
-	            }
+                if ( !match(reservation, annotationQuery))
+                {
+                    continue;
+                }
 	            if ( !reservationSet.contains( reservation))
 	            {
 	            	reservationSet.add( reservation );
@@ -260,6 +242,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         removeFilteredClassifications(result, filters);
 		return result;
 	}
+
+    public boolean match(Reservation reservation, Map<String, String> annotationQuery) {
+        if ( annotationQuery != null)
+        {
+        	for (String key : annotationQuery.keySet())
+        	{
+        		String annotationParam = annotationQuery.get( key);
+        		String annotation = reservation.getAnnotation( key);
+        		if ( annotation == null || annotationParam == null)
+        		{
+        			if (annotationParam!= null)
+        			{
+        			    return false;
+        			}
+        		}
+        		else
+        		{
+        			if ( !annotation.equals(annotationParam))
+        			{
+                        return false;
+        			}
+        		}
+        	}
+        }
+        return true;
+    }
 
 	public Collection<String> getTemplateNames() throws RaplaException {
     	Lock readLock = readLock();
@@ -602,10 +610,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			for ( Appointment app:((ReservationImpl)r).getAppointmentList())
 			{
 				Reservation reservation = app.getReservation();
-				if ( RaplaComponent.isTemplate( reservation))
-				{
-					continue;
-				}
 				Allocatable[] allocatables = reservation.getAllocatablesFor(app);
 				{
 					Collection<Appointment> list = getAndCreateList(appointmentMap,null);
@@ -693,7 +697,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					removedAllocatables.add( old);
 				}
 			}
-			if (raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE)
+			if (raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE )
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{

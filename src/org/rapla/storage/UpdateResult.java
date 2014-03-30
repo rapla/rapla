@@ -36,6 +36,7 @@ public class UpdateResult implements ModificationEvent
     private User user;
     private List<UpdateOperation> operations = new ArrayList<UpdateOperation>();
 	Set<RaplaType> modified = new HashSet<RaplaType>(); 
+	boolean switchTemplateMode = false;
 	
 	public UpdateResult(User user) {
         this.user = user;
@@ -262,10 +263,19 @@ public class UpdateResult implements ModificationEvent
 	{
 		return modified.contains( raplaType) ;
 	}
-
+	
 	public boolean isModified() {
-		return !operations.isEmpty();
+		return !operations.isEmpty() || switchTemplateMode;
 	}
+
+    public boolean isEmpty() {
+        return !isModified() && timeInterval == null;
+    }
+
+    public void setSwitchTemplateMode(boolean b) 
+    {
+        switchTemplateMode = b;
+    }
 
 }
     

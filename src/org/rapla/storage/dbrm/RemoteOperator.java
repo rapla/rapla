@@ -716,7 +716,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     		if ( bSessionActive  &&   !evt.isEmpty()  ) {
                 getLogger().debug("Objects updated!");
                 UpdateResult result = update(evt);
-                fireStorageUpdated(result);
+                if ( !result.isEmpty())
+                {
+                    fireStorageUpdated(result);
+                }
             }
         }
 		finally

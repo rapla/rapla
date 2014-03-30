@@ -657,6 +657,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
     
     private boolean isInFilter( Allocatable classifiable) {
+        if (isTemplateModus())
+        {
+            return true;
+        }
         final Classification classification = classifiable.getClassification();
         final DynamicType type = classification.getType();
         final ClassificationFilter classificationFilter = allocatableFilter.get( type);
@@ -674,11 +678,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Override
     public Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException
     {
-    	if ( m_facade.getTemplateName() != null )
-        {
-    		return Collections.emptyList();
-        }
-        Assert.notNull(selectedObjects);
+    	Assert.notNull(selectedObjects);
 
         ArrayList<DynamicType> dynamicTypes = new ArrayList<DynamicType>();
         for (Iterator<RaplaObject> it = selectedObjects.iterator();it.hasNext();)
@@ -744,10 +744,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Override
     public Collection<RaplaObject> getSelectedObjects()
     {
-    	if ( m_facade.getTemplateName() != null )
-        {
-    		return Collections.emptyList();
-        }	
         return selectedObjects;
     }
 
@@ -755,7 +751,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public ClassificationFilter[] getReservationFilter() throws RaplaException 
     {
         Collection<ClassificationFilter> filter ;
-        if ( isDefaultEventTypes())
+        if ( isDefaultEventTypes() || isTemplateModus())
         {
             filter = new ArrayList<ClassificationFilter>();
             for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
@@ -770,10 +766,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return filter.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
     }
 
+    protected boolean isTemplateModus() {
+        return m_facade.getTemplateName() != null;
+    }
+
     @Override
     public ClassificationFilter[] getAllocatableFilter() throws RaplaException {
         Collection<ClassificationFilter> filter ;
-        if ( isDefaultResourceTypes())
+        if ( isDefaultResourceTypes() || isTemplateModus())
         {
             filter = new ArrayList<ClassificationFilter>();
             for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
@@ -842,7 +842,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		
 		List<Reservation> reservations = new ArrayList<Reservation>(reservationsToRestrict);
 		// Don't restrict templates
-		if ( m_facade.getTemplateName() != null)
+		if ( isTemplateModus())
 		{
 			return reservations;
 		}

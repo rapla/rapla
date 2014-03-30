@@ -1006,6 +1006,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		cachedReservations = null;
 		cacheValidString = null;
 		UpdateResult updateResult = new UpdateResult( workingUser);
+		updateResult.setSwitchTemplateMode(true);
 		updateResult.setInvalidateInterval( new TimeInterval(null, null));
 		fireUpdateEvent( updateResult);
 	}

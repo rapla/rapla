@@ -98,6 +98,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 	        	  conflictsView.clearSelection();
 	          }
 	      };
+
 	      
         final RaplaMenu viewMenu = getService( InternMenus.VIEW_MENU_ROLE);
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
@@ -190,6 +191,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         
         savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection,model);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
+        templatePanel.setVisible( false);
+        jp.add( templatePanel, BorderLayout.WEST );
         JToolBar mintb =new JToolBar();
         mintb.setFloatable( false);
        // mintb.add( min);
@@ -271,17 +274,25 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         boolean templateMode = getModification().getTemplateName() != null;
         if ( templateMode)
         {
-        	if ( content.getLeftComponent() != templatePanel)
-        	{
-        		content.setLeftComponent( templatePanel);
-				content.setDividerSize(0);
-        	}
+            conflictsView.getComponent().setVisible(false);
+            conflictsView.getSummaryComponent().setVisible( false);
         }
-        else 
-        {
+//        if ( templateMode)
+//        {
+//        	if ( content.getLeftComponent() != templatePanel)
+//        	{
+//        		content.setLeftComponent( templatePanel);
+//				content.setDividerSize(0);
+//        	}
+//        }
+//        else 
+//        {
 	  		if (  showSelection )
 			{
-				if ( content.getLeftComponent() != left )
+	  	        savedViews.getComponent().setVisible( !templateMode  );
+	  	        templatePanel.setVisible( templateMode);
+	  	        resourceSelection.getFilterButton().setVisible( !templateMode );
+	  		    if ( content.getLeftComponent() != left )
 				{
 					content.setLeftComponent( left);
 					content.setDividerSize( 5);
@@ -293,7 +304,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		    	content.setLeftComponent( minimized);
 				content.setDividerSize(0);
 			}
-        }
+//        }
     }
 
 

@@ -804,6 +804,10 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		{
 		    Reservation r1 = appointment.getReservation();
 		    Reservation r2 = overlappingAppointment.getReservation();
+		    if ( RaplaComponent.isTemplate( r1) || RaplaComponent.isTemplate( r2))
+            {
+                continue;
+            }
 		    if ( r2 != null && ignoreList.contains( r2))
 		    {
 		    	continue;
