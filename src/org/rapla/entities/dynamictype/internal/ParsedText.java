@@ -620,7 +620,7 @@ public class ParsedText implements Serializable {
 		public Object eval(EvalContext context) 
 		{
 			Object condResult =condition.eval( context);
-			Object resultCond = ParsedText.this.getValue( condResult, context);
+			Object resultCond = ParsedText.this.getValueForIf( condResult, context);
 			boolean isTrue;
 			if ( resultCond != null)
 			{
@@ -669,7 +669,7 @@ public class ParsedText implements Serializable {
 			return evalResult1.equals( evalResult2);
 		}
 	}
-	private Object getValue(Object result, EvalContext context)
+	private Object getValueForIf(Object result, EvalContext context)
 	{
 		if ( result instanceof Attribute)
 		{

@@ -199,13 +199,21 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
     public String getValueAsString(Attribute attribute,Locale locale)
     {
-    	Object value =  getValue(attribute);
+    	Collection values =  getValues(attribute);
         StringBuilder buf = new StringBuilder();
-//        for ( Object value: values)
-//        {
-//        	buf.append( getValueAsString(attribute, locale, value));
-//        }
-        buf.append( ((AttributeImpl)attribute).getValueAsString( locale, value) );
+        boolean first = true;
+        for ( Object value: values)
+        {
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                buf.append(", ");
+            }
+        	buf.append( ((AttributeImpl)attribute).getValueAsString( locale, value));
+        }
         String result = buf.toString();
         return result;
     }
