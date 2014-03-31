@@ -2,8 +2,8 @@ package org.rapla.rest.gwtjsonrpc.common;
 
 import java.lang.reflect.Type;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,12 +39,11 @@ public class JSONParserWrapper {
 	        new InstanceCreator<java.util.Set<Object>>() {
 	          @Override
 	          public Set<Object> createInstance(final Type arg0) {
-	            return new HashSet<Object>();
+	            return new LinkedHashSet<Object>();
 	          }
 	        });
 	    Map<Type, InstanceCreator<?>> instanceCreators = new LinkedHashMap<Type,InstanceCreator<?>>();
 	    instanceCreators.put(Map.class, new InstanceCreator<Map>() {
-
             public Map createInstance(Type type) {
                 return new LinkedHashMap();
             }
@@ -57,7 +56,7 @@ public class JSONParserWrapper {
 	    gb.registerTypeAdapterFactory(new MyAdaptorFactory(reflectiveTypeAdapterFactory));
 	    gb.registerTypeAdapter(java.util.Date.class, new GmtDateTypeAdapter());
 	   
-	    GsonBuilder configured = gb.disableHtmlEscaping();
+	    GsonBuilder configured = gb.disableHtmlEscaping().setPrettyPrinting();
 	    return configured;
 	  }
 	  

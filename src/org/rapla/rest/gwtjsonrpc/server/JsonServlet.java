@@ -398,14 +398,7 @@ public class JsonServlet {
     }
 
     private String formatResult(final ActiveCall call) throws UnsupportedEncodingException, IOException {
-        String parameter = call.httpRequest.getParameter("pretty");
-        boolean pretty =  (parameter != null && !parameter.equals("false"));
-        GsonBuilder builder = createGsonBuilder();
-        if ( pretty)
-        {
-            builder = builder.setPrettyPrinting();
-        }
-        final GsonBuilder gb = builder;
+        final GsonBuilder gb = createGsonBuilder();
        
         gb.registerTypeAdapter(call.getClass(), new JsonSerializer<ActiveCall>() {
             @Override
