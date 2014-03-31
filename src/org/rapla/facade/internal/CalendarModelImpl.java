@@ -60,6 +60,7 @@ import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
+import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
@@ -71,6 +72,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.storage.UpdateResult;
 
 public class CalendarModelImpl implements CalendarSelectionModel
 {
@@ -285,18 +287,35 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return user;
     }
 
-    public CalendarModelConfiguration createConfiguration() throws RaplaException {
+    public CalendarModelConfigurationImpl createConfiguration() throws RaplaException {
         ClassificationFilter[] allocatableFilter = isDefaultResourceTypes() ? null : getAllocatableFilter();
         ClassificationFilter[] eventFilter = isDefaultEventTypes() ? null : getReservationFilter();
         return createConfiguration(allocatableFilter, eventFilter);
     }
     
+    CalendarModelConfigurationImpl beforeTemplateConf;
     public void dataChanged(ModificationEvent evt) throws RaplaException
     {
     	Collection<RaplaObject> selectedObjects = getSelectedObjects();
     	if ( evt == null)
     	{
     		return;
+    	}
+    	boolean switchTemplate =  ((UpdateResult)evt).isSwitchTemplateMode();
+    	if  (switchTemplate)
+    	{
+    	    boolean changeToTemplate= m_facade.getTemplateName() != null;
+    	    if (changeToTemplate)
+    	    {
+    	        beforeTemplateConf = createConfiguration();
+    	        setSelectedObjects(Collections.singleton(ALLOCATABLES_ROOT));
+    	    }
+    	    else if ( beforeTemplateConf != null)
+    	    {
+    	        setConfiguration( beforeTemplateConf, null);
+    	        beforeTemplateConf = null;
+    	    }
+    	    
     	}
     	{
 	    	Collection<RaplaObject> newSelection = new ArrayList<RaplaObject>();
@@ -324,42 +343,49 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			if (evt.isModified( DynamicType.TYPE) || evt.isModified( Category.TYPE) || evt.isModified( User.TYPE))
 			{
 				CalendarModelConfigurationImpl config = (CalendarModelConfigurationImpl)createConfiguration();
-				User user2 = getUser();
-				if ( user2 != null && evt.isModified( user2))
+				updateConfig(evt, config);
+				if  ( beforeTemplateConf != null)
 				{
-					Set<User> changed = RaplaType.retainObjects(evt.getChanged(), Collections.singleton(user2));
-					if ( changed.size() > 0)
-					{
-						User newUser = changed.iterator().next();
-						user = newUser;
-					}
+				    updateConfig(evt, beforeTemplateConf);
 				}
-				for ( RaplaObject obj:evt.getChanged())
-				{
-					if ( obj.getRaplaType() == DynamicType.TYPE)
-					{
-						DynamicType type = (DynamicType) obj;
-						if ( config.needsChange(type))
-						{
-							config.commitChange( type);
-						}
-					}
-				}
-				for ( RaplaObject obj:evt.getRemoved())
-				{
-					if ( obj.getRaplaType() == DynamicType.TYPE)
-					{
-						DynamicType type = (DynamicType) obj;
-						config.commitRemove( type);
-					}
-				}
-						
 				setConfiguration( config, null);
 			}
     	}
     }
+
+    public void updateConfig(ModificationEvent evt, CalendarModelConfigurationImpl config) throws CannotExistWithoutTypeException {
+        User user2 = getUser();
+        if ( user2 != null && evt.isModified( user2))
+        {
+        	Set<User> changed = RaplaType.retainObjects(evt.getChanged(), Collections.singleton(user2));
+        	if ( changed.size() > 0)
+        	{
+        		User newUser = changed.iterator().next();
+        		user = newUser;
+        	}
+        }
+        for ( RaplaObject obj:evt.getChanged())
+        {
+        	if ( obj.getRaplaType() == DynamicType.TYPE)
+        	{
+        		DynamicType type = (DynamicType) obj;
+        		if ( config.needsChange(type))
+        		{
+        			config.commitChange( type);
+        		}
+        	}
+        }
+        for ( RaplaObject obj:evt.getRemoved())
+        {
+        	if ( obj.getRaplaType() == DynamicType.TYPE)
+        	{
+        		DynamicType type = (DynamicType) obj;
+        		config.commitRemove( type);
+        	}
+        }
+    }
     
-    private CalendarModelConfiguration createConfiguration(ClassificationFilter[] allocatableFilter, ClassificationFilter[] eventFilter) throws RaplaException {
+    private CalendarModelConfigurationImpl createConfiguration(ClassificationFilter[] allocatableFilter, ClassificationFilter[] eventFilter) throws RaplaException {
         String viewName = selectedView;
         Set<Entity> selected = new HashSet<Entity>( );
         
@@ -379,7 +405,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		return newRaplaCalendarModel( selected,resourceRootSelected, allocatableFilter,eventFilter, title, startDate, endDate, selectedDate, viewName, optionMap);
     }
     
-    public CalendarModelConfiguration newRaplaCalendarModel(Collection<Entity> selected,
+    public CalendarModelConfigurationImpl newRaplaCalendarModel(Collection<Entity> selected,
     		boolean resourceRootSelected,
             ClassificationFilter[] allocatableFilter,
             ClassificationFilter[] eventFilter, String title, Date startDate,

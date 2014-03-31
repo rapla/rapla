@@ -43,7 +43,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
@@ -132,7 +131,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     		 updateTree();
     		 updateMenu();
     	}
-        ((CalendarModelImpl) model).dataChanged( evt);
+    	// No longer needed here as directly done in RaplaClientServiceImpl
+    	// ((CalendarModelImpl) model).dataChanged( evt);
     }
 
     final protected TreeFactory getTreeFactory() {

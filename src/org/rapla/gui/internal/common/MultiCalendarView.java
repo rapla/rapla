@@ -322,7 +322,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         return list.toArray( RaplaObject.EMPTY_STRING_ARRAY);
     }
 
-    private CalendarSelectionModel getModel() {
+    public CalendarSelectionModel getModel() {
         return model;
     }
 

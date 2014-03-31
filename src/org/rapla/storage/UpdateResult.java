@@ -276,6 +276,10 @@ public class UpdateResult implements ModificationEvent
     {
         switchTemplateMode = b;
     }
+    
+    public boolean isSwitchTemplateMode() {
+        return switchTemplateMode;
+    }
 
 }
     
