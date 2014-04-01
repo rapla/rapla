@@ -16,7 +16,7 @@
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry exported="true" kind="lib" path="lib/servlet-api-3.0.jar" sourcepath="C:/Users/Christopher/.m2/repository/org/eclipse/jetty/orbit/javax.servlet/3.0.0.v201112011016/javax.servlet-3.0.0.v201112011016-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/servlet-api-3.0.jar"/>
 	<classpathentry kind="lib" path="lib/server/mailapi-1.4.7.jar"/>
 	<classpathentry kind="lib" path="lib/server/smtp-1.4.7.jar">
 		<accessrules>
@@ -41,7 +41,7 @@
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/common/gson-2.2.4.jar" sourcepath="lib/unused/gson-2.2.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib/common/gson-2.2.4.jar"/>
 	<classpathentry kind="lib" path="lib/logging/slf4j-api-1.7.5.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
