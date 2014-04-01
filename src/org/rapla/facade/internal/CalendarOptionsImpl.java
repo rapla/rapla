@@ -24,7 +24,8 @@ import org.rapla.framework.TypedComponentRole;
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
 public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<RaplaConfiguration>("org.rapla.calendarview");
-
+    public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<Boolean>("org.rapla.conflict.showWarning");
+    
     public static final String WORKTIME = "worktime";
     public static final String EXCLUDE_DAYS = "exclude-days";
     public static final String WEEKSTART = "exclude-days";

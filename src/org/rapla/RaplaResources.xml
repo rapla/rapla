@@ -1482,6 +1482,17 @@ See French text.
         <text lang="pl">z</text>
 		<text lang="pt">com</text>
     </entry>
+    
+    <entry key="warnings">
+        <text lang="en">warnings</text>
+        <text lang="de">Warnungen</text>
+        <text lang="fr">avertissements</text>
+        <text lang="es">advertencias</text>
+        <text lang="cs">pozor</text>
+        <text lang="nl">waarschuwingen</text>
+        <text lang="pl">poszlaka</text>
+		<text lang="pt">advertencias</text>
+    </entry>
 
     <!-- Warnings -->
     <entry key="warning.conflict">
@@ -1493,7 +1504,6 @@ See French text.
         <text lang="nl">WAARSCHUWING: Conflict gevonden!</text>
         <text lang="pl">UWAGA: Wykryto konflikt!</text>
 		<text lang="pt">Atenção: Conflitos encontrados!</text>
-
     </entry>
     <entry key="warning.duplicated_appointments">
         <text lang="en">WARNING: The same appointment exists multiple times [{0}]!</text>

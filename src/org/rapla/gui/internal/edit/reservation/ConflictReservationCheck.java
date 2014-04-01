@@ -22,6 +22,7 @@ import javax.swing.tree.TreeModel;
 
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
@@ -38,6 +39,11 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Reser
     }
 
     public boolean check(Reservation reservation, Component sourceComponent) throws RaplaException {
+        boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
+        if ( !showWarning)
+        {
+            return true;
+        }
         Conflict[] conflicts =  getQuery().getConflicts(reservation);
         if (conflicts.length == 0) {
             return true;

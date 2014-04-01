@@ -14,59 +14,57 @@ package org.rapla.gui.internal;
 
 import java.util.Locale;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.UpdateModule;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
-
-public class ConnectionOption extends RaplaGUIComponent implements OptionPanel {
+public class WarningsOption extends RaplaGUIComponent implements OptionPanel
+{
     JPanel panel = new JPanel();
-    RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
     Preferences preferences;
-    
-    public ConnectionOption(RaplaContext sm) {
-        super( sm);
-        seconds.getNumberField().setBlockStepSize( 60);
-        seconds.getNumberField().setStepSize( 10);
-        double pre = TableLayout.PREFERRED;
-        double fill = TableLayout.FILL;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre,5, pre}, {pre,fill}}));
+    JCheckBox showConflictWarningsField = new JCheckBox();
 
-        panel.add( new JLabel(getString("refresh") + ": " + getI18n().format("interval.format", "","")),"0,0"  );
-        panel.add( seconds,"2,0");
-        panel.add( new JLabel(getString("seconds")),"4,0"  );
-        addCopyPaste( seconds.getNumberField());
+    public WarningsOption(RaplaContext sm) {
+        super( sm);
+        showConflictWarningsField.setText("");        
+        double pre = TableLayout.PREFERRED;
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre}}));
+        panel.add( new JLabel(getString("warning.conflict")),"0,0");
+        panel.add( showConflictWarningsField,"2,0");
+
     }
 
     public JComponent getComponent() {
         return panel;
     }
     public String getName(Locale locale) {
-        return getString("connection");
+        return getString("warnings");
     }
 
     public void setPreferences( Preferences preferences) {
         this.preferences = preferences;
-
     }
 
     public void show() throws RaplaException {
-        int delay = preferences.getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
-        seconds.setNumber( new Long(delay / 1000));
+    	// get the options 
+        boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
+        showConflictWarningsField.setSelected( config);
     }
 
     public void commit() {
-        int delay = seconds.getNumber().intValue() * 1000;
-        preferences.putEntry( UpdateModule.REFRESH_INTERVAL_ENTRY, delay );
-    }
+    	// Save the options
+        
+        boolean selected = showConflictWarningsField.isSelected();
+        preferences.putEntry( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, selected);
+	}
 
 
 }

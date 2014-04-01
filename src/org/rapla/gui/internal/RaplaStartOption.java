@@ -22,9 +22,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
@@ -38,12 +40,13 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 	private JComboBox cboTimezone;
 	ICalTimezones timezoneService;
 	private JCheckBox ownReservations;
+	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
 	
     public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService) throws RaplaException {
         super( context );
         double pre = TableLayout.PREFERRED;
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre}}));
         calendarName = new JTextField();
         addCopyPaste( calendarName);
         calendarName.setColumns(20);
@@ -57,9 +60,18 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 		cboTimezone = jComboBox;
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
+		
 		panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,4");
 		ownReservations = new JCheckBox();
 		panel.add(ownReservations, "2,4");
+		
+		seconds.getNumberField().setBlockStepSize( 60);
+	    seconds.getNumberField().setStepSize( 10);
+	    
+        panel.add( new JLabel(getString("seconds")),"4,6"  );
+        panel.add( seconds,"2,6");
+        panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,6"  );
+        addCopyPaste( seconds.getNumberField());
     }
 
     public JComponent getComponent() {
@@ -92,6 +104,10 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 
         boolean selected= preferences.getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true); 
         ownReservations.setSelected( selected);
+        int delay = preferences.getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
+        seconds.setNumber( new Long(delay / 1000));
+        seconds.setEnabled(getClientFacade().isClientForServer());
+
     }
 
     public void commit() {
@@ -110,6 +126,9 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
    
     	boolean selected= ownReservations.isSelected(); 
     	preferences.putEntry( CalendarModel.ONLY_MY_EVENTS_DEFAULT, selected); 
+    	
+    	int delay = seconds.getNumber().intValue() * 1000;
+    	preferences.putEntry( UpdateModule.REFRESH_INTERVAL_ENTRY, delay );
     }
     
 	/**

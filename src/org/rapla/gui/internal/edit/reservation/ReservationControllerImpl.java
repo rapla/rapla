@@ -62,9 +62,7 @@ import org.rapla.gui.internal.view.HTMLInfo.Row;
 import org.rapla.gui.internal.view.ReservationInfoUI;
 import org.rapla.gui.toolkit.DialogUI;
 
-public class ReservationControllerImpl extends RaplaGUIComponent
-    implements
-    ModificationListener, ReservationController
+public class ReservationControllerImpl extends RaplaGUIComponent implements ModificationListener, ReservationController
 {
     /** We store all open ReservationEditWindows with their reservationId
      * in a map, to lookup if the reservation is already beeing edited.
@@ -974,7 +972,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent
             Appointment app= addAppointment != null ? addAppointment : appointment;
             newStart = new Date( app.getStart().getTime()+ offset);
         }
-        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable,newStart, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded);
+        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable,newStart, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded, sourceComponent);
 		return command;
 	}
 
@@ -991,9 +989,11 @@ public class ReservationControllerImpl extends RaplaGUIComponent
         Appointment addAppointment;
         List<Date> exceptionsAdded;
         Date newStart;
+        boolean firstTimeCall = true;
+        Component sourceComponent;
         
         AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, Date newStart,Map<Allocatable, Appointment[]> newRestrictions, boolean removeAllocatable, boolean addAllocatable, Appointment addAppointment,
-            List<Date> exceptionsAdded)  
+            List<Date> exceptionsAdded, Component sourceComponent)  
         {
             this.appointment = appointment;
             this.oldAllocatable = oldAllocatable;
@@ -1004,13 +1004,22 @@ public class ReservationControllerImpl extends RaplaGUIComponent
             this.addAllocatable = addAllocatable;
             this.addAppointment = addAppointment;
             this.exceptionsAdded = exceptionsAdded;
+            this.sourceComponent = sourceComponent;
         }
         
         public boolean execute() throws RaplaException 
         {
             Reservation modifiableReservation = getModifiedReservationForExecute();
-            getModification().store( modifiableReservation);
-            return true;
+            if ( firstTimeCall)
+            {
+                firstTimeCall = false;
+                return save(modifiableReservation, sourceComponent);
+            }
+            else
+            {
+                getModification().store( modifiableReservation );
+                return true;
+            }
         }
 
 		protected Reservation getModifiedReservationForExecute() throws RaplaException {

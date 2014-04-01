@@ -84,12 +84,12 @@ import org.rapla.gui.ReservationController;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.images.Images;
 import org.rapla.gui.internal.CalendarOption;
-import org.rapla.gui.internal.ConnectionOption;
 import org.rapla.gui.internal.MainFrame;
 import org.rapla.gui.internal.MenuFactoryImpl;
 import org.rapla.gui.internal.RaplaDateRenderer;
 import org.rapla.gui.internal.RaplaStartOption;
 import org.rapla.gui.internal.UserOption;
+import org.rapla.gui.internal.WarningsOption;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.internal.edit.EditControllerImpl;
@@ -211,6 +211,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( ReservationController.class, ReservationControllerImpl.class );
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION ,UserOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , CalendarOption.class);
+        addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , WarningsOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class );
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class );
         
@@ -399,10 +400,10 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 			    model.dataChanged( evt );
 			}
         });
-        if ( facade.isClientForServer() )
-        {
-            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
-        } 
+//        if ( facade.isClientForServer() )
+//        {
+//            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
+//        } 
         
         Set<String> pluginNames;
         //List<PluginDescriptor<ClientServiceContainer>> pluginList;
