@@ -738,6 +738,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                {
 	                	throw new RaplaException("client sync time is missing");
 	                }
+	             
 					UpdateEvent result = createUpdateEvent( clientVersion );
 					return new ResultImpl<UpdateEvent>(result );
 	        	}
@@ -1033,6 +1034,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             
             private UpdateEvent createUpdateEvent( Date lastSynced ) throws RaplaException
             {
+                Date currentTimestamp = operator.getCurrentTimestamp();
+                if ( lastSynced.after( currentTimestamp))
+                {
+                    long diff  = lastSynced.getTime() - currentTimestamp.getTime();
+                    getLogger().warn("Timestamp of client " +diff  +  " ms  after server ");
+                    lastSynced = currentTimestamp;
+                }
             	User user = getSessionUser();
                 Date currentVersion = operator.getCurrentTimestamp();
                 UpdateEvent safeResultEvent = new UpdateEvent();
@@ -1056,7 +1064,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     }
                     boolean resourceRefresh;
                     {
-	                    Long lastVersion = needResourceRefresh.get( user);
+	                    String userId = user.getId();
+                        Long lastVersion = needResourceRefresh.get( userId);
 	                    resourceRefresh = ( lastVersion != null && lastVersion > lastSynced.getTime());
                     }
                     safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
