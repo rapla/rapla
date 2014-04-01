@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -48,6 +47,7 @@ import org.rapla.gui.internal.edit.EditField;
 import org.rapla.gui.internal.edit.SetGetField;
 import org.rapla.gui.toolkit.EmptyLineBorder;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.gui.toolkit.RaplaListComboBox;
 import org.rapla.gui.toolkit.RaplaWidget;
 /**
    Gui for editing the {@link Classification} of a reservation. Same as
@@ -69,7 +69,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     ArrayList<DetailListener> detailListenerList = new ArrayList<DetailListener>();
-    JComboBox typeSelector = new JComboBox();
+    RaplaListComboBox typeSelector;
     RaplaButton tabSelector = new RaplaButton();
     boolean isMainViewSelected = true;
     private boolean internalUpdate = false;
@@ -77,6 +77,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     public ReservationInfoEdit(RaplaContext sm, CommandHistory commandHistory)  
     {
         super( sm);
+        typeSelector = new RaplaListComboBox( sm );
         this.commandHistory = commandHistory;
         editUI = new MyClassificationEditUI(sm);
     }
@@ -110,8 +111,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         DynamicType[] types = getQuery().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         DynamicType dynamicType = classification.getType();
 
-        @SuppressWarnings("unchecked")
-		JComboBox jComboBox = new JComboBox( types );
+        RaplaListComboBox jComboBox =  new RaplaListComboBox( getContext() , types );
 		typeSelector =  jComboBox;
         typeSelector.setEnabled( types.length > 1);
         typeSelector.setSelectedItem(dynamicType);
