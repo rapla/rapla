@@ -87,12 +87,14 @@ public class MainServlet extends HttpServlet {
    	private String downloadUrl;
    	private String serverVersion;
    	
+   	private ServerServiceImpl server;
+    
+   	private Runnable shutdownCommand;
+   	private Collection<ServletRequestPreprocessor> processors;
+   	private ReadWriteLock restartLock = new ReentrantReadWriteLock();
+
    	// the following variables are only for non server startup
-	Runnable shutdownCommand;
-	Semaphore guiMutex = new Semaphore(1);
-	
-	protected ReadWriteLock restartLock = new ReentrantReadWriteLock();
-	
+   	private Semaphore guiMutex = new Semaphore(1);
 	private ConnectInfo reconnect;
 
     private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
@@ -221,7 +223,7 @@ public class MainServlet extends HttpServlet {
 			catch (Exception ex)
 			{
 			    exit();
-			    throw ex;
+			    throw new ServletException(ex);
 			}
 		}
     }
@@ -343,7 +345,7 @@ public class MainServlet extends HttpServlet {
 
 	protected String getFirstAdmin() throws RaplaContextException,	RaplaException {
 		String username = null;
-		StorageOperator operator = getServer().getContext().lookup(StorageOperator.class);
+		StorageOperator operator = server.getContext().lookup(StorageOperator.class);
 		for (User u:operator.getUsers())
 		{
 		    if ( u.isAdmin())
@@ -426,15 +428,20 @@ public class MainServlet extends HttpServlet {
 			}
 			else if ( startupMode.equals("server") || startupMode.equals("standalone") )
     		{
-				//lookup shutdownService
+			    String hint = serverContainerHint != null ? serverContainerHint :"*";
+                // Start the server via lookup
+			    // We start the standalone server before the client to prevent jndi lookup failures 
+			    server = (ServerServiceImpl) raplaContainer.lookup( ServerServiceContainer.class, hint);
+			    processors = server.lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
+			    final Logger logger = getLogger();
+		        logger.info("Rapla server started");
 				if ( startupMode.equals("server"))
     		    {
-	    		    startServer_(startupMode);
+				    // if 
+	    		    setShutdownService(startupMode);
     		    }
 				else
 				{
-					// We start the standalone server before the client to prevent jndi lookup failures 
-					ServerServiceImpl server = (ServerServiceImpl)getServer();
 					raplaContainer.addContainerProvidedComponentInstance(RemoteMethodStub.class, server);
 				}
     		}
@@ -456,11 +463,7 @@ public class MainServlet extends HttpServlet {
         }
 	}
 	
-	protected void startServer_(final String startupMode)
-			throws RaplaContextException {
-		final Logger logger = getLogger();
-		logger.info("Rapla server started");
-		ServerServiceImpl server = (ServerServiceImpl)getServer();
+	protected void setShutdownService(final String startupMode)	 {
 		server.setShutdownService( new ShutdownService() {
 		        public void shutdown(final boolean restart) {
 		        	Lock writeLock;
@@ -653,17 +656,35 @@ public class MainServlet extends HttpServlet {
     	Lock readLock = null;
     	try
     	{
-        	readLock = RaplaComponent.lock( restartLock.readLock(), 25);
-        	RaplaContext context = getServer().getContext();
-        	Collection<ServletRequestPreprocessor> processors = getServer().lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
-		    for (ServletRequestPreprocessor preprocessor: processors)
-			{
-	            final HttpServletRequest newRequest = preprocessor.handleRequest(context, getServletContext(), request, response);
-	            if (newRequest != null)
-	                request = newRequest;
-	            if (response.isCommitted())
-	            	return;
-			}
+    	    try
+    	    {
+        	    readLock = RaplaComponent.lock( restartLock.readLock(), 25);
+            	RaplaContext context = server.getContext();
+            	
+    		    for (ServletRequestPreprocessor preprocessor: processors)
+    			{
+    	            final HttpServletRequest newRequest = preprocessor.handleRequest(context, getServletContext(), request, response);
+    	            if (newRequest != null)
+    	                request = newRequest;
+    	            if (response.isCommitted())
+    	            	return;
+    			}
+    	    }
+	        catch (RaplaException e) 
+	        {
+	            try
+	            {
+	                response.setStatus( 500 );
+	                java.io.PrintWriter out = response.getWriter();
+	                out.println(IOUtil.getStackTraceAsString( e));
+	                out.close();
+	            }
+	            catch (Exception ex)
+	            {
+	                getLogger().error("Error writing exception back to client " + e.getMessage());
+	            }
+	            return;
+	        }
 
 	        String page =  request.getParameter("page");
 	        String requestURI =request.getRequestURI();
@@ -704,7 +725,7 @@ public class MainServlet extends HttpServlet {
 	            page = "index";
 	        }
 	
-            servletPage = getServer().getWebpage( page);
+            servletPage = server.getWebpage( page);
             if ( servletPage == null)
             {
             	response.setStatus( 404 );
@@ -718,22 +739,7 @@ public class MainServlet extends HttpServlet {
             ServletContext servletContext = getServletContext();
             servletPage.generatePage( servletContext, request, response);
         } 
-        catch (RaplaException e) 
-        {
-        	try
-        	{
-	        	response.setStatus( 500 );
-	        	
-	          	java.io.PrintWriter out = response.getWriter();
-	        	out.println(IOUtil.getStackTraceAsString( e));
-	        	out.close();
-        	}
-        	catch (Exception ex)
-        	{
-        		getLogger().error("Error writing exception back to client " + e.getMessage());
-        	}
-            return;
-        }
+
         finally
         {
         	try
@@ -759,16 +765,7 @@ public class MainServlet extends HttpServlet {
     
 	/** serverContainerHint is useful when you have multiple server configurations in one config file e.g. in a test environment*/
     public static String serverContainerHint = null;
-	protected ServerServiceContainer getServer() throws RaplaContextException {
-    	String hint = serverContainerHint;
-    	if  (hint == null)
-    	{
-    		//hint = startupMode;
-    		return raplaContainer.getContext().lookup( ServerServiceContainer.class);
-    	}
-    	return raplaContainer.lookup( ServerServiceContainer.class, hint);
-    }
-
+	
 
     private void stopServer() {
     	if ( raplaContainer == null)

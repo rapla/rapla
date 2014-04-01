@@ -39,8 +39,17 @@ public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Anno
     void removeAttribute(Attribute attribute);
     /** exchange the two attribute positions */
     void exchangeAttributes(int index1, int index2);
+    /** @deprecated use setKey instead*/
+    @Deprecated()
     void setElementKey(String elementKey);
+    /** @deprecated use getKey instead*/
+    @Deprecated()
     String getElementKey();
+    
+    void setKey(String key);
+
+    String getKey();
+
     /* creates a new classification and initializes it with the attribute defaults
      * @throws IllegalStateException when called from a non persistant instance of DynamicType */
     Classification newClassification();

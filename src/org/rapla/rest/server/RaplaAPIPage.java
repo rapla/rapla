@@ -1,4 +1,4 @@
-package org.rapla.servletpages;
+package org.rapla.rest.server;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +17,7 @@ import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
 import org.rapla.rest.gwtjsonrpc.server.RPCServletUtils;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
 import com.google.gson.GsonBuilder;
@@ -24,13 +25,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 
-public class RaplaResourcesRestPage extends RaplaComponent implements RaplaPageGenerator
+public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
 {
 
     final ServerServiceContainer serverContainer;
-    private static final String RAPLA_JSON_PATH = "/rapla/resources";
     
-    public RaplaResourcesRestPage(RaplaContext context) throws RaplaContextException {
+    public RaplaAPIPage(RaplaContext context) throws RaplaContextException {
         super(context);
         serverContainer = context.lookup(ServerServiceContainer.class);
     }
@@ -64,7 +64,7 @@ public class RaplaResourcesRestPage extends RaplaComponent implements RaplaPageG
                 {
                     throw new RaplaException("Webservice " + interfaceName + " not configured or initialized.");
                 }
-                Class<?> interfaceClass =  Class.forName(interfaceName, true,RaplaResourcesRestPage.class.getClassLoader());
+                Class<?> interfaceClass =  Class.forName(interfaceName, true,RaplaAPIPage.class.getClassLoader());
                 // Test if service is found
                 servlet = new JsonServlet(getLogger(), interfaceClass);
             }
@@ -79,9 +79,8 @@ public class RaplaResourcesRestPage extends RaplaComponent implements RaplaPageG
 
     public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
     {
-        String requestURI =request.getRequestURI();
-        int rpcIndex=requestURI.indexOf(RAPLA_JSON_PATH) ;
-        String serviceAndMethodName = requestURI.substring(rpcIndex + RAPLA_JSON_PATH.length()).trim();
+        String id = request.getParameter("id");
+        String serviceAndMethodName = getServiceAndMethodName(request);
         try
         {
             JsonServlet servlet;
@@ -92,19 +91,7 @@ public class RaplaResourcesRestPage extends RaplaComponent implements RaplaPageG
             catch (RaplaException ex)
             {
                 getLogger().error(ex.getMessage(), ex);
-                final JsonObject r = new JsonObject();
-                String versionName = "jsonrpc";
-                int code = -32603;
-                r.add(versionName, new JsonPrimitive("2.0"));
-                String id = request.getParameter("id");
-                if (id != null) {
-                  r.add("id", new JsonPrimitive(id));
-                }
-                
-                final JsonObject error = JsonServlet.getError(versionName, code, ex, JSONParserWrapper.defaultGsonBuilder());
-                r.add("error", error);
-                GsonBuilder builder = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping();
-                String out = builder.create().toJson( r);
+                String out = serializeException(id, ex);
                 RPCServletUtils.writeResponse(servletContext, response,  out, false);
                 return;
             }
@@ -129,6 +116,31 @@ public class RaplaResourcesRestPage extends RaplaComponent implements RaplaPageG
         {
             getLogger().error(ex.getMessage(), ex);
         }
+    }
+
+    protected String getServiceAndMethodName(HttpServletRequest request) {
+        String requestURI =request.getPathInfo();
+        String path = "/json/";
+        int rpcIndex=requestURI.indexOf(path) ;
+        String serviceAndMethodName = requestURI.substring(rpcIndex + path.length()).trim();
+        return serviceAndMethodName;
+    }
+
+    protected String serializeException(String id, Exception ex) 
+    {
+        final JsonObject r = new JsonObject();
+        String versionName = "jsonrpc";
+        int code = -32603;
+        r.add(versionName, new JsonPrimitive("2.0"));
+        if (id != null) {
+          r.add("id", new JsonPrimitive(id));
+        }
+        GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder();
+        final JsonObject error = JsonServlet.getError(versionName, code, ex, gb);
+        r.add("error", error);
+        GsonBuilder builder = JSONParserWrapper.defaultGsonBuilder();
+        String out = builder.create().toJson( r);
+        return out;
     }
 
     

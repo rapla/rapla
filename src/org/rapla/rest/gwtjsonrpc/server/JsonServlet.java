@@ -36,7 +36,6 @@ import java.util.Map;
 
 import javax.jws.WebService;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -44,11 +43,12 @@ import org.apache.commons.codec.binary.Base64;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.DependencyException;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.rest.jsonpatch.mergepatch.server.JsonMergePatch;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -63,12 +63,7 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * Basic HTTP servlet to forward JSON based RPC requests onto services.
- * <p>
- * Implementors of a JSON-RPC service should extend this servlet and implement
- * any interface(s) that extend from {@link RemoteJsonService}. Clients may
- * invoke methods declared in any implemented interface.
- * <p>
+ * Forward JSON based RPC requests onto services.
  * <b>JSON-RPC 1.1</b><br>
  * Calling conventions match the JSON-RPC 1.1 working draft from 7 August 2006
  * (<a href="http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html">draft</a>).
@@ -81,19 +76,19 @@ import com.google.gson.JsonSyntaxException;
  * the resulting JSON, reducing transfer time for the response data.
  */
 public class JsonServlet {
-    public final static String JSON_METHOD = "jsonmethod";
+    public final static String JSON_METHOD = "method";
 
     static final Object[] NO_PARAMS = {};
     Class class1;
     private Map<String, MethodHandle> myMethods;
     Logger logger;
 
-    public JsonServlet(final Logger logger, final Class class1) throws ServletException {
+    public JsonServlet(final Logger logger, final Class class1) throws RaplaException {
         this.class1 = class1;
         this.logger = logger;
         myMethods = methods(class1);
         if (myMethods.isEmpty()) {
-            throw new ServletException("No public service methods declared in " + class1 + " Did you forget the javax.jws.WebService annotation?");
+            throw new RaplaException("No public service methods declared in " + class1 + " Did you forget the javax.jws.WebService annotation?");
         }
     }
 
@@ -127,7 +122,7 @@ public class JsonServlet {
     }
 
     public void service(final HttpServletRequest req, final HttpServletResponse resp, ServletContext servletContext, final Object service) throws IOException {
-        final ActiveCall call = new ActiveCall(req, resp);
+        ActiveCall call = new ActiveCall(req, resp);
 
         call.noCache();
         // if (!acceptJSON(call)) {
@@ -136,8 +131,35 @@ public class JsonServlet {
         // return;
         // }
 
+        boolean isPatch = req.getMethod().equals("PATCH");
         doService(service, call);
-
+        if (  isPatch && !call.hasFailed())
+        {
+            Object result = call.result;
+            call = new ActiveCall(req, resp);
+            try
+            {
+                final Gson gs = createGsonBuilder().create();
+                JsonElement unpatchedObject = gs.toJsonTree(result);
+                String patchBody = readBody(call);
+                JsonElement patchElement = new JsonParser().parse( patchBody);
+                final JsonMergePatch patch = JsonMergePatch.fromJson(patchElement);
+                final JsonElement patchedObject = patch.apply(unpatchedObject);
+                Object patchMethod = req.getAttribute("patchMethod");
+                if ( patchMethod == null )
+                {
+                    throw new RaplaException("request attribute patchMethod or patchParameter is missing.");
+                }
+                req.setAttribute("method", patchMethod);
+                String patchedObjectToString =gs.toJson( patchedObject);
+                req.setAttribute("postBody", patchedObjectToString);
+                doService(service, call);
+            } 
+            catch (Exception ex)
+            {
+                call.externalFailure = ex;
+            }
+        }
         final String out = formatResult(call);
         RPCServletUtils.writeResponse(servletContext, call.httpResponse, out, out.length() > 256 && RPCServletUtils.acceptsGzipEncoding(call.httpRequest));
     }
@@ -193,7 +215,7 @@ public class JsonServlet {
         try {
             try {
                 String httpMethod = call.httpRequest.getMethod();
-                if ("GET".equals(httpMethod)) {
+                if ("GET".equals(httpMethod) || "PATCH".equals(httpMethod)) {
                     parseGetRequest(call);
                 } else if ("POST".equals(httpMethod)) {
                     parsePostRequest(call);
@@ -231,7 +253,6 @@ public class JsonServlet {
             d.addProperty("jsonrpc", "2.0");
             d.addProperty("method", req.getParameter("method"));
             d.addProperty("id", req.getParameter("id"));
-
             try {
                 String parameter = req.getParameter("params");
                 final byte[] params = parameter.getBytes("ISO-8859-1");
@@ -257,41 +278,81 @@ public class JsonServlet {
                 throw err;
             }
         } else { /* JSON-RPC 1.1 or GET REST API */
-            final Gson gs = createGsonBuilder().create();
-            String methodName = (String) req.getAttribute(JSON_METHOD);
-            if (methodName != null) {
-                call.versionName = "jsonrpc";
-                call.versionValue = new JsonPrimitive("2.0");
-            } else {
-                methodName = req.getParameter("method");
-                call.versionName = "version";
-                call.versionValue = new JsonPrimitive("1.1");
-            }
-            call.method = lookupMethod(methodName);
-            if (call.method == null) {
-                throw new NoSuchRemoteMethodException();
-            }
-            final Type[] paramTypes = call.method.getParamTypes();
-            String[] paramNames = call.method.getParamNames();
+            String body = (String)req.getAttribute("postBody");
+            mapRequestToCall(call, req, body);
+        }
+    }
 
-            final Object[] r = new Object[paramTypes.length];
-            for (int i = 0; i < r.length; i++) {
-                Type type = paramTypes[i];
-                String name = paramNames[i];
-                if (name == null && !call.versionName.equals("jsonrpc")) {
-                    name = "param" + i;
-                }
+    public void mapRequestToCall(final ActiveCall call, final HttpServletRequest req, String body) {
+        final Gson gs = createGsonBuilder().create();
+        String methodName = (String) req.getAttribute(JSON_METHOD);
+        if (methodName != null) {
+            call.versionName = "jsonrpc";
+            call.versionValue = new JsonPrimitive("2.0");
+        } else {
+            methodName = req.getParameter("method");
+            call.versionName = "version";
+            call.versionValue = new JsonPrimitive("1.1");
+        }
+        call.method = lookupMethod(methodName);
+        if (call.method == null) {
+            throw new NoSuchRemoteMethodException();
+        }
+        final Type[] paramTypes = call.method.getParamTypes();
+        String[] paramNames = call.method.getParamNames();
+
+        final Object[] r = new Object[paramTypes.length];
+        for (int i = 0; i < r.length; i++) {
+            Type type = paramTypes[i];
+            String name = paramNames[i];
+            if (name == null && !call.versionName.equals("jsonrpc")) {
+                name = "param" + i;
+            }
+            {
+                // First search in the request attributes
+                Object attribute = req.getAttribute(name);
+                Object paramValue;
+                if ( attribute != null)
                 {
-                    final String v = req.getParameter(name);
+                    paramValue =attribute;
+                    Class attributeClass = attribute.getClass();
+                    // we try to convert string and jsonelements to the parameter type (if the parameter type is not string or jsonelement)
+                    if ( attributeClass.equals(String.class) && !type.equals(String.class) )
+                    {
+                        JsonParser parser = new JsonParser();
+                        JsonElement parsed = parser.parse((String)attribute);
+                        paramValue = gs.fromJson(parsed, type);
+                        
+                    } 
+                    else if (JsonElement.class.isAssignableFrom(attributeClass) && !type.equals(JsonElement.class))
+                    {
+                        JsonElement parsed = (JsonElement) attribute;
+                        paramValue = gs.fromJson(parsed, type);
+                    }
+                    else
+                    {
+                        paramValue =attribute;
+                    }
+                }
+                // then in request parameters
+                else 
+                {
+                    String v = null;
+                    v = req.getParameter(name);
+                    // if not found in request use body
+                    if ( v == null && body != null && !body.isEmpty())
+                    {
+                        v = body;
+                    }
                     if (v == null) {
-                        r[i] = null;
+                        paramValue = null;
                     } else if (type == String.class) {
-                        r[i] = v;
+                        paramValue = v;
                     } else if (type == Date.class) {
                         // special case for handling date parameters with the
                         // ':' char i it
                         try {
-                            r[i] = SerializableDateTimeFormat.INSTANCE.parseTimestamp(v);
+                            paramValue = SerializableDateTimeFormat.INSTANCE.parseTimestamp(v);
                         } catch (ParseDateException e) {
                             throw new JsonSyntaxException(v, e);
                         }
@@ -299,7 +360,7 @@ public class JsonServlet {
                         // Primitive type, use the JSON representation of that
                         // type.
                         //
-                        r[i] = gs.fromJson(v, type);
+                        paramValue = gs.fromJson(v, type);
                     } else {
                         // Assume it is like a java.sql.Timestamp or something
                         // and treat
@@ -307,12 +368,13 @@ public class JsonServlet {
                         //
                         JsonParser parser = new JsonParser();
                         JsonElement parsed = parser.parse(v);
-                        r[i] = gs.fromJson(parsed, type);
+                        paramValue = gs.fromJson(parsed, type);
                     }
                 }
+                r[i] = paramValue;
             }
-            call.params = r;
         }
+        call.params = r;
     }
 
     private static boolean isBodyJson(final ActiveCall call) {
@@ -385,11 +447,20 @@ public class JsonServlet {
 
     private void parsePostRequest(final ActiveCall call) throws UnsupportedEncodingException, IOException {
         try {
+            HttpServletRequest request = call.httpRequest;
+            String attribute = (String)request.getAttribute(JSON_METHOD);
+            String postBody = readBody(call);
             final GsonBuilder gb = createGsonBuilder();
-            gb.registerTypeAdapter(ActiveCall.class, new CallDeserializer(call, this));
-            Gson builder = gb.disableHtmlEscaping().create();
-            String readBody = readBody(call);
-            builder.fromJson(readBody, ActiveCall.class);
+            if ( attribute != null)
+            {
+                mapRequestToCall(call, request, postBody);
+            }
+            else
+            {
+                gb.registerTypeAdapter(ActiveCall.class, new CallDeserializer(call, this));
+                Gson mapper = gb.create();
+                mapper.fromJson(postBody, ActiveCall.class);
+            }
         } catch (JsonParseException err) {
             call.method = null;
             call.params = null;
@@ -424,7 +495,14 @@ public class JsonServlet {
                 }
 
                 final JsonObject r = new JsonObject();
-                r.add(src.versionName, src.versionValue);
+                if (src.versionName == null || src.versionValue == null)
+                {
+                    r.add("jsonrpc", new JsonPrimitive("2.0"));
+                }
+                else
+                {
+                    r.add(src.versionName, src.versionValue);
+                }
                 if (src.id != null) {
                     r.add("id", src.id);
                 }
@@ -538,7 +616,7 @@ public class JsonServlet {
 
     private static Class findInterface(Class<?> c) {
         while (c != null) {
-            if (c.isInterface() && c.getAnnotation(WebService.class) != null) {
+            if ( c.getAnnotation(WebService.class) != null) {
                 return c;
             }
             for (final Class<?> i : c.getInterfaces()) {

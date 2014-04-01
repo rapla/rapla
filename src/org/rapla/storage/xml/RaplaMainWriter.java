@@ -103,7 +103,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         		continue;
         	}
             openTag("relax:ref");
-            att("name",type.getElementKey());
+            att("name",type.getKey());
             closeElementTag();
         }
         closeElement("relax:choice");

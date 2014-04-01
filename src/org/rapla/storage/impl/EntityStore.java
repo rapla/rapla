@@ -58,7 +58,7 @@ public class EntityStore implements EntityResolver {
         if ( entity.getRaplaType() == DynamicType.TYPE)
         {
             DynamicType dynamicType = (DynamicType) entity;
-            dynamicTypes.put ( dynamicType.getElementKey(), dynamicType);
+            dynamicTypes.put ( dynamicType.getKey(), dynamicType);
         }
         if ( entity.getRaplaType() ==  Allocatable.TYPE)
         {

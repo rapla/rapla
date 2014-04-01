@@ -112,6 +112,11 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     	lastChanged = date;
     }
     
+    public void setCreateDate(Date createDate) {
+        checkWritable();
+        this.createDate = createDate;
+    }
+    
     public RaplaType<Allocatable> getRaplaType() {
     	return TYPE;
     }
@@ -431,6 +436,8 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 	{
 		return super.compareTo(o);
 	}
+
+   
 
 
 }

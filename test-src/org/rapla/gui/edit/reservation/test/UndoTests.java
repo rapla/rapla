@@ -261,7 +261,7 @@ public class UndoTests extends GUITestCase {
 			Reservation nonPersistantEvent) throws RaplaException, Exception {
 		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
-        assertEquals( "event", nonPersistantEvent.getClassification().getType().getElementKey());
+        assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
         nonPersistantEvent.addAllocatable( nonPersistantAllocatable );
         Appointment appointment = getFacade().newAppointment( new Date(), new Date());
         appointment.setRepeatingEnabled( true);

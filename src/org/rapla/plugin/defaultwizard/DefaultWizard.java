@@ -78,7 +78,7 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 			item.setIcon( getIcon("icon.new"));
 			for ( DynamicType type:eventTypes)
 			{
-				RaplaMenuItem newItem = new RaplaMenuItem(type.getElementKey());
+				RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());
 				newItem.setText( type.getName( getLocale()));
 				item.add( newItem);
 				newItem.addActionListener( this);

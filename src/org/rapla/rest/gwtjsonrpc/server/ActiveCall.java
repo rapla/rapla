@@ -81,4 +81,9 @@ public class ActiveCall implements AsyncCallback<Object> {
     httpResponse.setHeader("Pragma", "no-cache");
     httpResponse.setHeader("Cache-Control", "no-cache, must-revalidate");
   }
+
+
+  public boolean hasFailed() {
+      return externalFailure != null || internalFailure != null; 
+  }   
 }

@@ -34,11 +34,11 @@ public class DynamicTypeWriter extends RaplaXMLWriter
 
     public void printDynamicType(DynamicType type) throws IOException,RaplaException {
         openTag("relax:define");
-        att("name",type.getElementKey());
+        att("name",type.getKey());
         closeTag();
 
         openTag("relax:element");
-        att("name","dynatt:" + type.getElementKey());
+        att("name","dynatt:" + type.getKey());
         if (isPrintId())
         {
             att("id",getId(type));
@@ -104,7 +104,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             }
             else if ( constraint instanceof DynamicType) {
                 DynamicType dynamicType = (DynamicType) constraint;
-                print( dynamicType.getElementKey() );
+                print( dynamicType.getKey() );
             }
             else if ( constraint instanceof Date) {
                 final String formatDate = dateTimeFormat.formatDate( (Date) constraint);

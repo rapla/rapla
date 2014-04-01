@@ -631,7 +631,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     @Override
 	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
 	  	AllocatableImpl allocatable = (AllocatableImpl) entity;
-	  	String typeKey = allocatable.getClassification().getType().getElementKey();
+	  	String typeKey = allocatable.getClassification().getType().getKey();
 		setId(stmt, 1, entity);
 	  	setString(stmt,2, typeKey );
 		org.rapla.entities.Timestamp timestamp = allocatable;
@@ -735,7 +735,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 
     @Override
     protected int write(PreparedStatement stmt,Reservation event) throws SQLException,RaplaException {
-      	String typeKey = event.getClassification().getType().getElementKey();
+      	String typeKey = event.getClassification().getType().getKey();
       	setId(stmt,1, event );
       	setString(stmt,2, typeKey );
     	setId(stmt,3, event.getOwner() );
@@ -1193,7 +1193,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 			return 0;
 		}
         setId(stmt,1,type);
-        setString(stmt,2, type.getElementKey());
+        setString(stmt,2, type.getKey());
         setText(stmt,3,  getXML( type) );
 //    	setDate(stmt, 4,timestamp.getCreateTime() );
 //    	setDate(stmt, 5,timestamp.getLastChanged() );

@@ -108,7 +108,7 @@ public class ServerTest extends ServletTestBase {
 
 	public void testChangeReservation() throws Exception {
 		Reservation r1 = facade1.newReservation();
-		String typeKey = r1.getClassification().getType().getElementKey();
+		String typeKey = r1.getClassification().getType().getKey();
 		r1.getClassification().setValue("name", "test-reservation");
 		r1.addAppointment(facade1.newAppointment(facade1.today(), new Date()));
 		facade1.store(r1);

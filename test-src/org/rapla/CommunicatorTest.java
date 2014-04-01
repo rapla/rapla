@@ -90,7 +90,7 @@ public class CommunicatorTest extends ServletTestBase
         ClientFacade facade = getContainer().lookup(ClientFacade.class , "remote-facade-3");
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
-        String typeName = alloc.getClassification().getType().getElementKey();
+        String typeName = alloc.getClassification().getType().getKey();
         // AE = \u00C4
         // OE = \u00D6
         // UE = \u00DC

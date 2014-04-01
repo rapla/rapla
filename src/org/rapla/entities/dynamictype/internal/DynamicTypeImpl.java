@@ -49,7 +49,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
     MultiLanguageName name  = new MultiLanguageName();
-    String elementKey = "";
+    String key = "";
     //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
     Map<String,ParsedText> annotations = new HashMap<String,ParsedText>();
     transient DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
@@ -82,7 +82,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     public boolean isInternal()
     {
-    	boolean result =elementKey.startsWith("rapla:");
+    	boolean result =key.startsWith("rapla:");
     	return result;
     }
     
@@ -257,16 +257,26 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public void setElementKey(String elementKey) {
+        setKey(elementKey);
+    }
+
+    public void setKey(String key) {
         checkWritable();
-        this.elementKey = elementKey;
+        this.key = key;
         for ( ParsedText text:annotations.values())
 		{
 			text.updateFormatString(parseContext);
 		}
     }
 
-    public String getElementKey() {
-        return elementKey;
+    public String getElementKey()
+    {
+        return getKey();
+    }
+    
+    public String getKey()
+    {
+        return key;
     }
 
     /** exchange the two attribute positions */
@@ -384,7 +394,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;
         clone.name = (MultiLanguageName) name.clone();
-        clone.elementKey = elementKey;
+        clone.key = key;
         for (AttributeImpl att:clone.getSubEntities())
         {
             ((AttributeImpl)att).setParent(clone);
@@ -410,7 +420,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         buf.append(" [");
         buf.append ( super.toString()) ;
         buf.append("] key=");
-        buf.append( getElementKey() );
+        buf.append( getKey() );
         buf.append(": ");
         if ( attributes != null ) {
             Attribute[] att = getAttributes();
@@ -498,7 +508,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	        {
 	        	return new AttributeFunction(attribute);
 	        } 
-	        else if (variableName.equals(type.getElementKey())) 
+	        else if (variableName.equals(type.getKey())) 
 	        {
 	        	return new TypeFunction(type);
 	        }
@@ -555,7 +565,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			Object id;
 			TypeFunction(DynamicType type) 
 			{
-				super("type:"+type.getElementKey());
+				super("type:"+type.getKey());
 				id = type.getId() ;
 			}
 			
@@ -569,7 +579,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			public String getRepresentation( ParseContext context)
 			{
 				if ( type.getId().equals( id ) ) {
-					return type.getElementKey();
+					return type.getKey();
 		        }
 				return "";
 			}

@@ -49,7 +49,7 @@ public class AttributeTest extends RaplaTestCase {
 
     public void testAnnotations() throws Exception {
         type = modificationMod.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        type.setElementKey("test-type");
+        type.setKey("test-type");
         Attribute a1 = modificationMod.newAttribute(AttributeType.STRING);
         a1.setKey("test-attribute");
         a1.setAnnotation("expected-rows", "5");

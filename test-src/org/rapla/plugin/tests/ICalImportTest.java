@@ -40,7 +40,7 @@ public class ICalImportTest extends RaplaTestCase{
         getFacade().store( newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);
         User user = getFacade().getUser("homer");
-        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getElementKey();
+        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
     }
 	
@@ -72,7 +72,7 @@ public class ICalImportTest extends RaplaTestCase{
         getFacade().store( newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);
         User user = getFacade().getUser("homer");
-        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getElementKey();
+        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
         Reservation[] reservations;
         {

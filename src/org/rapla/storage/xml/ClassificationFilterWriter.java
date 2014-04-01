@@ -31,7 +31,7 @@ class ClassificationFilterWriter extends RaplaXMLWriter {
 
     public void printClassificationFilter(ClassificationFilter f) throws IOException,RaplaException {
         openTag("rapla:classificationfilter");
-        att("dynamictype", f.getType().getElementKey());
+        att("dynamictype", f.getType().getKey());
         closeTag();
         for (Iterator<? extends ClassificationFilterRule> it = f.ruleIterator();it.hasNext();) {
             ClassificationFilterRule rule = it.next();

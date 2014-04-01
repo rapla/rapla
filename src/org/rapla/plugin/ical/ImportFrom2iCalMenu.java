@@ -275,7 +275,7 @@ public class ImportFrom2iCalMenu extends RaplaGUIComponent implements Identifiab
                     final DynamicType dynamicType = (DynamicType) comboEventType.getSelectedItem();
                     if (dynamicType == null)
                         return;
-                    String eventTypeKey = dynamicType.getElementKey();
+                    String eventTypeKey = dynamicType.getKey();
 
                     Object selectedItem = comboNameAttribute.getSelectedItem();
                     if (selectedItem == null)

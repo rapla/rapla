@@ -8,11 +8,26 @@
   <listener>
     <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
   </listener>
+  <filter>
+     <filter-name>RaplaFilter</filter-name>
+     <filter-class>org.rapla.server.HTTPMethodOverrideFilter</filter-class>
+  </filter>
+  
+  <filter-mapping>
+    <filter-name>RaplaFilter</filter-name>
+    <url-pattern>/rapla/*</url-pattern>
+  </filter-mapping>
+  
+  <filter-mapping>
+    <filter-name>RaplaFilter</filter-name>
+    <url-pattern>/rapla</url-pattern>
+  </filter-mapping>
+  
+  
   <servlet>
     <servlet-name>RaplaServer</servlet-name>
     <display-name>RaplaServer</display-name>
     <description>Rapla</description>
-
     <servlet-class>org.rapla.server.MainServlet</servlet-class>
     <!-- Config file path relative to this file -->
     <init-param>
@@ -21,26 +36,17 @@
     </init-param>
     <load-on-startup>3</load-on-startup>
   </servlet>
-  <!-- GWT Test servlet  
-  <servlet>
-    <servlet-name>greetServlet</servlet-name>
-    <servlet-class>org.rapla.server.GreetingServiceImpl</servlet-class>
-  </servlet>
   
-  <servlet-mapping>
-    <servlet-name>greetServlet</servlet-name>
-    <url-pattern>/test_gwt/greet</url-pattern>
-  </servlet-mapping>
-  -->
   <servlet-mapping>
     <servlet-name>RaplaServer</servlet-name>
     <url-pattern>/rapla/*</url-pattern>
   </servlet-mapping>
   
-   <servlet-mapping>
+  <servlet-mapping>
     <servlet-name>RaplaServer</servlet-name>
     <url-pattern>/rapla</url-pattern>
   </servlet-mapping>
+  
   
   <env-entry>
 	  <env-entry-name>raplafile</env-entry-name>

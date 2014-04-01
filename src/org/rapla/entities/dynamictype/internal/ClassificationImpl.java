@@ -44,7 +44,7 @@ import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
  */
 public class ClassificationImpl implements Classification,DynamicTypeDependant, EntityReferencer {
 
-	private String parentId;
+	private String typeId;
 	private String type;
 	private Map<String,List<String>> data = new LinkedHashMap<String,List<String>>();
 	private transient boolean readOnly = false;
@@ -93,8 +93,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     ClassificationImpl(DynamicTypeImpl dynamicType) {
-        parentId = dynamicType.getId();
-        type = dynamicType.getElementKey();
+        typeId = dynamicType.getId();
+        type = dynamicType.getKey();
     }
 
     public void setResolver( EntityResolver resolver)
@@ -148,8 +148,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
 	private String getParentId() {
-		if  (parentId != null)
-			return parentId;
+		if  (typeId != null)
+			return typeId;
 		if (type == null)
 		{
 			throw new UnresolvableReferenceExcpetion( "type and parentId are both not set");
@@ -159,8 +159,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		{
 			throw new UnresolvableReferenceExcpetion( type);
 		}
-		parentId = dynamicType.getId();
-		return parentId;
+		typeId = dynamicType.getId();
+		return typeId;
 			
 	}
 
@@ -231,7 +231,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             return false;
     	}
         DynamicTypeImpl type = getType();
-		if ( !newType.getElementKey().equals( type.getElementKey()))
+		if ( !newType.getKey().equals( type.getKey()))
         	return true;
 		
         for (String key:data.keySet()) {
@@ -293,7 +293,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
         	data.remove( key );
         }
-        this.type = type.getElementKey();
+        this.type = type.getKey();
         name = null;
         namePlaning = null;
     }
@@ -435,7 +435,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			clone.data.put(key, value);
         }
         clone.resolver = resolver;
-        clone.parentId = getParentId();
+        clone.typeId = getParentId();
         clone.type = type;
         clone.name = null;
         clone.namePlaning = null;

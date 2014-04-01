@@ -262,7 +262,7 @@ public class LocalCache implements EntityResolver
    
     public DynamicType getDynamicType(String elementKey) {
         for (DynamicType dt:dynamicTypes) {
-            if (dt.getElementKey().equals(elementKey))
+            if (dt.getKey().equals(elementKey))
                 return dt;
         }
         return null;

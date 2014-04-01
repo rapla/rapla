@@ -2,6 +2,7 @@ package org.rapla.server;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.rapla.entities.User;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
@@ -30,8 +31,9 @@ public interface ServerServiceContainer extends Container
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass, Configuration config);
     /** @return null when the server doesn't have the webpage 
      * @throws RaplaContextException */
-	RaplaPageGenerator getWebpage(String page) throws RaplaContextException;
+	RaplaPageGenerator getWebpage(String page);
 	
+	public User getUser(HttpServletRequest request) throws RaplaException;
     <T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
     boolean hasWebservice(String interfaceName);
 

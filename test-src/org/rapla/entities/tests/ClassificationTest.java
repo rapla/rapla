@@ -75,7 +75,7 @@ public class ClassificationTest extends RaplaTestCase {
     	rootC.addCategory( c2 );
 
     	DynamicType type =  modificationMod.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-    	type.setElementKey("test-type");
+    	type.setKey("test-type");
     	Attribute a1 = modificationMod.newAttribute(AttributeType.CATEGORY);
     	a1.setKey("test-attribute");
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c1 );

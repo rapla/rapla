@@ -174,7 +174,7 @@ public class ClientFacadeTest extends RaplaTestCase {
     		 
     		Reservation nonPeristantEvent = getFacade().newReservation();
     		nonPeristantEvent.getClassification().setValue("name","dummy-event");
-    		assertEquals( "event", nonPeristantEvent.getClassification().getType().getElementKey());
+    		assertEquals( "event", nonPeristantEvent.getClassification().getType().getKey());
     		nonPeristantEvent.addAllocatable( nonPersistantAllocatable );
     		nonPeristantEvent.addAppointment( getFacade().newAppointment( new Date(), new Date()));
     		getFacade().storeObjects( new Entity[] { nonPersistantAllocatable, nonPeristantEvent} );

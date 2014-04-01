@@ -60,6 +60,11 @@ import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.rest.gwtjsonrpc.server.SignedToken;
 import org.rapla.rest.gwtjsonrpc.server.ValidToken;
 import org.rapla.rest.gwtjsonrpc.server.XsrfException;
+import org.rapla.rest.server.RaplaAPIPage;
+import org.rapla.rest.server.RaplaAuthRestPage;
+import org.rapla.rest.server.RaplaDynamicTypesRestPage;
+import org.rapla.rest.server.RaplaEventsRestPage;
+import org.rapla.rest.server.RaplaResourcesRestPage;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaServerExtensionPoints;
@@ -69,12 +74,10 @@ import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.DefaultHTMLMenuEntry;
-import org.rapla.servletpages.RaplaAPIPage;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
 import org.rapla.servletpages.RaplaJNLPPageGenerator;
 import org.rapla.servletpages.RaplaPageGenerator;
-import org.rapla.servletpages.RaplaResourcesRestPage;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
 import org.rapla.storage.CachableStorageOperator;
@@ -82,6 +85,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
@@ -155,6 +159,9 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addWebpage( "server",RaplaStatusPageGenerator.class);
         addWebpage( "json",RaplaAPIPage.class);
         addWebpage( "resources",RaplaResourcesRestPage.class);
+        addWebpage( "events",RaplaEventsRestPage.class);
+        addWebpage( "dynamictypes",RaplaDynamicTypesRestPage.class);
+        addWebpage( "auth",RaplaAuthRestPage.class);
         addWebpage( "index",RaplaIndexPageGenerator.class );
         addWebpage( "raplaclient.jnlp",RaplaJNLPPageGenerator.class );
         addWebpage( "raplaclient",RaplaJNLPPageGenerator.class );
@@ -304,8 +311,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponent(REMOTE_METHOD_FACTORY,factory, role.getName(), configuration);
     }
     
-    
-    
     protected RemoteMethodFactory<?> getRemoteMethod(String interfaceName) throws RaplaContextException {
 		RemoteMethodFactory<?> factory = lookup( REMOTE_METHOD_FACTORY ,interfaceName);
 		return factory;
@@ -322,7 +327,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		 addContainerProvidedComponent(SERVLET_PAGE_EXTENSION,pageClass, lowerCase, configuration);
 	}
 	
-	public RaplaPageGenerator getWebpage(String page) throws RaplaContextException {
+	public RaplaPageGenerator getWebpage(String page)  {
 		try
 		{
 			String lowerCase = page.toLowerCase();
@@ -330,6 +335,11 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			return factory;
 		} catch (RaplaContextException ex)
 		{
+		    Throwable cause = ex.getCause();
+            if ( cause != null)
+		    {
+		        getLogger().error(cause.getMessage(),cause);
+		    }
 			return null;
 		}
 	}
@@ -598,40 +608,50 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             
             @Override
             public FutureResult<LoginTokens> login( String username, String password, String connectAs ) 
-             {
-            	 try
-            	 {
-	            	 User user;
-	            	 if ( standaloneSession == null)
-	            	 {
-	            		 Logger logger = getLogger().getChildLogger("login");
-	            		 user = authenticate(username, password, connectAs,	logger);
-		            	 ((RemoteSessionImpl)session).setUser( user);
-	            	 }
-	            	 else
-	                 {
-	            		 String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-	            		 // don't check passwords in standalone version
-	                	 user = operator.getUser( toConnect);
-	                	 if ( user == null)
-	                	 {
-	                		 throw new RaplaSecurityException(i18n.getString("error.login"));
-	                	 }
-	                	 standaloneSession.setUser( user);
-	                 }
-	                 if ( connectAs != null && connectAs.length()> 0)
-	                 {
-	                     if (!operator.getUser( username).isAdmin())
-	                     {
-	                         throw new SecurityException("Non admin user is requesting change user permission!");
-	                     }
-	                 }
-	                 FutureResult<LoginTokens> generateAccessToken = generateAccessToken(user);
-	                 return generateAccessToken;
-	             } catch (RaplaException ex)  {
-	            	 return new ResultImpl<LoginTokens>(ex);
-	             }
-             }
+            {
+                LoginCredentials loginCredentials = new LoginCredentials(username,password,connectAs);
+                return auth(loginCredentials);
+            }
+           
+            @Override
+            public FutureResult<LoginTokens> auth( LoginCredentials credentials ) 
+            {
+                try
+                {
+                    User user;
+                    String username = credentials.getUsername();
+                    String password = credentials.getPassword();
+                    String connectAs = credentials.getConnectAs();
+                    if ( standaloneSession == null)
+                    {
+                        Logger logger = getLogger().getChildLogger("login");
+                        user = authenticate(username, password, connectAs,	logger);
+                        ((RemoteSessionImpl)session).setUser( user);
+                    }
+                    else
+                    {
+                        String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
+                        // don't check passwords in standalone version
+                        user = operator.getUser( toConnect);
+                        if ( user == null)
+                        {
+                            throw new RaplaSecurityException(i18n.getString("error.login"));
+                        }
+                        standaloneSession.setUser( user);
+                    }
+                    if ( connectAs != null && connectAs.length()> 0)
+                    {
+                        if (!operator.getUser( username).isAdmin())
+                        {
+                            throw new SecurityException("Non admin user is requesting change user permission!");
+                        }
+                    }
+                    FutureResult<LoginTokens> generateAccessToken = generateAccessToken(user);
+                    return generateAccessToken;
+                } catch (RaplaException ex)  {
+                    return new ResultImpl<LoginTokens>(ex);
+                }
+            }
 
             private FutureResult<LoginTokens> generateAccessToken(User user) throws RaplaException {
                 try 
@@ -828,8 +848,16 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		}
 	}
 
-	private RemoteSession getRemoteSession(HttpServletRequest request) throws RaplaException {
-	    String token = request.getHeader("Authorization");
+	public RemoteSession getRemoteSession(HttpServletRequest request) throws RaplaException {
+	    User user = getUser(request);
+	    RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous");
+	    remoteSession.setUser( (User) user);
+	   // remoteSession.setAccessToken( token );
+	    return remoteSession;
+	}
+
+    public User getUser(HttpServletRequest request) throws RaplaException {
+        String token = request.getHeader("Authorization");
 	    if ( token != null)
 	    {
 	        String bearerStr = "bearer";
@@ -856,12 +884,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 	    {
 	        user = getUser( token, accessTokenSigner);
         }
-
-	    RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous");
-	    remoteSession.setUser( (User) user);
-	    remoteSession.setAccessToken( token );
-	    return remoteSession;
-	}
+        return user;
+    }
 	
 	@SuppressWarnings("unchecked")
 	@Override

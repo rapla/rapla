@@ -59,7 +59,7 @@ import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.storage.dbrm.HTTPConnector;
+import org.rapla.storage.dbrm.RaplaHTTPConnector;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
@@ -341,7 +341,7 @@ final public class RaplaMainContainer extends ContainerImpl
    
 
     static private FutureResult call( RaplaContext context,URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
-         HTTPConnector connector = new HTTPConnector();
+         RaplaHTTPConnector connector = new RaplaHTTPConnector();
          try {
              FutureResult result =connector.call(service, methodName, args, connectionInfo);
              return result;

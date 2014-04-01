@@ -1,12 +1,6 @@
 package org.rapla.storage.dbrm;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.lang.reflect.Method;
-import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -17,17 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
+import org.rapla.rest.client.HTTPJsonConnector;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
-import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.ResultType;
 import org.rapla.storage.RaplaNewVersionException;
@@ -38,35 +29,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-public class HTTPConnector 
+public class RaplaHTTPConnector extends HTTPJsonConnector 
 {
     //private String clientVersion;
     
-    public HTTPConnector() {
+    public RaplaHTTPConnector() {
     //    clientVersion = i18n.getString("rapla.version");
     }
     
-    private String readResultToString( InputStream input) throws IOException
-    {
-        InputStreamReader in = new InputStreamReader( input,"UTF-8");
-        char[] buf = new char[4096];
-        StringBuffer buffer = new StringBuffer();
-        while ( true )
-        {
-            int  len = in.read(buf);
-            if ( len == -1)
-            {
-                break;
-            }
-            buffer.append( buf, 0,len );
-        }
-        String result = buffer.toString();
-        in.close();
-        return result;
-    }
- 
     private JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
 	{	
 		final GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping();
@@ -81,16 +52,21 @@ public class HTTPConnector
 		}
 		return params;
 	}
+    private Gson createJsonMapper() {
+        Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+        return gson;
+    }
+
 
 	private Object deserializeReturnValue(Class<?> returnType, JsonElement element) {
-		Gson gson = createParser();
+		Gson gson = createJsonMapper();
 		
 		Object result = gson.fromJson(element, returnType);
 		return result;
 	}
 	
 	private List deserializeReturnList(Class<?> returnType, JsonArray list) {
-        Gson gson = createParser();
+        Gson gson = createJsonMapper();
         List<Object> result = new ArrayList<Object>();
         for (JsonElement element:list )
         {
@@ -100,12 +76,8 @@ public class HTTPConnector
         return result;
     }
 
-    public Gson createParser() {
-        Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
-        return gson;
-    }
-	private Set deserializeReturnSet(Class<?> returnType, JsonArray list) {
-        Gson gson = createParser();
+    private Set deserializeReturnSet(Class<?> returnType, JsonArray list) {
+        Gson gson = createJsonMapper();
         Set<Object> result = new LinkedHashSet<Object>();
         for (JsonElement element:list )
         {
@@ -116,7 +88,7 @@ public class HTTPConnector
     }
 
 	private Map deserializeReturnMap(Class<?> returnType, JsonObject map) {
-	    Gson gson = createParser();
+	    Gson gson = createJsonMapper();
 	    Map<String,Object> result = new LinkedHashMap<String,Object>();
 	    for (Entry<String, JsonElement> entry:map.entrySet() )
 	    {
@@ -158,7 +130,7 @@ public class HTTPConnector
     				    List<StackTraceElement> trace = new ArrayList<StackTraceElement>();
     				    for (JsonElement element:stacktrace.getAsJsonArray())
     				    {
-    				        StackTraceElement ste = createParser().fromJson( element, StackTraceElement.class);
+    				        StackTraceElement ste = createJsonMapper().fromJson( element, StackTraceElement.class);
     				        trace.add( ste);
     				    }
     				    ex.setStackTrace( trace.toArray( new StackTraceElement[] {}));
@@ -173,19 +145,57 @@ public class HTTPConnector
 		}
 		return new RaplaException( message.toString());
 	}
+	
+	private JsonObject sendCall_(String requestMethod, URL methodURL, JsonElement jsonObject, String authenticationToken) throws Exception  
+	{
+    	 try
+         {
+    	     return sendCall(requestMethod, methodURL, jsonObject, authenticationToken);
+         }
+         catch (SocketException ex)
+         {   
+              throw new RaplaConnectException( ex);
+         }
+         catch (UnknownHostException ex)
+         {   
+             throw new RaplaConnectException( ex);
+         }
+	}
     	
     public FutureResult call(Class<?> service, String methodName, Object[] args,final RemoteConnectionInfo serverInfo) throws Exception
 	{
-        return post(service, methodName, args, serverInfo);
-	}
-
-    public FutureResult post(Class<?> service, String methodName, Object[] args, final RemoteConnectionInfo serverInfo) throws Exception {
         String serviceUrl =service.getName();
         Method method = findMethod(service, methodName);
         URL baseUrl = new URL(serverInfo.getServerURL());
-        URL methodURL = new URL(baseUrl,"/rapla/json/" + serviceUrl +"/" + methodName);
+        URL methodURL = new URL(baseUrl,"/rapla/json/" + serviceUrl );
         JsonObject element = serializeCall(method, args);
-        JsonObject resultMessage = sendCall("POST",methodURL, element, serverInfo.getAccessToken(), serverInfo.getRefreshCommand());
+        FutureResult<String> authExpiredCommand = serverInfo.getRefreshCommand();
+        JsonObject resultMessage = sendCall_("POST",methodURL, element, serverInfo.getAccessToken());
+        JsonElement errorElement = resultMessage.get("error");
+        if ( errorElement != null)
+        {
+            RaplaException ex = deserializeExceptionObject(resultMessage);
+            // if authorization expired
+            String message = ex.getMessage();
+            boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !methodURL.getPath().endsWith("login");
+            if ( !b || authExpiredCommand == null )
+            {
+                throw ex;
+            }
+            // try to get a new one
+            String newAuthCode;
+            try {
+                newAuthCode = authExpiredCommand.get();
+            } catch (RaplaException e) {
+                throw e;
+            } catch (Exception e)
+            {
+                throw new RaplaException(e.getMessage(), e);
+            }
+            // try the same call again with the new result, this time with no auth code failed fallback
+            resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+            
+        }
 	    JsonElement resultElement = resultMessage.get("result");
 	    Class resultType;
 	    Object resultObject;
@@ -265,127 +275,6 @@ public class HTTPConnector
         return element;
     }
     
-    public JsonObject sendCall(String requestMethod,URL methodURL, JsonElement jsonObject, String authenticationToken, FutureResult<String> authExpiredCommand) throws RaplaException,IOException {
-        HttpURLConnection conn = (HttpURLConnection)methodURL.openConnection();
-        conn.setRequestMethod(requestMethod);
-        conn.setUseCaches( false );
-        conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
-        conn.setRequestProperty("Content-Type", JsonConstants.JSON_TYPE + ";charset=utf-8");
-        if ( authenticationToken != null)
-        {
-        	conn.setRequestProperty("Authorization", "Bearer "  + authenticationToken);
-        }
-        conn.setDoOutput(true);
-        try
-        {
-            conn.connect();
-        }
-        catch (SocketException ex)
-        {   
-             throw new RaplaConnectException( ex);
-        }
-        catch (UnknownHostException ex)
-        {   
-            throw new RaplaConnectException( ex);
-        }
-        
-        if ( requestMethod.equals("PUT") ||requestMethod.equals("POST"))
-        {
-            Writer wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-            Gson gson = createParser();
-    		String body = gson.toJson( jsonObject);
-            wr.write( body);
-            wr.flush();
-        }
-        else
-        {
-            
-        }
-        JsonObject resultMessage = readResult(conn);
-        JsonElement errorElement = resultMessage.get("error");
-        if ( errorElement != null)
-        {
-            RaplaException ex = deserializeExceptionObject(resultMessage);
-            // if authorization expired
-            String message = ex.getMessage();
-            boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !methodURL.getPath().endsWith("login");
-            if ( !b || authExpiredCommand == null )
-            {
-                throw ex;
-            }
-            // try to get a new one
-            String newAuthCode;
-            try {
-                newAuthCode = authExpiredCommand.get();
-            } catch (RaplaException e) {
-                throw e;
-            } catch (Exception e)
-            {
-                throw new RaplaException(e.getMessage(), e);
-            }
-            // try the same call again with the new result, this time with no auth code failed fallback
-            JsonObject newResultMessage = sendCall( requestMethod, methodURL, jsonObject, newAuthCode, null);
-            return newResultMessage;
-        }
-        return resultMessage;
-    }
-
-    public JsonObject readResult(HttpURLConnection conn) throws RaplaException, IOException {
-        String resultString;
-        InputStream inputStream = null;
-        try
-        {
-        	String message = conn.getHeaderField("X-Error-Stacktrace");
-            if ( message != null)
-            {
-            	String classname = conn.getHeaderField("X-Error-Classname");
-            	RaplaException ex = deserializeException( classname, message, null);
-            	throw ex;
-            }
-            
-            String encoding = conn.getContentEncoding();
-			if (encoding != null && encoding.equalsIgnoreCase("gzip")) 
-			{
-				inputStream = new GZIPInputStream(conn.getInputStream());
-			}
-			else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
-            	 inputStream = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
-			}
-			else {
-				inputStream = conn.getInputStream();
-			}
-            resultString = readResultToString( inputStream);
-            inputStream.close();
-        }
-        catch (SocketException ex)
-        {   
-        	throw new RaplaConnectException( ex);
-        }
-        catch (UnknownHostException ex)
-        {   
-        	throw  new RaplaConnectException( ex);
-        }
-        catch (IOException ex)
-        {
-        	throw new RaplaException( ex);
-        }
-        finally
-        {
-        	if ( inputStream != null)
-        	{
-        		inputStream.close();
-        	}
-        }
-
-	    JsonElement  parsed = new JsonParser().parse(resultString);
-	    if ( !(parsed instanceof JsonObject))
-	    {
-	    	throw new RaplaException("Invalid json result");
-	    }
-	    JsonObject resultMessage = (JsonObject) parsed;
-        return resultMessage;
-    }
-    
     public RaplaException deserializeException(String classname, String message, List<String> params) 
     {
     	String error = "";
@@ -397,23 +286,23 @@ public class HTTPConnector
 	    {
             if ( classname.equals( WrongRaplaVersionException.class.getName()))
             {
-                    return new WrongRaplaVersionException( message);
+                return new WrongRaplaVersionException( message);
             }
             else if ( classname.equals(RaplaNewVersionException.class.getName()))
             {
-                    return new RaplaNewVersionException( message);
+                return new RaplaNewVersionException( message);
             }
             else if ( classname.equals( RaplaSecurityException.class.getName()))
             {
-                    return new RaplaSecurityException( message);
+                return new RaplaSecurityException( message);
             }
             else if ( classname.equals( RaplaSynchronizationException.class.getName()))
             {
-                    return new RaplaSynchronizationException( message);
+                return new RaplaSynchronizationException( message);
             }
             else if ( classname.equals( RaplaConnectException.class.getName()))
             {
-                    return new RaplaConnectException( message);
+                return new RaplaConnectException( message);
             }
             else if ( classname.equals( EntityNotFoundException.class.getName()))
             {
@@ -422,16 +311,16 @@ public class HTTPConnector
 //                            String id = (String)convertFromString( String.class, param);
 //                            return new EntityNotFoundException( message, id);
 //                    }
-                    return new EntityNotFoundException( message);
+                return new EntityNotFoundException( message);
             }
             else if ( classname.equals( DependencyException.class.getName()))
             {
-                    if ( params != null)
-                    {
-                    	return new DependencyException( message,params);
-                    }
-                    //Collection<String> depList = Collections.emptyList();
-                    return new DependencyException( message, new String[] {});
+                if ( params != null)
+                {
+                	return new DependencyException( message,params);
+                }
+                //Collection<String> depList = Collections.emptyList();
+                return new DependencyException( message, new String[] {});
             }
             else
             {

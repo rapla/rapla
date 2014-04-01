@@ -34,7 +34,7 @@ class ClassifiableWriter extends RaplaXMLWriter {
         DynamicType dynamicType = classification.getType();
         boolean internal = ((DynamicTypeImpl)dynamicType).isInternal();
 		String namespacePrefix = internal ? "ext:" : "dynatt:";
-		String elementKey = dynamicType.getElementKey();
+		String elementKey = dynamicType.getKey();
 		if ( internal )
 		{
 			if (!elementKey.startsWith("rapla:"))

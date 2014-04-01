@@ -1200,7 +1200,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		DynamicType[] dts = getDynamicTypes(classificationType);
 		int max = 1;
 		for (int i = 0; i < dts.length; i++) {
-			String key = dts[i].getElementKey();
+			String key = dts[i].getKey();
 			int len = classificationType.length();
 			if (key.indexOf(classificationType) >= 0 && key.length() > len && Character.isDigit(key.charAt(len))) {
 				try {

@@ -135,6 +135,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     	checkWritable();
         lastChanged = date;
     }
+    
+    public void setCreateDate(Date createDate)
+    {
+        checkWritable();
+        this.createDate = createDate;
+    }
+
 
     public Appointment[] getAppointments()   {
         return appointments.toArray(Appointment.EMPTY_ARRAY);
@@ -607,6 +614,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
+   
 
 
 }

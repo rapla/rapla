@@ -1243,7 +1243,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			Entity entity2 = null;
 			if (DynamicType.TYPE == entity.getRaplaType()) {
 				DynamicType type = (DynamicType) entity;
-				name = type.getElementKey();
+				name = type.getKey();
 				entity2 = (Entity) store.getDynamicType(name);
 				if (entity2 != null && !entity2.equals(entity))
 					throwNotUnique(name);

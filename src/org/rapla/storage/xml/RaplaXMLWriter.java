@@ -198,7 +198,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
         String localName = entity.getRaplaType().getLocalName();
         openTag("rapla:" + localName);
         if ( entity.getRaplaType() == DynamicType.TYPE) {
-            att("keyref", ((DynamicType)entity).getElementKey());
+            att("keyref", ((DynamicType)entity).getKey());
         } else {
             att("idref",getId( entity));
         }

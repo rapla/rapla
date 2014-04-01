@@ -16,7 +16,7 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
      */
     User user;
     Logger logger;
-    private String accessToken;
+   // private String accessToken;
     
     public RemoteSessionImpl(RaplaContext context, String clientName) {
         super( context );
@@ -43,15 +43,15 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
         this.user = user;
     }
     
-    public void setAccessToken( String token)
-    {
-        this.accessToken = token;
-    }
-    
-    @Override
-    public String getAccessToken() {
-        return accessToken;
-    }
+//    public void setAccessToken( String token)
+//    {
+//        this.accessToken = token;
+//    }
+//    
+//    @Override
+//    public String getAccessToken() {
+//        return accessToken;
+//    }
 
     public void logout() {
     	this.setUser( null);

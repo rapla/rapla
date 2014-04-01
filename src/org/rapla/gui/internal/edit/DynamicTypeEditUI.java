@@ -194,7 +194,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     public void mapToObjects() throws RaplaException {
         MultiLanguageName newName = name.getValue();
 		dynamicType.getName().setTo( newName);
-        dynamicType.setElementKey(elementKey.getValue());
+        dynamicType.setKey(elementKey.getValue());
         attributeEdit.confirmEdits();
         validate();
         setAnnotations();
@@ -266,7 +266,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     public void mapFromObjects()
     {
         name.setValue( dynamicType.getName());
-        elementKey.setValue( dynamicType.getElementKey());
+        elementKey.setValue( dynamicType.getKey());
         attributeEdit.setDynamicType(dynamicType);
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 		isEventType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
@@ -343,10 +343,10 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         if ( getName( dynamicType ).length() == 0)
             throw new RaplaException(getString("error.no_name"));
 
-        if (dynamicType.getElementKey().equals("")) {
+        if (dynamicType.getKey().equals("")) {
             throw new RaplaException(getI18n().format("error.no_key",""));
         }
-        checkKey(dynamicType.getElementKey());
+        checkKey(dynamicType.getKey());
         Attribute[] attributes = dynamicType.getAttributes();
         for (int i=0;i<attributes.length;i++) {
             String key = attributes[i].getKey();

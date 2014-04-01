@@ -255,7 +255,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 {
                 	String elementKey = content;
                 	// check if the dynamic type refers to itself
-                	if (elementKey.equals( dynamicType.getElementKey()))
+                	if (elementKey.equals( dynamicType.getKey()))
                 	{
                 		constraint = dynamicType;
                 	}

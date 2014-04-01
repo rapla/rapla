@@ -240,7 +240,7 @@ public final class ClassificationFilterImpl
         if (!hasType( newType ))
             return false;
         
-        if ( !newType.getElementKey().equals( getType().getElementKey()))
+        if ( !newType.getKey().equals( getType().getKey()))
         	return true;
 
         ClassificationFilterRuleImpl[] rules = getRules();
@@ -324,7 +324,7 @@ public final class ClassificationFilterImpl
     public String toString()
     {
     		StringBuilder buf = new StringBuilder();
-    		buf.append(getType().getElementKey() +": ");
+    		buf.append(getType().getKey() +": ");
     		for ( ClassificationFilterRule rule: getRules())
     		{
     			buf.append(rule.toString());

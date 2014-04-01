@@ -108,7 +108,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     	{
     		return false;
     	}
-    	if (!classification.getType().getElementKey().equals(StorageOperator.PERIOD_TYPE))
+    	if (!classification.getType().getKey().equals(StorageOperator.PERIOD_TYPE))
     	{
     		return false;
     	}

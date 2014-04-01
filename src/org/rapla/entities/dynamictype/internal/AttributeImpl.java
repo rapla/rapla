@@ -305,7 +305,15 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 return Boolean.TRUE;
         }
         if (type.equals( AttributeType.ALLOCATABLE)) {
-        	// We currently can't convert to allocatable type so we set it to null
+            // we try to convert ids
+            if ( value instanceof String)
+            {
+                Entity result = resolver.tryResolve( (String) value);
+                if ( result != null && result instanceof Allocatable)
+                {
+                    return (Allocatable) result;
+                }
+            }
         	return null;
         }
         if (type.equals( AttributeType.CATEGORY )) {
@@ -389,6 +397,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             	   }
             	   return newCategory;
                }
+            }
+            else if ( value instanceof String)
+            {
+                Entity result = resolver.tryResolve( (String) value);
+                if ( result != null && result instanceof Category)
+                {
+                    return (Category) result;
+                }
             }
             if ( rootCategory != null)
             {
