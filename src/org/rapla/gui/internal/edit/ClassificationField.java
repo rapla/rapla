@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -38,6 +37,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
+import org.rapla.gui.toolkit.RaplaListComboBox;
 
 /****************************************************************
  * This is the base-class for all Classification-Panels         *
@@ -47,7 +47,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
             ActionListener
 {
 	JPanel content = new JPanel();
-	JComboBox typeSelector;
+	RaplaListComboBox typeSelector;
 	ClassificationEditUI editUI;
 
 	DynamicType oldDynamicType;
@@ -145,7 +145,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			dynamicType = null;
 		oldDynamicType = dynamicType;
 
-		JComboBox jComboBox = new JComboBox(types);
+		RaplaListComboBox jComboBox = new RaplaListComboBox(getContext(),types);
 		typeSelector = jComboBox;
 		typeSelector.setEnabled( types.length > 1);
 		if (dynamicType != null)

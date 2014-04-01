@@ -16,6 +16,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
+import javax.swing.KeyStroke;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreeModel;
@@ -193,6 +195,16 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 	        tree = new JTree()
 	        {
 		        public void setSelectionPath(TreePath path) {
+		            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+		            StackTraceElement caller = stackTrace[2];
+                    String className = caller.getClassName();
+                    String methodName = caller.getMethodName();
+                    
+                    if ( className.contains("BasicTreeUI") && methodName.contains("keyTyped"))
+		            {
+                        setLeadSelectionPath( path);
+		                return;
+		            }
 		        	addSelectionPath(path);
 		        }
 	
@@ -206,6 +218,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 		
 		        public void setSelectionRows(int[] rows) {
 		        	addSelectionRows(rows);
+		        }
+		        
+		        protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed)
+		        {
+		            return super.processKeyBinding(ks, e, condition, pressed);
 		        }
 	        };
 	        TreeSelectionModel model = new DefaultTreeSelectionModel()
@@ -295,6 +312,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             }
         });
         dialog.setTitle(getString("select"));
+        dialog.setInitFocus( tree);
         dialog.start();
         if (dialog.getSelectedIndex() == 0) {
             TreePath[] paths = tree.getSelectionPaths();

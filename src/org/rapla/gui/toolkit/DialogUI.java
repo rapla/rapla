@@ -348,12 +348,22 @@ public class DialogUI extends JDialog
         } else {
             getFrameList().placeRelativeToMain(this);
         }
+        if ( initFocusComponent != null)
+        {
+            initFocusComponent.requestFocus();
+        }
         //      okButton.requestFocus();
         bClosed = false;
         super.setVisible( true );
         if (m_modal) {
             dispose();
         }
+    }
+    
+    Component initFocusComponent;
+    public void setInitFocus(Component component)
+    {
+        initFocusComponent = component;
     }
 
     public void start() {

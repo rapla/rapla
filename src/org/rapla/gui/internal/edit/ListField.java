@@ -29,9 +29,8 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
-import org.rapla.entities.Named;
 import org.rapla.framework.RaplaContext;
-import org.rapla.gui.internal.common.NamedListCellRenderer;
+import org.rapla.gui.toolkit.RaplaListComboBox;
 
 public class ListField<T> extends AbstractEditField implements ActionListener,FocusListener, MultiEditField, SetGetField<T>, SetGetCollectionField<T> {
 	JPanel panel;
@@ -43,7 +42,6 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 	final String multipleValuesOutput = TextField.getOutputForMultipleValues();
 	boolean includeNothingSelected;
 
-	
 	public ListField(RaplaContext sm, String fieldName, Collection<T> v)
 	{
 		this(sm, fieldName, false);
@@ -57,75 +55,10 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		setFieldName(fieldName);
 		panel = new JPanel();
 		panel.setOpaque(false);
-		field = new JComboBox()
-		{
-            private static final long serialVersionUID = 1L;
-            // copied the coe from tree table
-		    String cachedSearchKey = "";
-		    protected boolean processKeyBinding(javax.swing.KeyStroke ks, java.awt.event.KeyEvent e, int condition, boolean pressed) {
-		         // live search in current parent node
-                if ((Character.isLetterOrDigit(e.getKeyChar())) && ks.isOnKeyRelease()) {
-                    char keyChar = e.getKeyChar();
-
-                    // search term
-                    String search = ("" + keyChar).toLowerCase();
-
-                    // try to find node with matching searchterm plus the search before
-                    int nextIndexMatching = getNextIndexMatching(cachedSearchKey + search);
-
-                    // if we did not find anything, try to find search term only: restart!
-                    if (nextIndexMatching <0 ) {
-                        nextIndexMatching = getNextIndexMatching(search);
-                        cachedSearchKey = "";
-                    }
-                    // if we found a node, select it, make it visible and return true
-                    if (nextIndexMatching >=0 ) {
-
-                        // store found treepath
-                        cachedSearchKey = cachedSearchKey + search;
-                        setSelectedIndex(nextIndexMatching);
-                        return true;
-                    }
-                    cachedSearchKey = "";
-                    return true;
-                }
-		        return super.processKeyBinding(ks,e,condition,pressed);
-		    }
-            private int getNextIndexMatching(String string) 
-            {
-                int i = 0;
-                while ( i< getItemCount())
-                {
-                    Object item = getItemAt( i );
-                    String toString;
-                    if  ( item instanceof Named)
-                    {
-                        toString = ((Named) item).getName( getLocale());
-                    }
-                    else if ( item != null)
-                    {
-                        toString = item.toString();
-                    }
-                    else
-                    {
-                        toString = null; 
-                    }
-                    if ( toString != null && toString.toLowerCase().startsWith( string.toLowerCase()))
-                    {
-                        return i;
-                    }
-                    i++;
-                }
-                
-                return -1;
-            };
-		};
-		
-		
+		field = new RaplaListComboBox(sm);
 		field.addActionListener(this);
 		panel.setLayout(new BorderLayout());
 		panel.add(field, BorderLayout.WEST);
-		setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
 		nothingSelected = getString("nothing_selected");
 		field.addFocusListener(this);
 	}
