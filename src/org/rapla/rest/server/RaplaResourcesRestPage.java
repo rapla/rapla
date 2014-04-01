@@ -11,7 +11,6 @@ import javax.jws.WebService;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -79,7 +78,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
         {
             throw new RaplaException("Id has to be null for new events");
         }
-        String eventId = operator.createIdentifier(Reservation.TYPE, 1)[0];
+        String eventId = operator.createIdentifier(Allocatable.TYPE, 1)[0];
         resource.setId( eventId);
         resource.setResolver( operator);
         resource.setCreateDate( operator.getCurrentTimestamp());
