@@ -78,6 +78,7 @@ public class HTTPJsonConnector {
         conn.setUseCaches( false );
         conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
         conn.setRequestProperty("Content-Type", "application/json" + ";charset=utf-8");
+        conn.setRequestProperty("Accept", "application/json");
         if ( authenticationToken != null)
         {
         	conn.setRequestProperty("Authorization", "Bearer "  + authenticationToken);
