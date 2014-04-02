@@ -106,8 +106,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     ClientFacade facade;
     RaplaLocale raplaLocale;
     
-   // private Map<String,Long> updateMap = new HashMap<String,Long>();
-   // private Map<String,Long> removeMap = new HashMap<String,Long>();
+    //private Map<String,Long> updateMap = new HashMap<String,Long>();
+    //private Map<String,Long> removeMap = new HashMap<String,Long>();
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
@@ -200,6 +200,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     	long repositoryVersion = operator.getCurrentTimestamp().getTime();
         // notify the client for changes
         TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
+        
+          
         if ( invalidateInterval != null)
         {
         	long oneHourAgo = repositoryVersion - DateTools.MILLISECONDS_PER_HOUR;
@@ -224,6 +226,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent( evt );
         if ( getLogger().isDebugEnabled() )
             getLogger().debug( "Storage was modified. Calling notify." );
+        boolean addAllUsersToConflictRefresh = false;
         for ( Iterator<Entity>it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
         {
             Entity obj = it.next();
@@ -231,6 +234,22 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         	{
         		continue;
         	}
+            if (  obj instanceof Conflict)
+            {
+                addAllUsersToConflictRefresh = true;
+            }
+            if (  obj instanceof DynamicType)
+            {
+                addAllUsersToConflictRefresh = true;
+            }
+//            RaplaType<?> raplaType = obj.getRaplaType();
+//            if (raplaType == Conflict.TYPE)
+//            {
+//                String id = obj.getId();
+//                updateMap.remove( id );
+//                removeMap.remove( id );
+//                updateMap.put( id, new Long( repositoryVersion ) );
+//            }
         }
         
         // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
@@ -263,11 +282,23 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	{
 	        		addAllUsersToResourceRefresh = true;
 	        	}
+	        	if (  obj instanceof Conflict)
+	        	{
+	        	    addAllUsersToConflictRefresh = true;
+	        	}
+//	            if ( obj  instanceof Conflict)
+//	            {
+//	                String id = obj.getId();
+//	                updateMap.remove( id );
+//	                removeMap.remove( id );
+//	                removeMap.put( id, new Long( repositoryVersion ) );
+//	            }
+
 	        }
         }
-        if (addAllUsersToResourceRefresh)
+        if (addAllUsersToResourceRefresh || addAllUsersToConflictRefresh)
         {
-        	invalidateAll(repositoryVersion);
+        	invalidateAll(repositoryVersion, addAllUsersToResourceRefresh,addAllUsersToConflictRefresh);
         }
         else
         {
@@ -275,7 +306,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         }
     }
 
-	private void invalidateAll(long repositoryVersion) {
+	private void invalidateAll(long repositoryVersion, boolean resourceRefreh, boolean conflictRefresh) {
 		Collection<String> allUserIds = new ArrayList<String>();
         try
         {
@@ -300,8 +331,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         }
 		for ( String userId :allUserIds)
 		{
-			needResourceRefresh.put( userId, repositoryVersion);
-			needConflictRefresh.put( userId, repositoryVersion);
+		    if (resourceRefreh )
+		    {
+		        needResourceRefresh.put( userId, repositoryVersion);
+		    }
+		    if ( conflictRefresh)
+		    {
+		        needConflictRefresh.put( userId, repositoryVersion);
+		    }
 		}
 	}
 
@@ -311,7 +348,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			allUsers = operator.getUsers();
 		} catch (RaplaException e) {
 			// we need to invalidate all on an exception
-        	invalidateAll(repositoryVersion);
+        	invalidateAll(repositoryVersion, true, true);
         	return;
 		}
 		
@@ -1022,9 +1059,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 safeResultEvent.setTimezoneOffset( timezoneOffset );
                 //if ( lastSynced.before( currentTimestamp ))
                 {
+                    String userId = user.getId();
                     TimeInterval invalidateInterval;
                     {
-	                    Long lastVersion = needConflictRefresh.get( user);
+	                    Long lastVersion = needConflictRefresh.get( userId );
 	                    if ( lastVersion != null && lastVersion > lastSynced.getTime())
 	                    {
 	                    	invalidateInterval = new TimeInterval( null, null);
@@ -1036,7 +1074,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     }
                     boolean resourceRefresh;
                     {
-	                    String userId = user.getId();
                         Long lastVersion = needResourceRefresh.get( userId);
 	                    resourceRefresh = ( lastVersion != null && lastVersion > lastSynced.getTime());
                     }

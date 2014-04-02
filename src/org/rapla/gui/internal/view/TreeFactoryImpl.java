@@ -696,7 +696,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             	if ( obj instanceof Classifiable)
             	{
             		Classification classification = ((Classifiable)obj).getClassification();
-					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING) != null)
+					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
 					{
 						return classification.getNamePlaning(locale);
 					}

@@ -15,15 +15,18 @@ package org.rapla.gui.internal.view;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 
 public abstract class HTMLInfo<T> extends RaplaComponent {
     public HTMLInfo(RaplaContext sm) {
@@ -52,7 +55,27 @@ public abstract class HTMLInfo<T> extends RaplaComponent {
         }
         return text;
     }
-
+    protected void insertModificationRow( Timestamp timestamp, StringBuffer buf ) {
+        final Date createTime = timestamp.getCreateTime();
+        final Date lastChangeTime = timestamp.getLastChanged();
+        if ( lastChangeTime != null)
+        {
+            buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");
+            RaplaLocale raplaLocale = getRaplaLocale();
+            if ( createTime != null)
+            {
+                buf.append(getString("created_at"));
+                buf.append(" ");
+                buf.append(raplaLocale.formatTimestamp(createTime));
+                buf.append(", ");
+            }
+            buf.append(getString("last_changed"));
+            buf.append(" ");
+            buf.append(raplaLocale.formatTimestamp(lastChangeTime));
+            buf.append("</div>");
+            buf.append("\n");
+        }
+    }
     
     static public void addColor(String color,StringBuffer buf) {
         buf.append(" color=\"");

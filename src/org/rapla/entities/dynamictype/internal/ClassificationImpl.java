@@ -178,22 +178,22 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	return type;
     }
 
+    
     public String getName(Locale locale) {
     	// display name = Title of event
-    	if ( name == null)
-    	{
-    		name = new TextCache();
-    	}
+        if ( name == null)
+        {
+            name = new TextCache();
+        }
         return name.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT);
     }
 
     public String getNamePlaning(Locale locale) {
-    	// display name = Title of event
-    	if ( namePlaning == null)
-    	{
-    		namePlaning = new TextCache();
-    	}
-        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING);
+        if ( namePlaning == null)
+        {
+            namePlaning = new TextCache();
+        }
+        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
     }
 	
 

@@ -377,6 +377,16 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	}
     	super.setResolver(entities);
     }
+    
+    @Override
+    protected void testResolve(Collection<? extends Entity> entities) {
+        //  don't resolve entities in standalone mode
+        if (context.has(RemoteMethodStub.class))
+        {
+            return;
+        }
+        super.testResolve(entities);
+    }
 
     private void loadData(String username) throws RaplaException {
         getLogger().debug("Getting Data..");
@@ -387,6 +397,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			updateTimestamps(evt);
 	        Collection<Entity> storeObjects = evt.getStoreObjects();
         	cache.clearAll();
+        	
         	testResolve( storeObjects);
         	setResolver( storeObjects );
             for( Entity entity:storeObjects) {

@@ -64,6 +64,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     JLabel annotationDescription = new JLabel();
     
     JTextField annotationText = new JTextField();
+    JTextField annotationTreeText = new JTextField();
     JComboBox colorChooser;
     JLabel locationLabel = new JLabel("location");
     JComboBox locationChooser;
@@ -95,9 +96,10 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         elementKeyLabel.setText(getString("elementkey") + ":");
         attributeEdit.setEditKeys( true );
         annotationPanel.setVisible( true);
+        double PRE = TableLayout.PREFERRED;
         double[][] sizes = new double[][] {
-            {5,TableLayout.PREFERRED,5,TableLayout.FILL,5}
-            ,{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL,5,TableLayout.PREFERRED}
+            {5,PRE,5,TableLayout.FILL,5}
+            ,{PRE,5,PRE,5,PRE,5,PRE,5,TableLayout.FILL,5,PRE}
         };
         TableLayout tableLayout = new TableLayout(sizes);
         editPanel.setLayout(tableLayout);
@@ -109,22 +111,24 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 
         // #FIXM Should be replaced by generic solution
         tableLayout.insertRow(7,5);
-        tableLayout.insertRow(8,TableLayout.PREFERRED);
+        tableLayout.insertRow(8,PRE);
         editPanel.add(annotationPanel,"1,8,3,8");
         annotationPanel.setLayout(new TableLayout(new double[][] {
-            {TableLayout.PREFERRED,5,TableLayout.FILL}
-            ,{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED}
+            {PRE,5,TableLayout.FILL}
+            ,{PRE,5,PRE,5,PRE, 5, PRE,5, PRE,5,PRE}
         }));
         addCopyPaste( annotationText);
+        addCopyPaste(annotationTreeText);
         annotationPanel.add(annotationLabel,"0,0");
         annotationPanel.add(annotationText ,"2,0");
         annotationPanel.add(annotationDescription,"2,2");
-        annotationPanel.add(new JLabel(getString("color")),"0,4");
-        annotationPanel.add(colorChooser,"2,4");
-        annotationPanel.add(locationLabel,"0,6");
-        annotationPanel.add(locationChooser,"2,6");
-        annotationPanel.add(conflictLabel,"0,8");
-        annotationPanel.add(conflictChooser,"2,8");
+        annotationPanel.add(annotationTreeText ,"2,4");
+        annotationPanel.add(new JLabel(getString("color")),"0,6");
+        annotationPanel.add(colorChooser,"2,6");
+        annotationPanel.add(locationLabel,"0,8");
+        annotationPanel.add(locationChooser,"2,8");
+        annotationPanel.add(conflictLabel,"0,10");
+        annotationPanel.add(conflictChooser,"2,10");
         annotationLabel.setText(getString("dynamictype.annotation.nameformat") + ":");
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
         float newSize = (float) (annotationDescription.getFont().getSize() * 0.8);
@@ -204,6 +208,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     {
         try {
             dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, annotationText.getText().trim());
+            String planningText = annotationTreeText.getText().trim();
+            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, planningText.length() > 0 ? planningText : null);
         } catch (IllegalAnnotationException ex) {
             throw ex;
         }
@@ -281,6 +287,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 
     private void updateAnnotations() {
         annotationText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT ) );
+        annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
+
         {
 	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_COLORS); 
 	        if (annotation  == null)

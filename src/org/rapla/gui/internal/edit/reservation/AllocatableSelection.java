@@ -1887,7 +1887,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 					Allocatable allocatable = (Allocatable) nodeInfo;
 					setLeafIcon(getIcon(allocatable));
 					Classification classification = allocatable.getClassification();
-					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANING) != null)
+					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
 					{
 						value = classification.getNamePlaning(locale);
 					}

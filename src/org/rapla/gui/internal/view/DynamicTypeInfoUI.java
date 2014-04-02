@@ -30,6 +30,7 @@ class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
     protected String createHTMLAndFillLinks(DynamicType object,LinkController controller){
         DynamicType dynamicType = object;
         StringBuffer buf = new StringBuffer();
+        insertModificationRow( object, buf );
         Collection<Row> att = new ArrayList<Row>();
         att.add(new Row(getString("dynamictype.name"), strong( encode( getName( dynamicType ) ))));
         Attribute[] attributes = dynamicType.getAttributes();

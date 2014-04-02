@@ -15,17 +15,14 @@ package org.rapla.gui.internal.view;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Locale;
 
-import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaLocale;
 
 class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     public ClassificationInfoUI(RaplaContext sm) {
@@ -112,27 +109,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         return 	 getString("view") + ": " 	+ classification.getType().getName(getLocale());
     }
     
-    protected void insertModificationRow( Timestamp timestamp, StringBuffer buf ) {
-        final Date createTime = timestamp.getCreateTime();
-        final Date lastChangeTime = timestamp.getLastChanged();
-        if ( lastChangeTime != null)
-        {
-            buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");
-            RaplaLocale raplaLocale = getRaplaLocale();
-            if ( createTime != null)
-            {
-                buf.append(getString("created_at"));
-                buf.append(" ");
-                buf.append(raplaLocale.formatTimestamp(createTime));
-                buf.append(", ");
-            }
-            buf.append(getString("last_changed"));
-            buf.append(" ");
-            buf.append(raplaLocale.formatTimestamp(lastChangeTime));
-            buf.append("</div>");
-            buf.append("\n");
-        }
-    }
+   
 
 }
 
