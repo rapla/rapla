@@ -672,17 +672,25 @@ public class MainServlet extends HttpServlet {
     	    }
 	        catch (RaplaException e) 
 	        {
+	            java.io.PrintWriter out = null;
 	            try
 	            {
 	                response.setStatus( 500 );
-	                java.io.PrintWriter out = response.getWriter();
+	                out = response.getWriter();
 	                out.println(IOUtil.getStackTraceAsString( e));
-	                out.close();
 	            }
 	            catch (Exception ex)
+                {
+                    getLogger().error("Error writing exception back to client " + e.getMessage());
+                }
+	            finally
 	            {
-	                getLogger().error("Error writing exception back to client " + e.getMessage());
+	                if ( out != null)
+	                {
+	                    out.close();
+	                }
 	            }
+	           
 	            return;
 	        }
 
@@ -726,14 +734,25 @@ public class MainServlet extends HttpServlet {
 	        }
 	
             servletPage = server.getWebpage( page);
+
             if ( servletPage == null)
             {
             	response.setStatus( 404 );
-              	java.io.PrintWriter out = response.getWriter();
-            	String message = "404: Page " + page + " not found in Rapla context";
-    			out.print(message);
-    			getLogger().getChildLogger("server.html.404").warn( message);
-    			out.close();
+                java.io.PrintWriter out = null;
+                try
+                {
+                	out =	response.getWriter();
+                	String message = "404: Page " + page + " not found in Rapla context";
+        			out.print(message);
+        			getLogger().getChildLogger("server.html.404").warn( message);
+                } finally 
+                {
+                    if ( out != null)
+                    {
+                        out.close();
+                    }
+                }
+                
     			return;
             }
             ServletContext servletContext = getServletContext();
@@ -842,15 +861,23 @@ public class MainServlet extends HttpServlet {
 			exout.flush();
 			exout.close();
 			byte[] out = outStream.toByteArray();
+			ServletOutputStream outputStream = null;
 			try
 			{
-				ServletOutputStream outputStream = response.getOutputStream();
+				outputStream = response.getOutputStream();
 				outputStream.write( out );
-				outputStream.close();
 			}
 			catch (Exception ex)
 			{
+			  
 				getLogger().error( " Error writing exception back to client " + ex.getMessage());
+			}
+			finally
+			{
+			    if (outputStream != null)
+                {
+                    outputStream.close();
+                }
 			}
 			response.setStatus( 500);
 		}

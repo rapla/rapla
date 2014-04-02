@@ -3,6 +3,7 @@ package org.rapla.rest.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
@@ -83,16 +84,35 @@ public class HTTPJsonConnector {
         {
         	conn.setRequestProperty("Authorization", "Bearer "  + authenticationToken);
         }
+        conn.setReadTimeout(20000); //set timeout to 20 seconds
+        conn.setConnectTimeout(15000); //set connect timeout to 15 seconds
         conn.setDoOutput(true);
         conn.connect();
         
         if ( requestMethod.equals("PUT") ||requestMethod.equals("POST") ||requestMethod.equals("PATCH"))
         {
-            Writer wr = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-            Gson gson = new GsonBuilder().create();
-    		String body = gson.toJson( jsonObject);
-            wr.write( body);
-            wr.flush();
+            OutputStream outputStream = null;
+            Writer wr = null;
+            try
+            {
+                outputStream= conn.getOutputStream();
+                wr = new OutputStreamWriter(outputStream,"UTF-8");
+                Gson gson = new GsonBuilder().create();
+        		String body = gson.toJson( jsonObject);
+                wr.write( body);
+                wr.flush();
+            }
+            finally
+            {
+                if ( wr != null)
+                {
+                    wr.close();
+                }
+                if ( outputStream  != null)
+                {
+                    outputStream.close();
+                }
+            }
         }
         else
         {

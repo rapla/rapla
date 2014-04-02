@@ -883,9 +883,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			Object o = ((DefaultMutableTreeNode) node).getUserObject();
 			if (column == 1 && o instanceof Allocatable && value instanceof Appointment[])
 			{
-				if (mutableReservation.getRestriction((Allocatable) o) != value)
+				Appointment[] restriction = mutableReservation.getRestriction((Allocatable) o);
+				Appointment[] newValue = (Appointment[]) value;
+                if (!Arrays.equals(restriction,newValue))
 				{
-					mutableReservation.setRestriction((Allocatable) o, (Appointment[]) value);
+                    mutableReservation.setRestriction((Allocatable) o, newValue);
 					fireAllocationsChanged();
 				}
 			}

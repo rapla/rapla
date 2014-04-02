@@ -379,7 +379,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         return clone;
     }
     
-    public int compareTo(Category o) {
+    public int compareTo(Object o) {
         if ( o == this )
         {
             return 0;
@@ -389,7 +389,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         	return 0;
         }
         Category c1= this;
-        Category c2= o;
+        Category c2= (Category) o;
         if ( c1.isAncestorOf( c2))
         {
         	return -1;

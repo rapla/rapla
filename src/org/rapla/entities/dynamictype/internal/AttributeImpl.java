@@ -54,7 +54,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     private String key;
     private boolean bOptional = false;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
-    transient private Object defaultValue =null;
+    private String defaultValue =null;
     private transient DynamicTypeImpl parent;
     
     public final static AttributeType DEFAULT_TYPE = AttributeType.STRING;
@@ -100,13 +100,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 
     public void setType(AttributeType type) 
     {
+        checkWritable();
         Object oldValue = defaultValue;
         if ( type.equals( AttributeType.CATEGORY))
         {
             oldValue = getEntity("default.category");
         }
         this.type = type;
-        defaultValue = convertValue( oldValue);
+        setDefaultValue(convertValue( oldValue));
     }
 
     public MultiLanguageName getName() {
@@ -152,10 +153,15 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     
     public void setDefaultValue(Object object)
     {
-        defaultValue = object;
+        checkWritable();
         if ( type.equals( AttributeType.CATEGORY))
         {
             putEntity("default.category",(Entity)object);
+            defaultValue = null;
+        } 
+        else 
+        {
+            defaultValue = (String) convertValue(object, AttributeType.STRING);
         }
     }
 
@@ -211,7 +217,16 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 
     public Object defaultValue() 
     {
-        return defaultValue;
+        Object value;
+        if ( type.equals( AttributeType.CATEGORY))
+        {
+            value = getEntity("default.category");
+        }
+        else
+        {
+            value = convertValue(defaultValue);
+        }
+        return value;
     }
 
     public boolean needsChange(Object value) {
@@ -253,6 +268,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     }
 
     public Object convertValue(Object value) {
+        return convertValue(value, type);
+    }
+    
+    private Object convertValue(Object value, AttributeType type) {
         if (type.equals( AttributeType.STRING )) {
             if (value == null)
                 return null;

@@ -171,18 +171,21 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
         {
             serverURL+="/";
         }
+        
         URL baseUrl = new URL(serverURL);
         URL methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
+        boolean loginCmd = methodURL.getPath().endsWith("login");
         JsonObject element = serializeCall(method, args);
         FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
-        JsonObject resultMessage = sendCall_("POST",methodURL, element, serverInfo.getAccessToken());
+        String accessToken = loginCmd ? null: serverInfo.getAccessToken();
+        JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);
         JsonElement errorElement = resultMessage.get("error");
         if ( errorElement != null)
         {
             RaplaException ex = deserializeExceptionObject(resultMessage);
             // if authorization expired
             String message = ex.getMessage();
-            boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !methodURL.getPath().endsWith("login");
+            boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !loginCmd;
             if ( !b || authExpiredCommand == null )
             {
                 throw ex;

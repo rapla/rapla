@@ -21,7 +21,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -72,10 +71,10 @@ public class LocalCache implements EntityResolver
         entityMap = new LinkedHashMap<RaplaType, Set<? extends Entity>>();
         entities = new HashMap<Object,Entity>();
         // top-level-entities
-        reservations = new TreeSet<ReservationImpl>();
-        users = new TreeSet<UserImpl>();
-        resources = new TreeSet<AllocatableImpl>();
-        dynamicTypes = new TreeSet<DynamicTypeImpl>();
+        reservations = new LinkedHashSet<ReservationImpl>();
+        users = new LinkedHashSet<UserImpl>();
+        resources = new LinkedHashSet<AllocatableImpl>();
+        dynamicTypes = new LinkedHashSet<DynamicTypeImpl>();
 
         // non-top-level-entities with exception of one super-category
         categories = new HashSet<CategoryImpl>();
