@@ -16,7 +16,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -34,7 +33,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
-import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicTreeUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreeModel;
@@ -186,6 +186,16 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
 	protected abstract String getNodeName(T selectedCategory);
    
+    public class MultiSelectionTreeUI extends BasicTreeUI
+    {
+
+        @Override
+        protected boolean isToggleSelectionEvent( MouseEvent event )
+        {
+            return SwingUtilities.isLeftMouseButton( event );
+        }
+    }
+
     @SuppressWarnings("serial")
 	public void showDialog(JComponent parent) throws RaplaException {
         final DialogUI dialog;
@@ -200,50 +210,60 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                     String className = caller.getClassName();
                     String methodName = caller.getMethodName();
                     
-                    if ( className.contains("BasicTreeUI") && methodName.contains("keyTyped"))
+                    if ( className.contains("BasicTreeUI") && (methodName.contains("keyTyped") || methodName.contains("page")))
 		            {
                         setLeadSelectionPath( path);
 		                return;
 		            }
-		        	addSelectionPath(path);
+		        	setSelectionPath(path);
 		        }
-	
-			    public void setSelectionPaths(TreePath[] paths) {
-			    	addSelectionPaths(paths);
-			    }
-	
-			    public void setSelectionRow(int row) {
-		        	addSelectionRow(row);
-		        }
-		
-		        public void setSelectionRows(int[] rows) {
-		        	addSelectionRows(rows);
-		        }
-		        
-		        protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed)
-		        {
-		            return super.processKeyBinding(ks, e, condition, pressed);
+		        public void setSelectionInterval(int index0, int index1) {
+		            if ( index0 >= 0)
+		            {
+		                TreePath path = getPathForRow(index0);
+		                setLeadSelectionPath( path);
+		            }
 		        }
 	        };
-	        TreeSelectionModel model = new DefaultTreeSelectionModel()
-	        {
-				public void addSelectionPaths(TreePath[] paths) {
-	        		if(paths != null) {
-	        			for(TreePath path : paths) {
-	        				TreePath[] toAdd = new TreePath[1];
-	        				toAdd[0] = path;
+//			    public void setSelectionPaths(TreePath[] paths) {
+//			    	addSelectionPaths(paths);
+//			    }
+//	
+//			    public void setSelectionRow(int row) {
+//		        	addSelectionRow(row);
+//		        }
+//		
+//		        public void setSelectionRows(int[] rows) {
+//		        	addSelectionRows(rows);
+//		        }
+//		        
+//		        protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed)
+//		        {
+//		            return super.processKeyBinding(ks, e, condition, pressed);
+//		        }
+//	        };
+	        TreeSelectionModel model = new DefaultTreeSelectionModel();
+//	        {
+//				public void addSelectionPaths(TreePath[] paths) {
+//	        		if(paths != null) {
+//	        			for(TreePath path : paths) {
+//	        				TreePath[] toAdd = new TreePath[1];
+//	        				toAdd[0] = path;
+//
+//	        				if (isPathSelected(path)) {
+//	        					// If path has been previously selected REMOVE THE SELECTION.
+//	        					super.removeSelectionPaths(toAdd);
+//	        				} else {
+//	        					// Else we really want to add the selection...
+//	        					super.addSelectionPaths(toAdd);
+//	        				}
+//	        			}
+//	        		}
+//	        	}
+//	        };
 
-	        				if (isPathSelected(path)) {
-	        					// If path has been previously selected REMOVE THE SELECTION.
-	        					super.removeSelectionPaths(toAdd);
-	        				} else {
-	        					// Else we really want to add the selection...
-	        					super.addSelectionPaths(toAdd);
-	        				}
-	        			}
-	        		}
-	        	}
-	        };
+
+            tree.setUI( new MultiSelectionTreeUI() );
 	        model.setSelectionMode( TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION );
 	        tree.setSelectionModel(model );
         }
