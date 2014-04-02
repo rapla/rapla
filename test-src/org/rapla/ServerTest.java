@@ -83,6 +83,7 @@ public class ServerTest extends ServletTestBase {
 		// start the client service
 		facade1 = container.lookup(ClientFacade.class, "remote-facade");
 		facade1.login("homer", "duffs".toCharArray());
+		
 		facade2 = container.lookup(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();

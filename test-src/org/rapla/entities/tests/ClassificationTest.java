@@ -95,7 +95,7 @@ public class ClassificationTest extends RaplaTestCase {
         List<?> asList = Arrays.asList(new Category[] {c1a, c1b});
 		classification.setValues(classification.getAttribute("test-attribute"), asList);
 		Allocatable resource = modificationMod.newAllocatable(classification);
-    	modificationMod.storeObjects( new Entity[] { rootC, type, resource } );
+    	modificationMod.storeObjects( new Entity[] {  resource } );
     	{
 	        Allocatable persistantResource = modificationMod.getPersistant(resource);
 	        Collection<Object> values = persistantResource.getClassification().getValues( classification.getAttribute("test-attribute"));

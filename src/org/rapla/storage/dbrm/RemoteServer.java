@@ -39,4 +39,7 @@ public interface RemoteServer extends RemoteJsonService {
 	
 	@ResultType(String.class)
     FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
+	
+	void setConnectInfo(RemoteConnectionInfo info);
+	
 }

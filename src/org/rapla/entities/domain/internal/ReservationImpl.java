@@ -184,8 +184,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public void removeAppointment(Appointment appointment)   {
         checkWritable();
-        if ( findAppointment( appointment ) == null)
-            return;
         appointments.remove( appointment );
         // Remove allocatable if its restricted to the appointment
         String appointmentId = appointment.getId();

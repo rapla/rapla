@@ -87,43 +87,28 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     int timezoneOffset;
     ConnectInfo connectInfo;
     Configuration config;
-    RemoteConnectionInfo connectionFactory;
+    RemoteConnectionInfo connectionInfo;
 	
-    public RemoteOperator(RaplaContext context, Logger logger, Configuration config, RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionFactory) throws RaplaException {
+    public RemoteOperator(RaplaContext context, Logger logger, Configuration config, RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaException {
         super( context, logger );
         this.config = config;
         this.remoteServer = remoteServer;
         this.remoteStorage = remoteStorage;
     	commandQueue = context.lookup( CommandScheduler.class);
-    	this.connectionFactory = connectionFactory;
+    	this.connectionInfo = new RemoteConnectionInfo();
+    	remoteStorage.setConnectInfo( connectionInfo );
+    	remoteServer.setConnectInfo( connectionInfo );
     	if ( config != null)
     	{
     	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");
     	    final String serverURL= ContextTools.resolveContext(serverConfig, context );
-    	    connectionFactory.setServerURL(serverURL);
+    	    connectionInfo.setServerURL(serverURL);
     	}
-    	connectionFactory.setRefreshCommand(new FutureResult<String>() {
-
-            @Override
-            public String get() throws Exception {
-                return login();
-            }
-
-            @Override
-            public String get(long wait) throws Exception {
-                return get();
-            }
-
-            @Override
-            public void get(AsyncCallback<String> callback) {
-               try {
-                   String string = get();
-                   callback.onSuccess(string);
-               } catch (Exception e) {
-                   callback.onFailure(e);
-               } 
-            }
-        });
+    }
+    
+    public RemoteConnectionInfo getRemoteConnectionInfo()
+    {
+        return connectionInfo;
     }
     
     synchronized public void connect(ConnectInfo connectInfo) throws RaplaException {
@@ -131,6 +116,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             throw new RaplaException("RemoteOperator doesn't support anonymous connect");
         }
+       
         if (isConnected())
             return;
         getLogger().info("Connecting to server and starting login..");
@@ -138,6 +124,28 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	try
     	{
     		loginAndLoadData(connectInfo);
+    		connectionInfo.setReAuthenticateCommand(new FutureResult<String>() {
+
+    	            @Override
+    	            public String get() throws Exception {
+    	                return login();
+    	            }
+
+    	            @Override
+    	            public String get(long wait) throws Exception {
+    	                return get();
+    	            }
+
+    	            @Override
+    	            public void get(AsyncCallback<String> callback) {
+    	               try {
+    	                   String string = get();
+    	                   callback.onSuccess(string);
+    	               } catch (Exception e) {
+    	                   callback.onFailure(e);
+    	               } 
+    	            }
+    	        });
     		initRefresh();
     	}
     	finally
@@ -151,7 +159,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		this.connectInfo = connectInfo;
 		String username = this.connectInfo.getUsername();
 		String accessToken = login();
-        connectionFactory.setAccessToken(accessToken );
+        connectionInfo.setAccessToken(accessToken );
 		loadData(username);
         bSessionActive = true;
 	}
@@ -176,6 +184,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	}
    
 	public Date getCurrentTimestamp() {
+	    if (lastSyncedTime == null)
+	    {
+	        return new Date(System.currentTimeMillis());
+	    }
 		// no matter what the client clock says we always sync to the server clock
 		long passedMillis =  System.currentTimeMillis()- lastSyncedTimeLocal.getTime();
 		if ( passedMillis < 0)
@@ -199,7 +211,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		Command refreshTask = new Command() {
 			public void execute() {
 			    try {
-		            if (isConnected()) {
+			        // test if the remote operator is writable
+			        // if not we skip until the next update cycle
+		            Lock writeLock = lock.writeLock();
+                    boolean tryLock = writeLock.tryLock();
+		            if ( tryLock)
+		            {
+		                writeLock.unlock();
+		            }
+                    if (isConnected() && tryLock) {
 		                refresh();
 		            }
 			    } catch (RaplaConnectException e) {
@@ -308,7 +328,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
    
     synchronized public void disconnect() throws RaplaException { 
-    	connectionFactory.setAccessToken( null);
+    	connectionInfo.setAccessToken( null);
+    	this.connectInfo = null;
+    	connectionInfo.setReAuthenticateCommand(null);
         disconnect("Disconnection from Server initiated");
     }
     
@@ -706,59 +728,81 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     		refreshAll();
     		return;
     	}
-		Lock writeLock = writeLock();
-		try
-        {
-			testResolve(evt.getStoreObjects());
-			setResolver(evt.getStoreObjects());
-			// we don't test the references of the removed objects
-			setResolver(evt.getRemoveObjects());
-    		if ( bSessionActive  &&   !evt.isEmpty()  ) {
-                getLogger().debug("Objects updated!");
-                UpdateResult result = update(evt);
-                if ( !result.isEmpty())
-                {
-                    fireStorageUpdated(result);
-                }
-            }
+    	UpdateResult result = null;
+    	testResolve(evt.getStoreObjects());
+    	setResolver(evt.getStoreObjects());
+    	// we don't test the references of the removed objects
+    	setResolver(evt.getRemoveObjects());
+    	if ( bSessionActive  &&   !evt.isEmpty()  ) 
+    	{
+    	    getLogger().debug("Objects updated!");
+    	    Lock writeLock = writeLock();
+    	    try
+    	    {
+    	        result = update(evt);
+    	    }
+    	    finally
+    	    {
+    	        unlock(writeLock);
+    	    }
         }
-		finally
-		{
-			unlock(writeLock);
-		}
+	
+		if ( result != null && !result.isEmpty())
+        {
+            fireStorageUpdated(result);
+        }
     }
 
 	protected void refreshAll() throws RaplaException,EntityNotFoundException {
 		UpdateResult result;
-		Lock writeLock = writeLock();
+		Set<Entity> oldEntities; 
+		Lock readLock = readLock();
+        try
+        {
+            oldEntities = cache.getAllEntities();
+        }
+        finally
+        {
+            unlock(readLock);
+        }
+        Lock writeLock = writeLock();
 		try
 		{
-			Set<Entity> oldEntities = cache.getAllEntities();
-			loadData(null);
-			Set<Entity> newEntities = cache.getAllEntities();
-			HashSet<Entity> updated = new HashSet<Entity>(newEntities);
-			Set<Entity> toRemove = new HashSet<Entity>(oldEntities);
-			Set<Entity> toUpdate = new HashSet<Entity>(oldEntities);
-			toRemove.removeAll(newEntities);
-			updated.removeAll( toRemove);
-			toUpdate.retainAll(newEntities);
-			
-			HashMap<Entity,Entity> oldEntityMap = new HashMap<Entity,Entity>();
-			for ( Entity update: toUpdate)
-			{
-				Entity newEntity = cache.tryResolve( update.getId());
-				if ( newEntity != null)
-				{
-					oldEntityMap.put( newEntity, update);
-				}
-			}
-			TimeInterval invalidateInterval = new TimeInterval( null,null);
-			result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
+		    loadData(null);
 		}
 		finally
 		{
-			unlock(writeLock);
+		    unlock(writeLock);
 		}
+		Set<Entity> newEntities; 
+		readLock = readLock();
+		try
+		{
+		    newEntities = cache.getAllEntities();
+		}
+		finally
+		{
+		    unlock(readLock);
+		}
+		HashSet<Entity> updated = new HashSet<Entity>(newEntities);
+		Set<Entity> toRemove = new HashSet<Entity>(oldEntities);
+		Set<Entity> toUpdate = new HashSet<Entity>(oldEntities);
+		toRemove.removeAll(newEntities);
+		updated.removeAll( toRemove);
+		toUpdate.retainAll(newEntities);
+		
+		HashMap<Entity,Entity> oldEntityMap = new HashMap<Entity,Entity>();
+		for ( Entity update: toUpdate)
+		{
+			Entity newEntity = cache.tryResolve( update.getId());
+			if ( newEntity != null)
+			{
+				oldEntityMap.put( newEntity, update);
+			}
+		}
+		TimeInterval invalidateInterval = new TimeInterval( null,null);
+		result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
+	
 		fireStorageUpdated(result);
 	}
     
@@ -862,16 +906,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		{
 			throw new RaplaException(ex);
 		}
-		Lock readLock = readLock();
-	    try
-	    {
-	    	testResolve( serverResult);
-        	setResolver( serverResult );
-        }
-	    finally
-	    {
-	    	unlock( readLock );
-	    }
+		testResolve( serverResult);
+	    setResolver( serverResult );
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
         for ( ReservationImpl reservation: serverResult)
         {
@@ -937,16 +973,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	try
     	{
 	    	List<ConflictImpl> list = serv.getConflicts().get();
-	        Lock readLock = readLock();
-		    try
-		    {
-		    	testResolve( list);
-	        	setResolver( list);
-	        }
-		    finally
-		    {
-		    	unlock( readLock );
-		    }
+	    	testResolve( list);
+	    	setResolver( list);
 	        List<Conflict> result = new ArrayList<Conflict>();
 	        Iterator it = list.iterator();
 	        while ( it.hasNext())

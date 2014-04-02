@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -270,7 +271,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	Map<String,PreferencesImpl> emptyPreferencesProxy = new HashMap<String, PreferencesImpl>();
+	Map<String,PreferencesImpl> emptyPreferencesProxy = new ConcurrentHashMap<String, PreferencesImpl>();
 
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
@@ -280,41 +281,25 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		String userId = user != null ? user.getId() : null;
 		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-		Lock readLock = readLock();
-		PreferencesImpl pref;
-		try
+		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId);
+		if (pref == null && createIfNotNull )
 		{
-			pref = (PreferencesImpl) cache.tryResolve( preferenceId);
-			if (pref == null && createIfNotNull )
+			PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
+			if ( preferencesImpl != null)
 			{
-				PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
-				if ( preferencesImpl != null)
-				{
-					return preferencesImpl;
-				}
+				return preferencesImpl;
 			}
 		}
-		finally
-		{
-			unlock(readLock);
-		}
+
 		if (pref == null && createIfNotNull) {
-			Lock writeLock = writeLock();
-			try
-			{
-				Date now = getCurrentTimestamp();
-				PreferencesImpl newPref = new PreferencesImpl(now,now);
-				newPref.setResolver( this);
-				newPref.setOwner(user);
-				newPref.setId( preferenceId );
-				newPref.setReadOnly(  );
-				pref = newPref;
-				emptyPreferencesProxy.put(preferenceId , pref);
-			}
-			finally
-			{
-				unlock(writeLock);
-			}
+			Date now = getCurrentTimestamp();
+			PreferencesImpl newPref = new PreferencesImpl(now,now);
+			newPref.setResolver( this);
+			newPref.setOwner(user);
+			newPref.setId( preferenceId );
+			newPref.setReadOnly(  );
+			pref = newPref;
+			emptyPreferencesProxy.put(preferenceId , pref);
 		}
 		return pref;
 	}
@@ -703,7 +688,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			{
 				// wait 1 ms to increase timestamp
 				try {
-					Thread.class.wait(1);
+					Thread.sleep(1);
 				} catch (InterruptedException e1) {
 					throw new RaplaException( e1.getMessage(), e1);
 				}

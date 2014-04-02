@@ -84,6 +84,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -104,6 +105,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     Logger logger;
     ClientFacade facade;
     RaplaLocale raplaLocale;
+    
+   // private Map<String,Long> updateMap = new HashMap<String,Long>();
+   // private Map<String,Long> removeMap = new HashMap<String,Long>();
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
@@ -492,7 +496,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     @Override
     public RemoteStorage createService(final RemoteSession session) {
         return new RemoteStorage() {
-        	public FutureResult<UpdateEvent> getResources()
+            @Override
+            public void setConnectInfo(RemoteConnectionInfo info) {
+                // do nothing here
+            }
+
+            public FutureResult<UpdateEvent> getResources()
             {
             	try
             	{
@@ -723,6 +732,18 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             {
             	try
             	{
+            	    Date currentTimestamp = operator.getCurrentTimestamp();
+            	    Date lastSynced = event.getLastValidated();
+            	    if ( lastSynced == null)
+                    {
+                        throw new RaplaException("client sync time is missing");
+                    }
+            	    if ( lastSynced.after( currentTimestamp))
+                    {
+                        long diff  = lastSynced.getTime() - currentTimestamp.getTime();
+                        getLogger().warn("Timestamp of client " +diff  +  " ms  after server ");
+                        lastSynced = currentTimestamp;
+                    }
 	            	//   LocalCache cache = operator.getCache();
 	             //   UpdateEvent event = createUpdateEvent( context,xml, cache );
 	            	User sessionUser = getSessionUser();
@@ -733,13 +754,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					}
 	            	dispatch_( event);
 	                getLogger().info("Change for user " + sessionUser + " dispatched.");
-	                Date clientVersion =  event.getLastValidated();
-	                if ( clientVersion == null)
-	                {
-	                	throw new RaplaException("client sync time is missing");
-	                }
-	             
-					UpdateEvent result = createUpdateEvent( clientVersion );
+	               
+					UpdateEvent result = createUpdateEvent( lastSynced );
 					return new ResultImpl<UpdateEvent>(result );
 	        	}
 	        	catch (RaplaException ex )
@@ -894,47 +910,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
             }
 
-
-//            public String> authenticate(String username, String password)
-//            {
-//                final String token;
-//            	try
-//            	{
-//	                getSessionUser(); //check if authenified
-//	                Logger logger = getLogger().getChildLogger("passwordcheck");
-//					if ( authenticationStore != null  )
-//	                {
-//	                	logger.info("Checking external authentifiction for user " + username);
-//	                	try
-//	                	{
-//		                	if (authenticationStore.authenticate( username, password ))
-//		                	{
-//		                		String userId = operator.getUser(username).getId();
-//		                		token = operator.sign( userId);
-//		                		return new ResultImpl<String>( token);
-//		                	}
-//	                	}
-//	                	catch (Exception ex)
-//	                	{
-//	                		getLogger().error("Error with external authentification ", ex);
-//	                	}
-//	                	logger.info("Now trying to authenticate with local store" + username);
-//	                	token = operator.authenticate( username, password );
-//	                    // do nothing
-//	                } // if the authenticationStore can't authenticate the user is checked against the local database
-//	                else
-//	                {
-//	                	logger.info("Check password for " + username);
-//	                    token = operator.authenticate( username, password );
-//	                }
-//					return new ResultImpl<String>( token);
-//	        	}
-//	        	catch (RaplaException ex )
-//	        	{
-//	        		return new ResultImpl<String>(ex );
-//	        	}
-//            }
-            
             public FutureResult<UpdateEvent> refresh(String lastSyncedTime)
             {
             	try
@@ -953,14 +928,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             		return new ResultImpl<UpdateEvent>(new RaplaException( e.getMessage()) );
 				}
             }
-
             
             public Logger getLogger()
             {
                 return session.getLogger();
             }
            
-
             private void checkAuthentified() throws RaplaSecurityException {
                 if (!session.isAuthentified()) {
                     
@@ -1042,13 +1015,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     lastSynced = currentTimestamp;
                 }
             	User user = getSessionUser();
-                Date currentVersion = operator.getCurrentTimestamp();
                 UpdateEvent safeResultEvent = new UpdateEvent();
-                safeResultEvent.setLastValidated(  currentVersion);
+                safeResultEvent.setLastValidated(  currentTimestamp);
                 TimeZone systemTimeZone = operator.getTimeZone();
-        		int timezoneOffset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, currentVersion.getTime());
+        		int timezoneOffset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
                 safeResultEvent.setTimezoneOffset( timezoneOffset );
-                if ( lastSynced.before( currentVersion ))
+                //if ( lastSynced.before( currentTimestamp ))
                 {
                     TimeInterval invalidateInterval;
                     {
@@ -1059,7 +1031,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    }
 	                    else
 	                    {
-	                    	invalidateInterval = getInvalidateInterval( lastSynced.getTime(), currentVersion.getTime());
+	                    	invalidateInterval = getInvalidateInterval( lastSynced.getTime() );
 	                    }
                     }
                     boolean resourceRefresh;
@@ -1074,7 +1046,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 
                 if ( !safeResultEvent.isNeedResourcesRefresh())
                 {
-	            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(new Date( lastSynced.getTime() - 1));
+	            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(lastSynced );
                     for ( Entity obj: updatedEntities )
                     {
                     	processClientReadable( user, safeResultEvent, obj, false);
@@ -1162,12 +1134,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //			}
 //			
 
-			private TimeInterval getInvalidateInterval( long clientRepositoryVersion, long currentVersion) 
+			private TimeInterval getInvalidateInterval( long clientRepositoryVersion) 
 			{
 				TimeInterval interval = null;
 				synchronized (invalidateMap)
 				{
-					for ( TimeInterval current:invalidateMap.subMap( clientRepositoryVersion-1, currentVersion).values())
+					for ( TimeInterval current:invalidateMap.tailMap( clientRepositoryVersion).values())
 					{
 						if ( current != null)
 						{

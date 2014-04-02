@@ -66,6 +66,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public AppointmentImpl(Date start,Date end, RepeatingType type, int repeatingDuration) {
         this(start,end);
         this.repeating = new RepeatingImpl(type,this);
+        repeating.setAppointment( this );
         repeating.setNumber(repeatingDuration);
     }
     
@@ -201,6 +202,10 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public Repeating getRepeating() {
+        if ( repeating != null && repeating.getAppointment() == null)
+        {
+            repeating.setAppointment( this);
+        }
         return repeating;
     }
 
@@ -209,6 +214,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (this.repeating == null) {
             if (enableRepeating) {
                 this.repeating = new RepeatingImpl(Repeating.WEEKLY,this);
+                this.repeating.setAppointment( this);
             }
         } else {
             if (!enableRepeating) {

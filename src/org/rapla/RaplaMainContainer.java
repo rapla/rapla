@@ -59,8 +59,8 @@ import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.storage.dbrm.RaplaHTTPConnector;
 import org.rapla.storage.dbrm.RaplaConnectException;
+import org.rapla.storage.dbrm.RaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
@@ -126,7 +126,7 @@ final public class RaplaMainContainer extends ContainerImpl
     	this(  env,context,createRaplaLogger());
     }
     
-    RemoteConnectionInfo remoteConnectionStore = new RemoteConnectionInfo();
+    RemoteConnectionInfo globalConnectInfo;
     CommandScheduler commandQueue;
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
         super( context, env.getStartupConfiguration(),logger );
@@ -135,7 +135,6 @@ final public class RaplaMainContainer extends ContainerImpl
         addContainerProvidedComponentInstance( DOWNLOAD_URL,  env.getDownloadURL());
         commandQueue = createCommandQueue();
 		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
-		addContainerProvidedComponentInstance( RemoteConnectionInfo.class, remoteConnectionStore);
 		addContainerProvidedComponentInstance( RemoteServiceCaller.class, new RemoteServiceCaller() {
             
             @Override
@@ -284,29 +283,40 @@ final public class RaplaMainContainer extends ContainerImpl
             RemoteMethodStub server =  context.lookup(RemoteMethodStub.class);
             return server.getWebserviceLocalStub(a);
         }  
-        T proxyInstance = getRemoteMethod(context, a, remoteConnectionStore);
-        return proxyInstance;
-    }
-    
-    /** static method for testing purpose */
-    public static <T> T  getRemoteMethod(final RaplaContext context,final Class<T> a, final  RemoteConnectionInfo remoteConnectionStore)
-    {
+      
         InvocationHandler proxy = new InvocationHandler() 
         {
+            RemoteConnectionInfo localConnectInfo;
+            
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
             {
+                if ( method.getName().equals("setConnectInfo") && method.getParameterTypes()[0].equals(RemoteConnectionInfo.class))
+                {
+                    localConnectInfo = (RemoteConnectionInfo) args[0];
+                    if ( globalConnectInfo == null)
+                    {
+                        globalConnectInfo =localConnectInfo;
+                    }
+                    return null;
+                }
+
+                RemoteConnectionInfo remoteConnectionInfo = localConnectInfo != null ? localConnectInfo : globalConnectInfo;
+                if ( remoteConnectionInfo == null)
+                {
+                    throw new IllegalStateException("you need to call setConnectInfo first");
+                }
                 Class<?> returnType = method.getReturnType();
                 String methodName = method.getName();
                 final URL server;
                 try 
                 {
-                    server = new URL( remoteConnectionStore.getServerURL());
+                    server = new URL( remoteConnectionInfo.getServerURL());
                 } 
                 catch (MalformedURLException e) 
                 {
                    throw new RaplaContextException(e.getMessage());
                 }
-                StatusUpdater statusUpdater = remoteConnectionStore.getStatusUpdater();
+                StatusUpdater statusUpdater = remoteConnectionInfo.getStatusUpdater();
                 if ( statusUpdater != null)
                 {
                     statusUpdater.setStatus( Status.BUSY );
@@ -314,7 +324,7 @@ final public class RaplaMainContainer extends ContainerImpl
                 FutureResult result;
                 try
                 {
-                    result = call(context,server, a, methodName, args, remoteConnectionStore);
+                    result = call(context,server, a, methodName, args, remoteConnectionInfo);
                 }
                 finally
                 {

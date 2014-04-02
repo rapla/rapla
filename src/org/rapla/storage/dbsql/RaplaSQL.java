@@ -397,6 +397,27 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     	deleteIds(idList);
     }
     
+    @Override
+    public void insert(Collection<Category> entities) throws SQLException, RaplaException {
+        Set<Category> transitiveCategories = new LinkedHashSet<Category>();
+        for ( Category cat: entities)
+        {
+            transitiveCategories.add( cat);
+            transitiveCategories.addAll(getAllChilds( cat ));
+        }
+        super.insert(transitiveCategories);
+    }
+    
+    private Collection<Category> getAllChilds(Category cat) {
+        Set<Category> allChilds = new LinkedHashSet<Category>();
+        allChilds.add( cat);
+        for ( Category child: cat.getCategories())
+        {
+            allChilds.addAll(getAllChilds( child ));
+        }
+        return allChilds;
+    }
+
     private Collection<String> getIds(String parentId) throws SQLException, RaplaException {
 		Set<String> childIds = new HashSet<String>();
 		String sql = "SELECT ID FROM CATEGORY WHERE PARENT_ID=?";
@@ -404,8 +425,9 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         ResultSet rset = null;
         try {
             stmt = con.prepareStatement(sql);
-            stmt.setInt(1, RaplaType.parseId(parentId));
-            rset = stmt.executeQuery(sql);
+            int intId = RaplaType.parseId(parentId);
+            stmt.setInt(1, intId);
+            rset = stmt.executeQuery();
             while (rset.next ()) {
             	String id = readId(rset, 1, Category.class);
             	childIds.add( id);
@@ -422,7 +444,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         	result.addAll( getIds( childId));
         }
         result.add( parentId);
-		return childIds;
+		return result;
     }
 
     @Override

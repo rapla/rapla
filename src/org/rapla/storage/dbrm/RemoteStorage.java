@@ -103,5 +103,5 @@ public interface RemoteStorage extends RemoteJsonService {
     }
     
     
-	
+    void setConnectInfo(RemoteConnectionInfo info);
 }

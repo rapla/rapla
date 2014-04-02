@@ -5,7 +5,7 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 public class RemoteConnectionInfo 
 {
     String accessToken;
-    FutureResult<String> refreshCommand;
+    FutureResult<String> reAuthenticateCommand;
     String serverURL;
     StatusUpdater statusUpdater;
     public void setStatusUpdater(StatusUpdater statusUpdater) {
@@ -29,17 +29,17 @@ public class RemoteConnectionInfo
         return serverURL;
     }
 
-    public void setRefreshCommand(FutureResult<String> refreshCommand) {
-        this.refreshCommand = refreshCommand;
+    public void setReAuthenticateCommand(FutureResult<String> reAuthenticateCommand) {
+        this.reAuthenticateCommand = reAuthenticateCommand;
     }
 
     public String getRefreshToken() throws Exception {
-        return refreshCommand.get();
+        return reAuthenticateCommand.get();
     }
     
-    public FutureResult<String> getRefreshCommand()
+    public FutureResult<String> getReAuthenticateCommand()
     {
-        return refreshCommand;
+        return reAuthenticateCommand;
     }
 
     public String getAccessToken() {

@@ -108,6 +108,7 @@ import org.rapla.gui.toolkit.RaplaSeparator;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RestartServer;
 import org.rapla.storage.dbrm.StatusUpdater;
 
@@ -320,19 +321,23 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
             ClientFacade facade = getFacade();
             facade.addUpdateErrorListener(this);
-            RemoteConnectionInfo remoteConnection = getContext().lookup(RemoteConnectionInfo.class);
-            remoteConnection.setStatusUpdater( new StatusUpdater()
-	    		{
-	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
-	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-	    			
-	            	public void setStatus(Status status) {
-	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
-	    				frameControllerList.setCursor( cursor);
-	            	}
-	    			
-	    		}
-	    		);
+            StorageOperator operator = facade.getOperator();
+            if ( operator instanceof RemoteOperator)
+            {
+                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
+                remoteConnection.setStatusUpdater( new StatusUpdater()
+    	    		{
+    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
+    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
+    	    			
+    	            	public void setStatus(Status status) {
+    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
+    	    				frameControllerList.setCursor( cursor);
+    	            	}
+    	    			
+    	    		}
+    	    		);
+            }
             advanceLoading(true);
 
             logoutAvailable = true;

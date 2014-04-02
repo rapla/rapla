@@ -166,10 +166,15 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 	{
         String serviceUrl =service.getName();
         Method method = findMethod(service, methodName);
-        URL baseUrl = new URL(serverInfo.getServerURL());
-        URL methodURL = new URL(baseUrl,"/rapla/json/" + serviceUrl );
+        String serverURL = serverInfo.getServerURL();
+        if ( !serverURL.endsWith("/"))
+        {
+            serverURL+="/";
+        }
+        URL baseUrl = new URL(serverURL);
+        URL methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
         JsonObject element = serializeCall(method, args);
-        FutureResult<String> authExpiredCommand = serverInfo.getRefreshCommand();
+        FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
         JsonObject resultMessage = sendCall_("POST",methodURL, element, serverInfo.getAccessToken());
         JsonElement errorElement = resultMessage.get("error");
         if ( errorElement != null)

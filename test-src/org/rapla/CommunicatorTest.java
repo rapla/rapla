@@ -13,7 +13,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -29,7 +28,7 @@ public class CommunicatorTest extends ServletTestBase
   
     public void testLargeform() throws Exception
     {
-        ClientFacade facade = getContainer().lookup(ClientFacade.class, "remote-facade-3");
+        ClientFacade facade = getContainer().lookup(ClientFacade.class, "remote-facade");
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         StringBuffer buf = new StringBuffer();
@@ -46,7 +45,7 @@ public class CommunicatorTest extends ServletTestBase
     
     public void testClient() throws Exception
     {
-       ClientFacade facade = getContainer().lookup(ClientFacade.class, "remote-facade-3");
+       ClientFacade facade = getContainer().lookup(ClientFacade.class, "remote-facade");
        boolean success = facade.login("admin","test".toCharArray());
        assertFalse( "Login should fail",success ); 
        facade.login("homer","duffs".toCharArray());
@@ -87,7 +86,7 @@ public class CommunicatorTest extends ServletTestBase
 
     public void testUmlaute() throws Exception
     {
-        ClientFacade facade = getContainer().lookup(ClientFacade.class , "remote-facade-3");
+        ClientFacade facade = getContainer().lookup(ClientFacade.class , "remote-facade");
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         String typeName = alloc.getClassification().getType().getKey();
@@ -124,12 +123,12 @@ public class CommunicatorTest extends ServletTestBase
         serverParam.setValue("http://localhost:8052/");
         remoteConfig.addChild( serverParam );
      
-        RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
         for ( int i=0;i<clientNum;i++)
         {
-			RemoteServer remoteServer = RaplaMainContainer.getRemoteMethod( context, RemoteServer.class, connectionInfo);
-			RemoteStorage remoteStorage = RaplaMainContainer.getRemoteMethod(context, RemoteStorage.class, connectionInfo);
-			RemoteOperator opt = new RemoteOperator(context,new ConsoleLogger(),remoteConfig, remoteServer, remoteStorage, connectionInfo );
+			RaplaMainContainer container = (RaplaMainContainer) getContainer();
+            RemoteServer remoteServer = container.getRemoteMethod( context, RemoteServer.class);
+			RemoteStorage remoteStorage = container.getRemoteMethod(context, RemoteStorage.class);
+			RemoteOperator opt = new RemoteOperator(context,new ConsoleLogger(),remoteConfig, remoteServer, remoteStorage );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

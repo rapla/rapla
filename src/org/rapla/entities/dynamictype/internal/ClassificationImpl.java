@@ -236,6 +236,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		
         for (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
+        	if ( attribute == null)
+        	{
+        	    return true;
+        	}
             String attributeId = attribute.getId();
 			if (type.hasAttributeChanged( (DynamicTypeImpl)newType , attributeId))
             	return true;
@@ -256,16 +260,16 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         Map<Attribute,Attribute> attributeMapping = new HashMap<Attribute,Attribute>();
         for  (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
+        	Attribute attribute2 = type.getAttribute(key);
+        	// key now longer availabe so remove it
+            if ( attribute2 == null)
+            {
+                removedKeys.add( key );
+            }
 			if ( attribute == null)
 			{
         		continue;
 			}
-			// key now longer availabe so remove it
-			if ( type.getAttribute(key) == null)
-			{
-				removedKeys.add( key );
-			}
-			
 			String attId = attribute.getId();
 			Attribute newAtt = findAttributeById(type, attId);
 			if ( newAtt != null)

@@ -702,7 +702,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					removedAllocatables.add( old);
 				}
 			}
-			if (raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE )
+			if (raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE )
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{

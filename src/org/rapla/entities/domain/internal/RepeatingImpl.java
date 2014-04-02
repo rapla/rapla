@@ -359,6 +359,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         RepeatingImpl dest = new RepeatingImpl(repeatingType,appointment);
         RepeatingImpl source = this; 
         copy(source, dest);
+        dest.appointment = appointment;
         dest.readOnly = false;// clones are always writable
         return dest;
     }
