@@ -337,11 +337,18 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
         Assert.notNull(end, "You must set an endDate");
-        processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions);
+        processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions, null);
+    }
+    
+    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, SortedSet<AppointmentBlock> additionalSet) {
+        Assert.notNull(blocks);
+        Assert.notNull(start,"You must set a startDate");
+        Assert.notNull(end, "You must set an endDate");
+        processBlocks(start.getTime(), end.getTime(), blocks, true, additionalSet);
     }
     /* returns true if there is at least one block in an array. If the passed blocks array is not null it will contain all blocks
      * that overlap the start,end period after a call.*/
-    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
+    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions, SortedSet<AppointmentBlock> additionalSet) {
         long c1 = start;
         long c2 = end;
         long s = this.start.getTime();
@@ -356,7 +363,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
                 }
                 else
                 {
-                    blocks.add(new AppointmentBlock(s,e,this, false));
+                    AppointmentBlock block = new AppointmentBlock(s,e,this, false);
+                    blocks.add(block);
+                    if ( additionalSet != null)
+                    {
+                        additionalSet.add( block );
+                    }
                 }
             } 
             return false;
@@ -372,7 +384,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             } 
             else 
             {
-                blocks.add(new AppointmentBlock(s,e,this, repeating.isException(s)));
+                AppointmentBlock block = new AppointmentBlock(s,e,this, repeating.isException(s));
+                blocks.add(block);
+                if ( additionalSet != null)
+                {
+                    additionalSet.add( block );
+                }
             }
         }
         
@@ -408,7 +425,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
                     } 
                     else 
                     {
-                        blocks.add( new AppointmentBlock(currentPos,currentPos + blockLength,this, isException));
+                        AppointmentBlock block = new AppointmentBlock(currentPos,currentPos + blockLength,this, isException);
+                        blocks.add( block);
+                        if ( additionalSet != null)
+                        {
+                            additionalSet.add( block );
+                        }
                     }
                 }
             }
@@ -458,7 +480,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (!this.start.before(end2))
             return false;
 
-        boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions );
+        boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions, null );
         return overlaps;
     }
     
@@ -469,7 +491,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (this.start.getTime() > end)
             return false;
 
-        boolean overlaps  = processBlocks( start, end, null,  excludeExceptions );
+        boolean overlaps  = processBlocks( start, end, null,  excludeExceptions, null );
         return overlaps;
     }
 
@@ -482,7 +504,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
                 maxEnd = r2.getEnd();
         return maxEnd;
     }
-
+    
     public boolean overlaps(Appointment a2) {
         if ( a2 == this)
             return true;

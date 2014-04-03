@@ -63,6 +63,16 @@ public class ConflictImpl extends SimpleEntity implements Conflict
                     Appointment app2,
                     Date today
                     )
+	{
+	    this(allocatable,app1,app2, today,createId(allocatable.getId(), app1.getId(), app2.getId()));
+	}
+    public ConflictImpl(
+            Allocatable allocatable,
+            Appointment app1,
+            Appointment app2,
+            Date today,
+            String id
+            )
     {
 		putEntity("allocatable", allocatable);
 		startDate = getStartDate_(today, app1, app2);
@@ -77,7 +87,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		this.reservation1Name = reservation1.getName(Locale.getDefault());
 		this.reservation2Name = reservation2.getName(Locale.getDefault());
 		setResolver( ((AllocatableImpl)allocatable).getResolver());
-		setId( createId());
+		setId( id);
     }
 	
 	public String getReservation1Name() {
@@ -115,18 +125,23 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		return date;
 	}
 
-    public String createId()
+    static public String createId(String allocId, String id1, String id2)
     {
     	StringBuilder buf = new StringBuilder();
-    	buf.append(getId("allocatable"));
-    	buf.append(";");
-     	buf.append(getId("appointment1"));
-     	buf.append(";");
-     	buf.append(getId("appointment2"));
+    	//String id1 = getId("appointment1");
+    	//String id2 = getId("appointment2");
+    	if ( id1.equals( id2))
+    	{
+    	    throw new IllegalStateException("ids of conflicting appointments are the same " + id1);
+    	}
+    	buf.append(allocId);
+    	buf.append(';');
+    	buf.append(id1.compareTo( id2) > 0 ? id1 : id2);
+     	buf.append(';');
+        buf.append(id1.compareTo( id2) > 0 ? id2 : id1);
      	return buf.toString();
     }
-
-  
+    
     
 //	public ConflictImpl(String id) throws RaplaException {
 //		String[] split = id.split(";");
@@ -263,7 +278,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     static public boolean equals( ConflictImpl firstConflict,Conflict secondConflict) {
         if  (secondConflict == null  )
             return false;
-
         if (!firstConflict.contains( secondConflict.getAppointment1()))
             return false;
         if (!firstConflict.contains( secondConflict.getAppointment2()))
@@ -384,6 +398,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		}
 		if (appointment1.equals(appointment2))
 			return false;
+		
 		if (RaplaComponent.isTemplate( appointment1))
 		{
 			return false;
@@ -410,11 +425,45 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         }
         return true;
 	}
+	
+	   public static boolean isConflictWithoutCheck(Appointment appointment1,Appointment appointment2, Date today) {
+	        // Don't add conflicts, when in the past
+	        if (appointment1.equals(appointment2))
+	            return false;
+	        
+	        boolean conflictTypes = checkForConflictTypes2( appointment1, appointment2);
+	        if ( !conflictTypes )
+	        {
+	            return false;
+	        }
+	        Date maxEnd1 = appointment1.getMaxEnd();
+	        Date maxEnd2 = appointment2.getMaxEnd();
+	        Date checkEnd = maxEnd1;
+	        if ( maxEnd2 != null && checkEnd !=null && maxEnd2.before( checkEnd) )
+	        {
+	            checkEnd = maxEnd2;
+	        }
+	        if (checkEnd != null && ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
+	        {
+	            return false;
+	        }
+	        return true;
+	    }
 
-	private static boolean checkForConflictTypes(Appointment a1,	Appointment a2) {
-		String annotation1 = getConflictAnnotation(a1);
-		String annotation2 = getConflictAnnotation(a2);
-		if ( isNoConflicts( annotation1 ) || isNoConflicts ( annotation2))
+
+	@SuppressWarnings("null")
+    private static boolean checkForConflictTypes(Appointment a1,	Appointment a2) {
+	    Reservation r1 = a1.getReservation();
+	    DynamicType type1 = r1 != null ? r1.getClassification().getType() : null;
+	    String annotation1 = getConflictAnnotation( type1);
+	    if ( isNoConflicts( annotation1 ) )
+        {
+            return false;
+        }
+	    Reservation r2 = a2.getReservation();
+        DynamicType type2 = r2 != null ? r2.getClassification().getType() : null;
+		String annotation2 = getConflictAnnotation( type2);
+		if (  isNoConflicts ( annotation2))
 		{
 			return false;
 		}
@@ -422,11 +471,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		{
 			if ( annotation1.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES))
 			{
-				if  (annotation2 != null)
+				if  (type2 != null)
 				{
-					DynamicType type2 = a2.getReservation().getClassification().getType();
-					DynamicType type1 = a1.getReservation().getClassification().getType();
-					if (type1.equals(type2))
+				    if (type1.equals(type2))
 					{
 						return false;
 					}
@@ -435,8 +482,31 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		}
 		return true;
 	}
+	
+	@SuppressWarnings("null")
+    private static boolean checkForConflictTypes2(Appointment a1,    Appointment a2) {
+        Reservation r1 = a1.getReservation();
+        DynamicType type1 = r1 != null ? r1.getClassification().getType() : null;
+        String annotation1 = getConflictAnnotation( type1);
+        Reservation r2 = a2.getReservation();
+        DynamicType type2 = r2 != null ? r2.getClassification().getType() : null;
+        if ( annotation1 != null )
+        {
+            if ( annotation1.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES))
+            {
+                if  (type2 != null)
+                {
+                    if (type1.equals(type2))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
-	private static boolean isNoConflicts(String annotation) {
+	public static boolean isNoConflicts(String annotation) {
 		if ( annotation != null && annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE))
 		{
 			return true;
@@ -444,13 +514,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		return false;
 	}
 
-	private static String getConflictAnnotation(Appointment a) {
-		Reservation reservation = a.getReservation();
-		if ( reservation == null)
+	public static String getConflictAnnotation( DynamicType type) {
+		if ( type == null)
 		{
 			return null;
 		}
-		return reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
+		return type.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
 	}
 
 	public boolean hasAppointment(Appointment appointment) 

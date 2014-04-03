@@ -137,10 +137,14 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
             return false;
         }
         Entity e2 = (Entity) o;
-        Object id2 = e2.getId(); 
+        String id2 = e2.getId(); 
         if ( id2== null || id == null)
             return e2 == this;
-        return id.equals( id2);
+        if (id == id2)
+        {
+            return true;
+        }
+        return id.equals(id2);
     }
     
     /** The hashcode of the id-object will be returned.

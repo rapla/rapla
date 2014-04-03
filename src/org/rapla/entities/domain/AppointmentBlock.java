@@ -48,6 +48,11 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		this.isException = false;
 	}
 	
+	public boolean includes(AppointmentBlock a2)
+	{
+	    return start <= a2.start  &&  end>= a2.end;
+	}
+	
 	/**
 	 * Returns the start date of this block
 	 * 
