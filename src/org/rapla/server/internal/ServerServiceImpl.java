@@ -627,13 +627,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                     String username = credentials.getUsername();
                     String password = credentials.getPassword();
                     String connectAs = credentials.getConnectAs();
-                    if ( standaloneSession == null)
-                    {
-                        Logger logger = getLogger().getChildLogger("login");
-                        user = authenticate(username, password, connectAs,	logger);
-                        ((RemoteSessionImpl)session).setUser( user);
-                    }
-                    else
+                    boolean isStandalone = getContext().has( RemoteMethodStub.class);
+                    if ( isStandalone)
                     {
                         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
                         // don't check passwords in standalone version
@@ -643,6 +638,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                             throw new RaplaSecurityException(i18n.getString("error.login"));
                         }
                         standaloneSession.setUser( user);
+                    }
+                    else
+                    {
+                        Logger logger = getLogger().getChildLogger("login");
+                        user = authenticate(username, password, connectAs,  logger);
+                        ((RemoteSessionImpl)session).setUser( user);
                     }
                     if ( connectAs != null && connectAs.length()> 0)
                     {

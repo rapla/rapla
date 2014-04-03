@@ -1,5 +1,6 @@
 package org.rapla.storage.dbrm;
 
+import java.io.FileNotFoundException;
 import java.lang.reflect.Method;
 import java.net.SocketException;
 import java.net.URL;
@@ -160,6 +161,10 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
          {   
              throw new RaplaConnectException( ex);
          }
+    	  catch (FileNotFoundException ex)
+          {   
+              throw new RaplaConnectException(  ex);
+          }
 	}
     	
     public FutureResult call(Class<?> service, String methodName, Object[] args,final RemoteConnectionInfo serverInfo) throws Exception

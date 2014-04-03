@@ -365,7 +365,7 @@ final public class RaplaMainContainer extends ContainerImpl
      static private RaplaConnectException getConnectError(RaplaContext context,RaplaConnectException ex2, String server) {
          try
          {
-             String message = context.lookup(RaplaComponent.RAPLA_RESOURCES).format("error.connect", server);
+             String message = context.lookup(RaplaComponent.RAPLA_RESOURCES).format("error.connect", server) + " " + ex2.getMessage();
              return new RaplaConnectException(message);
          }
          catch (Exception ex)
