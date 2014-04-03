@@ -293,7 +293,7 @@ public class CategoryEditUI extends RaplaGUIComponent
                 }
                 last = current;
             }
-            if  (last != null) {
+            if  (last != null && !last.equals( selectedCategory)) {
                 parent.addCategory(last);
             }
         }

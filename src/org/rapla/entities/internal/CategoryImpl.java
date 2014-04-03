@@ -12,15 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -38,7 +39,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 {
     private MultiLanguageName name = new MultiLanguageName();
     private String key;
-    List<CategoryImpl> childs = new ArrayList<CategoryImpl>();
+    Set<CategoryImpl> childs = new LinkedHashSet<CategoryImpl>();
     private Date lastChanged;
     private Date createDate;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
@@ -438,7 +439,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 		CategoryImpl existingEntity = (CategoryImpl) findEntityForId(id);
 		if (  existingEntity != null)
 		{
-			ArrayList<CategoryImpl> newChilds = new ArrayList<CategoryImpl>();
+		    LinkedHashSet<CategoryImpl> newChilds = new LinkedHashSet<CategoryImpl>();
 			for ( CategoryImpl child: childs)
 			{
 				newChilds.add(  ( child != existingEntity) ? child: (CategoryImpl)category);
