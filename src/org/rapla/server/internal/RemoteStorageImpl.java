@@ -281,6 +281,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	if (  obj instanceof DynamicType)
 	        	{
 	        		addAllUsersToResourceRefresh = true;
+	        		addAllUsersToConflictRefresh = true;
 	        	}
 	        	if (  obj instanceof Conflict)
 	        	{
