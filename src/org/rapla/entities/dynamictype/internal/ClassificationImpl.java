@@ -349,6 +349,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		if ( values == null || values.isEmpty())
         {
 			data.remove(attributeKey);
+			name = null;
+		    namePlaning = null;
         	return;
         }
 		ArrayList<String> newValues = new ArrayList<String>();
