@@ -1370,7 +1370,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
       
         if ( value!= null) {
-            preferences.putEntry(configRole, value);
+            preferences.putEntryPrivate(configRole, value);
         } else {
         	String xml = getText(rset, 4);
 	        if ( xml != null && xml.length() > 0)

@@ -63,7 +63,7 @@ public class CalendarListPageGenerator extends RaplaComponent implements RaplaPa
             {
                 users = new User[] { getQuery().getUser( username )}; 
             }
-			String calendarName = getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+			String calendarName = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
             out.println( "<html>" );
             out.println( "<head>" );
             out.println( "<title>" + calendarName + "</title>" );

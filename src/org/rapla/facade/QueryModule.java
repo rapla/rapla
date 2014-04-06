@@ -127,6 +127,10 @@ public interface QueryModule
 
     /** returns the preferences for the login user */
     Preferences getPreferences() throws RaplaException;
+    
+    Preferences getSystemPreferences() throws RaplaException;
+    
+    Preferences getServerPreferences() throws RaplaException;
 
     /** returns if the user is allowed to exchange the allocatables of this reservation. A user can do it if he has
      * at least admin privileges for one allocatable. He can only exchange or remove or insert allocatables he has admin privileges on.

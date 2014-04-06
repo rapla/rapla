@@ -540,7 +540,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    
     /** performs Integrity constraints check */
 	protected void check(final UpdateEvent evt, final EntityStore store) throws RaplaException {
 		Set<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
@@ -579,8 +578,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					return result;
 				}
 			}
-			String id1 = o1.getId();
-			String id2 = o2.getId();
+			String id1 =  (o1 instanceof Entity) ? ((Entity)o1).getId() : o1.toString();
+			String id2 = (o2 instanceof Entity) ?  ((Entity)o2).getId() : o2.toString();
 		     if ( id1 == null)
 		     {
 		       	 if ( id2 == null)
@@ -757,11 +756,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			@Override
 			public Date getLastChangeTime() {
 				return getLastChanged();
-			}
-			
-			@Override
-			public String getId() {
-				return "";
 			}
 			
 			@Override

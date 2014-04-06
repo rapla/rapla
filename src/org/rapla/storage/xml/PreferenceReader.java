@@ -73,7 +73,7 @@ public class PreferenceReader extends RaplaXMLReader {
             configRole = getString(atts,"key");
             stringValue = getString(atts,"value", null);
             if ( stringValue != null) {
-            	preferences.putEntry( configRole,stringValue );
+            	preferences.putEntryPrivate( configRole,stringValue );
             }
             return;
         }

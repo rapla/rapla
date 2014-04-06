@@ -643,7 +643,7 @@ public class RaplaComponent
 
     public Configuration getPluginConfig(String pluginClassName) throws EntityNotFoundException,
 			RaplaException {
-				RaplaConfiguration raplaConfig  = getQuery().getPreferences(null).getEntry(RaplaComponent.PLUGIN_CONFIG);
+				RaplaConfiguration raplaConfig  = getQuery().getSystemPreferences().getEntry(RaplaComponent.PLUGIN_CONFIG);
 				Configuration pluginConfig = null;
 				if ( raplaConfig != null) {
 					pluginConfig = raplaConfig.find("class", pluginClassName);

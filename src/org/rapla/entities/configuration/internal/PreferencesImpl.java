@@ -14,7 +14,9 @@ package org.rapla.entities.configuration.internal;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.RaplaObject;
@@ -41,6 +43,7 @@ public class PreferencesImpl extends SimpleEntity
     private Date createDate;
     
 	RaplaMapImpl map = new RaplaMapImpl();
+	Set<String> removedKeys = new LinkedHashSet<String>();
     final public RaplaType<Preferences> getRaplaType() {return TYPE;}
     
     PreferencesImpl() {
@@ -91,7 +94,7 @@ public class PreferencesImpl extends SimpleEntity
         map.putPrivate(role, entry);
     }
     
-    public void putEntry(String role,String entry) {
+    public void putEntryPrivate(String role,String entry) {
         checkWritable();
         map.putPrivate(role, entry);
     }
@@ -122,13 +125,12 @@ public class PreferencesImpl extends SimpleEntity
         }
     }
 
-
-    public String getEntryAsString(String role) {
+    private String getEntryAsString(String role) {
         return (String) map.get( role );
     }
 
-    public String getEntryAsString(String role, String defaultValue) {
-        String value = getEntryAsString( role);
+    public String getEntryAsString(TypedComponentRole<String> role, String defaultValue) {
+        String value = getEntryAsString( role.getId());
         if ( value != null)
             return value;
         return defaultValue;
@@ -175,8 +177,8 @@ public class PreferencesImpl extends SimpleEntity
 	/* (non-Javadoc)
 	 * @see org.rapla.entities.configuration.Preferences#getEntryAsBoolean(java.lang.String, boolean)
 	 */
-	public boolean getEntryAsBoolean(String role, boolean defaultValue) {
-		String entry = getEntryAsString( role);
+	public Boolean getEntryAsBoolean(TypedComponentRole<Boolean> role, boolean defaultValue) {
+		String entry = getEntryAsString( role.getId());
 		if ( entry == null)
 			return defaultValue;
 		return Boolean.valueOf(entry).booleanValue();
@@ -185,8 +187,8 @@ public class PreferencesImpl extends SimpleEntity
 	/* (non-Javadoc)
 	 * @see org.rapla.entities.configuration.Preferences#getEntryAsInteger(java.lang.String, int)
 	 */
-	public int getEntryAsInteger(String role, int defaultValue) {
-		String entry = getEntryAsString( role);
+	public Integer getEntryAsInteger(TypedComponentRole<Integer> role, int defaultValue) {
+		String entry = getEntryAsString( role.getId());
 		if ( entry == null)
 			return defaultValue;
 		return Integer.parseInt(entry);
@@ -257,20 +259,6 @@ public class PreferencesImpl extends SimpleEntity
 //        }
 	}
 
-	public String getEntryAsString(TypedComponentRole<String> role,
-			String defaultValue) {
-		return getEntryAsString(role.getId(), defaultValue);
-	}
-
-	public Boolean getEntryAsBoolean(TypedComponentRole<Boolean> role,
-			boolean defaultValue) {
-		return getEntryAsBoolean(role.getId(), defaultValue);
-	}
-
-	public Integer getEntryAsInteger(TypedComponentRole<Integer> role,
-			int defaultValue) {
-		return getEntryAsInteger(role.getId(), defaultValue);
-	}
 
 	public static String getPreferenceIdFromUser(String userId) {
 		String preferenceId = Preferences.TYPE.getId( userId != null ? RaplaType.parseId( userId): 0);

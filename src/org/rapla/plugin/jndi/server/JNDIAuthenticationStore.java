@@ -277,8 +277,6 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         return new JNDIAuthenticationStore(config, logger);
     }
 
-  
-
     private void initWithMap(Map<String,String> config) throws RaplaException {
         try {
             setDigest( getAttribute( config,DIGEST, null ) );
@@ -372,24 +370,24 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
          * Adds the default user groups if the user doesnt already have a group*/
         if (rapla_context != null && user.getGroups().length == 0)
         {
-        	ClientFacade facade = rapla_context.lookup(ClientFacade.class);
-        	Preferences preferences = facade.getPreferences(null);
+            ClientFacade facade = rapla_context.lookup(ClientFacade.class);
+        	Preferences preferences = facade.getServerPreferences();
         	
-        	 RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
-             Collection<Category> groups;
-             if (groupList == null)
-             {
-             	groups = new ArrayList<Category>();
-             }
-             else
-             {
-             	groups = Arrays.asList(groupList.values().toArray(Category.CATEGORY_ARRAY));
-             }
-             for (Category group:groups)
-             {
+        	RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
+        	Collection<Category> groups;
+        	if (groupList == null)
+        	{
+        	    groups = new ArrayList<Category>();
+        	}
+        	else
+        	{
+        	    groups = Arrays.asList(groupList.values().toArray(Category.CATEGORY_ARRAY));
+        	}
+        	for (Category group:groups)
+        	{
             	 user.addGroup( group);
-             }
-             modified = true;
+        	}
+        	modified = true;
         }
         return modified;
     }

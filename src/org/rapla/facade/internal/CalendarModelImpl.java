@@ -122,7 +122,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         setViewId( DEFAULT_VIEW);
         this.user = user;
         if ( user != null && !user.isAdmin()) {
-        	boolean selected = m_facade.getPreferences(null).getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
+        	boolean selected = m_facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
         	optionMap.put( CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
         }
         optionMap.put( CalendarModel.SAVE_SELECTED_DATE, "false");

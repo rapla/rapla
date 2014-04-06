@@ -179,7 +179,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
         
         URL baseUrl = new URL(serverURL);
         URL methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
-        boolean loginCmd = methodURL.getPath().endsWith("login");
+        boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
         JsonObject element = serializeCall(method, args);
         FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
         String accessToken = loginCmd ? null: serverInfo.getAccessToken();

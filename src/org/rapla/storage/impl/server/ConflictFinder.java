@@ -216,11 +216,9 @@ class ConflictFinder {
 	    String appointment1 = conflict.getAppointment1();
         String appointment2 = conflict.getAppointment2();
         return( idList.contains( appointment1) || idList.contains( appointment2));
-    
 	}
 
-	private SortedSet<AppointmentBlock> createBlocks(Date today,
-			Set<Appointment> appointmentSet,final Comparator<AppointmentBlock> comparator, SortedSet<AppointmentBlock> additionalSet) {
+	private SortedSet<AppointmentBlock> createBlocks(Date today, Set<Appointment> appointmentSet,final Comparator<AppointmentBlock> comparator, SortedSet<AppointmentBlock> additionalSet) {
 		  // overlaps will be checked  260 weeks (5 years) from now on
         long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
       
@@ -324,16 +322,6 @@ class ConflictFinder {
 
 	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult evt, Date today,Collection<Allocatable> removedAllocatables)
 	{
-		for ( Allocatable alloc: removedAllocatables)
-		{
-			Set<Conflict> sortedSet = conflictMap.get( alloc);
-			if ( sortedSet != null && !sortedSet.isEmpty())
-			{
-				logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
-			}
-			conflictMap.remove( alloc);
-		}
-
 		Iterator<Change> it = evt.getOperations(UpdateResult.Change.class);
 		while (it.hasNext())
 		{
@@ -352,6 +340,16 @@ class ConflictFinder {
 					}
 				}
 			}
+		}
+		
+		for ( Allocatable alloc: removedAllocatables)
+		{
+		    Set<Conflict> sortedSet = conflictMap.get( alloc);
+		    if ( sortedSet != null && !sortedSet.isEmpty())
+		    {
+		        logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
+		    }
+		    conflictMap.remove( alloc);
 		}
 		
     	Set<Conflict> added = new HashSet<Conflict>();

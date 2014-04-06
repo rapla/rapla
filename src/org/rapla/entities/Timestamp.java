@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Gereon Fassbender, Christopher Kohlhaas               |
+ | Copyright (C) 2014  Christopher Kohlhaas                                 |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -22,5 +22,5 @@ public interface Timestamp {
     /**@deprecated use getLastChanged instead */
     Date getLastChangeTime();
     User getLastChangedBy();
-    String getId();
+    //String getId();
 }

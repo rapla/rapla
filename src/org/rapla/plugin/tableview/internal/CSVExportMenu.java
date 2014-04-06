@@ -125,7 +125,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
         byte[] bytes = buf.toString().getBytes();
         
 		DateFormat sdfyyyyMMdd = new SimpleDateFormat("yyyyMMdd");
-		final String calendarName = getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+		final String calendarName = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
 		String filename = calendarName + "-" + sdfyyyyMMdd.format( model.getStartDate() )  + "-" + sdfyyyyMMdd.format( model.getEndDate() ) + ".csv";
 		if (saveFile( bytes, filename,"csv"))
 		{

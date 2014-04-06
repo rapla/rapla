@@ -108,7 +108,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
         String menuName;
         try
         {
-            menuName= getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            menuName= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
         }
         catch (RaplaException e) {
             menuName = defaultTitle;

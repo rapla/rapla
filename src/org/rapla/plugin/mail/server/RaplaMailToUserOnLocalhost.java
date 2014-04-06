@@ -44,7 +44,7 @@ public class RaplaMailToUserOnLocalhost extends RaplaComponent implements MailTo
 
             final MailInterface mail = getContext().lookup(MailInterface.class);
             ClientFacade facade =  getContext().lookup(ClientFacade.class);
-            Preferences prefs = facade.getPreferences( null);
+            Preferences prefs = facade.getServerPreferences();
             final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
             try {
                 mail.sendMail( defaultSender, recipientEmail,subject, body);

@@ -128,6 +128,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     	            @Override
     	            public String get() throws Exception {
+    	                getLogger().info("Refreshing access token.");
     	                return login();
     	            }
 
@@ -158,8 +159,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
 		this.connectInfo = connectInfo;
 		String username = this.connectInfo.getUsername();
-		String accessToken = login();
-        connectionInfo.setAccessToken(accessToken );
+		login();
+        getLogger().info("login successfull");
 		loadData(username);
         bSessionActive = true;
 	}
@@ -172,8 +173,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		    RemoteServer serv1 = getRemoteServer();
 		    LoginTokens loginToken = serv1.login(username,password, connectAs).get();
             String accessToken = loginToken.getAccessToken();
-		    getLogger().info("login successfull");
-		    return accessToken;
+            if ( accessToken != null)
+            {
+		        connectionInfo.setAccessToken( accessToken);
+	            return accessToken;
+            }
+            else
+            {
+                throw new RaplaSecurityException("Invalid Access token");
+            }
 		} catch (RaplaException ex){
 		    disconnect();
 		    throw ex;
@@ -284,7 +292,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     synchronized public void refresh() throws RaplaException {
-        String clientRepoVersion = SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
+        String clientRepoVersion = getClientRepoVersion();
         RemoteStorage serv = getRemoteStorage();
     	try
         {
@@ -304,6 +312,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    {
 	    	throw new RaplaException(ex);
 	    }		
+    }
+
+    private String getClientRepoVersion() {
+        return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
     }
  
     synchronized public void restartServer() throws RaplaException {
@@ -661,30 +673,21 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
     
     public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
-    	// first we do a refresh to ensure that all the resources are in place
-    	refresh();
     	RemoteStorage serv = getRemoteStorage();
     	String[] allocatableId = getIdList(allocatables);
     	try
     	{
-			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
-	        Lock lock = readLock();
-			try 
-	        {
-	        	testResolve( list);
-	        	setResolver( list );
-	        } 
-			finally
-	        {
-				unlock(lock);
-	        }
+    	    String clientRepoVersion = getClientRepoVersion();
+            UpdateEvent updateEvent = serv.getReservations(allocatableId,start, end, annotationQuery, clientRepoVersion).get();
+			refresh( updateEvent);
+            
 	        List<Reservation> result = new ArrayList<Reservation>();
-	        Iterator it = list.iterator();
-	        while ( it.hasNext())
+	        for (Entity entity :updateEvent.getStoreObjects())
 	        {
-	        	Object object = it.next();
-	        	Reservation next = (Reservation)object;
-	        	result.add( next);
+	        	if ( entity instanceof Reservation)
+	        	{
+    	        	result.add( (Reservation)entity);
+	        	}
 	        }
 	        removeFilteredClassifications(result, filters);
 	        return result;

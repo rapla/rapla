@@ -27,38 +27,24 @@ import org.rapla.framework.TypedComponentRole;
  */
 public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Named {
     final RaplaType<Preferences> TYPE = new RaplaType<Preferences>(Preferences.class, "preferences");
-    /** puts a new configuration entry to the role.*/
     /** returns if there are any preference-entries */
     boolean isEmpty();
-    
     boolean hasEntry(TypedComponentRole<?> role);
-    void putEntry(TypedComponentRole<Boolean> role,Boolean entry);
-    void putEntry(TypedComponentRole<Integer> role,Integer entry);
-    void putEntry(TypedComponentRole<String> role,String entry);
-    //<T extends RaplaObject> void putEntry(TypedComponentRole<T> role,T entry);
-    void putEntry(TypedComponentRole<CalendarModelConfiguration> role,CalendarModelConfiguration entry);
-    <T> void putEntry(TypedComponentRole<RaplaMap<T>> role,RaplaMap<T> entry);
-    void putEntry(TypedComponentRole<RaplaConfiguration> role,RaplaConfiguration entry);
-
+ 
     <T extends RaplaObject> T getEntry(TypedComponentRole<T> role);
     <T extends RaplaObject> T getEntry(TypedComponentRole<T> role, T defaultEntry);
     String getEntryAsString(TypedComponentRole<String> role, String defaultValue);
     Boolean getEntryAsBoolean(TypedComponentRole<Boolean> role, boolean defaultValue);
     Integer getEntryAsInteger(TypedComponentRole<Integer> role, int defaultValue);
 
-    /** @deprecated use the typed version instead */
-    @Deprecated
-    void putEntry(String role,String entry);
-    /** @deprecated use the typed version instead */
-    @Deprecated
-    String getEntryAsString(String role, String defaultValue);
-    /** @deprecated use the typed version instead */
-    @Deprecated
-    boolean getEntryAsBoolean(String role, boolean defaultValue);
-    /** @deprecated use the typed version instead */
-    @Deprecated
-    int getEntryAsInteger(String role, int defaultValue);
-    
+    /** puts a new configuration entry to the role.*/
+    void putEntry(TypedComponentRole<Boolean> role,Boolean entry);
+    void putEntry(TypedComponentRole<Integer> role,Integer entry);
+    void putEntry(TypedComponentRole<String> role,String entry);
+    void putEntry(TypedComponentRole<CalendarModelConfiguration> role,CalendarModelConfiguration entry);
+    <T> void putEntry(TypedComponentRole<RaplaMap<T>> role,RaplaMap<T> entry);
+    void putEntry(TypedComponentRole<RaplaConfiguration> role,RaplaConfiguration entry);
+
 }
 
 

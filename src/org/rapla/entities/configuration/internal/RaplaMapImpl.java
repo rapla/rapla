@@ -50,7 +50,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    private Map<String,CalendarModelConfigurationImpl> calendars;
    protected ReferenceHandler links;
 
-   protected transient Map<String,Object> map;
+   transient protected Map<String,Object> map;
    transient EntityResolver resolver;
    
    // this map only stores the references

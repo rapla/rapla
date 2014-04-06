@@ -465,7 +465,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             }
         }
         addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
-        initializePlugins( pluginList, facade.getPreferences( null) );
+        initializePlugins( pluginList, facade.getSystemPreferences() );
         
         // Add daterender if not provided by the plugins
         if ( !getContext().has( DateRenderer.class))

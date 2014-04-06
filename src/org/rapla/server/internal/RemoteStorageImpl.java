@@ -96,7 +96,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     
     protected SecurityManager security;
     
-   // RemoteServer server;
     RaplaContext context;
     
     int cleanupPointVersion = 0;
@@ -667,11 +666,13 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
             }
 			
-            public FutureResult<List<ReservationImpl>> getReservations(String[] allocatableIds,Date start,Date end,Map<String,String> annotationQuery) 
+            public FutureResult<UpdateEvent> getReservations(String[] allocatableIds,Date start,Date end,Map<String,String> annotationQuery, String clientRepoVersion) 
             {
             	getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
                 try
                 {
+                    FutureResult<UpdateEvent> result = refresh(clientRepoVersion);
+                    UpdateEvent updateEvent = result.get();
                 	checkAuthentified();
                     User sessionUser = getSessionUser();
                     User user = null;
@@ -695,7 +696,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     	if (isAllocatablesVisible(sessionUser, res))
                 		{
                         	ReservationImpl safeRes = checkAndMakeReservationsAnonymous(sessionUser,	 res);
-							list.add( safeRes);
+                        	updateEvent.putStore( safeRes);
                 		}
                     	
                     }
@@ -707,11 +708,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //                            completeList.add( appointments);
 //                        }
                     getLogger().debug("Get reservations " + start + " " + end + ": "  + reservations.size() + "," + list.size());
-                    return new ResultImpl<List<ReservationImpl>>(list);
+                    return new ResultImpl<UpdateEvent>(updateEvent);
             	}
-            	catch (RaplaException ex )
+            	catch (Exception ex )
             	{
-            		return new ResultImpl<List<ReservationImpl>>(ex );
+            		return new ResultImpl<UpdateEvent>(ex );
             	}
             }
             

@@ -52,8 +52,8 @@ public interface RemoteStorage extends RemoteJsonService {
     
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
-    @ResultType(value=ReservationImpl.class,container=List.class)
-    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+    @ResultType(UpdateEvent.class)
+    FutureResult<UpdateEvent> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery, @WebParam(name="clientRepoVersion") String clientRepoVersion);
 
     @ResultType(UpdateEvent.class)
     FutureResult<UpdateEvent> getEntityRecursive(String... id);

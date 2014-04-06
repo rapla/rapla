@@ -51,12 +51,12 @@ public class CommunicatorTest extends ServletTestBase
        facade.login("homer","duffs".toCharArray());
        try 
        {
-           Preferences preferences = facade.edit( facade.getPreferences( null));
+           Preferences preferences = facade.edit( facade.getSystemPreferences());
            TypedComponentRole<String> TEST_ENTRY = new TypedComponentRole<String>("test-entry");
            preferences.putEntry(TEST_ENTRY, "test-value");
            
            facade.store( preferences);
-           preferences = facade.edit( facade.getPreferences( null));
+           preferences = facade.edit( facade.getSystemPreferences());
            preferences.putEntry(TEST_ENTRY, "test-value");
            facade.store( preferences);
 

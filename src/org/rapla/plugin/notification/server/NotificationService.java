@@ -154,7 +154,7 @@ public class NotificationService extends RaplaComponent
             buf.append("\n\n");
         }
         I18nBundle i18n = getI18n();
-		String raplaTitle = getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+		String raplaTitle = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
 		buf.append(i18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {

@@ -237,7 +237,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         if ( isAdmin() ) {
         	RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
-        	adminOptions.setAction( createOptionAction( getQuery().getPreferences( null )));
+        	adminOptions.setAction( createOptionAction( getQuery().getSystemPreferences()));
             adminMenu.add( adminOptions );
            
         }

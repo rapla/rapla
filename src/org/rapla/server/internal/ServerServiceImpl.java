@@ -125,7 +125,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     RemoteSessionImpl standaloneSession;
     ShutdownService shutdownService;
     // 1 Hour until the token expires
-    int accessTokenValiditySeconds = 60 * 60;
+    int accessTokenValiditySeconds =  60 * 60;
     public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
     {
         super( parentContext, config, logger );

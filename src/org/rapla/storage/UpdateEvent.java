@@ -49,6 +49,8 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	List<CategoryImpl> categories = createList(Category.class);
 	List<DynamicTypeImpl> types = createList(DynamicType.class);
 	List<UserImpl> users = createList(User.class);
+	Map<String,PreferncePatch> preferencesChange;
+
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> resources = createList(Allocatable.class);
 	List<ReservationImpl> reservations =  createList(Reservation.class);

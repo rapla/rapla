@@ -52,7 +52,7 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		 String title;
 		 final String defaultTitle = getI18n().getString("rapla.title");
 		 try {
-            title= getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            title= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
         } catch (RaplaException e) {
             title = defaultTitle; 
         }

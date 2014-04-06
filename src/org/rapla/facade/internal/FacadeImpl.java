@@ -528,6 +528,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return getPreferences(getUser());
 	}
 
+	public Preferences getSystemPreferences() throws RaplaException
+	{
+        return operator.getPreferences(null, true);
+	}
+	
+	public Preferences getServerPreferences() throws RaplaException
+    {
+        return operator.getPreferences(null, true);
+    }
+	
 	public Preferences getPreferences(User user) throws RaplaException {
 		return operator.getPreferences(user, true);
 	}

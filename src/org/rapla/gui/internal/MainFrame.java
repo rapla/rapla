@@ -54,7 +54,7 @@ public class MainFrame extends RaplaGUIComponent
         super(sm);
         menuBar = new RaplaMenuBar(getContext());
         frame =  getService( ClientService.MAIN_COMPONENT );
-        String title = getQuery().getPreferences( null ).getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+        String title = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
         	
