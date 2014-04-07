@@ -28,8 +28,7 @@ public class PeriodReader extends DynAttReader {
         super(context);
     }
 
-    // FIXME please replace with proper id solution
-    static int big = 100000000;
+    static int idCount = 0 ;
     @Override
     public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
         throws RaplaSAXParseException
@@ -44,7 +43,12 @@ public class PeriodReader extends DynAttReader {
             String id = atts.getValue("id");
             if ( id != null)
             {
-            	period.setId("resource_"+ big++);
+            	period.setId(id);
+            }
+            else
+            {
+                period.setId("period_"+idCount);
+                idCount++;
             }
             add(period);
         }

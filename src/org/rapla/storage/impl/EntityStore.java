@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -27,16 +26,11 @@ import org.rapla.entities.storage.EntityResolver;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
-    HashSet<String> idsToRemove = new HashSet<String>();
-    HashSet<String> idsToStore = new HashSet<String>();
-    HashSet<String> idsToReference = new HashSet<String>();
     EntityResolver parent;
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashSet<Allocatable> allocatables = new HashSet<Allocatable>();
-    Map<String,Map<String,String>> serverPreferences = new HashMap<String,Map<String,String>>();
     CategoryImpl superCategory;
     HashMap<Object,String> passwordList = new HashMap<Object,String>();
-    int repositoryVersion;
     
     public EntityStore(EntityResolver parent,Category superCategory) {
         this.parent = parent;
@@ -75,22 +69,6 @@ public class EntityStore implements EntityResolver {
         entities.put(id,entity);
     }
     
-    public void addRemoveId(String id)
-    {
-        idsToRemove.add(id);
-    }
-    
-    public void addReferenceId(String id)
-    {
-        idsToReference.add(id);
-    }
-
-    public void addStoreId(String id)
-    {
-        idsToStore.add(id);
-    }
-    
-    
     public DynamicType getDynamicType(String key)
     {
         // todo super 
@@ -106,19 +84,6 @@ public class EntityStore implements EntityResolver {
         return entities.values();
     }
     
-    public Collection<String> getRemoveIds() {
-        return  idsToRemove;
-    }
-
-    public Collection<String> getStoreIds() {
-        return  idsToStore;
-    }
-   
-	public Collection<String> getReferenceIds() {
-	    return idsToReference;
-	}
-
-
     // Implementation of EntityResolver
     public Entity resolve(String id) throws EntityNotFoundException {
         Entity result = tryResolve(id );
@@ -198,16 +163,7 @@ public class EntityStore implements EntityResolver {
         return collection;
     }
 
-    public int getRepositoryVersion()
-    {
-        return repositoryVersion;
-    }
-
-    public void setRepositoryVersion( int repositoryVersion )
-    {
-        this.repositoryVersion = repositoryVersion;
-    }
-
+  
 //	public void putServerPreferences(User user, String configRole, String value) {
 //		String userId = user != null ? user.getId() : null;
 //		String preferenceIdFromUser = PreferencesImpl.getPreferenceIdFromUser(userId);

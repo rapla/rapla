@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Locale;
 
-class ColumnDef
+public class ColumnDef
 {
 	String name;
 

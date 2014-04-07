@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-class TableDef
+public class TableDef
 {
 
 	public TableDef(String table) 

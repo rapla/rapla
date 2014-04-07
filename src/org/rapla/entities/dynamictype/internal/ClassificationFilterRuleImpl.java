@@ -65,7 +65,7 @@ public final class ClassificationFilterRuleImpl
                 referenceHandler.putEntity(String.valueOf(i),(Entity)ruleValue);
                 //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
             }
-            else if (refType != null && refType.isId(ruleValue))
+            else if (refType != null && (ruleValue instanceof String) /*&& refType.isId(ruleValue)*/)
             {
                 referenceHandler.putId(String.valueOf(i),(String)ruleValue);
             }

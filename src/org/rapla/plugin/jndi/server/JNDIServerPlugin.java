@@ -27,7 +27,7 @@ public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer
      	if ( !config.getAttributeAsBoolean("enabled", JNDIPlugin.ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addContainerProvidedComponent( AuthenticationStore.class, JNDIAuthenticationStore.class, config);
+        container.addContainerProvidedComponent( AuthenticationStore.class, JNDIAuthenticationStore.class);
     }
     
 }

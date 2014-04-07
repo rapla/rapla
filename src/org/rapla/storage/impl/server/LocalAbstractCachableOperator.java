@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 
 import org.rapla.components.util.Assert;
@@ -95,8 +96,9 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
-import org.rapla.storage.IdTable;
+import org.rapla.storage.IdCreator;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
@@ -106,8 +108,8 @@ import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
 
-public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator {
-	protected IdTable idTable;
+public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator {
+	
 	/**
 	 * set encryption if you want to enable password encryption. Possible values
 	 * are "sha" or "md5".
@@ -119,14 +121,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
+    MessageDigest md;
+
 	
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
 		{
     		DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = UNRESOLVED_RESOURCE_TYPE;
-			type.setElementKey(key);
-			type.setId(DynamicType.TYPE.getId(-1));
+			type.setKey(key);
+			type.setId("rapla_" + key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
@@ -137,8 +141,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = ANONYMOUSEVENT_TYPE;
-			type.setElementKey(key);
-			type.setId(DynamicType.TYPE.getId( 0));
+			type.setKey(key);
+            type.setId("rapla_" + key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
@@ -158,27 +162,29 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //		}
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
-			type.setElementKey(SYNCHRONIZATIONTASK_TYPE);
-			type.setId(DynamicType.TYPE.getId( -3));
+			String key = SYNCHRONIZATIONTASK_TYPE;
+            type.setKey(key);
+            type.setId("rapla_" + key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-			type.addAttribute(createAttributeWithId("objectId", AttributeType.STRING,-7));
-			type.addAttribute(createAttributeWithId("externalObjectId",AttributeType.STRING, -8));
-			type.addAttribute(createAttributeWithId("status",AttributeType.STRING, -9));
-			type.addAttribute(createAttributeWithId("retries", AttributeType.STRING,-10));
+			addAttributeWithInternalId(type,"objectId", AttributeType.STRING);
+			addAttributeWithInternalId(type,"externalObjectId",AttributeType.STRING);
+			addAttributeWithInternalId(type,"status",AttributeType.STRING);
+			addAttributeWithInternalId(type,"retries", AttributeType.STRING);
 			type.setResolver( this);
 			type.setReadOnly();
 			cache.put( type);
 		}
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
-			type.setElementKey(PERIOD_TYPE);
-			type.setId(DynamicType.TYPE.getId( -2));
+			String key = PERIOD_TYPE;
+            type.setKey(key);
+            type.setId("rapla_" + key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, null);
-			type.addAttribute(createAttributeWithId("name", AttributeType.STRING, -11));
-			type.addAttribute(createAttributeWithId("start", AttributeType.DATE, -12));
-			type.addAttribute(createAttributeWithId("end", AttributeType.DATE, -13));
+			addAttributeWithInternalId(type,"name", AttributeType.STRING);
+			addAttributeWithInternalId(type,"start", AttributeType.DATE);
+			addAttributeWithInternalId(type,"end", AttributeType.DATE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			type.setResolver( this);
 			type.setReadOnly();
@@ -189,6 +195,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
 		super( context, logger);
 		scheduler = context.lookup( CommandScheduler.class);
+		try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RaplaException( e.getMessage() ,e);
+        }
+
 	}
 
 	public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
@@ -299,14 +311,43 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return templates;
 	}
 	
+	@Override
+	public String createId(RaplaType raplaType) throws RaplaException {
+	    return UUID.randomUUID().toString();
+	}
+	
+	public String createId(RaplaType raplaType,String seed) throws RaplaException {
+	  
+	    byte[] data = new byte[16];
+	    data = md.digest( seed.getBytes());
+	    if ( data.length != 16 )
+	    {
+	        throw new RaplaException("Wrong algorithm");
+	    }
+	    data[6]  &= 0x0f;  /* clear version        */
+        data[6]  |= 0x40;  /* set to version 4     */
+        data[8]  &= 0x3f;  /* clear variant        */
+        data[8]  |= 0x80;  /* set to IETF variant  */
+        
+        long msb = 0;
+        long lsb = 0;
+        for (int i=0; i<8; i++)
+            msb = (msb << 8) | (data[i] & 0xff);
+        for (int i=8; i<16; i++)
+            lsb = (lsb << 8) | (data[i] & 0xff);
+        long mostSigBits = msb;
+        long leastSigBits = lsb;
+        
+        UUID uuid = new UUID( mostSigBits, leastSigBits);
+	    return uuid.toString();
+    }
+	
 	public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
         String[] ids = new String[ count];
-        synchronized ( idTable) {
-        	for ( int i=0;i<count;i++)
-            {
-            	ids[i] = idTable.createId(raplaType);
-            }
-		}
+    	for ( int i=0;i<count;i++)
+        {
+        	ids[i] = createId(raplaType);
+        }
         return ids;
     }
 	
@@ -985,6 +1026,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					}
 				}
 			}
+			
+            // TODO add conversion of classification filters 
+			for (PreferencePatch patch:evt.getPreferencePatches())
+			{
+			    
+			}
 		}
 
 		for (Entity object: removeObjects) 
@@ -1028,15 +1075,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		
 	}
 
-	protected void setCache(final LocalCache cache) {
-		super.setCache( cache);
-		if ( idTable == null)
-		{
-			idTable = new IdTable();
-		}
-		idTable.setCache(cache);
-	}
-	
+//	protected void setCache(final LocalCache cache) {
+//		super.setCache( cache);
+//		if ( idTable == null)
+//		{
+//			idTable = new IdTable();
+//		}
+//		idTable.setCache(cache);
+//	}
+//	
 
 	protected void addChangedDynamicTypeDependant(UpdateEvent evt, EntityStore store,DynamicTypeImpl type, boolean toRemove) throws RaplaException {
 		List<Entity> referencingEntities = getReferencingEntities( type, store);
@@ -1969,17 +2016,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return attribute;
 	}
 	
-	private Attribute createAttributeWithId(String key, AttributeType type,int id) throws RaplaException {
-		Attribute attribute = newAttribute(type, Attribute.TYPE.getId(id));
-		attribute.setKey(key);
+	private void addAttributeWithInternalId(DynamicType dynamicType,String key, AttributeType type) throws RaplaException {
+	    String id = "rapla_"+ dynamicType.getKey() + "_" +key; 
+        Attribute attribute = newAttribute(type, id);
+        attribute.setKey(key);
 		setName(attribute.getName(), key);
-		return attribute;
+		dynamicType.addAttribute( attribute);
 	}
 	
 	private DynamicTypeImpl newDynamicType(String classificationType, String key) throws RaplaException {
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
 		dynamicType.setAnnotation("classification-type", classificationType);
-		dynamicType.setElementKey(key);
+		dynamicType.setKey(key);
 		setNew(dynamicType);
 		if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)) {
 			dynamicType.addAttribute(createStringAttribute("name", "name"));

@@ -47,7 +47,8 @@ public class RaplaJNDITestOnLocalhost extends RaplaComponent implements RemoteMe
                     }
 
                     Logger logger = getLogger();
-                    JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(getContext(), config, logger);
+                    JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(getContext(), logger);
+                    testStore.initWithConfig( config);
                     logger.info("Test of JNDI Plugin started");
                     boolean authenticate;
                     if ( password == null || password.equals(""))

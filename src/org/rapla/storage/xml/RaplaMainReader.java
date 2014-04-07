@@ -91,11 +91,6 @@ public class RaplaMainReader extends RaplaXMLReader
                 if (version == null)
                     throw createSAXParseException( "Could not get Version" );
             }
-            String repositoryVersion = atts.getValue("repositoryVersion");
-            if ( repositoryVersion != null)
-            {
-                store.setRepositoryVersion( Integer.parseInt( repositoryVersion));
-            }
             String start = atts.getValue( "startDate");
             String end = atts.getValue( "endDate");
             if ( start != null || end != null)

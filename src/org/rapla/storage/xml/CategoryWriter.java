@@ -24,7 +24,7 @@ public class CategoryWriter extends RaplaXMLWriter {
     public CategoryWriter(RaplaContext sm) throws RaplaException {
         super(sm);
     }
-
+    
     public void printRaplaType(RaplaObject type) throws RaplaException, IOException {
         printCategory( (Category) type);
     }

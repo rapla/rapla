@@ -58,13 +58,12 @@ public class PreferenceReader extends RaplaXMLReader {
             preferences.setResolver( store);
             if ( owner == null )
             {
-            	preferences.setId( Preferences.TYPE.getId( 0));
+            	preferences.setId( Preferences.SYSTEM_PREFERENCES_ID);
             } 
             else
             {
                 preferences.setOwner( owner );
-                int key = User.TYPE.getKey(owner.getId());
-                preferences.setId( Preferences.TYPE.getId( key));
+                preferences.setId( Preferences.ID_PREFIX + owner.getId());
             }
             return;
         }

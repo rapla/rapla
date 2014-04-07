@@ -790,7 +790,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		if (end != null) {
 	        // all appointments that start before the enddate
 	        AppointmentImpl compareElement = new AppointmentImpl(end, end);
-			compareElement.setId(Appointment.TYPE.getId( -1) );
+			compareElement.setId("DUMMYID");
 	        SortedSet<Appointment> headSet = sortedAppointmentList.headSet(compareElement);
             it = headSet.iterator();
 	        //it = appointments.values().iterator();

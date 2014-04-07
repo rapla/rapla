@@ -32,7 +32,6 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.storage.LocalCache;
 
 public class DynamicTypeReader extends RaplaXMLReader
 {
@@ -84,7 +83,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 }
 
                 currentName = dynamicType.getName();
-                dynamicType.setElementKey( name );
+                dynamicType.setKey( name );
                 
                 // because the dynamic types refered in the constraints could be loaded after their first reference we resolve all prior unresolved constraint bindings to that type  when the type is loaded
                 Map<Attribute,String> constraintMap = unresolvedDynamicTypeConstraints.get( name );
@@ -234,7 +233,8 @@ public class DynamicTypeReader extends RaplaXMLReader
             Object constraint = null;
             if (attribute.getConstraintClass( constraintKey ) == Category.class)
             {
-                boolean idContent = LocalCache.isTextId(Category.TYPE, content );
+                @SuppressWarnings("deprecation")
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.TYPE, content );
                 if (idContent)
                 {
                     constraint = resolve( Category.TYPE, content );
@@ -246,7 +246,8 @@ public class DynamicTypeReader extends RaplaXMLReader
             }
             else if (attribute.getConstraintClass( constraintKey ) == DynamicType.class)
             {
-                boolean idContent = LocalCache.isTextId( DynamicType.TYPE, content );
+                @SuppressWarnings("deprecation")
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId( DynamicType.TYPE, content );
                 if (idContent)
                 {
 					constraint = content.trim();
@@ -295,7 +296,8 @@ public class DynamicTypeReader extends RaplaXMLReader
             final AttributeType type = attribute.getType();
             if (type == AttributeType.CATEGORY)
             {
-                boolean idContent = LocalCache.isTextId(Category.TYPE, content );
+                @SuppressWarnings("deprecation")
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.TYPE, content );
                 if (idContent)
                 {
                     defaultValue = resolve( Category.TYPE, content );
@@ -310,7 +312,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 Object value;
                 try 
                 {
-                    value = AttributeImpl.parseAttributeValue(attribute, content);
+                    value = parseAttributeValue(attribute, content);
                 } 
                 catch (RaplaException e) 
                 {

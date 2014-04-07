@@ -22,7 +22,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.storage.IdTable;
+import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
 public class IOContext
@@ -72,11 +72,11 @@ public class IOContext
         writerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsWriter(context) );
     }
 
-    public RaplaDefaultContext createInputContext(RaplaContext parentContext, EntityStore store, IdTable idTable) throws RaplaException {
+    public RaplaDefaultContext createInputContext(RaplaContext parentContext, EntityStore store, IdCreator idTable) throws RaplaException {
          
         RaplaDefaultContext ioContext = new RaplaDefaultContext( parentContext);
         ioContext.put(EntityStore.class, store);
-        ioContext.put(IdTable.class,idTable);
+        ioContext.put(IdCreator.class,idTable);
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
         Map<RaplaType,RaplaXMLReader> readerMap = new HashMap<RaplaType,RaplaXMLReader>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);

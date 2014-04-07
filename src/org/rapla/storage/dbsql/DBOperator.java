@@ -273,7 +273,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     	getLogger().info("Disconnecting: " + getConnectionName());
 
         cache.clearAll();
-        idTable.setCache( cache );
+        //idTable.setCache( cache );
 
         // HSQLDB Special
         if ( hsqldb ) 
@@ -303,29 +303,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         	c = createConnection();
         	connectionName = c.getMetaData().getURL();
 			getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() +": " +  connectionName);
-    		Map<String, TableDef> schema = loadDBSchema(c);
-    		RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-    		raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
-    		PreparedStatement prepareStatement = null;
-			ResultSet set = null;
-			boolean empty;
-    		try
-    		{
-    			prepareStatement = c.prepareStatement("select * from DYNAMIC_TYPE");
-    			set = prepareStatement.executeQuery();
-    			empty = !set.next();
-    		}
-    		finally
-    		{
-    			if ( set != null)
-    			{
-    				set.close();
-    			}
-    			if ( prepareStatement != null)
-    			{
-    				prepareStatement.close();
-    			}
-    		}
+    		boolean empty = upgradeDatabase(c);
 			if ( empty	 ) 
 			{
     		    getLogger().warn("No content in database! Creating new database");
@@ -352,10 +330,8 @@ public class DBOperator extends LocalAbstractCachableOperator
     		    c = createConnection();
     		}
   	        cache.clearAll();
-  	        idTable.setCache(cache);
   	        addInternalTypes(cache);
-  	        loadData( c );
-  	        idTable.setCache(cache);
+  	        loadData( c, cache );
   	        
   	        if ( getLogger().isDebugEnabled())
   	        	getLogger().debug("Entities contextualized");
@@ -377,6 +353,89 @@ public class DBOperator extends LocalAbstractCachableOperator
         	close ( c );
         	c = null;
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean upgradeDatabase(Connection c) throws SQLException, RaplaException, RaplaContextException {
+        Map<String, TableDef> schema = loadDBSchema(c);
+        TableDef dynamicTypeDef = schema.get("DYNAMIC_TYPE"); 
+        boolean empty = false;
+        int oldIdColumnCount = 0;
+        int unpatchedTables = 0;
+        
+        if ( dynamicTypeDef != null)
+        {
+            PreparedStatement prepareStatement = null;
+            ResultSet set = null;
+            try
+            {
+                prepareStatement = c.prepareStatement("select * from DYNAMIC_TYPE");
+                set = prepareStatement.executeQuery();
+                empty = !set.next();
+            }
+            finally
+            {
+                if ( set != null)
+                {
+                    set.close();
+                }
+                if ( prepareStatement != null)
+                {
+                    prepareStatement.close();
+                }
+            }
+            
+            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+            Map<String,String> idColumnMap = raplaSQLOutput.getIdColumns();
+            oldIdColumnCount = idColumnMap.size();
+            for ( Map.Entry<String, String> entry:idColumnMap.entrySet())
+            {
+                String idColumnName = entry.getKey();
+                ColumnDef idColumn = dynamicTypeDef.getColumn(idColumnName);
+                String type = idColumn.getType();
+                if ( type != null)
+                {
+                    if ( type.toLowerCase().contains("integer"))
+                    {
+                        unpatchedTables++;
+                    }
+//                        else if ( type.toLowerCase().contains("varchar"))
+//                        {
+//                            patchedTables++;
+//                        }
+                }
+            }
+        }
+        if ( !empty && unpatchedTables == oldIdColumnCount)
+        {
+            getLogger().warn("Old database schema detected. Exporting for reimport");
+            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+            raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
+
+            CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
+            if ( sourceOperator == this)
+            {
+                throw new RaplaException("Can't export old db data, because no data export is set.");
+            }
+            LocalCache cache =new LocalCache();
+            cache.clearAll();
+            addInternalTypes(cache);
+            loadData( c, cache );
+            sourceOperator.saveData(cache);
+            close( c);
+        }
+        
+        if ( unpatchedTables > 0 )
+        {
+            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+            getLogger().warn("Dropping database tables");
+            raplaSQLOutput.dropAll(c);
+            empty = true;
+        }
+        // createNew
+        RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+        raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
+        return empty;
     }
     
 	private Map<String, TableDef> loadDBSchema(Connection c)
@@ -577,13 +636,21 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
 
-	protected void saveData(Connection connection, LocalCache cache)
-			throws RaplaException, SQLException {
+	protected void saveData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
 		String connectionName = getConnectionName();
 		getLogger().info("Importing Data into " + connectionName);
 		RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-		getLogger().info("Deleting all old Data from " + connectionName);
-		raplaSQLOutput.removeAll( connection );
+		
+//		if (dropOldTables)
+//		{
+//		    getLogger().info("Droping all data from " + connectionName);
+//            raplaSQLOutput.dropAndRecreate( connection );
+//		}
+//		else
+		{
+	        getLogger().info("Deleting all old Data from " + connectionName);
+		    raplaSQLOutput.removeAll( connection );
+		}
 		getLogger().info("Inserting new Data into " + connectionName);
 		raplaSQLOutput.createAll( connection );
 		if ( !connection.getAutoCommit())
@@ -612,7 +679,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
 
-    protected void loadData(Connection connection) throws RaplaException, SQLException {
+    protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore));
         raplaSQLInput.loadAll( connection );
@@ -629,7 +696,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 	}
 
 	private RaplaDefaultContext createInputContext(  EntityStore store) throws RaplaException {
-        RaplaDefaultContext inputContext =  new IOContext().createInputContext(context, store,idTable);
+        RaplaDefaultContext inputContext =  new IOContext().createInputContext(context, store, this);
         RaplaNonValidatedInput xmlAdapter = context.lookup(RaplaNonValidatedInput.class);
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
         return inputContext;

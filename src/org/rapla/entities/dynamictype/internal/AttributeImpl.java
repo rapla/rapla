@@ -38,7 +38,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
-import org.rapla.storage.LocalCache;
 
 final public class AttributeImpl extends SimpleEntity implements Attribute
 {
@@ -489,9 +488,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
+    @SuppressWarnings("deprecation")
     static public Object parseAttributeValue(Attribute attribute,String text) throws RaplaException {
         AttributeType type = attribute.getType();
         final String trim = text.trim();
+        EntityResolver resolver = ((AttributeImpl)attribute).getResolver();
         if (type.equals( AttributeType.STRING )) {
             return text;
         }
@@ -500,9 +501,15 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             if (path.length() == 0) {
                 return null;
             }
-        	if (LocalCache.isTextId(Allocatable.TYPE,path)) {
-        		Comparable id = LocalCache.getId( Allocatable.TYPE, path);
-        		return id ;
+            if ( resolver != null)
+            {
+                if ( resolver.tryResolve( path) != null)
+                {
+                    return path;
+                }
+            }
+        	if (org.rapla.storage.OldIdMapping.isTextId(Allocatable.TYPE,path)) {
+        		return path ;
         	}
             return null;
         }
@@ -511,8 +518,15 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             if (path.length() == 0) {
                 return null;
             }
-            if (LocalCache.isTextId(Category.TYPE,path) ) {
-            	Comparable id = LocalCache.getId( Category.TYPE, path);
+            if ( resolver != null)
+            {
+                if ( resolver.tryResolve( path) != null)
+                {
+                    return path;
+                }
+            }
+            if (org.rapla.storage.OldIdMapping.isTextId(Category.TYPE,path) ) {
+            	String id = org.rapla.storage.OldIdMapping.getId( Category.TYPE, path);
             	return id ;
             } else {
                 CategoryImpl rootCategory = (CategoryImpl)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
@@ -648,7 +662,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 			{
 				stringValue = ((Entity) value).getId();
 			}
-			else if ( refType.isId(  value) )
+			else 
 			{
 				stringValue = value.toString();
 			}
@@ -667,7 +681,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		RaplaType refType = getRefType();
 		if (refType != null) 
 		{
-		Entity resolved = resolver.resolve( value );
+		    Entity resolved = resolver.resolve( value );
 			return resolved;
 		}
 		Object result;

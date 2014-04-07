@@ -87,7 +87,7 @@ public class CategoryReader extends RaplaXMLReader
                     String parentId = atts.getValue( "parentid"); 
                     if (  parentId!= null)
                     {
-                    	if (parentId.equals("category_0")) {
+                    	if (parentId.equals(Category.SUPER_CATEGORY_ID)) {
                     	    if ( !superCategory.isReadOnly())
                     	    {
                     	        superCategory.addCategory( category);

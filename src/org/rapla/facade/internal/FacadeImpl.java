@@ -1150,7 +1150,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date now = operator.getCurrentTimestamp();
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
 		dynamicType.setAnnotation("classification-type", classificationType);
-		dynamicType.setElementKey(createDynamicTypeKey(classificationType));
+		dynamicType.setKey(createDynamicTypeKey(classificationType));
 		setNew(dynamicType);
 		if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)) {
 			dynamicType.addAttribute(createStringAttribute("name", "name"));

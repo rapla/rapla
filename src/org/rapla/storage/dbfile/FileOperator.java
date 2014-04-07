@@ -199,7 +199,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
     	{
 	    	getLogger().info("Disconnecting: " + getURL());
 	    	cache.clearAll();
-	        idTable.setCache( cache );
 	        isConnected = false;
 	        fireStorageDisconnected("");
 	    	getLogger().debug("Disconnected");
@@ -216,13 +215,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             cache.clearAll();
-            idTable.setCache( cache );
             addInternalTypes(cache);
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
             EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
-            RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, idTable );
+            RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, this );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();

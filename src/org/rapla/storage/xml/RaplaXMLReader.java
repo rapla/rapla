@@ -29,34 +29,35 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.IdTable;
-import org.rapla.storage.LocalCache;
+import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
     EntityStore store;
     Logger logger;
-    IdTable idTable;
+    IdCreator idTable;
     RaplaContext context;
     Map<String,RaplaType> localnameMap;
     Map<RaplaType,RaplaXMLReader> readerMap;
     SerializableDateTimeFormat dateTimeFormat;
     I18nBundle i18n;
     Date now;
+    
     public static class TimestampDates
     {
     	public Date createTime;
@@ -69,7 +70,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         this.context = context;
         this.i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
         this.store = context.lookup( EntityStore.class); 
-        this.idTable = context.lookup( IdTable.class );
+        this.idTable = context.lookup( IdCreator.class );
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
@@ -271,15 +272,20 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	}
 
 
+    @SuppressWarnings("deprecation")
     protected String getId( RaplaType type, String str ) throws RaplaSAXParseException
     {
         try
         {
-        	if ( type == Conflict.TYPE)
-        	{
-        		return str;
-        	}
-        	String id = LocalCache.getId( type, str );
+            String id;
+            if (org.rapla.storage.OldIdMapping.isTextId(type, str))
+            {
+               id = idTable.createId(type, str);
+            } 
+            else
+            {
+                id = str;
+            }
             return id;
         }
         catch (RaplaException ex)
@@ -314,7 +320,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         try
         {
             String id = getId( type, str );
-		Entity resolved = store.resolve( id );
+            Entity resolved = store.resolve( id );
 			@SuppressWarnings("unchecked")
 			T casted = (T)resolved;
 			return casted;
@@ -329,6 +335,15 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
+            AttributeType type = attribute.getType();
+            if ( type == AttributeType.CATEGORY )
+            {
+                getId(Category.TYPE, text);
+            }
+            else if ( type == AttributeType.ALLOCATABLE )
+            {
+                getId(Allocatable.TYPE, text);
+            }
             return AttributeImpl.parseAttributeValue( attribute, text);
         }
         catch (RaplaException ex)
@@ -346,27 +361,6 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
          	}
          }
         store.put(entity);
-    }
-    
-    public void remove(String localname, String id) throws RaplaSAXParseException
-    {
-        RaplaType type = getTypeForLocalName( localname);
-        String idObject = getId( type, id );
-        store.addRemoveId( idObject );
-    }
-    
-    public void reference(String localname, String id) throws RaplaSAXParseException
-    {
-        RaplaType type = getTypeForLocalName( localname);
-        String idObject = getId( type, id );
-        store.addReferenceId( idObject );
-    }
-    
-    public void store(String localname, String id) throws RaplaSAXParseException
-    {
-        RaplaType type = getTypeForLocalName( localname);
-        String idObject = getId( type, id );
-        store.addStoreId( idObject );
     }
     
     protected Category getCategoryFromPath( String path ) throws RaplaSAXParseException 

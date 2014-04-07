@@ -256,6 +256,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
+    @Deprecated
     public void setElementKey(String elementKey) {
         setKey(elementKey);
     }

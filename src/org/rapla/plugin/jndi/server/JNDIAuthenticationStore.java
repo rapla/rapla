@@ -88,8 +88,10 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -227,12 +229,16 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     RaplaContext rapla_context;
     Logger logger;
     
-    public JNDIAuthenticationStore(RaplaContext context,Configuration config,Logger logger) throws RaplaException {
+    public JNDIAuthenticationStore(RaplaContext context,Logger logger) throws RaplaException {
         this.logger = logger.getChildLogger("ldap");
         this.rapla_context = context;
-        Map<String,String> map = generateMap(config);
-        initWithMap(map);
-        
+        Preferences preferences = context.lookup(ClientFacade.class).getSystemPreferences();
+        DefaultConfiguration config = preferences.getEntry( JNDIPlugin.JNDISERVER_CONFIG);
+        if ( config == null)
+        {
+            config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(JNDIPlugin.class.getName());
+        }
+        initWithConfig(config);
         /*
         setDigest( config.getAttribute( DIGEST, null ) );
         setConnectionName( config.getAttribute( CONNECTION_NAME ) );
@@ -245,6 +251,12 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         setUserSearch( config.getAttribute( USER_SEARCH) );
         setUserBase( config.getAttribute( USER_BASE) );
     */
+    }
+    
+    public void initWithConfig(Configuration config) throws RaplaException
+    {
+        Map<String,String> map = generateMap(config);
+        initWithMap(map);
     }
     
     public JNDIAuthenticationStore() {

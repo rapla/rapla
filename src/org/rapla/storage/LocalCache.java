@@ -48,7 +48,6 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.framework.Provider;
-import org.rapla.framework.RaplaException;
 
 public class LocalCache implements EntityResolver
 {
@@ -208,10 +207,10 @@ public class LocalCache implements EntityResolver
     
     private void initSuperCategory() {
     	CategoryImpl superCategory = new CategoryImpl(null, null);
-        superCategory.setId(LocalCache.SUPER_CATEGORY_ID);
+        superCategory.setId(Category.SUPER_CATEGORY_ID);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
-        entities.put (LocalCache.SUPER_CATEGORY_ID, superCategory);
+        entities.put (Category.SUPER_CATEGORY_ID, superCategory);
         categories.add( superCategory );
         Category[] childs = superCategory.getCategories();
         for (int i=0;i<childs.length;i++) {
@@ -219,11 +218,9 @@ public class LocalCache implements EntityResolver
         }
     }
 
-    public static String SUPER_CATEGORY_ID = Category.TYPE.getId(0);
-    
     public CategoryImpl getSuperCategory() 
     {
-        return (CategoryImpl) get(SUPER_CATEGORY_ID);
+        return (CategoryImpl) get(Category.SUPER_CATEGORY_ID);
     }
 
     public <T extends Entity> Collection<Entity> getReferers(Class<T> raplaType,Entity object) {
@@ -331,54 +328,6 @@ public class LocalCache implements EntityResolver
 		};
 	}
 	
-	 static public String getId(RaplaType type,String str) throws RaplaException {
-	    	if (str == null)
-	    		throw new RaplaException("Id string for " + type + " can't be null");
-	    	int index = str.lastIndexOf("_") + 1;
-	        if (index>str.length())
-	            throw new RaplaException("invalid rapla-id '" + str + "'");
-	        try {
-	        	return type.getId(Integer.parseInt(str.substring(index)));
-	        } catch (NumberFormatException ex) {
-	            throw new RaplaException("invalid rapla-id '" + str + "'");
-	        }
-	    }
-
-
-	static public boolean isTextId( RaplaType type,String content )
-	{
-	    if ( content == null)
-	    {
-	        return false;
-	    }
-	    content = content.trim();
-	    if ( isNumeric( content))
-	    {
-	    	return true;
-	    }
-	    String KEY_START = type.getLocalName() + "_";
-	    boolean idContent = (content.indexOf( KEY_START ) >= 0  && content.length() > 0);
-	    return idContent;
-	}
-
-	static public boolean isNumeric(String text)
-	{
-		int length = text.length();
-		if ( length == 0)
-		{
-			return false;
-		}
-		for ( int i=0;i<length;i++)
-	    {
-	    	char ch = text.charAt(i);
-			if (!Character.isDigit(ch))
-	    	{
-	    		return false;
-	    	}
-	    }
-		return true;
-	}
-
 	@Deprecated
 	public Set<Entry<RaplaType, Set<? extends Entity>>> entrySet() {
 		return entityMap.entrySet();

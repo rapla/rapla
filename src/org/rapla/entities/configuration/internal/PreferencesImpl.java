@@ -310,7 +310,7 @@ public class PreferencesImpl extends SimpleEntity
 
 
 	public static String getPreferenceIdFromUser(String userId) {
-		String preferenceId = Preferences.TYPE.getId( userId != null ? RaplaType.parseId( userId): 0);
+		String preferenceId = (userId != null ) ? Preferences.ID_PREFIX + userId : SYSTEM_PREFERENCES_ID;
 		return preferenceId.intern();
 	}
 

@@ -19,7 +19,6 @@ import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -75,14 +74,14 @@ public class AllocatableReader extends RaplaXMLReader
             ReferenceHandler referenceHandler = permission.getReferenceHandler();
             if (userString != null)
             {
-                referenceHandler.putId("user", getId(User.TYPE, userString));
+                referenceHandler.putId("user", userString);
             }
 
             // process group
             String groupId = atts.getValue( "groupidref" );
             if (groupId != null)
             {
-            	referenceHandler.putId("group", getId(Category.TYPE, groupId));
+            	referenceHandler.putId("group", groupId);
             }
             else
             {

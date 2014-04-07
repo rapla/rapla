@@ -21,6 +21,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -59,25 +60,29 @@ public class LocalCacheTest extends RaplaTestCase {
     public DynamicTypeImpl createDynamicType() throws Exception {
         AttributeImpl attribute = new AttributeImpl(AttributeType.STRING);
         attribute.setKey("name");
-        attribute.setId(Attribute.TYPE.getId(1));
+        attribute.setId(getId(Attribute.TYPE,1));
         DynamicTypeImpl dynamicType = new DynamicTypeImpl();
-        dynamicType.setElementKey("defaultResource");
-        dynamicType.setId(DynamicType.TYPE.getId(1));
+        dynamicType.setKey("defaultResource");
+        dynamicType.setId(getId(DynamicType.TYPE,1));
         dynamicType.addAttribute(attribute);
         dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
         return dynamicType;
     }
 
 
-    public AllocatableImpl createResource(LocalCache cache,int id,DynamicType type,String name) {
+    public AllocatableImpl createResource(LocalCache cache,int intId,DynamicType type,String name) {
         Date today = new Date();
         AllocatableImpl resource = new AllocatableImpl(today, today);
-        resource.setId(Allocatable.TYPE.getId(id));
+        resource.setId(getId(Allocatable.TYPE,intId));
         resource.setResolver( cache);
         Classification classification = type.newClassification();
         classification.setValue("name",name);
         resource.setClassification(classification);
         return resource;
+    }
+
+    private String getId(RaplaType type, int intId) {
+        return type.getLocalName() + "_" + intId;
     }
 
     public void testAllocatable() throws Exception {

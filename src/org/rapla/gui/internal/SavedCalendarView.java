@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -45,7 +44,6 @@ import org.rapla.gui.RaplaAction;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.common.MultiCalendarView;
-import org.rapla.gui.internal.edit.SaveUndo;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
@@ -408,15 +406,17 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     public void save(final String filename) throws RaplaException 
     {
         Preferences preferences = ((CalendarModelImpl)model).createStorablePreferences(filename);
+        getModification().store( preferences);
         
-        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );
-        Preferences original = originalMap.get(preferences);
-		Collection<Preferences> originalList = original != null ? Collections.singletonList( original): null;
-        Collection<Preferences> newList = Collections.singletonList(preferences);
-        String file = (filename != null) ? filename : getString("default");
-        String commandoName = getString("save")+ " " + getString("calendar") + " " + file ;
-        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
-        getModification().getCommandHistory().storeAndExecute( cmd);
+        // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
+//        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );
+//        Preferences original = originalMap.get(preferences);
+//		Collection<Preferences> originalList = original != null ? Collections.singletonList( original): null;
+//        Collection<Preferences> newList = Collections.singletonList(preferences);
+//        String file = (filename != null) ? filename : getString("default");
+//        String commandoName = getString("save")+ " " + getString("calendar") + " " + file ;
+//        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
+//        getModification().getCommandHistory().storeAndExecute( cmd);
 
     }
     
@@ -439,11 +439,13 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
         preferences.putEntry( AutoExportPlugin.PLUGIN_ENTRY, getModification().newRaplaMap( newMap ));
 
-        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
-        Collection<Preferences> newList = Collections.singletonList(preferences);
-        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
-        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
-        getModification().getCommandHistory().storeAndExecute( cmd);
+        getModification().store( preferences);
+        // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
+//        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
+//        Collection<Preferences> newList = Collections.singletonList(preferences);
+//        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
+//        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
+//        getModification().getCommandHistory().storeAndExecute( cmd);
         final int defaultIndex = getDefaultIndex();
         if (defaultIndex != -1)
             selectionBox.setSelectedIndex(defaultIndex);

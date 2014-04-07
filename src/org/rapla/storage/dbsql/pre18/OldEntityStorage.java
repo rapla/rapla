@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.storage.dbsql;
+package org.rapla.storage.dbsql.pre18;
 
 import java.sql.Clob;
 import java.sql.Connection;
@@ -23,12 +23,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
@@ -49,13 +47,17 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.OldIdMapping;
+import org.rapla.storage.dbsql.ColumnDef;
+import org.rapla.storage.dbsql.TableDef;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.PreferenceWriter;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
+@Deprecated
+public abstract class OldEntityStorage<T extends Entity<T>>  {
     String insertSql;
     String updateSql;
     String deleteSql;
@@ -68,7 +70,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
     
-    Collection<Storage<T>> subStores = new ArrayList<Storage<T>>();
+    Collection<OldEntityStorage<T>> subStores = new ArrayList<OldEntityStorage<T>>();
     protected Connection con;
     int lastParameterIndex; /** first paramter is 1 */
     protected final String tableName;
@@ -79,7 +81,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     Calendar datetimeCal;
     
-    protected EntityStorage( RaplaContext context, String table,String[] entries) throws RaplaException {
+    protected OldEntityStorage( RaplaContext context, String table,String[] entries) throws RaplaException {
         this.context = context;
         if ( context.has( EntityStore.class))
         {
@@ -188,54 +190,52 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	}
 		
 	protected void setId(PreparedStatement stmt, int column, Entity<?> entity) throws SQLException {
-	    setId( stmt, column, entity != null ? entity.getId() : null);
+    	if ( entity != null) {
+		    int groupId = getId( (Entity) entity);
+		    stmt.setInt( column, groupId );
+		} else {
+			stmt.setObject(column, null, Types.INTEGER);
+		}
 	}
-
-	protected void setId(PreparedStatement stmt, int column, String id) throws SQLException {
-        if ( id != null) {
-            stmt.setString( column, id );
-        } else {
-            stmt.setObject(column, null, Types.VARCHAR);
-        }
-    }
-
+	 
 	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1) throws SQLException, RaplaException {
 		return readId(rset, column, class1, false);
 	}
 
 	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
-		String id = rset.getString( column );
+		RaplaType type = RaplaType.get( class1);
+		Integer id = rset.getInt( column );
 		if ( rset.wasNull() || id == null )
 		{
 			if ( nullAllowed )
 			{
 				return null;
 			}
-			throw new RaplaException("Id can't be null for " + tableName );
+			throw new RaplaException("Id can't be null for " + tableName);
 		}
-		// TODO  check if id matches class
-		return id;
+		return  OldIdMapping.getId(type,id);
 	}
     
-    protected <S extends RaplaObject> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
-    {
-        String id = rset.getString( column );
-        if  (rset.wasNull() || id == null)
-        {
-            return null;
-        }
-        try {
-            Entity resolved = resolve(id);
-            @SuppressWarnings("unchecked")
-            S casted = (S) resolved;
-            return casted;
-        }
-        catch ( EntityNotFoundException ex)
-        {
-            getLogger().warn("Could not find "  + class1.getName() +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
-            return null;
-        }
-    }
+	protected <S extends RaplaObject> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
+	{
+		RaplaType type = RaplaType.get( class1);
+		Integer id = rset.getInt( column );
+		if  (rset.wasNull() || id == null)
+		{
+			return null;
+		}
+		try {
+			Entity resolved = resolve(OldIdMapping.getId(type,id));
+			@SuppressWarnings("unchecked")
+			S casted = (S) resolved;
+			return casted;
+		}
+		catch ( EntityNotFoundException ex)
+		{
+			getLogger().warn("Could not find "  + type +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
+			return null;
+		}
+	}
 	 
     protected void setInt(PreparedStatement stmt, int column, Integer number) throws SQLException {
     	if ( number != null) {
@@ -342,6 +342,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return "create index KEY_"+ table + "_" + colName + " on " + table + "(" + colName +")";
 	}
     
+    /**
+     * @throws RaplaException  
+     */
     public void createOrUpdateIfNecessary( Map<String,TableDef> schema) throws SQLException, RaplaException
     {
     	String tablename = tableName;
@@ -625,7 +628,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		con.commit();
 	}
     
-    @Override
     public void dropTable() throws SQLException
     {
         String sql = "DROP TABLE " + tableName ;
@@ -642,17 +644,17 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     }
 
     
-    protected void addSubStorage(Storage<T> subStore) {
+    protected void addSubStorage(OldEntityStorage<T> subStore) {
     	subStores.add(subStore);
     }
     
-    public Collection<Storage<T>> getSubStores() {
+    public Collection<OldEntityStorage<T>> getSubStores() {
 		return subStores;
 	}
 
     public void setConnection(Connection con) throws SQLException {
 		this.con= con;
-		for (Storage<T> subStore: subStores) {
+		for (OldEntityStorage<T> subStore: subStores) {
 		    subStore.setConnection(con);
 		}
 		if ( con != null)
@@ -719,6 +721,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
+    
+
+    public static int getId(Entity entity) {
+    	String id = (String) entity.getId();
+		return OldIdMapping.parseId(id);
+    }
 
 	public void loadAll() throws SQLException,RaplaException {
 	    Statement stmt = null;
@@ -735,127 +743,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             if (stmt!=null)
                 stmt.close();
         }
-        for (Storage storage: subStores) {
+        for (OldEntityStorage storage: subStores) {
             storage.loadAll();
         }
     }
-
-    public void insert(Collection<T> entities) throws SQLException,RaplaException {
-        for (Storage<T> storage: subStores) 
-        {
-            storage.insert(entities);
-        }
-        PreparedStatement stmt = null;
-        try {
-            stmt = con.prepareStatement(insertSql);
-            int count = 0;
-            for ( T entity: entities)
-            {
-                count+= write(stmt, entity);
-            }
-            if ( count > 0)
-            {
-                stmt.executeBatch();
-            } 
-        } catch (SQLException ex) {
-            throw ex;
-        } finally {
-            if (stmt!=null)
-                stmt.close();
-        }
-    }
-
-//    public void update(Collection<Entity>> entities ) throws SQLException,RaplaException {
-//        for (Storage<T> storage: subStores) {
-//            storage.delete( entities );
-//		    storage.insert( entities);
-//		}
-//        PreparedStatement stmt = null;
-//        try {
-//            stmt = con.prepareStatement( updateSql);
-//            int count = 0;
-//            for (Entity entity: entities)
-//            {
-//                int id = getId( entity );
-//                stmt.setInt( lastParameterIndex + 1,id );
-//                count+=write(stmt, entity);
-//            }
-//            if ( count > 0)
-//            {
-//                stmt.executeBatch();
-//            }
-//        } finally {
-//            if (stmt!=null)
-//                stmt.close();
-//        }
-//    }
-
-//    public void save(Collection<Entity>> entities) throws SQLException,RaplaException {
-//        Collection<Entity>>  toUpdate = new ArrayList<Entity>>();
-//        Collection<Entity>>  toInsert = new ArrayList<Entity>>();
-//        for (Entity entity:entities)
-//        {
-//            
-//            if (cache.tryResolve( entity.getId())!= null) {
-//    		    toUpdate.add( entity );
-//    		} else {
-//    		    toInsert.add( entity );
-//    		}
-//        }
-//        if  ( !toInsert.isEmpty())
-//        {
-//            insert( toInsert);
-//        }
-//        if  ( !toUpdate.isEmpty())
-//        {
-//            update( toUpdate);
-//        }
-//    }
-
-    public void save( Collection<T> entities ) throws RaplaException, SQLException{
-        deleteEntities( entities );
-        insert( entities );
-    }
-	
-    public void deleteEntities(Collection<T> entities) throws SQLException, RaplaException {
-        Set<String> ids = new HashSet<String>();
-        for ( T entity: entities)
-        {
-        	ids.add( entity.getId());
-        }
-        deleteIds(ids);
-    }
-
-	public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
-    	for (Storage<T> storage: subStores) {
-            storage.deleteIds( ids);
-        }
-    	PreparedStatement stmt = null;
-        try {
-            stmt = con.prepareStatement(deleteSql);
-            for ( String id: ids)
-            {
-                stmt.setString(1,id);
-                stmt.addBatch();
-            }
-            if ( ids.size() > 0)
-            {
-                stmt.executeBatch();
-            }
-        } finally {
-            if (stmt!=null)
-                stmt.close();
-        }
-	}
-
-    public void deleteAll() throws SQLException {
-		for (Storage<T> subStore: subStores)
-		{
-		    subStore.deleteAll();
-		}
-		executeBatchedStatement(con,deleteAllSql);
-    }
-    abstract protected int write(PreparedStatement stmt,T entity) throws SQLException,RaplaException;
+    
     abstract protected void load(ResultSet rs) throws SQLException,RaplaException;
 
     public RaplaNonValidatedInput getReader() throws RaplaException {
@@ -933,28 +825,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.tryResolve( id);  
     }
     
-    protected void setText(PreparedStatement stmt, int columIndex, String xml)
-			throws SQLException {
-    	if (  isHsqldb() || isH2())
-		{
-		    if (xml != null)
-		    {
-		    	Clob clob = con.createClob();
-		    	clob.setString(1, xml);
-		    	stmt.setClob( columIndex, clob);
-		    }
-		    else
-		    {
-		    	stmt.setObject( columIndex,  null, Types.CLOB);
-		    }
-		}
-		else
-		{
-			stmt.setString( columIndex, xml);
-		}
-	}
-    
-	protected String getText(ResultSet rset, int columnIndex)
+   protected String getText(ResultSet rset, int columnIndex)
 			throws SQLException {
 		String xml = null;
 		if ( isMysql())
