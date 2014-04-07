@@ -15,7 +15,7 @@ package org.rapla.plugin.jndi.server;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.plugin.jndi.internal.JNDITest;
+import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.ServerServiceContainer;
 
@@ -23,7 +23,7 @@ public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer
     
     public void provideServices(ServerServiceContainer container, Configuration config) 
     {
-        container.addRemoteMethodFactory(JNDITest.class, RaplaJNDITestOnLocalhost.class);
+        container.addRemoteMethodFactory(JNDIConfig.class, RaplaJNDITestOnLocalhost.class);
      	if ( !config.getAttributeAsBoolean("enabled", JNDIPlugin.ENABLE_BY_DEFAULT) )
         	return;
 

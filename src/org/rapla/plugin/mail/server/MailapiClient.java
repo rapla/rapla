@@ -7,15 +7,16 @@ import java.lang.reflect.Method;
 import java.util.Properties;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.MailException;
-import org.rapla.server.RaplaKeyStorage;
-import org.rapla.server.RaplaKeyStorage.LoginInfo;
+import org.rapla.plugin.mail.MailPlugin;
 
-public class MailapiClient  implements MailInterface
+public class MailapiClient implements MailInterface
 {
     String mailhost = "localhost";
     int port = 25;
@@ -24,35 +25,16 @@ public class MailapiClient  implements MailInterface
     String password;
     RaplaContext context;
     Object lookup;
-    public MailapiClient(Configuration config, RaplaContext context) throws ConfigurationException, RaplaException {
+    public MailapiClient( RaplaContext context) throws  RaplaException {
     	this.context = context;
     	if (  context.has(RaplaMainContainer.ENV_RAPLAMAIL))
     	{
     		lookup =  context.lookup(RaplaMainContainer.ENV_RAPLAMAIL);
     	}
-    	if ( lookup == null)
-    	{ 
-	    	// get the configuration entry text with the default-value "Welcome"
-	        setPort(config.getChild("smtp-port").getValueAsInteger(25));
-	        setSmtpHost(config.getChild("smtp-host").getValue());
-	        RaplaKeyStorage keystorage = context.lookup( RaplaKeyStorage.class);
-	        LoginInfo secrets = keystorage.getSecrets( null, "mailserver");
-	        if ( secrets != null)
-	        {
-	        	String username = secrets.login;
-		        if ( username.length() >0)
-		        {
-		        	setUsername( username);
-		        	setPassword( secrets.secret);
-		        }
-	        }
-		    setSsl( config.getChild("ssl").getValueAsBoolean(false));
-    	}      
     }
     
     public MailapiClient()
     {
-    	
     }
     
     public boolean isSsl() {
@@ -63,51 +45,97 @@ public class MailapiClient  implements MailInterface
 		this.ssl = ssl;
 	}
 
-	       
+
     public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
     {
-    	if ( lookup != null)
-    	{
-    		send(senderMail, recipient, subject, mailBody,  lookup);    		
-    	}
-    	else
-    	{
-	    	Properties props = new Properties();
-	    	props.put("mail.smtp.host", mailhost);
-	        props.put("mail.smtp.port", new Integer(port));
+        if ( lookup != null)
+        {
+            send(senderMail, recipient, subject, mailBody,  lookup);
+            return;
+        }
+        else
+        {
+            sendMail(senderMail, recipient, subject, mailBody,  (Configuration)null);
+        }
 
-			boolean usernameSet = username != null && username.trim().length() > 0;
-	        if ( usernameSet)
-	        {
-	    	    props.put("username", username);
-	    		props.put("mail.smtp.auth","true");
-	        }
-	        if ( password != null)
-	        {
-	            if ( usernameSet || password.length() > 0)
-	            {
-	                props.put("password", password);
-	            }
-	        }
-	        if (ssl)
-	        {
-	        	props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory");	
-	        	props.put("mail.smtp.socketFactory.port",  new Integer(port));
-	        }
-	        Object session;
-			try {
-		        Class<?> MailLibsC = Class.forName("org.rapla.plugin.mail.server.RaplaMailLibs");
-		        session = MailLibsC.getMethod("getSession", Properties.class).invoke( null, props);
-			} catch (Exception e) {
-				Throwable cause = e;
-				if ( e instanceof InvocationTargetException)
-				{ 
-					cause = e.getCause();
-				}
-				throw new MailException( cause.getMessage(), cause);
+    }
+ 
+    public void sendMail( String senderMail, String recipient, String subject, String mailBody, Configuration config ) throws MailException
+    {
+        Object session;
+        if ( config == null && context != null && context.has( ClientFacade.class))
+        {
+            Preferences systemPreferences;
+            try {
+                systemPreferences = context.lookup(ClientFacade.class).getSystemPreferences();
+            } catch (RaplaException e) {
+                throw new MailException( e.getMessage(),e);
+            }
+            config = systemPreferences.getEntry(MailPlugin.MAILSERVER_CONFIG);
+            if ( config == null)
+            {
+                config = getOldConfig(systemPreferences);
+            }
+        }
+        if ( config != null)
+        {
+            // get the configuration entry text with the default-value "Welcome"
+            int port = config.getChild("smtp-port").getValueAsInteger(25);
+            String mailhost = config.getChild("smtp-host").getValue("localhost");
+            String username= config.getChild("username").getValue("");
+            String password= config.getChild("password").getValue("");
+            boolean ssl = config.getChild("ssl").getValueAsBoolean(false);
+            session = createSessionFromProperties(mailhost,port,ssl, username, password);
+        } 
+        else
+        {
+            session = createSessionFromProperties(mailhost,port,ssl, username, password);
+        }
+        send(senderMail, recipient, subject, mailBody,  session);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Configuration getOldConfig(Preferences systemPreferences) 
+    {
+        return ((PreferencesImpl)systemPreferences).getOldPluginConfig(MailPlugin.class.getName());
+    }
+
+    private Object createSessionFromProperties(String mailhost, int port, boolean ssl, String username, String password) throws MailException {
+        Properties props = new Properties();
+    	props.put("mail.smtp.host", mailhost);
+        props.put("mail.smtp.port", new Integer(port));
+
+		boolean usernameSet = username != null && username.trim().length() > 0;
+        if ( usernameSet)
+        {
+    	    props.put("username", username);
+    		props.put("mail.smtp.auth","true");
+        }
+        if ( password != null)
+        {
+            if ( usernameSet || password.length() > 0)
+            {
+                props.put("password", password);
+            }
+        }
+        if (ssl)
+        {
+        	props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory");	
+        	props.put("mail.smtp.socketFactory.port",  new Integer(port));
+        }
+        Object session;
+		try {
+	        Class<?> MailLibsC = Class.forName("org.rapla.plugin.mail.server.RaplaMailLibs");
+	        session = MailLibsC.getMethod("getSession", Properties.class).invoke( null, props);
+		} catch (Exception e) {
+			Throwable cause = e;
+			if ( e instanceof InvocationTargetException)
+			{ 
+				cause = e.getCause();
 			}
-	        send(senderMail, recipient, subject, mailBody,  session);    		
-    	}		
+			throw new MailException( cause.getMessage(), cause);
+		}
+        return session;
     }
 
     private void send(String senderMail, String recipient, String subject,
@@ -202,7 +230,7 @@ public class MailapiClient  implements MailInterface
 				e = ex.getCause();
 			}
 			String message = e.getMessage();
-		    throw new MailException( message, e);
+		    throw new RaplaException( message, e);
 		}
 		finally
 		{

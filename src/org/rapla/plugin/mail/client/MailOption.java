@@ -27,17 +27,17 @@ import javax.swing.JTextField;
 
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.plugin.mail.MailConfigService;
-import org.rapla.plugin.mail.MailConfigService.LoginInfo;
 import org.rapla.plugin.mail.MailPlugin;
-import org.rapla.plugin.mail.MailToUserInterface;
 
 
 public class MailOption extends DefaultPluginOption {
@@ -60,7 +60,7 @@ public class MailOption extends DefaultPluginOption {
         super(sm);
         this.configService = mailConfigService;
     }
-
+    
     protected JPanel createPanel() throws RaplaException {
     	JPanel panel = super.createPanel();
     	externalConfigEnabled = configService.isExternalConfigEnabled();
@@ -159,19 +159,19 @@ public class MailOption extends DefaultPluginOption {
 					String className = getPluginClass().getName();
 					newConfig.setAttribute( "class", className);
 					newConfig.setAttribute( "enabled", activate.isSelected());
-					if ( !activate.isSelected())
-					{
-						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options")); 
-					}
+//					if ( !activate.isSelected())
+//					{
+//						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options")); 
+//					}
 					if  (!externalConfigEnabled)
 					{
 						addChildren( newConfig);
-						if ( !newConfig.equals( config))
-						{
-							getLogger().info("old config" + config );
-							getLogger().info("new config" + newConfig);
-							throw new RaplaException(getString("restart_options"));
-						}
+//						if ( !newConfig.equals( config))
+//						{
+//							getLogger().info("old config" + config );
+//							getLogger().info("new config" + newConfig);
+//							throw new RaplaException(getString("restart_options"));
+//						}
 					}
 					else
 					{
@@ -187,14 +187,11 @@ public class MailOption extends DefaultPluginOption {
 					{
 						throw new RaplaException("You need to set an email address in your user settings.");
 					}
-					String subject ="Rapla Test Mail";
-					String mailBody ="If you receive this mail the rapla mail settings are successfully configured.";
+		
 					try
 					{
 						send.setBackground(new Color(255,100,100, 255));
-					    MailToUserInterface test = getService(MailToUserInterface.class);
-					    String username = getUser().getUsername();
-					    test.sendMail(username, subject, mailBody);
+						configService.testMail( newConfig, defaultSender.getText());
     					send.setBackground(Color.GREEN);
     		        	send.setText("Please check your mailbox.");
 					}
@@ -234,31 +231,41 @@ public class MailOption extends DefaultPluginOption {
 	        newConfig.addChild( smtpPort );
 	        newConfig.addChild( smtpServer );
 	        newConfig.addChild( ssl );
-	
-//	        DefaultConfiguration username = new DefaultConfiguration("username");
-//	        DefaultConfiguration password = new DefaultConfiguration("password");
-//	        String usernameValue = this.username.getText();
-//	        if ( usernameValue != null && usernameValue.trim().length() > 0)
-//	        {
-//	            username.setValue( usernameValue);
-//	        } 
-//	        newConfig.addChild( username );
-//	        String passwordString = new String(this.password.getPassword());
-//	        if ( passwordString.trim().length() > 0 )
-//	        {
-//	            password.setValue( passwordString);
-//	        }
-//	        newConfig.addChild( password );
+	        DefaultConfiguration username = new DefaultConfiguration("username");
+	        DefaultConfiguration password = new DefaultConfiguration("password");
+	        String usernameValue = this.username.getText();
+	        if ( usernameValue != null && usernameValue.trim().length() > 0)
+	        {
+	            username.setValue( usernameValue);
+	        } 
+	        newConfig.addChild( username );
+	        String passwordString = new String(this.password.getPassword());
+	        if ( passwordString.trim().length() > 0 )
+	        {
+	            password.setValue( passwordString);
+	        }
+	        newConfig.addChild( password );
     	}
     }
 
-    protected void readConfig( Configuration config)   {
-    	listenersEnabled = false;
+    @Override
+    protected void readConfig( Configuration config)  {
     	try
+    	{
+    	    config = configService.getConfig();
+    	} 
+    	catch (RaplaException ex)
+    	{
+    	    showException(ex, getComponent());
+    	}
+    	listenersEnabled = false;
+        try
     	{
 	        useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false));
 	        mailServer.setText( config.getChild("smtp-host").getValue("localhost"));
 	        smtpPortField.setNumber( new Integer(config.getChild("smtp-port").getValueAsInteger(25)));
+	        username.setText( config.getChild("username").getValue(""));
+            password.setText( config.getChild("password").getValue(""));
     	} 
     	finally
     	{
@@ -268,40 +275,16 @@ public class MailOption extends DefaultPluginOption {
 
     public void show() throws RaplaException  {
         super.show();
-        listenersEnabled = false;
-    	try
-    	{
-    		LoginInfo loginInfo = configService.getLoginInfo();
-    		String username;
-    		String password;
-    		if ( loginInfo != null)
-    		{
-    			username = loginInfo.username;
-    			password = loginInfo.password;
-    		}
-    		else
-    		{
-    			username = "";
-    			password = "";
-    		}
-    		this.username.setText( username);
-	        this.password.setText( password);
-    	}
-    	finally
-    	{
-    		listenersEnabled = true;
-    	}
         defaultSender.setText( preferences.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY,"rapla@domainname"));
     }
   
     public void commit() throws RaplaException {
-    	super.commit();
-    	
-    	String username = this.username.getText();
-    	String password = new String(this.password.getPassword());
-        configService.setLogin(username, password);
+        writePluginConfig(false);
+    	TypedComponentRole<RaplaConfiguration> configEntry = MailPlugin.MAILSERVER_CONFIG;
+    	RaplaConfiguration newConfig = new RaplaConfiguration("config" );
+    	addChildren( newConfig );
+    	preferences.putEntry( configEntry,newConfig);
     	preferences.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, defaultSender.getText() );
-        
     }
 
 

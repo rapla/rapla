@@ -50,6 +50,10 @@ public class AllocatableReader extends RaplaXMLReader
     {
         if (namespaceURI.equals( DYNATT_NS ) || namespaceURI.equals( EXTENSION_NS ))
         {
+            if (  localName.equals("rapla:crypto"))
+            {
+                return;
+            }
             dynAttHandler.setClassifiable( allocatable );
             delegateElement(
                 dynAttHandler,
@@ -154,9 +158,6 @@ public class AllocatableReader extends RaplaXMLReader
             setLastChangedBy(allocatable, atts);
             setOwner(allocatable, atts);
         }
-
-        
-        
         
     }
 
@@ -174,7 +175,10 @@ public class AllocatableReader extends RaplaXMLReader
         }
         else if (localName.equals( "extension" ) )
         {
-            add( allocatable );
+            if ( allocatable.getClassification() != null)
+            {
+                add( allocatable );
+            }
         }
         else if (localName.equals( "annotation" ) )
         {

@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail;
 
+import org.rapla.framework.RaplaException;
 
-public class MailException extends Exception {
+
+public class MailException extends RaplaException {
     private static final long serialVersionUID = 1L;
 
     public MailException(String text,Throwable ex)  {

@@ -214,6 +214,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	}
 
 	Cancelable timerTask;
+	int intervalLength;
 	private final void initRefresh() 
 	{
 		Command refreshTask = new Command() {
@@ -237,7 +238,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			    }
 			}
 		};
-		int intervalLength = UpdateModule.REFRESH_INTERVAL_DEFAULT;
+		intervalLength = UpdateModule.REFRESH_INTERVAL_DEFAULT;
 		if (isConnected()) {
 			try {
 				intervalLength = getPreferences(null, true).getEntryAsInteger(UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
@@ -674,20 +675,34 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     
     public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
+    	// if a refresh is due, we assume the system went to sleep so we refresh before we continue
+    	if ( intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
+    	{
+    	    getLogger().info("cache not uptodate. Refreshing first.");
+    	    refresh();
+    	}
+    	
     	String[] allocatableId = getIdList(allocatables);
     	try
     	{
-    	    String clientRepoVersion = getClientRepoVersion();
-            UpdateEvent updateEvent = serv.getReservations(allocatableId,start, end, annotationQuery, clientRepoVersion).get();
-			refresh( updateEvent);
-            
-	        List<Reservation> result = new ArrayList<Reservation>();
-	        for (Entity entity :updateEvent.getStoreObjects())
+			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
+	        Lock lock = readLock();
+			try 
 	        {
-	        	if ( entity instanceof Reservation)
-	        	{
-    	        	result.add( (Reservation)entity);
-	        	}
+	        	testResolve( list);
+	        	setResolver( list );
+	        } 
+			finally
+	        {
+				unlock(lock);
+	        }
+	        List<Reservation> result = new ArrayList<Reservation>();
+	        Iterator it = list.iterator();
+	        while ( it.hasNext())
+	        {
+	        	Object object = it.next();
+	        	Reservation next = (Reservation)object;
+	        	result.add( next);
 	        }
 	        removeFilteredClassifications(result, filters);
 	        return result;

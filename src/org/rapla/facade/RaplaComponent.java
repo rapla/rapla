@@ -27,13 +27,13 @@ import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -53,7 +53,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
-import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -640,19 +639,12 @@ public class RaplaComponent
     	return remote.getRemoteMethod(a);
     }
     
-
-    public Configuration getPluginConfig(String pluginClassName) throws EntityNotFoundException,
-			RaplaException {
-				RaplaConfiguration raplaConfig  = getQuery().getSystemPreferences().getEntry(RaplaComponent.PLUGIN_CONFIG);
-				Configuration pluginConfig = null;
-				if ( raplaConfig != null) {
-					pluginConfig = raplaConfig.find("class", pluginClassName);
-				}
-				if ( pluginConfig == null) {
-					pluginConfig = new DefaultConfiguration("plugin");
-				}
-				return pluginConfig;
-			}
+    @Deprecated
+    public Configuration getPluginConfig(String pluginClassName) throws RaplaException 
+    {
+		Preferences systemPreferences = getQuery().getSystemPreferences();
+        return ((PreferencesImpl)systemPreferences).getOldPluginConfig(pluginClassName);
+    }
 
 	public static boolean isTemplate(RaplaObject<?> obj) 
 	{

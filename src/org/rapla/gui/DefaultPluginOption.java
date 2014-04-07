@@ -21,6 +21,7 @@ import javax.swing.JPanel;
 
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
@@ -63,6 +64,10 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
      * @see org.rapla.gui.OptionPanel#commit()
      */
     public void commit() throws RaplaException {
+        writePluginConfig(true);
+    }
+
+    protected void writePluginConfig(boolean addChildren) {
         RaplaConfiguration config =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
         if ( config  == null)
 	    {
@@ -74,7 +79,10 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
         RaplaConfiguration newChild = new RaplaConfiguration("plugin" );
         newChild.setAttribute( "enabled", activate.isSelected());
         newChild.setAttribute( "class", className);
-        addChildren( newChild );
+        if ( addChildren)
+        {
+            addChildren( newChild );
+        }
         RaplaConfiguration newConfig = config.replace(config.find("class", className), newChild);
         preferences.putEntry( RaplaComponent.PLUGIN_CONFIG,newConfig);
     }
@@ -89,38 +97,31 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     /**
      * 
      * @param config
+     * @throws RaplaException 
      */
     protected void readConfig( Configuration config)   {
     	
     }
 
-
     /**
      * @see org.rapla.gui.OptionPanel#show()
      */
-    public void show() throws RaplaException {
+    @SuppressWarnings("deprecation")
+    public void show() throws RaplaException 
+    {
         activate.setText( getString("selected"));
         container = createPanel();
-        RaplaConfiguration raplaConfig = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        Class<? extends PluginDescriptor<?>> pluginClass = getPluginClass();
-	    if ( raplaConfig  != null)
-	    {
-			config = raplaConfig.find( "class" ,pluginClass.getName());
-	    }
-        if ( config == null) {
-        	config = new RaplaConfiguration("plugin");
-        }
-        
-    	boolean defaultSelection = false;
+	    Class<? extends PluginDescriptor<?>> pluginClass = getPluginClass();
+        boolean defaultSelection = false;
 		try {
 			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
 		} catch (Throwable e) {
 		}
-        
+        config = ((PreferencesImpl)preferences).getOldPluginConfig(pluginClass.getName());
         activate.setSelected( config.getAttributeAsBoolean("enabled", defaultSelection));
         readConfig( config );
     }
-
+   
     /**
      * @see org.rapla.gui.toolkit.RaplaWidget#getComponent()
      */

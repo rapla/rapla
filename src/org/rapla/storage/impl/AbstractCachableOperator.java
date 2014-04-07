@@ -60,6 +60,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
@@ -160,7 +161,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			evt.setUserId(user.getId());
 		}
 		for (Entity obj : storeObjects) {
-			evt.putStore(obj);
+		    if ( obj instanceof Preferences)
+		    {
+		        PreferencePatch patch = ((PreferencesImpl)obj).getPatch();
+                evt.putPatch( patch);
+		    }
+		    else
+		    {
+		        evt.putStore(obj);
+		    }
 		}
 
 		for (Entity entity : removeObjects) {
@@ -280,7 +289,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			resolve(user.getId());
 		}
 		String userId = user != null ? user.getId() : null;
-		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
 		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId);
 		if (pref == null && createIfNotNull )
 		{
@@ -292,17 +301,27 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 
 		if (pref == null && createIfNotNull) {
-			Date now = getCurrentTimestamp();
-			PreferencesImpl newPref = new PreferencesImpl(now,now);
-			newPref.setResolver( this);
-			newPref.setOwner(user);
-			newPref.setId( preferenceId );
+			PreferencesImpl newPref = newPreferences(userId);
 			newPref.setReadOnly(  );
 			pref = newPref;
 			emptyPreferencesProxy.put(preferenceId , pref);
 		}
 		return pref;
 	}
+
+    private PreferencesImpl newPreferences(final String userId) throws EntityNotFoundException {
+        Date now = getCurrentTimestamp();
+        String id = PreferencesImpl.getPreferenceIdFromUser(userId);
+        PreferencesImpl newPref = new PreferencesImpl(now,now);
+        newPref.setResolver( this);
+        if ( userId != null)
+        {
+            User user = (User) resolve( userId);
+            newPref.setOwner(user);
+        }
+        newPref.setId( id );
+        return newPref;
+    }
 
 	public Category getSuperCategory() {
 		return cache.getSuperCategory();
@@ -537,7 +556,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
 		HashMap<Entity,Entity> oldEntities = new HashMap<Entity,Entity>();
 		// First make a copy of the old entities
-		Collection<Entity>storeObjects = evt.getStoreObjects();
+		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(evt.getStoreObjects());
 		for (Entity entity : storeObjects) 
 		{
 			if (!isStorableInCache( entity))
@@ -566,6 +585,25 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				Entity oldEntity = persistantEntity;
 				oldEntities.put(persistantEntity, oldEntity);
 			}
+
+		}
+		Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+		for ( PreferencePatch patch:preferencePatches)
+		{
+		    String userId = patch.getUserId();
+            PreferencesImpl oldEntity = cache.getPreferencesForUserId( userId);
+            PreferencesImpl clone;
+            if ( oldEntity == null)
+            {
+                clone = newPreferences( userId);
+            }
+            else
+            {
+                clone = oldEntity.clone();
+            }
+            clone.applyPatch( patch);
+            oldEntities.put(clone, oldEntity);
+            storeObjects.add( clone);
 
 		}
 		List<Entity>updatedEntities = new ArrayList<Entity>();

@@ -1,15 +1,15 @@
 package org.rapla.components.mail;
 
 
-import org.rapla.plugin.mail.MailException;
-import org.rapla.plugin.mail.server.MailapiClient;
-
 import junit.framework.TestCase;
+
+import org.rapla.framework.RaplaException;
+import org.rapla.plugin.mail.server.MailapiClient;
 
 public class MailTest extends TestCase
 {
     
-    public void testMailSend() throws MailException
+    public void testMailSend() throws RaplaException
     {
         MailapiClient client = new MailapiClient();
         client.setSmtpHost("localhost");

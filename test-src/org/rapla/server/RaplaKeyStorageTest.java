@@ -3,6 +3,7 @@ package org.rapla.server;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
 
@@ -19,7 +20,7 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 		user.setUsername("testuser");
 		getFacade().store( user);
 		
-		String tagName = "test";
+		TypedComponentRole<String> tagName = new TypedComponentRole<String>("org.rapla.server.secret.test");
 		String login ="username";
 		String secret = "secret";
 		storage.storeLoginInfo(user, tagName, login, secret);

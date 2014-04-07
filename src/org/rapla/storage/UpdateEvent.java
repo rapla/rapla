@@ -39,6 +39,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 
@@ -49,7 +50,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	List<CategoryImpl> categories = createList(Category.class);
 	List<DynamicTypeImpl> types = createList(DynamicType.class);
 	List<UserImpl> users = createList(User.class);
-	Map<String,PreferncePatch> preferencesChange;
+	List<PreferencePatch> preferencesPatches = new ArrayList<PreferencePatch>();
 
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> resources = createList(Allocatable.class);
@@ -146,6 +147,12 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
     	}
     	list.add( entity);
 	}
+    
+    public void putPatch(PreferencePatch patch) 
+    {
+        preferencesPatches.add( patch);
+    }
+
 
     public Collection<Entity> getRemoveObjects()
     {
@@ -179,6 +186,37 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         }
 		return objects;
 
+    }
+    
+    public Collection<EntityReferencer> getEntityReferences(boolean includeRemove) 
+    {
+        HashSet<EntityReferencer> objects = new HashSet<EntityReferencer>();
+        for ( Collection<Entity> list:getListMap().values())
+        {
+            for ( Entity entity:list)
+            {
+                String id = entity.getId();
+                boolean contains = storeSet.contains( id) || (includeRemove && removeSet.contains( id));
+                if ( contains && entity instanceof EntityReferencer)
+                {
+                    EntityReferencer references = (EntityReferencer)entity;
+                    objects.add(references);
+                }
+            }
+        }
+        // TODO: Do we need to add a hashcode and equals to the PreferencePatch to make this work?
+        for ( PreferencePatch patch:preferencesPatches)
+        {
+            objects.add(patch);
+        }
+        return objects;
+
+    }
+
+    
+    public List<PreferencePatch> getPreferencePatches() 
+    {
+        return preferencesPatches;
     }
     
 //    public void putReference(Entity entity) {
@@ -226,32 +264,32 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
       	throw new IllegalStateException("Entity in store/remove set but not found in list");
     }
 
-    public UpdateEvent clone() {
-        UpdateEvent clone = new UpdateEvent( );
-        clone.lastValidated = lastValidated;
-        clone.invalidateInterval = invalidateInterval;
-        clone.needResourcesRefresh = needResourcesRefresh;
-        clone.userId = userId;
-        clone.removeSet = new LinkedHashSet<String>( removeSet);
-        clone.storeSet = new LinkedHashSet<String>( storeSet);
-        
-        for ( Collection<Entity> list:getListMap().values())
-        {
-        	for ( Entity entity:list)
-        	{
-        		String id = entity.getId();
-				if ( storeSet.contains( id))
-        		{
-        			clone.addStore( entity);
-        		}
-        		if ( removeSet.contains( id))
-        		{
-        			clone.addRemove( entity);
-        		}
-        	}
-        }
-        return clone;
-    }
+//    public UpdateEvent clone() {
+//        UpdateEvent clone = new UpdateEvent( );
+//        clone.lastValidated = lastValidated;
+//        clone.invalidateInterval = invalidateInterval;
+//        clone.needResourcesRefresh = needResourcesRefresh;
+//        clone.userId = userId;
+//        clone.removeSet = new LinkedHashSet<String>( removeSet);
+//        clone.storeSet = new LinkedHashSet<String>( storeSet);
+//        
+//        for ( Collection<Entity> list:getListMap().values())
+//        {
+//        	for ( Entity entity:list)
+//        	{
+//        		String id = entity.getId();
+//				if ( storeSet.contains( id))
+//        		{
+//        			clone.addStore( entity);
+//        		}
+//        		if ( removeSet.contains( id))
+//        		{
+//        			clone.addRemove( entity);
+//        		}
+//        	}
+//        }
+//        return clone;
+//    }
 
     public void setLastValidated( Date serverTime )
     {
@@ -320,5 +358,7 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	{
 		this.timezoneOffset = timezoneOffset;
 	}
+
+
 
 }

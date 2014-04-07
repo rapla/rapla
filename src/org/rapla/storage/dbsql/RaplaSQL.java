@@ -71,6 +71,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.RaplaXMLReader;
@@ -80,6 +81,7 @@ class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
     private final Logger logger;
     RaplaContext context;
+    PreferenceStorage preferencesStorage;
     
     
     RaplaSQL( RaplaContext context) throws RaplaException{
@@ -90,7 +92,8 @@ class RaplaSQL {
 	    stores.add(new DynamicTypeStorage( context));
 	    stores.add(new UserStorage( context));
 	    stores.add(new AllocatableStorage( context));
-	    stores.add(new PreferenceStorage( context));
+	    preferencesStorage = new PreferenceStorage( context);
+        stores.add(preferencesStorage);
 	    ReservationStorage reservationStorage = new ReservationStorage( context);
 		stores.add(reservationStorage);
 	    AppointmentStorage appointmentStorage = new AppointmentStorage( context);
@@ -254,7 +257,7 @@ class RaplaSQL {
 			{
 				storage.loadAll();
 				Collection<PeriodImpl> periods = storage.getPeriods();
-				// FIXME implement period conversion
+				// FIXME implement period conversion9
 			}
     		finally
     		{
@@ -262,6 +265,19 @@ class RaplaSQL {
     		}
 		}
 	}
+
+    public void storePatches(Connection connection, List<PreferencePatch> preferencePatches) throws SQLException, RaplaException {
+        PreferenceStorage storage = preferencesStorage;
+        storage.setConnection( connection);
+        try
+        {
+            preferencesStorage.storePatches( preferencePatches);
+        }
+        finally
+        {
+            storage.setConnection( null);
+        }
+    }
 
 }
 
@@ -1251,7 +1267,70 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	    new String [] {"USER_ID INTEGER KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT"});
     }
 
-	@Override
+    class PatchEntry
+    {
+        String userId;
+        String role;
+    }
+    
+	public void storePatches(List<PreferencePatch> preferencePatches) throws RaplaException, SQLException 
+	{
+	    for ( PreferencePatch patch:preferencePatches)
+	    {
+	        String userId = patch.getUserId();
+            Integer idKey = userId != null ? RaplaType.parseId(userId) : 0;
+            PreparedStatement stmt = null;
+	        try {
+	            String deleteSqlWithRole = deleteSql + " and role=?";
+	            stmt = con.prepareStatement(deleteSqlWithRole);
+	            for ( String role: patch.getRemovedEntries())
+	            {
+	                stmt.setInt(1,idKey);
+	                stmt.setString(2,role);
+	                stmt.addBatch();
+	            }
+	            for ( String role: patch.keySet())
+                {
+                    stmt.setInt(1,idKey);
+                    stmt.setString(2,role);
+                    stmt.addBatch();
+                }
+	        } finally {
+	            if (stmt!=null)
+	                stmt.close();
+	        }
+	    }
+	    
+	    PreparedStatement stmt = null;
+        try {
+            stmt = con.prepareStatement(insertSql);
+            int count = 0;
+            for ( PreferencePatch patch:preferencePatches)
+            {
+                String userId = patch.getUserId();
+                Integer idKey = userId != null ? RaplaType.parseId(userId) : 0;
+                for ( String role:patch.keySet())
+                {
+                    Object entry = patch.get( role);
+                    insterEntry(stmt, idKey, role, entry);
+                    count++;
+                }
+            }
+
+            if ( count > 0)
+            {
+                stmt.executeBatch();
+            } 
+        } catch (SQLException ex) {
+            throw ex;
+        } finally {
+            if (stmt!=null)
+                stmt.close();
+        }
+        
+    }
+
+    @Override
 	void insertAll() throws SQLException, RaplaException {
 		List<Preferences> preferences = new ArrayList<Preferences>();
 		{
@@ -1286,36 +1365,34 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     protected int write(PreparedStatement stmt, Preferences entity) throws SQLException, RaplaException {
         PreferencesImpl preferences = (PreferencesImpl) entity;
         User user = preferences.getOwner();
-        if ( user == null) {
-			stmt.setInt(1, 0);
-        } else {
-            stmt.setInt(1,getId( (Entity) user));
-        }
+        int id = user != null ? getId( (Entity) user):0; 
         int count = 0;
-        Iterator<String> it = preferences.getPreferenceEntries();
-        while (it.hasNext()) {
-            String role =  it.next();
+        for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
-            setString( stmt,2, role);
-            String xml;
-            String entryString;
-            if ( entry instanceof String) {
-                entryString = (String) entry;
-            	xml = null;
-            } else {
-            	//System.out.println("Role " + role + " CHILDREN " + conf.getChildren().length);
-                entryString = null;
-            	xml = getXML( (RaplaObject)entry);
-            }
-            setString( stmt,3, entryString);
-
-			setText(stmt, 4, xml);
-       
-            stmt.addBatch();
+            insterEntry(stmt, id, role, entry);
             count++;
         }
        
         return count;
+    }
+
+    private void insterEntry(PreparedStatement stmt, int userId, String role, Object entry) throws SQLException, RaplaException {
+        stmt.setInt(1, userId);
+        setString( stmt,2, role);
+        String xml;
+        String entryString;
+        if ( entry instanceof String) {
+            entryString = (String) entry;
+        	xml = null;
+        } else {
+        	//System.out.println("Role " + role + " CHILDREN " + conf.getChildren().length);
+            entryString = null;
+        	xml = getXML( (RaplaObject)entry);
+        }
+        setString( stmt,3, entryString);
+
+        setText(stmt, 4, xml);
+        stmt.addBatch();
     }
 
     @Override

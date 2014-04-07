@@ -298,10 +298,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
     	final Lock writeLock = writeLock();
     	try
         {
-    	 	final UpdateEvent closure = checkAndCreateClosure(evt);
+    	 	checkAndAddClosure(evt);
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
-	        result = update( closure);
+	        result = update( evt);
 	        saveData(cache, includeIds);
         }
         finally

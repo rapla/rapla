@@ -44,6 +44,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
@@ -66,7 +67,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
@@ -76,6 +76,7 @@ import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -584,21 +585,31 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             		adminOnlyPreferences.add(JNDIPlugin.class.getCanonicalName());
                 	
             		RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-	                RaplaConfiguration newConfig = entry.clone();
-	            	for ( String className: adminOnlyPreferences)
+            		if ( entry != null)
             		{
-	            	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
-		                if ( pluginConfig != null)
-		                {
-			                newConfig.removeChild( pluginConfig);
-			                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
-			                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
-			                newPluginConfig.setAttribute("enabled", enabled);
-			                newPluginConfig.setAttribute("class", className);
-			                newConfig.addChild( newPluginConfig);
-		                }
+    	                RaplaConfiguration newConfig = entry.clone();
+    	            	for ( String className: adminOnlyPreferences)
+                		{
+    	            	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
+    		                if ( pluginConfig != null)
+    		                {
+    			                newConfig.removeChild( pluginConfig);
+    			                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
+    			                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
+    			                newPluginConfig.setAttribute("enabled", enabled);
+    			                newPluginConfig.setAttribute("class", className);
+    			                newConfig.addChild( newPluginConfig);
+    		                }
+                		}
+    	                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
             		}
-	                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
+            		for (String role :((PreferencesImpl)preferences).getPreferenceEntries())
+            		{
+            		    if ( role.contains(".server."))
+            		    {
+            		        clone.removeEntry(role);
+            		    }
+            		}
             	}
                 return clone;
 			}
@@ -644,10 +655,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                			throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
 	                		}
 	                    }
-	                    if ( entity.getRaplaType() == Reservation.TYPE)
+	                    if ( entity instanceof Reservation)
                     	{
                     		entity = checkAndMakeReservationsAnonymous(sessionUser,	entity);
                     	}
+	                    if ( entity instanceof Preferences)
+                        {
+	                        entity = removeServerOnlyPreferences((Preferences)entity);
+                        }
 	                    security.checkRead(sessionUser, entity);
 	                    completeList.add( entity );
 	                    getLogger().debug("Get entity " + entity);
@@ -666,13 +681,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
             }
 			
-            public FutureResult<UpdateEvent> getReservations(String[] allocatableIds,Date start,Date end,Map<String,String> annotationQuery, String clientRepoVersion) 
+            public FutureResult<List<ReservationImpl>> getReservations(String[] allocatableIds,Date start,Date end,Map<String,String> annotationQuery) 
             {
             	getLogger().debug ("A RemoteServer wants to reservations from ." + start + " to " + end);
                 try
                 {
-                    FutureResult<UpdateEvent> result = refresh(clientRepoVersion);
-                    UpdateEvent updateEvent = result.get();
                 	checkAuthentified();
                     User sessionUser = getSessionUser();
                     User user = null;
@@ -696,7 +709,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     	if (isAllocatablesVisible(sessionUser, res))
                 		{
                         	ReservationImpl safeRes = checkAndMakeReservationsAnonymous(sessionUser,	 res);
-                        	updateEvent.putStore( safeRes);
+							list.add( safeRes);
                 		}
                     	
                     }
@@ -708,11 +721,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //                            completeList.add( appointments);
 //                        }
                     getLogger().debug("Get reservations " + start + " " + end + ": "  + reservations.size() + "," + list.size());
-                    return new ResultImpl<UpdateEvent>(updateEvent);
+                    return new ResultImpl<List<ReservationImpl>>(list);
             	}
-            	catch (Exception ex )
+            	catch (RaplaException ex )
             	{
-            		return new ResultImpl<UpdateEvent>(ex );
+            		return new ResultImpl<List<ReservationImpl>>(ex );
             	}
             }
             
@@ -911,11 +924,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	    	    		final MailInterface mail = context.lookup(MailInterface.class);
 	    	            final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
 	    	            
-	    	            try {
-	    					mail.sendMail( defaultSender, newEmail,subject, "" + mailbody);
-	    				} catch (MailException e) {
-	    					throw new RaplaException( e.getMessage(), e);
-	    				}
+	    	            mail.sendMail( defaultSender, newEmail,subject, "" + mailbody);
 	                }
 	                else
 	                {
@@ -999,22 +1008,20 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     Collection<Entity>storeObjects = evt.getStoreObjects();
                     EntityStore store = new EntityStore(operator, operator.getSuperCategory());
             		store.addAll(storeObjects);
-                    for (Entity entity:storeObjects) {
-                        if (getLogger().isDebugEnabled())
-                            getLogger().debug("Contextualizing " + entity);
-                        ((EntityReferencer)entity).setResolver( store);
-                    }
-
-                    Collection<Entity>removeObjects = evt.getRemoveObjects();
-                    store.addAll( removeObjects );
-					for ( Entity entity:removeObjects)
+                    for (EntityReferencer references:evt.getEntityReferences( true)) 
                     {
-                        ((EntityReferencer)entity).setResolver( store);
-                    }
+                        references.setResolver( store);
+                    }                    
                     for (Entity entity:storeObjects) 
                     {
                         security.checkWritePermissions(user,entity);
                     }
+                    List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+                    for (PreferencePatch patch:preferencePatches) 
+                    {
+                        security.checkWritePermissions(user,patch);
+                    }
+                    Collection<Entity>removeObjects = evt.getRemoveObjects();
                     for ( Entity entity:removeObjects)
                     {
                     	security.checkWritePermissions(user,entity);
@@ -1105,10 +1112,15 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     // we don't transmit preferences for other users
 				    if ( obj instanceof Preferences)
 				    {
-				        User owner = ((Preferences) obj).getOwner();
+				        Preferences preferences = (Preferences) obj;
+                        User owner = preferences.getOwner();
 				        if  ( owner != null && !owner.equals( user))
 				        {
 				        	clientStore = false;
+				        }
+				        else
+				        {
+				            obj = removeServerOnlyPreferences(preferences);
 				        }
 				    }
 				    else if ( obj instanceof Allocatable)

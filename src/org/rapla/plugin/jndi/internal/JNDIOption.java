@@ -33,12 +33,14 @@ import javax.swing.JTextField;
 
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.internal.edit.GroupListField;
 import org.rapla.gui.toolkit.DialogUI;
@@ -62,10 +64,11 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
 	JTextField userBase;
 	
 	GroupListField groupField;
-	
-
-    public JNDIOption(RaplaContext sm) {
+	JNDIConfig configService;
+    
+    public JNDIOption(RaplaContext sm,JNDIConfig config) {
         super(sm);
+        this.configService = config;
     }
 
     protected JPanel createPanel() throws RaplaException {
@@ -126,21 +129,8 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
             public void actionPerformed(ActionEvent e) {
                 try
                 {
-                    JNDITest test = getContext().lookup(JNDITest.class);
                     DefaultConfiguration conf = new DefaultConfiguration("test");
-                    StringBuffer buf = new StringBuffer();
                     addChildren(conf);
-                    String[] attributes = conf.getAttributeNames();
-                    for (int i=0;i<attributes.length;i++)
-                    {
-                        String attribute = attributes[i];
-                        String value = conf.getAttribute( attribute, null);
-                        buf.append( attribute);
-                        buf.append("=");
-                        buf.append( value );
-                        buf.append("RAPLANEXT");
-                    }
-                    String list = buf.toString();
                     String username = "admin";
                     String password ="";
                     {
@@ -156,7 +146,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
                             return;
                         }
                     }
-                    test.test(list,username,password);
+                    configService.test(conf,username,password);
                     {
                         DialogUI dialog =DialogUI.create( getContext(), getComponent(), true, "JNDI","JNDI Authentification successfull");
                         dialog.start(); 
@@ -222,7 +212,15 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
     
     @Override
     protected void readConfig( Configuration config)   {
-    	super.readConfig( config );
+        try
+        {
+            this.config = configService.getConfig();
+        } 
+        catch (RaplaException ex)
+        {
+            showException(ex, getComponent());
+            this.config = config;
+        }
     	readAttribute("digest", digest);
     	readAttribute("connectionName", connectionName, "uid=admin,ou=system" );
     	readAttribute("connectionPassword", connectionPassword, "secret" );
@@ -253,11 +251,14 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
     }
   
     public void commit() throws RaplaException {
-    	Set<Category> set = new LinkedHashSet<Category>();
+        writePluginConfig(false);
+        TypedComponentRole<RaplaConfiguration> configEntry = JNDIPlugin.JNDISERVER_CONFIG;
+        RaplaConfiguration newConfig = new RaplaConfiguration("config" );
+        addChildren( newConfig );
+        preferences.putEntry( configEntry,newConfig);
+        Set<Category> set = new LinkedHashSet<Category>();
     	this.groupField.mapToList( set);
     	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, getModification().newRaplaMap( set) );
-    	super.commit();
-        
     }
 
 

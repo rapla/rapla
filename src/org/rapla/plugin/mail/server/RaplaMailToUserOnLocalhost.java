@@ -18,7 +18,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteMethodFactory;
@@ -44,13 +43,9 @@ public class RaplaMailToUserOnLocalhost extends RaplaComponent implements MailTo
 
             final MailInterface mail = getContext().lookup(MailInterface.class);
             ClientFacade facade =  getContext().lookup(ClientFacade.class);
-            Preferences prefs = facade.getServerPreferences();
+            Preferences prefs = facade.getSystemPreferences();
             final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
-            try {
-                mail.sendMail( defaultSender, recipientEmail,subject, body);
-            } catch (MailException ex) {
-                throw new RaplaException( ex );
-            }
+            mail.sendMail( defaultSender, recipientEmail,subject, body);
             getLogger().getChildLogger("mail").info("Email send to user " + userName);
         }
 

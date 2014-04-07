@@ -50,8 +50,6 @@ public interface StorageOperator extends EntityResolver {
 	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
 	public final static String PERIOD_TYPE = "rapla:period";
 	
-	public final static String CRYPTO_TYPE = "rapla:crypto";
-	
     void connect() throws RaplaException;
     void connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();

@@ -371,7 +371,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         if (rapla_context != null && user.getGroups().length == 0)
         {
             ClientFacade facade = rapla_context.lookup(ClientFacade.class);
-        	Preferences preferences = facade.getServerPreferences();
+        	Preferences preferences = facade.getSystemPreferences();
         	
         	RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
         	Collection<Category> groups;

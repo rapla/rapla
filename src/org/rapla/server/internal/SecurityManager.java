@@ -40,6 +40,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 
 /** checks if the client can store or delete an entity */
@@ -357,8 +358,7 @@ public class SecurityManager
         }
     }
     
-    public void checkRead(User user,Entity entity)
-			throws RaplaSecurityException, RaplaException {
+    public void checkRead(User user,Entity entity) throws RaplaSecurityException, RaplaException {
 		RaplaType<?> raplaType = entity.getRaplaType();
 		if ( raplaType == Allocatable.TYPE)
 		{
@@ -372,12 +372,23 @@ public class SecurityManager
 		{
 		    Ownable ownable = (Preferences) entity;
 		    User owner = ownable.getOwner();
-		    if ( owner != null && user != null && !user.isAdmin() && !user.equals( owner))
+		    if (  user != null && !user.isAdmin() && (owner == null || !user.equals( owner)))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
 			}
 		}
 		
 	}
+
+    public void checkWritePermissions(User user, PreferencePatch patch) throws RaplaSecurityException 
+    {
+
+        String ownerId = patch.getUserId();
+        if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals( ownerId)))
+        {
+            throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerId);
+        }
+        
+    }
     
 }

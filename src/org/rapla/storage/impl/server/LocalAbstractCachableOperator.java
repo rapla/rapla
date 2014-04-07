@@ -146,16 +146,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			cache.put( type);
 		}
 		
-		{
-			DynamicTypeImpl type = new DynamicTypeImpl();
-			type.setElementKey(CRYPTO_TYPE);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-			type.setId(DynamicType.TYPE.getId( -4));
-			type.setResolver( this);
-			type.setReadOnly( );
-			cache.put( type);
-		}
+//		{
+//			DynamicTypeImpl type = new DynamicTypeImpl();
+//			type.setElementKey(CRYPTO_TYPE);
+//			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+//			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+//			type.setId(DynamicType.TYPE.getId( -4));
+//			type.setResolver( this);
+//			type.setReadOnly( );
+//			cache.put( type);
+//		}
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			type.setElementKey(SYNCHRONIZATIONTASK_TYPE);
@@ -925,7 +925,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		fireStorageUpdated( result );
     }
 	
-	protected UpdateEvent checkAndCreateClosure(final UpdateEvent evt) throws RaplaException {
+	protected void checkAndAddClosure(final UpdateEvent evt) throws RaplaException {
 		EntityStore store = new EntityStore(this, this.getSuperCategory());
     	Collection<Entity>storeObjects = evt.getStoreObjects();
 		store.addAll(storeObjects);
@@ -939,6 +939,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             	store.addAll(children);
             }
         }
+        //evt.getPreferenceChanges();
         Collection<Entity>removeObjects = evt.getRemoveObjects();
         store.addAll( removeObjects );
 
@@ -948,9 +949,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             ((EntityReferencer)entity).setResolver( store);
         }
-		final UpdateEvent closure = createClosure( evt, store );
-		check( closure, store);
-		return closure;
+		addClosure( evt, store );
+		check( evt, store);
 	}
 
 	/**
@@ -960,13 +960,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * Classifiables when the DynamicType changes. The method will recursivly
 	 * proceed with all discovered objects.
 	 */
-	protected UpdateEvent createClosure(final UpdateEvent evt,EntityStore store) throws RaplaException {
-		UpdateEvent closure = evt.clone();
-		for (Entity entity: evt.getStoreObjects()) 
+	protected void addClosure(final UpdateEvent evt,EntityStore store) throws RaplaException {
+		Collection<Entity> storeObjects = new ArrayList<Entity>(evt.getStoreObjects());
+		Collection<Entity> removeObjects = new ArrayList<Entity>(evt.getRemoveObjects());
+        for (Entity entity: storeObjects) 
 		{
-			addStoreOperationsToClosure(closure, store,entity);
+			addStoreOperationsToClosure(evt, store,entity);
 		}
-		for (Entity entity: evt.getStoreObjects()) {
+		for (Entity entity: storeObjects) {
 			// update old classifiables, that may not been update before via a change event
 			// that could be the case if an old reservation is restored via undo but the dynamic type changed in between. 
 			// The undo cache does not notice the change in type   
@@ -986,19 +987,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			}
 		}
 
-		for (Entity object: evt.getRemoveObjects()) 
+		for (Entity object: removeObjects) 
 		{
-			addRemoveOperationsToClosure(closure, store, object);
+			addRemoveOperationsToClosure(evt, store, object);
 		}
-		Set<Entity> deletedCategories = getDeletedCategories(evt.getStoreObjects());
+		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
 		for (Entity entity: deletedCategories)
 		{
-			closure.putRemove(entity);
+			evt.putRemove(entity);
 		}
-		return closure;
 	}
 
-	protected void addStoreOperationsToClosure(UpdateEvent evt, EntityStore store,Entity entity) throws RaplaException {
+	protected void addStoreOperationsToClosure(UpdateEvent evt, EntityStore store,Entity entity) throws RaplaException 
+	{
 		if (getLogger().isDebugEnabled() && !evt.getStoreObjects().contains(entity)) {
 			getLogger().debug("Adding " + entity + " to store closure");
 		}
@@ -1214,8 +1215,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 */
 	final protected void checkReferences(UpdateEvent evt, EntityStore store)	throws RaplaException {
 		
-		for (Entity entity: evt.getStoreObjects()) {
-			for (String id: ((RefEntity)entity).getReferencedIds())
+		for (EntityReferencer entity: evt.getEntityReferences(false)) {
+			for (String id: entity.getReferencedIds())
 			{				
 				// Reference in cache or store?
 				if (store.tryResolve(id) != null)

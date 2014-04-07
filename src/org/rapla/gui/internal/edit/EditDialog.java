@@ -26,8 +26,11 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
@@ -174,11 +177,25 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 				List<T> saveObjects = ui.getObjects();
 				Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);
-
-                @SuppressWarnings({ "unchecked", "rawtypes" })
-                SaveUndo<T> saveCommand = new SaveUndo(getContext(), entities,  originals);
-		        CommandHistory commandHistory = getModification().getCommandHistory();
-                commandHistory.storeAndExecute(saveCommand);
+                boolean canUndo = true;
+                for ( T obj: saveObjects)
+                {
+                   if ( obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
+                   {
+                       canUndo = false;
+                   }
+                }
+                if ( canUndo)
+                {
+                    @SuppressWarnings({ "unchecked", "rawtypes" })
+                    SaveUndo<T> saveCommand = new SaveUndo(getContext(), entities,  originals);
+    		        CommandHistory commandHistory = getModification().getCommandHistory();
+                    commandHistory.storeAndExecute(saveCommand);
+                } 
+                else 
+                {
+                    getModification().storeObjects( saveObjects.toArray( new Entity[] {}));
+                }
 
 		        getPrivateEditDialog().removeEditDialog(EditDialog.this);
 				dlg.close();

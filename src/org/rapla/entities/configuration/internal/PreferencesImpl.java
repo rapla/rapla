@@ -13,7 +13,6 @@
 package org.rapla.entities.configuration.internal;
 
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -21,6 +20,7 @@ import java.util.Set;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -31,7 +31,10 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.storage.PreferencePatch;
 
 public class PreferencesImpl extends SimpleEntity
     implements
@@ -45,6 +48,7 @@ public class PreferencesImpl extends SimpleEntity
 	RaplaMapImpl map = new RaplaMapImpl();
 	Set<String> removedKeys = new LinkedHashSet<String>();
     final public RaplaType<Preferences> getRaplaType() {return TYPE;}
+    private transient PreferencePatch patch = new PreferencePatch();
     
     PreferencesImpl() {
     	this(null,null);
@@ -90,18 +94,27 @@ public class PreferencesImpl extends SimpleEntity
     }
     
     public void putEntryPrivate(String role,RaplaObject entry) {
+        updateMap(role, entry);
+    }
+
+    private void updateMap(String role, Object entry) {
         checkWritable();
         map.putPrivate(role, entry);
+        patch.putPrivate( role, entry);
+        if ( entry == null)
+        {
+            patch.addRemove( role);
+        }
     }
     
     public void putEntryPrivate(String role,String entry) {
-        checkWritable();
-        map.putPrivate(role, entry);
+        updateMap(role, entry);
     }
     
     public void setResolver( EntityResolver resolver)  {
     	super.setResolver(resolver);
     	map.setResolver(resolver);
+    	patch.setResolver(resolver);
     }
         
     public <T> T getEntry(String role) {
@@ -136,8 +149,12 @@ public class PreferencesImpl extends SimpleEntity
         return defaultValue;
     }
 
-    public Iterator<String> getPreferenceEntries() {
-        return map.keySet().iterator();
+    public Iterable<String> getPreferenceEntries() {
+        return map.keySet();
+    }
+    
+    public void removeEntry(String role) {
+        updateMap(role, null);
     }
 
     @Override
@@ -158,7 +175,21 @@ public class PreferencesImpl extends SimpleEntity
         clone.map = map.deepClone();
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
+        // we clear the patch on a clone
+        clone.patch = new PreferencePatch();
+        clone.patch.setUserId( getOwnerId());
         return clone;
+    }
+    
+    @Override
+    public void setOwner(User owner) {
+        super.setOwner(owner);
+        patch.setUserId( getOwnerId());
+    }
+    
+    public PreferencePatch getPatch()
+    {
+        return patch;
     }
 
     /**
@@ -200,12 +231,14 @@ public class PreferencesImpl extends SimpleEntity
     
     public void commitChange(DynamicType type) {
     	map.commitChange(type);
+    	patch.commitChange(type);
     }
 
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
     {
     	map.commitRemove(type);
+    	patch.commitRemove(type);
     }
 
     
@@ -214,10 +247,26 @@ public class PreferencesImpl extends SimpleEntity
         return super.toString() + " " + map.toString();
     }
 
-	public <T extends RaplaObject> void putEntry(TypedComponentRole<T> role,
-			T entry) {
+	public <T extends RaplaObject> void putEntry(TypedComponentRole<T> role,T entry) 
+	{
 		putEntryPrivate( role.getId(), entry);
 	}
+	
+	public void applyPatch(PreferencePatch patch)
+	{
+	    checkWritable();
+	    Set<String> removedEntries = patch.getRemovedEntries();
+	    for (String key:patch.keySet())
+	    {
+	        Object value = patch.get( key);
+	        updateMap(key, value);
+	    }
+	    for ( String remove:removedEntries)
+	    {
+	        updateMap(remove, null);
+	    }
+	}
+
 
 	public <T extends RaplaObject> T getEntry(TypedComponentRole<T> role) {
 		return getEntry( role, null);
@@ -247,7 +296,7 @@ public class PreferencesImpl extends SimpleEntity
 	protected void putEntry_(TypedComponentRole<?> role, Object entry) {
 		checkWritable();
 		String key = role.getId();
-		map.putPrivate(key, entry);
+		updateMap(key, entry);
 
 //        if ( entry == null)
 //        {
@@ -264,6 +313,20 @@ public class PreferencesImpl extends SimpleEntity
 		String preferenceId = Preferences.TYPE.getId( userId != null ? RaplaType.parseId( userId): 0);
 		return preferenceId.intern();
 	}
+
+	@Deprecated
+	public Configuration getOldPluginConfig(String pluginClassName) {
+        RaplaConfiguration raplaConfig  = getEntry(RaplaComponent.PLUGIN_CONFIG);
+        Configuration pluginConfig = null;
+        if ( raplaConfig != null) {
+            pluginConfig = raplaConfig.find("class", pluginClassName);
+        }
+        if ( pluginConfig == null) {
+            pluginConfig = new RaplaConfiguration("plugin");
+        }
+        return pluginConfig;
+    }
+
 
 //	public static boolean isServerEntry(String configRole) {
 //		if ( configRole == null)

@@ -482,7 +482,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     	Lock writeLock = writeLock();
     	try
         {
-        	evt = checkAndCreateClosure(evt);
+    	    checkAndAddClosure(evt);
 	        Connection connection = createConnection();
 	        try {
 	             executeEvent(connection,evt);
@@ -530,6 +530,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
         Collection<Entity> storeObjects = evt.getStoreObjects();
         raplaSQLOutput.store( connection, storeObjects);
+        raplaSQLOutput.storePatches( connection, evt.getPreferencePatches());
         Collection<Entity> removeObjects = evt.getRemoveObjects();
         for (Entity entityStore: removeObjects) {
              Comparable id = entityStore.getId();

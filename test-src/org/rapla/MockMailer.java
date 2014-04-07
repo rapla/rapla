@@ -1,6 +1,5 @@
 package org.rapla;
 
-import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.server.MailInterface;
 
 public class MockMailer implements MailInterface
@@ -16,7 +15,7 @@ public class MockMailer implements MailInterface
         mailBody = null;
     }
 
-    public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
+    public void sendMail( String senderMail, String recipient, String subject, String mailBody ) 
     {
         this.senderMail = senderMail;
         this.recipient = recipient;

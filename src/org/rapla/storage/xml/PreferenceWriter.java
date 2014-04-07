@@ -14,7 +14,6 @@
 package org.rapla.storage.xml;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.rapla.entities.RaplaObject;
@@ -39,9 +38,8 @@ public class PreferenceWriter extends RaplaXMLWriter {
             printTimestamp( preferences);            
             closeTag();
             PreferencesImpl impl = (PreferencesImpl)preferences;
-            Iterator<String> it = impl.getPreferenceEntries();
-            while (it.hasNext()) {
-                String role =  it.next();
+            for (String role:impl.getPreferenceEntries())
+            {
                 Object entry = impl.getEntry(role);
                 if ( entry instanceof String) {
                 	openTag("rapla:entry");

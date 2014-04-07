@@ -44,6 +44,7 @@ public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Name
     void putEntry(TypedComponentRole<CalendarModelConfiguration> role,CalendarModelConfiguration entry);
     <T> void putEntry(TypedComponentRole<RaplaMap<T>> role,RaplaMap<T> entry);
     void putEntry(TypedComponentRole<RaplaConfiguration> role,RaplaConfiguration entry);
+    void removeEntry(String role);
 
 }
 
