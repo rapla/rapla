@@ -175,6 +175,7 @@ public class RaplaKeyStorageImpl extends RaplaComponent implements RaplaKeyStora
         Preferences preferences = getQuery().getPreferences(user);
         Preferences edit = getModification().edit( preferences);
         edit.putEntry(tagName, null);
+        getModification().store( edit);
     }
 //    
 //    Allocatable getAllocatable(User user) throws RaplaException
