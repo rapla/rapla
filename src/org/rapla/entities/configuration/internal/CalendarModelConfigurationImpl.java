@@ -14,8 +14,8 @@ package org.rapla.entities.configuration.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,12 +63,14 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	       }
        }
        super.setClassificationFilter( filterList );
-       this.optionMap = extensionMap;
-       if (optionMap == null)
+       Map<String,String> map= new LinkedHashMap<String,String>();
+       if ( extensionMap != null)
        {
-           this.optionMap= new LinkedHashMap<String,String>();
+           map.putAll(extensionMap);
        }
+       this.optionMap = Collections.unmodifiableMap( map);
    }
+   
 
    CalendarModelConfigurationImpl() {
    }
@@ -161,6 +163,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
          dest.endDate = source.endDate;
          dest.selectedDate = source.selectedDate;
          dest.resourceRootSelected = source.resourceRootSelected;
+         dest.setResolver( source.resolver);
          List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>();
          for ( ClassificationFilterImpl f: source.classificationFilters)
          {
@@ -169,7 +172,9 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
          }
          dest.setClassificationFilter(newFilter  );
          dest.selected = (List<String>)((ArrayList<String>)source.selected).clone();
-         dest.optionMap = (Map<String, String>) ((HashMap)source.optionMap).clone();
+         LinkedHashMap<String, String> optionMap = new LinkedHashMap<String,String>();
+         optionMap.putAll(source.optionMap);
+         dest.optionMap = Collections.unmodifiableMap(optionMap); 
     }
 
 	public void copy(CalendarModelConfiguration obj) 
@@ -199,6 +204,16 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	{
 		return super.toString() + ",selected=" + selected; 
 	}
+
+
+    @Override
+    public CalendarModelConfiguration cloneWithNewOptions(Map<String, String> newMap) {
+        CalendarModelConfigurationImpl clone = (CalendarModelConfigurationImpl) deepClone();
+        clone.optionMap = Collections.unmodifiableMap( newMap);
+        return clone;
+    }
+
+
 	
 
 }

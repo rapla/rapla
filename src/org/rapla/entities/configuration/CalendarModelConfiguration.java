@@ -48,4 +48,6 @@ public interface CalendarModelConfiguration extends RaplaObject<CalendarModelCon
     public boolean isDefaultResourceTypes(); 
 
     public boolean isResourceRootSelected();
+    
+    public CalendarModelConfiguration cloneWithNewOptions(Map<String, String> newMap);
 }
