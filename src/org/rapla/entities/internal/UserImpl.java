@@ -232,22 +232,6 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
             setName(person.getClassification().getName(null));
         }
     }
-    
-    public int compare(User u2) {
-        if ( u2 == null)
-        {
-        	return 1;
-        }
-    	if ( this==u2 || equals(u2)) return 0;
-        int result = String.CASE_INSENSITIVE_ORDER.compare(
-                                      getUsername()
-                                      ,u2.getUsername()
-                                      );
-        if ( result !=0 )
-            return result;
-      
-        return super.compareTo( u2 );
-    }
 
     public Allocatable getPerson() 
     {

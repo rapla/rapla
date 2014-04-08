@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.swing.BorderFactory;
@@ -445,7 +446,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
             DefaultMutableTreeNode userRoot = new TypeNode(User.TYPE, getString("users"));
             User[] userList = getQuery().getUsers();
-            for (final User user: userList) {
+            SortedSet<User> sorted = new TreeSet<User>( User.USER_COMPARATOR);
+            sorted.addAll( Arrays.asList( userList));
+            for (final User user: sorted) {
                 DefaultMutableTreeNode node = new DefaultMutableTreeNode();
                 node.setUserObject( user);
                 userRoot.add(node);
