@@ -105,5 +105,15 @@ public class ColumnDef
 				+ ", defaultValue=" + defaultValue + "]";
 	}
 
+    public boolean isIntType() 
+    {
+        if ( type == null)
+        {
+            return false;
+        }
+        String lowerCase = type.toLowerCase();
+        return  (lowerCase.contains("int"));
+    }
+
 	
 }

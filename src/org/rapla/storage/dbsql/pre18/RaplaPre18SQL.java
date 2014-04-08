@@ -168,7 +168,7 @@ public class RaplaPre18SQL {
 
     public Map<String, String> getIdColumns() {
         Map<String,String> idColumns = new LinkedHashMap<String,String>();
-        for (RaplaTypeStorage storage:stores)
+        for (OldEntityStorage<?> storage:getStoresWithChildren())
         {
             String tableName = storage.getTableName();
             String idColumn =storage.getIdColumn();
@@ -181,7 +181,8 @@ public class RaplaPre18SQL {
     }
 
     public void dropAll(Connection con) throws SQLException {
-        for (OldEntityStorage<?> storage:getStoresWithChildren())
+        List<OldEntityStorage<?>> storesWithChildren = getStoresWithChildren();
+        for (OldEntityStorage<?> storage:storesWithChildren)
         {
             storage.setConnection(con);
             try
@@ -206,21 +207,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends OldEntityStorage<T>
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
 	}
-    public String getIdColumn() {
-        for (Map.Entry<String, ColumnDef> entry:columns.entrySet())
-        {
-            String column = entry.getKey();
-            ColumnDef def = entry.getValue();
-            if ( def.isPrimary())
-            {
-                return column;
-            }
-        }
-        return null;
-    }
-    public String getTableName() {
-        return tableName;
-    }
+
     boolean canStore(Entity entity) {
     	return entity.getRaplaType() == raplaType;
     }
@@ -809,6 +796,11 @@ class AppointmentExceptionStorage extends OldEntityStorage<Appointment>  {
             Date date = getDate(rset,2 );
             repeating.addException( date );
         }
+    }
+    
+    @Override
+    public void dropTable() throws SQLException {
+        super.dropTable();
     }
 
 }

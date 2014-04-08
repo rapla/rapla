@@ -154,6 +154,21 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
 		return new Date( time);
 	}
 
+    public String getIdColumn() {
+        for (Map.Entry<String, ColumnDef> entry:columns.entrySet())
+        {
+            String column = entry.getKey();
+            ColumnDef def = entry.getValue();
+            if ( def.isPrimary())
+            {
+                return column;
+            }
+        }
+        return null;
+    }
+    public String getTableName() {
+        return tableName;
+    }
 
 	protected TimeZone getSystemTimeZone() {
 		return TimeZone.getDefault();
@@ -630,6 +645,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
     
     public void dropTable() throws SQLException
     {
+        getLogger().info("Dropping table " + tableName);
         String sql = "DROP TABLE " + tableName ;
         Statement stmt = con.createStatement();
         try

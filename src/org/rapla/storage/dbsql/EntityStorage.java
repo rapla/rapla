@@ -152,6 +152,21 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return new Date( time);
 	}
 
+	public String getIdColumn() {
+        for (Map.Entry<String, ColumnDef> entry:columns.entrySet())
+        {
+            String column = entry.getKey();
+            ColumnDef def = entry.getValue();
+            if ( def.isPrimary())
+            {
+                return column;
+            }
+        }
+        return null;
+    }
+    public String getTableName() {
+        return tableName;
+    }
 
 	protected TimeZone getSystemTimeZone() {
 		return TimeZone.getDefault();
@@ -417,35 +432,30 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	}
     
     protected String getDatabaseProductType(String type) {
-    	if ( isHsqldb())
-		{
-			if ( type.equals("TEXT"))
-			{
-				return "VARCHAR(16777216)";
-			}
-		}
-    	if ( isMysql())
-		{
-			if ( type.equals("TEXT"))
-			{
-				return "LONGTEXT";
-			}
-		}
-    	if ( isH2())
-		{
-			if ( type.equals("TEXT"))
-			{
-				return "CLOB";
-			}
-		}
-		else
-		{
-			if ( type.equals("DATETIME"))
-			{
-				return "TIMESTAMP";
-			}
-		}
-    	return type;
+        if ( type.equals("TEXT"))
+        {
+            if ( isHsqldb())
+            {
+		        return "VARCHAR(16777216)";
+            }
+            if ( isMysql())
+            {
+                return "LONGTEXT";
+            }
+            if ( isH2())
+            {
+                return "CLOB";
+            }
+        }
+		
+        if ( type.equals("DATETIME"))
+        {
+            if ( !isH2() && !isMysql())
+            {
+                return "TIMESTAMP";
+            }
+        }
+		return type;
 	}
 
 
@@ -628,6 +638,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     @Override
     public void dropTable() throws SQLException
     {
+        getLogger().info("Dropping table " + tableName);
         String sql = "DROP TABLE " + tableName ;
         Statement stmt = con.createStatement();
         try

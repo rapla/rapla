@@ -367,30 +367,30 @@ public class DBOperator extends LocalAbstractCachableOperator
                 }
             }
             
-            if ( !empty)
             {
                 org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
                 Map<String,String> idColumnMap = raplaSQLOutput.getIdColumns();
                 oldIdColumnCount = idColumnMap.size();
                 for ( Map.Entry<String, String> entry:idColumnMap.entrySet())
                 {
+                    String table = entry.getKey();
                     String idColumnName = entry.getValue();
-                    ColumnDef idColumn = dynamicTypeDef.getColumn(idColumnName);
-                    if ( idColumn == null)
+                    TableDef tableDef = schema.get(table);
+                    if ( tableDef != null)
                     {
-                        throw new RaplaException("Id column not found");
-                    }
-                    String type = idColumn.getType();
-                    if ( type != null)
-                    {
-                        if ( type.toLowerCase().contains("integer"))
+                        ColumnDef idColumn = tableDef.getColumn(idColumnName);
+                        if ( idColumn == null)
+                        {
+                            throw new RaplaException("Id column not found");
+                        }
+                        if ( idColumn.isIntType())
                         {
                             unpatchedTables++;
+        //                        else if ( type.toLowerCase().contains("varchar"))
+        //                        {
+        //                            patchedTables++;
+        //                        }
                         }
-    //                        else if ( type.toLowerCase().contains("varchar"))
-    //                        {
-    //                            patchedTables++;
-    //                        }
                     }
                 }
             }
