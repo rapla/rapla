@@ -73,7 +73,12 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        Map<String,T> map = new TreeMap<String,T>();
        int key = 0;
        for ( Iterator<T> it = list.iterator();it.hasNext();) {
-           map.put( new String( String.valueOf(key++)), it.next());
+           T next = it.next();
+           if ( next == null)
+           {
+               System.err.println("Adding null value in list" );
+           }
+           map.put( new String( String.valueOf(key++)), next);
        }
        return map;
    }
@@ -198,7 +203,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 	   this.map.putAll(  map);
    }
    public void putIdPrivate(String key, String id) {
-	if ( links == null)
+       cachedEntries = null;
+       if ( links == null)
 	   {
 		   links = new ReferenceHandler();
 		   if ( resolver != null)
@@ -212,16 +218,18 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 }
 
    public Iterable<String> getReferencedIds() {
-	   NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
+       NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
            public Iterable<String> getNestedIterator(EntityReferencer obj) {
-               return obj.getReferencedIds();
+               Iterable<String> referencedIds = obj.getReferencedIds();
+               return referencedIds;
            }
        };
        if ( links == null)
        {
     	   return refIt;
        }
-       return new IteratorChain<String>( refIt, links.getReferencedIds());
+       Iterable<String> referencedLinks = links.getReferencedIds();
+       return new IteratorChain<String>( refIt, referencedLinks);
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
@@ -437,6 +445,10 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     	{
     		this.key = key;
     		this.id = id;
+    		if ( id == null)
+    		{
+    		      throw new IllegalArgumentException("Empty id added");
+    		}
     	}
     	public String getKey() {
 			return key;
@@ -466,7 +478,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 		
 		public String toString()
 		{
-			return key + "=" + getValue();
+		    Entity value = links.getResolver().tryResolve( id );
+			return key + "=" + ((value != null) ? value : "unresolvable_" + id);
 		}
     }
     
@@ -480,6 +493,10 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     			for (String key:links.getReferenceKeys())
     			{
     				String id = links.getId( key);
+    				if ( id == null)
+    				{
+    				    System.err.println("Empty id " + id);
+    				}
 					cachedEntries.add(new Entry( key, id));
     			}
     		}
@@ -492,7 +509,11 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     			cachedEntries = new HashSet<Map.Entry<String, Object>>();
     			for (Map.Entry<String,Object> entry:getMap().entrySet())
     			{
-					cachedEntries.add((Map.Entry<String, Object>) entry);
+    			    if ( entry.getValue() == null)
+    			    {
+                        System.err.println("Empty value for  " + entry.getKey());
+    			    }
+    			    cachedEntries.add((Map.Entry<String, Object>) entry);
     			}
     		}
     		return cachedEntries;
@@ -501,7 +522,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     
     public String toString()
     {
-    	return entrySet().toString();
+       return entrySet().toString();
     }
 
 

@@ -85,6 +85,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
@@ -130,7 +131,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     		DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = UNRESOLVED_RESOURCE_TYPE;
 			type.setKey(key);
-			type.setId("rapla_" + key);
+			type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
@@ -142,7 +143,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = ANONYMOUSEVENT_TYPE;
 			type.setKey(key);
-            type.setId("rapla_" + key);
+            type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
@@ -150,21 +151,40 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			cache.put( type);
 		}
 		
-//		{
-//			DynamicTypeImpl type = new DynamicTypeImpl();
-//			type.setElementKey(CRYPTO_TYPE);
-//			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-//			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-//			type.setId(DynamicType.TYPE.getId( -4));
-//			type.setResolver( this);
-//			type.setReadOnly( );
-//			cache.put( type);
-//		}
+		{
+		    DynamicTypeImpl type = new DynamicTypeImpl();
+		    String key = DEFAUTL_USER_TYPE;
+            type.setKey(key);
+            type.setId( key);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+            //type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+            addAttributeWithInternalId(type,"surname", AttributeType.STRING);
+            addAttributeWithInternalId(type,"firstname", AttributeType.STRING);
+            addAttributeWithInternalId(type,"email", AttributeType.STRING);
+            type.setResolver( this);
+            type.setReadOnly();
+            cache.put( type);
+	    }
+		{
+            DynamicTypeImpl type = new DynamicTypeImpl();
+            String key = PERIOD_TYPE;
+            type.setKey(key);
+            type.setId( key);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, null);
+            addAttributeWithInternalId(type,"name", AttributeType.STRING);
+            addAttributeWithInternalId(type,"start", AttributeType.DATE);
+            addAttributeWithInternalId(type,"end", AttributeType.DATE);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+            type.setResolver( this);
+            type.setReadOnly();
+            cache.put( type);
+        }
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = SYNCHRONIZATIONTASK_TYPE;
             type.setKey(key);
-            type.setId("rapla_" + key);
+            type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
 			addAttributeWithInternalId(type,"objectId", AttributeType.STRING);
@@ -175,21 +195,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setReadOnly();
 			cache.put( type);
 		}
-		{
-			DynamicTypeImpl type = new DynamicTypeImpl();
-			String key = PERIOD_TYPE;
-            type.setKey(key);
-            type.setId("rapla_" + key);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, null);
-			addAttributeWithInternalId(type,"name", AttributeType.STRING);
-			addAttributeWithInternalId(type,"start", AttributeType.DATE);
-			addAttributeWithInternalId(type,"end", AttributeType.DATE);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
-			type.setResolver( this);
-			type.setReadOnly();
-			cache.put( type);
-		}
+		
     }
 	
 	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
@@ -478,14 +484,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		storeAndRemove(storeObjects, removeObjects, null);
 	}
 	
-	protected void resolveInitial(Collection<? extends Entity> entities) throws RaplaException {
+	protected void resolveInitial(Collection<? extends Entity> entities,EntityResolver resolver) throws RaplaException {
 		testResolve(entities);
 		
 		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(this);
+			((RefEntity)obj).setResolver(resolver);
 		}
-		
-		// resolve emails
+		processUserPersonLink(entities);
+		// It is important to do the read only later because some resolve might involve write to referenced objects
+		for (Entity entity: entities) {
+			 ((RefEntity)entity).setReadOnly();
+		}
+	}
+
+    protected void processUserPersonLink(Collection<? extends Entity> entities) throws RaplaException {
+        // resolve emails
 		Map<String,Allocatable> resolvingMap = new HashMap<String,Allocatable>();
 		for (Entity entity: entities)
     	{
@@ -520,12 +533,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				}
 			}
 		}
-
-		// It is important to do the read only later because some resolve might involve write to referenced objects
-		for (Entity entity: entities) {
-			 ((RefEntity)entity).setReadOnly();
-		}
-	}
+    }
 	
 	public void confirmEmail(User user, String newEmail)	throws RaplaException {
 		throw new RaplaException("Email confirmation must be done in the remotestorage class");
@@ -1358,8 +1366,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	/** Check if the objects are consistent, so that they can be safely stored. */
 	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
-		for (Entity entity : evt.getStoreObjects()) {
-			for (String referencedIds:((RefEntity)entity).getReferencedIds())
+		for (EntityReferencer referencer : evt.getEntityReferences(false)) {
+			for (String referencedIds:referencer.getReferencedIds())
 			{
 				Entity reference = store.resolve( referencedIds);
 				if (reference instanceof Preferences
@@ -1371,8 +1379,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					throw new RaplaException("The current version of Rapla doesn't allow references to objects of type "	+ reference.getRaplaType());
 				}
 			}
+		}
 			
-			CategoryImpl superCategory = store.getSuperCategory();
+		for (Entity entity : evt.getStoreObjects()) {
+		    CategoryImpl superCategory = store.getSuperCategory();
 			if (Category.TYPE == entity.getRaplaType()) {
 				if (entity.equals(superCategory)) {
 					// Check if the user group is missing
@@ -1794,20 +1804,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			List<Entity> result = new ArrayList<Entity>();
 			result.add( getSuperCategory());
 			@SuppressWarnings("deprecation")
-			Set<Entry<RaplaType, Set<? extends Entity>>> entrySet = cache.entrySet();
-			for ( Map.Entry<RaplaType,Set<? extends Entity>> entry:entrySet )
+			Set<Entry<RaplaType, Map<String,? extends Entity>>> entrySet = cache.entrySet();
+			for ( Map.Entry<RaplaType,Map<String,? extends Entity>> entry:entrySet )
 			{
 				RaplaType raplaType = entry.getKey();
-				if (   Conflict.TYPE.equals( raplaType ))
+				if (  Reservation.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
 				{
 					continue;
 				}
-				@SuppressWarnings("unchecked")
-				Set<Entity>set =  (Set<Entity>) entry.getValue();
-				if ( Appointment.TYPE.equals( raplaType )  || Reservation.TYPE.equals( raplaType) || Attribute.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
-				{
-					continue;
-				}
+                @SuppressWarnings("unchecked")
+                Collection<Entity>set =  (Collection<Entity>) entry.getValue().values();
 				if (user == null )
 				{
 					result.addAll( set);

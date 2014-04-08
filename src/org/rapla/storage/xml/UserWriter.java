@@ -40,11 +40,15 @@ public class UserWriter extends RaplaXMLWriter {
         if ( password != null )
         {
             att("password",password);
-            //System.out.println("Writing password to file " + password);
         }
             
         att("name",user.getName());
         att("email",user.getEmail());
+//        Allocatable person = user.getPerson();
+//        if ( person != null)
+//        {
+//            att("person", person.getId());
+//        }
         att("isAdmin",String.valueOf(user.isAdmin()));
         closeTag();
         
@@ -64,16 +68,11 @@ public class UserWriter extends RaplaXMLWriter {
             }
         }
 
-//        if ( includePreference)
-//        {
-//            Preferences preferences = cache.getPreferences(user);
-            if ( preferences != null) {
-                PreferenceWriter preferenceWriter = (PreferenceWriter) getWriterFor(Preferences.TYPE);
-                preferenceWriter.setIndentLevel( getIndentLevel() );
-                preferenceWriter.printPreferences(preferences);
-            }
-//        }
-
+        if ( preferences != null) {
+            PreferenceWriter preferenceWriter = (PreferenceWriter) getWriterFor(Preferences.TYPE);
+            preferenceWriter.setIndentLevel( getIndentLevel() );
+            preferenceWriter.printPreferences(preferences);
+        }
         closeElement("rapla:user");
     }
     

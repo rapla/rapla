@@ -277,8 +277,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
-            String id;
-            if (org.rapla.storage.OldIdMapping.isTextId(type, str))
+            final String id;
+            if ( str.equals(Category.SUPER_CATEGORY_ID))
+            {
+                id = Category.SUPER_CATEGORY_ID;
+            }
+            else if (org.rapla.storage.OldIdMapping.isTextId(type, str))
             {
                id = idTable.createId(type, str);
             } 
@@ -338,11 +342,11 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             AttributeType type = attribute.getType();
             if ( type == AttributeType.CATEGORY )
             {
-                getId(Category.TYPE, text);
+                text = getId(Category.TYPE, text);
             }
             else if ( type == AttributeType.ALLOCATABLE )
             {
-                getId(Allocatable.TYPE, text);
+                text = getId(Allocatable.TYPE, text);
             }
             return AttributeImpl.parseAttributeValue( attribute, text);
         }

@@ -63,10 +63,11 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
@@ -580,29 +581,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             {
             	Preferences clone = preferences.clone();
             	{
-            		List<String> adminOnlyPreferences = new ArrayList<String>();
-            		adminOnlyPreferences.add(MailPlugin.class.getCanonicalName());
-            		adminOnlyPreferences.add(JNDIPlugin.class.getCanonicalName());
-                	
-            		RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-            		if ( entry != null)
-            		{
-    	                RaplaConfiguration newConfig = entry.clone();
-    	            	for ( String className: adminOnlyPreferences)
-                		{
-    	            	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
-    		                if ( pluginConfig != null)
-    		                {
-    			                newConfig.removeChild( pluginConfig);
-    			                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
-    			                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
-    			                newPluginConfig.setAttribute("enabled", enabled);
-    			                newPluginConfig.setAttribute("class", className);
-    			                newConfig.addChild( newPluginConfig);
-    		                }
-                		}
-    	                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
-            		}
+            		//removeOldPluginConfigs(preferences, clone);
             		for (String role :((PreferencesImpl)preferences).getPreferenceEntries())
             		{
             		    if ( role.contains(".server."))
@@ -613,6 +592,32 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	}
                 return clone;
 			}
+
+//            private void removeOldPluginConfigs(Preferences preferences, Preferences clone) {
+//                List<String> adminOnlyPreferences = new ArrayList<String>();
+//                adminOnlyPreferences.add(MailPlugin.class.getCanonicalName());
+//                adminOnlyPreferences.add(JNDIPlugin.class.getCanonicalName());
+//                
+//                RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+//                if ( entry != null)
+//                {
+//                    RaplaConfiguration newConfig = entry.clone();
+//                	for ( String className: adminOnlyPreferences)
+//                	{
+//                	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
+//                        if ( pluginConfig != null)
+//                        {
+//                            newConfig.removeChild( pluginConfig);
+//                            boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
+//                            RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
+//                            newPluginConfig.setAttribute("enabled", enabled);
+//                            newPluginConfig.setAttribute("class", className);
+//                            newConfig.addChild( newPluginConfig);
+//                        }
+//                	}
+//                    clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
+//                }
+//            }
 
 			public FutureResult<List<String>> getTemplateNames()
             {
@@ -1393,6 +1398,60 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //			}
         };
     }
+
+    static public void convertToNewPluginConfig(RaplaContext context, String className, TypedComponentRole<RaplaConfiguration> newConfKey) throws RaplaContextException {
+            ClientFacade facade = context.lookup( ClientFacade.class);
+    //        {
+    //            RaplaConfiguration entry = facade.getPreferences().getEntry(RaplaComponent.PLUGIN_CONFIG,null);
+    //            if ( entry == null )
+    //            {
+    //                return;
+    //            }
+    //            DefaultConfiguration pluginConfig = (DefaultConfiguration)entry.find("class", className);
+    //            if ( pluginConfig == null)
+    //            {
+    //                return;
+    //            }
+    //            // only class and getEnabled
+    //       
+    //        }
+            try
+            {
+                PreferencesImpl clone = (PreferencesImpl) facade.edit( facade.getSystemPreferences());  
+                RaplaConfiguration entry = clone.getEntry(RaplaComponent.PLUGIN_CONFIG,null);
+                RaplaConfiguration newPluginConfigEntry = entry.clone();
+                
+                DefaultConfiguration pluginConfig = (DefaultConfiguration)newPluginConfigEntry.find("class", className);
+                // we split the config entry in the plugin config and the new config entry;
+                if ( pluginConfig != null)
+                {
+                    context.lookup(Logger.class).info("Converting plugin conf "  + className + " to preference entry " + newConfKey);
+                    newPluginConfigEntry.removeChild( pluginConfig);
+                    boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
+                    RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
+                    newPluginConfig.setAttribute("enabled", enabled);
+                    newPluginConfig.setAttribute("class", className);
+                    newPluginConfigEntry.addChild( newPluginConfig);
+        
+                    RaplaConfiguration newConfigEntry = new RaplaConfiguration( pluginConfig);
+                    
+                    newConfigEntry.setAttribute("enabled", null);
+                    newConfigEntry.setAttribute("class", null);
+                    
+                    clone.putEntry(newConfKey, newConfigEntry);
+                    clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newPluginConfigEntry);
+                    facade.store( clone);
+                }
+            }
+            catch (RaplaException ex)
+            {
+                if ( ex instanceof RaplaContextException)
+                {
+                    throw (RaplaContextException)ex;
+                }
+                throw new RaplaContextException(ex.getMessage(),ex);
+            }
+        }
 
 }
 

@@ -82,7 +82,7 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         Date end = new Date( start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
         Allocatable period = facade.newPeriod();
         Classification c = period.getClassification();
-        String name = "TEST PERIOD";
+        String name = "TEST PERIOD2";
 		c.setValue("name", name);
         c.setValue("start", start );
         c.setValue("end", end );
@@ -93,10 +93,10 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         Period[] periods = facade.getPeriods();
         for ( Period period1:periods)
         {
-        	if ( period.getName( null).equals(name))
+        	if ( period1.getName( null).equals(name))
         	{
-        		assertEquals( period1.getStart(), start);
-        		assertEquals( period1.getEnd(), end);
+        		assertEquals(  start,period1.getStart());
+        		assertEquals(  end, period1.getEnd());
         	}
         }
     }

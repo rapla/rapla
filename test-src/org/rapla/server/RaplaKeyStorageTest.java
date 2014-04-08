@@ -1,6 +1,7 @@
 package org.rapla.server;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -31,10 +32,13 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 		}
 		
 		getFacade().remove( user);
-		
-		LoginInfo secrets = storage.getSecrets(user, tagName);
+		try
 		{
-			assertNull( secrets);
+		    storage.getSecrets(user, tagName);
+		    fail("Should throw Entity not found exception"); 
+		}
+		catch ( EntityNotFoundException ex)
+		{
 		}
 	}
 

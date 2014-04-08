@@ -12,13 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
+import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailConfigService;
+import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.internal.RemoteStorageImpl;
 
 /** Provides the MailToUserInterface and the MailInterface for sending mails.
  * The MailInterface can only be used on a machine that can connect to the mailserver.
@@ -47,6 +52,7 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
 
     public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException {
         container.addRemoteMethodFactory(MailConfigService.class,RaplaConfigServiceImpl.class);
+        convertSettings(container.getContext(), config);
     	if ( !config.getAttributeAsBoolean("enabled", false) )
         	return;
         
@@ -67,11 +73,21 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
             mailClass = MailapiClient.class;
         }
         
-        container.addContainerProvidedComponent( MailInterface.class, mailClass , config);
+        container.addContainerProvidedComponent( MailInterface.class, mailClass);
         // only add mail service on localhost
         container.addRemoteMethodFactory(MailToUserInterface.class,RaplaMailToUserOnLocalhost.class);
         container.addContainerProvidedComponent( MailToUserInterface.class, RaplaMailToUserOnLocalhost.class);
     }
 
+    private void convertSettings(RaplaContext context,Configuration config) throws RaplaContextException
+    {
+        String className = MailPlugin.class.getName();
+        TypedComponentRole<RaplaConfiguration> newConfKey = MailPlugin.MAILSERVER_CONFIG;
+        if ( config.getChildren().length > 0)
+        {
+            RemoteStorageImpl.convertToNewPluginConfig(context, className, newConfKey);
+        }
+    }
+    
 }
 

@@ -46,6 +46,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
@@ -54,8 +55,8 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -74,7 +75,7 @@ public class Export2iCalConverter extends RaplaComponent {
     TimeZoneConverter timezoneConverter;
     boolean hasLocationType;
     
-    public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences, Configuration config) throws RaplaException {
+    public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences) throws RaplaException {
         super(context);
         timezoneConverter = context.lookup( TimeZoneConverter.class);
         calendar = context.lookup(RaplaLocale.class).createCalendar();
@@ -88,23 +89,21 @@ public class Export2iCalConverter extends RaplaComponent {
         	}
         }
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
-        if (config != null)
-        {
-            boolean global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
-            String global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS).getValue(Export2iCalPlugin.DEFAULT_attendee_participation_status);
+        RaplaConfiguration config = context.lookup(ClientFacade.class).getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        boolean global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
+        String global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS).getValue(Export2iCalPlugin.DEFAULT_attendee_participation_status);
 
-            doExportAsMeeting = preferences == null ? global_export_attendees : preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, global_export_attendees);
-            exportAttendeesParticipationStatus = preferences == null ? global_export_attendees_participation_status : preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, global_export_attendees_participation_status);
+        doExportAsMeeting = preferences == null ? global_export_attendees : preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, global_export_attendees);
+        exportAttendeesParticipationStatus = preferences == null ? global_export_attendees_participation_status : preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, global_export_attendees_participation_status);
 
-            try {
-                exportAttendeesAttribute = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE).getValue();
-            } catch (ConfigurationException e) {
-                exportAttendeesAttribute = "";
-                getLogger().info("ExportAttendeesMailAttribute is not set. So do not export as meeting");
-            }
-            //ensure the stored value is not empty string, if so, do not export attendees
-            doExportAsMeeting = doExportAsMeeting && (exportAttendeesAttribute != null && exportAttendeesAttribute.trim().length() > 0);
+        try {
+            exportAttendeesAttribute = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE).getValue();
+        } catch (ConfigurationException e) {
+            exportAttendeesAttribute = "";
+            getLogger().info("ExportAttendeesMailAttribute is not set. So do not export as meeting");
         }
+        //ensure the stored value is not empty string, if so, do not export attendees
+        doExportAsMeeting = doExportAsMeeting && (exportAttendeesAttribute != null && exportAttendeesAttribute.trim().length() > 0);
 
         if (zone != null) {
             final String timezoneId = zone.getID();

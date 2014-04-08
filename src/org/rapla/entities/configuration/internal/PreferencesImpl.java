@@ -160,7 +160,9 @@ public class PreferencesImpl extends SimpleEntity
     @Override
     public Iterable<String> getReferencedIds() 
     {
-    	IteratorChain<String> iteratorChain = new IteratorChain<String>(super.getReferencedIds(),map.getReferencedIds());
+    	Iterable<String> parentReferences = super.getReferencedIds();
+        Iterable<String> mapReferences = map.getReferencedIds();
+        IteratorChain<String> iteratorChain = new IteratorChain<String>(parentReferences,mapReferences);
 		return iteratorChain;
     }
     

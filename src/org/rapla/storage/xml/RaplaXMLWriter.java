@@ -23,6 +23,7 @@ import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -163,11 +164,14 @@ abstract public class RaplaXMLWriter extends XMLWriter
                 throw new RaplaException("Wrong attribute value Category expected but was " + value.getClass());
             }
             Category categoryValue = (Category)value;
-            List<String> pathForCategory = rootCategory.getPathForCategory(categoryValue, false );
-            if ( pathForCategory != null)
+            if (rootCategory == null)
             {
-                String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
-				print( keyPathString);
+                getLogger().error("root category missing for attriubte " + attribute);
+            }
+            else
+            {
+                String keyPathString = getKeyPath(rootCategory, categoryValue);
+                print( keyPathString);
             }
         }
         else if (type.equals(AttributeType.DATE) )
@@ -185,6 +189,12 @@ abstract public class RaplaXMLWriter extends XMLWriter
         }
     }
 
+    private String getKeyPath(CategoryImpl rootCategory, Category categoryValue) throws EntityNotFoundException {
+        List<String> pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
+        String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
+        return keyPathString;
+    }
+
 
     protected void printOwner(Ownable obj) throws IOException {
         User user = obj.getOwner();
@@ -194,12 +204,19 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
 
-    protected void printReference(Entity entity) throws IOException {
+    protected void printReference(Entity entity) throws IOException, EntityNotFoundException {
         String localName = entity.getRaplaType().getLocalName();
         openTag("rapla:" + localName);
-        if ( entity.getRaplaType() == DynamicType.TYPE) {
+        if ( entity.getRaplaType() == DynamicType.TYPE ) {
             att("keyref", ((DynamicType)entity).getKey());
-        } else {
+        }
+        else if ( entity.getRaplaType() == Category.TYPE  && !isPrintId()) 
+        {
+            String path = getKeyPath( (CategoryImpl)getSuperCategory(), (Category) entity);
+            att("keyref", path);
+        } 
+        else 
+        {
             att("idref",getId( entity));
         }
         closeElementTag();

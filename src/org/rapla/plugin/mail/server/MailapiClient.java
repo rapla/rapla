@@ -8,7 +8,7 @@ import java.util.Properties;
 
 import org.rapla.RaplaMainContainer;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -71,11 +71,7 @@ public class MailapiClient implements MailInterface
             } catch (RaplaException e) {
                 throw new MailException( e.getMessage(),e);
             }
-            config = systemPreferences.getEntry(MailPlugin.MAILSERVER_CONFIG);
-            if ( config == null)
-            {
-                config = getOldConfig(systemPreferences);
-            }
+            config = systemPreferences.getEntry(MailPlugin.MAILSERVER_CONFIG, new RaplaConfiguration());
         }
         if ( config != null)
         {
@@ -92,12 +88,6 @@ public class MailapiClient implements MailInterface
             session = createSessionFromProperties(mailhost,port,ssl, username, password);
         }
         send(senderMail, recipient, subject, mailBody,  session);
-    }
-
-    @SuppressWarnings("deprecation")
-    private Configuration getOldConfig(Preferences systemPreferences) 
-    {
-        return ((PreferencesImpl)systemPreferences).getOldPluginConfig(MailPlugin.class.getName());
     }
 
     private Object createSessionFromProperties(String mailhost, int port, boolean ssl, String username, String password) throws MailException {

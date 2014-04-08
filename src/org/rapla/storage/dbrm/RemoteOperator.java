@@ -392,7 +392,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
     
     @Override
-    protected void testResolve(Collection<? extends Entity> entities) {
+    protected void testResolve(Collection<? extends Entity> entities) throws EntityNotFoundException {
         //  don't resolve entities in standalone mode
         if (context.has(RemoteMethodStub.class))
         {

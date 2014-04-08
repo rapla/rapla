@@ -71,6 +71,7 @@ public class PreferenceReader extends RaplaXMLReader {
         if (localName.equals("entry")) {
             configRole = getString(atts,"key");
             stringValue = getString(atts,"value", null);
+            // ignore old entry
             if ( stringValue != null) {
             	preferences.putEntryPrivate( configRole,stringValue );
             }

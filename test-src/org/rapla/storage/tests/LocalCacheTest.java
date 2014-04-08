@@ -109,7 +109,7 @@ public class LocalCacheTest extends RaplaTestCase {
     public void test2() throws Exception {
         final CachableStorageOperator storage = raplaContainer.lookup(CachableStorageOperator.class , "raplafile");
         storage.connect();
-        final Period period = getFacade().getPeriods()[0];
+        final Period[] periods = getFacade().getPeriods();
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
 			
 			@Override
@@ -117,15 +117,27 @@ public class LocalCacheTest extends RaplaTestCase {
 				{
 		            ClassificationFilter[] filters = null;
 		            Map<String, String> annotationQuery = null;
-		            Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery);
-		            assertEquals(0,reservations.size());
-		            reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery);
-		            assertEquals(2, reservations.size());
-		            User user = cache.getUser("homer");
-		            reservations = storage.getReservations(user,null,null,null, filters,annotationQuery);
-		            assertEquals(3, reservations.size());
-		            reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery);
-		            assertEquals(2, reservations.size());
+		            {
+		                final Period period = periods[2];
+		                Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery);
+		                assertEquals(0,reservations.size());
+		            }
+		            {
+		                final Period period = periods[1];
+	                    Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery);
+		                assertEquals(2, reservations.size());
+		            }
+		            {
+    		            User user = cache.getUser("homer");
+    		            Collection<Reservation> reservations = storage.getReservations(user,null,null,null, filters,annotationQuery);
+    		            assertEquals(3, reservations.size());
+		            }
+		            {
+		                User user = cache.getUser("homer");
+		                final Period period = periods[1];
+                        Collection<Reservation> reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery);
+    		            assertEquals(2, reservations.size());
+		            }
 		        }
 		        {
 		            Iterator<Allocatable> it = cache.getAllocatables().iterator();

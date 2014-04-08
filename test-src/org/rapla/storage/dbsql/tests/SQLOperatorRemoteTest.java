@@ -142,7 +142,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
 
    public void testNewAttribute() throws Exception {
        ClientFacade facade = getContainer().lookup(ClientFacade.class,"sql-facade");
-       facade.login("admin","".toCharArray());
+       facade.login("homer","duffs".toCharArray());
        // change Type
        DynamicType roomType = facade.edit( facade.getDynamicType("room") );
        Attribute attribute = facade.newAttribute( AttributeType.STRING );
@@ -168,7 +168,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
         // The error shows when connect again
        operator.connect();
 
-       facade.login("admin","".toCharArray());
+       facade.login("homer","duffs".toCharArray());
        allocatables = facade.getAllocatables( new ClassificationFilter[] {roomType.newClassificationFilter() });
        allocatable =  facade.edit( allocatables[0]);
        assertEquals( name, allocatable.getClassification().getValue("name") );

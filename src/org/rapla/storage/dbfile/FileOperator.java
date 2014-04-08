@@ -33,11 +33,16 @@ import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
@@ -225,7 +230,23 @@ final public class FileOperator extends LocalAbstractCachableOperator
             parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();
 			cache.putAll( list );
-	        resolveInitial( list);
+			Preferences preferences = cache.getPreferencesForUserId( null);
+			if ( preferences != null)
+			{
+			    TypedComponentRole<RaplaConfiguration> oldEntry = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical");
+                if (preferences.getEntry(oldEntry, null) != null)
+                {
+                    preferences.putEntry( oldEntry, null);
+                }
+                RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG, null);
+                if ( entry != null)
+                {
+                    DefaultConfiguration pluginConfig = (DefaultConfiguration)entry.find("class", "org.rapla.export2ical.Export2iCalPlugin");
+                    entry.removeChild( pluginConfig);
+                }
+			}
+
+	        resolveInitial( list, this);
             cache.getSuperCategory().setReadOnly();
             for (User user:cache.getUsers())
             {
@@ -362,5 +383,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
         file.renameTo( backupFile );
     }
 
+    public String toString()
+    {
+        return "FileOpertator for " + getURL();
+    }
     
 }

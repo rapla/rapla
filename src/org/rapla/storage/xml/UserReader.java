@@ -46,7 +46,12 @@ public class UserReader extends RaplaXMLReader
             TimestampDates ts = readTimestamps( atts);
             user = new UserImpl(ts.createTime, ts.changeTime);
             Object id = setId( user, atts );
-            
+//            String idString = getString(atts, "person",null);
+//            if ( idString != null)
+//            {
+//                String personId = getId(Allocatable.TYPE,idString);
+//                user.putId("person",personId);
+//            }
             user.setUsername( getString( atts, "username", "" ) );
             user.setName( getString( atts, "name", "" ) );
             user.setEmail( getString( atts, "email", "" ) );
@@ -65,7 +70,8 @@ public class UserReader extends RaplaXMLReader
             String groupId = atts.getValue( "idref" );
             if (groupId !=null)
             {
-            	user.addId("groups",getId(Category.TYPE, groupId));
+            	String newGroupId = getId(Category.TYPE, groupId);
+                user.addId("groups",newGroupId);
             }
             else
             {

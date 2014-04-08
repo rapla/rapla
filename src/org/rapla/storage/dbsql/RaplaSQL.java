@@ -352,18 +352,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     );
 
     public CategoryStorage(RaplaContext context) throws RaplaException {
-    	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER"});
+    	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER"});
     }
-    
-    @Override
-    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
-	{
-    	super.createOrUpdateIfNecessary( schema);
-    	checkAndDrop(schema, "NAME");
-    	checkAndAdd(schema, "DEFINITION");
-    	checkAndAdd(schema, "PARENT_ORDER");
-    	checkAndRetype(schema, "DEFINITION");
-	}
     
     @Override
     public void deleteEntities(Collection<Category> entities) throws SQLException,RaplaException {
@@ -539,7 +529,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     PermissionStorage permissionStorage;
 
     public AllocatableStorage(RaplaContext context ) throws RaplaException {
-        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
+        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage( context, allocatableMap);
         addSubStorage(resourceAttributeStorage);
@@ -609,7 +599,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	AppointmentStorage appointmentStorage;
 
     public ReservationStorage(RaplaContext context) throws RaplaException {
-        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
+        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
     }
@@ -748,20 +738,12 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
   	public final static String ANNOTATION_PREFIX = "rapla:";
 	
     public AttributeValueStorage(RaplaContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
-    	super(context, tablename, new String[]{foreignKeyName + " VARCHAR(255) NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(100)","ATTRIBUTE_VALUE VARCHAR(20000)"});
+    	super(context, tablename, new String[]{foreignKeyName + " VARCHAR(255) NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(255)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
         this.annotableMap = annotableMap;
     }
 
-    @Override
-    public void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException
-    {
-    	super.createOrUpdateIfNecessary( schema);
-    	checkAndRename( schema, "VALUE", "ATTRIBUTE_VALUE");
-    	checkAndRetype(schema, "ATTRIBUTE_VALUE");
-    }
-    
     @Override
 	protected int write(PreparedStatement stmt,T classifiable) throws EntityNotFoundException, SQLException {
         Classification classification =  ((Classifiable)classifiable).getClassification();
@@ -997,14 +979,7 @@ class AllocationStorage extends EntityStorage<Appointment>  {
 
     public AllocationStorage(RaplaContext context) throws RaplaException  
     {
-        super(context,"ALLOCATION",new String [] {"APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "OPTIONAL INTEGER"});
-    }
-    
-    @Override
-    public void createOrUpdateIfNecessary(
-    		Map<String, TableDef> schema) throws SQLException, RaplaException {
-    	super.createOrUpdateIfNecessary( schema);
-    	checkAndAdd( schema, "OPTIONAL");
+        super(context,"ALLOCATION",new String [] {"APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER"});
     }
     
     @Override
@@ -1090,17 +1065,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
     public DynamicTypeStorage(RaplaContext context) throws RaplaException {
-        super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
-    }
-
-    @Override
-    public void createOrUpdateIfNecessary(Map<String, TableDef> schema)
-    		throws SQLException, RaplaException {
-    	super.createOrUpdateIfNecessary(schema);
-    	checkAndRetype(schema, "DEFINITION");
-//	    checkAndAdd( schema, "CREATION_TIME");
-//	    checkAndAdd( schema, "LAST_CHANGED");
-//	    checkAndAdd( schema, "LAST_CHANGED_BY");
+        super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
     }
 
     @Override
@@ -1204,7 +1169,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             if (stmt!=null)
                 stmt.close();
         }
-        
     }
 
     @Override
@@ -1229,14 +1193,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 		}
 		insert( preferences);
 	}
-
-    @Override
-    public void createOrUpdateIfNecessary(Map<String, TableDef> schema)
-    		throws SQLException, RaplaException {
-    	super.createOrUpdateIfNecessary(schema);
-    	checkAndRetype(schema, "STRING_VALUE");
-    	checkAndRetype(schema, "XML_VALUE");
-    }
 
     @Override
     protected int write(PreparedStatement stmt, Preferences entity) throws SQLException, RaplaException {
@@ -1364,27 +1320,19 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             deleteNullStmt.execute();
         }
     }
-
-
  }
 
 class UserStorage extends RaplaTypeStorage<User> {
     UserGroupStorage groupStorage;
+    
     public UserStorage(RaplaContext context) throws RaplaException {
         super( context,User.TYPE, "RAPLA_USER",
-	    new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","USERNAME VARCHAR(100) NOT NULL","PASSWORD VARCHAR(100)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP"});
+	    new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","USERNAME VARCHAR(255) NOT NULL","PASSWORD VARCHAR(255)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP"});
         groupStorage = new UserGroupStorage( context );
         addSubStorage( groupStorage );
     }
 
     @Override
-    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException {
-    	super.createOrUpdateIfNecessary(schema);
-	    checkAndAdd( schema, "CREATION_TIME");
-	    checkAndAdd( schema, "LAST_CHANGED");
-    }
-    
-	@Override
 	void insertAll() throws SQLException, RaplaException {
 		insert( cache.getUsers());
 	}
@@ -1395,18 +1343,16 @@ class UserStorage extends RaplaTypeStorage<User> {
     	setString(stmt,2,user.getUsername());
     	String password = cache.getPassword(user.getId());
     	setString(stmt,3,password);
+    	//setId(stmt,4,user.getPerson());
     	setString(stmt,4,user.getName());
     	setString(stmt,5,user.getEmail());
     	stmt.setInt(6,user.isAdmin()?1:0);
     	setTimestamp(stmt, 7, user.getCreateTime() );
    		setTimestamp(stmt, 8, user.getLastChanged() );
-
    		stmt.addBatch();
    		return 1;
     }
     
-    
-
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         String userId = readId(rset,1, User.class );
@@ -1415,6 +1361,8 @@ class UserStorage extends RaplaTypeStorage<User> {
         {
         	getLogger().warn("Username is null for " + userId + " Ignoring user.");
         }
+        String password = getString(rset,3, null);
+        //String personId = readId(rset,4, Allocatable.class, true);
         String name = getString(rset,4,"");
         String email = getString(rset,5,"");
         boolean isAdmin = rset.getInt(6) == 1;
@@ -1422,12 +1370,15 @@ class UserStorage extends RaplaTypeStorage<User> {
 		Date lastChanged = getTimestampOrNow( rset, 8);
      	
         UserImpl user = new UserImpl(createDate, lastChanged);
+//        if ( personId != null)
+//        {
+//            user.putId("person", personId);
+//        }
         user.setId( userId );
         user.setUsername( username );
         user.setName( name );
         user.setEmail( email );
         user.setAdmin( isAdmin );
-        String password = getString(rset,3, null);
         if ( password != null) {
             putPassword(userId,password);
         }

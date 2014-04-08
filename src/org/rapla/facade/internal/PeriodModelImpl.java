@@ -231,7 +231,8 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     }
 
     public Period[] getAllPeriods() {
-    	return m_periods.toArray( Period.PERIOD_ARRAY);
+    	Period[] sortedPriods = m_periods.toArray( Period.PERIOD_ARRAY);
+        return sortedPriods;
     }
 
     public Object getElementAt(int index) {

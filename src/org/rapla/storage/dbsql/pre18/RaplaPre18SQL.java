@@ -862,6 +862,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         User owner ;
         if  ( userId == null || userId.equals(OldIdMapping.getId(User.TYPE, 0)) )
         {
+            userId = null;
         	owner = null;
         }
         else
@@ -943,10 +944,11 @@ class UserStorage extends RaplaTypeStorage<User> {
         String name = getString(rset,4,"");
         String email = getString(rset,5,"");
         boolean isAdmin = rset.getInt(6) == 1;
-        Date createDate = getTimestampOrNow( rset, 7);
-		Date lastChanged = getTimestampOrNow( rset, 8);
-     	
-        UserImpl user = new UserImpl(createDate, lastChanged);
+        Date currentTimestamp = getCurrentTimestamp();
+        
+        Date createDate = currentTimestamp;
+		Date lastChanged = currentTimestamp;
+     	UserImpl user = new UserImpl(createDate, lastChanged);
         user.setId( userId );
         user.setUsername( username );
         user.setName( name );

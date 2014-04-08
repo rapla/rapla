@@ -258,12 +258,14 @@ public class ServerTest extends ServletTestBase {
 			DynamicType type = facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
 			DynamicType typeEdit3 = facade1.edit(type);
 			typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
-			Allocatable resource1 = facade1.getAllocatables()[0];
+			Allocatable[] allocatables = facade1.getAllocatables();
+			Allocatable resource1 = allocatables[0];
 			assertEquals("erwin", resource1.getName(locale));
 			facade1.store(typeEdit3);
 		}
 		{
-			Allocatable resource1 = facade1.getAllocatables()[0];
+		    Allocatable[] allocatables = facade1.getAllocatables();
+	        Allocatable resource1 = allocatables[0];
 			assertEquals("erwin", resource1.getName(locale));
 			assertEquals(2, resource1.getClassification().getAttributes().length);
 		}

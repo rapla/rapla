@@ -41,6 +41,7 @@ import javax.sql.DataSource;
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
@@ -52,6 +53,7 @@ import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
+import org.rapla.storage.IdCreator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateEvent;
@@ -303,33 +305,13 @@ public class DBOperator extends LocalAbstractCachableOperator
         	c = createConnection();
         	connectionName = c.getMetaData().getURL();
 			getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() +": " +  connectionName);
-    		boolean empty = upgradeDatabase(c);
-			if ( empty	 ) 
-			{
-    		    getLogger().warn("No content in database! Creating new database");
-    		    CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
-    		    if ( sourceOperator == this)
-    		    {
-    		    	throw new RaplaException("Can't import, because db is configured as source.");
-    		    }
-    		    sourceOperator.connect();
-    		    final Connection conn = c;
-    		    sourceOperator.runWithReadLock( new CachableStorageOperatorCommand() {
-					
-					@Override
-					public void execute(LocalCache cache) throws RaplaException {
-		    		    try {
-							saveData(conn, cache);
-						} catch (SQLException e) {
-							throw new RaplaException( e);
-						}
-					}
-				});
+    		if (upgradeDatabase(c))
+    		{
     		    close( c);
     		    c = null;
     		    c = createConnection();
     		}
-  	        cache.clearAll();
+			cache.clearAll();
   	        addInternalTypes(cache);
   	        loadData( c, cache );
   	        
@@ -385,30 +367,41 @@ public class DBOperator extends LocalAbstractCachableOperator
                 }
             }
             
-            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
-            Map<String,String> idColumnMap = raplaSQLOutput.getIdColumns();
-            oldIdColumnCount = idColumnMap.size();
-            for ( Map.Entry<String, String> entry:idColumnMap.entrySet())
+            if ( !empty)
             {
-                String idColumnName = entry.getKey();
-                ColumnDef idColumn = dynamicTypeDef.getColumn(idColumnName);
-                String type = idColumn.getType();
-                if ( type != null)
+                org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+                Map<String,String> idColumnMap = raplaSQLOutput.getIdColumns();
+                oldIdColumnCount = idColumnMap.size();
+                for ( Map.Entry<String, String> entry:idColumnMap.entrySet())
                 {
-                    if ( type.toLowerCase().contains("integer"))
+                    String idColumnName = entry.getValue();
+                    ColumnDef idColumn = dynamicTypeDef.getColumn(idColumnName);
+                    if ( idColumn == null)
                     {
-                        unpatchedTables++;
+                        throw new RaplaException("Id column not found");
                     }
-//                        else if ( type.toLowerCase().contains("varchar"))
-//                        {
-//                            patchedTables++;
-//                        }
+                    String type = idColumn.getType();
+                    if ( type != null)
+                    {
+                        if ( type.toLowerCase().contains("integer"))
+                        {
+                            unpatchedTables++;
+                        }
+    //                        else if ( type.toLowerCase().contains("varchar"))
+    //                        {
+    //                            patchedTables++;
+    //                        }
+                    }
                 }
             }
-        }
-        if ( !empty && unpatchedTables == oldIdColumnCount)
+        } 
+        else
         {
-            getLogger().warn("Old database schema detected. Exporting for reimport");
+            empty = true;
+        }
+        if ( !empty && (unpatchedTables == oldIdColumnCount && unpatchedTables > 0))
+        {
+            getLogger().warn("Old database schema detected. Initializing conversion!");
             org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
 
@@ -420,22 +413,65 @@ public class DBOperator extends LocalAbstractCachableOperator
             LocalCache cache =new LocalCache();
             cache.clearAll();
             addInternalTypes(cache);
-            loadData( c, cache );
+            loadOldData(c, cache );
+            
+            getLogger().info("Old database loaded in memory. Now exporting to xml: " + sourceOperator);
             sourceOperator.saveData(cache);
-            close( c);
+            getLogger().info("XML export done.");
+            
+            //close( c);
         }
         
-        if ( unpatchedTables > 0 )
+        
+        if ( empty  || unpatchedTables > 0  ) 
         {
-            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
-            getLogger().warn("Dropping database tables");
-            raplaSQLOutput.dropAll(c);
-            empty = true;
+            CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
+            if ( sourceOperator == this)
+            {
+                throw new RaplaException("Can't import, because db is configured as source.");
+            }
+            if ( unpatchedTables > 0)
+            {
+                getLogger().info("Reading data from xml.");
+            }
+            else
+            {
+                getLogger().warn("Empty database. Importing data from " + sourceOperator);
+            }
+            sourceOperator.connect();
+            if ( unpatchedTables > 0)
+            {
+                org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+                getLogger().warn("Dropping database tables and reimport from " + sourceOperator);
+                raplaSQLOutput.dropAll(c);
+                // we need to load the new schema after dropping
+                schema = loadDBSchema(c);
+            }
+            {
+                RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+                raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
+            }
+            close( c);
+            c = null;
+            c = createConnection();
+            final Connection conn = c;
+            sourceOperator.runWithReadLock( new CachableStorageOperatorCommand() {
+                
+                @Override
+                public void execute(LocalCache cache) throws RaplaException {
+                    try
+                    {
+                        saveData(conn, cache);
+                    }
+                    catch (SQLException ex)
+                    {
+                        throw new RaplaException(ex.getMessage(),ex);
+                    } 
+                }
+            });
+            return true;
         }
-        // createNew
-        RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-        raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
-        return empty;
+        return false;
     }
     
 	private Map<String, TableDef> loadDBSchema(Connection c)
@@ -681,11 +717,11 @@ public class DBOperator extends LocalAbstractCachableOperator
 
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-        RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore));
+        RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, this));
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
-        resolveInitial( list);
+        resolveInitial( list, this);
         cache.getSuperCategory().setReadOnly();
         for (User user:cache.getUsers())
         {
@@ -694,9 +730,41 @@ public class DBOperator extends LocalAbstractCachableOperator
             cache.putPassword(id, password);
         }
 	}
+    
+    @SuppressWarnings("deprecation")
+    protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
+        EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+        IdCreator idCreator = new IdCreator() {
+            
+            @Override
+            public String createId(RaplaType type, String seed) throws RaplaException {
+                String id = org.rapla.storage.OldIdMapping.getId(type, seed);
+                return id;
+            }
+            
+            @Override
+            public String createId(RaplaType raplaType) throws RaplaException {
+                throw new RaplaException("Can't create new ids in " + getClass().getName() + " this class is import only for old data ");
+            }
+        };
+        RaplaDefaultContext inputContext = createInputContext(entityStore, idCreator);
+        
+        org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLInput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(inputContext);
+        raplaSQLInput.loadAll( connection );
+        Collection<Entity> list = entityStore.getList();
+        cache.putAll( list);
+        resolveInitial( list, cache);
+        cache.getSuperCategory().setReadOnly();
+        for (User user:cache.getUsers())
+        {
+            Object id = ((Entity)user).getId();
+            String password = entityStore.getPassword( id);
+            cache.putPassword(id, password);
+        }
+    }
 
-	private RaplaDefaultContext createInputContext(  EntityStore store) throws RaplaException {
-        RaplaDefaultContext inputContext =  new IOContext().createInputContext(context, store, this);
+	private RaplaDefaultContext createInputContext(  EntityStore store, IdCreator idCreator) throws RaplaException {
+        RaplaDefaultContext inputContext =  new IOContext().createInputContext(context, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = context.lookup(RaplaNonValidatedInput.class);
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
         return inputContext;

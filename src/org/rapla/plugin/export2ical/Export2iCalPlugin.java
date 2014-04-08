@@ -4,6 +4,7 @@ import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
@@ -16,8 +17,9 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(Export2iCalPlugin.class.getPackage().getName() + ".Export2iCalResources");
 
 	public static final String PLUGIN_CLASS = Export2iCalPlugin.class.getName();
-	public static final String PLUGIN_ENTRY = "org.rapla.plugin.export2ical";
-	public static final String ICAL_EXPORT = PLUGIN_ENTRY+".selected";
+	public static final TypedComponentRole<RaplaConfiguration> ICAL_CONFIG =  new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical.server.Config");
+    
+	public static final String ICAL_EXPORT = "org.rapla.plugin.export2ical.selected";
 	public static final String DAYS_BEFORE = "days_before";
 	public static final String DAYS_AFTER = "days_after";
 

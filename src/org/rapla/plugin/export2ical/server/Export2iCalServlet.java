@@ -23,14 +23,15 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
@@ -63,11 +64,10 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	//private TimeZone pluginTimeZone;
 	private int lastModifiedIntervall;
 
-	Configuration config;
 	
-    public Export2iCalServlet(RaplaContext context, Configuration config) throws RaplaContextException{
+    public Export2iCalServlet(RaplaContext context) throws RaplaException{
 		super(createLoggerContext(context));
-		this.config = config;
+		RaplaConfiguration config = context.lookup(ClientFacade.class).getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
 		global_interval = config.getChild(Export2iCalPlugin.GLOBAL_INTERVAL).getValueAsBoolean(Export2iCalPlugin.DEFAULT_globalIntervall);
 
 		global_daysBefore = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
@@ -237,7 +237,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		}
 		final RaplaContext context = getContext();
 		TimeZone timezone = context.lookup( TimeZoneConverter.class).getImportExportTimeZone();
-		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences, config);
+		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences);
 		final Calendar iCal = converter.createiCalender(appointments);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
 		final PrintWriter responseWriter = response.getWriter();

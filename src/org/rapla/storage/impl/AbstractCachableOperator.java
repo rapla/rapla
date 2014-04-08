@@ -455,29 +455,34 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	protected void testResolve(Collection<? extends Entity> entities) {
+	protected void testResolve(Collection<? extends Entity> entities) throws EntityNotFoundException {
 		EntityStore store = new EntityStore( this, getSuperCategory());
 		store.addAll( entities);
 		for (Entity obj: entities) {
 			((EntityReferencer)obj).setResolver(store);
 		}
 		for (Entity obj: entities) {
-			Iterable<String> referencedIds = ((EntityReferencer)obj).getReferencedIds();
-			for ( String id:referencedIds)
-			{
-				testResolve(store, obj, id);
-			}
+			testResolve(store, obj);
 		}
 	}
 
-	private void testResolve(EntityStore store, Entity obj, String id) {
-		try
-		{
-			store.resolve(id);
+    private void testResolve(EntityStore store, Entity obj) throws EntityNotFoundException {
+        Iterable<String> referencedIds = ((EntityReferencer)obj).getReferencedIds();
+        for ( String id:referencedIds)
+        {
+        	testResolve(store, obj, id);
+        }
+    }
+
+	private void testResolve(EntityStore store, Entity obj, String id) throws EntityNotFoundException {
+	    try
+	    {
+	        store.resolve(id);
 		}
 		catch (EntityNotFoundException ex)
 		{
 			getLogger().error("Reference " + id + " not found for " + obj);
+			throw ex;
 		}
 	}
 	

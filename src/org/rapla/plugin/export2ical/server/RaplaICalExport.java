@@ -26,7 +26,6 @@ import net.fortuna.ical4j.model.ValidationException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalExport;
@@ -36,18 +35,17 @@ import org.rapla.server.TimeZoneConverter;
 
 public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
 {
-    Configuration config;
-
-    public RaplaICalExport( RaplaContext context, Configuration config) {
+    
+    public RaplaICalExport( RaplaContext context) {
         super( context );
-        this.config = config;
     }
 
     
     public void export(String[] appointmentIds, OutputStream out ) throws RaplaException, IOException 
     {
         TimeZone timeZone = getContext().lookup( TimeZoneConverter.class).getImportExportTimeZone();
-		Export2iCalConverter converter = new Export2iCalConverter(getContext(),timeZone, null, config);
+        
+		Export2iCalConverter converter = new Export2iCalConverter(getContext(),timeZone, null);
         if ( appointmentIds.length == 0)
         {
             return;

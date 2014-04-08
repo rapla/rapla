@@ -39,7 +39,7 @@ public class MailPlugin implements PluginDescriptor<ClientServiceContainer>
 {
 	public static final boolean ENABLE_BY_DEFAULT = false;
     public static final TypedComponentRole<String> DEFAULT_SENDER_ENTRY = new TypedComponentRole<String>("org.rapla.plugin.mail.DefaultSender");
-    public static final TypedComponentRole<RaplaConfiguration> MAILSERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.mail.server.config");
+    public static final TypedComponentRole<RaplaConfiguration> MAILSERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.mail.server.Config");
  
     public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION,MailOption.class);
