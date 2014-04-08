@@ -139,6 +139,11 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         List<T> objects = ui.getObjects();
         for (T o:objects )
         {
+            // TODO include timestamps in preferencepatches
+            if ( o instanceof Preferences && ((Preferences)o).getOwner() != null)
+            {
+                continue;
+            }
             if (evt.hasChanged(o))
             {
                 return true;
