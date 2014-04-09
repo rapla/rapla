@@ -47,8 +47,8 @@ public class DateRendererAdapter implements DateRenderer {
         m_calendar.setTime(date);
         return m_renderer.getRenderingInfo(
                                            m_calendar.get(Calendar.DAY_OF_WEEK)
-                                           ,m_calendar.get(Calendar.DATE) + 1
-                                           ,m_calendar.get(Calendar.MONTH)
+                                           ,m_calendar.get(Calendar.DATE) 
+                                           ,m_calendar.get(Calendar.MONTH) + 1
                                            ,m_calendar.get(Calendar.YEAR)
                                            );
     }

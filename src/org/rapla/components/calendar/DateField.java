@@ -202,7 +202,7 @@ final public class DateField extends AbstractBlockField {
                    renderingInfo = m_dateRenderer.getRenderingInfo(
                                                 m_calendar.get(Calendar.DAY_OF_WEEK)
                                                 ,m_calendar.get(Calendar.DATE)
-                                                ,m_calendar.get(Calendar.MONTH)
+                                                ,m_calendar.get(Calendar.MONTH) + 1 
                                                 ,m_calendar.get(Calendar.YEAR)
                                                 );
                    String text = renderingInfo.getTooltipText();
