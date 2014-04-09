@@ -238,7 +238,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 if (idContent)
                 {
                     String id = getId( Category.TYPE, content );
-                    constraint = store.tryResolve( id );
+                    constraint = store.tryResolve( id, Category.class );
                     if ( constraint == null)
                     {
                         getLogger().error("Can't resolve root category for " + dynamicType.getKey() + "." + attribute.getKey() + " id is " + id + " (" + content + ")");

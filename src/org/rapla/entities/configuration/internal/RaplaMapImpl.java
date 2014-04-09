@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.rapla.components.util.iterator.FilterIterator;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -34,6 +35,7 @@ import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
@@ -49,10 +51,14 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    private Map<String,RaplaMapImpl> maps;
    private Map<String,CalendarModelConfigurationImpl> calendars;
    protected ReferenceHandler links;
+   protected String linkType;
 
+   
+   transient private Class<? extends Entity> linkClass;
    transient protected Map<String,Object> map;
    transient EntityResolver resolver;
    
+   static private RaplaType[] SUPPORTED_TYPES = new RaplaType[] { Allocatable.TYPE, Category.TYPE, DynamicType.TYPE};
    // this map only stores the references
   
    // this map only stores the child objects (not the references)
@@ -91,6 +97,37 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        }
    }
 
+   public void setLinkType(String type)
+   {
+       this.linkType  = type;
+       linkClass = null;
+   }
+   
+   public String getLinkType() 
+   {
+       return linkType;
+   }
+   
+   private Class<? extends Entity> getLinkClass() {
+       if ( linkClass != null)
+       {
+           return linkClass;
+       }
+       if ( linkType != null )
+       {
+          for ( RaplaType type: SUPPORTED_TYPES )
+          {
+              if (linkType.equals( type.getLocalName()))
+              {
+                  @SuppressWarnings("unchecked")
+                  Class<? extends Entity> casted = type.getTypeClass();
+                  this.linkClass = casted;
+                  return linkClass;
+              }
+          }
+       }
+       return null;
+   }
    
    /** This method is only used in storage operations, please dont use it from outside, as it skips type protection and resolving*/
    public void putPrivate(String key, Object value)
@@ -133,8 +170,15 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 //       }
        if ( value instanceof Entity) 
        {
-    	   String id = ((Entity) value).getId();
-    	   putIdPrivate(key, id);
+           Entity entity = (Entity) value;
+           String id = entity.getId();
+           RaplaType raplaType = entity.getRaplaType();
+           if ( !isTypeSupportedAsLink( raplaType))
+           {
+               throw new IllegalArgumentException("RaplaType " + raplaType + " cannot be stored as link in map");
+           }
+           linkType = raplaType.getLocalName();
+           putIdPrivate(key, id);
        }
        else if ( value instanceof RaplaConfiguration) {
     	   if ( configurations == null)
@@ -168,7 +212,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     	   constants.put( key , (String) value);
            getMap().put(key, value);
        } else {
-    	   throw new IllegalArgumentException("Map type not supported only entities, maps, configuration  or Strings are allowed.");
+    	   throw new IllegalArgumentException("Map type not supported only category, dynamictype, allocatable, raplamap, raplaconfiguration or String.");
        }
    }
  
@@ -206,7 +250,14 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        cachedEntries = null;
        if ( links == null)
 	   {
-		   links = new ReferenceHandler();
+		   links = new ReferenceHandler()
+		   {
+		       protected Class<? extends Entity> getInfoClass(String key) {
+		           return getLinkClass();
+		       }
+
+               
+		   };
 		   if ( resolver != null)
 		   {
 			   links.setResolver( resolver);
@@ -230,6 +281,23 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        }
        Iterable<String> referencedLinks = links.getReferencedIds();
        return new IteratorChain<String>( refIt, referencedLinks);
+   }
+   
+   @Override
+   public Iterable<ReferenceInfo> getReferenceInfo() 
+   {
+       NestedIterator<ReferenceInfo,EntityReferencer> refIt = new NestedIterator<ReferenceInfo,EntityReferencer>( getEntityReferencers()) {
+           public Iterable<ReferenceInfo> getNestedIterator(EntityReferencer obj) {
+               Iterable<ReferenceInfo> referencedIds = obj.getReferenceInfo();
+               return referencedIds;
+           }
+       };
+       if ( links == null)
+       {
+           return refIt;
+       }
+       Iterable<ReferenceInfo> referencedLinks = links.getReferenceInfo();
+       return new IteratorChain<ReferenceInfo>( refIt, referencedLinks);
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
@@ -289,7 +357,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    public Object get(Object key) {
 	   if (links != null)
 	   {
-		   return links.getEntity((String)key);
+	       Class<? extends Entity> linkClass = getLinkClass();
+		   return links.getEntity((String)key, linkClass);
 	   }
        return  getMap().get(key);
    }
@@ -523,6 +592,19 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     public String toString()
     {
        return entrySet().toString();
+    }
+
+     
+    public boolean isTypeSupportedAsLink(RaplaType raplaType) 
+    {
+        for ( RaplaType type: SUPPORTED_TYPES )
+        {
+            if ( type == raplaType)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 

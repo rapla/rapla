@@ -124,7 +124,7 @@ public class ReservationTest extends RaplaTestCase {
 	        // store clone
 	        modificationMod.storeObjects(new Entity[] {clone});
 	    }
-        Reservation persistantReservation = (Reservation) getFacade().getOperator().resolve(eventId);
+        Reservation persistantReservation = getFacade().getOperator().resolve(eventId, Reservation.class);
 		assertTrue(persistantReservation.hasAllocated(allocatable1));
 		// Check if oldAppointment has been modified
 		Appointment[] appointments = persistantReservation.getAppointments();

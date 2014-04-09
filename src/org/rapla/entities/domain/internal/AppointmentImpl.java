@@ -14,6 +14,7 @@ package org.rapla.entities.domain.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,6 +51,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     final public RaplaType<Appointment> getRaplaType() {return TYPE;}
     transient ReservationImpl parent;
+    
     
     public AppointmentImpl() {
     }
@@ -126,6 +128,17 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public boolean isWholeDaysSet() {
         return isWholeDaysSet;
     }
+    
+    @Override
+    public Iterable<String> getReferencedIds() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        return Collections.emptyList();
+    }
+
 
     public void setWholeDays(boolean enable) {
         checkWritable();

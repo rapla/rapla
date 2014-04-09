@@ -24,8 +24,16 @@ import org.rapla.entities.dynamictype.DynamicType;
 public interface EntityResolver
 {
     public Entity resolve(String id) throws EntityNotFoundException;
+
     /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
     public Entity tryResolve(String id);
+    
+    /** now the type safe version */
+    public <T extends Entity> T tryResolve(String id,Class<T> entityClass);
+    
+    /** now the type safe version */
+    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException;
+    
     public DynamicType getDynamicType(String key);
 
 }

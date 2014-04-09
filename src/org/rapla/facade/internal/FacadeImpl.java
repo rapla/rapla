@@ -113,7 +113,7 @@ import org.rapla.storage.UpdateResult;
 
 public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
-	private User workingUser = null;
+	private String workingUserId = null;
 	private StorageOperator operator;
 	private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
 	private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
@@ -193,37 +193,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
     	cacheValidString = null;
 		cachedReservations = null;
-    	if (workingUser != null)
+    	if (workingUserId != null)
 		{
 			if ( evt.isModified( User.TYPE))
 			{
-				try
-				{
-					Iterator<User> it = operator.getUsers().iterator();
-					User newUser = null;
-					while (it.hasNext()) {
-						User user = it.next();
-						if (user.equals(workingUser)) {
-						    newUser = user;
-						    break;
-						}
-					}
-					if ( newUser == null)
-					{
-						EntityNotFoundException ex = new EntityNotFoundException("User (" + workingUser + ") not found. Maybe it was removed.");
-						fireUpdateError(ex);
-						return;
-					}
-					else
-					{
-						workingUser = newUser;
-					}
-				}
-				catch (RaplaException ex)
-				{
-					fireUpdateError(ex);
-					return;
-				}
+			    if (operator.tryResolve( workingUserId, User.class) == null)
+			    {
+			        EntityNotFoundException ex = new EntityNotFoundException("User for id " + workingUserId + " not found. Maybe it was removed.");
+                    fireUpdateError(ex);
+			    }
 			}
 		}
 				
@@ -457,6 +435,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * Query-module *
 	 ******************************/
 	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
+        User workingUser = getWorkingUser();
 		Collection<Allocatable> objects = operator.getAllocatables(filters);
 		Iterator<Allocatable> it = objects.iterator();
 		while (it.hasNext()) {
@@ -737,6 +716,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public Conflict[] getConflicts() throws RaplaException {
 		final User user;
+        User workingUser = getWorkingUser();
 		if ( workingUser != null && !workingUser.isAdmin())
 		{
 			user = workingUser;
@@ -831,6 +811,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	protected boolean hasGroupRights(User user, String groupKey) {
 		if (user == null) {
+		    User workingUser;
+            try {
+                workingUser = getWorkingUser();
+            } catch (EntityNotFoundException e) {
+                return false;
+            }
 			return workingUser == null || workingUser.isAdmin();
 		}
 		if (user.isAdmin()) {
@@ -910,11 +896,20 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * Login - Module *
 	 ******************************/
 	public User getUser() throws RaplaException {
-		if (this.workingUser == null) {
+		if (this.workingUserId == null) {
 			throw new RaplaException("no user loged in");
 		}
-		return this.workingUser;
+	    return operator.resolve( workingUserId, User.class);
 	}
+
+	/** unlike getUser this can be null if working user not set*/
+    private User getWorkingUser() throws EntityNotFoundException {
+        if ( workingUserId == null)
+        {
+            return null;
+        }
+        return operator.resolve( workingUserId, User.class);
+    }
 
    public boolean login(String username, char[] password)
             throws RaplaException {
@@ -923,9 +918,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
    
    public boolean login(ConnectInfo connectInfo)
 			throws RaplaException {
-		try {
+       User user = null;
+       try {
 			if (!operator.isConnected()) {
-				operator.connect( connectInfo);
+				user = operator.connect( connectInfo);
 			}
 		} catch (RaplaSecurityException ex) {
 			return false;
@@ -934,14 +930,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //				for (int i = 0; i < password.length; i++)
 //					password[i] = 0;
 		}
-		String username = connectInfo.getUsername();
-		if  ( connectInfo.getConnectAs() != null)
-		{
-		    username = connectInfo.getConnectAs();
-		}
-		User user = operator.getUser(username);
+        if ( user == null)
+        {
+    		String username = connectInfo.getUsername();
+    		if  ( connectInfo.getConnectAs() != null)
+    		{
+    		    username = connectInfo.getConnectAs();
+    		}
+    		user = operator.getUser(username);
+        }
+		
 		if (user != null) {
-			this.workingUser = user;
+			this.workingUserId = user.getId();
 			getLogger().info("Login " + user.getUsername());
 			return true;
 		} else {
@@ -958,21 +958,21 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public boolean isSessionActive() {
-		return (this.workingUser != null);
+		return (this.workingUserId != null);
 	}
 
 	private boolean aborting;
 	public void logout() throws RaplaException {
 		
-		if (this.workingUser == null )
+		if (this.workingUserId == null )
 			return;
-		getLogger().info("Logout " + workingUser.getUsername());
+		getLogger().info("Logout " + workingUserId);
 		aborting = true;
 			
 		try
 		{
 			// now we can add it again
-			this.workingUser = null;
+			this.workingUserId = null;
 			// we need to remove the storage update listener, because the disconnect
 			// would trigger a restart otherwise
 			operator.removeStorageUpdateListener(this);
@@ -1010,6 +1010,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		this.templateName = templateName;
 		cachedReservations = null;
 		cacheValidString = null;
+		User workingUser;
+        try {
+            workingUser = getWorkingUser();
+        } catch (EntityNotFoundException e) {
+            // system user as change initiator won't hurt 
+            workingUser = null;
+            getLogger().error(e.getMessage(),e);
+        }
 		UpdateResult updateResult = new UpdateResult( workingUser);
 		updateResult.setSwitchTemplateMode(true);
 		updateResult.setInvalidateInterval( new TimeInterval(null, null));
@@ -1200,7 +1208,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	public CalendarSelectionModel newCalendarModel(User user) throws RaplaException{
-	    if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
+	    User workingUser = getWorkingUser();
+        if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
@@ -1292,6 +1301,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			castedList.add( entity);
 		}
+		User workingUser = getWorkingUser();
 		Collection<Entity> result = operator.editObjects(castedList,	workingUser);
 		List<T> castedResult = new ArrayList<T>();
 		for ( Entity entity:result)
@@ -1320,8 +1330,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Object temp = clone;
 			((CategoryImpl) temp).removeParent();
 		}
-
-		setNew((Entity) clone, this.workingUser);
+		User workingUser = getWorkingUser();
+        setNew((Entity) clone, workingUser);
 		return clone;
 	}
 
@@ -1330,6 +1340,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (obj == null)
 			throw new NullPointerException("Can't clone null objects");
 
+		User workingUser = getWorkingUser();
 		T result;
 		RaplaType<T> raplaType = obj.getRaplaType();
 		// Hack for 1.6 compiler compatibility
@@ -1392,6 +1403,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
 	 */
 	private Reservation cloneReservation(Reservation obj) throws RaplaException {
+	    User workingUser = getWorkingUser();
 		// first we do a reservation deep clone
 		Reservation clone =  obj.clone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
@@ -1403,14 +1415,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 		// then we set new ids for all appointments
 		Appointment[] clonedAppointments = clone.getAppointments();
-		setNew(Arrays.asList(clonedAppointments),Appointment.TYPE, this.workingUser);
+		setNew(Arrays.asList(clonedAppointments),Appointment.TYPE, workingUser);
 		
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.removeAppointment(clonedAppointment);
 		}
 
 		// and now a new id for the reservation
-		setNew( clone, this.workingUser);
+		setNew( clone, workingUser);
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.addAppointment(clonedAppointment);
 		}
@@ -1497,6 +1509,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		for (Entity<?> toRemove : removedObjects) {
 			removeList.add( toRemove);
 		}
+		User workingUser = getWorkingUser();
 		operator.storeAndRemove(storeList, removeList, workingUser);
 	
 		if (getLogger().isDebugEnabled())

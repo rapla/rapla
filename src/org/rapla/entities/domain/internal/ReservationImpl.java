@@ -168,6 +168,30 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             ;
     }
     
+    
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        return new IteratorChain<ReferenceInfo>
+            (
+             super.getReferenceInfo()
+             ,classification.getReferenceInfo()
+             );
+    }
+
+    
+    @Override
+    protected Class<? extends Entity> getInfoClass(String key) {
+        Class<? extends Entity> result = super.getInfoClass(key);
+        if ( result == null)
+        {
+            if ( key.equals("resources"))
+            {
+                return Allocatable.class;
+            }
+        }
+        return result;
+    }
+    
     public void removeAllSubentities() {
     	appointments.clear();
     }
@@ -272,21 +296,24 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
     
     @Override
-    protected Entity tryResolve(String id) {
-    	Entity entity = super.tryResolve(id);
+    protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
+    {
+    	T entity = super.tryResolve(id, entityClass);
     	if ( entity == null && nonpersistantAllocatables != null)
     	{
-    		entity = nonpersistantAllocatables.get( id);
+    		AllocatableImpl allocatableImpl = nonpersistantAllocatables.get( id);
+            @SuppressWarnings("unchecked")
+            T casted = (T) allocatableImpl;
+            entity = casted;
     	}
 		return entity;
     }
     
     public Collection<Allocatable> getAllocatables(String annotationType) {
         Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
-   		Collection<Entity> list = getList("resources");
-		for (Entity o: list)
+   		Collection<Allocatable> list = getList("resources", Allocatable.class);
+		for (Allocatable alloc: list)
     	{
-			Allocatable alloc = (Allocatable) o;
 			if ( annotationType != null)
 			{
 				boolean person = alloc.isPerson();
@@ -455,7 +482,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             for (String restriction:getRestrictionPrivate( allocatableId ))
             {
             	if ( restriction.equals( appointment.getId() ) ) {
-            		Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
+            		Allocatable alloc = getResolver().tryResolve( allocatableId, Allocatable.class);
             		if ( alloc == null)
             		{
             			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
@@ -488,7 +515,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             }
             if (found )
             {
-            	Allocatable alloc = (Allocatable) getResolver().tryResolve( allocatableId);
+            	Allocatable alloc = getResolver().tryResolve( allocatableId, Allocatable.class);
             	if ( alloc == null)
         		{
         			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
@@ -612,7 +639,23 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
-   
+    public String toString() {
+        StringBuffer buf = new StringBuffer();
+        buf.append(getRaplaType().getLocalName());
+        buf.append(" [");
+        buf.append(super.toString());
+        buf.append("] ");
+        try
+        {
+            if ( getClassification() != null) {
+                buf.append (getClassification().toString()) ;
+            }
+        }
+        catch ( NullPointerException ex)
+        {
+        }
+        return buf.toString();
+    }
 
 
 }

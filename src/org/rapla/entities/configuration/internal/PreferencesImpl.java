@@ -165,7 +165,15 @@ public class PreferencesImpl extends SimpleEntity
         IteratorChain<String> iteratorChain = new IteratorChain<String>(parentReferences,mapReferences);
 		return iteratorChain;
     }
-    
+
+    public Iterable<ReferenceInfo> getReferenceInfo() 
+    {
+        Iterable<ReferenceInfo> parentReferences = super.getReferenceInfo();
+        Iterable<ReferenceInfo> mapReferences = map.getReferenceInfo();
+        IteratorChain<ReferenceInfo> iteratorChain = new IteratorChain<ReferenceInfo>(parentReferences,mapReferences);
+        return iteratorChain;
+    }
+
     public boolean isEmpty() {
         return map.isEmpty();
     }

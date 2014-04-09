@@ -37,7 +37,6 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
@@ -232,7 +231,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return id;
 	}
     
-    protected <S extends RaplaObject> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
+    protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
     {
         String id = rset.getString( column );
         if  (rset.wasNull() || id == null)
@@ -240,7 +239,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             return null;
         }
         try {
-            Entity resolved = resolve(id);
+            Entity resolved = entityStore.resolve(id, class1);
             @SuppressWarnings("unchecked")
             S casted = (S) resolved;
             return casted;
@@ -921,11 +920,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore.getDynamicType( typeKey);
     }
 
-    protected Entity resolve( String id) throws EntityNotFoundException
-    {
-        return entityStore.resolve( id);
-    }
-
     protected Category getSuperCategory()
     {
         if ( cache != null)
@@ -933,15 +927,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             return cache.getSuperCategory();
         }
         return entityStore.getSuperCategory();
-    }
-    
-    protected Entity get( String id )
-    {
-    	if ( id == null)
-    	{
-    		return null;
-    	}
-        return entityStore.tryResolve( id);  
     }
     
     protected void setText(PreparedStatement stmt, int columIndex, String xml)

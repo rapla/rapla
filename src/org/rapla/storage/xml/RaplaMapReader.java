@@ -20,8 +20,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -69,10 +67,11 @@ public class RaplaMapReader extends RaplaXMLReader  {
         if ( refid != null) {
             childReader = null;
             // We ignore the old references from 1.7
-            if ( raplaType.equals( Appointment.TYPE) || raplaType.equals( Reservation.TYPE)) {
+            if ( entityMap.isTypeSupportedAsLink(raplaType)) {
                 return;
             }
             String id = getId( raplaType, refid);
+            entityMap.setLinkType( raplaType.getLocalName());
             entityMap.putIdPrivate( key,  id);
         }  else if ( keyref != null) {
             childReader = null;

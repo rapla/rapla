@@ -22,7 +22,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -146,7 +148,38 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	}
     	return result;
     }
+    
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        List<ReferenceInfo> result = new ArrayList<ReferenceInfo>();
+        String parentId = getParentId();
+        result.add( new ReferenceInfo(parentId, DynamicType.class) );
+        DynamicTypeImpl type = getType();
+        for ( Map.Entry<String,List<String>> entry:data.entrySet())
+        {
+            String key = entry.getKey();
+            Attribute attribute = type.getAttribute(key);
+            RaplaType refType = attribute.getRefType();
+            if ( attribute == null || refType == null)
+            {
+                continue;
+            }
+            List<String> values = entry.getValue();
+            if  (values != null ) 
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends Entity> class1 = refType.getTypeClass();
+                for ( String value:values)
+                {
+                    result.add(new ReferenceInfo(value, class1) );
+                }
+            }
+        }
+        return result;
+    }
 
+    
+    
 	private String getParentId() {
 		if  (typeId != null)
 			return typeId;
@@ -170,7 +203,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     		throw new IllegalStateException("Resolver not set on "+ toString());
     	}
         String parentId = getParentId();
-		DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId);
+		DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId, DynamicType.class);
         if ( type == null)
         {
         	throw new UnresolvableReferenceExcpetion(parentId, toString());
@@ -450,11 +483,38 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
      public String toString() {
-         return data.toString();
+         try
+         {
+             StringBuilder builder = new StringBuilder();
+             boolean first = true;
+             builder.append("{");
+             for ( Attribute attribute:getAttributes())
+             {
+                 if ( !first)
+                 {
+                     builder.append(", ");
+                 }
+                 else
+                 {
+                     first = false;
+                 }
+                 String key = attribute.getKey();
+                 String valueAsString = getValueAsString(attribute, null);
+                 builder.append(key);
+                 builder.append(':');
+                 builder.append(valueAsString);
+             }
+             builder.append("}");
+             return builder.toString();
+         } catch (Exception ex)
+         {
+             return data.toString();
+         }
      }
 
     public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
     {
         throw new CannotExistWithoutTypeException();
     }
+
 }

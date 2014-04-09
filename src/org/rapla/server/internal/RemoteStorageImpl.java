@@ -161,7 +161,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         UpdateEvent saveEvent = new UpdateEvent();
         if ( user != null )
         {
-            saveEvent.setUserId( updateResult.getUser().getId() );
+            saveEvent.setUserId( user.getId() );
         }
         {
             Iterator<UpdateResult.Add> it = updateResult.getOperations( UpdateResult.Add.class );
@@ -550,6 +550,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     Date serverTime = operator.getCurrentTimestamp();
                     Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
                     UpdateEvent evt = new UpdateEvent();
+                    evt.setUserId( user.getId());
                     for ( Entity entity: visibleEntities)
                     {
                     	if ( isTransferedToClient(entity))
@@ -699,9 +700,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
 	                    for ( String id:allocatableIds)
 	                    {
-	                    	Entity entity = operator.resolve(id);
-	                    	Allocatable allocatable = (Allocatable) entity;
-		                    security.checkRead(sessionUser, entity);
+	                    	Allocatable allocatable = operator.resolve(id, Allocatable.class);
+		                    security.checkRead(sessionUser, allocatable);
 							allocatables.add( allocatable);
 	                    }
                     }
@@ -1002,7 +1002,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     User user;
                     if ( evt.getUserId() != null)
                     {
-                        user = (User) operator.resolve(evt.getUserId());
+                        user = operator.resolve(evt.getUserId(), User.class);
                     }
                     else
                     {
@@ -1338,8 +1338,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				User sessionUser = getSessionUser();
 				for ( String id:allocatableIds)
 				{
-					Entity entity = operator.resolve(id);
-					allocatables.add( (Allocatable) entity);
+					Allocatable entity = operator.resolve(id, Allocatable.class);
+					allocatables.add( entity);
 					security.checkRead(sessionUser, entity);
 				}
 				return allocatables;
@@ -1351,8 +1351,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				{
 					try
 					{
-						Entity entity = operator.resolve(reservationId);
-						ignoreConflictsWith.add( (Reservation) entity);
+						Reservation entity = operator.resolve(reservationId, Reservation.class);
+						ignoreConflictsWith.add( entity);
 					}
 					catch (EntityNotFoundException ex)
 					{

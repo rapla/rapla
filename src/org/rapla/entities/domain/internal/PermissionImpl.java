@@ -55,6 +55,20 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     public Date getEnd() {
         return pEnd;
     }
+    
+    @Override
+    protected Class<? extends Entity> getInfoClass(String key) 
+    {
+        if ( key.equals("group"))
+        {
+            return Category.class;
+        }
+        if ( key.equals("user"))
+        {
+            return User.class;
+        }
+        return null;
+    }
 
     public void setStart(Date start) {
         checkWritable();
@@ -156,7 +170,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     }
 
     public User getUser() {
-        return (User) getEntity("user");
+        return getEntity("user", User.class);
     }
 
     public void setGroup(Category group) {
@@ -170,7 +184,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     }
 
     public Category getGroup() {
-        return (Category) getEntity("group");
+        return getEntity("group", Category.class);
     }
 
     public Date getMinAllowed(Date today) {

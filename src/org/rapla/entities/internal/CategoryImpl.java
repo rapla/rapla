@@ -106,7 +106,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     {
     	if ( parent == null)
     	{
-    		parent = (Category) getEntity("parent");
+    		parent = getEntity("parent", Category.class);
     	}
 		return parent;
     }
@@ -447,7 +447,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 		}
 	}
 
-
+	
 }
 
 

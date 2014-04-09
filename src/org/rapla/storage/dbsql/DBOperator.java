@@ -247,16 +247,17 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
 
-    synchronized public void connect(ConnectInfo connectInfo) throws RaplaException {
+    synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
         if (isConnected())
         {
-            return;
+            return null;
         }
     	getLogger().debug("Connecting: " + getConnectionName());
         loadData();
         initIndizes();
         isConnected = true;
     	getLogger().debug("Connected");
+    	return null;
     }
 
     public boolean isConnected() {

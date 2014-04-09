@@ -62,6 +62,16 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
                 }
             };
     }
+    
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        Iterable<ClassificationFilterImpl> classificatonFilterIterator = classificationFilters;
+        return new NestedIterator<ReferenceInfo,ClassificationFilterImpl>(classificatonFilterIterator) {
+                public Iterable<ReferenceInfo> getNestedIterator(ClassificationFilterImpl obj) {
+                    return obj.getReferenceInfo();
+                }
+            };
+    }
+
 
 
     public void setClassificationFilter(List<ClassificationFilterImpl> classificationFilters) {

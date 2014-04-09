@@ -51,8 +51,8 @@ public interface StorageOperator extends EntityResolver {
 	public final static String DEFAUTL_USER_TYPE = "rapla:defaultUser";
 	public final static String PERIOD_TYPE = "rapla:period";
 	
-    void connect() throws RaplaException;
-    void connect(ConnectInfo connectInfo) throws RaplaException;
+    User connect() throws RaplaException;
+    User connect(ConnectInfo connectInfo) throws RaplaException;
     boolean isConnected();
     /** Refreshes the data. This could be helpful if the storage
      * operator uses a cache and does not support "Active Monitoring"

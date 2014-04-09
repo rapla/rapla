@@ -315,7 +315,7 @@ class ConflictFinder {
 	
 	private Appointment getAppointment(String id) 
 	{
-		return (Appointment) resolver.tryResolve(id);
+		return resolver.tryResolve(id, Appointment.class);
 	}
 
 	

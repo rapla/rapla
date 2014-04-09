@@ -52,6 +52,8 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
@@ -95,16 +97,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
-		LocalCache newCache = new LocalCache();
-		setCache(newCache);
+		cache = new LocalCache();
 	}
 
 	public Logger getLogger() {
 		return logger;
 	}
 
-	public void connect() throws RaplaException {
-		connect(null);
+	public User connect() throws RaplaException {
+		return connect(null);
 	}
 
 	public abstract Date getCurrentTimestamp();
@@ -286,11 +287,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		checkConnected();
 		// Test if user is already stored
 		if (user != null) {
-			resolve(user.getId());
+			resolve(user.getId(), User.class);
 		}
 		String userId = user != null ? user.getId() : null;
         String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId);
+		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId, Preferences.class);
 		if (pref == null && createIfNotNull )
 		{
 			PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
@@ -316,7 +317,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
         newPref.setResolver( this);
         if ( userId != null)
         {
-            User user = (User) resolve( userId);
+            User user = resolve( userId, User.class);
             newPref.setOwner(user);
         }
         newPref.setId( id );
@@ -389,11 +390,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			throw new RaplaException(getI18n().format("error.connection_closed", ""));
 		}
 	}
-
-	protected void setCache(final LocalCache cache) {
-		this.cache = cache;
-	}
-
+	
 	@Override
 	public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound)	throws RaplaException {
     	Lock readLock = readLock();
@@ -402,7 +399,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Map<String, Entity> result= new LinkedHashMap<String,Entity>();
 			for ( String id:idSet)
 			{
-				Entity persistant = (Entity) (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
+				Entity persistant = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
 		    	if ( persistant != null)
 		    	{
 		    		result.put( id,persistant);
@@ -446,44 +443,54 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	 * @throws RaplaException  
 	 */
 	protected void setResolver(Collection<? extends Entity> entities) throws RaplaException {
-		for (Entity obj: entities) {
-			((EntityReferencer)obj).setResolver(this);
+		for (Entity entity: entities) {
+		    if (entity instanceof EntityReferencer)
+            {
+		        ((EntityReferencer)entity).setResolver(this);
+            }
 		}
 		// It is important to do the read only later because some resolve might involve write to referenced objects
 		for (Entity entity: entities) {
-			 ((RefEntity)entity).setReadOnly();
+		    if (entity instanceof RefEntity)
+            {
+		        ((RefEntity)entity).setReadOnly();
+            }
 		}
 	}
 
 	protected void testResolve(Collection<? extends Entity> entities) throws EntityNotFoundException {
 		EntityStore store = new EntityStore( this, getSuperCategory());
 		store.addAll( entities);
-		for (Entity obj: entities) {
-			((EntityReferencer)obj).setResolver(store);
+		for (Entity entity: entities) {
+		    if (entity instanceof EntityReferencer)
+		    {
+		        ((EntityReferencer)entity).setResolver(store);
+		    }
 		}
-		for (Entity obj: entities) {
-			testResolve(store, obj);
+		for (Entity entity: entities) {
+		    if (entity instanceof EntityReferencer)
+            {
+		        testResolve(store, (EntityReferencer)entity);
+            }
 		}
 	}
 
-    private void testResolve(EntityStore store, Entity obj) throws EntityNotFoundException {
-        Iterable<String> referencedIds = ((EntityReferencer)obj).getReferencedIds();
-        for ( String id:referencedIds)
+    private void testResolve(EntityResolver resolver, EntityReferencer referencer) throws EntityNotFoundException {
+        Iterable<ReferenceInfo> referencedIds =referencer.getReferenceInfo();
+        for ( ReferenceInfo id:referencedIds)
         {
-        	testResolve(store, obj, id);
+        	testResolve(resolver, referencer, id);
         }
     }
 
-	private void testResolve(EntityStore store, Entity obj, String id) throws EntityNotFoundException {
-	    try
-	    {
-	        store.resolve(id);
-		}
-		catch (EntityNotFoundException ex)
-		{
-			getLogger().error("Reference " + id + " not found for " + obj);
-			throw ex;
-		}
+	private void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
+        Class<? extends Entity> class1 = reference.getType();
+        String id = reference.getId();
+        if (tryResolve(resolver,id, class1) == null)
+        {
+            String prefix = (class1!= null) ? class1.getName() : " unkown type";
+            throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+        }
 	}
 	
 	
@@ -518,7 +525,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	@Override
-	public Entity tryResolve(String id) {
+	public Entity tryResolve(String id) 
+	{
+	    return tryResolve( id, null);
+	}
+	
+	@Override
+    public Entity resolve(String id) throws EntityNotFoundException 
+    {
+        return resolve( id, null);
+    }
+	
+	@Override
+	public <T extends Entity> T tryResolve(String id,Class<T> entityClass) {
 		Lock readLock = null;
 		try {
 			readLock = readLock();
@@ -527,7 +546,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		try
 		{
-			return cache.tryResolve( id);
+			return tryResolve(cache,id, null);
 		}
 		finally
 		{
@@ -536,7 +555,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	@Override
-	public Entity resolve(String id) throws EntityNotFoundException {
+	public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
 		Lock readLock;
 		try {
 			readLock = readLock();
@@ -545,7 +564,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		try
 		{
-			return resolveIdWithoutSync(id);
+			return resolve(cache,id, entityClass);
 		}
 		finally
 		{
@@ -553,9 +572,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 	
-	protected Entity resolveIdWithoutSync(String id) throws EntityNotFoundException {
-		return cache.resolve(id);
+	protected <T extends Entity> T resolve(EntityResolver resolver,String id,Class<T> entityClass) throws EntityNotFoundException {
+	    T entity = tryResolve(resolver,id, entityClass);
+	    SimpleEntity.checkResolveResult(id, entityClass, entity);
+		return entity;
 	}
+
+    protected <T extends Entity> T tryResolve(EntityResolver resolver,String id,Class<T> entityClass)  {
+        return resolver.tryResolve(id, entityClass);
+    }
 
 	/** Writes the UpdateEvent in the cache */
 	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
@@ -569,7 +594,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				continue;
 			}
 				
-			Entity persistantEntity = findInLocalCache(entity);
+			Entity persistantEntity = cache.tryResolve(entity.getId());
 			if ( persistantEntity == null)
 			{
 				continue;
@@ -619,7 +644,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			if ( storableInCache)
 			{
 				increaseVersion(entity);
-				Entity persistant = findInLocalCache(entity);
+				Entity persistant = cache.tryResolve(entity.getId());
 				// do nothing, because the persitantVersion is always read only
 				if (persistant == entity) {
 					continue;
@@ -651,7 +676,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Entity persistantVersion = null;
 			if ( isStorableInCache(entity))
 			{
-				persistantVersion = findInLocalCache(entity);
+				persistantVersion = cache.tryResolve(entity.getId());
 				if (persistantVersion != null) {
 					cache.remove(persistantVersion);
 					((RefEntity)persistantVersion).setReadOnly();
@@ -683,7 +708,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 					throws EntityNotFoundException {
 		User user = null;
 		if (userId != null) {
-			user = (User) resolveIdWithoutSync(userId);
+			user = resolve(cache,userId, User.class);
 		}
 
 		UpdateResult result = new UpdateResult(user);
@@ -710,12 +735,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return result;
 	}
 
-	/** returns null if no persistant version found */
-	protected Entity findInLocalCache(Entity entity)
-	{
-		return cache.tryResolve(entity.getId());
-	}
-	
 	abstract protected boolean isAddedToUpdateResult(Entity entity);
 
 	abstract protected boolean isStorableInCache(Entity entity);

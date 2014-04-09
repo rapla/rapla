@@ -47,8 +47,7 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
@@ -111,19 +110,19 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         return connectionInfo;
     }
     
-    synchronized public void connect(ConnectInfo connectInfo) throws RaplaException {
+    synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
         if ( connectInfo == null)
         {
             throw new RaplaException("RemoteOperator doesn't support anonymous connect");
         }
        
         if (isConnected())
-            return;
+            return null;
         getLogger().info("Connecting to server and starting login..");
     	Lock writeLock = writeLock();
     	try
     	{
-    		loginAndLoadData(connectInfo);
+    		User user = loginAndLoadData(connectInfo);
     		connectionInfo.setReAuthenticateCommand(new FutureResult<String>() {
 
     	            @Override
@@ -148,6 +147,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	            }
     	        });
     		initRefresh();
+    		return user;
     	}
     	finally
     	{
@@ -156,13 +156,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
 	
-	private void loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
+	private User loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
 		this.connectInfo = connectInfo;
 		String username = this.connectInfo.getUsername();
 		login();
         getLogger().info("login successfull");
-		loadData(username);
+		User user = loadData(username);
         bSessionActive = true;
+        return user;
 	}
 
 	protected String login() throws RaplaException {
@@ -405,16 +406,20 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         super.testResolve(entities);
     }
 
-    private void loadData(String username) throws RaplaException {
+    private User loadData(String username) throws RaplaException {
         getLogger().debug("Getting Data..");
         RemoteStorage serv = getRemoteStorage();
         try
         {
 	        UpdateEvent evt = serv.getResources().get();
+	        this.userId = evt.getUserId();
+	        if ( userId != null)
+	        {
+	            cache.setClientUserId( userId);
+	        }
 			updateTimestamps(evt);
 	        Collection<Entity> storeObjects = evt.getStoreObjects();
         	cache.clearAll();
-        	
         	testResolve( storeObjects);
         	setResolver( storeObjects );
             for( Entity entity:storeObjects) {
@@ -423,12 +428,20 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 					cache.put(entity);
 				}
 	        }
-	        if ( username != null)
+            getLogger().debug("Data flushed");
+            if ( username != null)
 	        {
-	        	UserImpl user = cache.getUser( username);
-	        	userId = user.getId();
+	        	if ( userId == null)
+	        	{
+	        	    throw new EntityNotFoundException("User with username "+ username + " not found in result");
+	        	}
+	        	User user = cache.resolve( userId, User.class);
+	        	return user;
 	        }
-	        getLogger().debug("Data flushed");
+	        else 
+	        {
+	            return null;
+	        }
         }
 	    catch (RaplaException ex)
 	    {
@@ -654,25 +667,21 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
    
     @Override
-    public Entity tryResolve(String id) {
+    protected <T extends Entity> T tryResolve(EntityResolver resolver,String id,Class<T> entityClass)  {
     	Assert.notNull( id);
-    	Entity entity =  super.tryResolve(id);
+    	T entity =  super.tryResolve(resolver,id, entityClass);
     	if ( entity != null)
     	{
     		return entity;
     	}
-    	if ( id.startsWith(Allocatable.TYPE.getLocalName()))
+    	if ( entityClass != null && Allocatable.class.isAssignableFrom(entityClass))
 		{
 			AllocatableImpl unresolved = new AllocatableImpl(null, null);
 			unresolved.setId( id);
 			unresolved.setClassification( getDynamicType(UNRESOLVED_RESOURCE_TYPE).newClassification());
-			return unresolved;
-		}
-		// if the type is not found we test if its an anonymous type (key = 0)
-		if ( id.startsWith(DynamicType.TYPE.getLocalName() + "_0"))
-		{
-			DynamicType unresolvedReservation = getDynamicType(ANONYMOUSEVENT_TYPE);
-			return (Entity) unresolvedReservation;
+			@SuppressWarnings("unchecked")
+            T casted = (T) unresolved;
+            return casted;
 		}
 		return null;
     }
@@ -827,7 +836,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		HashMap<Entity,Entity> oldEntityMap = new HashMap<Entity,Entity>();
 		for ( Entity update: toUpdate)
 		{
-			Entity newEntity = cache.tryResolve( update.getId());
+			@SuppressWarnings("unchecked")
+            Class<? extends Entity> typeClass = update.getRaplaType().getTypeClass();
+            Entity newEntity = cache.tryResolve( update.getId(), typeClass);
 			if ( newEntity != null)
 			{
 				oldEntityMap.put( newEntity, update);

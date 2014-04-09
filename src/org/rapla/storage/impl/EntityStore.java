@@ -18,11 +18,10 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.internal.SimpleEntity;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
@@ -84,34 +83,6 @@ public class EntityStore implements EntityResolver {
         return entities.values();
     }
     
-    // Implementation of EntityResolver
-    public Entity resolve(String id) throws EntityNotFoundException {
-        Entity result = tryResolve(id );
-        if ( result == null)
-        {
-            throw new EntityNotFoundException("Object for id " + id.toString() + " not found",  id);
-        }
-        return result;
-    }
-    
-    public Entity resolveEmail(final String emailArg) throws EntityNotFoundException
-    {
-    	for (Allocatable entity: allocatables)
-    	{
-    		final Classification classification = entity.getClassification();
-    		final Attribute attribute = classification.getAttribute("email");
-    		if ( attribute != null)
-    		{
-    			final String email = (String)classification.getValue(attribute);
-    			if ( email != null && email.equals( emailArg))
-    			{
-    				return (Entity)entity;
-    			}
-    		}
-        }
-    	throw new EntityNotFoundException("Object for email " + emailArg + " not found");
-    }
-
     public CategoryImpl getSuperCategory()
     {
         return superCategory;
@@ -127,26 +98,47 @@ public class EntityStore implements EntityResolver {
         return passwordList.get(userid);
     }
 
+    
+    public Entity resolve(String id) throws EntityNotFoundException {
+        return resolve(id, null);
+    }
+    
+    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
+        T entity = tryResolve(id, entityClass);
+        SimpleEntity.checkResolveResult(id, entityClass, entity);
+        return entity;
+    }
+    
     @Override
-    public Entity tryResolve( String id )
-    {
-    	Assert.notNull( id);
+    public Entity tryResolve(String id) {
+        return tryResolve(id, null);
+    }
+    
+    @Override
+    public <T extends Entity> T tryResolve(String id,Class<T> entityClass)  {
+        Assert.notNull( id);
         Entity entity = entities.get(id);
-        if (entity != null)
-            return entity;
+        if (entity != null) {
+            @SuppressWarnings("unchecked")
+            T casted = (T) entity;
+            return casted;
+        }
 
-        if ( id.equals( superCategory.getId()))
+        if ( id.equals( superCategory.getId()) && (entityClass == null || Category.class.isAssignableFrom( entityClass)))
         {
-            return superCategory;
+            @SuppressWarnings("unchecked")
+            T casted = (T) superCategory;
+            return casted;
         }
       
         if (parent != null)
         {
-            return parent.tryResolve(id);
+            return parent.tryResolve(id, entityClass);
             
         }
         return null;
     }
+
 
     public Collection<RaplaObject> getCollection( RaplaType raplaType )
     {

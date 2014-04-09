@@ -346,6 +346,20 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
              );
     }
 
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        return new IteratorChain<ReferenceInfo>
+            (
+             super.getReferenceInfo()
+             ,classification.getReferenceInfo()
+             ,new NestedIterator<ReferenceInfo,PermissionImpl>( permissions ) {
+                     public Iterable<ReferenceInfo> getNestedIterator(PermissionImpl obj) {
+                         return obj.getReferenceInfo();
+                     }
+                 }
+             );
+    }
+
     public boolean needsChange(DynamicType type) {
         return classification.needsChange( type );
     }
@@ -417,6 +431,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     public String toString() {
         StringBuffer buf = new StringBuffer();
+        buf.append(getRaplaType().getLocalName());
         buf.append(" [");
         buf.append(super.toString());
         buf.append("] ");

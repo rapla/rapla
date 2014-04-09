@@ -27,6 +27,7 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.framework.RaplaException;
 
 
 public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter implements CalendarModelConfiguration
@@ -34,6 +35,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    // Don't forget to increase the serialVersionUID when you change the fields
    private static final long serialVersionUID = 1;
    List<String> selected;
+   List<String> typeList;
    String title;
    Date startDate;
    Date endDate;
@@ -44,8 +46,22 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    boolean defaultResourceTypes;
    boolean resourceRootSelected;
     
-   public CalendarModelConfigurationImpl( Collection<String> selected,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
-	   this.selected = selected != null ? new ArrayList<String>(selected) : new ArrayList<String>();
+   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<RaplaType> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
+	   if (selected != null)
+	   {
+	       this.selected = Collections.unmodifiableList(new ArrayList<String>(selected));
+	       typeList = new ArrayList<String>();
+	       for ( RaplaType type:idTypeList)
+	       {
+	           typeList.add(type.getLocalName());
+	       }
+	   }
+	   else
+	   {
+	       this.selected = Collections.emptyList();
+	       typeList = Collections.emptyList();
+	   }
+	   
        this.view = view;
        this.resourceRootSelected = resourceRootSelected;
        this.defaultEventTypes = defaultEventTypes;
@@ -125,7 +141,34 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         Iterable<String> references = super.getReferencedIds();
 		return new IteratorChain<String>(references, selected);
     }
-
+    
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() {
+        Iterable<ReferenceInfo> references = super.getReferenceInfo();
+        List<ReferenceInfo> selectedInfo = new ArrayList<ReferenceInfo>();
+        int size = selected.size();
+        for ( int i = 0;i<size;i++)
+        {
+            String id = selected.get(0);
+            String localname = typeList.get(0);
+            Class<? extends Entity> type = null;
+            RaplaType raplaType;
+            try {
+                raplaType = RaplaType.find(localname);
+                Class typeClass = raplaType.getTypeClass();
+                if ( Entity.class.isAssignableFrom(typeClass ))
+                {
+                    @SuppressWarnings("unchecked")
+                    Class<? extends Entity> casted = (Class<? extends Entity>)typeClass;
+                    type = casted;
+                }
+            } catch (RaplaException e) {
+            }
+            ReferenceInfo referenceInfo = new ReferenceInfo(id, type);
+            selectedInfo.add( referenceInfo);    
+        }
+        return new IteratorChain<ReferenceInfo>(references, selectedInfo);
+    }
     /**
      * @see org.rapla.entities.storage.EntityReferencer#isRefering(org.rapla.entities.storage.Entity)
      */

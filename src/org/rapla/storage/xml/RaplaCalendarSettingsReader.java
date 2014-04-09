@@ -44,6 +44,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     ClassificationFilterReader classificationFilterHandler;
 
     List<String> idList;
+    List<RaplaType> idTypeList;
     Map<String,String> optionMap;
   
     
@@ -70,11 +71,13 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             endDate = getDate( atts, "enddate");
             resourceRootSelected = getString(atts, "rootSelected", "false").equalsIgnoreCase("true");
             idList = Collections.emptyList();
+            idTypeList = Collections.emptyList();
             optionMap = Collections.emptyMap();
         }
 
         if (localName.equals("selected")) {
         	idList = new ArrayList<String>();
+        	idTypeList = new ArrayList<RaplaType>();
         }
 
         if (localName.equals("options")) {
@@ -95,11 +98,13 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             RaplaType raplaType = getTypeForLocalName( localName );
         	String id = getId( raplaType, refid);
             idList.add( id);
+            idTypeList.add( raplaType);
         } 
         else if ( keyref != null)
         {
             DynamicType type = getDynamicType( keyref );
         	idList.add( type.getId());
+        	idTypeList.add( DynamicType.TYPE);
         }
     }
 
@@ -119,7 +124,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         if (localName.equals("calendar")) {
             boolean defaultResourceTypes =  classificationFilterHandler.isDefaultResourceTypes();
             boolean defaultEventTypes = classificationFilterHandler.isDefaultEventTypes();
-            settings = new CalendarModelConfigurationImpl( idList, resourceRootSelected,filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
+            settings = new CalendarModelConfigurationImpl( idList,idTypeList, resourceRootSelected,filter, defaultResourceTypes, defaultEventTypes,title,startDate, endDate, selectedDate, view, optionMap);
         }
 
         if (localName.equals("selected")) {

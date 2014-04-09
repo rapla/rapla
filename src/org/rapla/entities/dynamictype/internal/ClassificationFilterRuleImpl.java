@@ -24,14 +24,11 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
-public final class ClassificationFilterRuleImpl
+public final class ClassificationFilterRuleImpl extends ReferenceHandler
     implements
         ClassificationFilterRule
-        ,EntityReferencer
         ,java.io.Serializable
 {
     // Don't forget to increase the serialVersionUID when you change the fields
@@ -40,8 +37,7 @@ public final class ClassificationFilterRuleImpl
     String[] operators;
     String[] ruleValues;
     String attributeId;
-    ReferenceHandler referenceHandler = new ReferenceHandler();
-
+    
     ClassificationFilterRuleImpl()
     {
     	
@@ -54,20 +50,20 @@ public final class ClassificationFilterRuleImpl
 		{
 			throw new IllegalArgumentException("Attribute type cannot be null");
 		}
-		referenceHandler.putEntity("dynamictype",type);
+		putEntity("dynamictype",type);
         this.operators = operators;
         this.ruleValues = new String[ruleValues.length];
         RaplaType refType = attribute.getRefType();
         for (int i=0;i<ruleValues.length;i++) {
             Object ruleValue = ruleValues[i];
 			if (ruleValue instanceof Entity)
-            {
-                referenceHandler.putEntity(String.valueOf(i),(Entity)ruleValue);
+			{
+			    putEntity(String.valueOf(i),(Entity)ruleValue);
                 //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
             }
             else if (refType != null && (ruleValue instanceof String) /*&& refType.isId(ruleValue)*/)
             {
-                referenceHandler.putId(String.valueOf(i),(String)ruleValue);
+                putId(String.valueOf(i),(String)ruleValue);
             }
             else
             {
@@ -75,19 +71,6 @@ public final class ClassificationFilterRuleImpl
             }
         }
 	}
-
-
-    public void setResolver( EntityResolver resolver)  {
-        referenceHandler.setResolver( resolver );
-    }
-
-    public boolean isRefering(String object) {
-        return referenceHandler.isRefering(object);
-    }
-
-    public Iterable<String> getReferencedIds() {
-        return referenceHandler.getReferencedIds();
-    }
 
     public boolean needsChange(Attribute typeAttribute) {
         Object[] ruleValues = getValues();
@@ -107,7 +90,6 @@ public final class ClassificationFilterRuleImpl
         }
     }
 
-    
     /** find the attribute of the given type that matches the id */
     private Attribute findAttribute(DynamicType type,Object id) {
         Attribute[] typeAttributes = type.getAttributes();
@@ -124,7 +106,30 @@ public final class ClassificationFilterRuleImpl
     }
     
     public DynamicType getDynamicType() {
-        return (DynamicType)referenceHandler.getEntity("dynamictype");
+        return getEntity("dynamictype", DynamicType.class);
+    }
+    
+    @Override
+    protected Class<? extends Entity> getInfoClass(String key) {
+        if ( key.equals("dynamictype"))
+        {
+            return DynamicType.class;
+        }
+        Attribute attribute = getAttribute();
+        if ( key.length() > 0 && Character.isDigit(key.charAt(0)))
+        {
+            //int index = Integer.parseInt(key);
+            AttributeType type = attribute.getType();
+            if (type == AttributeType.CATEGORY )
+            {
+                return Category.class;
+            }
+            else if ( type == AttributeType.ALLOCATABLE)
+            {
+                return Allocatable.class;
+            }
+        }
+        return null;
     }
 
     public String[] getOperators() {
@@ -141,12 +146,16 @@ public final class ClassificationFilterRuleImpl
         return result;
     }
     
-	private Object getValue(Attribute attribute, int index) {
-			
+	private Object getValue(Attribute attribute, int index) 
+	{
 		 AttributeType type = attribute.getType();
-		 if (type == AttributeType.CATEGORY || type == AttributeType.ALLOCATABLE)
+		 if (type == AttributeType.CATEGORY )
 		 {
-			 return referenceHandler.getEntity(String.valueOf(index));
+			 return getEntity(String.valueOf(index), Category.class);
+		 }
+		 else if (type == AttributeType.ALLOCATABLE)
+		 {
+		     return getEntity(String.valueOf(index), Allocatable.class);
 		 }
 		 String stringValue =  ruleValues[index];
 		 if ( stringValue == null)
@@ -187,7 +196,7 @@ public final class ClassificationFilterRuleImpl
     	String newValue;
     	if (ruleValue instanceof Entity)
     	{
-    		referenceHandler.putEntity(String.valueOf(i), (Entity)ruleValue);
+    		putEntity(String.valueOf(i), (Entity)ruleValue);
     		newValue = null;
     	}
     	else if ( ruleValue instanceof Date)
@@ -198,7 +207,7 @@ public final class ClassificationFilterRuleImpl
     	else
     	{
     		newValue = ruleValue != null ? ruleValue.toString() : null;
-        	referenceHandler.removeId( String.valueOf( i));
+        	removeId( String.valueOf( i));
     	}
     	ruleValues[i] = newValue;
 

@@ -54,7 +54,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
         Collection<Appointment> appointments = new ArrayList<Appointment>();
         for ( String id:appointmentIds)
         {
-        	Appointment app = (Appointment) operator.resolve( id );
+        	Appointment app = operator.resolve( id , Appointment.class);
         	appointments.add( app );
         }
         Calendar iCal = converter.createiCalender(appointments);

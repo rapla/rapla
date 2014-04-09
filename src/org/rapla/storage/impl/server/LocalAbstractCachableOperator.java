@@ -1120,7 +1120,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			// no, then create a clone of the classfiable object and add to list
 			User user = null;
 			if (evt.getUserId() != null) {
-				user = (User) resolveIdWithoutSync(evt.getUserId());
+				user = resolve(cache,evt.getUserId(), User.class);
 			}
 			Entity persistant = store.tryResolve(entity.getId());
 			dependant = (DynamicTypeDependant) editObject( entity, persistant, user);
@@ -1184,7 +1184,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				}
 				else
 				{
-					Entity persistant= cache.tryResolve( entity.getId());
+					@SuppressWarnings("unchecked")
+                    Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
+                    Entity persistant= cache.tryResolve( entity.getId(), typeClass);
 					Entity dependant = editObject( entity, persistant, user);
 					((SimpleEntity)dependant).setLastChangedBy( null );
 					addStoreOperationsToClosure(evt, store, dependant);
@@ -1340,7 +1342,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		while (it.hasNext()) {
 			// Check Versions
 			SimpleEntity entity = (SimpleEntity) it.next();
-			SimpleEntity persistantVersion = (SimpleEntity) findInLocalCache((Entity)entity);
+			SimpleEntity persistantVersion = (SimpleEntity) cache.tryResolve( entity.getId());
 			// If the entities are newer, everything is o.k.
 			if (persistantVersion != null && persistantVersion != entity)
 			{
@@ -1508,7 +1510,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			if ( entity.getRaplaType() == Category.TYPE)
 			{
 				Category newCat = (Category) entity;
-				Category old = (Category) findInLocalCache(entity);
+				Category old = tryResolve(entity.getId(), Category.class);
 				if ( old != null)
 				{
 					Set<Category> oldSet = getAllCategories( old);
@@ -1887,7 +1889,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 							logger.error( "Empty id  for " + original);
 							continue;
 						}
-						SimpleEntity persistant = (SimpleEntity) cache.tryResolve( id );
+						Appointment persistant =  cache.tryResolve( id, Appointment.class );
 						if ( persistant == null )
 						{
 							logger.error( "appointment not stored in cache " + original );
@@ -1917,7 +1919,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 								logger.error( "Empty id  for " + original);
 								continue;
 							}
-							Reservation persistant = (Reservation) cache.tryResolve( id );
+							Reservation persistant = cache.tryResolve( id, Reservation.class );
 							if ( persistant != null )
 							{
 								Date lastChanged = original.getLastChanged();

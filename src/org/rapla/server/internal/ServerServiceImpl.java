@@ -943,7 +943,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			throw new RaplaSecurityException(e.getMessage(), e);
 		}
     	String userId = recvText;
-    	User user = (User) operator.resolve( userId);
+    	User user =  operator.resolve( userId, User.class);
     	return user;
 
     }

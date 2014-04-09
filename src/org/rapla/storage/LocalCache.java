@@ -31,6 +31,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -41,6 +42,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.Provider;
 
 public class LocalCache implements EntityResolver
@@ -56,7 +58,7 @@ public class LocalCache implements EntityResolver
     Map<String,PreferencesImpl> preferences;
     
     Map<RaplaType,Map<String,? extends Entity>> entityMap;
-    
+    private String clientUserId;
     public LocalCache() {
         
         entityMap = new LinkedHashMap<RaplaType, Map<String,? extends Entity>>();
@@ -80,12 +82,18 @@ public class LocalCache implements EntityResolver
         initSuperCategory();
     }
     
-	@Override
-    public Entity tryResolve(String id) {
-        if (id == null)
-            throw new RuntimeException("id is null");
-        return entities.get(id);
+    
+    
+	public String getClientUserId() {
+        return clientUserId;
     }
+
+	/** use this to prohibit reservations and preferences (except from system and current user) to be stored in the cache*/ 
+    public void setClientUserId(String clientUserId) {
+        this.clientUserId = clientUserId;
+    }
+
+    
 
     /** @return true if the entity has been removed and false if the entity was not found*/
     public boolean remove(Entity entity) {
@@ -123,6 +131,23 @@ public class LocalCache implements EntityResolver
         if (id == null)
             throw new IllegalStateException("ID can't be null");
 
+        String clientUserId = getClientUserId();
+        if ( clientUserId != null )
+        {
+            if (raplaType == Reservation.TYPE || raplaType == Appointment.TYPE )
+            {
+                throw new IllegalArgumentException("Can't store reservations or appointments in client cache");
+            }
+            if (raplaType == Preferences.TYPE  )
+            {
+                String owner = ((PreferencesImpl)entity).getId("owner");
+                if ( owner != null && !owner.equals( clientUserId))
+                {
+                    throw new IllegalArgumentException("Can't store non system preferences for other users in client cache"); 
+                }
+            }
+        }
+            
         // first remove the old children from the map
         Entity oldEntity = entities.get( entity);
         if (oldEntity != null && oldEntity instanceof ParentEntity)
@@ -237,7 +262,7 @@ public class LocalCache implements EntityResolver
 
     public PreferencesImpl getPreferencesForUserId(String userId) {
 		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-		PreferencesImpl pref = (PreferencesImpl) tryResolve( preferenceId);
+		PreferencesImpl pref = (PreferencesImpl) tryResolve( preferenceId, Preferences.class);
 		return pref; 	
     }
     
@@ -263,12 +288,30 @@ public class LocalCache implements EntityResolver
     // Implementation of EntityResolver
     @Override
     public Entity resolve(String id) throws EntityNotFoundException {
-        Entity entity =  tryResolve(id);
-
-        if (entity == null)
-            throw new EntityNotFoundException("Object for id [" + id + "] not found", id);
+        return resolve(id, null);
+    }
+    
+    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
+        T entity = tryResolve(id, entityClass);
+        SimpleEntity.checkResolveResult(id, entityClass, entity);
         return entity;
     }
+    
+    @Override
+    public Entity tryResolve(String id) {
+        return tryResolve(id, null);
+    }
+    
+    @Override
+    public <T extends Entity> T tryResolve(String id,Class<T> entityClass)  {
+        if (id == null)
+            throw new RuntimeException("id is null");
+        Entity entity = entities.get(id);
+        @SuppressWarnings("unchecked")
+        T casted = (T) entity;
+        return casted;
+    }
+
 
     public String getPassword(Object userId) {
         return  passwords.get(userId);

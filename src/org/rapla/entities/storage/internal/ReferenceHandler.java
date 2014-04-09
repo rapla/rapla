@@ -15,7 +15,6 @@ package org.rapla.entities.storage.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,7 +54,7 @@ Itertor references = referenceHandler.getReferences();
 </p>
     @see EntityResolver
  */
-public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
+abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
 	protected Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
     protected transient EntityResolver resolver;
 	
@@ -95,6 +94,25 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 //		}
     }
     
+    @Override
+    public Iterable<ReferenceInfo> getReferenceInfo() 
+    {
+        Set<ReferenceInfo> result = new HashSet<ReferenceInfo>();
+        if (links != null) {
+            for (String key:links.keySet()) {
+                List<String> entries = links.get( key);
+                for ( String id: entries)
+                {
+                    ReferenceInfo referenceInfo = new ReferenceInfo(id, getInfoClass( key));
+                    result.add( referenceInfo);
+                }
+            }
+        }
+        return result;
+    }
+    
+    abstract protected Class<? extends Entity> getInfoClass(String key);
+
     public Iterable<String> getReferencedIds()
     {
     	Set<String> result = new HashSet<String>();
@@ -206,54 +224,58 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
         }
     }
     
-
-	public Collection<Entity> getList(String key) 
+    public <T extends Entity> Collection<T> getList(String key, Class<T> entityClass) 
 	{
 		List<String> ids  = links.get(key);
 		if ( ids == null )
 		{
 			return Collections.emptyList();
 		}
-		List<Entity> entries = new ArrayList<Entity>(ids.size());
+		List<T> entries = new ArrayList<T>(ids.size());
 		for ( String id:ids)
 		{
-			Entity entity = tryResolve(id);
+			T entity = tryResolve(id, entityClass);
 			if ( entity != null)
 			{
 				entries.add( entity );
 			}
 			else
 			{
-				throw new UnresolvableReferenceExcpetion( id, toString() );
+				throw new UnresolvableReferenceExcpetion( entityClass.getName() + ":" + id, toString() );
 			}
 		}
 		return entries;
 	}
 
-	protected Entity tryResolve(String id) 
+	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass) 
 	{
-		return resolver.tryResolve( id );
+		return resolver.tryResolve( id , entityClass);
 	}	
 
-    public Entity getEntity(String key) {
-    	 List<String>entries  = links.get(key);
-         if ( entries == null || entries.size() == 0)
-         {
-         	return null;
-         }
-         String id  = entries.get(0);
-         if (id == null)
-             return null;
-         if ( resolver == null)
-         {
-        	 throw new IllegalStateException("Resolver not set");
-         }
- 		Entity resolved = tryResolve(id);
-		if ( resolved == null)
-		{
-			throw new UnresolvableReferenceExcpetion(id);
-		}
- 		return resolved;
+//    public Entity getEntity(String key) {
+//    	
+//    }
+    
+    public <T extends Entity> T getEntity(String key,Class<T> entityClass)
+    {
+        List<String>entries  = links.get(key);
+        if ( entries == null || entries.size() == 0)
+        {
+           return null;
+        }
+        String id  = entries.get(0);
+        if (id == null)
+            return null;
+        if ( resolver == null)
+        {
+            throw new IllegalStateException("Resolver not set");
+        }
+        T resolved = tryResolve(id, entityClass);
+        if ( resolved == null)
+        {
+            throw new UnresolvableReferenceExcpetion(entityClass.getName() + ":" + id);
+        }
+        return resolved;
     }
 
 	public boolean removeWithKey(String key) {
@@ -319,14 +341,5 @@ public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implement
 		}
 	    return builder.toString();
 	}
-
-	@SuppressWarnings("unchecked")
-	public ReferenceHandler cloneReferenceHandler() {
-		ReferenceHandler clone = new ReferenceHandler();
-		clone.links = (Map<String, List<String>>) ((HashMap)links).clone();
-		clone.resolver = this.resolver;
-		return clone;
-	}
-
 
 }

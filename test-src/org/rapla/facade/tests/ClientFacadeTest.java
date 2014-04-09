@@ -181,7 +181,7 @@ public class ClientFacadeTest extends RaplaTestCase {
     		allocatableId = nonPersistantAllocatable.getId();
     		eventId = nonPeristantEvent.getId();
     	}
-    	Allocatable allocatable = facade.edit((Allocatable) facade.getOperator().resolve(allocatableId) );
+    	Allocatable allocatable = facade.edit(facade.getOperator().resolve(allocatableId, Allocatable.class) );
     	
         // Store the allocatable it a second time to test if it is still modifiable after storing
         allocatable.getClassification().setValue("name", "Blubs");
@@ -201,7 +201,7 @@ public class ClientFacadeTest extends RaplaTestCase {
 
         // test if the ids of editable Versions are equal to the persistant ones
         assertEquals( persistantAllocatable, allocatable);
-        Reservation event = (Reservation) facade.getOperator().resolve( eventId);
+        Reservation event = facade.getOperator().resolve( eventId, Reservation.class);
 		assertEquals( persistantEvent, event);
         assertEquals( persistantEvent.getAllocatables()[0], event.getAllocatables()[0]);
 

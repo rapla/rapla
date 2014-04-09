@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage;
 
+import org.rapla.entities.Entity;
+
 
 /** transforms ids into references to
  * the corresponding objects.
@@ -23,9 +25,53 @@ public interface EntityReferencer
     void setResolver( EntityResolver resolver);
     /**Return all References of the object*/
     Iterable<String> getReferencedIds();
+    Iterable<ReferenceInfo> getReferenceInfo();
     /** returns if the entity is refering to the Object. */
     //boolean isRefering(Entity object);
     boolean isRefering(String id);
+    
+    public class ReferenceInfo
+    {
+
+        final private String id;
+        final private Class<? extends Entity> type;
+
+        public ReferenceInfo(String id, Class<? extends Entity> type) {
+            super();
+            this.id = id;
+            this.type = type;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Class<? extends Entity> getType() {
+            return type;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if ( ! (obj instanceof ReferenceInfo))
+            {
+                return false;
+            }
+            return this.id.equals(((ReferenceInfo)obj).id);
+        }
+        
+        @Override
+        public int hashCode() 
+        {
+            return id.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "ReferenceInfo [id=" + id + ", type=" + type + "]";
+        }
+
+        
+    }
 }
 
 

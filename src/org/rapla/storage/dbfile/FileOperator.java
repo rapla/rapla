@@ -181,15 +181,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     /** Sets the isConnected-flag and calls loadData.*/
-    final public void connect(ConnectInfo connectInfo) throws RaplaException
+    final public User connect(ConnectInfo connectInfo) throws RaplaException
     {
         if ( isConnected )
-            return;
+            return null;
     	getLogger().info("Connecting: " + getURL()); 
         loadData();
         initIndizes();
         isConnected = true;
-    	getLogger().debug("Connected"); 	
+    	getLogger().debug("Connected");
+    	return null;
     }
 
     final public boolean isConnected()

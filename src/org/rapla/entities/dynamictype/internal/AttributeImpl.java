@@ -103,7 +103,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         Object oldValue = defaultValue;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            oldValue = getEntity("default.category");
+            oldValue = getEntity("default.category", Category.class);
         }
         this.type = type;
         setDefaultValue(convertValue( oldValue));
@@ -149,6 +149,31 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         	}
         }
 	}
+	
+	@Override
+	protected Class<? extends Entity> getInfoClass(String key) 
+	{
+	    Class<? extends Entity> infoClass = super.getInfoClass(key);
+	    if ( infoClass == null)
+	    {
+	        if ( key.equals( "default.category"))
+	        {
+	            return Category.class;
+	        }
+	        if ( key.startsWith( "constraint."))
+            {
+	            String constraintKey = key.substring( "constraint.".length());
+	            Class<?> constraintClass = getConstraintClass( constraintKey);
+	            if ( !constraintClass.equals(String.class))
+	            {
+	                @SuppressWarnings("unchecked")
+                    Class<? extends Entity> casted = (Class<? extends Entity>) constraintClass;
+                    return casted;
+	            }
+            }
+	    }
+        return infoClass;
+	}
     
     public void setDefaultValue(Object object)
     {
@@ -165,8 +190,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     }
 
     public Object getConstraint(String key) {
-        if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
-            return getEntity("constraint." + key);
+        Class<?> constraintClass = getConstraintClass( key );
+        if ( constraintClass == Category.class || constraintClass == DynamicType.class) {
+            @SuppressWarnings("unchecked")
+            Class<? extends Entity> class1 = (Class<? extends Entity>) constraintClass;
+            return getEntity("constraint." + key, class1);
         }
         return null;
     }
@@ -219,7 +247,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         Object value;
         if ( type.equals( AttributeType.CATEGORY))
         {
-            value = getEntity("default.category");
+            value = getEntity("default.category", Category.class);
         }
         else
         {

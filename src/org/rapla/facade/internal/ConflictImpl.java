@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -107,7 +106,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	public Iterable<String> getReferencedIds() {
 		return Collections.emptyList();
 	}
-   
+
+	@Override
+	public Iterable<ReferenceInfo> getReferenceInfo() {
+	    return Collections.emptyList();
+	}
+
 	private Date getStartDate_(Date today,Appointment app1, Appointment app2) {
 		Date fromDate = today;
 		Date start1 = app1.getStart();
@@ -203,7 +207,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     /** @return the allocatable, allocated for the same time by two different reservations. */
     public Allocatable getAllocatable() 
     { 
-    	return (Allocatable)getEntity("allocatable"); 
+    	return getEntity("allocatable", Allocatable.class); 
     }
 //    /** @return the second Reservation, that is involed in the conflict.*/
 //    public Reservation getReservation2() 
@@ -255,11 +259,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 //}
     
     public User getOwner1() {
-    	return (User) getEntity("owner1");
+    	return  getEntity("owner1", User.class);
     }
 
     public User getOwner2() {
-    	return (User) getEntity("owner2");
+    	return getEntity("owner2", User.class);
     }
 
 	private boolean contains(String appointmentId) {
@@ -544,7 +548,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		}
 		if (allocatable.canRead( user ))
 		{
-			Entity reservation = resolver.tryResolve(conflict.getReservation1());
+			Reservation reservation = resolver.tryResolve(conflict.getReservation1(), Reservation.class);
 			if ( reservation == null )
 			{
 				// reservation will be deleted, and conflict also so return 
@@ -554,7 +558,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 			{
 				return true;
 			}
-			Entity overlappingReservation = resolver.tryResolve(conflict.getReservation2());
+			Reservation overlappingReservation = resolver.tryResolve(conflict.getReservation2(), Reservation.class);
 			if ( overlappingReservation == null )
 			{
 				return false;

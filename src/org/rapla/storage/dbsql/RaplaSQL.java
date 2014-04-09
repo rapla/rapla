@@ -480,7 +480,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     		Category parent;
             Assert.notNull( category );
     		if ( parentId != null) {
-    		    parent = (Category) resolve( parentId );
+    		    parent = entityStore.resolve( parentId ,Category.class);
             } else {
     		    parent = getSuperCategory();
             }
@@ -1226,7 +1226,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
         else
         {
-        	User user = (User) entityStore.tryResolve( userId);
+        	User user = entityStore.tryResolve( userId,User.class);
         	if ( user != null)
         	{
         		owner = user;
@@ -1252,14 +1252,14 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 //        	return;
 //        }
         
-        PreferencesImpl preferences = (PreferencesImpl) get( preferenceId );
+        PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId, Preferences.class ): null;
         if ( preferences == null) 
         {
-        	Date now =getCurrentTimestamp();
-			preferences = new PreferencesImpl(now,now);
-        	preferences.setId(preferenceId);
-        	preferences.setOwner(owner);
-        	put( preferences );
+            Date now =getCurrentTimestamp();
+            preferences = new PreferencesImpl(now,now);
+            preferences.setId(preferenceId);
+            preferences.setOwner(owner);
+            put( preferences );
         }
       
         if ( value!= null) {

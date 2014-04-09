@@ -101,8 +101,8 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
 	    AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
-	    final Entity refEntity = operator.resolve( id);
-	    return (Allocatable) refEntity;
+	    final Allocatable refEntity = operator.resolve( id, Allocatable.class);
+	    return refEntity;
 	}
 
 

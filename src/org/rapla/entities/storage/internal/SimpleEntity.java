@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -20,6 +21,7 @@ import java.util.List;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
@@ -40,6 +42,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     public SimpleEntity() {
 
     }
+    
+    
     
     public void checkWritable() {
         if ( readOnly )
@@ -90,7 +94,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
 
     public User getOwner() {
-        return (User) getEntity("owner");
+        return getEntity("owner", User.class);
     }
     
     protected String getOwnerId()
@@ -103,11 +107,20 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
     
 	public User getLastChangedBy() {
-		return (User) getEntity("last_changed_by");
+		return getEntity("last_changed_by", User.class);
 	}
 
 	public void setLastChangedBy(User user) {
         putEntity("last_changed_by",user);
+	}
+	
+	@Override
+	protected Class<? extends Entity> getInfoClass(String key) {
+	    if ( key.equals( "owner") || key.equals("last_changed_by"))
+	    {
+	        return User.class;
+	    }
+	    return null;
 	}
 
    
@@ -222,7 +235,15 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     	return compare_(this, (SimpleEntity)o);
     }
 	
-	static private int compare_(SimpleEntity o1,SimpleEntity o2) {
+	static public <T extends Entity> void checkResolveResult(String id, Class<T> entityClass, T entity) throws EntityNotFoundException {
+        if ( entity == null)
+        {
+            Serializable serializable = entityClass != null ? entityClass : "Object";
+            throw new EntityNotFoundException(serializable +" for id [" + id + "] not found for class ", id);
+        }
+    }
+
+    static private int compare_(SimpleEntity o1,SimpleEntity o2) {
         if ( o1 == o2)
         {
             return 0;

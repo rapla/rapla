@@ -41,7 +41,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id :resources)
         {
-            Allocatable allocatable = (Allocatable) operator.resolve(id);
+            Allocatable allocatable = operator.resolve(id, Allocatable.class);
             allocatables.add( allocatable);
         }
  
@@ -63,7 +63,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     
     public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
-        ReservationImpl event = (ReservationImpl) operator.resolve(id);
+        ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         boolean canReadReservationsFromOthers = getQuery().canReadReservationsFromOthers(user);
         if (!RaplaComponent.canRead(event, user, canReadReservationsFromOthers))
         {

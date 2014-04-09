@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
@@ -176,11 +175,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
             return;
         synchronized ( this )
         {
-        	Collection<Category> groupList = new ArrayList<Category>();
-        	for(Entity o:getList("groups"))
-       	 	{
-        		groupList.add((Category)o);
-        	}
+        	Collection<Category> groupList = getList("groups", Category.class);
         	groups = groupList.toArray(Category.CATEGORY_ARRAY);
     	}
     }
@@ -235,7 +230,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     public Allocatable getPerson() 
     {
-        final Allocatable person = (Allocatable) getEntity("person");
+        final Allocatable person = getEntity("person", Allocatable.class);
         return person;
     }
 

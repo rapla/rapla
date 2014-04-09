@@ -48,7 +48,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
     
     public AllocatableImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
-        AllocatableImpl resource = (AllocatableImpl) operator.resolve(id);
+        AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
         if (!RaplaComponent.canRead(resource, user))
         {
             throw new RaplaSecurityException("User " + user + " can't read  " + resource);
