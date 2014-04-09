@@ -129,7 +129,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	            @Override
     	            public String get() throws Exception {
     	                getLogger().info("Refreshing access token.");
-    	                return login();
+    	                return loginWithoutDisconnect();
     	            }
 
     	            @Override
@@ -166,22 +166,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	}
 
 	protected String login() throws RaplaException {
-		String connectAs = this.connectInfo.getConnectAs();
-		String password = new String( this.connectInfo.getPassword());
-		String username = this.connectInfo.getUsername();
 		try {
-		    RemoteServer serv1 = getRemoteServer();
-		    LoginTokens loginToken = serv1.login(username,password, connectAs).get();
-            String accessToken = loginToken.getAccessToken();
-            if ( accessToken != null)
-            {
-		        connectionInfo.setAccessToken( accessToken);
-	            return accessToken;
-            }
-            else
-            {
-                throw new RaplaSecurityException("Invalid Access token");
-            }
+		    return loginWithoutDisconnect();
 		} catch (RaplaException ex){
 		    disconnect();
 		    throw ex;
@@ -190,6 +176,24 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		    throw new RaplaException(ex);
 		}
 	}
+
+    private String loginWithoutDisconnect() throws Exception, RaplaSecurityException {
+        String connectAs = this.connectInfo.getConnectAs();
+        String password = new String( this.connectInfo.getPassword());
+        String username = this.connectInfo.getUsername();
+        RemoteServer serv1 = getRemoteServer();
+        LoginTokens loginToken = serv1.login(username,password, connectAs).get();
+        String accessToken = loginToken.getAccessToken();
+        if ( accessToken != null)
+        {
+            connectionInfo.setAccessToken( accessToken);
+            return accessToken;
+        }
+        else
+        {
+            throw new RaplaSecurityException("Invalid Access token");
+        }
+    }
    
 	public Date getCurrentTimestamp() {
 	    if (lastSyncedTime == null)
