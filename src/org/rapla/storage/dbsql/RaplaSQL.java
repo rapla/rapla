@@ -244,22 +244,6 @@ class RaplaSQL {
     			storage.setConnection( null);
     		}
 		}
-//		TableDef tableDef = schema.get("PERIOD");
-//		if ( tableDef != null)
-//		{
-//			PeriodStorage storage = new PeriodStorage(context);
-//			storage.setConnection(con);
-//			try
-//			{
-//				storage.loadAll();
-//				Collection<PeriodImpl> periods = storage.getPeriods();
-//				// FIXME implement period conversion
-//			}
-//    		finally
-//    		{
-//    			storage.setConnection( null);
-//    		}
-//		}
 	}
 
     public void storePatches(Connection connection, List<PreferencePatch> preferencePatches) throws SQLException, RaplaException {

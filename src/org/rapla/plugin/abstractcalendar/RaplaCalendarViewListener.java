@@ -61,7 +61,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     /** override this method if you want to implement a custom time selection */
     public void selectionChanged(Date start,Date end) 
     {
-		// #FIXME this cast need to be replaced without adding the setter methods to the readOnly interface CalendarModel
+		// #TODO this cast need to be replaced without adding the setter methods to the readOnly interface CalendarModel
     	CalendarSelectionModel castedModel = (CalendarSelectionModel)model;
 		castedModel.markInterval( start, end);
 		Collection<Allocatable> markedAllocatables = getMarkedAllocatables();

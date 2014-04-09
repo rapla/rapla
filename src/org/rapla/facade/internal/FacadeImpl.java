@@ -1068,7 +1068,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
-        if ( !((DynamicTypeImpl)classification.getType()).isInternal())
+        DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
+        if ( type.getElementKey().equals(StorageOperator.PERIOD_TYPE))
+        {
+            Permission newPermission =allocatable.newPermission();
+            newPermission.setAccessLevel( Permission.READ);
+            allocatable.addPermission(newPermission);
+        }
+        if ( !type.isInternal())
         {
         	allocatable.addPermission(allocatable.newPermission());
             if (user != null && !user.isAdmin()) {

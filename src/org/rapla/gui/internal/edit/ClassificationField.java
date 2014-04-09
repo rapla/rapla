@@ -53,7 +53,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	DynamicType oldDynamicType;
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
-
+	
 	public ClassificationField(RaplaContext sm)  {
 		super(sm);
 		editUI = new ClassificationEditUI(sm);
@@ -78,6 +78,14 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	        x.setClassification(classification);
 	    }
 		editUI.mapToObjects();
+	}
+	
+	public void setTypeChooserVisible( boolean visible)
+	{
+	    if ( typeSelector != null)
+	    {
+	        typeSelector.setVisible( visible);
+	    }
 	}
 
 	@SuppressWarnings("unchecked")

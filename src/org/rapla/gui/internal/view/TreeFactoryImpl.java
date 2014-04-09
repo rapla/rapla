@@ -76,6 +76,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.toolkit.TreeToolTipRenderer;
+import org.rapla.storage.StorageOperator;
 
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     public TreeFactoryImpl(RaplaContext sm) {
@@ -468,8 +469,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             
             // Add the periods    
             DefaultMutableTreeNode periodRoot = new TypeNode(Period.TYPE, getString("periods"));
-            Period[] periodList = getQuery().getPeriods();
-            for (final Period period: sorted(Arrays.asList(periodList))) {
+            DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
+            
+            Allocatable[] periodList = getQuery().getAllocatables(periodType.newClassificationFilter().toArray());
+            for (final Allocatable period: sorted(Arrays.asList(periodList))) {
                 NamedNode node = new NamedNode(period);
                 periodRoot.add(node);
             }

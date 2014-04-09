@@ -84,7 +84,7 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
     public JComponent getComponent() {
         return panel;
     }
-
+    
     public void focusGained(FocusEvent evt) {
 		Component focusedComponent = evt.getComponent(); 
 		Component  parent = focusedComponent.getParent();

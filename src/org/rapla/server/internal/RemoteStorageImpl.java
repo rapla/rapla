@@ -550,8 +550,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     Date serverTime = operator.getCurrentTimestamp();
                     Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
                     UpdateEvent evt = new UpdateEvent();
-                    // FIXME comment in
-                    //evt.setRepositoryVersion(repositoryVersion);
                     for ( Entity entity: visibleEntities)
                     {
                     	if ( isTransferedToClient(entity))

@@ -26,16 +26,22 @@ import org.rapla.framework.RaplaException;
 class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     ClassificationField<Allocatable> classificationField;
     PermissionListField permissionField;
-    BooleanField holdBackConflictsField; 
-    public AllocatableEditUI(RaplaContext sm) throws RaplaException {
-        super(sm);
+    BooleanField holdBackConflictsField;
+    boolean internal =false;
+    
+    public AllocatableEditUI(RaplaContext contest, boolean internal) throws RaplaException {
+        super(contest);
+        this.internal = internal;
         ArrayList<EditField> fields = new ArrayList<EditField>();
-        classificationField = new ClassificationField<Allocatable>(sm);
+        classificationField = new ClassificationField<Allocatable>(contest);
         fields.add(classificationField );
-        permissionField = new PermissionListField(sm,"permissions");
+        permissionField = new PermissionListField(contest,"permissions");
         fields.add( permissionField );
-        holdBackConflictsField = new BooleanField(sm,"holdBackConflicts");
-        fields.add(holdBackConflictsField );
+        if ( !internal)
+        {
+            holdBackConflictsField = new BooleanField(contest,"holdBackConflicts");
+            fields.add(holdBackConflictsField );
+        }
         setFields(fields);
     }
 
@@ -44,12 +50,15 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         permissionField.mapTo( objectList);
         if ( getName(objectList).length() == 0)
             throw new RaplaException(getString("error.no_name"));
-        Boolean value = holdBackConflictsField.getValue();
-        if ( value != null)
+        if ( !internal)
         {
-            for ( Allocatable alloc:objectList)
+            Boolean value = holdBackConflictsField.getValue();
+            if ( value != null)
             {
-            	alloc.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, value  ? ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE  : null); 
+                for ( Allocatable alloc:objectList)
+                {
+                	alloc.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, value  ? ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE  : null); 
+                }
             }
         }
     }
@@ -64,17 +73,21 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
 			values.add(holdBackConflicts);
         }
-        if ( values.size() ==  1)
-        {
-            Boolean singleValue = values.iterator().next();
-            holdBackConflictsField.setValue( singleValue);
+        if ( !internal)
+        {   
+            if ( values.size() ==  1)
+            {
+                Boolean singleValue = values.iterator().next();
+                holdBackConflictsField.setValue( singleValue);
+            }
+            if ( values.size() > 1)
+            {
+                holdBackConflictsField.setFieldForMultipleValues();
+            }
         }
-        if ( values.size() > 1)
-        {
-            holdBackConflictsField.setFieldForMultipleValues();
-        }
-      
+        classificationField.setTypeChooserVisible( !internal);
     }
+
 
 
 }

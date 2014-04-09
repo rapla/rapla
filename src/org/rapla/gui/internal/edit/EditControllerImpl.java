@@ -30,6 +30,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
@@ -69,7 +70,8 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 		RaplaType type = obj.getRaplaType();
 		EditComponent<?> ui = null;
 		if (Allocatable.TYPE.equals(type)) {
-			ui = new AllocatableEditUI(getContext());
+			boolean internal = isInternalType( (Allocatable)obj);
+            ui = new AllocatableEditUI(getContext(), internal);
 		} else if (DynamicType.TYPE.equals(type)) {
 			ui =  new DynamicTypeEditUI(getContext());
 		} else if (User.TYPE.equals(type)) {
@@ -89,6 +91,12 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 		return (EditComponent<T>)ui;
 	}
 	
+    private boolean isInternalType(Allocatable alloc) {
+        DynamicType type = alloc.getClassification().getType();
+        String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+    }
+
 //	enhancement of the method to deal with arrays
 	protected String guessTitle(Object obj) {
 		RaplaType raplaType = getRaplaType(obj);

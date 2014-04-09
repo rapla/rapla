@@ -44,6 +44,7 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
@@ -66,7 +67,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.OldIdMapping;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbsql.ColumnDef;
 import org.rapla.storage.dbsql.TableDef;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
@@ -132,6 +132,9 @@ public class RaplaPre18SQL {
             classification.setValue("start",value.getStart());
             classification.setValue("end",value.getEnd());
             period.setClassification( classification);
+            Permission newPermission = period.newPermission();
+            newPermission.setAccessLevel( Permission.READ);
+            period.addPermission( newPermission);
             String id = entry.getKey();
             period.setId(id);
 		}

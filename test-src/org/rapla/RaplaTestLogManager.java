@@ -16,7 +16,7 @@ import ch.qos.logback.core.ConsoleAppender;
 
 @SuppressWarnings("restriction")
 public class RaplaTestLogManager {
-	// FIXME Doesn't work now
+	// TODO Make me test again
 	List<String> messages = new ArrayList<String>();
 	static ThreadLocal<RaplaTestLogManager> localManager = new ThreadLocal<RaplaTestLogManager>();
 	

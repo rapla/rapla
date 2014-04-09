@@ -37,7 +37,6 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.toolkit.EmptyLineBorder;
@@ -51,8 +50,7 @@ public class PermissionListField extends AbstractEditField
 	PermissionField permissionField;
 	private RaplaListEdit<Permission> listEdit;
 	Listener listener = new Listener();
-	Allocatable[] allocatables; // enhancement to array, for storing multiple
-								// allocatables
+	Allocatable firstAllocatable;
 	DefaultListModel model = new DefaultListModel();
 	Permission selectedPermission = null;
 	int selectedIndex = 0;
@@ -121,6 +119,7 @@ public class PermissionListField extends AbstractEditField
 	@SuppressWarnings("unchecked")
 	public void mapFrom(List<Allocatable> list) {
 		model.clear();
+		firstAllocatable = list.size() > 0 ? list.get(0) : null;
 		Set<Permission> permissions = new LinkedHashSet<Permission>();
 		for (Allocatable allocatable :list)
 		{
@@ -209,7 +208,11 @@ public class PermissionListField extends AbstractEditField
 
 	@SuppressWarnings("unchecked")
 	private void createPermission() {
-		Permission permission = new PermissionImpl();
+	    if ( firstAllocatable == null)
+	    {
+	        return;
+	    }
+	    Permission permission = firstAllocatable.newPermission();
 		model.addElement(permission);
 	}
 

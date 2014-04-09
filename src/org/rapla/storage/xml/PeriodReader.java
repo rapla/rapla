@@ -17,6 +17,7 @@ import java.util.Date;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.framework.RaplaContext;
@@ -40,6 +41,9 @@ public class PeriodReader extends DynAttReader {
             classification.setValue("start",parseDate(getString(atts,"start"),false));
             classification.setValue("end",parseDate(getString(atts,"end"),true));
             period.setClassification( classification);
+            Permission newPermission = period.newPermission();
+            newPermission.setAccessLevel( Permission.READ);
+            period.addPermission( newPermission);
             String id = atts.getValue("id");
             if ( id != null)
             {

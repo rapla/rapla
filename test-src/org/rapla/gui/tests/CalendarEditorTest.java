@@ -40,7 +40,8 @@ public final class CalendarEditorTest extends GUITestCase
         //editor.listUI.treeSelection.getTree().setSelectionRow(1);
     }
 
-/* #FIXME uncomment me
+/* #TODO uncomment me and make me test again
+ * 
     public void testCreateException() throws Exception {
         CalendarModel settings = new CalendarModelImpl( getClientService().getContext() );
         settings.setSelectionType( Reservation.TYPE );
@@ -66,7 +67,8 @@ public final class CalendarEditorTest extends GUITestCase
         assertEquals( date1, editor.getCalendarView().getStartDate());
         getLogger().info("WeekViewEditor started");
     }
-*/
+ */
+
     public static void main(String[] args) {
         new CalendarEditorTest(CalendarEditorTest.class.getName()
                                ).interactiveTest("testShow");
