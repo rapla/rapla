@@ -45,9 +45,6 @@ import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 
-import sun.awt.ModalityEvent;
-import sun.awt.ModalityListener;
-
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
 public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener, ModificationListener

@@ -66,8 +66,6 @@ import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.StatusUpdater;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
-
-import sun.security.action.GetLongAction;
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
 The rapla container has only one instance at runtime. Configuration of the RaplaMainContainer is done in the rapla*.xconf
