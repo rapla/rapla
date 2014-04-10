@@ -34,6 +34,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
@@ -43,13 +45,19 @@ import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 
+import sun.awt.ModalityEvent;
+import sun.awt.ModalityListener;
+
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
-public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener
+public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener, ModificationListener
 {
 	Map<Component,String> componentMap = new HashMap<Component, String>();
-    public TemplateWizard(RaplaContext sm){
-        super(sm);
+	Collection<String> templateNames;
+    public TemplateWizard(RaplaContext context) throws RaplaException{
+        super(context);
+        getUpdateModule().addModificationListener( this);
+        updateTemplateNames();
     }
     
     public String getId() {
@@ -57,14 +65,20 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	}
 
 
+    @Override
+    public void dataChanged(ModificationEvent evt) throws RaplaException {
+        if ( evt.getInvalidateInterval() != null)
+        {
+            updateTemplateNames();
+        }
+    }
+
+    private Collection<String> updateTemplateNames() throws RaplaException {
+        return templateNames = getQuery().getTemplateNames();
+    }
+
+
     public MenuElement getMenuElement() {
-    	Collection<String> templateNames;
-		try {
-			templateNames = getQuery().getTemplateNames();
-		} catch (RaplaException e) {
-			getLogger().error(e.getMessage(), e);
-			return null;
-		}
     	componentMap.clear();
 
 		boolean canCreateReservation = canCreateReservation();
@@ -272,6 +286,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			showException( ex, getMainComponent());
 		}
     }
+
     
 	
 }
