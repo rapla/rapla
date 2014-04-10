@@ -487,8 +487,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected void resolveInitial(Collection<? extends Entity> entities,EntityResolver resolver) throws RaplaException {
 		testResolve(entities);
 		
-		for (Entity obj: entities) {
-			((RefEntity)obj).setResolver(resolver);
+		for (Entity entity: entities) {
+		    if ( entity instanceof EntityReferencer)
+		    {
+		        ((EntityReferencer)entity).setResolver(resolver);
+		    }
 		}
 		processUserPersonLink(entities);
 		// It is important to do the read only later because some resolve might involve write to referenced objects
@@ -1439,9 +1442,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 			// First we add the dependencies from the stored object list
 			for (Entity obj : storeObjects) {
-				if (((EntityReferencer)obj).isRefering(entity.getId())) {
-					dep.add(obj);
-				}
+			    if ( obj instanceof EntityReferencer)
+			    {
+			        if (((EntityReferencer)obj).isRefering(entity.getId())) {
+					    dep.add(obj);
+			        }
+			    }
 			}
 			if ( entity instanceof User)
 			{

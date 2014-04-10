@@ -66,6 +66,8 @@ import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.StatusUpdater;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
+
+import sun.security.action.GetLongAction;
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
 The rapla container has only one instance at runtime. Configuration of the RaplaMainContainer is done in the rapla*.xconf
@@ -112,7 +114,8 @@ final public class RaplaMainContainer extends ContainerImpl
 	public final static TypedComponentRole<Set<String>> PLUGIN_LIST = new TypedComponentRole<Set<String>>("plugin-list");
 	public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
 	public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
-
+	Logger callLogger;
+	
     public RaplaMainContainer() throws Exception {
         this(new RaplaStartupEnvironment());
     }
@@ -264,6 +267,7 @@ final public class RaplaMainContainer extends ContainerImpl
             version = "-";
             logger.warn("Permission to system property java.version is denied!");
         }
+        callLogger =logger.getChildLogger("call");
     }
 
 	public void dispose() {
@@ -325,6 +329,10 @@ final public class RaplaMainContainer extends ContainerImpl
                 try
                 {
                     result = call(context,server, a, methodName, args, remoteConnectionInfo);
+                    if (callLogger.isDebugEnabled())
+                    {
+                        callLogger.debug("Calling " + server + " " + a.getName() + "."+methodName);
+                    }
                 }
                 finally
                 {
