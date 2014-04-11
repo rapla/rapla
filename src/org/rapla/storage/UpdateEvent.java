@@ -129,7 +129,7 @@ public class UpdateEvent
 
     public Collection<Entity> getRemoveObjects()
     {
-		HashSet<Entity> objects = new HashSet<Entity>();
+		HashSet<Entity> objects = new LinkedHashSet<Entity>();
 		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
@@ -146,7 +146,8 @@ public class UpdateEvent
 
     public Collection<Entity> getStoreObjects() 
     {
-		HashSet<Entity> objects = new HashSet<Entity>();
+        // Needs to be a linked hashset to keep the order of the entities
+		HashSet<Entity> objects = new LinkedHashSet<Entity>();
 		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
