@@ -65,7 +65,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ReservationAnnotations;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -99,7 +99,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.LocalCache;
-import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
@@ -251,7 +250,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     continue;
                 } // Ignore Templates if not explicitly requested
                 // FIXME this special case should be refactored, so one can get all reservations in one method
-                else if ( RaplaComponent.isTemplate( reservation) &&  (annotationQuery == null || !annotationQuery.containsKey(ReservationAnnotations.KEY_TEMPLATE) ))
+                else if ( RaplaComponent.isTemplate( reservation) &&  (annotationQuery == null || !annotationQuery.containsKey(RaplaObjectAnnotations.KEY_TEMPLATE) ))
                 {
                     continue;
                 }
@@ -308,7 +307,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     	Set<String> templates = new LinkedHashSet<String>();
         for ( Reservation r:reservations)
         {
-        	String templateName = r.getAnnotation(ReservationAnnotations.KEY_TEMPLATE);
+        	String templateName = r.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
         	if ( templateName != null)
         	{
 				templates.add( templateName);
@@ -1038,11 +1037,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				}
 			}
 			
-            // TODO add conversion of classification filters 
-			for (PreferencePatch patch:evt.getPreferencePatches())
-			{
-			    
-			}
+            // TODO add conversion of classification filters or other dynamictypedependent that are stored in preferences
+//			for (PreferencePatch patch:evt.getPreferencePatches())
+//			{
+//			    for (String key: patch.keySet())
+//			    {
+//			        Object object = patch.get( key);
+//			        if ( object instanceof DynamicTypeDependant)
+//			        {
+//			            
+//			        }
+//			    }
+//			}
 		}
 
 		for (Entity object: removeObjects) 
@@ -1572,7 +1578,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				buf.append(raplaLocale.formatDate(start));
 			}
 			
-			String template = reservation.getAnnotation(ReservationAnnotations.KEY_TEMPLATE);
+			String template = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
 			if ( template != null)
 			{
 				buf.append(" in template " + template);

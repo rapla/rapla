@@ -43,11 +43,13 @@ public interface AttributeAnnotations
     String KEY_EXPECTED_ROWS = "expected-rows";
     String KEY_EXPECTED_COLUMNS = "expected-columns";
     String KEY_MULTI_SELECT = "multi-select";
+    
     String KEY_COLOR = "color";
     String KEY_EMAIL = "email";
     String KEY_CATEGORIZATION = "categorization";
     String KEY_PERMISSION_MODIFY = "permission_modify";
     String KEY_PERMISSION_READ = "permission_read";
+    
 }
 
 

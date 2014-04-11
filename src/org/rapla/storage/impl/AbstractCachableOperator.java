@@ -546,7 +546,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		try
 		{
-			return tryResolve(cache,id, null);
+			return tryResolve(cache,id, entityClass);
 		}
 		finally
 		{

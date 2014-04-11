@@ -217,7 +217,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return readId(rset, column, class1, false);
 	}
 
-	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
+	protected String readId(ResultSet rset, int column, @SuppressWarnings("unused") Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
 		String id = rset.getString( column );
 		if ( rset.wasNull() || id == null )
 		{
@@ -227,7 +227,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			}
 			throw new RaplaException("Id can't be null for " + tableName );
 		}
-		// TODO  check if id matches class
 		return id;
 	}
     

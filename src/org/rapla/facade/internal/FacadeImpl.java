@@ -50,7 +50,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ReservationAnnotations;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -545,7 +545,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date start = null;
 		Date end = null;
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
-		annotationQuery.put(ReservationAnnotations.KEY_TEMPLATE, name);
+		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, name);
 		Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery);
 		return result;
 	}
@@ -1061,7 +1061,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         ReservationImpl reservation = new ReservationImpl(now ,now );
         if ( templateName != null )
         {
-        	reservation.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, templateName);
+        	reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
         }
         reservation.setClassification(classification);
         setNew(reservation, user);
@@ -1363,16 +1363,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 			if ( templateName != null )
 			{
-				r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, templateName);
+				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
 			}
 			else
 			{
-				String originalTemplate = r.getAnnotation( ReservationAnnotations.KEY_TEMPLATE);
+				String originalTemplate = r.getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE);
 				if (originalTemplate != null)
 				{
-					r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
+					r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
 				}
-				r.setAnnotation(ReservationAnnotations.KEY_TEMPLATE, null);
+				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
 			}
 			// Hack for 1.6 compiler compatibility
 			Object r2 =  r;

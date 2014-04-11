@@ -518,7 +518,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             	Allocatable alloc = getResolver().tryResolve( allocatableId, Allocatable.class);
             	if ( alloc == null)
         		{
-        			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
+        			throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + allocatableId, toString());
         		}
             	set.add( alloc);
             }

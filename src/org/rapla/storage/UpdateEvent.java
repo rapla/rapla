@@ -43,10 +43,9 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 
-public class UpdateEvent implements java.io.Serializable,Cloneable
+public class UpdateEvent
 {
 	transient Map listMap;// = new HashMap<Class, List<Entity>>(); 
-	//transient Map<Class,List> lists = new LinkedHashMap<Class,List>();
 	List<CategoryImpl> categories = createList(Category.class);
 	List<DynamicTypeImpl> types = createList(DynamicType.class);
 	List<UserImpl> users = createList(User.class);
@@ -55,19 +54,12 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	List<PreferencesImpl> preferences = createList(Preferences.class);
 	List<AllocatableImpl> resources = createList(Allocatable.class);
 	List<ReservationImpl> reservations =  createList(Reservation.class);
-	//List<PeriodImpl> periods =  createList(Period.class);
 	List<ConflictImpl> conflicts =  createList(Conflict.class);
 	
 	private Set<String> removeSet = new LinkedHashSet<String>();
 	private Set<String> storeSet = new LinkedHashSet<String>();
-	private static final long serialVersionUID = 1L;
-    //List<User> changedUser;
-    //transient private Map<String,Entity> removeSet = new LinkedHashMap<String,Entity>();
-    //transient private Map<String,Entity> storeSet = new LinkedHashMap<String,Entity>();
-   // transient private Map<String,Entity> referenceSet = new LinkedHashMap<String,Entity>();
-//    RaplaMapImpl<RaplaObject> objMap = new RaplaMapImpl<>();
+
     private String userId;
-    //private int repositoryVersion;
     
     private boolean needResourcesRefresh = false;
 
@@ -78,27 +70,8 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
 	public UpdateEvent() {
     }
 
-
-//	@Override
-//	public void resolveEntities(EntityResolver resolver) throws EntityNotFoundException {
-//		objMap.resolveEntities(resolver);
-//	}
-//
-//	@Override
-//	public Iterable<Entity>getReferences() {
-//		return objMap.getReferences();
-//	}
-//
-//	@Override
-//	public boolean isRefering(Entity object) {
-//		return objMap.isRefering(object);
-//	}
-
-
     private  <T> List<T> createList(@SuppressWarnings("unused") Class<? super T> clazz) {
 		ArrayList<T> list = new ArrayList<T>();
-		//lists.put(clazz, list);
-		//listMap.put( clazz, (List<Entity>) list);
 		return list;
 	}
 
@@ -204,7 +177,6 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
                 }
             }
         }
-        // TODO: Do we need to add a hashcode and equals to the PreferencePatch to make this work?
         for ( PreferencePatch patch:preferencesPatches)
         {
             objects.add(patch);
@@ -219,13 +191,6 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         return preferencesPatches;
     }
     
-//    public void putReference(Entity entity) {
-//		referenceSet.put(entity.getId(), entity);
-//	}
-//
-//    public Collection<Entity>getReferenceObjects() {
-//        return referenceSet.values();
-//    }
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putStore(Entity entity) {
        
@@ -263,33 +228,6 @@ public class UpdateEvent implements java.io.Serializable,Cloneable
         }
       	throw new IllegalStateException("Entity in store/remove set but not found in list");
     }
-
-//    public UpdateEvent clone() {
-//        UpdateEvent clone = new UpdateEvent( );
-//        clone.lastValidated = lastValidated;
-//        clone.invalidateInterval = invalidateInterval;
-//        clone.needResourcesRefresh = needResourcesRefresh;
-//        clone.userId = userId;
-//        clone.removeSet = new LinkedHashSet<String>( removeSet);
-//        clone.storeSet = new LinkedHashSet<String>( storeSet);
-//        
-//        for ( Collection<Entity> list:getListMap().values())
-//        {
-//        	for ( Entity entity:list)
-//        	{
-//        		String id = entity.getId();
-//				if ( storeSet.contains( id))
-//        		{
-//        			clone.addStore( entity);
-//        		}
-//        		if ( removeSet.contains( id))
-//        		{
-//        			clone.addRemove( entity);
-//        		}
-//        	}
-//        }
-//        return clone;
-//    }
 
     public void setLastValidated( Date serverTime )
     {

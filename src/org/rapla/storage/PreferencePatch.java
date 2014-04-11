@@ -24,6 +24,11 @@ public class PreferencePatch extends RaplaMapImpl {
         return removedEntries;
     }
     
+    @Override
+    public String toString() {
+        return "Patch for " + userId + " " + super.toString() + " Removed " + removedEntries.toString(); 
+    }
+    
     
     
 }

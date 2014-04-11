@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Gereon Fassbender, Christopher Kohlhaas               |
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -12,14 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-public interface ReservationAnnotations
+public interface RaplaObjectAnnotations
 {
 	/** Template Annotation */
 	final String KEY_TEMPLATE = "template"; 
 	final String KEY_TEMPLATE_COPYOF = "copyof";
 	/** Template externalid annotation */
 	final String KEY_EXTERNALID = "externalid"; 
-
 }
 
 
