@@ -206,7 +206,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId, DynamicType.class);
         if ( type == null)
         {
-        	throw new UnresolvableReferenceExcpetion(parentId, toString());
+        	throw new UnresolvableReferenceExcpetion(DynamicType.class +":" + parentId + " " +data);
         }
     	return type;
     }
