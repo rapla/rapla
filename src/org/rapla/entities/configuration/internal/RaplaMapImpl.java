@@ -50,11 +50,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    private Map<String,RaplaConfiguration> configurations;
    private Map<String,RaplaMapImpl> maps;
    private Map<String,CalendarModelConfigurationImpl> calendars;
-   protected ReferenceHandler links;
-   protected String linkType;
-
-   
-   transient private Class<? extends Entity> linkClass;
+   protected LinkReferenceHandler links;
    transient protected Map<String,Object> map;
    transient EntityResolver resolver;
    
@@ -97,37 +93,6 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        }
    }
 
-   public void setLinkType(String type)
-   {
-       this.linkType  = type;
-       linkClass = null;
-   }
-   
-   public String getLinkType() 
-   {
-       return linkType;
-   }
-   
-   private Class<? extends Entity> getLinkClass() {
-       if ( linkClass != null)
-       {
-           return linkClass;
-       }
-       if ( linkType != null )
-       {
-          for ( RaplaType type: SUPPORTED_TYPES )
-          {
-              if (linkType.equals( type.getLocalName()))
-              {
-                  @SuppressWarnings("unchecked")
-                  Class<? extends Entity> casted = type.getTypeClass();
-                  this.linkClass = casted;
-                  return linkClass;
-              }
-          }
-       }
-       return null;
-   }
    
    /** This method is only used in storage operations, please dont use it from outside, as it skips type protection and resolving*/
    public void putPrivate(String key, Object value)
@@ -177,8 +142,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
            {
                throw new IllegalArgumentException("RaplaType " + raplaType + " cannot be stored as link in map");
            }
-           linkType = raplaType.getLocalName();
-           putIdPrivate(key, id);
+           putIdPrivate(key, id, raplaType);
        }
        else if ( value instanceof RaplaConfiguration) {
     	   if ( configurations == null)
@@ -246,27 +210,21 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 	   }
 	   this.map.putAll(  map);
    }
-   public void putIdPrivate(String key, String id) {
+
+   public void putIdPrivate(String key, String id, RaplaType raplaType) {
        cachedEntries = null;
        if ( links == null)
-	   {
-		   links = new ReferenceHandler()
-		   {
-		       protected Class<? extends Entity> getInfoClass(String key) {
-		           return getLinkClass();
-		       }
-
-               
-		   };
-		   if ( resolver != null)
-		   {
-			   links.setResolver( resolver);
-		   }
-			   
-	   }
+       {
+           links = new LinkReferenceHandler();
+           links.setLinkType( raplaType.getLocalName());
+           if ( resolver != null)
+           {
+               links.setResolver( resolver);
+           }
+       }
 	   links.putId( key,id);
 	   map  = null;
-}
+   }
 
    public Iterable<String> getReferencedIds() {
        NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
@@ -357,8 +315,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    public Object get(Object key) {
 	   if (links != null)
 	   {
-	       Class<? extends Entity> linkClass = getLinkClass();
-		   return links.getEntity((String)key, linkClass);
+		   return links.getEntity((String)key);
 	   }
        return  getMap().get(key);
    }
@@ -505,6 +462,50 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     }
 
     
+    public static final class LinkReferenceHandler extends ReferenceHandler {
+        protected String linkType;
+        transient private Class<? extends Entity> linkClass;
+
+        protected Class<? extends Entity> getInfoClass(String key) {
+            return getLinkClass();
+        }
+        
+        public Entity getEntity(String key) 
+        {
+            Class<? extends Entity> linkClass = getLinkClass();
+            return getEntity(key, linkClass);
+        }
+
+        private Class<? extends Entity> getLinkClass() {
+            if ( linkClass != null)
+            {
+                return linkClass;
+            }
+            if ( linkType != null )
+            {
+               for ( RaplaType type: SUPPORTED_TYPES )
+               {
+                   if (linkType.equals( type.getLocalName()))
+                   {
+                       @SuppressWarnings("unchecked")
+                       Class<? extends Entity> casted = type.getTypeClass();
+                       this.linkClass = casted;
+                       return linkClass;
+                   }
+               }
+            }
+            return null;
+        }
+
+        public void setLinkType(String type)
+        {
+            this.linkType  = type;
+            linkClass = null;
+        }
+       
+    }
+
+
     class Entry implements Map.Entry<String, Object>
     {
     	String key;
