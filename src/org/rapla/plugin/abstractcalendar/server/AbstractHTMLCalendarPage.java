@@ -13,6 +13,8 @@
 package org.rapla.plugin.abstractcalendar.server;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -170,8 +172,9 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 
     /**
      * @throws ServletException  
+     * @throws UnsupportedEncodingException 
      */
-    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Calendar currentDate) throws ServletException {
+    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Calendar currentDate) throws ServletException, UnsupportedEncodingException {
         boolean navigationVisible = isNavigationVisible( request );
         String linkPrefix = request.getPathTranslated() != null ? "../": "";
 		        
@@ -207,7 +210,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 					out.print("</a>");
 					out.print("</td>");
 					out.print("<td>");
-					String link = base + "/rapla?" + queryPath + "&allocatable_id=" + alloc.getId();
+					String link = base + "?" + queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(),"UTF-8");
 					out.print("<a href=\""+ link+ "\">");
 					out.print(link);
 					out.print("</a>");
