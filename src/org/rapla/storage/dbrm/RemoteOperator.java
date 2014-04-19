@@ -422,11 +422,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         	cache.clearAll();
         	testResolve( storeObjects);
         	setResolver( storeObjects );
-            for( Entity entity:storeObjects) {
-				if ( isStorableInCache(entity))
-				{
-					cache.put(entity);
-				}
+            for( Entity entity:storeObjects)
+            {
+                cache.put(entity);
 	        }
             getLogger().debug("Data flushed");
             if ( username != null)
@@ -850,39 +848,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		fireStorageUpdated(result);
 	}
     
-    @Override
-    protected void increaseVersion(Entity e) {
-    	// Do nothing here versions are increased on the server
-    }
-    
-    /**
-	 * @param entity  
-	 */
-	protected boolean isAddedToUpdateResult(Entity entity) {
-		RaplaType raplaType = entity.getRaplaType();
-		if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) )
-		{
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * @param entity  
-	 */
-	protected boolean isStorableInCache(Entity entity) {
-		RaplaType raplaType = entity.getRaplaType();
-		if  (raplaType == Conflict.TYPE)
-		{
-			return false;
-		}
-		else if ((raplaType ==  Appointment.TYPE  || raplaType == Reservation.TYPE) )
-		{
-			return false;
-		}
-		return true;
-	}
-
 	@Override
 	public Map<Allocatable, Collection<Appointment>> getFirstAllocatableBindings( Collection<Allocatable> allocatables,	Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException {
 		checkConnected();

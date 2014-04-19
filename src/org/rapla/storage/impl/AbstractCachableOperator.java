@@ -108,8 +108,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return connect(null);
 	}
 
-	public abstract Date getCurrentTimestamp();
-
 	// Implementation of StorageOperator
 	public <T extends Entity> T editObject(T o, User user)throws RaplaException {
 		Set<Entity>singleton = Collections.singleton( (Entity)o);
@@ -147,9 +145,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		SimpleEntity refEntity = clone;
 		if (refEntity instanceof ModifiableTimestamp) {
-			if (user != null) {
-				((ModifiableTimestamp) refEntity).setLastChangedBy(user);
-			}
+		    ((ModifiableTimestamp) refEntity).setLastChangedBy(user);
 		}
 		return (Entity) refEntity;
 	}
@@ -589,11 +585,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(evt.getStoreObjects());
 		for (Entity entity : storeObjects) 
 		{
-			if (!isStorableInCache( entity))
-			{
-				continue;
-			}
-				
 			Entity persistantEntity = cache.tryResolve(entity.getId());
 			if ( persistantEntity == null)
 			{
@@ -639,61 +630,34 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		List<Entity>updatedEntities = new ArrayList<Entity>();
 		// Then update the new entities
 		for (Entity entity : storeObjects) {
-			Entity toUpdate = null;
-			boolean storableInCache = isStorableInCache( entity);
-			if ( storableInCache)
+			Entity persistant = cache.tryResolve(entity.getId());
+			// do nothing, because the persitantVersion is always read only
+			if (persistant == entity) {
+				continue;
+			}
+			if ( entity instanceof Category)
 			{
-				increaseVersion(entity);
-				Entity persistant = cache.tryResolve(entity.getId());
-				// do nothing, because the persitantVersion is always read only
-				if (persistant == entity) {
-					continue;
-				}
-				toUpdate = entity;
-				if ( entity instanceof Category)
+				Category category = (Category)entity;
+				CategoryImpl parent = (CategoryImpl)category.getParent();
+				if ( parent != null)
 				{
-					Category category = (Category)entity;
-					CategoryImpl parent = (CategoryImpl)category.getParent();
-					if ( parent != null)
-					{
-						parent.replace( category);
-					}
+					parent.replace( category);
 				}
-				cache.put(toUpdate);
 			}
-			else
-			{
-				toUpdate = entity;
-			}
-			if ( isAddedToUpdateResult ( entity))
-			{
-				updatedEntities.add(toUpdate);	
-			}
+			cache.put(entity);
+			updatedEntities.add(entity);	
 		}
 		Collection<Entity> removeObjects = evt.getRemoveObjects();
 		Collection<Entity> toRemove = new HashSet<Entity>();
 		for (Entity entity : removeObjects) {
-			Entity persistantVersion = null;
-			if ( isStorableInCache(entity))
-			{
-				persistantVersion = cache.tryResolve(entity.getId());
-				if (persistantVersion != null) {
-					cache.remove(persistantVersion);
-					((RefEntity)persistantVersion).setReadOnly();
-				}
+			Entity persistantVersion = cache.tryResolve(entity.getId());
+			if (persistantVersion != null) {
+			    cache.remove(persistantVersion);
+			    ((RefEntity)persistantVersion).setReadOnly();
 			}
-			if  ( persistantVersion == null)
-			{
-				persistantVersion = entity;
-			}
-			if  ( isAddedToUpdateResult(entity))
-			{
-				toRemove.add( entity);
-			}
+			toRemove.add( entity);
 		}
-
 		setResolver(updatedEntities);
-
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();
 		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
@@ -734,31 +698,4 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 		return result;
 	}
-
-	abstract protected boolean isAddedToUpdateResult(Entity entity);
-
-	abstract protected boolean isStorableInCache(Entity entity);
-
-	protected void increaseVersion(Entity entity) throws RaplaException {
-		SimpleEntity e = (SimpleEntity) entity;
-		Date currentTime = getCurrentTimestamp();
-		
-		if ( e instanceof ModifiableTimestamp)
-		{
-			Date lastChangeTime = ((ModifiableTimestamp)e).getLastChanged();
-			if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
-			{
-				// wait 1 ms to increase timestamp
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e1) {
-					throw new RaplaException( e1.getMessage(), e1);
-				}
-				currentTime = getCurrentTimestamp();
-			}
-			((ModifiableTimestamp)e).setLastChanged( currentTime);
-		}
-	}
-	
-	
 }

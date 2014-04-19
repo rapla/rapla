@@ -64,8 +64,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -81,6 +81,7 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
@@ -947,8 +948,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
     @Override
-	protected UpdateResult update(UpdateEvent evt)
-			throws RaplaException {
+	protected UpdateResult update(UpdateEvent evt) throws RaplaException {
+        updateLastChanged( evt );
 		UpdateResult update = super.update(evt);
 	   	updateIndizes(update);
 		return update;
@@ -1594,20 +1595,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return string;
 	}
 
-	/**
-	 * @param entity  
-	 */
-	protected boolean isAddedToUpdateResult(Entity entity) {
-		return true;
-	}
-
-	/**
-	 * @param entity  
-	 */
-	protected boolean isStorableInCache(Entity entity) {
-		return true;
-	}
-	
 
 	private void storeUser(User refUser) throws RaplaException {
 		ArrayList<Entity> arrayList = new ArrayList<Entity>();
@@ -2091,7 +2078,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	
-	void setName(MultiLanguageName name, String to)
+	private void setName(MultiLanguageName name, String to)
 	{
 		String currentLang = i18n.getLang();
 		name.setName("en", to);
@@ -2106,6 +2093,31 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
-	
+	private void updateLastChanged(UpdateEvent evt) throws RaplaException {
+        Date currentTime = getCurrentTimestamp();
+	    String userId = evt.getUserId();
+	    User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
+        for ( Entity e: evt.getStoreObjects())
+	    {
+            if ( e instanceof ModifiableTimestamp)
+            {
+                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
+                Date lastChangeTime = modifiableTimestamp.getLastChanged();
+                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
+                {
+                    // wait 1 ms to increase timestamp
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e1) {
+                        throw new RaplaException( e1.getMessage(), e1);
+                    }
+                    currentTime = getCurrentTimestamp();
+                }
+                modifiableTimestamp.setLastChanged( currentTime);
+                modifiableTimestamp.setLastChangedBy( lastChangedBy );
+            }
+	    }
+	}
+
 	
 }
