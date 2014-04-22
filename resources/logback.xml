@@ -121,6 +121,7 @@
   <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR" />
   <logger name="net.fortuna.ical4j.model.*" level="INFO" />
   <logger name="rapla" level="INFO" />
+  <logger name="rapla.call" level="DEBUG" />
   <logger name="rapla.standalone.plugin" level="WARN" />
   <logger name="rapla.standalonefacade" level="WARN" />
   <logger name="rapla.remotefacade" level="INFO" />

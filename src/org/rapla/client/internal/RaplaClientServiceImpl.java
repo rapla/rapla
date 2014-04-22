@@ -76,6 +76,7 @@ import org.rapla.framework.internal.ComponentInfo;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.EditController;
 import org.rapla.gui.InfoFactory;
 import org.rapla.gui.MenuFactory;
@@ -93,6 +94,11 @@ import org.rapla.gui.internal.WarningsOption;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.internal.edit.EditControllerImpl;
+import org.rapla.gui.internal.edit.annotation.CategorizationAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ColorAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.EmailAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ExpectedColumnsAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ExpectedRowsAnnotationEdit;
 import org.rapla.gui.internal.edit.reservation.ConflictReservationCheck;
 import org.rapla.gui.internal.edit.reservation.DefaultReservationCheck;
 import org.rapla.gui.internal.edit.reservation.ReservationControllerImpl;
@@ -215,7 +221,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , WarningsOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class );
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class );
-        
+
+        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ColorAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, CategorizationAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedRowsAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedColumnsAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, EmailAnnotationEdit.class);
+
         frameControllerList = new FrameControllerList(getLogger().getChildLogger("framelist"));
         addContainerProvidedComponentInstance(FrameControllerList.class,frameControllerList);
 

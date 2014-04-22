@@ -6,10 +6,10 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.AppointmentStatusFactory;
 import org.rapla.gui.ObjectMenuFactory;
 import org.rapla.gui.OptionPanel;
+import org.rapla.gui.PluginOptionPanel;
 import org.rapla.gui.PublishExtensionFactory;
 import org.rapla.gui.ReservationCheck;
 import org.rapla.gui.SwingViewFactory;
-import org.rapla.gui.internal.edit.PluginOptionPanel;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 
 

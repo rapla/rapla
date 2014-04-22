@@ -51,6 +51,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 	private MultiLanguageName name = new MultiLanguageName();
     private AttributeType type;
     private String key;
+    private boolean multiSelect;
     private boolean bOptional = false;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
     private String defaultValue =null;
@@ -131,8 +132,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         setContraintWithoutWritableCheck(key, constraint);
     }
 
-	public void setContraintWithoutWritableCheck(String key,
-			Object constraint) {
+	public void setContraintWithoutWritableCheck(String key,Object constraint) {
 		if ( getConstraintClass( key ) == Category.class || getConstraintClass( key ) == DynamicType.class) {
         	String refID = "constraint." + key;
         	if ( constraint == null)
@@ -148,6 +148,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         		putId(refID,(String)constraint);
         	}
         }
+		if ( key.equals( ConstraintIds.KEY_MULTI_SELECT))
+		{
+		    multiSelect = true;
+		}
 	}
 	
 	@Override
@@ -190,6 +194,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     }
 
     public Object getConstraint(String key) {
+        if ( key.equals(ConstraintIds.KEY_MULTI_SELECT))
+        {
+            return multiSelect;
+        }
         Class<?> constraintClass = getConstraintClass( key );
         if ( constraintClass == Category.class || constraintClass == DynamicType.class) {
             @SuppressWarnings("unchecked")
@@ -206,15 +214,18 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         if (key.equals(ConstraintIds.KEY_DYNAMIC_TYPE)) {
             return DynamicType.class;
         }
+        if (key.equals(ConstraintIds.KEY_MULTI_SELECT)) {
+            return Boolean.class;
+        }
         return String.class;
     }
 
     public String[] getConstraintKeys() {
         if (type.equals( AttributeType.CATEGORY)) {
-            return new String[] {ConstraintIds.KEY_ROOT_CATEGORY};
+            return new String[] {ConstraintIds.KEY_ROOT_CATEGORY, ConstraintIds.KEY_MULTI_SELECT};
         } 
         if (type.equals( AttributeType.ALLOCATABLE)) {
-            return new String[] {ConstraintIds.KEY_DYNAMIC_TYPE};
+            return new String[] {ConstraintIds.KEY_DYNAMIC_TYPE, ConstraintIds.KEY_MULTI_SELECT};
         } else {
             return new String[0];
         }
@@ -480,7 +491,16 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             annotations.remove(key);
             return;
         }
-        annotations.put(key,annotation);
+        // multiselect is now a constraint so we keep this for backward compatibility with old data format
+        if ( key.equals( ConstraintIds.KEY_MULTI_SELECT))
+        {
+            multiSelect = annotation != null && annotation.equalsIgnoreCase("true");
+        }
+        else
+        {
+            annotations.put(key,annotation);
+            
+        }
     }
 
     public String[] getAnnotationKeys() {
@@ -496,6 +516,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		HashMap<String,String> annotationClone = (HashMap<String,String>) ((HashMap<String,String>) annotations).clone();
 		clone.annotations = annotationClone;
         clone.type = getType();
+        clone.multiSelect = multiSelect;
         clone.setKey(getKey());
         clone.setOptional(isOptional());
         String[] constraintKeys = getConstraintKeys();
@@ -531,7 +552,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             }
             if ( resolver != null)
             {
-                if ( resolver.tryResolve( path) != null)
+                if ( resolver.tryResolve( path, Allocatable.class) != null)
                 {
                     return path;
                 }

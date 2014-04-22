@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -42,13 +42,13 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 	final String multipleValuesOutput = TextField.getOutputForMultipleValues();
 	boolean includeNothingSelected;
 
-	public ListField(RaplaContext sm, String fieldName, Collection<T> v)
+	public ListField(RaplaContext context, Collection<T> v)
 	{
-		this(sm, fieldName, false);
+		this(context, false);
 		setVector(v);
 	}
 
-	public ListField(RaplaContext sm, String fieldName, boolean includeNothingSelected)
+	public ListField(RaplaContext sm,  boolean includeNothingSelected)
 	{
 		super(sm);
 		this.includeNothingSelected = includeNothingSelected;

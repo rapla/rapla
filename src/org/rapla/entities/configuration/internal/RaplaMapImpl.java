@@ -226,21 +226,6 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 	   map  = null;
    }
 
-   public Iterable<String> getReferencedIds() {
-       NestedIterator<String,EntityReferencer> refIt = new NestedIterator<String,EntityReferencer>( getEntityReferencers()) {
-           public Iterable<String> getNestedIterator(EntityReferencer obj) {
-               Iterable<String> referencedIds = obj.getReferencedIds();
-               return referencedIds;
-           }
-       };
-       if ( links == null)
-       {
-    	   return refIt;
-       }
-       Iterable<String> referencedLinks = links.getReferencedIds();
-       return new IteratorChain<String>( refIt, referencedLinks);
-   }
-   
    @Override
    public Iterable<ReferenceInfo> getReferenceInfo() 
    {
@@ -266,18 +251,6 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
        };
    }
 
-
-   public boolean isRefering(String object) {
-       if ( links != null && links.isRefering( object )) {
-           return true;
-       }
-       for (EntityReferencer ref:getEntityReferencers()) {
-           if (ref.isRefering( object)) {
-               return true;
-           }
-       }
-       return false;
-   }
    /*
    public Iterator getReferences() {
        return getReferenceHandler().getReferences();
@@ -469,6 +442,21 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         protected Class<? extends Entity> getInfoClass(String key) {
             return getLinkClass();
         }
+        
+        public Iterable<String> getReferencedIds()
+        {
+            Set<String> result = new HashSet<String>();
+            if (links != null) {
+                for (List<String> entries:links.values()) {
+                    for ( String id: entries)
+                    {
+                        result.add(id);
+                    }
+                }
+            }
+            return result;
+        }
+        
         
         public Entity getEntity(String key) 
         {

@@ -28,7 +28,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.internal.edit.PluginOptionPanel;
 
 abstract public class DefaultPluginOption extends RaplaGUIComponent implements PluginOptionPanel {
     public DefaultPluginOption(RaplaContext sm)  {

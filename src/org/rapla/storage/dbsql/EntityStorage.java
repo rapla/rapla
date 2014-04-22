@@ -749,7 +749,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
-    public void insert(Collection<T> entities) throws SQLException,RaplaException {
+    public void insert(Iterable<T> entities) throws SQLException,RaplaException {
         for (Storage<T> storage: subStores) 
         {
             storage.insert(entities);
@@ -821,12 +821,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //        }
 //    }
 
-    public void save( Collection<T> entities ) throws RaplaException, SQLException{
+    public void save( Iterable<T> entities ) throws RaplaException, SQLException{
         deleteEntities( entities );
         insert( entities );
     }
 	
-    public void deleteEntities(Collection<T> entities) throws SQLException, RaplaException {
+    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException {
         Set<String> ids = new HashSet<String>();
         for ( T entity: entities)
         {
@@ -909,7 +909,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return entityStore;
     }
     
-    protected void putPassword( Object userId, String password )
+    protected void putPassword( String userId, String password )
     {
         entityStore.putPassword( userId, password);
     }

@@ -44,25 +44,7 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
         }
     }
 
-    public boolean isRefering(String object) {
-    	for (ClassificationFilterImpl filter:classificationFilters) {
-    		if (filter.isRefering( object ))
-    		{
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-
-    public Iterable<String> getReferencedIds() {
-        Iterable<ClassificationFilterImpl> classificatonFilterIterator = classificationFilters;
-        return new NestedIterator<String,ClassificationFilterImpl>(classificatonFilterIterator) {
-                public Iterable<String> getNestedIterator(ClassificationFilterImpl obj) {
-                    return obj.getReferencedIds();
-                }
-            };
-    }
-    
+    @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         Iterable<ClassificationFilterImpl> classificatonFilterIterator = classificationFilters;
         return new NestedIterator<ReferenceInfo,ClassificationFilterImpl>(classificatonFilterIterator) {
@@ -71,8 +53,6 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
                 }
             };
     }
-
-
 
     public void setClassificationFilter(List<ClassificationFilterImpl> classificationFilters) {
         if ( classificationFilters != null)

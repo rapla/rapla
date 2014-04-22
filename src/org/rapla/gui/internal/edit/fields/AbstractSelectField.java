@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -68,14 +68,13 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(RaplaContext sm,String fieldName){
-       this( sm, fieldName, null);
+    public AbstractSelectField(RaplaContext context){
+       this( context, null);
     }
     
-    public AbstractSelectField(RaplaContext sm,String fieldName, T defaultValue) {
-        super( sm);
+    public AbstractSelectField(RaplaContext context, T defaultValue) {
+        super( context);
         useDefault = defaultValue != null;
-        setFieldName( fieldName );
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
         selectButton.setText(getString("select"));
@@ -225,44 +224,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 		            }
 		        }
 	        };
-//			    public void setSelectionPaths(TreePath[] paths) {
-//			    	addSelectionPaths(paths);
-//			    }
-//	
-//			    public void setSelectionRow(int row) {
-//		        	addSelectionRow(row);
-//		        }
-//		
-//		        public void setSelectionRows(int[] rows) {
-//		        	addSelectionRows(rows);
-//		        }
-//		        
-//		        protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed)
-//		        {
-//		            return super.processKeyBinding(ks, e, condition, pressed);
-//		        }
-//	        };
 	        TreeSelectionModel model = new DefaultTreeSelectionModel();
-//	        {
-//				public void addSelectionPaths(TreePath[] paths) {
-//	        		if(paths != null) {
-//	        			for(TreePath path : paths) {
-//	        				TreePath[] toAdd = new TreePath[1];
-//	        				toAdd[0] = path;
-//
-//	        				if (isPathSelected(path)) {
-//	        					// If path has been previously selected REMOVE THE SELECTION.
-//	        					super.removeSelectionPaths(toAdd);
-//	        				} else {
-//	        					// Else we really want to add the selection...
-//	        					super.addSelectionPaths(toAdd);
-//	        				}
-//	        			}
-//	        		}
-//	        	}
-//	        };
-
-
             tree.setUI( new MultiSelectionTreeUI() );
 	        model.setSelectionMode( TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION );
 	        tree.setSelectionModel(model );

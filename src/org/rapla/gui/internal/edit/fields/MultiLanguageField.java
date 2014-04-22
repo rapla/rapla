@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -46,11 +46,16 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
     String[] availableLanguages;
 
-    public MultiLanguageField(RaplaContext sm, String fieldName) 
+    public MultiLanguageField(RaplaContext context, String fieldName) 
     {
-        super( sm);
-        textField = new TextField(sm, "name");
+        this(context);
         setFieldName(fieldName);
+    }
+
+    public MultiLanguageField(RaplaContext context) 
+    {
+        super( context);
+        textField = new TextField(context, "name");
         availableLanguages = getRaplaLocale().getAvailableLanguages();
         panel.setLayout( new BorderLayout() );
         panel.add( textField.getComponent(), BorderLayout.CENTER );

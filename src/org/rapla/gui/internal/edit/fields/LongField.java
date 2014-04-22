@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -35,14 +35,19 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-	public LongField(RaplaContext sm, String fieldName) {
-		this(sm, fieldName, null);
+	public LongField(RaplaContext context, String fieldName) {
+		this(context, (Long)null);
+		setFieldName(fieldName);
 	}
 
-	public LongField(RaplaContext sm, String fieldName, Long minimum)
+	public LongField(RaplaContext context) {
+        this(context,  (Long)null);
+    }
+
+	
+	public LongField(RaplaContext context, Long minimum)
 	{
-		super(sm);
-		setFieldName(fieldName);
+		super(context);
 		panel.setLayout(new BorderLayout());
 		panel.setOpaque(false);
 		field = new RaplaNumber(minimum, minimum, null, minimum == null);

@@ -45,7 +45,7 @@ public class UserReader extends RaplaXMLReader
         {
             TimestampDates ts = readTimestamps( atts);
             user = new UserImpl(ts.createTime, ts.changeTime);
-            Object id = setId( user, atts );
+            String id = setId( user, atts );
 //            String idString = getString(atts, "person",null);
 //            if ( idString != null)
 //            {

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -39,6 +40,7 @@ import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -46,15 +48,23 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
+import org.rapla.gui.internal.edit.fields.AbstractEditField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.CategorySelectField;
+import org.rapla.gui.internal.edit.fields.ListField;
+import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.gui.internal.edit.fields.TextField;
+import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.EmptyLineBorder;
+import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaWidget;
 
-/**
- *  @author Christopher Kohlhaas
- */
 public class AttributeEdit extends RaplaGUIComponent
     implements
     RaplaWidget
@@ -67,10 +77,10 @@ public class AttributeEdit extends RaplaGUIComponent
     Listener listener = new Listener();
     DefaultListModel model = new DefaultListModel();
     boolean editKeys;
-
-    public AttributeEdit(RaplaContext sm) throws RaplaException {
-        super( sm);
-        constraintPanel = new DefaultConstraints(sm);
+    
+    public AttributeEdit(RaplaContext context) throws RaplaException {
+        super( context);
+        constraintPanel = new DefaultConstraints(context);
         listEdit = new RaplaListEdit<Attribute>( getI18n(), constraintPanel.getComponent(), listener );
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
@@ -126,10 +136,10 @@ public class AttributeEdit extends RaplaGUIComponent
                     constraintPanel.mapFrom( attribute );
                 } else if (evt.getActionCommand().equals("moveUp")) {
                     dt.exchangeAttributes(index, index -1);
-                    updateModel();
+                    updateModel(null);
                 } else if (evt.getActionCommand().equals("moveDown")) {
                     dt.exchangeAttributes(index, index + 1);
-                    updateModel();
+                    updateModel(null);
                 }
 
             } catch (RaplaException ex) {
@@ -156,12 +166,12 @@ public class AttributeEdit extends RaplaGUIComponent
 
     public void setDynamicType(DynamicType dt)  {
         this.dt = dt;
-        updateModel();
+        updateModel(null);
     }
 
     @SuppressWarnings("unchecked")
-	private void updateModel() {
-        Attribute selectedItem = listEdit.getSelectedValue();
+	private void updateModel(Attribute newSelectedItem) {
+        Attribute selectedItem = newSelectedItem != null ? newSelectedItem : listEdit.getSelectedValue();
         model.clear();
         Attribute[] attributes = dt.getAttributes();
         for (int i = 0; i < attributes.length; i++ ) {
@@ -219,7 +229,7 @@ public class AttributeEdit extends RaplaGUIComponent
     	{
     		dt.removeAttribute(att);
     	}
-        updateModel();
+        updateModel(null);
     }
 
     void createAttribute() throws RaplaException {
@@ -230,9 +240,9 @@ public class AttributeEdit extends RaplaGUIComponent
 		att.getName().setName(language, getString("attribute"));
         att.setKey(createNewKey());
         dt.addAttribute(att);
-        updateModel();
-        int index = dt.getAttributes().length -1;
-		listEdit.getList().setSelectedIndex( index );
+        updateModel( att);
+//        int index = dt.getAttributes().length -1;
+//		listEdit.getList().setSelectedIndex( index );
 		constraintPanel.name.selectAll();
 		constraintPanel.name.requestFocus();
 		
@@ -273,12 +283,9 @@ class DefaultConstraints extends AbstractEditField
     JLabel typeLabel = new JLabel();
     JLabel categoryLabel = new JLabel();
     JLabel dynamicTypeLabel = new JLabel();
-    JLabel emailLabel = new JLabel();
     JLabel defaultLabel = new JLabel();
     JLabel multiSelectLabel = new JLabel();
     JLabel tabLabel = new JLabel();
-    JLabel expectedColumnsLabel = new JLabel();
-    JLabel expectedRowsLabel = new JLabel();
     AttributeType types[] = {
         AttributeType.BOOLEAN
         ,AttributeType.STRING
@@ -305,45 +312,42 @@ class DefaultConstraints extends AbstractEditField
     TextField defaultSelectText;
     BooleanField defaultSelectBoolean;
     BooleanField multiSelect;
-    BooleanField emailSelect;
     RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0),null,null, false);
     RaplaCalendar defaultSelectDate ;
-    static final Long DEFAULT_ROWS = new Long(1);
-    static final Long DEFAULT_COLUMNS = new Long(1);
-    
-    RaplaNumber expectedRows = new RaplaNumber(DEFAULT_ROWS,new Long(1),null, false);
-    RaplaNumber expectedColumns = new RaplaNumber(DEFAULT_COLUMNS,new Long(1),null, false);
+    RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
     JComboBox tabSelect = new JComboBox();
-
+    DialogUI dialog;
     boolean emailPossible = false;
     Category rootCategory;
-
-    DefaultConstraints(RaplaContext sm) throws RaplaException{
-        super( sm );
-        key = new TextField(sm,"key");
-        name = new MultiLanguageField(sm,"name");
+    AnnotationEditUI annotationEdit;
+    Collection<AnnotationEditExtension> annotationExtensions;
+    Attribute attribute;
+    
+    DefaultConstraints(RaplaContext context) throws RaplaException{
+        super( context );
+        annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT);
+        annotationEdit = new AnnotationEditUI(context, annotationExtensions);
+        key = new TextField(context);
+        name = new MultiLanguageField(context);
         Collection<DynamicType> typeList = new ArrayList<DynamicType>(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)));
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
-        dynamicTypeSelect = new ListField<DynamicType>(sm, "dynamic_type",true );
+        dynamicTypeSelect = new ListField<DynamicType>(context,true );
         dynamicTypeSelect.setVector( typeList );
         rootCategory = getQuery().getSuperCategory();
 
-        categorySelect = new CategorySelectField(sm,"choose_root_category"
-                                                 ,rootCategory);
+        categorySelect = new CategorySelectField(context,rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(sm,"default"
-                ,rootCategory);
-        defaultSelectText = new TextField(sm,"default");
+        defaultSelectCategory = new CategorySelectField(context,rootCategory);
+        defaultSelectText = new TextField(context);
         addCopyPaste( defaultSelectNumber.getNumberField());
-        addCopyPaste( expectedRows.getNumberField());
-        addCopyPaste( expectedColumns.getNumberField());
+        //addCopyPaste( expectedRows.getNumberField());
+        //addCopyPaste( expectedColumns.getNumberField());
 
-        defaultSelectBoolean = new BooleanField(sm, "default");
+        defaultSelectBoolean = new BooleanField(context);
         defaultSelectDate = createRaplaCalendar();
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
-        multiSelect = new BooleanField(sm,"multiselect");
-        emailSelect = new BooleanField(sm,"email");
+        multiSelect = new BooleanField(context);
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]
@@ -356,37 +360,45 @@ class DefaultConstraints extends AbstractEditField
         panel.add("3,3,f,f", key.getComponent() );
         panel.add("1,5,l,f", typeLabel);
         panel.add("3,5,l,f", classSelect);
-        panel.add("1,7,l,t", emailLabel);
-        panel.add("3,7,l,t", emailSelect.getComponent());
+        
+        // constraints
         panel.add("1,7,l,t", categoryLabel);
         panel.add("3,7,l,t", categorySelect.getComponent());
         panel.add("1,7,l,t", dynamicTypeLabel);
         panel.add("3,7,l,t", dynamicTypeSelect.getComponent());
-        panel.add("1,9,l,t", expectedRowsLabel);
-        panel.add("3,9,l,t", expectedRows);
-        panel.add("1,9,l,t", multiSelectLabel);
-        panel.add("3,9,l,t", multiSelect.getComponent());
-        panel.add("1,11,l,t", expectedColumnsLabel);
-        panel.add("3,11,l,t", expectedColumns);
-        panel.add("1,13,l,t", defaultLabel);
-        panel.add("3,13,l,t", defaultSelectCategory.getComponent());
-        panel.add("3,13,l,t", defaultSelectText.getComponent());
-        panel.add("3,13,l,t", defaultSelectBoolean.getComponent());
-        panel.add("3,13,l,t", defaultSelectDate);
-        panel.add("3,13,l,t", defaultSelectNumber);
-        panel.add("1,15,l,t", tabLabel);
-        panel.add("3,15,l,t", tabSelect);
-
+        panel.add("1,9,l,t", defaultLabel);
+        panel.add("3,9,l,t", defaultSelectCategory.getComponent());
+        panel.add("3,9,l,t", defaultSelectText.getComponent());
+        panel.add("3,9,l,t", defaultSelectBoolean.getComponent());
+        panel.add("3,9,l,t", defaultSelectDate);
+        panel.add("3,9,l,t", defaultSelectNumber);
+        panel.add("1,11,l,t", multiSelectLabel);
+        panel.add("3,11,l,t", multiSelect.getComponent());
+        panel.add("1,13,l,t", tabLabel);
+        panel.add("3,13,l,t", tabSelect);
+        panel.add("1,15,l,t", new JLabel("erweitert"));
+        panel.add("3,15,l,t", annotationButton);
+        annotationButton.setText(getString("edit"));
+        annotationButton.addActionListener(new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    showAnnotationDialog();
+                } catch (RaplaException ex) {
+                    showException(ex, getComponent());
+                }
+                
+            }
+        });
+      
         setModel();
 
         nameLabel.setText(getString("name") + ":");
         keyLabel.setText(getString("key") +" *"+ ":");
         typeLabel.setText(getString("type") + ":");
-        emailLabel.setText(getString("email") + ":");
         categoryLabel.setText(getString("root") + ":");
         dynamicTypeLabel.setText(getString("root") + ":");
-        expectedRowsLabel.setText(getString("expected_rows") + ":");
-        expectedColumnsLabel.setText(getString("expected_columns") + ":");
         tabLabel.setText(getString("edit-view") + ":");
         multiSelectLabel.setText("Multiselect:");
         defaultLabel.setText(getString("default") +":");
@@ -407,9 +419,6 @@ class DefaultConstraints extends AbstractEditField
         key.addChangeListener ( this );
         classSelect.addActionListener ( this );
         tabSelect.addActionListener( this);
-        expectedRows.addChangeListener( this );
-        
-        expectedColumns.addChangeListener( this );
         defaultSelectCategory.addChangeListener( this );
         defaultSelectText.addChangeListener( this );
         defaultSelectBoolean.addChangeListener( this );
@@ -449,8 +458,6 @@ class DefaultConstraints extends AbstractEditField
 
     private void clearValues() {
     	 categorySelect.setValue(null);
-         expectedRows.setNumber(DEFAULT_ROWS);
-         expectedColumns.setNumber(DEFAULT_COLUMNS);
          defaultSelectCategory.setValue( null);
          defaultSelectText.setValue("");
          defaultSelectBoolean.setValue( null);
@@ -459,10 +466,11 @@ class DefaultConstraints extends AbstractEditField
          multiSelect.setValue( Boolean.FALSE);
 	}
 
-    public void mapFrom(Attribute attribute) {
+    public void mapFrom(Attribute attribute) throws RaplaException  {
     	clearValues();
         try {
             mapping = true;
+            this.attribute = attribute;
             clearValues();
             String classificationType = attribute.getDynamicType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 			emailPossible = classificationType != null && (classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON) || classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE));
@@ -484,21 +492,6 @@ class DefaultConstraints extends AbstractEditField
             else if (attributeType.equals(AttributeType.STRING)) 
             {
                 defaultSelectText.setValue( (String)attribute.defaultValue());
-                String value = attribute.getAnnotation(AttributeAnnotations.KEY_EMAIL);
-                final boolean emailValue;
-                if ( value != null )
-                {
-                	emailValue = value.equals("true");
-                }
-                else if ( attribute.getKey().equalsIgnoreCase("email"))
-                {
-                	emailValue =  true;
-                }
-                else
-                {
-                	emailValue = false;
-                }
-				emailSelect.setValue( emailValue);
             }
             else if (attributeType.equals(AttributeType.BOOLEAN)) 
             {
@@ -514,14 +507,9 @@ class DefaultConstraints extends AbstractEditField
             }
             
             if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE)) {
-            	String multiSelectValue = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false") ;
-            	multiSelect.setValue( multiSelectValue.equals("true") ? Boolean.TRUE : Boolean.FALSE );
+            	Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT) ;
+            	multiSelect.setValue( multiSelectValue != null ? multiSelectValue: Boolean.FALSE );
             }
-            Long rows = new Long(attribute.getAnnotation(AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
-            expectedRows.setNumber( rows );
-            Long columns = new Long(attribute.getAnnotation(AttributeAnnotations.KEY_EXPECTED_COLUMNS, String.valueOf(TextField.DEFAULT_LENGTH)));
-            expectedColumns.setNumber( columns );
-            //String selectedTab = attribute.getAnnotation(AttributeAnnotations.EDIT_VIEW.class,AttributeAnnotations);//KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             tabSelect.setSelectedItem(getString(selectedTab));
             update();
@@ -530,12 +518,11 @@ class DefaultConstraints extends AbstractEditField
         }
     }
 
-    public void mapTo(Attribute attribute) throws RaplaException {
+    public void mapTo(Attribute attribute) throws RaplaException  {
         attribute.getName().setTo( name.getValue());
         attribute.setKey( key.getValue());
         AttributeType type = types[classSelect.getSelectedIndex()];
         attribute.setType( type );
-        
         if ( type.equals(AttributeType.CATEGORY)) {
             Object defaultValue = defaultSelectCategory.getValue();
             Object rootCategory = categorySelect.getValue();
@@ -548,7 +535,6 @@ class DefaultConstraints extends AbstractEditField
             attribute.setDefaultValue( defaultValue);
         } else {
             attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, null);
-            
         }
         
         if ( type.equals(AttributeType.ALLOCATABLE)) {
@@ -565,14 +551,12 @@ class DefaultConstraints extends AbstractEditField
         
         if ( type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY))
         {
-            String value = multiSelect.getValue()? "true":"false";
-            attribute.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, value);
+            Boolean value = multiSelect.getValue();
+            attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, value);
         }
         else
         {
-        	attribute.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, null);
-        	String value = multiSelect.getValue()? "true":null;
-        	attribute.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, value);
+        	attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
         }
         
         if ( type.equals(AttributeType.BOOLEAN)) {
@@ -589,49 +573,8 @@ class DefaultConstraints extends AbstractEditField
             final Object defaultValue = defaultSelectDate.getDate();
             attribute.setDefaultValue( defaultValue);
         }
-        
-        if (type.equals(AttributeType.STRING)) {
-            Long size = (Long) expectedRows.getNumber();
-            String newRows = null;
-            if ( size != null && size.longValue() > 1)
-                newRows = size.toString();
-
-            size = (Long) expectedColumns.getNumber();
-            String newColumns = null;
-            if ( size != null && size.longValue() > 1)
-                newColumns = size.toString();
-            Object defaultValue = defaultSelectText.getValue();
-            if ( defaultValue != null && defaultValue.toString().length() == 0)
-            {
-            	defaultValue = null;
-            }
-            attribute.setDefaultValue( defaultValue);
-
-            Boolean emailValue = emailSelect.getValue();
-			String value;
-			if ( emailValue)
-			{
-				value = "true";
-			}
-			else
-			{
-				if ( attribute.getKey().equalsIgnoreCase("email"))
-				{
-					value = "false";
-				}
-				else
-				{
-					value = null;
-				}
-			}
-        	attribute.setAnnotation(AttributeAnnotations.KEY_EMAIL, value);
-            attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_ROWS ,  newRows);
-            attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_COLUMNS,  newColumns);
-        } else {
-            attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_ROWS,  null);
-            attribute.setAnnotation(AttributeAnnotations.KEY_EXPECTED_COLUMNS,  null);
-        }
-
+        List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
+        annotationEdit.mapTo(asList);
         String selectedTab = tabs[tabSelect.getSelectedIndex()];
         if ( selectedTab != null && !selectedTab.equals(AttributeAnnotations.VALUE_EDIT_VIEW_MAIN)) {
             attribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW,  selectedTab);
@@ -640,27 +583,20 @@ class DefaultConstraints extends AbstractEditField
         }
     }
 
-    private void update() {
+    private void update() throws RaplaException {
         AttributeType type = types[classSelect.getSelectedIndex()];
-        boolean categoryVisible = type.equals(AttributeType.CATEGORY);
-        boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
+        List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
+        annotationEdit.setObjects( asList);
+        final boolean categoryVisible = type.equals(AttributeType.CATEGORY);
+        final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
         final boolean textVisible = type.equals(AttributeType.STRING);
         final boolean booleanVisible = type.equals(AttributeType.BOOLEAN);
         final boolean numberVisible = type.equals(AttributeType.INT);
         final boolean dateVisible  = type.equals(AttributeType.DATE);
-        boolean expectedRowsVisible = textVisible;
-        boolean expectedColumnsVisible = textVisible;
-        boolean emailVisible = textVisible && emailPossible;
-		emailLabel.setVisible( emailVisible );
-        emailSelect.getComponent().setVisible( emailVisible );
         categoryLabel.setVisible( categoryVisible );
         categorySelect.getComponent().setVisible( categoryVisible );
         dynamicTypeLabel.setVisible( allocatableVisible);
         dynamicTypeSelect.getComponent().setVisible( allocatableVisible);
-        expectedRowsLabel.setVisible( expectedRowsVisible );
-        expectedRows.setVisible( expectedRowsVisible );
-        expectedColumnsLabel.setVisible( expectedColumnsVisible );
-        expectedColumns.setVisible( expectedColumnsVisible );
         defaultLabel.setVisible( !allocatableVisible);
         defaultSelectCategory.getComponent().setVisible( categoryVisible);
         defaultSelectText.getComponent().setVisible( textVisible);
@@ -670,7 +606,32 @@ class DefaultConstraints extends AbstractEditField
         multiSelectLabel.setVisible( categoryVisible || allocatableVisible);
         multiSelect.getComponent().setVisible( categoryVisible || allocatableVisible);
     }
+    
+    private void showAnnotationDialog() throws RaplaException
+    {
+        RaplaContext context = getContext();
+        boolean modal = false;
+        if (dialog != null)
+        {
+            dialog.close();
+        }
+        dialog = DialogUI.create(context
+                ,getComponent()
+                ,modal
+                ,annotationEdit.getComponent()
+                ,new String[] { getString("close")});
 
+        dialog.getButton(0).setAction( new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            public void actionPerformed(ActionEvent e) {
+                fireContentChanged();
+                dialog.close();
+            }
+        });
+        dialog.setTitle(getString("select"));
+        dialog.start();
+    }
+    
     public void actionPerformed(ActionEvent evt) {
         if (mapping)
             return;
@@ -682,14 +643,16 @@ class DefaultConstraints extends AbstractEditField
             }
         }
         fireContentChanged();
-        update();
+        try {
+            update();
+        } catch (RaplaException ex) {
+            showException(ex, getComponent());
+        }
     }
-
 
 	public void stateChanged(ChangeEvent e) {
         if (mapping)
             return;
-
         fireContentChanged();
     }
 

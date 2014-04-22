@@ -57,8 +57,18 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
+import org.rapla.gui.internal.edit.fields.AbstractEditField;
+import org.rapla.gui.internal.edit.fields.AllocatableSelectField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.CategoryListField;
+import org.rapla.gui.internal.edit.fields.CategorySelectField;
+import org.rapla.gui.internal.edit.fields.DateField;
+import org.rapla.gui.internal.edit.fields.LongField;
+import org.rapla.gui.internal.edit.fields.SetGetField;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaWidget;
 
@@ -781,15 +791,15 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         private EditField createField(Attribute attribute) {
             operatorComponent = null;
             AttributeType type = attribute.getType();
-            String key = attribute.getKey();
             // used for static testing of the field type 
             @SuppressWarnings("unused")
             SetGetField test;
+            RaplaContext context = getContext();
             if (type.equals(AttributeType.ALLOCATABLE))
             {
                 operatorComponent = new JLabel("");
                 DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-                AllocatableSelectField newField = new AllocatableSelectField(getContext(),key, dynamicTypeConstraint);
+                AllocatableSelectField newField = new AllocatableSelectField(context, dynamicTypeConstraint);
                 field = newField;
                 test = newField;
                
@@ -800,18 +810,18 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 if (rootCategory.getDepth() > 2) {
                     Category defaultCategory = (Category) attribute.defaultValue();
-                    CategorySelectField newField = new CategorySelectField(getContext(),key,rootCategory,defaultCategory);
+                    CategorySelectField newField = new CategorySelectField(context,rootCategory,defaultCategory);
 					field = newField;
 					test = newField;
                 } else {
-                    CategoryListField newField = new CategoryListField(getContext(),key,rootCategory);
+                    CategoryListField newField = new CategoryListField(context,rootCategory);
 					field = newField;
 					test = newField;
                 }
             }
             else if (type.equals(AttributeType.STRING))
             {
-                TextField newField = new TextField(getContext(),key);
+                TextField newField = new TextField(context);
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")
@@ -825,7 +835,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.INT))
             {
-                LongField newField = new LongField(getContext(),key);
+                LongField newField = new LongField(context);
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")
@@ -844,7 +854,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.DATE))
             {
-                DateField newField = new DateField(getContext(),key);
+                DateField newField = new DateField(context);
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")
@@ -860,7 +870,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             else if (type.equals(AttributeType.BOOLEAN))
             {
                 operatorComponent = new JLabel("");
-                BooleanField newField = new BooleanField(getContext(),key);
+                BooleanField newField = new BooleanField(context);
 				field = newField;
 				test = newField;
                 ruleValue = new Boolean(false);

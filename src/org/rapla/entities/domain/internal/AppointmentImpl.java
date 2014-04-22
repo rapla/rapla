@@ -130,11 +130,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
     
     @Override
-    public Iterable<String> getReferencedIds() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         return Collections.emptyList();
     }

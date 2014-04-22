@@ -17,15 +17,17 @@ import java.util.ArrayList;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
+import org.rapla.gui.internal.edit.fields.ClassificationField;
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
 class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
-    public ReservationEditUI(RaplaContext sm) {
-        super(sm);
+    public ReservationEditUI(RaplaContext context) {
+        super(context);
         ArrayList<EditField> fields = new ArrayList<EditField>();
-        classificationField = new ClassificationField<Reservation>(sm);
+        classificationField = new ClassificationField<Reservation>(context);
         fields.add( classificationField);
         setFields(fields);
     }

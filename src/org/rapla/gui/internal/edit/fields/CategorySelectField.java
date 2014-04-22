@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import javax.swing.tree.TreeModel;
 
@@ -22,12 +22,12 @@ public class CategorySelectField extends AbstractSelectField<Category>
 {
     Category rootCategory;
 
-    public CategorySelectField(RaplaContext sm,String fieldName,Category rootCategory){
-       this( sm, fieldName, rootCategory, null);
+    public CategorySelectField(RaplaContext context,Category rootCategory){
+       this( context, rootCategory, null);
     }
     
-    public CategorySelectField(RaplaContext sm,String fieldName,Category rootCategory, Category defaultCategory) {
-        super( sm, fieldName, defaultCategory);
+    public CategorySelectField(RaplaContext context,Category rootCategory, Category defaultCategory) {
+        super( context, defaultCategory);
         this.rootCategory = rootCategory;
     }
     

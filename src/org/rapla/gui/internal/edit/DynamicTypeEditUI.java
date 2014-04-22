@@ -40,6 +40,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 
 
@@ -72,8 +74,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 	JComboBox conflictChooser;
     boolean isResourceType;
     boolean isEventType;
-    public DynamicTypeEditUI(RaplaContext sm) throws RaplaException {
-        super(sm);
+    public DynamicTypeEditUI(RaplaContext context) throws RaplaException {
+        super(context);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
@@ -89,9 +91,9 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         	JComboBox jComboBox = new JComboBox(new String[] {DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES});
         	conflictChooser = jComboBox;
         }
-        name = new MultiLanguageField(sm,"name");
-        elementKey = new TextField(sm,"elementKey");
-        attributeEdit = new AttributeEdit(sm);
+        name = new MultiLanguageField(context,"name");
+        elementKey = new TextField(context,"elementKey");
+        attributeEdit = new AttributeEdit(context);
         nameLabel.setText(getString("dynamictype.name") + ":");
         elementKeyLabel.setText(getString("elementkey") + ":");
         attributeEdit.setEditKeys( true );

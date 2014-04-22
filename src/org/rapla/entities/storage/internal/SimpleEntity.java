@@ -40,10 +40,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     transient boolean readOnly = false;
     
     public SimpleEntity() {
-
     }
-    
-    
     
     public void checkWritable() {
         if ( readOnly )

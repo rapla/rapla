@@ -42,7 +42,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
-import org.rapla.gui.internal.edit.GroupListField;
+import org.rapla.gui.internal.edit.fields.GroupListField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.storage.RaplaSecurityException;

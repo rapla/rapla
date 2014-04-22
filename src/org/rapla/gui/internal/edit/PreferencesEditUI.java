@@ -47,6 +47,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.OptionPanel;
+import org.rapla.gui.PluginOptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.toolkit.RaplaTree;
@@ -67,8 +68,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
     Preferences preferences;
 
     /** called during initialization to create the info component */
-    public PreferencesEditUI(RaplaContext sm) {
-        super( sm);
+    public PreferencesEditUI(RaplaContext context) {
+        super( context);
         jPanelContainer.setLayout(new BorderLayout());
         jPanelContainer.add(messages,BorderLayout.SOUTH);
         messages.setForeground( Color.red);

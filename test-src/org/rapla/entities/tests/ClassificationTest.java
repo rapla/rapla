@@ -24,7 +24,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
@@ -79,7 +78,7 @@ public class ClassificationTest extends RaplaTestCase {
     	Attribute a1 = modificationMod.newAttribute(AttributeType.CATEGORY);
     	a1.setKey("test-attribute");
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c1 );
-    	a1.setAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "true");
+    	a1.setConstraint( ConstraintIds.KEY_MULTI_SELECT, true);
     	type.addAttribute( a1 );
 
     	try {

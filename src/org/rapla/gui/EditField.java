@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui;
 
 import javax.swing.event.ChangeListener;
 
@@ -23,11 +23,7 @@ import org.rapla.gui.toolkit.RaplaWidget;
 */
 public interface EditField extends RaplaWidget
 {
-    public boolean isBlock();
-    public boolean isVariableSized();
     public String getFieldName();
-    // public void mapTo(List<T> o) throws RaplaException;
-    // public void mapFrom(List<T> o) throws RaplaException;
     /** registers new ChangeListener for this component.
      *  An ChangeEvent will be fired to every registered ChangeListener
      *  when the component info changes.

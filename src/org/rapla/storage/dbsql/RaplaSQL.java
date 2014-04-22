@@ -340,7 +340,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     }
     
     @Override
-    public void deleteEntities(Collection<Category> entities) throws SQLException,RaplaException {
+    public void deleteEntities(Iterable<Category> entities) throws SQLException,RaplaException {
     	Set<String> idList = new HashSet<String>();
     	for ( Category cat:entities)
     	{
@@ -350,7 +350,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     }
     
     @Override
-    public void insert(Collection<Category> entities) throws SQLException, RaplaException {
+    public void insert(Iterable<Category> entities) throws SQLException, RaplaException {
         Set<Category> transitiveCategories = new LinkedHashSet<Category>();
         for ( Category cat: entities)
         {
@@ -599,8 +599,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	}
 
 	@Override
-	public void save(Collection<Reservation> entities) throws RaplaException,
-			SQLException {
+	public void save(Iterable<Reservation> entities) throws RaplaException,	SQLException {
 		super.save(entities);
 		Collection<Appointment> appointments = new ArrayList<Appointment>();
 		for (Reservation r: entities)
@@ -608,13 +607,6 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 			appointments.addAll( Arrays.asList(r.getAppointments()));
 		}
 		appointmentStorage.insert( appointments );
-	}
-	
-
-	@Override
-	public void insert(Collection<Reservation> entities) throws SQLException,RaplaException {
-		super.insert(entities);
-	
 	}
 	
 	@Override
@@ -678,13 +670,13 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     }
 
     @Override
-    public void deleteEntities(Collection<Reservation> entities)
+    public void deleteEntities(Iterable<Reservation> entities)
     		throws SQLException, RaplaException {
     	super.deleteEntities(entities);
     	deleteAppointments(entities);
     }
 
-	private void deleteAppointments(Collection<Reservation> entities)
+	private void deleteAppointments(Iterable<Reservation> entities)
 			throws SQLException, RaplaException {
 		Set<String> ids = new HashSet<String>();
 		String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
@@ -1276,21 +1268,23 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     }
 
     @Override
-    public void deleteEntities( Collection<Preferences> entities) throws SQLException {
+    public void deleteEntities( Iterable<Preferences> entities) throws SQLException {
         PreparedStatement stmt = null;
         boolean deleteNullUserPreference = false;
         try {
             stmt = con.prepareStatement(deleteSql);
+            boolean empty = true;
             for ( Preferences preferences: entities)
             {
                 User user = preferences.getOwner();
                 if ( user == null) {
                 	deleteNullUserPreference = true;
                 }
+                empty = false;
             	setId( stmt,1, user);
                 stmt.addBatch();
             }
-            if ( entities.size() > 0)
+            if ( !empty)
             {
                 stmt.executeBatch();
             } 

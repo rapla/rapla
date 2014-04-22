@@ -287,6 +287,10 @@ public class DynamicTypeReader extends RaplaXMLReader
             {
                 constraint = parseLong( content );
             }
+            else if (attribute.getConstraintClass( constraintKey ) == Boolean.class)
+            {
+                constraint = parseBoolean( content );
+            }
             else
             {
                 constraint = content;

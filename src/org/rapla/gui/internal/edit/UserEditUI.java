@@ -40,7 +40,12 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
 import org.rapla.gui.TreeFactory;
+import org.rapla.gui.internal.edit.fields.AbstractEditField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.GroupListField;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaTree;
@@ -64,23 +69,23 @@ class UserEditUI  extends AbstractEditUI<User> {
     AdminBooleanField adminField;
     GroupListField groupField;
     /**
-     * @param sm
+     * @param context
      * @throws RaplaException
      */
-    public UserEditUI(RaplaContext sm) throws RaplaException {
-        super(sm);
+    public UserEditUI(RaplaContext context) throws RaplaException {
+        super(context);
         List<EditField> fields = new ArrayList<EditField>();
-        usernameField = new TextField(sm,"username");
+        usernameField = new TextField(context,getString("username"));
         fields.add(usernameField);
-        personSelect = new PersonSelectField(sm);
+        personSelect = new PersonSelectField(context);
         fields.add(personSelect);
-        nameField = new TextField(sm,"name");
+        nameField = new TextField(context,getString("name"));
         fields.add(nameField);
-        emailField = new TextField(sm,"email");
+        emailField = new TextField(context,getString("email"));
         fields.add(emailField);
-        adminField = new AdminBooleanField(sm,"admin",getUser());
+        adminField = new AdminBooleanField(context,getString("admin"),getUser());
         fields.add(adminField);
-        groupField = new GroupListField(sm);
+        groupField = new GroupListField(context);
         fields.add(groupField);
         setFields(fields);
     }
@@ -140,7 +145,7 @@ class UserEditUI  extends AbstractEditUI<User> {
          */
         public PersonSelectField(RaplaContext sm) throws RaplaException {
             super(sm);
-            setFieldName( "person");
+            setFieldName( getString("person"));
             final Category rootCategory = getQuery().getUserGroupsCategory();
             if ( rootCategory == null )
                 return;
@@ -170,14 +175,6 @@ class UserEditUI  extends AbstractEditUI<User> {
 
         public JComponent getComponent() {
             return panel;
-        }
-
-        public boolean isBlock() {
-            return false;
-        }
-
-        public boolean isVariableSized() {
-            return false;
         }
 
         public String getName()

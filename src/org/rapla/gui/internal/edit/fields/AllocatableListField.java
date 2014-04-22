@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -26,8 +26,8 @@ import org.rapla.framework.RaplaException;
 public class AllocatableListField extends ListField<Allocatable>  {
 	DynamicType dynamicTypeConstraint;
 
-    public AllocatableListField(RaplaContext sm,String fieldName, DynamicType dynamicTypeConstraint) throws RaplaException{
-        super( sm, fieldName, true);
+    public AllocatableListField(RaplaContext context, DynamicType dynamicTypeConstraint) throws RaplaException{
+        super( context, true);
         this.dynamicTypeConstraint = dynamicTypeConstraint;
   		ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
   		ClassificationFilter[] filters = new ClassificationFilter[] {filter};

@@ -68,7 +68,9 @@ public class SecurityManager
             throw new RaplaSecurityException("No id set");
 
         boolean permitted = false;
-        Entity original = operator.tryResolve( entity.getId());
+        @SuppressWarnings("unchecked")
+        Class<Entity> typeClass = entity.getRaplaType().getTypeClass();
+        Entity original = operator.tryResolve( entity.getId(), typeClass);
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
 

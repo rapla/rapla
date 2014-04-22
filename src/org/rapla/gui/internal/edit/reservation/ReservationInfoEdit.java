@@ -40,11 +40,11 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
 import org.rapla.gui.internal.edit.ClassificationEditUI;
-import org.rapla.gui.internal.edit.EditField;
-import org.rapla.gui.internal.edit.SetGetField;
+import org.rapla.gui.internal.edit.fields.SetGetField;
 import org.rapla.gui.toolkit.EmptyLineBorder;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaListComboBox;
@@ -342,7 +342,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         public void stateChanged(ChangeEvent evt) {
             try {
             	SetGetField<?> editField = (SetGetField<?>) evt.getSource();
-            	String keyName   = editField.getFieldName();
+            	String keyName   = getKey(editField);
             	Object oldValue = getAttValue(keyName); //this.classification.getValue(keyName);
             	mapTo( editField );
                 Object newValue = getAttValue(keyName);
@@ -419,7 +419,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 				EditField editField = null;
 				
 				for (EditField field: editUI.fields) {
-					if (field.getFieldName().equals(keyName)) {
+					if (getKey(field).equals(keyName)) {
 						editField = field;
 						break;
 					}

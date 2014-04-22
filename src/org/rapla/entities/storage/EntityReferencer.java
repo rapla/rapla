@@ -24,11 +24,8 @@ public interface EntityReferencer
 {
     void setResolver( EntityResolver resolver);
     /**Return all References of the object*/
-    Iterable<String> getReferencedIds();
     Iterable<ReferenceInfo> getReferenceInfo();
     /** returns if the entity is refering to the Object. */
-    //boolean isRefering(Entity object);
-    boolean isRefering(String id);
     
     public class ReferenceInfo
     {
@@ -67,7 +64,11 @@ public interface EntityReferencer
 
         @Override
         public String toString() {
-            return "ReferenceInfo [id=" + id + ", type=" + type + "]";
+            return type + ":" + id;
+        }
+
+        public boolean isReferenceOf(Entity object) {
+            return id.equals(object.getId() );
         }
 
         

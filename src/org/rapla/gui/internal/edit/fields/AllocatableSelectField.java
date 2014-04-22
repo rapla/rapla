@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
@@ -26,8 +26,8 @@ import org.rapla.framework.RaplaException;
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {
 	DynamicType dynamicTypeConstraint;
-    public AllocatableSelectField(RaplaContext sm,String fieldName, DynamicType dynamicTypeConstraint){
-       super( sm, fieldName);
+    public AllocatableSelectField(RaplaContext context, DynamicType dynamicTypeConstraint){
+       super( context);
        this.dynamicTypeConstraint = dynamicTypeConstraint;
     }
     

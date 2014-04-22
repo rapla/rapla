@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -56,9 +56,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     ListField<Integer> accessField;
 
     @SuppressWarnings("unchecked")
-	public PermissionField(RaplaContext sm,String fieldName) throws RaplaException {
-        super( sm);
-        setFieldName( fieldName );
+	public PermissionField(RaplaContext context) throws RaplaException {
+        super( context);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
 
@@ -76,7 +75,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
              {pre,5,pre,5,pre}} // Rows
                                           ));
 
-        userSelect = new UserListField( sm,"user" );
+        userSelect = new UserListField( context );
         userPanel.add( new JLabel(getString("user") + ":"), "0,0,l,f" );
         userPanel.add( userSelect.getComponent(),"2,0,l,f" );
 
@@ -84,11 +83,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(getContext(),"group", rootCategory);
+                CategorySelectField field= new CategorySelectField(getContext(), rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {
-                CategoryListField field = new CategoryListField(getContext(),"group", rootCategory);
+                CategoryListField field = new CategoryListField(getContext(), rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             }
@@ -112,10 +111,10 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         startSelection.setModel( createSelectionModel() );
         startSelection.setSelectedIndex( 0 );
 
-        startDate = new DateField(sm,"start");
+        startDate = new DateField(context);
         reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
 
-        minAdvance = new LongField(sm,"minAdvance", new Long(0) );
+        minAdvance = new LongField(context,new Long(0) );
         reservationPanel.add( minAdvance.getComponent() , "4,0,l,f" );
 
         reservationPanel.add( new JLabel( getString("end_date") + ":" ), "0,2,l,f" );
@@ -123,10 +122,10 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         endSelection.setModel( createSelectionModel() );
         endSelection.setSelectedIndex( 0 );
 
-        endDate = new DateField(sm,"end");
+        endDate = new DateField(context);
         reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
 
-        maxAdvance = new LongField(sm,"maxAdvance", new Long(1) );
+        maxAdvance = new LongField(context, new Long(1) );
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(getString("permission.access") + ":"), "0,4,f,f" );
@@ -135,7 +134,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         {
             vector.add( accessLevel ) ;
         }
-        accessField = new ListField<Integer>(sm,"accessLevel", vector );
+        accessField = new ListField<Integer>(context, vector );
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -305,8 +304,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     class UserListField extends ListField<User> {
 
-        public UserListField(RaplaContext sm,String fieldName) throws RaplaException{
-            super(sm,fieldName,true);
+        public UserListField(RaplaContext sm) throws RaplaException{
+            super(sm,true);
             setVector(Arrays.asList(getQuery().getUsers() ));
         }
     }

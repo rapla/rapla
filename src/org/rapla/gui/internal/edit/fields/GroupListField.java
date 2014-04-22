@@ -1,4 +1,4 @@
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -31,7 +31,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.toolkit.RaplaButton;
 
 
-public class GroupListField extends AbstractEditField implements ChangeListener, ActionListener {
+public class GroupListField extends AbstractEditField implements ChangeListener, ActionListener, EditFieldWithLayout {
     DefaultListModel model = new DefaultListModel();
 
     JPanel panel = new JPanel();
@@ -43,15 +43,15 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     JList list = new JList();
     Set<Category> notAllList = new HashSet<Category>();
     /**
-     * @param sm
+     * @param context
      * @throws RaplaException
      */
-    public GroupListField(RaplaContext sm) throws RaplaException {
-        super(sm);
+    public GroupListField(RaplaContext context) throws RaplaException {
+        super(context);
     	final Category rootCategory = getQuery().getUserGroupsCategory();
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(sm,"group", rootCategory );
+        newCategory = new CategorySelectField(context, rootCategory );
         newCategory.setUseNull( false);
         toolbar.add( newButton  );
         toolbar.add( removeButton );
@@ -104,14 +104,14 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         return panel;
     }
 
-    public boolean isBlock() {
-        return true;
+    @Override
+    public EditFieldLayout getLayout() {
+        EditFieldLayout layout = new EditFieldLayout();
+        layout.setBlock( true);
+        layout.setVariableSized( false);
+        return layout;
     }
 
-    public boolean isVariableSized() {
-        return false;
-    }
-    
     public void mapFrom(List<User> users) {
 
     	Set<Category> categories = new LinkedHashSet<Category>();

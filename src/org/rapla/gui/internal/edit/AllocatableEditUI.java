@@ -20,6 +20,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.ClassificationField;
+import org.rapla.gui.internal.edit.fields.PermissionListField;
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
@@ -35,11 +39,11 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         ArrayList<EditField> fields = new ArrayList<EditField>();
         classificationField = new ClassificationField<Allocatable>(contest);
         fields.add(classificationField );
-        permissionField = new PermissionListField(contest,"permissions");
+        permissionField = new PermissionListField(contest,getString("permissions"));
         fields.add( permissionField );
         if ( !internal)
         {
-            holdBackConflictsField = new BooleanField(contest,"holdBackConflicts");
+            holdBackConflictsField = new BooleanField(contest,getString("holdbackconflicts"));
             fields.add(holdBackConflictsField );
         }
         setFields(fields);

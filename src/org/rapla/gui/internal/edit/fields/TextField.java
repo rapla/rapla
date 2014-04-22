@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -48,10 +48,16 @@ public class TextField extends AbstractEditField implements ActionListener,Focus
     
 	boolean multipleValues = false; // indicator, shows if multiple different
 	// values are shown in this field
+    public final static int DEFAULT_LENGTH = 30;
 	
-    public TextField(RaplaContext sm,String fieldName) 
+    public TextField(RaplaContext context) 
     {
-        this( sm,fieldName, 1, DEFAULT_LENGTH);
+        this( context,"", 1, TextField.DEFAULT_LENGTH);
+    }
+    
+    public TextField(RaplaContext context,String fieldName) 
+    {
+        this( context,fieldName, 1, TextField.DEFAULT_LENGTH);
     }
         
     public TextField(RaplaContext sm,String fieldName, int rows, int columns) 

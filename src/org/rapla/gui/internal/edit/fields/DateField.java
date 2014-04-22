@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -35,9 +35,12 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    public DateField(RaplaContext sm,String fieldName) {
-        super( sm);
+    public DateField(RaplaContext context,String fieldName) {
+        this( context);
         setFieldName(fieldName);
+    }
+    public DateField(RaplaContext context) {
+        super( context);
         panel = new JPanel();
         field = createRaplaCalendar();
         panel.setLayout(new BorderLayout());

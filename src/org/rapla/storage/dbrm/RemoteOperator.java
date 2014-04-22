@@ -635,9 +635,18 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
      	try
      	{
 			UpdateEvent entityList = serv.getEntityRecursive( array).get();
-			refresh( entityList);
-	    	Collection<Entity> storeObjects = entityList.getStoreObjects();
-			for (Entity entity:storeObjects)
+	    	Collection<Entity> list = entityList.getStoreObjects();
+	    	Lock lock = readLock();
+	    	try 
+	    	{
+	    	    testResolve( list);
+                setResolver( list );
+            } 
+            finally
+            {
+                unlock(lock);
+            }
+	    	for (Entity entity:list)
 			{
 				String id = entity.getId();
 				if ( idSet.contains( id ))
@@ -793,13 +802,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
     }
 
+    
 	protected void refreshAll() throws RaplaException,EntityNotFoundException {
 		UpdateResult result;
-		Set<Entity> oldEntities; 
+		Collection<Entity> oldEntities; 
 		Lock readLock = readLock();
         try
         {
-            oldEntities = cache.getAllEntities();
+            User user = cache.resolve( userId, User.class);
+            oldEntities = cache.getVisibleEntities(user);
         }
         finally
         {
@@ -814,11 +825,12 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		{
 		    unlock(writeLock);
 		}
-		Set<Entity> newEntities; 
+		Collection<Entity> newEntities; 
 		readLock = readLock();
 		try
 		{
-		    newEntities = cache.getAllEntities();
+		    User user = cache.resolve( userId, User.class);
+		    newEntities = cache.getVisibleEntities(user);
 		}
 		finally
 		{
@@ -844,7 +856,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		}
 		TimeInterval invalidateInterval = new TimeInterval( null,null);
 		result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
-	
 		fireStorageUpdated(result);
 	}
     

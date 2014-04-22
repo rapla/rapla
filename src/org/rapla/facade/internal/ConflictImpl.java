@@ -103,11 +103,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	}
 	
 	@Override
-	public Iterable<String> getReferencedIds() {
-		return Collections.emptyList();
-	}
-
-	@Override
 	public Iterable<ReferenceInfo> getReferenceInfo() {
 	    return Collections.emptyList();
 	}

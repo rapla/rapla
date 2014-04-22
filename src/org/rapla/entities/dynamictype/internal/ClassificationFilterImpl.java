@@ -74,25 +74,6 @@ public final class ClassificationFilterImpl
 		return type;
     }
 
-    public boolean isRefering(String id) {
-        if ( typeId.equals( id))
-            return true;
-        ClassificationFilterRuleImpl[] rules = getRules();
-        for (int i=0;i<rules.length;i++)
-            if (rules[i].isRefering(id))
-                return true;
-        return false;
-    }
-
-    public Iterable<String> getReferencedIds() {
-    	NestedIterator<String,ClassificationFilterRuleImpl> ruleIterator = new NestedIterator<String,ClassificationFilterRuleImpl>(list) {
-                public Iterable<String> getNestedIterator(ClassificationFilterRuleImpl obj) {
-                    return obj.getReferencedIds();
-                }
-            };
-        return new IteratorChain<String>(Collections.singleton( typeId), ruleIterator);
-    }
-    
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         return new IteratorChain<ReferenceInfo>

@@ -807,7 +807,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
         return entityStore;
     }
     
-    protected void putPassword( Object userId, String password )
+    protected void putPassword( String userId, String password )
     {
         entityStore.putPassword( userId, password);
     }

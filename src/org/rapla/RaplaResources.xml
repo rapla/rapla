@@ -790,6 +790,10 @@ See French text.
         <text lang="pl">Kategoria</text>
 		<text lang="pt">Categoria</text>
     </entry>
+    <entry key="categorization">
+        <text lang="en">Categorization</text>
+        <text lang="de">Kategoriesierung</text>
+    </entry>
     <entry key="changes">
         <text lang="en">Changes</text>
         <text lang="de">Änderungen</text>

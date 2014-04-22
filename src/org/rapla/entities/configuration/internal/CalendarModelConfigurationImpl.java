@@ -137,11 +137,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 		return result;
     }
 
-    public Iterable<String> getReferencedIds() {
-        Iterable<String> references = super.getReferencedIds();
-		return new IteratorChain<String>(references, selected);
-    }
-    
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         Iterable<ReferenceInfo> references = super.getReferenceInfo();
@@ -168,17 +163,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
             selectedInfo.add( referenceInfo);    
         }
         return new IteratorChain<ReferenceInfo>(references, selectedInfo);
-    }
-    /**
-     * @see org.rapla.entities.storage.EntityReferencer#isRefering(org.rapla.entities.storage.Entity)
-     */
-    public boolean isRefering(String object) {
-        if ( selected.contains( object ) )
-            return true;
-        if ( super.isRefering(object)) {
-            return true;
-        }
-        return false;
     }
 
     public Map<String,String> getOptionMap()

@@ -20,7 +20,7 @@ import junit.framework.TestSuite;
 import org.rapla.client.ClientService;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
-import org.rapla.gui.internal.edit.PermissionListField;
+import org.rapla.gui.internal.edit.fields.PermissionListField;
 import org.rapla.gui.tests.GUITestCase;
 
 public final class PermissionEditTest extends GUITestCase

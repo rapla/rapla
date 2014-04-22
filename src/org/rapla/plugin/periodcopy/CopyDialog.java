@@ -45,7 +45,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
-import org.rapla.gui.internal.edit.BooleanField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
 import org.rapla.gui.toolkit.RaplaWidget;
 
 /** sample UseCase that only displays the text of the configuration and

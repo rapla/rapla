@@ -10,25 +10,15 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
-import java.util.Vector;
+import org.rapla.gui.EditField;
 
-import org.rapla.entities.Category;
-import org.rapla.framework.RaplaContext;
 
-public class CategoryListField extends ListField<Category>  {
-    Category rootCategory;
 
-    public CategoryListField(RaplaContext sm,String fieldName,Category rootCategory) {
-        super(sm,fieldName, true);
-        this.rootCategory = rootCategory;
-
-        Category[] obj = rootCategory.getCategories();
-        Vector<Category> list = new Vector<Category>();
-        for (int i=0;i<obj.length;i++)
-            list.add(obj[i]);
-        setVector(list);
-    }
+public interface SetGetField<T> extends EditField
+{
+    T getValue();
+    void setValue(T value);
 }
 

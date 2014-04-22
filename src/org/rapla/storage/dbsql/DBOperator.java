@@ -578,7 +578,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     	Lock writeLock = writeLock();
     	try
         {
-    	    checkAndAddClosure(evt);
+    	    preprocessEventStorage(evt);
 	        Connection connection = createConnection();
 	        try {
 	             executeEvent(connection,evt);
@@ -726,7 +726,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         cache.getSuperCategory().setReadOnly();
         for (User user:cache.getUsers())
         {
-            Object id = ((Entity)user).getId();
+            String id = user.getId();
 			String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }
@@ -758,7 +758,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         cache.getSuperCategory().setReadOnly();
         for (User user:cache.getUsers())
         {
-            Object id = ((Entity)user).getId();
+            String id = user.getId();
             String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }

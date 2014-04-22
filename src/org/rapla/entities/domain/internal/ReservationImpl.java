@@ -159,17 +159,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
     
     @Override
-    public Iterable<String> getReferencedIds() {
-        return new IteratorChain<String>
-            (
-             super.getReferencedIds()
-             ,classification.getReferencedIds()
-            )
-            ;
-    }
-    
-    
-    @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         return new IteratorChain<ReferenceInfo>
             (
@@ -256,6 +245,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public void addAllocatable(Allocatable allocatable) {
         checkWritable();
+        if ( hasAllocated( allocatable))
+        {
+            return;
+        }
         addAllocatablePrivate(allocatable.getId());
         if ( !allocatable.isReadOnly())
         {
@@ -268,10 +261,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
 	private void addAllocatablePrivate(String allocatableId) {
-		if (isRefering(allocatableId))
-            return;
 		synchronized (this) {
-			addId("resources",allocatableId);
+		    addId("resources",allocatableId);
 		}
 	}
 
@@ -341,7 +332,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public boolean hasAllocated(Allocatable allocatable) {
-        return isRefering(allocatable.getId());
+        return isRefering("resources",allocatable.getId());
     }
 
     public boolean hasAllocated(Allocatable allocatable,Appointment appointment) {

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -28,7 +27,10 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
+import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.fields.EditFieldLayout;
+import org.rapla.gui.internal.edit.fields.EditFieldWithLayout;
 
 /** 
  */
@@ -42,11 +44,11 @@ implements
     protected List<T> objectList;
     protected List<EditField> fields = Collections.emptyList();
 
-    public AbstractEditUI(RaplaContext sm) {
-        super(sm);
+    public AbstractEditUI(RaplaContext context) 
+    {
+        super(context);
     }
 
-    
     final protected void setFields(Collection<? extends EditField> fields) {
         for (EditField field:fields) {
             field.removeChangeListener(this);
@@ -70,7 +72,9 @@ implements
         tableLayout.insertColumn(4,5);
         int variableSizedBlocks = 0;
         for (EditField field:fields) {
-            if (field.isVariableSized())
+            
+            EditFieldLayout layout = getLayout(field);
+            if (layout.isVariableSized())
             {
                 variableSizedBlocks ++;
             }
@@ -79,13 +83,15 @@ implements
         for (EditField field:fields) {
             tableLayout.insertRow(row,5);
             row ++;
-            if (field.isVariableSized()) {
+            EditFieldLayout layout = getLayout(field);
+            if (layout.isVariableSized()) {
                 @SuppressWarnings("cast")
                 double size = 0.99 / ((double) variableSizedBlocks);
                 tableLayout.insertRow(row,size);
-            } else
+            } else{
                 tableLayout.insertRow(row,TableLayout.PREFERRED);
-            if (field.isBlock()) {
+            }
+            if (layout.isBlock()) {
                 editPanel.add("1," + row + ",3," + row+",l", field.getComponent());
             } else {
                 editPanel.add("1," + row +",l,c", new JLabel(getFieldName(field) + ":"));
@@ -99,15 +105,26 @@ implements
         }
     }
 
+    private EditFieldLayout getLayout(EditField field) 
+    {
+        if ( field instanceof EditFieldWithLayout)
+        {
+            return ((EditFieldWithLayout) field).getLayout();
+        }
+        else
+        {
+            return new EditFieldLayout();
+        }
+    }
 
-    public String getFieldName(EditField field) 
+    final public String getFieldName(EditField field) 
     {
         String fieldName = field.getFieldName();
         if ( fieldName == null)
         {
             return "";
         }
-        return getString(fieldName.toLowerCase(Locale.ENGLISH));
+        return fieldName;
     }
 
     public void setObjects(List<T> o) throws RaplaException {

@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -37,13 +37,14 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
+import org.rapla.gui.internal.edit.ClassificationEditUI;
 import org.rapla.gui.toolkit.RaplaListComboBox;
 
 /****************************************************************
  * This is the base-class for all Classification-Panels         *
  ****************************************************************/
 public  class  ClassificationField<T extends Classifiable> extends AbstractEditField
-    implements
+    implements EditFieldWithLayout,
             ActionListener
 {
 	JPanel content = new JPanel();
@@ -54,19 +55,19 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
 	
-	public ClassificationField(RaplaContext sm)  {
-		super(sm);
-		editUI = new ClassificationEditUI(sm);
+	public ClassificationField(RaplaContext context)  {
+		super(context);
+		editUI = new ClassificationEditUI(context);
 		setFieldName("type");
 		content.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
 	}
-
-	public boolean isBlock() {
-		return true;
-	}
-
-	public boolean isVariableSized() {
-		return true;
+	
+	@Override
+	public EditFieldLayout getLayout() {
+	    EditFieldLayout layout = new EditFieldLayout();
+	    layout.setBlock( true);
+	    layout.setVariableSized( true);
+	    return layout;
 	}
 
 	public void mapTo(List<T> list) throws RaplaException {

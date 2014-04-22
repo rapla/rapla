@@ -333,20 +333,6 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
 
     @Override
-    public Iterable<String> getReferencedIds() {
-        return new IteratorChain<String>
-            (
-             super.getReferencedIds()
-             ,classification.getReferencedIds()
-             ,new NestedIterator<String,PermissionImpl>( permissions ) {
-                     public Iterable<String> getNestedIterator(PermissionImpl obj) {
-                         return obj.getReferencedIds();
-                     }
-                 }
-             );
-    }
-
-    @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         return new IteratorChain<ReferenceInfo>
             (

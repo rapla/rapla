@@ -29,7 +29,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
@@ -37,7 +36,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 
-import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -86,6 +84,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -123,8 +122,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
     MessageDigest md;
-
-	
+    
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
 		{
@@ -294,7 +292,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 	public Collection<String> getTemplateNames() throws RaplaException {
     	Lock readLock = readLock();
-    	Collection<Reservation> reservations;
+    	Collection<? extends Reservation> reservations;
     	try
     	{
     		reservations = cache.getReservations();
@@ -408,7 +406,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 	public void changePassword(User user, char[] oldPassword,char[] newPassword) throws RaplaException {
 		getLogger().info("Change password for User " + user.getUsername());
-		Object userId = (user).getId();
+		String userId = user.getId();
 		String password = new String(newPassword);
 		if (encryption != null)
 			password = encrypt(encryption, password);
@@ -603,6 +601,34 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkVersions(storeObjects);
 	}
 	
+	protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
+        Date currentTime = getCurrentTimestamp();
+        String userId = evt.getUserId();
+        User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
+        for ( Entity e: evt.getStoreObjects())
+        {
+            if ( e instanceof ModifiableTimestamp)
+            {
+                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
+                Date lastChangeTime = modifiableTimestamp.getLastChanged();
+                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
+                {
+                    // wait 1 ms to increase timestamp
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e1) {
+                        throw new RaplaException( e1.getMessage(), e1);
+                    }
+                    currentTime = getCurrentTimestamp();
+                }
+                modifiableTimestamp.setLastChanged( currentTime);
+                modifiableTimestamp.setLastChangedBy( lastChangedBy );
+            }
+        }
+    }
+
+
+	
 	class TimestampComparator implements Comparator<Timestamp>
 	{
 		public int compare(Timestamp o1, Timestamp o2) {
@@ -660,8 +686,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		timestampSet.addAll( cache.getUsers());
 		// The appointment map
 		appointmentMap = new HashMap<String, SortedSet<Appointment>>();
-		Collection<Reservation> reservations = cache.getReservations();
-    	for ( Reservation r: reservations)
+    	for ( Reservation r: cache.getReservations())
     	{
 			for ( Appointment app:((ReservationImpl)r).getAppointmentList())
 			{
@@ -684,9 +709,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			    {
 			    	return LocalAbstractCachableOperator.this.getAppointments(allocatable);
 			    }
-			    public Collection<Allocatable> getAllocatables()
+			    @SuppressWarnings("unchecked")
+                public Collection<Allocatable> getAllocatables()
 			    {
-			    	return cache.getAllocatables();
+			    	return (Collection)cache.getAllocatables();
 			    }
 		};
 		// The conflict map
@@ -949,8 +975,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
     @Override
 	protected UpdateResult update(UpdateEvent evt) throws RaplaException {
-        updateLastChanged( evt );
-		UpdateResult update = super.update(evt);
+        UpdateResult update = super.update(evt);
 	   	updateIndizes(update);
 		return update;
 	}
@@ -977,7 +1002,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		fireStorageUpdated( result );
     }
 	
-	protected void checkAndAddClosure(final UpdateEvent evt) throws RaplaException {
+	protected void preprocessEventStorage(final UpdateEvent evt) throws RaplaException {
 		EntityStore store = new EntityStore(this, this.getSuperCategory());
     	Collection<Entity>storeObjects = evt.getStoreObjects();
 		store.addAll(storeObjects);
@@ -985,24 +1010,26 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Contextualizing " + entity);
             ((EntityReferencer)entity).setResolver( store);
+            // add all child categories to store
             if ( entity instanceof Category)
             {
             	Set<Category> children = getAllCategories( (Category)entity);
             	store.addAll(children);
             }
         }
-        //evt.getPreferenceChanges();
         Collection<Entity>removeObjects = evt.getRemoveObjects();
         store.addAll( removeObjects );
 
-		// add all child categories to store
-	
         for ( Entity entity:removeObjects)
         {
             ((EntityReferencer)entity).setResolver( store);
         }
-		addClosure( evt, store );
+        // add transitve changes to event
+        addClosure( evt, store );
+        // check event for inconsistencies
 		check( evt, store);
+		// update last changed date
+		updateLastChanged( evt );
 	}
 
 	/**
@@ -1132,7 +1159,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			if (evt.getUserId() != null) {
 				user = resolve(cache,evt.getUserId(), User.class);
 			}
-			Entity persistant = store.tryResolve(entity.getId());
+			@SuppressWarnings("unchecked")
+            Class<Entity> entityType = entity.getRaplaType().getTypeClass();
+            Entity persistant = store.tryResolve(entity.getId(), entityType);
 			dependant = (DynamicTypeDependant) editObject( entity, persistant, user);
 			// replace or add the modified entity
 			addStoreOperationsToClosure(evt, store,(Entity) dependant);
@@ -1213,30 +1242,62 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * @param entity
 	 */
 	final protected Set<Entity> getDependencies(Entity entity, EntityStore store)  {
-		HashSet<Entity> dependencyList = new HashSet<Entity>();
 		RaplaType type = entity.getRaplaType();
 		final Collection<Entity>referencingEntities;
 		if (Category.TYPE == type || DynamicType.TYPE == type || Allocatable.TYPE == type || User.TYPE == type) {
+		    HashSet<Entity> dependencyList = new HashSet<Entity>();
 			referencingEntities = getReferencingEntities(entity, store);
-		} else {
-			referencingEntities = cache.getReferers(Preferences.class, entity);
-		}
-		if ( entity instanceof User)
-		{
-		}
-		dependencyList.addAll(referencingEntities);
-		return dependencyList;
+	        dependencyList.addAll(referencingEntities);
+	        return dependencyList;
+		} 
+		return Collections.emptySet();
 	}
 
 	protected List<Entity> getReferencingEntities(Entity entity, EntityStore store) {
-		ArrayList<Entity> list = new ArrayList<Entity>();
-		list.addAll(cache.getReferers(Reservation.class, entity));
-		list.addAll(cache.getReferers(Allocatable.class, entity));
-		list.addAll(cache.getReferers(Preferences.class, entity));
-		list.addAll(cache.getReferers(User.class, entity));
-		list.addAll(cache.getReferers(DynamicType.class, entity));
-		return list;
+		List<Entity> result = new ArrayList<Entity>();
+		addReferers(cache.getReservations(), entity, result);
+		addReferers(cache.getAllocatables(), entity, result);
+        addReferers(cache.getUsers(), entity, result);
+        addReferers(cache.getDynamicTypes(), entity, result);
+        Iterable<Preferences> preferenceList = getPreferences(store);
+        addReferers(preferenceList, entity, result);
+		return result;
 	}
+
+    private Iterable<Preferences> getPreferences(EntityStore store) {
+        List<Preferences> preferenceList = new ArrayList<Preferences>();
+        for ( User user:cache.getUsers())
+        {
+            PreferencesImpl preferences = cache.getPreferencesForUserId( user.getId() );
+            if ( preferences != null)
+            {
+                preferenceList.add( preferences);
+            }
+        }
+        PreferencesImpl systemPreferences = cache.getPreferencesForUserId( null);
+        if ( systemPreferences != null)
+        {
+            preferenceList.add( systemPreferences );
+        }
+        return preferenceList;
+    }
+	
+	private  void addReferers(Iterable<? extends Entity> refererList,Entity object, List<Entity> result) {
+        for ( Entity referer: refererList)
+        {
+            if (referer != null && !referer.isIdentical(object) )
+            {
+                for (ReferenceInfo info:((EntityReferencer)referer).getReferenceInfo())
+                {
+                    if (info.isReferenceOf(object) )
+                    {
+                        result.add(referer);
+                    }
+                }
+            }
+        }
+    }
+
 
 	private int countDynamicTypes(Collection<? extends RaplaObject> entities, String classificationType) throws RaplaException {
 		Iterator<? extends RaplaObject> it = entities.iterator();
@@ -1265,7 +1326,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			count += countDynamicTypes(entities, classificationType);
 		}
-		Collection<DynamicType> allTypes = cache.getDynamicTypes();
+		Collection<? extends DynamicType> allTypes = cache.getDynamicTypes();
 		int countAll = 0;
 		for ( String classificationType: classificationTypes)
 		{
@@ -1283,13 +1344,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	final protected void checkReferences(UpdateEvent evt, EntityStore store)	throws RaplaException {
 		
 		for (EntityReferencer entity: evt.getEntityReferences(false)) {
-			for (String id: entity.getReferencedIds())
+			for (ReferenceInfo info: entity.getReferenceInfo())
 			{				
-				// Reference in cache or store?
-				if (store.tryResolve(id) != null)
+				String id = info.getId();
+                // Reference in cache or store?
+				if (store.tryResolve(id, info.getType()) != null)
 					continue;
 			
-				throw new EntityNotFoundException(i18n.format("error.reference_not_stored", id));
+				throw new EntityNotFoundException(i18n.format("error.reference_not_stored", info.getType() + ":" + id));
 			}
 		}
 	}
@@ -1348,11 +1410,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 * entities. Throws an Exception if the newVersion != cachedVersion
 	 */
 	protected void checkVersions(Collection<Entity>entities)	throws RaplaException {
-		Iterator<Entity>it = entities.iterator();
-		while (it.hasNext()) {
+		for (Entity entity: entities) {
 			// Check Versions
-			SimpleEntity entity = (SimpleEntity) it.next();
-			SimpleEntity persistantVersion = (SimpleEntity) cache.tryResolve( entity.getId());
+			Entity persistantVersion = findPersistant(entity);
 			// If the entities are newer, everything is o.k.
 			if (persistantVersion != null && persistantVersion != entity)
 			{
@@ -1379,9 +1439,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	/** Check if the objects are consistent, so that they can be safely stored. */
 	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
 		for (EntityReferencer referencer : evt.getEntityReferences(false)) {
-			for (String referencedIds:referencer.getReferencedIds())
+		    for (ReferenceInfo referenceInfo:referencer.getReferenceInfo())
 			{
-				Entity reference = store.resolve( referencedIds);
+				Entity reference = store.resolve( referenceInfo.getId(), referenceInfo.getType());
 				if (reference instanceof Preferences
 						|| reference instanceof Conflict
 						|| reference instanceof Reservation
@@ -1444,18 +1504,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		HashSet<Entity> dep = new HashSet<Entity>();
 		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
 		IteratorChain<Entity> iteratorChain = new IteratorChain<Entity>( deletedCategories,removeEntities);
-		for (Entity entity : iteratorChain) {
-			// Add dependencies for the entity
 
-			// First we add the dependencies from the stored object list
-			for (Entity obj : storeObjects) {
+		for (Entity entity : iteratorChain) {
+		    // First we add the dependencies from the stored object list
+		    for (Entity obj : storeObjects) {
 			    if ( obj instanceof EntityReferencer)
 			    {
-			        if (((EntityReferencer)obj).isRefering(entity.getId())) {
+			        if (isRefering((EntityReferencer)obj, entity )) {
 					    dep.add(obj);
 			        }
 			    }
 			}
+			// we check if the user deletes himself
 			if ( entity instanceof User)
 			{
 			    String eventUserId = evt.getUserId();
@@ -1517,7 +1577,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkDynamicType(removeEntities, new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON});
 	}
 
-	private Set<Entity> getDeletedCategories(Iterable<Entity> storeObjects) {
+	private boolean isRefering(EntityReferencer referencer, Entity entity) {
+        for (ReferenceInfo info : referencer.getReferenceInfo())
+        {
+            if ( info.isReferenceOf(entity))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<Entity> getDeletedCategories(Iterable<Entity> storeObjects) {
 		Set<Entity> deletedCategories = new HashSet<Entity>();
 		for (Entity entity : storeObjects) {
 			if ( entity.getRaplaType() == Category.TYPE)
@@ -1619,7 +1690,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 
-	private boolean checkPassword(Object userId, String password) throws RaplaException {
+	private boolean checkPassword(String userId, String password) throws RaplaException {
 		if (userId == null)
 			return false;
 
@@ -1797,67 +1868,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return false;
 	}
 
-    public List<Entity> getVisibleEntities(final User user)throws RaplaException {
-		checkConnected();
+    public Collection<Entity> getVisibleEntities(final User user)throws RaplaException {
 		Lock readLock = readLock();
 		try
 		{
-			List<Entity> result = new ArrayList<Entity>();
-			result.add( getSuperCategory());
-			@SuppressWarnings("deprecation")
-			Set<Entry<RaplaType, Map<String,? extends Entity>>> entrySet = cache.entrySet();
-			for ( Map.Entry<RaplaType,Map<String,? extends Entity>> entry:entrySet )
-			{
-				RaplaType raplaType = entry.getKey();
-				if (  Reservation.TYPE.equals( raplaType) || Category.TYPE.equals( raplaType))
-				{
-					continue;
-				}
-                @SuppressWarnings("unchecked")
-                Collection<Entity>set =  (Collection<Entity>) entry.getValue().values();
-				if (user == null )
-				{
-					result.addAll( set);
-				}
-				else
-				{
-					if (   Preferences.TYPE.equals( raplaType )  )
-					{
-						{
-							PreferencesImpl preferences = cache.getPreferencesForUserId( null );
-							if ( preferences != null)
-							{
-								result.add( preferences);
-							}
-						}
-						{
-							String userId = user.getId();
-							Assert.notNull( userId);
-							PreferencesImpl preferences = cache.getPreferencesForUserId( userId );
-							if ( preferences != null)
-							{
-								result.add( preferences);
-							}
-						}
-					}
-					else if (   Allocatable.TYPE.equals( raplaType )  )
-					{
-						for ( Entity obj: set)
-						{
-							Allocatable alloc = (Allocatable) obj;
-							if (user.isAdmin() || alloc.canReadOnlyInformation( user))
-							{
-								result.add( obj);
-							}
-						}
-					}
-					else
-					{
-						result.addAll( set);
-					}
-				}
-			}
-			return result;
+			return cache.getVisibleEntities(user);
 		}
 		finally
 		{
@@ -1867,7 +1882,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     
     // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
     private void checkAbandonedAppointments() {
-		Collection<Allocatable> allocatables = cache.getAllocatables();
+		Collection<? extends Allocatable> allocatables = cache.getAllocatables();
 		Logger logger = getLogger().getChildLogger("appointmentcheck");
 		try
 		{
@@ -2015,7 +2030,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     		list.put((Entity) att);
     	}
 	}
-
+    
 	private Attribute createStringAttribute(String key, String name) throws RaplaException {
 		Attribute attribute = newAttribute(AttributeType.STRING, null);
 		attribute.setKey(key);
@@ -2093,31 +2108,5 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
-	private void updateLastChanged(UpdateEvent evt) throws RaplaException {
-        Date currentTime = getCurrentTimestamp();
-	    String userId = evt.getUserId();
-	    User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
-        for ( Entity e: evt.getStoreObjects())
-	    {
-            if ( e instanceof ModifiableTimestamp)
-            {
-                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
-                Date lastChangeTime = modifiableTimestamp.getLastChanged();
-                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
-                {
-                    // wait 1 ms to increase timestamp
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e1) {
-                        throw new RaplaException( e1.getMessage(), e1);
-                    }
-                    currentTime = getCurrentTimestamp();
-                }
-                modifiableTimestamp.setLastChanged( currentTime);
-                modifiableTimestamp.setLastChangedBy( lastChangedBy );
-            }
-	    }
-	}
-
 	
 }

@@ -14,9 +14,11 @@ package org.rapla.gui.internal.edit;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.Assert;
@@ -29,6 +31,17 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditField;
+import org.rapla.gui.internal.edit.fields.AllocatableSelectField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.CategoryListField;
+import org.rapla.gui.internal.edit.fields.CategorySelectField;
+import org.rapla.gui.internal.edit.fields.DateField;
+import org.rapla.gui.internal.edit.fields.LongField;
+import org.rapla.gui.internal.edit.fields.MultiEditField;
+import org.rapla.gui.internal.edit.fields.SetGetCollectionField;
+import org.rapla.gui.internal.edit.fields.SetGetField;
+import org.rapla.gui.internal.edit.fields.TextField;
 
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
@@ -44,13 +57,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		for (Classification c : objectList) {
 			attNames.add(getName(c.getAttribute(key)));
 		}
-
 		// checks if there is a common attribute-name
 		if (attNames.size() == 1) {
 			// delivers this name
 			return attNames.iterator().next();
 		} else {
-			return null;
+			return "-";
 		}
 	}
 
@@ -59,8 +71,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		// certain field
 		Set<Attribute> attributes = new HashSet<Attribute>();
 		for (Classification c : objectList) {
-			String fieldName = ((AbstractEditField) fields.get(i)).getFieldName();
-			Attribute attribute = c.getAttribute(fieldName);
+			String key = getKey( fields.get(i));
+			Attribute attribute = c.getAttribute(key);
 			attributes.add(attribute);
 		}
 
@@ -80,7 +92,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			if ( value instanceof Collection<?>)
 			{
 			    Collection<?> collection = (Collection<?>)value;
-    			if ( attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true"))
+			    Boolean multiSelect = (Boolean)attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
+			    if ( multiSelect != null && multiSelect==true)
                 {
                     c.setValues(attribute, collection);
                 }
@@ -107,7 +120,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		for (Classification c : objectList) {
 			Attribute attribute = c.getAttribute(key);
 			Object value;
-			if ( attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true"))
+			Boolean multiSelect = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
+			if ( multiSelect != null && multiSelect == true)
 			{
 				value = c.getValues(attribute);
 			}
@@ -122,26 +136,27 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 
 	private SetGetField<?> createField(Attribute attribute)  {
 		AttributeType type = attribute.getType();
-		String key = attribute.getKey();
+		String label = getAttName(attribute.getKey());
 		SetGetField<?> field = null;
 
 		RaplaContext context = getContext();
 		if (type.equals(AttributeType.STRING)) {
 			Integer rows = new Integer(attribute.getAnnotation(	AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
 			Integer columns = new Integer(attribute.getAnnotation( AttributeAnnotations.KEY_EXPECTED_COLUMNS,String.valueOf(TextField.DEFAULT_LENGTH)));
-			field = new TextField(context, key, rows.intValue(),columns.intValue());
+			field = new TextField(context, label, rows.intValue(),columns.intValue());
 		} else if (type.equals(AttributeType.INT)) {
-			field = new LongField(context, key);
+			field = new LongField(context, label);
 		} else if (type.equals(AttributeType.DATE)) {
-			field = new DateField(context, key);
+			field = new DateField(context, label);
 		} else if (type.equals(AttributeType.BOOLEAN)) {
-			field = new BooleanField(context, key);
+			field = new BooleanField(context, label);
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-			boolean multipleSelectionPossible = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true");
+			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(context, key, dynamicTypeConstraint);
-				 allocField.setMultipleSelectionPossible( multipleSelectionPossible);
+				 AllocatableSelectField allocField = new AllocatableSelectField(context,  dynamicTypeConstraint);
+				 allocField.setFieldName(label);
+				 allocField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
 				 field = allocField;
 //			 }else {
 //				 AllocatableListField allocField = new AllocatableListField(context, key, dynamicTypeConstraint);
@@ -151,13 +166,15 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.CATEGORY)) {
 			Category defaultCategory = (Category) attribute.defaultValue();
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-			boolean multipleSelectionPossible = attribute.getAnnotation(AttributeAnnotations.KEY_MULTI_SELECT, "false").equals("true");
+			boolean multipleSelectionPossible = attribute.getAnnotation(ConstraintIds.KEY_MULTI_SELECT, "false").equals("true");
             if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(context, key, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(context, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible);
+                catField.setFieldName( label );
                 field = catField;
             } else {
-			    CategoryListField catField = new CategoryListField(context, key, rootCategory);
+			    CategoryListField catField = new CategoryListField(context,  rootCategory);
+			    catField.setFieldName( label );
 			    field = catField;
             }
 		}
@@ -165,6 +182,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		return field;
 	}
 
+	Map<EditField,String> fieldKeyMap = new HashMap<EditField,String>();
+	
 	public void setObjects(List<Classification> classificationList) throws RaplaException {
 		this.objectList = classificationList;
 		// determining of the DynmicTypes from the classifications
@@ -174,6 +193,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		}
 		// checks if there is a common DynmicType
 		if (types.size() == 1) {
+		    fieldKeyMap.clear();
 			// read out attributes for this DynmicType
 			Attribute[] attributes = types.iterator().next().getAttributes();
 			// create fields for attributes
@@ -182,6 +202,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			    SetGetField<?> field = createField(attribute);
 				//field.setUser(classificationList);
 				fields.add( field);
+				fieldKeyMap.put( field, attribute.getKey());
 			}
 			// show fields
 			setFields(fields);
@@ -189,34 +210,32 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		mapFromObjects();
 	}
 
-	@Override
-	public String getFieldName(EditField field) 
-	{
-	    String fieldName = field.getFieldName();
-	    return getAttName(fieldName);
-	}
-	
 	public void mapTo(SetGetField<?> field) {
          // checks if the EditField shows a common value
          if (field instanceof MultiEditField && ((MultiEditField) field).hasMultipleValues())
              return;
          // read out attribute value if the field shows a common value
-         String fieldName = field.getFieldName();
+         String attKey = getKey(field);
          if ( field instanceof SetGetCollectionField)
          {
             Collection<?> values = ((SetGetCollectionField<?>) field).getValues();
-            setAttValue(fieldName, values);
+            setAttValue(attKey, values);
          }
          else
          {
-             setAttValue(fieldName, field.getValue());
+             setAttValue(attKey, field.getValue());
          }
      }
-
+	
+	protected String getKey(EditField field)
+	{
+	    String key = fieldKeyMap.get( field);
+        return key;
+	}
 	
      public <T> void mapFrom(SetGetField<T> field ) {
          // read out attribute values
-         Set<Object> values = getUniqueAttValues(field.getFieldName());
+         Set<Object> values = getUniqueAttValues(getKey(field));
          // checks if there is a common value, otherwise a place holder has
          // to be shown for this field
          if ( values.size() > 1 && field instanceof MultiEditField)

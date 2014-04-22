@@ -107,11 +107,6 @@ public class RaplaMapReader extends RaplaXMLReader  {
         childReader = null;
     }
 
-    public Iterable<String> getReferencedIds()
-    {
-    	return entityMap.getReferencedIds();
-    }
-    
     public RaplaMap getEntityMap() {
         return entityMap;
     }

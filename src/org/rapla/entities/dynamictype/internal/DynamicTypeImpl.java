@@ -210,19 +210,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
     
     @Override
-    public Iterable<String> getReferencedIds() 
-    {
-    	return new IteratorChain<String>(super.getReferencedIds(), 
-    			new NestedIterator<String,AttributeImpl>( attributes ) 
-    	{
-    		public Iterable<String> getNestedIterator(AttributeImpl obj) {
-                return obj.getReferencedIds();
-            }
-        }
-    			);
-    }
-
-    @Override
     public Iterable<ReferenceInfo> getReferenceInfo() 
     {
         return new IteratorChain<ReferenceInfo>(super.getReferenceInfo(), 
@@ -368,12 +355,17 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public void addAttribute(Attribute attribute) {
         checkWritable();
+        if  ( hasAttribute(attribute))
+        {
+            return;
+        }
         addEntity(attribute);
         attributeIndex = null;
     }
 
-    public boolean hasAttribute(Attribute attribute) {
-        return isRefering(attribute.getId());
+    public boolean hasAttribute(Attribute attribute) 
+    {
+        return attributes.contains( attribute );
     }
 
     public Attribute[] getAttributes() {

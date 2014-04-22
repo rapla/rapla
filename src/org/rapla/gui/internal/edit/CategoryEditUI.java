@@ -48,6 +48,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
+import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.internal.view.TreeFactoryImpl.NamedNode;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaTree;
@@ -77,10 +79,10 @@ public class CategoryEditUI extends RaplaGUIComponent
     TreeCellRenderer iconRenderer;
     boolean createNew;
 
-    public CategoryEditUI(RaplaContext sm, boolean createNew)  {
-        super( sm);
+    public CategoryEditUI(RaplaContext context, boolean createNew)  {
+        super( context);
         this.createNew = createNew;
-        detailPanel = new CategoryDetail(sm);
+        detailPanel = new CategoryDetail(context);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
         treeEdit.setListDimension( new Dimension( 250,100 ) );
@@ -429,12 +431,12 @@ class CategoryDetail extends RaplaGUIComponent
 	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
 
-    public CategoryDetail(RaplaContext sm) 
+    public CategoryDetail(RaplaContext context) 
     {
-        super( sm);
-        name = new MultiLanguageField(sm,"name");
-        key = new TextField(sm,"key");
-        colorTextField = new TextField(sm,"color");
+        super( context);
+        name = new MultiLanguageField(context);
+        key = new TextField(context);
+        colorTextField = new TextField(context);
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]

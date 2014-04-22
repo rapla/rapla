@@ -142,8 +142,10 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     public void addGroup(Category group) {
         checkWritable();
-        if (isRefering(group.getId()))
+        if ( isRefering("groups", group.getId()))
+        {
             return;
+        }
         groups = null;
         add("groups",group);
     }

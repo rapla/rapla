@@ -116,39 +116,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         if ( readOnly )
             throw new ReadOnlyException( this );
     }
-    /*
-    public ReferenceHandler getReferenceHandler() {
-		return referenceHandler;
-	}
-	*/
 
-    public boolean isRefering(String id) {
-        String parentId = getParentId();
-		return id.equals(parentId) || data.containsKey( id );
-    }
-
-    public Iterable<String> getReferencedIds() {
-    	List<String> result = new ArrayList<String>();
-    	String parentId = getParentId();
-		result.add( parentId );
-    	DynamicTypeImpl type = getType();
-    	for ( Map.Entry<String,List<String>> entry:data.entrySet())
-    	{
-    		String key = entry.getKey();
-    		Attribute attribute = type.getAttribute(key);
-    		if ( attribute == null || attribute.getRefType() == null)
-    		{
-    			continue;
-    		}
-    		List<String> values = entry.getValue();
-    		if  (values != null ) 
-    		{
-    			result.addAll(values );
-    		}
-    	}
-    	return result;
-    }
-    
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         List<ReferenceInfo> result = new ArrayList<ReferenceInfo>();

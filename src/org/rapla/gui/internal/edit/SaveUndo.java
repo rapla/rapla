@@ -15,6 +15,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -163,10 +164,9 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		
 		if ( entity instanceof SimpleEntity)
 		{
-			Iterable<String> referencedIds = ((SimpleEntity) entity).getReferencedIds();
-			for ( String id: referencedIds)
+			for ( ReferenceInfo info: ((SimpleEntity) entity).getReferenceInfo())
 			{
-				getClientFacade().getOperator().resolve( id);
+				getClientFacade().getOperator().resolve( info.getId(), info.getType());
 			}
 		}
 		if ( entity instanceof Classifiable)

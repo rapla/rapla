@@ -113,20 +113,6 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     
     abstract protected Class<? extends Entity> getInfoClass(String key);
 
-    public Iterable<String> getReferencedIds()
-    {
-    	Set<String> result = new HashSet<String>();
-    	if (links != null) {
-            for (List<String> entries:links.values()) {
-                for ( String id: entries)
-                {
-					result.add(id);
-                }
-            }
-        }
-        return result;
-    }
-    
     /** Use this method if you want to implement deserialization of the object manualy.
      * You have to add the reference-ids to other entities immediatly after the constructor.
      * @throws IllegalStateException if contextualize has been called before.
@@ -306,15 +292,13 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         return removed;
     }
 
-    final public boolean isRefering(String id) {
-    	for (String refId:getReferencedIds())
-    	{
-    		if ( refId.equals( id))
-    		{
-    			return true;
-    		}
-    	}
-    	return false;
+    protected boolean isRefering(String key,String id) {
+        List<String> ids  = links.get(key);
+        if ( ids == null)
+        {
+            return false;
+        }
+        return ids.contains( id);
     }
 
     public Iterable<String> getReferenceKeys() {
@@ -334,7 +318,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
-		for (String ref: getReferencedIds())
+		for (ReferenceInfo ref: getReferenceInfo())
 		{
 			builder.append(ref);
 			builder.append(",");

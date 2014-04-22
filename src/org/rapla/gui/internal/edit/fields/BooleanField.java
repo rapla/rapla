@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.Component;
 import java.awt.Font;
@@ -40,10 +40,15 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-    public BooleanField(RaplaContext sm,String fieldName) 
+    public BooleanField(RaplaContext context,String fieldName) 
     {
-        super( sm);
+        this(context);
         setFieldName( fieldName );
+    }
+
+    public BooleanField(RaplaContext context) 
+    {
+        super( context);
         field1.setOpaque( false );
         field2.setOpaque( false );
         panel.setOpaque( false );
@@ -104,7 +109,6 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 		multipleValues = true;
 		multipleValuesLabel.setText(TextField.getOutputForMultipleValues());
 		multipleValuesLabel.setFont(multipleValuesLabel.getFont().deriveFont(Font.ITALIC));
-
     }
 
 	public boolean hasMultipleValues() {

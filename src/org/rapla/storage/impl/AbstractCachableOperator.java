@@ -418,8 +418,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
      		String id =  key.getId().toString();
      		idMap.put( id, key);
     	}
-    
-		
 		Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
 		Set<String> keySet = idMap.keySet();
 		Map<String,Entity> resolvedList = getFromId( keySet, false);
@@ -585,7 +583,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(evt.getStoreObjects());
 		for (Entity entity : storeObjects) 
 		{
-			Entity persistantEntity = cache.tryResolve(entity.getId());
+			Entity persistantEntity = findPersistant(entity);
 			if ( persistantEntity == null)
 			{
 				continue;
@@ -630,7 +628,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		List<Entity>updatedEntities = new ArrayList<Entity>();
 		// Then update the new entities
 		for (Entity entity : storeObjects) {
-			Entity persistant = cache.tryResolve(entity.getId());
+			Entity persistant = findPersistant(entity);
 			// do nothing, because the persitantVersion is always read only
 			if (persistant == entity) {
 				continue;
@@ -650,7 +648,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		Collection<Entity> removeObjects = evt.getRemoveObjects();
 		Collection<Entity> toRemove = new HashSet<Entity>();
 		for (Entity entity : removeObjects) {
-			Entity persistantVersion = cache.tryResolve(entity.getId());
+			Entity persistantVersion = findPersistant(entity);
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
 			    ((RefEntity)persistantVersion).setReadOnly();
@@ -662,6 +660,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		String userId = evt.getUserId();
 		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 	}
+
+    protected Entity findPersistant(Entity entity) {
+        @SuppressWarnings("unchecked")
+        Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
+        Entity persistantEntity = cache.tryResolve(entity.getId(), typeClass);
+        return persistantEntity;
+    }
 
 	protected UpdateResult createUpdateResult(
 			Map<Entity,Entity> oldEntities,

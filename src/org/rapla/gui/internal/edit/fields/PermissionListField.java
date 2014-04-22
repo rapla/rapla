@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.gui.internal.edit;
+package org.rapla.gui.internal.edit.fields;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -39,11 +39,12 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.internal.edit.RaplaListEdit;
 import org.rapla.gui.toolkit.EmptyLineBorder;
 /**
  *  @author Christopher Kohlhaas
  */
-public class PermissionListField extends AbstractEditField
+public class PermissionListField extends AbstractEditField implements EditFieldWithLayout
 {
 	JList permissionList = new JList();
 	JPanel jPanel = new JPanel();
@@ -56,10 +57,9 @@ public class PermissionListField extends AbstractEditField
 	int selectedIndex = 0;
 	
 	List<Permission> notAllList = new ArrayList<Permission>();
-	public PermissionListField(RaplaContext sm, String fieldName)
-			throws RaplaException {
-		super(sm);
-		permissionField = new PermissionField(sm, "permission");
+	public PermissionListField(RaplaContext context, String fieldName) throws RaplaException {
+		super(context);
+		permissionField = new PermissionField(context);
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
 		listEdit = new RaplaListEdit<Permission>(getI18n(), permissionField.getComponent(),	listener);
@@ -73,14 +73,12 @@ public class PermissionListField extends AbstractEditField
 		return jPanel;
 	}
 
-	public boolean isBlock() {
-		return true;
+	public EditFieldLayout getLayout()
+	{
+	    EditFieldLayout layout = new EditFieldLayout();
+	    return layout;
 	}
-
-	public boolean isVariableSized() {
-		return false;
-	}
-
+	
 	public void mapTo(List<Allocatable> list) {
 		for (Allocatable allocatable :list)
 		{

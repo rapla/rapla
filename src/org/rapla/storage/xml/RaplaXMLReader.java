@@ -164,6 +164,11 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             throw createSAXParseException( "No valid number format: " + text );
         }
     }
+    
+    public Boolean parseBoolean( String text ) 
+    {
+        return new Boolean( text );
+    }
 
     public Date parseDate( String date, boolean fillDate ) throws RaplaSAXParseException
     {
@@ -220,7 +225,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
 
     /** return the new id */
-    protected Object setId( Entity entity, RaplaSAXAttributes atts )
+    protected String setId( Entity entity, RaplaSAXAttributes atts )
     	throws RaplaSAXParseException
     {
         String idString = atts.getValue( "id" );
@@ -319,15 +324,14 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return store.getDynamicType( keyref);
     }
 
-    protected <T extends RaplaObject> T resolve( RaplaType<T> type, String str ) throws RaplaSAXParseException
+    protected <T extends Entity> T resolve( RaplaType<T> type, String str ) throws RaplaSAXParseException
     {
         try
         {
             String id = getId( type, str );
-            Entity resolved = store.resolve( id );
-			@SuppressWarnings("unchecked")
-			T casted = (T)resolved;
-			return casted;
+            Class<T> typeClass = type.getTypeClass();
+            T resolved = store.resolve( id, typeClass );
+			return resolved;
         }
         catch (EntityNotFoundException ex)
         {
@@ -397,7 +401,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
     
     
-    protected void putPassword( Object userid, String password )
+    protected void putPassword( String userid, String password )
     {
         store.putPassword( userid, password);
     }
