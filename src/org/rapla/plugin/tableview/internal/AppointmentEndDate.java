@@ -4,6 +4,7 @@ import java.util.Date;
 
 import javax.swing.table.TableColumn;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -17,7 +18,9 @@ public final class AppointmentEndDate extends RaplaComponent implements Appointm
 	}
 
 	public void init(TableColumn column) {
-	    column.setCellRenderer( new DateCellRenderer( getRaplaLocale()));
+	    DateCellRenderer cellRenderer = new DateCellRenderer( getRaplaLocale());
+	    cellRenderer.setSubstractDayWhenFullDay(true);
+        column.setCellRenderer( cellRenderer);
 	    column.setMaxWidth( 175 );
 	    column.setPreferredWidth( 175 );
 	}
@@ -38,7 +41,15 @@ public final class AppointmentEndDate extends RaplaComponent implements Appointm
 	{
 		RaplaLocale raplaLocale = getRaplaLocale();
 		final Date date = new Date(block.getEnd());
-		String dateString= raplaLocale.formatDateLong(date) +  " " + raplaLocale.formatTime( date);
-		return dateString;
+		if ( block.getAppointment().isWholeDaysSet())
+		{
+		    String dateString= raplaLocale.formatDateLong(DateTools.addDays(date,-1));
+		    return dateString;
+		}
+		else
+		{    
+		    String dateString= raplaLocale.formatDateLong(date) +  " " + raplaLocale.formatTime( date );
+		    return dateString;
+		}
 	}
 }

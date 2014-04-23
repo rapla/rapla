@@ -38,7 +38,15 @@ public final class AppointmentStartDate extends RaplaComponent implements Appoin
 	{
 		RaplaLocale raplaLocale = getRaplaLocale();
 		final Date date = new Date(block.getStart());
-		String dateString= raplaLocale.formatDateLong(date) +  " " + raplaLocale.formatTime( date);
-		return dateString;
+		if ( block.getAppointment().isWholeDaysSet())
+        {
+		    String dateString= raplaLocale.formatDateLong(date);
+		    return dateString;
+        }
+		else
+		{
+            String dateString= raplaLocale.formatDateLong(date) +  " " + raplaLocale.formatTime( date);
+	        return dateString;
+		}
 	}
 }
