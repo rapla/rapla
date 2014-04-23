@@ -189,6 +189,10 @@ public class DynamicTypeImpl extends SimpleEntity<DynamicType> implements Dynami
     public String getElementKey() {
         return elementKey;
     }
+    
+    public String getKey() {
+        return elementKey;
+    }
 
     /** exchange the two attribute positions */
     public void exchangeAttributes(int index1, int index2) {

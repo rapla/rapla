@@ -40,6 +40,7 @@ public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Anno
     void exchangeAttributes(int index1, int index2);
     void setElementKey(String elementKey);
     String getElementKey();
+    String getKey();
     /* creates a new classification and initializes it with the attribute defaults
      * @throws IllegalStateException when called from a non persistant instance of DynamicType */
     Classification newClassification();
