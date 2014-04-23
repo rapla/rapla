@@ -744,7 +744,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					Reservation old = (Reservation) current;
 					for ( Appointment app: old.getAppointments() )
 					{
-						updateBindings( toUpdate, app, true);
+						updateBindings( toUpdate, old, app, true);
 					}
 				}
 				if ( operation instanceof UpdateResult.Add)
@@ -752,7 +752,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					Reservation newReservation = (Reservation) ((UpdateResult.Add) operation).getNew();
 					for ( Appointment app: newReservation.getAppointments() )
 					{
-						updateBindings( toUpdate, app, false);
+						updateBindings( toUpdate, newReservation,app, false);
 					}
 				}
 				if ( operation instanceof UpdateResult.Change)
@@ -762,12 +762,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					Appointment[] oldAppointments =  oldReservation.getAppointments();
 					for ( Appointment oldApp: oldAppointments)
 					{
-						updateBindings( toUpdate, oldApp, true);
+						updateBindings( toUpdate, oldReservation, oldApp, true);
 					}
 					Appointment[] newAppointments =  newReservation.getAppointments();
 					for ( Appointment newApp: newAppointments)
 					{
-						updateBindings( toUpdate, newApp, false);
+						updateBindings( toUpdate, newReservation, newApp, false);
 					}
 				}
 			}
@@ -859,11 +859,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return result;
 	}
 
-	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Appointment app, boolean remove)  {
+	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Reservation reservation,Appointment app, boolean remove)  {
 		
 		Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
 		allocatablesToProcess.add( null);
-		Reservation reservation = app.getReservation();
 		if ( reservation != null)
 		{
 			Allocatable[] allocatablesFor = reservation.getAllocatablesFor( app);
