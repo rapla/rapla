@@ -396,29 +396,42 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		for (UpdateOperation operation: result.getOperations())
 		{
 			RaplaObject current = operation.getCurrent();
-			if ( current.getRaplaType() ==  Appointment.TYPE )
-			{
-				Appointment oldApp = (Appointment) current;
-				if ( operation instanceof UpdateResult.Add)
-				{
-					Appointment newApp =(Appointment) ((UpdateResult.Add) operation).getNew();
-					updateBindings( toUpdate, newApp, false);
-				}
-				else if ( operation instanceof UpdateResult.Remove)
-				{
-					updateBindings( toUpdate, oldApp, true);	
-				}
-				else if ( operation instanceof UpdateResult.Change)
-				{
-					Appointment newApp =(Appointment) ((UpdateResult.Change) operation).getNew();
-					oldApp =(Appointment) ((UpdateResult.Change) operation).getOld();
-					// remove first
-					updateBindings( toUpdate, oldApp, true);
-					// then add again
-					updateBindings( toUpdate, newApp, false);
-				}
-			}
-			if ( current.getRaplaType() ==  Allocatable.TYPE )
+			RaplaType raplaType = current.getRaplaType();
+            if ( raplaType ==  Reservation.TYPE )
+            {
+                if ( operation instanceof UpdateResult.Remove)
+                {
+                    Reservation old = (Reservation) current;
+                    for ( Appointment app: old.getAppointments() )
+                    {
+                        updateBindings( toUpdate, old,app, true);
+                    }
+                }
+                if ( operation instanceof UpdateResult.Add)
+                {
+                    Reservation newReservation = (Reservation) ((UpdateResult.Add) operation).getNew();
+                    for ( Appointment app: newReservation.getAppointments() )
+                    {
+                        updateBindings( toUpdate, newReservation,app, false);
+                    }
+                }
+                if ( operation instanceof UpdateResult.Change)
+                {
+                    Reservation oldReservation = (Reservation) ((UpdateResult.Change) operation).getOld();
+                    Reservation newReservation =(Reservation) ((UpdateResult.Change) operation).getNew();
+                    Appointment[] oldAppointments =  oldReservation.getAppointments();
+                    for ( Appointment oldApp: oldAppointments)
+                    {
+                        updateBindings( toUpdate, oldReservation, oldApp, true);
+                    }
+                    Appointment[] newAppointments =  newReservation.getAppointments();
+                    for ( Appointment newApp: newAppointments)
+                    {
+                        updateBindings( toUpdate, newReservation, newApp, false);
+                    }
+                }
+            }
+			if ( raplaType ==  Allocatable.TYPE )
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
@@ -442,11 +455,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkAbandonedAppointments(cache.getCollection( Allocatable.class));
 	}
 	
-	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Appointment app, boolean remove) throws RaplaException {
+	private void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Reservation reservation, Appointment app, boolean remove) throws RaplaException {
 		
 		Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
 		allocatablesToProcess.add( null);
-		Reservation reservation = app.getReservation();
 		if ( reservation != null)
 		{
 			Allocatable[] allocatablesFor = reservation.getAllocatablesFor( app);
