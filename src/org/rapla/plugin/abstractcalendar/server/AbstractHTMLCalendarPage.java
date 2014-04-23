@@ -20,6 +20,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -192,39 +193,17 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 		out.println("<body>");
 		if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
 		{
-			try {
-				out.println("<table>");
-				String base = request.getRequestURL().toString();
-				String queryPath = request.getQueryString();
-				queryPath = queryPath.replaceAll("&selected_allocatables[^&]*","");
-				Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
-				List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(Arrays.asList(selectedAllocatables));
-				Collections.sort( sortedAllocatables, new NamedComparator<Allocatable>(getLocale()) );
-				for (Allocatable alloc:sortedAllocatables)
-				{
-					out.print("<tr>");
-					out.print("<td>");
-					String name = alloc.getName(getLocale());
-					out.print(name);
-					out.print("</a>");
-					out.print("</td>");
-					out.print("<td>");
-					String link = base + "/rapla?" + queryPath + "&allocatable_id=" + ((SimpleIdentifier)((RefEntity)alloc).getId()).getKey();
-					out.print("<a href=\""+ link+ "\">");
-					out.print(link);
-					out.print("</a>");
-					out.print("</td>");
-					out.print("</tr>");
-					
-				}
-				out.println("</table>");
-			} catch (RaplaException e) {
-				throw new ServletException( e);
-			}
+            try {
+                Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
+                printAllocatableList(request, out, getLocale(), selectedAllocatables);
+            } catch (RaplaException e) {
+                throw new ServletException(e);
+            }
 		}
 		else
 		{
-	        // Start DateChooser
+		    String allocatable_id  = request.getParameter("allocatable_id");
+		    // Start DateChooser
 			if (navigationVisible)
 			{
 				out.println("<div class=\"datechooser\">");
@@ -244,11 +223,10 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 						out.println(getHiddenField("file", filename));
 					}
 				}
-				String allocatable_id  = request.getParameter("allocatable_id");
-				if ( allocatable_id != null)
-				{
-					out.println(getHiddenField("allocatable_id", allocatable_id));
-				}				
+	            if ( allocatable_id != null)
+	            {
+	                out.println(getHiddenField("allocatable_id", allocatable_id));
+	            }               
 				// add the "previous" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"prev\" value=\"&lt;&lt;\"/></span> ");
 				out.println("<span class=\"spacer\">&nbsp;</span> ");
@@ -279,6 +257,33 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 		}
 		out.println("</body>");
 		out.println("</html>");
+    }
+
+    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Allocatable[] selectedAllocatables) {
+    	out.println("<table>");
+    	String base = request.getRequestURL().toString();
+    	String queryPath = request.getQueryString();
+    	queryPath = queryPath.replaceAll("&selected_allocatables[^&]*","");
+    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(Arrays.asList(selectedAllocatables));
+    	Collections.sort( sortedAllocatables, new NamedComparator<Allocatable>(locale) );
+    	for (Allocatable alloc:sortedAllocatables)
+    	{
+    		out.print("<tr>");
+    		out.print("<td>");
+    		String name = alloc.getName(locale);
+    		out.print(name);
+    		out.print("</a>");
+    		out.print("</td>");
+    		out.print("<td>");
+    		String link = base + "?" + queryPath + "&allocatable_id=" + ((SimpleIdentifier)((RefEntity)alloc).getId()).getKey();
+    		out.print("<a href=\""+ link+ "\">");
+    		out.print(link);
+    		out.print("</a>");
+    		out.print("</td>");
+    		out.print("</tr>");
+    		
+    	}
+    	out.println("</table>");
     }
 
     public String getFilename(HttpServletRequest request) {
