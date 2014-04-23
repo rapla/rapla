@@ -201,7 +201,7 @@ public class CalendarMenu extends JPanel implements MenuElement {
 
     private void updateFields() {
         labelCurrentDay.setText(m_focusModel.getCurrentDateString());
-        labelMonth.setText(m_monthNames[m_focusModel.getMonth()]);
+        labelMonth.setText(m_monthNames[m_focusModel.getMonth() -1]);
         labelYear.setText(m_focusModel.getYearString());
     }
 

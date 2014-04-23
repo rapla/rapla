@@ -70,7 +70,7 @@ final class DateModel {
 
     public Locale getLocale() {return m_locale; }
     public int getDay() {  return m_calendar.get(Calendar.DATE);  }
-    public int getMonth() {  return m_calendar.get(Calendar.MONTH);   }
+    public int getMonth() {  return m_calendar.get(Calendar.MONTH) + 1;   }
     public int getYear() {   return  m_calendar.get(Calendar.YEAR);   }
 
     /** return the number of days of the selected month */
@@ -150,7 +150,7 @@ final class DateModel {
 
     public void setDate(int day,int month,int year) {
         m_calendar.set(Calendar.DATE,day);
-        m_calendar.set(Calendar.MONTH,month);
+        m_calendar.set(Calendar.MONTH,month -1);
         m_calendar.set(Calendar.YEAR,year);
         trim(m_calendar);
         recalculate();

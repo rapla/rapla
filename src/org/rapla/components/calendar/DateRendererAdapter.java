@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2014 Christopher Kohlhaas                                  |
+ | Copyright (C) 2006 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -47,7 +47,7 @@ public class DateRendererAdapter implements DateRenderer {
         m_calendar.setTime(date);
         return m_renderer.getRenderingInfo(
                                            m_calendar.get(Calendar.DAY_OF_WEEK)
-                                           ,m_calendar.get(Calendar.DATE) 
+                                           ,m_calendar.get(Calendar.DATE)
                                            ,m_calendar.get(Calendar.MONTH) + 1
                                            ,m_calendar.get(Calendar.YEAR)
                                            );
@@ -57,7 +57,7 @@ public class DateRendererAdapter implements DateRenderer {
     /* calls {@link #getBackgroundColor(Date)} */
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year) {
         m_calendar.set(Calendar.DATE,day);
-        m_calendar.set(Calendar.MONTH,month  -1);
+        m_calendar.set(Calendar.MONTH,month -1 );
         m_calendar.set(Calendar.YEAR,year);
         m_calendar.set(Calendar.HOUR_OF_DAY,0);
         m_calendar.set(Calendar.MINUTE,0);

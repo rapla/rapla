@@ -45,6 +45,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 //        return cal1.getTime();
     }
 
+    @Deprecated
     public Date toDate( int year,int month, int day ) {
     	Date result =  toRaplaDate(year, month+1, day);
     	return result;
