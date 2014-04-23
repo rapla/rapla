@@ -454,8 +454,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				allocatablesFor = mutableReservation.getAllocatablesFor(appointment);
 				
 				wholeAppointment = appointment;
-				mutableReservation.removeAppointment( appointment);
-				model.removeElement( appointment);
 				fireAppointmentRemoved(Collections.singleton(appointment));
 				
 				splitAppointments = new ArrayList<Appointment>();
@@ -477,7 +475,10 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 						mutableReservation.setRestriction(alloc, newRestrictions.toArray(Appointment.EMPTY_ARRAY));
 					}
 				}
-
+				// we need to remove the appointment after splitting not before, otherwise allocatable connections could be lost
+				mutableReservation.removeAppointment( appointment);
+                model.removeElement( appointment);
+                
 				for (Appointment newApp:splitAppointments)
 				{
 					addToModel(newApp);
@@ -496,10 +497,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 		
 		public boolean undo()  {
-			for (Appointment newApp : splitAppointments) {
-			    mutableReservation.removeAppointment(newApp);
-				model.removeElement(newApp);
-			}
+            // Switch the type of the appointment to old type
+            mutableReservation.addAppointment(wholeAppointment);
 
 			for (Allocatable alloc : allocatablesFor) {
 				Appointment[] restrictions = mutableReservation.getRestriction(alloc);
@@ -510,10 +509,11 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 					mutableReservation.setRestriction(alloc,newRestrictions.toArray(Appointment.EMPTY_ARRAY));
 				}
 			}
-
-
-			// Switch the type of the appointment to old type
-			mutableReservation.addAppointment(wholeAppointment);
+			// same here we remove the split appointments after we add the old appointment so no allocatable connections gets lost 
+			for (Appointment newApp : splitAppointments) {
+                mutableReservation.removeAppointment(newApp);
+                model.removeElement(newApp);
+            }
 			addToModel(wholeAppointment);
 			fireAppointmentAdded(Collections.singleton(wholeAppointment));
 		
