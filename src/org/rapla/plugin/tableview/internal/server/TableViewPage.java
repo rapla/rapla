@@ -12,11 +12,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.servletpages.RaplaPageGenerator;
 
@@ -52,19 +54,30 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	    out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
 	    out.println("</head>");
 	    out.println("<body>");
-	    out.println("<h2 class=\"title\">");
-	    out.println(getTitle());
-	    out.println("</h2>");
-	    out.println("<div id=\"calendar\">");
-	    try {
-	        final String calendarHTML = getCalendarHTML();
-	        out.println(calendarHTML);
-	    } catch (RaplaException e) {
-	        out.close();
-	        throw new ServletException( e);
-	    }
-	    out.println("</div>");
-	    
+	    if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
+        {
+            try {
+                Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
+                AbstractHTMLCalendarPage.printAllocatableList(request, out, getLocale(), selectedAllocatables);
+            } catch (RaplaException e) {
+                throw new ServletException(e);
+            }
+        }
+        else
+        {
+    	    out.println("<h2 class=\"title\">");
+    	    out.println(getTitle());
+    	    out.println("</h2>");
+    	    out.println("<div id=\"calendar\">");
+    	    try {
+    	        final String calendarHTML = getCalendarHTML();
+    	        out.println(calendarHTML);
+    	    } catch (RaplaException e) {
+    	        out.close();
+    	        throw new ServletException( e);
+    	    }
+    	    out.println("</div>");
+        }	    
 	    // end weekview
 	    out.println("</body>");
 	    out.println("</html>");
@@ -174,6 +187,5 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	
 	abstract String getCalendarHTML() throws RaplaException;
 	abstract int compareTo(T object1, T object2);
-
 
 }
