@@ -54,6 +54,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.rest.RemoteLogger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
@@ -155,6 +156,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( ClientFacade.class, facade );
         addContainerProvidedComponent( SecurityManager.class, SecurityManager.class );
         addRemoteMethodFactory(RemoteStorage.class,RemoteStorageImpl.class, null);
+        addRemoteMethodFactory(RemoteLogger.class,RemoteLoggerImpl.class, null);
         addContainerProvidedComponentInstance( REMOTE_METHOD_FACTORY, this, RemoteServer.class.getName() );
         // adds 5 basic pages to the webapplication
         addWebpage( "server",RaplaStatusPageGenerator.class);

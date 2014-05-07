@@ -76,7 +76,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
         }
         if (resource.getId() != null)
         {
-            throw new RaplaException("Id has to be null for new events");
+            throw new RaplaException("Id has to be null for new resources");
         }
         String eventId = operator.createIdentifier(Allocatable.TYPE, 1)[0];
         resource.setId( eventId);

@@ -70,20 +70,7 @@
     </encoder>
   </appender>
 
-  <appender name="FILE_CALLS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${jetty.home}/logs/rapla_calls.log</file>
-    <!--  log the last 30 days and put them in separate files -->
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${jetty.home}/logs/rapla_calls%d{yyyy-MM-dd}.log</fileNamePattern>
-      <maxHistory>2</maxHistory>
-      <cleanHistoryOnStart>true</cleanHistoryOnStart>
-    </rollingPolicy>
-
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
-    </encoder>
-  </appender>
-
+  
   <appender name="FILE_CALLS" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${jetty.home}/logs/rapla_calls.log</file>
     <!--  log the last 30 days and put them in separate files -->
@@ -149,4 +136,21 @@
     <appender-ref ref="FILE" />
   </root>
 
+  <appender name="FILE_CLIENT_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${jetty.home}/logs/rapla_client.csv</file>
+    <!--  log the last 30 days and put them in separate files -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${jetty.home}/logs/rapla_client%d{yyyy-MM-dd}.csv</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS};%msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="rapla.server.csvaccesslog" level="DEBUG" additivity="false">
+    <appender-ref ref="FILE_CLIENT_LOG"/>
+  </logger>  
+  
 </configuration>
