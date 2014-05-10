@@ -26,6 +26,7 @@ public abstract class ServletTestBase extends TestCase
     Server jettyServer;
     public static String TEST_SRC_FOLDER_NAME="test-src";
     public static String WAR_SRC_FOLDER_NAME="war";
+    protected int port = 8052;
     
     final public static String WEBAPP_FOLDER_NAME = RaplaTestCase.TEST_FOLDER_NAME  + "/webapp";
     final public static String WEBAPP_INF_FOLDER_NAME = WEBAPP_FOLDER_NAME + "/WEB-INF";
@@ -50,7 +51,7 @@ public abstract class ServletTestBase extends TestCase
         IOUtil.copy( WAR_SRC_FOLDER_NAME + "/WEB-INF/web.xml", WEBAPP_INF_FOLDER_NAME + "/web.xml" );
         
         
-        jettyServer =new Server(8052);
+        jettyServer =new Server(port);
         WebAppContext context = new WebAppContext( jettyServer,"rapla","/" );
         context.setResourceBase(  webappFolder.getAbsolutePath() );
         context.setMaxFormContentSize(64000000);
