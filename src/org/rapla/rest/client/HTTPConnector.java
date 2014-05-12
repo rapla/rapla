@@ -14,6 +14,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import sun.security.action.GetLongAction;
+
 public class HTTPConnector {
 
     public String sendCallWithString(String requestMethod, URL methodURL,String body, String authenticationToken) throws IOException, ProtocolException, UnsupportedEncodingException {
@@ -49,8 +51,15 @@ public class HTTPConnector {
             {
                 outputStream= conn.getOutputStream();
                 wr = new OutputStreamWriter(outputStream,"UTF-8");
-                wr.write( body);
-                wr.flush();
+                if (  body != null)
+                {
+                    wr.write( body);
+                    wr.flush();
+                }
+                else
+                {
+                    wr.flush();
+                }
             }
             finally
             {
