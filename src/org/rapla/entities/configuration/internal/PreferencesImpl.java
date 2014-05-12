@@ -267,6 +267,16 @@ public class PreferencesImpl extends SimpleEntity
 	    {
 	        updateMap(remove, null);
 	    }
+	    Date lastChangedPatch = patch.getLastChanged();
+	    if ( lastChangedPatch != null )
+	    {
+	        Date lastChanged = getLastChanged();   
+	        if ( lastChanged == null || lastChanged.before(lastChangedPatch))
+	        {
+	            setLastChanged( lastChangedPatch );
+	        }
+	        
+	    }
 	}
 
 

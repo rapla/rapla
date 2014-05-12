@@ -99,6 +99,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
@@ -605,6 +606,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Date currentTime = getCurrentTimestamp();
         String userId = evt.getUserId();
         User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
+        
         for ( Entity e: evt.getStoreObjects())
         {
             if ( e instanceof ModifiableTimestamp)
@@ -624,6 +626,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 modifiableTimestamp.setLastChanged( currentTime);
                 modifiableTimestamp.setLastChangedBy( lastChangedBy );
             }
+        }
+        for ( PreferencePatch patch: evt.getPreferencePatches())
+        {
+            patch.setLastChanged( currentTime );
         }
     }
 
