@@ -14,8 +14,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import sun.security.action.GetLongAction;
-
 public class HTTPConnector {
 
     public String sendCallWithString(String requestMethod, URL methodURL,String body, String authenticationToken) throws IOException, ProtocolException, UnsupportedEncodingException {
