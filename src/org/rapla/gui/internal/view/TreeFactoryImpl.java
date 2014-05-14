@@ -63,6 +63,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -186,7 +187,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             Assert.notNull(type);
             DefaultMutableTreeNode typeNode = nodeMap.get(type);
             DefaultMutableTreeNode parentNode = typeNode;
-            Attribute categorizationAtt = classification.getAttribute("categorization");
+            Attribute categorizationAtt = getCategorizationAttribute(classification);
             if (useCategorizations && categorizationAtt != null && classification.getValues(categorizationAtt).size() > 0)
             {
             	Collection<Object> values = classification.getValues(categorizationAtt);
@@ -237,6 +238,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 		}
 		return childMap;
 	}
+
+    protected Attribute getCategorizationAttribute(Classification classification) {
+        for (Attribute attribute: classification.getType().getAttributes())
+        {
+            String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_CATEGORIZATION);
+            if  ( annotation != null && annotation.equals("true"))
+            {
+                return attribute;
+            }
+        }
+        return classification.getAttribute("categorization");
+    }
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Collection<Object> getSortedCategorizations(Collection<Object> unsortedCats) {

@@ -116,8 +116,8 @@ public interface ClassificationFilter extends Cloneable {
 				Classifiable classifiable) 
 		{
 			Classification classification = classifiable.getClassification();
-			for (int i = 0; i < filters.length; i++) {
-				if (filters[i].matches(classification)) {
+			for (ClassificationFilter filter:filters) {
+				if (filter.matches(classification)) {
 					return true;
 				}
 			}

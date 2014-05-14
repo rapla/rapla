@@ -51,6 +51,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -424,8 +425,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					usersConflictRefresh.add( newOwner);
 					usersConflictRefresh.add( oldOwner);
 				}
-				Collection<Category> newGroup = RaplaComponent.getPermissionGroups( newEvent, superCategory, ReservationImpl.PERMISSION_MODIFY, false);
-				Collection<Category> oldGroup = RaplaComponent.getPermissionGroups( oldEvent, superCategory, ReservationImpl.PERMISSION_MODIFY, false);
+				Collection<Category> newGroup = RaplaComponent.getPermissionGroups( newEvent, superCategory, AttributeAnnotations.KEY_PERMISSION_MODIFY, false);
+				Collection<Category> oldGroup = RaplaComponent.getPermissionGroups( oldEvent, superCategory, AttributeAnnotations.KEY_PERMISSION_MODIFY, false);
 				if (newGroup != null && (oldGroup == null || !oldGroup.equals(newGroup)))
 				{
 					groupsConflictRefresh.addAll( newGroup);

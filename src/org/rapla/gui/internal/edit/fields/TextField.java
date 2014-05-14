@@ -77,44 +77,49 @@ public class TextField extends AbstractEditField implements ActionListener,Focus
         addCopyPaste( field);
         field.addFocusListener(this);
         field.addKeyListener(this);
-        if (fieldName.equals("color"))
-        {
-        	colorPanel = new JPanel();
-        	color = new JPanel();
-        	color.setPreferredSize(new Dimension(20,20));
-        	
-        	color.setBorder( BorderFactory.createEtchedBorder());
-        	colorPanel.setLayout(new BorderLayout());
-        	colorPanel.add( field, BorderLayout.CENTER);
-            colorPanel.add( color, BorderLayout.WEST);
-        	colorChooserBtn = new JButton();
-        	if ( field instanceof JTextField)
-        	{
-        		((JTextField) field).setColumns( 7);
-        	}
-        	else
-        	{
-        		((JTextArea) field).setColumns( 7);
-           }
-            colorPanel.add( colorChooserBtn, BorderLayout.EAST);
-            colorChooserBtn.setText( getString("change") );
-            colorChooserBtn.addActionListener( new ActionListener() {
-
-        		public void actionPerformed(ActionEvent e) {
-        			currentColor = JColorChooser.showDialog(
-        					colorPanel,
-                             "Choose Background Color",
-                              currentColor);
-                    color.setBackground( currentColor );
-                    if ( currentColor != null) {
-                    	field.setText( AWTColorUtil.getHexForColor( currentColor ));
-                    }
-                    fireContentChanged();
-        		}
-
-            });
-        }
         setValue("");
+    }
+
+    public void setColorPanel(boolean show) {
+        if (!show )
+        {
+            colorPanel = null;
+            return;
+        }
+        colorPanel = new JPanel();
+        color = new JPanel();
+        color.setPreferredSize(new Dimension(20,20));
+        
+        color.setBorder( BorderFactory.createEtchedBorder());
+        colorPanel.setLayout(new BorderLayout());
+        colorPanel.add( field, BorderLayout.CENTER);
+        colorPanel.add( color, BorderLayout.WEST);
+        colorChooserBtn = new JButton();
+        if ( field instanceof JTextField)
+        {
+        	((JTextField) field).setColumns( 7);
+        }
+        else
+        {
+        	((JTextArea) field).setColumns( 7);
+         }
+        colorPanel.add( colorChooserBtn, BorderLayout.EAST);
+        colorChooserBtn.setText( getString("change") );
+        colorChooserBtn.addActionListener( new ActionListener() {
+
+        	public void actionPerformed(ActionEvent e) {
+        		currentColor = JColorChooser.showDialog(
+        				colorPanel,
+                         "Choose Background Color",
+                          currentColor);
+                color.setBackground( currentColor );
+                if ( currentColor != null) {
+                	field.setText( AWTColorUtil.getHexForColor( currentColor ));
+                }
+                fireContentChanged();
+        	}
+
+        });
     }
 
     public String getValue() {

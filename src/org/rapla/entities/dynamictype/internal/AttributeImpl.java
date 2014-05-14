@@ -550,17 +550,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             if (path.length() == 0) {
                 return null;
             }
-            if ( resolver != null)
-            {
-                if ( resolver.tryResolve( path, Allocatable.class) != null)
-                {
-                    return path;
-                }
-            }
-        	if (org.rapla.storage.OldIdMapping.isTextId(Allocatable.TYPE,path)) {
-        		return path ;
-        	}
-            return null;
+            return path;
         }
         else if (type.equals( AttributeType.CATEGORY )) {
             String path = trim;

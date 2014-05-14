@@ -36,6 +36,7 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
@@ -147,7 +148,9 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 			
     			public void actionPerformed(ActionEvent e) {
     				try {
-    					if ( dynamicType.getAttribute("color") != null || colorChooser.getSelectedIndex() != 1)
+    					int selectedIndex = colorChooser.getSelectedIndex();
+                        Attribute firstAttributeWithAnnotation = ((DynamicTypeImpl)dynamicType).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
+                        if ( firstAttributeWithAnnotation != null || selectedIndex != 1)
     					{
     						return;
     					}
@@ -158,6 +161,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 						{
 							Attribute colorAttribute = getModification().newAttribute(AttributeType.STRING);
 							colorAttribute.setKey( "color");
+							colorAttribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
 							colorAttribute.getName().setName(getLocale().getLanguage(), getString("color"));
 							colorAttribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW);
 							dynamicType.addAttribute( colorAttribute);

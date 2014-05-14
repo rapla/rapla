@@ -58,8 +58,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     private Date createDate;
     
     transient HashMap<String,AppointmentImpl> appointmentIndex;
-    public static final String PERMISSION_READ = "permission_read";
-	public static final String PERMISSION_MODIFY = "permission_modify";
         
 	// this is only used when you add a resource that is not yet stored, so the resolver won't find it
 	transient Map<String,AllocatableImpl> nonpersistantAllocatables;

@@ -45,10 +45,12 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.Conflict;
@@ -269,7 +271,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         	String color =null;
         	if (annotation  == null)
         	{
-        		annotation =  type.getAttribute("color") != null ? DynamicTypeAnnotations.VALUE_COLORS_COLOR_ATTRIBUTE: DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED;
+        		annotation =  ((DynamicTypeImpl)type).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR) != null ? DynamicTypeAnnotations.VALUE_COLORS_COLOR_ATTRIBUTE: DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED;
         	}
         	color = getColorForClassifiable( allocatable );
             if ( color == null && annotation.equals(DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED))
@@ -290,7 +292,7 @@ public abstract class RaplaBuilder extends RaplaComponent
 
     static String getColorForClassifiable( Classifiable classifiable ) {
         Classification c = classifiable.getClassification();
-        Attribute colorAttribute = c.getAttribute("color");
+        Attribute colorAttribute =((DynamicTypeImpl)c.getType()).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
         String annotation = c.getType().getAnnotation(DynamicTypeAnnotations.KEY_COLORS);
         if ( annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_COLORS_DISABLED))
         {

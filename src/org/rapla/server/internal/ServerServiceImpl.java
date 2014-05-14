@@ -277,7 +277,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         } catch (Exception rc) {
 			getLogger().error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
-        
 		initializePlugins( pluginList, preferences );
 
         if ( context.has( AuthenticationStore.class ) )
@@ -300,7 +299,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 //        	
 //        };
     }
-    
+
     @Override
     protected Map<String,ComponentInfo> getComponentInfos() {
         return new RaplaMetaConfigInfo();

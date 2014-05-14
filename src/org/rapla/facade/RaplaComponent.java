@@ -38,17 +38,17 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
-import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
@@ -352,12 +352,12 @@ public class RaplaComponent
     /** We check if an attribute with the permission_modify exists and look if the permission is set either globally (if boolean type is used) or for a specific user group (if category type is used)*/
 	public static boolean checkClassifiableModifyPermissions(Object object,
 			User user) {
-		return checkClassifiablePermissions(object, user, ReservationImpl.PERMISSION_MODIFY, false);
+		return checkClassifiablePermissions(object, user, AttributeAnnotations.KEY_PERMISSION_MODIFY, false);
 	}
 	
 	public static boolean checkClassifiablerReadPermissions(
 			Object object, User user) {
-		return checkClassifiablePermissions(object, user, ReservationImpl.PERMISSION_READ, true);
+		return checkClassifiablePermissions(object, user, AttributeAnnotations.KEY_PERMISSION_READ, true);
 	}
     
  	static Category dummyCategory = new CategoryImpl(new Date(), new Date());
@@ -392,8 +392,8 @@ public class RaplaComponent
             Classification classification = classifiable.getClassification();
             if ( classification != null)
             {
-                final DynamicType type = classification.getType();
-                final Attribute attribute = type.getAttribute(permissionKey);
+                final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
+                final Attribute attribute = type.getFirstAttributeWithAnnotation(permissionKey);
                 if ( attribute != null)
                 {
                     return getPermissionGroups(classification, yesCategory, attribute);

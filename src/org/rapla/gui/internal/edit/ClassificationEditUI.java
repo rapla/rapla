@@ -143,7 +143,10 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		if (type.equals(AttributeType.STRING)) {
 			Integer rows = new Integer(attribute.getAnnotation(	AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
 			Integer columns = new Integer(attribute.getAnnotation( AttributeAnnotations.KEY_EXPECTED_COLUMNS,String.valueOf(TextField.DEFAULT_LENGTH)));
-			field = new TextField(context, label, rows.intValue(),columns.intValue());
+			TextField textField = new TextField(context, label, rows.intValue(),columns.intValue());
+            boolean isColor = attribute.getKey().equals("color") || attribute.getAnnotation(AttributeAnnotations.KEY_COLOR, "false").equals("true");
+            textField.setColorPanel(  isColor);
+			field = textField;
 		} else if (type.equals(AttributeType.INT)) {
 			field = new LongField(context, label);
 		} else if (type.equals(AttributeType.DATE)) {

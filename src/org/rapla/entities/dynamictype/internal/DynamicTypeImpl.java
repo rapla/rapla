@@ -484,8 +484,19 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		return false;
 	}
 
-	
-	public static boolean isInternalType(Classifiable classifiable) {
+	public Attribute getFirstAttributeWithAnnotation(String annotationKey) {
+        for (Attribute attribute: attributes)
+        {
+            String annotation = attribute.getAnnotation(annotationKey);
+            if  ( annotation != null && annotation.equals("true"))
+            {
+                return attribute;
+            }
+        }
+        return getAttribute(annotationKey);
+    }
+
+    public static boolean isInternalType(Classifiable classifiable) {
 		boolean isRaplaType =false;
 		Classification classification = classifiable.getClassification();
 		if ( classification != null )

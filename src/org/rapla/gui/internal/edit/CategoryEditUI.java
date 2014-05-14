@@ -437,6 +437,8 @@ class CategoryDetail extends RaplaGUIComponent
         name = new MultiLanguageField(context);
         key = new TextField(context);
         colorTextField = new TextField(context);
+        colorTextField.setColorPanel( true );
+        
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]
