@@ -301,7 +301,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         String color = null;
         if ( colorAttribute != null) {
             Object hexValue = c.getValue( colorAttribute );
-            if ( hexValue != null) {
+            if ( hexValue != null ) {
                 if ( hexValue instanceof Category) {
                     hexValue = ((Category) hexValue).getAnnotation( CategoryAnnotations.KEY_NAME_COLOR );
                 }
@@ -309,6 +309,10 @@ public abstract class RaplaBuilder extends RaplaComponent
                     color = hexValue.toString();
                 }
             }
+        }
+        if ( color == null || color.trim().length() == 0)
+        {
+            return null;
         }
         return color;
     }
