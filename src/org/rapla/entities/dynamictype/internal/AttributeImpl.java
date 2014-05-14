@@ -370,6 +370,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 {
                     return (Allocatable) result;
                 }
+            } 
+            else if ( value instanceof Allocatable )
+            {
+                return (Allocatable) value;
             }
         	return null;
         }
