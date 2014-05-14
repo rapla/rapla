@@ -84,9 +84,16 @@ class DynAttReader extends RaplaXMLReader {
         if (level > entryLevel) {
             String content = readContent();
             if (content != null) {
-                Object value = parseAttributeValue(attribute, content);
-            	classification.addValue( attribute, value);
+                parseContent(content);
             }
+        }
+    }
+
+    private void parseContent(String content) throws RaplaSAXParseException {
+        Object value = parseAttributeValue(attribute, content);
+        if ( value != null)
+        {
+            classification.addValue( attribute, value);
         }
     }
     
