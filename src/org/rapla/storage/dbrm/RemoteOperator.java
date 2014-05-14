@@ -46,7 +46,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.UpdateModule;
@@ -60,9 +64,11 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
+import org.rapla.storage.impl.EntityStore;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -405,6 +411,49 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
         super.testResolve(entities);
     }
+    
+    // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
+    protected void testResolveInitial(Collection<? extends Entity> entities) throws EntityNotFoundException {
+        EntityStore store = new EntityStore( this, getSuperCategory())
+        {
+            protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
+                T tryResolve = super.tryResolveParent(id, entityClass);
+                if ( tryResolve != null)
+                {
+                    return tryResolve;
+                }
+                else
+                {
+                    if ( entityClass != null && Allocatable.class.isAssignableFrom(entityClass))
+                    {
+                        AllocatableImpl unresolved = new AllocatableImpl(null, null);
+                        unresolved.setId( id);
+                        DynamicType dynamicType = getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
+                        ((DynamicTypeImpl)dynamicType).setReadOnly();
+                        Classification newClassification = dynamicType.newClassification();
+                        unresolved.setClassification( newClassification);
+                        @SuppressWarnings("unchecked")
+                        T casted = (T) unresolved;
+                        return casted;
+                    }
+                    return null;
+                }
+            };
+        };
+        store.addAll( entities);
+        for (Entity entity: entities) {
+            if (entity instanceof EntityReferencer)
+            {
+                ((EntityReferencer)entity).setResolver(store);
+            }
+        }
+        for (Entity entity: entities) {
+            if (entity instanceof EntityReferencer)
+            {
+                testResolve(store, (EntityReferencer)entity);
+            }
+        }  
+    }
 
     private User loadData(String username) throws RaplaException {
         getLogger().debug("Getting Data..");
@@ -420,7 +469,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			updateTimestamps(evt);
 	        Collection<Entity> storeObjects = evt.getStoreObjects();
         	cache.clearAll();
-        	testResolve( storeObjects);
+        	testResolveInitial( storeObjects);
         	setResolver( storeObjects );
             for( Entity entity:storeObjects)
             {
@@ -685,7 +734,13 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		{
 			AllocatableImpl unresolved = new AllocatableImpl(null, null);
 			unresolved.setId( id);
-			unresolved.setClassification( getDynamicType(UNRESOLVED_RESOURCE_TYPE).newClassification());
+			DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
+		    if ( dynamicType == null)
+            {
+                return null;
+            }
+            Classification newClassification = dynamicType.newClassification();
+            unresolved.setClassification( newClassification);
 			@SuppressWarnings("unchecked")
             T casted = (T) unresolved;
             return casted;

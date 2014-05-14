@@ -129,10 +129,15 @@ public class EntityStore implements EntityResolver {
       
         if (parent != null)
         {
-            return parent.tryResolve(id, entityClass);
+            return tryResolveParent(id, entityClass);
             
         }
         return null;
+    }
+
+    protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
+        T tryResolve = parent.tryResolve(id, entityClass);
+        return tryResolve;
     }
 
     
