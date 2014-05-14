@@ -320,12 +320,11 @@ class DefaultConstraints extends AbstractEditField
     boolean emailPossible = false;
     Category rootCategory;
     AnnotationEditUI annotationEdit;
-    Collection<AnnotationEditExtension> annotationExtensions;
     Attribute attribute;
     
     DefaultConstraints(RaplaContext context) throws RaplaException{
         super( context );
-        annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT);
+        Collection<AnnotationEditExtension> annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT);
         annotationEdit = new AnnotationEditUI(context, annotationExtensions);
         key = new TextField(context);
         name = new MultiLanguageField(context);

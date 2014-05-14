@@ -14,9 +14,12 @@ package org.rapla.gui.internal.edit;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -28,6 +31,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
+import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.UniqueKeyException;
@@ -37,13 +41,17 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.gui.internal.edit.fields.MultiLanguageField;
 import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.gui.toolkit.RaplaButton;
 
 
 /****************************************************************
@@ -69,14 +77,22 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     JTextField annotationText = new JTextField();
     JTextField annotationTreeText = new JTextField();
     JComboBox colorChooser;
+    
+    RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
+    
     JLabel locationLabel = new JLabel("location");
     JComboBox locationChooser;
     JLabel conflictLabel = new JLabel("conflict creation");
 	JComboBox conflictChooser;
     boolean isResourceType;
     boolean isEventType;
+    AnnotationEditUI annotationEdit;
+    DialogUI dialog;
+
     public DynamicTypeEditUI(RaplaContext context) throws RaplaException {
         super(context);
+        Collection<AnnotationEditExtension> annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT);
+        annotationEdit = new AnnotationEditUI(context, annotationExtensions);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
@@ -125,7 +141,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         annotationPanel.add(annotationLabel,"0,0");
         annotationPanel.add(annotationText ,"2,0");
         annotationPanel.add(annotationDescription,"2,2");
-        annotationPanel.add(annotationTreeText ,"2,4");
+        annotationPanel.add(annotationButton ,"2,4");
         annotationPanel.add(new JLabel(getString("color")),"0,6");
         annotationPanel.add(colorChooser,"2,6");
         annotationPanel.add(locationLabel,"0,8");
@@ -133,13 +149,31 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         annotationPanel.add(conflictLabel,"0,10");
         annotationPanel.add(conflictChooser,"2,10");
         annotationLabel.setText(getString("dynamictype.annotation.nameformat") + ":");
+        annotationButton.setText(getString("edit"));
+        annotationButton.addActionListener(new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    showAnnotationDialog();
+                } catch (RaplaException ex) {
+                    showException(ex, getComponent());
+                }
+                
+            }
+        });
+     
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
         float newSize = (float) (annotationDescription.getFont().getSize() * 0.8);
         annotationDescription.setFont(annotationDescription.getFont().deriveFont( newSize));
         attributeEdit.addChangeListener( new ChangeListener() {
             public void stateChanged( ChangeEvent e )
             {
-                updateAnnotations();
+                try {
+                    updateAnnotations();
+                } catch (RaplaException ex) {
+                    showException(ex, getComponent());
+                }
             }
 
         });
@@ -265,17 +299,49 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 	        
         }
     }
+    
+    private void showAnnotationDialog() throws RaplaException
+    {
+        RaplaContext context = getContext();
+        boolean modal = false;
+        if (dialog != null)
+        {
+            dialog.close();
+        }
+        dialog = DialogUI.create(context
+                ,getComponent()
+                ,modal
+                ,annotationEdit.getComponent()
+                ,new String[] { getString("close")});
+
+        dialog.getButton(0).setAction( new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            public void actionPerformed(ActionEvent e) {
+                List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
+                try {
+                    annotationEdit.mapTo(asList);
+                } catch (RaplaException e1) {
+                    getLogger().error(e1.getMessage(), e1);
+                }
+                dialog.close();
+            }
+        });
+        dialog.setTitle(getString("select"));
+        dialog.start();
+    }
+
+    
     public List<DynamicType> getObjects() {
         List<DynamicType> types = Collections.singletonList(dynamicType);
         return types;
     }
 
-    public void setObjects(List<DynamicType> o) {
+    public void setObjects(List<DynamicType> o) throws RaplaException {
         dynamicType =  o.get(0);
         mapFromObjects();
     }
     
-    public void mapFromObjects()
+    public void mapFromObjects() throws RaplaException
     {
         name.setValue( dynamicType.getName());
         elementKey.setValue( dynamicType.getKey());
@@ -291,10 +357,12 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         updateAnnotations();
     }
 
-    private void updateAnnotations() {
+    private void updateAnnotations() throws RaplaException {
         annotationText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT ) );
         annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
-
+        List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
+        annotationEdit.setObjects(asList);
+        
         {
 	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_COLORS); 
 	        if (annotation  == null)

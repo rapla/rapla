@@ -99,6 +99,7 @@ import org.rapla.gui.internal.edit.annotation.ColorAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.EmailAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedColumnsAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedRowsAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ResourceTreeNameAnnotationEdit;
 import org.rapla.gui.internal.edit.reservation.ConflictReservationCheck;
 import org.rapla.gui.internal.edit.reservation.DefaultReservationCheck;
 import org.rapla.gui.internal.edit.reservation.ReservationControllerImpl;
@@ -227,7 +228,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedRowsAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedColumnsAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, EmailAnnotationEdit.class);
-
+        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
+        
         frameControllerList = new FrameControllerList(getLogger().getChildLogger("framelist"));
         addContainerProvidedComponentInstance(FrameControllerList.class,frameControllerList);
 
