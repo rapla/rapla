@@ -258,6 +258,10 @@ public class ParsedText implements Serializable {
 		{
 			return new IfFunction(args);
 		}
+		if ( functionName.equals("concat"))
+		{
+		    return new ConcatFunction(args);
+		}
 		if ( functionName.equals("equals"))
 		{
 			return new EqualsFunction(args);
@@ -624,7 +628,8 @@ public class ParsedText implements Serializable {
 			boolean isTrue;
 			if ( resultCond != null)
 			{
-				isTrue = Boolean.parseBoolean(resultCond.toString());
+				String string = resultCond.toString();
+                isTrue = !string.equalsIgnoreCase("false") && string.length() > 0;
 			} 
 			else 
 			{
@@ -635,6 +640,28 @@ public class ParsedText implements Serializable {
 			return result;
 		}
 	}
+
+	class ConcatFunction extends Function
+    {
+        List<Function> args;
+        public ConcatFunction( List<Function> args) {
+            super( "concat", args);
+            this.args = args;
+        }
+
+        @Override
+        public Object eval(EvalContext context) 
+        {
+            StringBuilder result = new StringBuilder();
+            for ( Function arg:args)
+            {
+                Object condResult =arg.eval( context);
+                String string = ParsedText.this.toString(condResult, context);
+                result.append( string);
+            }
+            return result.toString();
+        }
+    }
 
 	
 	class EqualsFunction extends Function
@@ -669,6 +696,7 @@ public class ParsedText implements Serializable {
 			return evalResult1.equals( evalResult2);
 		}
 	}
+	
 	private Object getValueForIf(Object result, EvalContext context)
 	{
 		if ( result instanceof Attribute)
