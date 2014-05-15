@@ -14,6 +14,9 @@ package org.rapla.gui.internal;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,12 +46,17 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.common.MultiCalendarView;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
+import org.rapla.gui.toolkit.PopupEvent;
+import org.rapla.gui.toolkit.PopupListener;
+import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.gui.toolkit.RaplaPopupMenu;
 import org.rapla.gui.toolkit.RaplaTree;
 import org.rapla.gui.toolkit.RaplaWidget;
 
@@ -60,6 +68,8 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 	protected JPanel content = new JPanel();
 	JLabel summary = new JLabel();
 	Collection<Conflict> conflicts;
+	Listener listener = new Listener();
+
 	 
     public ConflictSelection(RaplaContext context,final MultiCalendarView view, final CalendarSelectionModel model) throws RaplaException {
         super(context);
@@ -74,22 +84,103 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         // content.setPreferredSize(new Dimension(260,400));
         content.setBorder(BorderFactory.createRaisedBevelBorder());
         JTree tree = treeSelection.getTree();
-        tree.setRootVisible(true);
+        //tree.setRootVisible(false);
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(((TreeFactoryImpl) getTreeFactory()).createConflictRenderer());
         tree.setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createConflictTreeSelectionModel());
-
-        navTree.addTreeSelectionListener(new TreeSelectionListener() {
-
-            public void valueChanged(TreeSelectionEvent e) 
-            {
-            	Collection<Conflict> selectedConflicts = getSelectedConflicts();
-            	showConflicts(selectedConflicts);
-            }
-        });
+        treeSelection.addPopupListener(listener);
+        navTree.addTreeSelectionListener(listener);
     }
 
+    class Listener implements TreeSelectionListener, PopupListener
+    {
+        public void valueChanged(TreeSelectionEvent e) 
+        {
+            Collection<Conflict> selectedConflicts = getSelectedConflicts();
+            showConflicts(selectedConflicts);
+        }
+
+        @Override
+        public void showPopup( PopupEvent evt ) {
+            showTreePopup( evt );
+        }
+    }
    
+    
+    protected void showTreePopup(PopupEvent evt) {
+        try {
+            Point p = evt.getPoint();
+            // Object obj = evt.getSelectedObject();
+            List<?> list = treeSelection.getSelectedElements();
+            final List<Conflict> enabledConflicts = new ArrayList<Conflict>();
+            final List<Conflict> disabledConflicts = new ArrayList<Conflict>();
+            for ( Object selected:list)
+            {
+                if ( selected instanceof Conflict)
+                {
+                    Conflict conflict = (Conflict) selected;
+                    if ( conflict.isEnabled())
+                    {
+                        enabledConflicts.add( conflict );
+                    }
+                    else
+                    {
+                        disabledConflicts.add( conflict );
+                    }
+                }
+            }
+            
+            RaplaPopupMenu menu = new RaplaPopupMenu();
+            RaplaMenuItem disable = new RaplaMenuItem("disable");
+            disable.setText("disable conflicts");
+            disable.setEnabled( enabledConflicts.size() > 0);
+            RaplaMenuItem enable = new RaplaMenuItem("enable");
+            enable.setText("enable conflicts");
+            enable.setEnabled( disabledConflicts.size() > 0);
+            
+            disable.addActionListener( new ActionListener() {
+                
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    for (Conflict conflict: enabledConflicts)
+                    {
+                        ((ConflictImpl)conflict).setEnabled( false);
+                    }
+                    try {
+                        updateTree();
+                    } catch (RaplaException ex) {
+                        showException(ex, getComponent());
+                    }
+                }
+            });
+            
+            enable.addActionListener( new ActionListener() {
+                
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    for (Conflict conflict: disabledConflicts)
+                    {
+                        ((ConflictImpl)conflict).setEnabled( true );
+                    }
+                    try {
+                        updateTree();
+                    } catch (RaplaException ex) {
+                        showException(ex, getComponent());
+                    }
+                }
+            });
+
+         
+
+            menu.add(disable);
+            menu.add(enable);
+            JComponent component = (JComponent) evt.getSource();
+
+            menu.show(component, p.x, p.y);
+        } catch (Exception ex) {
+            showException(ex, getComponent());
+        }
+    }
     
     public RaplaTree getTreeSelection() {
         return treeSelection;

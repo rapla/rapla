@@ -3545,6 +3545,10 @@ See French text.
         <text lang="pl">Konflikty ({0})</text>
 		<text lang="pt">Conflitos ({0})</text>
     </entry>
+    <entry key="disabledConflictUC">
+        <text lang="en">disabled Conflicts ({0})</text>
+        <text lang="de">ausgeschaltete Konflikte ({0})</text>
+    </entry>
     
     <!-- Dialogs of Rapla -->
     <!-- License-Dialog -->

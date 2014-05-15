@@ -53,10 +53,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	Date startDate;
 	String reservation1Name;
 	String reservation2Name;
+	boolean enabled = true;
+	
 	ConflictImpl() {
 	}
-	    
-	public ConflictImpl(
+	
+    public ConflictImpl(
                     Allocatable allocatable,
                     Appointment app1,
                     Appointment app2,
@@ -106,6 +108,15 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	public Iterable<ReferenceInfo> getReferenceInfo() {
 	    return Collections.emptyList();
 	}
+	
+	public boolean isEnabled() {
+        return enabled;
+    }
+
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
 	private Date getStartDate_(Date today,Appointment app1, Appointment app2) {
 		Date fromDate = today;
@@ -532,6 +543,10 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	{
 		ConflictImpl clone = new ConflictImpl();
 		super.deepClone( clone);
+		clone.enabled = enabled;
+		clone.reservation1Name = reservation1Name;
+		clone.reservation2Name = reservation2Name;
+		clone.startDate = startDate;
 		return clone;
 	}
 

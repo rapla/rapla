@@ -99,6 +99,7 @@ public interface Conflict extends Named, Entity<Conflict>
     
     Date getStartDate();
    
+    boolean isEnabled();
 }
 
 

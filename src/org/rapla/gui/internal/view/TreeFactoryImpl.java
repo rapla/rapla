@@ -85,7 +85,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     public TreeFactoryImpl(RaplaContext sm) {
         super(sm);
     }
-
    
     class DynamicTypeComperator  implements Comparator<DynamicType>
     {
@@ -497,54 +496,79 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     }
     
     public DefaultTreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException {
-        String conflict_number = conflicts != null ? new Integer(conflicts.size()).toString() : getString("nothing_selected") ;
-		String conflictText = getI18n().format("conflictUC", conflict_number);
-		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.TYPE, conflictText);
+	    DefaultMutableTreeNode rootNode = new TypeNode(Conflict.TYPE, "root");
+		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.TYPE, getI18n().format("conflictUC", 0));
+		DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.TYPE, "disabledConflicts");
+		rootNode.add( treeNode );
         if ( conflicts != null )
         {
-            Map<DynamicType,DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
-            DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-            for (int i = 0; i < types.length; i++) {
-                DynamicType type = types[i];
-                NamedNode node = new NamedNode(type);
-                treeNode.add(node);
-                nodeMap.put(type, node);
-            }
-
-            // creates typ folders
-            types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-            for (int i = 0; i < types.length; i++) {
-                DynamicType type = types[i];
-                NamedNode node = new NamedNode(type);
-                treeNode.add(node);
-                nodeMap.put(type, node);
-            }
-            Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
-            for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
-                Conflict conflict = it.next();
-                Allocatable allocatable = conflict.getAllocatable();
-                allocatables.add( allocatable );
-            }
-            Collection<Allocatable> sorted = sorted(allocatables);
-            Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
-            for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
-                Conflict conflict = it.next();
-                Allocatable allocatable = conflict.getAllocatable();
-                for(NamedNode allocatableNode : childMap.get( allocatable))
-                {
-                	allocatableNode.add(new NamedNode( conflict));
-                }
-            }
-            for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
             {
-                MutableTreeNode value = entry.getValue();
-                if  (value.getChildCount() == 0 )
+                int conflict_number = addConflicts(conflicts, treeNode, true);
+                String conflictText = getI18n().format("conflictUC", conflict_number);
+                treeNode.setUserObject( conflictText);
+            }
+            {
+                int conflict_number = addConflicts(conflicts, treeNode2, false);
+                String conflictText = getI18n().format("disabledConflictUC", conflict_number);
+                treeNode2.setUserObject( conflictText);
+                if ( conflict_number > 0 )
                 {
-                    treeNode.remove( value);
+                    rootNode.add( treeNode2);
                 }
+            } 
+        }
+        return new DefaultTreeModel(rootNode);
+    }
+
+    private int addConflicts(Collection<Conflict> conflicts, DefaultMutableTreeNode treeNode, boolean enabledState) throws RaplaException {
+        int conflictsAdded = 0;
+        Map<DynamicType,DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
+        DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        for (int i = 0; i < types.length; i++) {
+            DynamicType type = types[i];
+            NamedNode node = new NamedNode(type);
+            treeNode.add(node);
+            nodeMap.put(type, node);
+        }
+
+        // creates typ folders
+        types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+        for (int i = 0; i < types.length; i++) {
+            DynamicType type = types[i];
+            NamedNode node = new NamedNode(type);
+            treeNode.add(node);
+            nodeMap.put(type, node);
+        }
+        Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
+            Conflict conflict = it.next();
+            Allocatable allocatable = conflict.getAllocatable();
+            allocatables.add( allocatable );
+        }
+        Collection<Allocatable> sorted = sorted(allocatables);
+        Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
+        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
+            Conflict conflict = it.next();
+            if ( conflict.isEnabled() != enabledState)
+            {
+                continue;
+            }
+            conflictsAdded++;
+            Allocatable allocatable = conflict.getAllocatable();
+            for(NamedNode allocatableNode : childMap.get( allocatable))
+            {
+            	allocatableNode.add(new NamedNode( conflict));
             }
         }
-        return new DefaultTreeModel(treeNode);
+        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
+        {
+            MutableTreeNode value = entry.getValue();
+            if  (value.getChildCount() == 0 )
+            {
+                treeNode.remove( value);
+            }
+        }
+        return conflictsAdded;
     }
 
     class TypeNode extends DefaultMutableTreeNode {
