@@ -105,7 +105,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         result.append("<td class=\"week_number\" width=\"" + Math.round(getLeftColumnSize() * 100) + "%\">");
         result.append(weeknumber);
         result.append("</td>");
-        String percentage = "" + Math.round(columns);
+        String percentage = "" + Math.round(95.0 / (Math.max(0, columns)));
          
         int rowsize = rows.size();
         slots = new HTMLSmallDaySlot[rowsize * columns];
