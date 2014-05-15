@@ -51,6 +51,7 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.InverseComparator;
 import org.rapla.entities.Category;
 import org.rapla.entities.MultiLanguageName;
@@ -74,6 +75,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.toolkit.TreeToolTipRenderer;
@@ -885,13 +887,20 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         protected String getText( Conflict conflict) {
             StringBuffer buf = new StringBuffer();
             buf.append("<html>");
-            buf.append( getRaplaLocale().formatTimestamp(conflict.getStartDate()));
+            Date startDate = conflict.getStartDate();
+            RaplaLocale raplaLocale = getRaplaLocale();
+            buf.append( raplaLocale.formatDate(startDate) );
+            if (!DateTools.cutDate(startDate).equals(startDate))
+            {
+                buf.append(' ');
+                buf.append( raplaLocale.formatTime(startDate) );
+            }
 //            buf.append( getAppointmentFormater().getSummary(conflict.getAppointment1()));
             buf.append( "<br>" );
             buf.append( conflict.getReservation1Name() );
-            buf.append( " " );
+            buf.append( ' ' );
             buf.append( getString("with"));
-            buf.append( "\n" );
+            buf.append( '\n' );
             buf.append( "<br>" );
             buf.append( conflict.getReservation2Name() );
             // TOD add the rest of conflict
