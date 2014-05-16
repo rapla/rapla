@@ -286,6 +286,7 @@ class DefaultConstraints extends AbstractEditField
     JLabel defaultLabel = new JLabel();
     JLabel multiSelectLabel = new JLabel();
     JLabel tabLabel = new JLabel();
+    JLabel specialkeyLabel = new JLabel(); // BJO
     AttributeType types[] = {
         AttributeType.BOOLEAN
         ,AttributeType.STRING
@@ -375,7 +376,7 @@ class DefaultConstraints extends AbstractEditField
         panel.add("3,11,l,t", multiSelect.getComponent());
         panel.add("1,13,l,t", tabLabel);
         panel.add("3,13,l,t", tabSelect);
-        panel.add("1,15,l,t", new JLabel("erweitert"));
+        panel.add("1,15,l,t", specialkeyLabel); // BJO
         panel.add("3,15,l,t", annotationButton);
         annotationButton.setText(getString("edit"));
         annotationButton.addActionListener(new ActionListener() {
@@ -394,13 +395,14 @@ class DefaultConstraints extends AbstractEditField
         setModel();
 
         nameLabel.setText(getString("name") + ":");
-        keyLabel.setText(getString("key") +" *"+ ":");
+        keyLabel.setText(getString("key") +" *" + ":");
         typeLabel.setText(getString("type") + ":");
         categoryLabel.setText(getString("root") + ":");
         dynamicTypeLabel.setText(getString("root") + ":");
         tabLabel.setText(getString("edit-view") + ":");
         multiSelectLabel.setText("Multiselect:");
-        defaultLabel.setText(getString("default") +":");
+        defaultLabel.setText(getString("default") + ":");
+        specialkeyLabel.setText(getString("options") + ":");
         categorySelect.addChangeListener ( this );
         categorySelect.addChangeListener( new ChangeListener() {
             

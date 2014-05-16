@@ -1512,7 +1512,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (eventUserId != null && eventUserId.equals( entity.getId()))
                 {
                     List<String> emptyList = Collections.emptyList();
-                    throw new DependencyException("User can't delete himself", emptyList);
+                    throw new DependencyException(i18n.getString("error.deletehimself"), emptyList);
                 }
 			}
 

@@ -793,6 +793,7 @@ See French text.
     <entry key="categorization">
         <text lang="en">Categorization</text>
         <text lang="de">Kategoriesierung</text>
+        <text lang="nl">Categorisering</text>
     </entry>
     <entry key="changes">
         <text lang="en">Changes</text>
@@ -4777,5 +4778,15 @@ See French text.
         <text lang="nl">Export to CSV</text>
         <text lang="pl">Export do CSV</text>
 		<text lang="pt">Exportar para CSV</text>
+    </entry>
+        <entry key="error.deletehimself">
+        <text lang="en">"User can't delete himself."</text>
+        <text lang="de">Benutzer kann sich nicht löschen.</text>
+        <text lang="fr">L'utilisateur ne peut pas se supprimer.</text>
+        <text lang="es">El usuario no puede eliminar a sí mismo.</text>
+        <text lang="cs">Uživatel nemůže odstranit sám.</text>
+        <text lang="nl">Gebruiker kan zichzelf niet verwijderen.</text>
+        <text lang="pl">Użytkownik nie może usunąć sam.</text>
+		<text lang="pt">O usuário não pode excluir-se.</text>
     </entry>
 </resources>
