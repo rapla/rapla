@@ -19,8 +19,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -58,7 +58,8 @@ public class CalendarListPageGenerator extends RaplaComponent implements RaplaPa
             String username = request.getParameter( "user" );
             response.setContentType("text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
             User[] users = getQuery().getUsers();
-            Set<User> sortedUsers =new TreeSet<User>( Arrays.asList( users));
+            SortedSet<User> sortedUsers = new TreeSet<User>( User.USER_COMPARATOR);
+            sortedUsers.addAll( Arrays.asList( users));
             if ( username != null)
             {
                 users = new User[] { getQuery().getUser( username )}; 
