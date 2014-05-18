@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -240,7 +241,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         tree.setShowsRootHandles(true);
         TreeModel model = createModel();
 		tree.setModel(model);
-        selectCategory(tree,selectedValues);
+        selectValues(tree,selectedValues);
         JPanel panel = new JPanel();
         panel.setLayout( new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(tree);
@@ -256,7 +257,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             defaultButton.addActionListener( new ActionListener() {
                 public void actionPerformed(ActionEvent arg0) 
                 {
-                    selectCategory( tree, Collections.singletonList(defaultValue));
+                    selectValues( tree, Collections.singletonList(defaultValue));
                 }
             });
         }
@@ -270,7 +271,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 public void actionPerformed(ActionEvent arg0) 
                 {
                     List<T> emptyList = Collections.emptyList();
-					selectCategory(tree, emptyList );
+					selectValues(tree, emptyList );
                 }
             });
         }
@@ -284,6 +285,12 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         tree.addMouseListener(new MouseAdapter() {
             // End dialog when a leaf is double clicked
             public void mousePressed(MouseEvent e) {
+                // we only add the double click when multiselect is not enabled
+                // because it will cause a deselect on double clicking an item
+                if ( multipleSelectionPossible)
+                {
+                    return;
+                }
                 TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
                 if (selPath != null && e.getClickCount() == 2) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode)selPath.getLastPathComponent();
@@ -298,7 +305,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         dialog.start();
         if (dialog.getSelectedIndex() == 0) {
             TreePath[] paths = tree.getSelectionPaths();
-            Collection<T> newValues = new ArrayList<T>();
+            Collection<T> newValues = new LinkedHashSet<T>();
             if ( paths != null)
             {
 	            for (TreePath path:paths) 
@@ -327,30 +334,33 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
 	public abstract TreeModel createModel() throws RaplaException;
 
-    private void selectCategory(JTree tree, Collection<T> categories) {
-        select(tree, categories);
+    private void selectValues(JTree tree, Collection<T> values) {
+        select(tree, values);
         //RecursiveNode.selectUserObjects(tree,path.toArray());
     }
     
     public void select(JTree jTree,Collection<?> selectedObjects) {
         Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
-        
-        Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
-        while (it.hasNext()) {
-            TreeNode node = it.next();
-            if (node != null && selectedObjects.contains( getObject(node) ))
-                selectedNodes.add(node);
+        {
+            Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
+            while (it.hasNext()) {
+                TreeNode node = it.next();
+                if (node != null && selectedObjects.contains( getObject(node) ))
+                    selectedNodes.add(node);
+            }
         }
-        it = selectedNodes.iterator();
-        TreePath[] path = new TreePath[selectedNodes.size()];
+        TreePath[] paths = new TreePath[selectedNodes.size()];
         int i=0;
-        while (it.hasNext()) {
-            path[i] = getPath(it.next());
-            jTree.expandPath(path[i]);
+        for ( TreeNode node: selectedNodes)
+        {
+            paths[i] = getPath(node);
+            jTree.expandPath(paths[i]);
             i++;
         }
-        jTree.getSelectionModel().clearSelection();
-        jTree.setSelectionPaths(path);
+        TreeSelectionModel selectionModel = jTree.getSelectionModel();
+        selectionModel.clearSelection();
+        selectionModel.setSelectionPaths(paths);
+        jTree.setSelectionPaths(paths);
     }
     
     private static Object getObject(Object treeNode) {
@@ -367,10 +377,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     }
    
     private TreePath getPath(TreeNode node) {
-        if (node.getParent() == null)
+        TreeNode parent = node.getParent();
+        if (parent == null)
             return new TreePath(node);
         else
-            return getPath(node.getParent()).pathByAddingChild(node);
+            return getPath(parent).pathByAddingChild(node);
     }
     
     public JComponent getComponent() {

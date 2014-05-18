@@ -169,10 +169,10 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.CATEGORY)) {
 			Category defaultCategory = (Category) attribute.defaultValue();
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-			boolean multipleSelectionPossible = attribute.getAnnotation(ConstraintIds.KEY_MULTI_SELECT, "false").equals("true");
+			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
                 CategorySelectField catField = new CategorySelectField(context, rootCategory, defaultCategory);
-                catField.setMultipleSelectionPossible( multipleSelectionPossible);
+                catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
                 field = catField;
             } else {
