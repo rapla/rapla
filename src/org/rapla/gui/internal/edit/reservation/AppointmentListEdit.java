@@ -119,16 +119,21 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
     public void setReservation(Reservation mutableReservation, Appointment mutableAppointment) {
         this.mutableReservation = mutableReservation;
-        Appointment[] appointments = mutableReservation.getAppointments();
-        model.clear();
-        for (Appointment app:appointments) {
-            addToModel(app);
-        }
+        Appointment[] appointments = replaceList(mutableReservation);
         if ( mutableAppointment != null ) {
             selectAppointment(mutableAppointment, false);
         } else if ( appointments.length> 0 ){
             selectAppointment(appointments[0], false);
         }
+    }
+
+    private Appointment[] replaceList(Reservation mutableReservation) {
+        Appointment[] appointments = mutableReservation.getAppointments();
+        model.clear();
+        for (Appointment app:appointments) {
+            addToModel( app);
+        }
+        return appointments;
     }
     
 	private void selectAppointment(Appointment appointment,boolean disableListeners) {
@@ -326,12 +331,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			for (Appointment appointment:appointmentList) {
 				mutableReservation.removeAppointment(appointment);
 			}
-	        model.clear();
-	        for (Appointment app:mutableReservation.getAppointments()) {
-	            addToModel(app);
-	        }
-
-			fireAppointmentRemoved(appointmentList);
+			replaceList(mutableReservation);
+	        fireAppointmentRemoved(appointmentList);
 			listEdit.getList().requestFocus();
 			return true;
 		}
@@ -344,10 +345,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
                 Allocatable[] removedAllocatables = list.get( appointment);
 				mutableReservation.setRestriction(appointment, removedAllocatables);
 			}
-			model.clear();
-			for (Appointment app:mutableReservation.getAppointments()) {
-	            addToModel(app);
-	        }
+			replaceList(mutableReservation);
 			fireAppointmentAdded(appointmentList);
 			disableInternSelectionListener = true;
 			try {
