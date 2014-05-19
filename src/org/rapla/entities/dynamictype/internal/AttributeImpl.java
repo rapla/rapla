@@ -150,7 +150,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
 		if ( key.equals( ConstraintIds.KEY_MULTI_SELECT))
 		{
-		    multiSelect = true;
+		    multiSelect = constraint != null && "true".equalsIgnoreCase( constraint.toString());
 		}
 	}
 	

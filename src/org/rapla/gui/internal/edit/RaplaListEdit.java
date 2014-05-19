@@ -244,6 +244,11 @@ final public class RaplaListEdit<T> implements
 
 
     private void editSelectedEntry() {
+        // This is a workaround for a bug when calling the model.clear method in combination with multiple selections and the use of SortedListModel
+        if (list.getMinSelectionIndex()>=list.getModel().getSize())
+        {
+            return;
+        }
         Object selected = list.getSelectedValue();
         if (selected == null) {
             cardLayout.first(editPanel);
@@ -297,6 +302,8 @@ final public class RaplaListEdit<T> implements
 		list.setSelectedIndices( index);
 		disableListSelection = false;
 	}
+    
+    
 
     class Listener extends MouseAdapter implements ListSelectionListener,ActionListener,ChangeListener {
         public void actionPerformed(ActionEvent evt) {

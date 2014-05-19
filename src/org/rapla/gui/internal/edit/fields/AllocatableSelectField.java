@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit.fields;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -67,6 +68,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 		if (dynamicTypeConstraint !=null)
 		{
 			TreeNode child = ((TreeNode)treeModel.getRoot()).getChildAt(0);
+			((DefaultMutableTreeNode)child).removeFromParent();
 			treeModel = new DefaultTreeModel( child );
 		}
 		return treeModel;

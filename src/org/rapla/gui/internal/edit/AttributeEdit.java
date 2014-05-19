@@ -420,6 +420,7 @@ class DefaultConstraints extends AbstractEditField
         key.addChangeListener ( this );
         classSelect.addActionListener ( this );
         tabSelect.addActionListener( this);
+        multiSelect.addChangeListener( this );
         defaultSelectCategory.addChangeListener( this );
         defaultSelectText.addChangeListener( this );
         defaultSelectBoolean.addChangeListener( this );
