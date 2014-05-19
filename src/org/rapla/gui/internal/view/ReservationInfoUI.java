@@ -84,7 +84,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     
     public List<Row> getAttributes(Reservation reservation,LinkController controller, User user, boolean excludeAdditionalInfos) {
         ArrayList<Row> att = new ArrayList<Row>();
-        att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,null ));
+        att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller ));
         User owner = reservation.getOwner();
         final Locale locale = getLocale();
         if ( owner != null)

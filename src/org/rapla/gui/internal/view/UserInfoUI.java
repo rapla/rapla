@@ -45,7 +45,7 @@ class UserInfoUI extends HTMLInfo<User> {
         }
         else
         {
-            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null);
+            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,controller);
 			att.addAll(classificationAttributes);
         }
         createTable(att,buf,false);
