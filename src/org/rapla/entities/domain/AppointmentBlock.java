@@ -53,6 +53,12 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	    return start <= a2.start  &&  end>= a2.end;
 	}
 	
+	public boolean intersects(AppointmentBlock a2)
+    {
+        return start < a2.end  &&  end> a2.start;
+    }
+    
+	
 	/**
 	 * Returns the start date of this block
 	 * 
@@ -113,8 +119,11 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		return compareTo;
     }
 	
+	
 	public String toString()
 	{
 		return DateTools.formatDateTime(new Date(start)) + " - " + DateTools.formatDateTime(new Date(end));
 	}
+
+    
 }

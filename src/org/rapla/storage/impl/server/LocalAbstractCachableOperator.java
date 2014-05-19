@@ -722,7 +722,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			    }
 		};
 		// The conflict map
-		conflictFinder = new ConflictFinder(allocationMap, today2, getLogger(), this);
+		Logger logger = getLogger();
+        conflictFinder = new ConflictFinder(allocationMap, today2, logger, this);
 		long delay = DateTools.MILLISECONDS_PER_HOUR;
 		long period = DateTools.MILLISECONDS_PER_HOUR;
 		Command cleanUpConflicts = new Command() {

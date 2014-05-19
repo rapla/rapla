@@ -15,16 +15,15 @@ package org.rapla.storage.impl.server;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.rapla.components.util.DateTools;
@@ -34,8 +33,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentBlockEndComparator;
-import org.rapla.entities.domain.AppointmentBlockStartComparator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -70,107 +67,174 @@ class ConflictFinder {
         this.resolver = resolver;
 	}
 	
-	private Set<Conflict> updateConflicts(Allocatable allocatable,AllocationChange change, Date today, Set<Conflict> oldList ) 
+    
+    private Set<Conflict> updateConflicts(Allocatable allocatable,AllocationChange change, Date today, Set<Conflict> oldList ) 
     {
-		if ( isConflictIgnored(allocatable))
-		{
-			return Collections.emptySet();
-		}
-		Set<Appointment> allAppointments = allocationMap.getAppointments(allocatable);
-		Set<Appointment> changedAppointments;
-    	Set<Appointment> removedAppointments;
-    	if ( change == null)
-		{
-			changedAppointments = allAppointments;
-	    	removedAppointments = new TreeSet<Appointment>();
-		}
-		else
-		{
-			changedAppointments = change.toChange;
-	    	removedAppointments = change.toRemove;
-		}
-    	Set<String> foundConflictIds = new HashSet<String>();
-		Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
-		{
-    		Set<String> idList1 = getIds( removedAppointments);
-    		Set<String> idList2 = getIds( changedAppointments);
-    		for ( Conflict conflict:oldList)
-    		{
+        if ( isConflictIgnored(allocatable))
+        {
+            return Collections.emptySet();
+        }
+        Set<Appointment> allAppointments = allocationMap.getAppointments(allocatable);
+        Set<Appointment> changedAppointments;
+        Set<Appointment> removedAppointments;
+        if ( change == null)
+        {
+            changedAppointments = allAppointments;
+            removedAppointments = new TreeSet<Appointment>();
+        }
+        else
+        {
+            changedAppointments = change.toChange;
+            removedAppointments = change.toRemove;
+        }
+        if (allAppointments.isEmpty() || changedAppointments.isEmpty())
+        {
+            return Collections.emptySet();
+        }
+        Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
+        {
+            Set<String> idList1 = getIds( removedAppointments);
+            Set<String> idList2 = getIds( changedAppointments);
+            for ( Conflict conflict:oldList)
+            {
                 if (endsBefore(conflict, today) || contains(conflict, idList1) || contains(conflict, idList2))
-    			{
-    			    continue;
-    			}
-                conflictList.add( conflict );
-    		}
-		}
-		
-		{
-		    SortedSet<AppointmentBlock> allAppointmentBlocksSortedByStartDescending = null;//new TreeSet<AppointmentBlock>(new InverseComparator<AppointmentBlock>(new AppointmentBlockStartComparator())); 
-			SortedSet<AppointmentBlock> allAppointmentBlocks = createBlocks(today,allAppointments, new AppointmentBlockEndComparator(), allAppointmentBlocksSortedByStartDescending);
-			SortedSet<AppointmentBlock> appointmentBlocks = createBlocks(today,changedAppointments, new AppointmentBlockStartComparator(), null);
-			
-			// Check the conflicts for each time block
-			for (AppointmentBlock appBlock:appointmentBlocks)
-			{
-				final Appointment appointment1 = appBlock.getAppointment();
-				
-                long start = appBlock.getStart();
-                long end = appBlock.getEnd();
-				/*
-				 * Shrink the set of all time blocks down to those with a start date which is
-				 * later than or equal to the start date of the block
-				 */
-				AppointmentBlock compareBlock = new AppointmentBlock(start, start, appointment1,false);
-				final SortedSet<AppointmentBlock> tailSet = allAppointmentBlocks.tailSet(compareBlock);
-            	
-				// Check all time blocks which start after or at the same time as the block which is being checked
-				for (AppointmentBlock appBlock2:tailSet)
-				{
-					// If the start date of the compared block is after the end date of the block, skip the appointment
-                    if (appBlock2.getStart() > end)
-					{
-                        break;
-					}
-                    final Appointment appointment2 = appBlock2.getAppointment();
-                    // we test that in the next step
-                    if ( appBlock == appBlock2 || appBlock2.includes( appBlock) || appointment1.equals( appointment2) )
-                    {
-                        continue;
-                    }
-					// Check if the corresponding appointments of both blocks overlap each other
-                    
-                    if (!appointment2.equals( appointment1) && appointment2.overlaps(appointment1))
-					{
-                        String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
-                        if ( foundConflictIds.contains(id ))
-                        {
-                            continue;
-                        }
-                        // Add appointments to conflict list
-                		if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
-                		{
-                            final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
-                            conflictList.add(conflict);
-                            foundConflictIds.add( id);
-                		}                    	
-					}
-				}
-
-				// we now need to check overlaps with appointments that start before and end after the appointment
-				//AppointmentBlock compareBlock2 = new AppointmentBlock(end, end, appointment1,false);
-                //SortedSet<AppointmentBlock> descending = allAppointmentBlocksSortedByStartDescending.tailSet(compareBlock);
-				for (AppointmentBlock appBlock2:tailSet)
                 {
-				    final Appointment appointment2 = appBlock2.getAppointment();
-                    if ( appBlock == appBlock2 || !appBlock2.includes( appBlock) || appointment2.equals( appointment1) )
-                    {
-                        continue;
-                    }
+                    continue;
+                }
+                conflictList.add( conflict );
+            }
+        }
+        updateConflicts(allocatable, today, allAppointments, changedAppointments, conflictList);
+        //updateConflictsOld(allocatable, today, allAppointments, changedAppointments, conflictList);
+        if ( conflictList.isEmpty())
+        {
+            return Collections.emptySet();
+        }
+        return conflictList;
+    }
+
+
+//    private void updateConflictsOld(Allocatable allocatable, Date today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
+//        Set<String> foundConflictIds = new HashSet<String>();
+//        //SortedSet<AppointmentBlock> allAppointmentBlocksSortedByStartDescending = null;//new TreeSet<AppointmentBlock>(new InverseComparator<AppointmentBlock>(new AppointmentBlockStartComparator())); 
+//        SortedSet<AppointmentBlock> allAppointmentBlocks =new TreeSet<AppointmentBlock>( new AppointmentBlockEndComparator()); 
+//        createBlocks(today,allAppointments,allAppointmentBlocks, null);
+//        SortedSet<AppointmentBlock> appointmentBlocks =  new TreeSet<AppointmentBlock>(  new AppointmentBlockStartComparator());
+//        createBlocks(today,changedAppointments,appointmentBlocks, null);
+//        long startTime = 0;
+//        if  ( appointmentBlocks.size() > 7000)
+//        {
+//            startTime = System.nanoTime();
+//        }
+//        // Check the conflicts for each time block
+//        for (AppointmentBlock appBlock:appointmentBlocks)
+//        {
+//            final Appointment appointment1 = appBlock.getAppointment();
+//            
+//            long start = appBlock.getStart();
+//            long end = appBlock.getEnd();
+//            /*
+//             * Shrink the set of all time blocks down to those with a start date which is
+//             * later than or equal to the start date of the block
+//             */
+//            AppointmentBlock compareBlock = new AppointmentBlock(start, start, appointment1,false);
+//            final SortedSet<AppointmentBlock> tailSet = allAppointmentBlocks.tailSet(compareBlock);
+//            
+//            // Check all time blocks which start after or at the same time as the block which is being checked
+//            for (AppointmentBlock appBlock2:tailSet)
+//            {
+//                // If the start date of the compared block is after the end date of the block, skip the appointment
+//                if (appBlock2.getStart() > end)
+//                {
+//                    break;
+//                }
+//                final Appointment appointment2 = appBlock2.getAppointment();
+//                // we test that in the next step
+//                if ( appBlock == appBlock2 || appBlock2.includes( appBlock) || appointment1.equals( appointment2) )
+//                {
+//                    continue;
+//                }
+//                // Check if the corresponding appointments of both blocks overlap each other
+//                
+//                if (!appointment2.equals( appointment1) && appointment2.overlaps(appointment1))
+//                {
+//                    String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
+//                    if ( foundConflictIds.contains(id ))
+//                    {
+//                        continue;
+//                    }
+//                    // Add appointments to conflict list
+//                    if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
+//                    {
+//                        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
+//                        conflictList.add(conflict);
+//                        foundConflictIds.add( id);
+//                    }                       
+//                }
+//            }
+//
+//            // we now need to check overlaps with appointments that start before and end after the appointment
+//            //AppointmentBlock compareBlock2 = new AppointmentBlock(end, end, appointment1,false);
+//            //SortedSet<AppointmentBlock> descending = allAppointmentBlocksSortedByStartDescending.tailSet(compareBlock);
+//            for (AppointmentBlock appBlock2:tailSet)
+//            {
+//                final Appointment appointment2 = appBlock2.getAppointment();
+//                if ( appBlock == appBlock2 || !appBlock2.includes( appBlock) || appointment2.equals( appointment1) )
+//                {
+//                    continue;
+//                }
+//                String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
+//                if ( foundConflictIds.contains(id ))
+//                {
+//                    continue;
+//                }
+//                if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
+//                {
+//                    final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
+//                    conflictList.add(conflict);
+//                    foundConflictIds.add( id);
+//                }                       
+//            }
+//        }
+//        if ( startTime > 0 )
+//        {
+//            long time = System.nanoTime() - startTime;
+//            System.out.println(  " Passed time for " + appointmentBlocks.size() + " blocks " + (time / 1000000.0) + "  ms ");
+//        }
+//    }
+    
+    private void updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
+        Set<String> foundConflictIds = new HashSet<String>();
+        Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
+        createBlocks(today,allAppointments,allAppointmentBlocks, null);
+        IntervalST intervalST = new IntervalST();
+        for ( AppointmentBlock block:allAppointmentBlocks)
+        {
+            intervalST.put( block);
+        }
+        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
+        createBlocks(today,changedAppointments,appointmentBlocks, null);
+        // Check the conflicts for each time block
+        for (AppointmentBlock appBlock:appointmentBlocks)
+        {
+            Appointment appointment1 = appBlock.getAppointment();
+            Iterable<AppointmentBlock> intersecting = intervalST.searchAll(appBlock);
+            for ( AppointmentBlock appBlock2:intersecting)
+            {
+                final Appointment appointment2 = appBlock2.getAppointment();
+                // we test that in the next step
+                if ( appBlock == appBlock2 || appointment1.equals( appointment2) )
+                {
+                    continue;
+                }
+                if (!appointment2.equals( appointment1) && appointment2.overlaps(appointment1))
+                {
                     String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
                     if ( foundConflictIds.contains(id ))
                     {
                         continue;
                     }
+                    // Add appointments to conflict list
                     if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
                     {
                         final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
@@ -178,14 +242,11 @@ class ConflictFinder {
                         foundConflictIds.add( id);
                     }                       
                 }
-			}
-		}
-		if ( conflictList.isEmpty())
-		{
-		    return Collections.emptySet();
-		}
-		return conflictList;
+            }
+        }
     }
+
+    
 
     public Set<String> getIds(Collection<? extends Entity> list) {
         if ( list.isEmpty())
@@ -217,18 +278,10 @@ class ConflictFinder {
         String appointment2 = conflict.getAppointment2();
         return( idList.contains( appointment1) || idList.contains( appointment2));
 	}
-
-	private SortedSet<AppointmentBlock> createBlocks(Date today, Set<Appointment> appointmentSet,final Comparator<AppointmentBlock> comparator, SortedSet<AppointmentBlock> additionalSet) {
-		  // overlaps will be checked  260 weeks (5 years) from now on
-        long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
-      
-		// Create a new set of time blocks, ordered by their start dates
-		SortedSet<AppointmentBlock> allAppointmentBlocks = new TreeSet<AppointmentBlock>(comparator);
-
-		if ( appointmentSet.isEmpty())
-		{
-			return allAppointmentBlocks;
-		}
+	
+    private void createBlocks(Date today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks, Set<AppointmentBlock> additionalSet) {
+        // overlaps will be checked  260 weeks (5 years) from now on
+		long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
 		//Appointment last = appointmentSet.last();
 		
 		// Get all time blocks of all appointments
@@ -271,8 +324,7 @@ class ConflictFinder {
 			}
             ((AppointmentImpl)appointment).createBlocks(start, DateTools.fillDate(maxEnd), allAppointmentBlocks,additionalSet);
 		}
-		return allAppointmentBlocks;
-	}
+    }
 
 
 	/**

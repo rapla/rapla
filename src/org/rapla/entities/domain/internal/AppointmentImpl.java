@@ -348,7 +348,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions, null);
     }
     
-    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, SortedSet<AppointmentBlock> additionalSet) {
+    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, Collection<AppointmentBlock> additionalSet) {
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
         Assert.notNull(end, "You must set an endDate");
@@ -356,7 +356,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
     /* returns true if there is at least one block in an array. If the passed blocks array is not null it will contain all blocks
      * that overlap the start,end period after a call.*/
-    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions, SortedSet<AppointmentBlock> additionalSet) {
+    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions, Collection<AppointmentBlock> additionalSet) {
         long c1 = start;
         long c2 = end;
         long s = this.start.getTime();
