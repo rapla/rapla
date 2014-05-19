@@ -79,7 +79,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     
     public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos) {
         ArrayList<Row> att = new ArrayList<Row>();
-        att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos ));
+        att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller ));
         final Locale locale = getLocale();
         User owner = allocatable.getOwner();
         User lastChangeBy = allocatable.getLastChangedBy();

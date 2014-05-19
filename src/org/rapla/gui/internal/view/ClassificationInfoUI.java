@@ -17,6 +17,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -40,11 +43,11 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     protected void insertClassification( Classifiable classifiable, StringBuffer buf ) {
         insertClassificationTitle( classifiable, buf );
         Collection<Row> att = new ArrayList<Row>();
-        att.addAll(getClassificationAttributes(classifiable, false));
+        att.addAll(getClassificationAttributes(classifiable, false, null));
         createTable(att,buf,false);
     }
 
-    protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos) {
+    protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller) {
         Collection<Row> att = new ArrayList<Row>();
         Classification classification = classifiable.getClassification();
 
@@ -72,21 +75,31 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
             {
 	            if (value instanceof Boolean) {
 	                valueString = getString(((Boolean) value).booleanValue() ? "yes":"no");
-	            } else {
-	            	valueString = ((AttributeImpl)attribute).getValueAsString( locale, value);
 	            }
-	            att.add (new Row(pre,encode(valueString)));
+	            if (value instanceof Allocatable) {
+	                Allocatable allocatable = (Allocatable) value;
+	                StringBuffer buf = new StringBuffer();
+	                if (controller != null) {
+	                    controller.createLink(allocatable,getName(allocatable),buf);
+	                    valueString = buf.toString();
+	            	}
+	                else
+	                    valueString = getName(allocatable);
+	            } else {
+	            	valueString = encode(((AttributeImpl)attribute).getValueAsString( locale, value));
+	            }
+	            att.add (new Row(pre,valueString));
 	            pre = "";
             }
         }
         return att;
     }
-
+    
     @Override
     protected String getTooltip(Classifiable classifiable) {
         StringBuffer buf = new StringBuffer();
         Collection<Row> att = new ArrayList<Row>();
-        att.addAll(getClassificationAttributes(classifiable, false));
+        att.addAll(getClassificationAttributes(classifiable, false,null));
         createTable(att,buf,false);
         return buf.toString();
     }
