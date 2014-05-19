@@ -76,15 +76,11 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 	            if (value instanceof Boolean) {
 	                valueString = getString(((Boolean) value).booleanValue() ? "yes":"no");
 	            }
-	            if (value instanceof Allocatable) {
+	            if (value instanceof Allocatable && controller != null) {
 	                Allocatable allocatable = (Allocatable) value;
 	                StringBuffer buf = new StringBuffer();
-	                if (controller != null) {
-	                    controller.createLink(allocatable,getName(allocatable),buf);
-	                    valueString = buf.toString();
-	            	}
-	                else
-	                    valueString = getName(allocatable);
+	                controller.createLink(allocatable,encode(getName(allocatable)),buf);
+	                valueString = buf.toString();
 	            } else {
 	            	valueString = encode(((AttributeImpl)attribute).getValueAsString( locale, value));
 	            }

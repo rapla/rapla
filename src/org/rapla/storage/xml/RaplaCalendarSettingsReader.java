@@ -21,12 +21,15 @@ import java.util.Map;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.Category;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -96,15 +99,24 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         if ( refid != null)
         {
             RaplaType raplaType = getTypeForLocalName( localName );
-        	String id = getId( raplaType, refid);
-            idList.add( id);
-            idTypeList.add( raplaType);
+            // Test if raplaType can be referenced by the model (categories and periods cannot, but old versions allowed to store them 
+            if ( CalendarModelConfigurationImpl.canReference(raplaType))
+            {
+                String id = getId( raplaType, refid);
+                idList.add( id);
+                idTypeList.add( raplaType);
+            }
         } 
         else if ( keyref != null)
         {
-            DynamicType type = getDynamicType( keyref );
-        	idList.add( type.getId());
-        	idTypeList.add( DynamicType.TYPE);
+            RaplaType raplaType = getTypeForLocalName( localName );
+            // Test if raplaType can be referenced by the model (categories and periods cannot, but old versions allowed to store them
+            if ( CalendarModelConfigurationImpl.canReference(raplaType))
+            {
+                DynamicType type = getDynamicType( keyref );
+            	idList.add( type.getId());
+            	idTypeList.add( DynamicType.TYPE);
+            }
         }
     }
 
