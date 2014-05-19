@@ -10,41 +10,35 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.components.util;
-import java.util.ArrayList;
+package org.rapla.components.util.iterator;
+
 import java.util.Iterator;
-import java.util.List;
 
-import junit.framework.TestCase;
+/** concatenates two Iterators */
+public class IterableChain<T> implements Iterable<T> {
+    protected Iterable<T> firstIt;
+    protected Iterable<T> secondIt;
+    protected Iterable<T> thirdIt;
 
-import org.rapla.components.util.iterator.FilterIterable;
-
-public class FilterIteratorTest extends TestCase {
-
-    public FilterIteratorTest(String name) {
-        super(name);
+    public IterableChain(Iterable<T> firstIt, Iterable<T> secondIt, Iterable<T> thirdIt)
+    {
+        this.firstIt = firstIt;
+        this.secondIt = secondIt;
+        this.thirdIt  = thirdIt;
+    }
+    
+    public IterableChain(Iterable<T> firstIt, Iterable<T> secondIt)
+    {
+        this.firstIt = firstIt;
+        this.secondIt = secondIt;
     }
 
-    public void testIterator() {
-        List<Integer> list = new ArrayList<Integer>();
-        for (int i=0;i<6;i++) {
-            list.add( new Integer(i));
-        }
-        Iterator<Integer> it = (new FilterIterable<Integer>(list) {
-            protected boolean isInIterator( Object obj )
-            {
-                return ((Integer) obj).intValue() % 2 ==0; 
-            }
-        }).iterator();
-        for (int i=0;i<6;i++) {
-            if ( i % 2 == 0)
-                assertEquals( new Integer(i), it.next());
-        }
-        assertTrue( it.hasNext() == false);
+
+    @Override
+    public Iterator<T> iterator() 
+    {
+        return new IteratorChain<T>(firstIt != null ? firstIt.iterator(): null, secondIt != null ? secondIt.iterator(): null , thirdIt != null ? thirdIt.iterator() :null);
     }
+	
 }
-
-
-
-
 

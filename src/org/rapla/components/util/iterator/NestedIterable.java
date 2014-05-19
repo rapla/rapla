@@ -29,49 +29,59 @@ class RecursiveEntityIterator extends NestedIterator {
 </pre>
 */
 
-public abstract class NestedIterator<T,S> implements Iterator<T>, Iterable<T> {
-    protected Iterator<S> outerIt;
-    protected Iterator<T> innerIt;
-    T nextElement;
-    boolean isInitialized;
-    public NestedIterator(Iterable<S> outerIt) {
-        this.outerIt = outerIt.iterator();
-    }
-
-    private T nextElement() {
-        while (outerIt.hasNext() || (innerIt != null && innerIt.hasNext())) {
-            if (innerIt != null && innerIt.hasNext())
-                return innerIt.next();
-            innerIt = getNestedIterator(outerIt.next()).iterator();
+public abstract class NestedIterable<T,S> implements Iterable<T> {
+    Iterable<S> outerIterable;
+    class NestedIterator implements Iterator<T>
+    {
+        protected Iterator<S> outerIt;
+        protected Iterator<T> innerIt;
+        T nextElement;
+        boolean isInitialized;
+        
+        public NestedIterator(Iterator<S> outerIt) {
+            this.outerIt = outerIt;
         }
-        return null;
-    }
+        
+        private T nextElement() {
+            while (outerIt.hasNext() || (innerIt != null && innerIt.hasNext())) {
+                if (innerIt != null && innerIt.hasNext())
+                    return innerIt.next();
+                innerIt = getNestedIterable(outerIt.next()).iterator();
+            }
+            return null;
+        }
 
-    public abstract Iterable<T> getNestedIterator(S obj);
+        public boolean hasNext() {
+            if (!isInitialized)
+            {
+                nextElement = nextElement();
+                isInitialized = true;
+            }
+            return nextElement != null;
+        }
 
-    public boolean hasNext() {
-        if (!isInitialized)
-        {
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        public T next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+            T result = nextElement;
             nextElement = nextElement();
-            isInitialized = true;
+            return result;
         }
-        return nextElement != null;
-    }
-
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
-
-    public T next() {
-        if (!hasNext())
-            throw new NoSuchElementException();
-        T result = nextElement;
-        nextElement = nextElement();
-        return result;
     }
     
+    public NestedIterable(Iterable<S> outerIterable) {
+        this.outerIterable = outerIterable;
+    }
+
+    public abstract Iterable<T> getNestedIterable(S obj);
+    
     public Iterator<T> iterator() {
-    	return this;
+    	Iterator<S> iterator = outerIterable.iterator();
+        return new NestedIterator(iterator);
     }
 }
 

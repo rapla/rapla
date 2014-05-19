@@ -17,9 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;

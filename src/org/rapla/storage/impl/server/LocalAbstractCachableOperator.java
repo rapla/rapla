@@ -43,7 +43,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
-import org.rapla.components.util.iterator.IteratorChain;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -1167,7 +1167,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
-	protected void addRemovedUserDependant(UpdateEvent evt, EntityStore store,User user) throws RaplaException {
+	private void addRemovedUserDependant(UpdateEvent evt, EntityStore store,User user) {
 		PreferencesImpl preferences = cache.getPreferencesForUserId(user.getId());
 		if (preferences != null)
 		{
@@ -1429,7 +1429,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	/** Check if the objects are consistent, so that they can be safely stored. */
 	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
-		for (EntityReferencer referencer : evt.getEntityReferences(false)) {
+		Collection<EntityReferencer> entityReferences = evt.getEntityReferences(false);
+        for (EntityReferencer referencer : entityReferences) {
 		    for (ReferenceInfo referenceInfo:referencer.getReferenceInfo())
 			{
 				Entity reference = store.resolve( referenceInfo.getId(), referenceInfo.getType());
@@ -1494,7 +1495,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Collection<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
 		HashSet<Entity> dep = new HashSet<Entity>();
 		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
-		IteratorChain<Entity> iteratorChain = new IteratorChain<Entity>( deletedCategories,removeEntities);
+		IterableChain<Entity> iteratorChain = new IterableChain<Entity>( deletedCategories,removeEntities);
 
 		for (Entity entity : iteratorChain) {
 		    // First we add the dependencies from the stored object list

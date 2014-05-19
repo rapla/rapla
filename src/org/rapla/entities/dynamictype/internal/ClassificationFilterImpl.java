@@ -19,8 +19,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.iterator.IteratorChain;
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -76,11 +76,11 @@ public final class ClassificationFilterImpl
 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IteratorChain<ReferenceInfo>
+        return new IterableChain<ReferenceInfo>
             (
              Collections.singleton( new ReferenceInfo(typeId, DynamicType.class))
-             ,new NestedIterator<ReferenceInfo,ClassificationFilterRuleImpl>( list ) {
-                     public Iterable<ReferenceInfo> getNestedIterator(ClassificationFilterRuleImpl obj) {
+             ,new NestedIterable<ReferenceInfo,ClassificationFilterRuleImpl>( list ) {
+                     public Iterable<ReferenceInfo> getNestedIterable(ClassificationFilterRuleImpl obj) {
                          return obj.getReferenceInfo();
                      }
                  }

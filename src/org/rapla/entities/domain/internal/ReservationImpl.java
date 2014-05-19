@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.iterator.IteratorChain;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
@@ -158,7 +158,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IteratorChain<ReferenceInfo>
+        return new IterableChain<ReferenceInfo>
             (
              super.getReferenceInfo()
              ,classification.getReferenceInfo()

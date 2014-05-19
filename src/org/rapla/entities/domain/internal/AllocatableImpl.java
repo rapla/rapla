@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.util.iterator.IteratorChain;
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
@@ -334,12 +334,12 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IteratorChain<ReferenceInfo>
+        return new IterableChain<ReferenceInfo>
             (
              super.getReferenceInfo()
              ,classification.getReferenceInfo()
-             ,new NestedIterator<ReferenceInfo,PermissionImpl>( permissions ) {
-                     public Iterable<ReferenceInfo> getNestedIterator(PermissionImpl obj) {
+             ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) {
+                     public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
                          return obj.getReferenceInfo();
                      }
                  }

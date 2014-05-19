@@ -16,21 +16,11 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /** concatenates two Iterators */
-public class IteratorChain<T> implements Iterator<T>, Iterable<T> {
+public class IteratorChain<T> implements Iterator<T> {
     protected Iterator<T> firstIt;
     protected Iterator<T> secondIt;
     protected Iterator<T> thirdIt;
 
-    public IteratorChain(Iterable<T> firstIt, Iterable<T> secondIt)
-    {
-    	this( firstIt.iterator(), secondIt.iterator());
-    }
-    
-    public IteratorChain(Iterable<T> firstIt, Iterable<T> secondIt, Iterable<T> thirdIt)
-    {
-    	this( firstIt.iterator(), secondIt.iterator(), thirdIt.iterator());
-    }
-    
     public IteratorChain(Iterator<T> firstIt, Iterator<T> secondIt) {
         this.firstIt = firstIt;
         this.secondIt = secondIt;
@@ -74,8 +64,6 @@ public class IteratorChain<T> implements Iterator<T>, Iterable<T> {
         	throw new NoSuchElementException();
     }
 
-	public Iterator<T> iterator() {
-		return this;
-	}
+	
 }
 
