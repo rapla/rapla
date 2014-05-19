@@ -262,7 +262,7 @@ public class LocalCache implements EntityResolver
         result.addAll(getUsers());
         for (Allocatable alloc: getAllocatables())
         {
-            if (user.isAdmin() || alloc.canReadOnlyInformation( user))
+            if (user == null || user.isAdmin() || alloc.canReadOnlyInformation( user))
             {
                 result.add( alloc);
             }
@@ -276,6 +276,7 @@ public class LocalCache implements EntityResolver
             }
         }
         // add user preferences
+        if ( user != null)
         {
             String userId = user.getId();
             Assert.notNull( userId);

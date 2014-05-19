@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
@@ -47,8 +47,8 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         Iterable<ClassificationFilterImpl> classificatonFilterIterator = classificationFilters;
-        return new NestedIterator<ReferenceInfo,ClassificationFilterImpl>(classificatonFilterIterator) {
-                public Iterable<ReferenceInfo> getNestedIterator(ClassificationFilterImpl obj) {
+        return new NestedIterable<ReferenceInfo,ClassificationFilterImpl>(classificatonFilterIterator) {
+                public Iterable<ReferenceInfo> getNestedIterable(ClassificationFilterImpl obj) {
                     return obj.getReferenceInfo();
                 }
             };

@@ -17,7 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import org.rapla.components.util.iterator.IteratorChain;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -162,7 +162,7 @@ public class PreferencesImpl extends SimpleEntity
     {
         Iterable<ReferenceInfo> parentReferences = super.getReferenceInfo();
         Iterable<ReferenceInfo> mapReferences = map.getReferenceInfo();
-        IteratorChain<ReferenceInfo> iteratorChain = new IteratorChain<ReferenceInfo>(parentReferences,mapReferences);
+        IterableChain<ReferenceInfo> iteratorChain = new IterableChain<ReferenceInfo>(parentReferences,mapReferences);
         return iteratorChain;
     }
 

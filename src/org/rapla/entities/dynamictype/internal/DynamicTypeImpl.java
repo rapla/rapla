@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.rapla.components.util.iterator.IteratorChain;
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
@@ -212,10 +212,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() 
     {
-        return new IteratorChain<ReferenceInfo>(super.getReferenceInfo(), 
-                new NestedIterator<ReferenceInfo,AttributeImpl>( attributes ) 
+        return new IterableChain<ReferenceInfo>(super.getReferenceInfo(), 
+                new NestedIterable<ReferenceInfo,AttributeImpl>( attributes ) 
         {
-            public Iterable<ReferenceInfo> getNestedIterator(AttributeImpl obj) {
+            public Iterable<ReferenceInfo> getNestedIterable(AttributeImpl obj) {
                 return obj.getReferenceInfo();
             }
         }

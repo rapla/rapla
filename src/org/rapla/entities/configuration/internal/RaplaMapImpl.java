@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.rapla.components.util.iterator.FilterIterator;
-import org.rapla.components.util.iterator.IteratorChain;
-import org.rapla.components.util.iterator.NestedIterator;
+import org.rapla.components.util.iterator.FilterIterable;
+import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -229,8 +229,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
    @Override
    public Iterable<ReferenceInfo> getReferenceInfo() 
    {
-       NestedIterator<ReferenceInfo,EntityReferencer> refIt = new NestedIterator<ReferenceInfo,EntityReferencer>( getEntityReferencers()) {
-           public Iterable<ReferenceInfo> getNestedIterator(EntityReferencer obj) {
+       NestedIterable<ReferenceInfo,EntityReferencer> refIt = new NestedIterable<ReferenceInfo,EntityReferencer>( getEntityReferencers()) {
+           public Iterable<ReferenceInfo> getNestedIterable(EntityReferencer obj) {
                Iterable<ReferenceInfo> referencedIds = obj.getReferenceInfo();
                return referencedIds;
            }
@@ -240,11 +240,11 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
            return refIt;
        }
        Iterable<ReferenceInfo> referencedLinks = links.getReferenceInfo();
-       return new IteratorChain<ReferenceInfo>( refIt, referencedLinks);
+       return new IterableChain<ReferenceInfo>( refIt, referencedLinks);
    }
 
    private Iterable<EntityReferencer> getEntityReferencers() {
-       return new FilterIterator<EntityReferencer>( getMap().values()) {
+       return new FilterIterable<EntityReferencer>( getMap().values()) {
            protected boolean isInIterator(Object obj) {
                return obj instanceof EntityReferencer;
            }

@@ -17,7 +17,7 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-import org.rapla.components.util.iterator.FilterIterator;
+import org.rapla.components.util.iterator.FilterIterable;
 
 public class FilterIteratorTest extends TestCase {
 
@@ -30,12 +30,12 @@ public class FilterIteratorTest extends TestCase {
         for (int i=0;i<6;i++) {
             list.add( new Integer(i));
         }
-        Iterator<Integer> it = new FilterIterator<Integer>(list) {
+        Iterator<Integer> it = (new FilterIterable<Integer>(list) {
             protected boolean isInIterator( Object obj )
             {
                 return ((Integer) obj).intValue() % 2 ==0; 
             }
-        };
+        }).iterator();
         for (int i=0;i<6;i++) {
             if ( i % 2 == 0)
                 assertEquals( new Integer(i), it.next());

@@ -386,7 +386,7 @@ public class ServerTest extends ServletTestBase {
 
 	}
 
-	public void testReservationInTheFutureStoredInCalendar() throws Exception {
+	public void testCalendarStore() throws Exception {
 		Date futureDate = new Date(facade1.today().getTime()
 				+ DateTools.MILLISECONDS_PER_WEEK * 10);
 		Reservation r = facade1.newReservation();
@@ -403,15 +403,11 @@ public class ServerTest extends ServletTestBase {
 		calendar.setTitle("test");
 		CalendarModelConfiguration conf = ((CalendarModelImpl) calendar)
 				.createConfiguration();
-		Preferences prefs = facade1.edit(facade1.getPreferences());
-		TypedComponentRole<CalendarModelConfiguration> TEST_ENTRY = new TypedComponentRole<CalendarModelConfiguration>(
-				"org.rapla.test");
-		prefs.putEntry(TEST_ENTRY, conf);
-
-		try {
-			facade1.store(prefs);
-			fail("Should throw an exception in the current version, because we can't store references to reservations");
-		} catch (RaplaException ex) {
+		{
+    		Preferences prefs = facade1.edit(facade1.getPreferences());
+    		TypedComponentRole<CalendarModelConfiguration> TEST_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.test");
+    		prefs.putEntry(TEST_ENTRY, conf);
+            facade1.store(prefs);
 		}
 	}
 

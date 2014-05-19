@@ -53,6 +53,7 @@ import javax.swing.tree.TreeSelectionModel;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.InverseComparator;
+import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
@@ -503,12 +504,14 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         if ( conflicts != null )
         {
             {
-                int conflict_number = addConflicts(conflicts, treeNode, true);
+                Iterable<Conflict> filteredConflicts = filter(conflicts, true);
+                int conflict_number = addConflicts(filteredConflicts, treeNode);
                 String conflictText = getI18n().format("conflictUC", conflict_number);
                 treeNode.setUserObject( conflictText);
             }
             {
-                int conflict_number = addConflicts(conflicts, treeNode2, false);
+                Iterable<Conflict> filteredConflicts = filter(conflicts, false);
+                int conflict_number = addConflicts(filteredConflicts, treeNode2);
                 String conflictText = getI18n().format("disabledConflictUC", conflict_number);
                 treeNode2.setUserObject( conflictText);
                 if ( conflict_number > 0 )
@@ -520,7 +523,19 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         return new DefaultTreeModel(rootNode);
     }
 
-    private int addConflicts(Collection<Conflict> conflicts, DefaultMutableTreeNode treeNode, boolean enabledState) throws RaplaException {
+   
+
+    private Iterable<Conflict> filter(Iterable<Conflict> conflicts, final boolean enabledState) {
+        return new FilterIterable<Conflict>( conflicts) {
+            protected boolean isInIterator(Object obj) {
+                boolean inIterator = ((Conflict)obj).isEnabled() == enabledState;
+                return inIterator;
+//                return true;
+            }
+        };
+    }
+
+    private int addConflicts(Iterable<Conflict> conflicts, DefaultMutableTreeNode treeNode) throws RaplaException {
         int conflictsAdded = 0;
         Map<DynamicType,DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
@@ -549,10 +564,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
         for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
             Conflict conflict = it.next();
-            if ( conflict.isEnabled() != enabledState)
-            {
-                continue;
-            }
             conflictsAdded++;
             Allocatable allocatable = conflict.getAllocatable();
             for(NamedNode allocatableNode : childMap.get( allocatable))

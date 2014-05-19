@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.rapla.components.util.iterator.IteratorChain;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -165,7 +165,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
             ReferenceInfo referenceInfo = new ReferenceInfo(id, type);
             selectedInfo.add( referenceInfo);    
         }
-        return new IteratorChain<ReferenceInfo>(references, selectedInfo);
+        return new IterableChain<ReferenceInfo>(references, selectedInfo);
     }
 
     public Map<String,String> getOptionMap()
