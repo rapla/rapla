@@ -456,8 +456,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Collection<RaplaType> idTypeList = new ArrayList<RaplaType>();
         for (Entity obj:selected)
         {
-        	selectedIds.add( obj.getId());
-        	idTypeList.add( obj.getRaplaType());
+            RaplaType raplaType = obj.getRaplaType();
+            if (CalendarModelConfigurationImpl.canReference( raplaType))
+            {
+                selectedIds.add( obj.getId());
+                idTypeList.add( raplaType);
+            }
         }
         
 		CalendarModelConfigurationImpl calendarModelConfigurationImpl = new CalendarModelConfigurationImpl(selectedIds, idTypeList,resourceRootSelected,filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);

@@ -23,8 +23,11 @@ import java.util.Map;
 import org.rapla.components.util.iterator.IteratorChain;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
@@ -221,7 +224,11 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 		return deepClone();
 	}
 
-
+	public static boolean canReference(RaplaType raplaType) 
+	{
+	    return raplaType == DynamicType.TYPE || raplaType == Allocatable.TYPE || raplaType == User.TYPE;
+    }
+	
 	public List<String> getSelectedIds()
 	{
 		return selected;

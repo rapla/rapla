@@ -210,7 +210,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
         if ( entity.getRaplaType() == DynamicType.TYPE ) {
             att("keyref", ((DynamicType)entity).getKey());
         }
-        else if ( entity.getRaplaType() == Category.TYPE  && !isPrintId()) 
+        else if ( entity.getRaplaType() == Category.TYPE ) 
         {
             String path = getKeyPath( (CategoryImpl)getSuperCategory(), (Category) entity);
             att("keyref", path);
