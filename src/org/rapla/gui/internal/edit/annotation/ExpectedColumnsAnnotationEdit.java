@@ -9,7 +9,6 @@ public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit im
     
     public ExpectedColumnsAnnotationEdit(RaplaContext context) {
         super(context);
-        fieldName="expected_columns";
         annotationName = AttributeAnnotations.KEY_EXPECTED_COLUMNS;
         DEFAULT_VALUE = new Long(TextField.DEFAULT_LENGTH);
     }

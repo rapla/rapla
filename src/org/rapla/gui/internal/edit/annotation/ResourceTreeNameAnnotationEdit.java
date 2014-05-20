@@ -14,7 +14,6 @@ import org.rapla.gui.internal.edit.fields.TextField;
 public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension {
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
     protected String DEFAULT_VALUE = new String();
-    protected String fieldName = "Name in resource tree";
     
     public ResourceTreeNameAnnotationEdit(RaplaContext context) {
         super(context);
@@ -33,7 +32,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
             return null;
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        TextField field = new TextField(getContext(),fieldName);
+        TextField field = new TextField(getContext(),getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( annotation);

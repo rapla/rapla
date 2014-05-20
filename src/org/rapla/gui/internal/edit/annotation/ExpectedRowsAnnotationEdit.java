@@ -14,7 +14,6 @@ import org.rapla.gui.internal.edit.fields.LongField;
 public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension {
     protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
     protected Long DEFAULT_VALUE = new Long(1);
-    protected String fieldName = "expected_rows";
     
     public ExpectedRowsAnnotationEdit(RaplaContext context) {
         super(context);
@@ -33,7 +32,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
             return null;
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        LongField field = new LongField(getContext(),fieldName);
+        LongField field = new LongField(getContext(),getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( Integer.parseInt(annotation));

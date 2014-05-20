@@ -26,14 +26,14 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
         }
         Attribute attribute = (Attribute)annotatable;
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(),getString("categorization"));
+        BooleanField field = new BooleanField(getContext(),getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( annotation.equalsIgnoreCase("true"));
         }
         else
         {
-            if ( attribute.getKey().equalsIgnoreCase("categorization"))
+            if ( attribute.getKey().equalsIgnoreCase(annotationName))
             {
                 field.setValue( true );
             }
@@ -54,7 +54,7 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
                     annotatable.setAnnotation(annotationName, Boolean.TRUE.toString());
                     return;
                 }
-                else if (( (Attribute)annotatable).getKey().equals("categorization"))
+                else if (( (Attribute)annotatable).getKey().equals(annotationName))
                 {
                     annotatable.setAnnotation(annotationName, Boolean.FALSE.toString());
                     return;

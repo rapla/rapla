@@ -32,14 +32,14 @@ public class EmailAnnotationEdit extends RaplaGUIComponent implements Annotation
             return null;
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(),getString("email"));
+        BooleanField field = new BooleanField(getContext(),getString(annotationName));
         if ( annotation != null )
         {
             field.setValue( annotation.equalsIgnoreCase("true"));
         }
         else
         {
-            if ( attribute.getKey().equalsIgnoreCase("email"))
+            if ( attribute.getKey().equalsIgnoreCase(annotationName))
             {
                 field.setValue( true );
             }
@@ -60,7 +60,7 @@ public class EmailAnnotationEdit extends RaplaGUIComponent implements Annotation
                     annotatable.setAnnotation(annotationName, Boolean.TRUE.toString());
                     return;
                 }
-                else if (( (Attribute)annotatable).getKey().equals("email"))
+                else if (( (Attribute)annotatable).getKey().equals(annotationName))
                 {
                     annotatable.setAnnotation(annotationName, Boolean.FALSE.toString());
                 }

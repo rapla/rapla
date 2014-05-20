@@ -32,7 +32,7 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
             return null;
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(),getString("color"));
+        BooleanField field = new BooleanField(getContext(),getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( annotation.equalsIgnoreCase("true"));

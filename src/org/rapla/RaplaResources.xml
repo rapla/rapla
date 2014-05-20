@@ -1675,7 +1675,7 @@ See French text.
         <text lang="fr">Au moins un type doit être disponible !</text>
         <text lang="es">¡Al menos un tipo debe estar disponible!</text>
         <text lang="cs">Je požadován alespoň jeden typ.</text>
-        <text lang="nl">Minimaal 1 soort is nodig.</text>
+        <text lang="nl">Minimaal 1 persoon/middel map is vereist.</text>
         <text lang="pl">Przynajmniej jeden typ jest wymagany.</text>
         <text lang="pt">Pelo menos um tipo é obrigatório.</text>
     </entry>
@@ -1705,8 +1705,7 @@ See French text.
         <text lang="fr">Rapla nécessite au moins 1 administrateur !</text>
         <text lang="es">Rapla requiere por lo menos un administrador!</text>
         <text lang="cs">Rapla vyžaduje alespoň 1 správce!</text>
-        <text lang="en">Rapla vereist minstens 1 administrator!</text>              
-        <text lang="nl">Rapla kræver mindst 1 administrator!</text>
+        <text lang="nl">Rapla vereist minstens 1 administrator!</text>              
         <text lang="pl">Rapla wymaga co najmniej 1 nazwy administratora!</text>       
 		<text lang="pt">Você deve fornecer pelo menos 1 administrador!</text>		
     </entry>
@@ -1916,7 +1915,7 @@ See French text.
         <text lang="fr">Nom du type</text>
         <text lang="es">Nombre de tipo</text>
         <text lang="cs">Jméno typu</text>
-        <text lang="nl">Naam type</text>
+        <text lang="nl">Naam folder</text>
         <text lang="pl">Nazwa typu</text>
 		<text lang="pt">Nome do tipo</text>
     </entry>
@@ -2100,7 +2099,7 @@ See French text.
         <text lang="pl">niewidoczny</text>
         <text lang="pt">invisível</text>
     </entry>
-    <entry key="expected_rows">
+    <entry key="expected-rows">
         <text lang="en">Expected rows</text>
         <text lang="de">Zeilenanzahl</text>
         <text lang="fr">Nombre de lignes</text>
@@ -2111,12 +2110,12 @@ See French text.
 		<text lang="pt">Número de linhas</text>
     </entry>
 
-    <entry key="expected_columns">
+    <entry key="expected-columns">
         <text lang="en">Expected columns</text>
         <text lang="de">Spaltenbreite</text>
         <text lang="fr">Nombre de colonnes</text>
         <text lang="es">Número de columnas</text>
-        <text lang="nl">Aantal kolommen.</text>
+        <text lang="nl">Aantal kolommen</text>
         <text lang="pl">Liczba oczekiwanych kolumn</text>
 		<text lang="pt">Número de colunas</text>
     </entry>
@@ -4786,6 +4785,16 @@ See French text.
         <text lang="es">El usuario no puede eliminar a sí mismo.</text>
         <text lang="cs">Uživatel nemůže odstranit sám.</text>
         <text lang="nl">Gebruiker kan zichzelf niet verwijderen.</text>
+        <text lang="pl">Użytkownik nie może usunąć sam.</text>
+		<text lang="pt">O usuário não pode excluir-se.</text>
+    </entry>
+        <entry key="nameformat_planning">
+        <text lang="en">"Name in resource tree"</text>
+        <text lang="de">Benutzer kann sich nicht löschen.</text>
+        <text lang="fr">L'utilisateur ne peut pas se supprimer.</text>
+        <text lang="es">El usuario no puede eliminar a sí mismo.</text>
+        <text lang="cs">Uživatel nemůže odstranit sám.</text>
+        <text lang="nl">Naam in folder</text>
         <text lang="pl">Użytkownik nie może usunąć sam.</text>
 		<text lang="pt">O usuário não pode excluir-se.</text>
     </entry>
