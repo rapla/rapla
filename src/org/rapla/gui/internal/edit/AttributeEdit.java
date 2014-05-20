@@ -575,6 +575,10 @@ class DefaultConstraints extends AbstractEditField
             final Object defaultValue = defaultSelectDate.getDate();
             attribute.setDefaultValue( defaultValue);
         }
+        if ( type.equals(AttributeType.STRING)) {
+            final Object defaultValue = defaultSelectText.getValue();
+            attribute.setDefaultValue( defaultValue);
+        }
         List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
         annotationEdit.mapTo(asList);
         String selectedTab = tabs[tabSelect.getSelectedIndex()];
