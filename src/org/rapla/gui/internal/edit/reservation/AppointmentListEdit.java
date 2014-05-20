@@ -363,9 +363,9 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 	protected Appointment createAppointmentFromSelected()
 			throws RaplaException {
-		Appointment[] appointments = mutableReservation.getAppointments();
+//		Appointment[] appointments = mutableReservation.getAppointments();
 		Appointment appointment;
-		if (appointments.length == 0) {
+		if (sortedModel.getSize() == 0) {
 			Date start = new Date(DateTools.cutDate(new Date()).getTime()+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE);
 			Date end = new Date(start.getTime()+ DateTools.MILLISECONDS_PER_HOUR);
 			appointment = getModification().newAppointment(start, end);
@@ -373,11 +373,11 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			// copy the selected appointment as template
 			// if no appointment is selected use the last
 			final int selectedIndex = listEdit.getSelectedIndex();
-			final int index = selectedIndex > -1 ? selectedIndex : appointments.length - 1;
-			final Appointment toClone = appointments[index];
+			final int index = selectedIndex > -1 ? selectedIndex : sortedModel.getSize() - 1;
+			final Appointment toClone = (Appointment)sortedModel.getElementAt( index);
+             //= appointments[index];
 			// this allows each appointment as template
 			appointment = getReservationController().copyAppointment(toClone);
-
 			Repeating repeating = appointment.getRepeating();
 			if (repeating != null) {
 				repeating.clearExceptions();
