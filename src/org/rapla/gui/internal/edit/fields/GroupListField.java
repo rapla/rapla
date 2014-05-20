@@ -53,6 +53,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
             return;
         newCategory = new CategorySelectField(context, rootCategory );
         newCategory.setUseNull( false);
+        newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );
         toolbar.add( removeButton );
         toolbar.setFloatable( false );
