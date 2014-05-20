@@ -311,7 +311,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
             super(sm,true);
             User[] users = getQuery().getUsers();
             List<User> asList = new ArrayList<User>(Arrays.asList(users ));
-            Collections.sort( asList, new NamedComparator<>( getLocale()));
+            Collections.sort( asList, new NamedComparator<User>( getLocale()));
             setVector(asList);
         }
     }
