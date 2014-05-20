@@ -18,7 +18,9 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -33,6 +35,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
+import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.framework.RaplaContext;
@@ -306,7 +309,10 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
         public UserListField(RaplaContext sm) throws RaplaException{
             super(sm,true);
-            setVector(Arrays.asList(getQuery().getUsers() ));
+            User[] users = getQuery().getUsers();
+            List<User> asList = new ArrayList<User>(Arrays.asList(users ));
+            Collections.sort( asList, new NamedComparator<>( getLocale()));
+            setVector(asList);
         }
     }
 
