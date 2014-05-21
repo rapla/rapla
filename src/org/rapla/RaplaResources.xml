@@ -4788,14 +4788,25 @@ See French text.
         <text lang="pl">Użytkownik nie może usunąć sam.</text>
 		<text lang="pt">O usuário não pode excluir-se.</text>
     </entry>
-        <entry key="nameformat_planning">
-        <text lang="en">"Name in resource tree"</text>
-        <text lang="de">Benutzer kann sich nicht löschen.</text>
-        <text lang="fr">L'utilisateur ne peut pas se supprimer.</text>
-        <text lang="es">El usuario no puede eliminar a sí mismo.</text>
-        <text lang="cs">Uživatel nemůže odstranit sám.</text>
-        <text lang="nl">Naam in folder</text>
-        <text lang="pl">Użytkownik nie może usunąć sam.</text>
-		<text lang="pt">O usuário não pode excluir-se.</text>
+    <entry key="nameformat_planning">
+        <text lang="en">Name in resource tree</text>
+        <text lang="de">Name im Ressourcenbaum</text>
     </entry>
+    <entry key="is_location">
+        <text lang="en">Is a location</text>
+        <text lang="de">Ist ein Ort</text>
+    </entry>
+    <entry key="conflicts.never">
+        <text lang="en">never</text>
+        <text lang="de">niemals</text>
+    </entry>
+    <entry key="conflicts.always">
+        <text lang="en">always</text>
+        <text lang="de">immer</text>
+    </entry>
+    <entry key="conflicts.withOtherTypes">
+        <text lang="en">not with same event type</text>
+        <text lang="de">nicht mit gleichem Veranstaltungstypen</text>
+    </entry>
+    
 </resources>

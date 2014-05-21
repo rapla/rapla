@@ -75,17 +75,17 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     JLabel annotationDescription = new JLabel();
     
     JTextField annotationText = new JTextField();
-    JTextField annotationTreeText = new JTextField();
+    //JTextField annotationTreeText = new JTextField();
     JComboBox colorChooser;
     
     RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
     
-    JLabel locationLabel = new JLabel("location");
-    JComboBox locationChooser;
-    JLabel conflictLabel = new JLabel("conflict creation");
-	JComboBox conflictChooser;
-    boolean isResourceType;
-    boolean isEventType;
+    //JLabel locationLabel = new JLabel("location");
+    //JComboBox locationChooser;
+    //JLabel conflictLabel = new JLabel("conflict creation");
+	//JComboBox conflictChooser;
+    //boolean isResourceType;
+    //boolean isEventType;
     AnnotationEditUI annotationEdit;
     DialogUI dialog;
 
@@ -98,16 +98,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
         	colorChooser = jComboBox;
         }
-        {
-        	@SuppressWarnings("unchecked")
-        	JComboBox jComboBox = new JComboBox(new String[] {"yes","no"});
-        	locationChooser = jComboBox;
-        }
-        {
-        	@SuppressWarnings("unchecked")
-        	JComboBox jComboBox = new JComboBox(new String[] {DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES});
-        	conflictChooser = jComboBox;
-        }
+      
         name = new MultiLanguageField(context,"name");
         elementKey = new TextField(context,"elementKey");
         attributeEdit = new AttributeEdit(context);
@@ -137,17 +128,18 @@ class DynamicTypeEditUI extends RaplaGUIComponent
             ,{PRE,5,PRE,5,PRE, 5, PRE,5, PRE,5,PRE}
         }));
         addCopyPaste( annotationText);
-        addCopyPaste(annotationTreeText);
+        //addCopyPaste(annotationTreeText);
         annotationPanel.add(annotationLabel,"0,0");
         annotationPanel.add(annotationText ,"2,0");
         annotationPanel.add(annotationDescription,"2,2");
-        annotationPanel.add(annotationButton ,"2,4");
-        annotationPanel.add(new JLabel(getString("color")),"0,6");
-        annotationPanel.add(colorChooser,"2,6");
-        annotationPanel.add(locationLabel,"0,8");
-        annotationPanel.add(locationChooser,"2,8");
-        annotationPanel.add(conflictLabel,"0,10");
-        annotationPanel.add(conflictChooser,"2,10");
+        annotationPanel.add(new JLabel(getString("options") + ":" ),"0,6");
+        annotationPanel.add(annotationButton ,"2,6");
+        annotationPanel.add(new JLabel(getString("color")+ ":"),"0,4");
+        annotationPanel.add(colorChooser,"2,4");
+//        annotationPanel.add(locationLabel,"0,8");
+//        annotationPanel.add(locationChooser,"2,8");
+//        annotationPanel.add(conflictLabel,"0,10");
+//        annotationPanel.add(conflictChooser,"2,10");
         annotationLabel.setText(getString("dynamictype.annotation.nameformat") + ":");
         annotationButton.setText(getString("edit"));
         annotationButton.addActionListener(new ActionListener() {
@@ -248,8 +240,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     {
         try {
             dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, annotationText.getText().trim());
-            String planningText = annotationTreeText.getText().trim();
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, planningText.length() > 0 ? planningText : null);
+      //      String planningText = annotationTreeText.getText().trim();
+        //    dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, planningText.length() > 0 ? planningText : null);
         } catch (IllegalAnnotationException ex) {
             throw ex;
         }
@@ -261,43 +253,43 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         	case 2:color = DynamicTypeAnnotations.VALUE_COLORS_DISABLED;break;
         }
         dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, color);
-        if ( isResourceType)
-        {
-        	String location = null;
-	        switch (locationChooser.getSelectedIndex())
-	        {
-	        	case 0:location = "true";break;
-	        	case 1:location = "false";break;
-	        }
-	        if ( location == null || location.equals( "false"))
-	        {
-	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_LOCATION, null);
-	        }
-	        else
-	        {
-	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_LOCATION, location);
-	        }
-        }
-        if ( isEventType)
-        {
-	        String conflicts = null;
-	        switch (conflictChooser.getSelectedIndex())
-	        {
-	        	case 0:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS;break;
-	        	case 1:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_NONE;break;
-	        	case 2:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES;break;
-	        }
-            if ( conflicts == null || conflicts.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS))
-	        {
-	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS, null);
-	        }
-	        else
-	        {
-	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS, conflicts);
-	        }
-	
-	        
-        }
+//        if ( isResourceType)
+//        {
+//        	String location = null;
+//	        switch (locationChooser.getSelectedIndex())
+//	        {
+//	        	case 0:location = "true";break;
+//	        	case 1:location = "false";break;
+//	        }
+//	        if ( location == null || location.equals( "false"))
+//	        {
+//	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_LOCATION, null);
+//	        }
+//	        else
+//	        {
+//	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_LOCATION, location);
+//	        }
+//        }
+//        if ( isEventType)
+//        {
+//	        String conflicts = null;
+//	        switch (conflictChooser.getSelectedIndex())
+//	        {
+//	        	case 0:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS;break;
+//	        	case 1:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_NONE;break;
+//	        	case 2:conflicts = DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES;break;
+//	        }
+//            if ( conflicts == null || conflicts.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS))
+//	        {
+//	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS, null);
+//	        }
+//	        else
+//	        {
+//	        	dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS, conflicts);
+//	        }
+//	
+//	        
+//        }
     }
     
     private void showAnnotationDialog() throws RaplaException
@@ -346,20 +338,20 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         name.setValue( dynamicType.getName());
         elementKey.setValue( dynamicType.getKey());
         attributeEdit.setDynamicType(dynamicType);
-        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-		isEventType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-		isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-		conflictLabel.setVisible( isEventType);
-		conflictChooser.setVisible( isEventType);
-		locationLabel.setVisible( isResourceType);
-		locationChooser.setVisible( isResourceType);
+//        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+//		isEventType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+//		isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+//		conflictLabel.setVisible( isEventType);
+//		conflictChooser.setVisible( isEventType);
+//		locationLabel.setVisible( isResourceType);
+//		locationChooser.setVisible( isResourceType);
 
         updateAnnotations();
     }
 
     private void updateAnnotations() throws RaplaException {
         annotationText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT ) );
-        annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
+        //annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
         List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
         annotationEdit.setObjects(asList);
         
@@ -382,42 +374,42 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 	         	colorChooser.setSelectedIndex(2);
 	        }
         }
-        if ( isEventType)
-        {
-	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS); 
-	        if (annotation  == null)
-	        {
-	        	annotation =  DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS;
-	        }
-	        if ( annotation.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS))
-	        {
-	         	conflictChooser.setSelectedIndex(0);
-	        }
-	        else if ( annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE))
-	        {
-	        	conflictChooser.setSelectedIndex(1);
-	        }
-	        else if ( annotation.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES))
-	        {
-	        	conflictChooser.setSelectedIndex(2);
-	        }
-        }
-        if ( isResourceType)
-        {
-	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_LOCATION); 
-	        if (annotation  == null)
-	        {
-	        	annotation =  "false";
-	        }
-	        if ( annotation.equals( "true"))
-	        {
-	        	locationChooser.setSelectedIndex(0);
-	        }
-	        else
-	        {
-	        	locationChooser.setSelectedIndex(1);
-	        }
-        }
+//        if ( isEventType)
+//        {
+//	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS); 
+//	        if (annotation  == null)
+//	        {
+//	        	annotation =  DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS;
+//	        }
+//	        if ( annotation.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS))
+//	        {
+//	         	conflictChooser.setSelectedIndex(0);
+//	        }
+//	        else if ( annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE))
+//	        {
+//	        	conflictChooser.setSelectedIndex(1);
+//	        }
+//	        else if ( annotation.equals( DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES))
+//	        {
+//	        	conflictChooser.setSelectedIndex(2);
+//	        }
+//        }
+//        if ( isResourceType)
+//        {
+//	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_LOCATION); 
+//	        if (annotation  == null)
+//	        {
+//	        	annotation =  "false";
+//	        }
+//	        if ( annotation.equals( "true"))
+//	        {
+//	        	locationChooser.setSelectedIndex(0);
+//	        }
+//	        else
+//	        {
+//	        	locationChooser.setSelectedIndex(1);
+//	        }
+//        }
     }
 
     private void validate() throws RaplaException {
