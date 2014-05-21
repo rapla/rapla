@@ -4791,22 +4791,52 @@ See French text.
     <entry key="nameformat_planning">
         <text lang="en">Name in resource tree</text>
         <text lang="de">Name im Ressourcenbaum</text>
+        <text lang="fr">Nom dans le dépliant</text>
+        <text lang="es">Nombre en el folleto</text>
+        <text lang="cs">Jméno v příbalové informaci</text>
+        <text lang="nl">Naam in de folder</text>
+        <text lang="pl">Imię w ulotce</text>
+		<text lang="pt">Nome no folheto</text>
     </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>
         <text lang="de">Ist ein Ort</text>
+        <text lang="fr">Est un lieu</text>
+        <text lang="es">Es un lugar</text>
+        <text lang="cs">Je to místo,</text>
+        <text lang="nl">Is een plaats</text>
+        <text lang="pl">Jest to miejsce,</text>
+		<text lang="pt">É um lugar</text>
     </entry>
     <entry key="conflicts.never">
         <text lang="en">never</text>
         <text lang="de">niemals</text>
+        <text lang="fr">jamais</text>
+        <text lang="es">nunca</text>
+        <text lang="cs">nikdy</text>
+        <text lang="nl">nooit</text>
+        <text lang="pl">nigdy</text>
+		<text lang="pt">nunca</text>
     </entry>
     <entry key="conflicts.always">
         <text lang="en">always</text>
         <text lang="de">immer</text>
+        <text lang="fr">toujours</text>
+        <text lang="es">siempre</text>
+        <text lang="cs">vždy</text>
+        <text lang="nl">altijd</text>
+        <text lang="pl">zawsze</text>
+		<text lang="pt">sempre</text>
     </entry>
     <entry key="conflicts.withOtherTypes">
         <text lang="en">not with same event type</text>
         <text lang="de">nicht mit gleichem Veranstaltungstypen</text>
+        <text lang="fr">pas avec le même type d'événement</text>
+        <text lang="es">no con el mismo tipo de evento</text>
+        <text lang="cs">Není se stejným typem události</text>
+        <text lang="nl">niet met zelfde soort event</text>
+        <text lang="pl">nie z samego typu zdarzenia</text>
+		<text lang="pt">não com o mesmo tipo de evento</text>
     </entry>
     
 </resources>
