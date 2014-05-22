@@ -189,9 +189,10 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	protected void setTimestamp(PreparedStatement stmt,int column, Date time) throws SQLException {
     	if ( time != null) 
         {
-    		TimeZone systemTimeZone = getSystemTimeZone();
+    		//TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
-    		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
+    		//long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
+    		long offset = 0;
             long timeInMillis = time.getTime() - offset;
 			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
         }
