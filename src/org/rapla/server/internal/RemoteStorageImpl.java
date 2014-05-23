@@ -270,6 +270,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        		String userId = obj.getId();
 	        		needConflictRefresh.remove( userId);
 	        		needResourceRefresh.remove( userId);
+	        		addAllUsersToResourceRefresh = true;
 	        	}
 	        	if (!isTransferedToClient(obj))
 	        	{
