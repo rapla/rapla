@@ -27,14 +27,14 @@ public class ArchiverServiceTask extends RaplaComponent implements ServerExtensi
             		ArchiverServiceImpl task = new ArchiverServiceImpl(getContext());
             		try 
             		{
-            			if ( days != -20 )
-            			{
-            				task.delete( days );
-            			}
             			if ( export && task.isExportEnabled())
             			{
             				task.backupNow();
             			}
+            			if ( days != -20 )
+                        {
+                            task.delete( days );
+                        }
 					} 
             		catch (RaplaException e) {
 			            getLogger().error("Could not execute archiver task ", e);
