@@ -286,7 +286,7 @@ a:hover img{
    border-spacing:0px;
 /* workaround for IE */
 //   border-collapse:collapse;
-//    border: 1px;
+//   border: 1px;
 //   border-left: 1px solid;
 }
 
@@ -301,6 +301,16 @@ a:hover img{
 }
 
 .month_cell {
+   border-width:0px;
+   border-left-width:0px;
+   border-right-width:1px;
+   border-bottom-width:1px;
+   border-style:solid;
+   padding:0px;
+}
+
+.month_rowheader  {
+   background-color: #DDDDDD;
    border-width:0px;
    border-left-width:0px;
    border-right-width:1px;

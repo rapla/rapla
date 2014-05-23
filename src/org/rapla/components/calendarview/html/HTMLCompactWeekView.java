@@ -102,7 +102,8 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         StringBuffer result = new StringBuffer();
         result.append("<table class=\"month_table\">\n");
         result.append("<tr>\n");
-        result.append("<th class=\"week_number\">");
+        
+        result.append("<th class=\"week_number\" width=\"" + Math.round(getLeftColumnSize() * 100) + "%\">");
         result.append(weeknumber);
         result.append("</th>");
         String percentage = "" + Math.round(95.0 / (Math.max(0, columns)));
@@ -131,7 +132,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         
         for (int row=0;row<rowsize;row++) {
             result.append("<tr>\n");
-            result.append("<th class=\"month_header\" valign=\"top\" height=\"40\">\n");
+            result.append("<th class=\"month_rowheader\" valign=\"top\" height=\"40\">\n");
             if ( slotNames.length > row ) {
                 result.append( slotNames[ row ] );
             }
