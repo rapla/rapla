@@ -119,6 +119,20 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		return compareTo;
     }
 	
+	public boolean equals( Object obj)
+	{
+	    if ( obj == this)
+	    {
+	        return true;
+	    }
+	    AppointmentBlock other = (AppointmentBlock) obj;
+	    if ( other.start != start || other.end != end)
+	    {
+	        return false;
+	    }
+	    return appointment.equals( other.appointment);
+	}
+	
 	
 	public String toString()
 	{

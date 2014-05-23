@@ -204,50 +204,157 @@ class ConflictFinder {
 //    }
     
     private void updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
-        Set<String> foundConflictIds = new HashSet<String>();
         Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
         createBlocks(today,allAppointments,allAppointmentBlocks, null);
-        IntervalST intervalST = new IntervalST();
-        for ( AppointmentBlock block:allAppointmentBlocks)
-        {
-            intervalST.put( block);
+//        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
+//        createBlocks(today,changedAppointments,appointmentBlocks, null);
+//        long startTime = 0;
+//        if  ( appointmentBlocks.size() > 7000)
+//        {
+//            startTime = System.nanoTime();
+//        }
+        sweepLine(allocatable,today, conflictList, allAppointmentBlocks);
+//        if ( startTime > 0 )
+//        {
+//            long time = System.nanoTime() - startTime;
+//            System.out.println(  " Passed time for " + appointmentBlocks.size() + " blocks " + (time / 1000000.0) + "  ms ");
+//        }
+    }
+
+
+ // helper class for events in sweep line algorithm
+    public static class Event implements Comparable<Event> {
+        long time;
+        AppointmentBlock interval;
+
+        public Event(long time, AppointmentBlock interval) {
+            this.time     = time;
+            this.interval = interval;
         }
-        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
-        createBlocks(today,changedAppointments,appointmentBlocks, null);
-        // Check the conflicts for each time block
-        for (AppointmentBlock appBlock:appointmentBlocks)
-        {
-            Appointment appointment1 = appBlock.getAppointment();
-            Iterable<AppointmentBlock> intersecting = intervalST.searchAll(appBlock);
-            for ( AppointmentBlock appBlock2:intersecting)
-            {
-                final Appointment appointment2 = appBlock2.getAppointment();
-                // we test that in the next step
-                if ( appBlock == appBlock2 || appointment1.equals( appointment2) )
-                {
-                    continue;
-                }
-                if (!appointment2.equals( appointment1) && appointment2.overlaps(appointment1))
-                {
-                    String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
-                    if ( foundConflictIds.contains(id ))
-                    {
-                        continue;
-                    }
-                    // Add appointments to conflict list
-                    if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
-                    {
-                        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
-                        conflictList.add(conflict);
-                        foundConflictIds.add( id);
-                    }                       
-                }
-            }
+
+        public int compareTo(Event b) {
+            Event a = this;
+            if      (a.time < b.time) return -1;
+            else if (a.time > b.time) return +1;
+            else                      return  0; 
         }
     }
 
-    
 
+    // the sweep-line algorithm
+    public static void sweepLine(Allocatable allocatable, Date today, Set<Conflict> conflictList,Collection<AppointmentBlock> intervals) {
+        Set<String> foundConflictIds = new HashSet<String>();
+        // generate N random intervals
+
+        // create events
+        MinPQ<Event> pq = new MinPQ<Event>();
+        for (AppointmentBlock block:intervals) {
+            Event e1 = new Event(block.getStart(),  block);
+            Event e2 = new Event(block.getEnd(), block);
+            pq.insert(e1);
+            pq.insert(e2);
+        }
+
+        // run sweep-line algorithm
+        HashSet<AppointmentBlock> st = new HashSet<AppointmentBlock>();
+        while (!pq.isEmpty()) {
+            Event e = pq.delMin();
+            long time = e.time;
+            AppointmentBlock appBlock = e.interval;
+            Appointment appointment1 = appBlock.getAppointment();
+
+            // next event is the right endpoint of interval i
+            if (time == appBlock.getEnd())
+                st.remove(appBlock);
+
+            // next event is the left endpoint of interval i
+            else {
+                for (AppointmentBlock appBlock2 : st) {
+                    final Appointment appointment2 = appBlock2.getAppointment();
+                    if ( appBlock == appBlock2 || appointment1.equals( appointment2) )
+                    {
+                        continue;
+                    }
+                    if ( appointment2.overlaps(appointment1))
+                    {
+                        String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
+                        if ( foundConflictIds.contains(id ))
+                        {
+                            continue;
+                        }
+                        // Add appointments to conflict list
+                        if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
+                        {
+                            final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
+                            conflictList.add(conflict);
+                            foundConflictIds.add( id);
+//                            System.out.println("Conflict " + appointment1 + " and " + appointment2);
+                        }                       
+                    }
+
+                }
+                st.add(appBlock);
+            }
+        }
+
+
+    }
+
+    
+//    private Map<AppointmentBlock,Integer> updateConflictsRandomTree(Allocatable allocatable, Date today, Set<Conflict> conflictList, Collection<AppointmentBlock> allAppointmentBlocks,
+//            Collection<AppointmentBlock> appointmentBlocks) {
+//        Map<AppointmentBlock,Integer> intersections = new LinkedHashMap();
+//        Set<String> foundConflictIds = new HashSet<String>();
+//
+//        IntervalST intervalST = new IntervalST();
+//        for ( AppointmentBlock block:allAppointmentBlocks)
+//        {
+//            intervalST.put( block);
+//        }
+//         
+//        // Check the conflicts for each time block
+//        for (AppointmentBlock appBlock:appointmentBlocks)
+//        {
+//            Appointment appointment1 = appBlock.getAppointment();
+//            Collection<AppointmentBlock> intersecting = intervalST.searchAll(appBlock);
+//            int count = 0;
+//            for ( AppointmentBlock appBlock2:intersecting)
+//            {
+//                final Appointment appointment2 = appBlock2.getAppointment();
+//                // we test that in the next step
+//                if ( appBlock == appBlock2 || appointment1.equals( appointment2) )
+//                {
+//                    continue;
+//                }
+//                if ( appointment2.overlaps(appointment1))
+//                {
+//                    String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
+//                    if ( foundConflictIds.contains(id ))
+//                    {
+//                        continue;
+//                    }
+//                    // Add appointments to conflict list
+//                    if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
+//                    {
+//                        count++;
+//                        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
+//                        conflictList.add(conflict);
+//                        foundConflictIds.add( id);
+//                    }                       
+//                }
+//            }
+//            if ( count > 0)
+//            {
+//                intersections.put( appBlock, count);
+//            }
+//            
+//        }
+//        return intersections;
+//       // System.out.println("Conflicts for Vicara " + foundConflictIds.size());
+//
+//    }
+
+    
     public Set<String> getIds(Collection<? extends Entity> list) {
         if ( list.isEmpty())
         {
@@ -387,7 +494,7 @@ class ConflictFinder {
 				{
 					if (isConflictIgnored(old) != isConflictIgnored(newAlloc))
 					{
-						// add an recalculate all if holdbackconflicts changed
+						// add and recalculate all if holdbackconflicts changed
 						toUpdate.put( newAlloc, null);
 					}
 				}

@@ -250,9 +250,9 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         try
         {
 	    	resourceSelection.dataChanged(evt);
+	        conflictsView.dataChanged(evt);
 	        calendarContainer.update(evt);
 	        savedViews.update();
-	        conflictsView.dataChanged(evt);
 	        updateViews();
 	        // this is done in calendarContainer update
  	        //updateOwnReservationsSelected();

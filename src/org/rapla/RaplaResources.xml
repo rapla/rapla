@@ -4830,7 +4830,7 @@ See French text.
     </entry>
     <entry key="conflicts.withOtherTypes">
         <text lang="en">not with same event type</text>
-        <text lang="de">nicht mit gleichem Veranstaltungstypen</text>
+        <text lang="de">nicht mit gleichem Veranstaltungstyp</text>
         <text lang="fr">pas avec le même type d'événement</text>
         <text lang="es">no con el mismo tipo de evento</text>
         <text lang="cs">Není se stejným typem události</text>

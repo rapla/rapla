@@ -778,6 +778,39 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					}
 				}
 			}
+			if ( raplaType ==  DynamicType.TYPE )
+            {
+                if ( operation instanceof UpdateResult.Change)
+                {
+                    DynamicType dynamicType = (DynamicType)current;
+                    DynamicType old = (DynamicType)((UpdateResult.Change) operation).getOld();
+                    String conflictsNew = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS);
+                    String conflictsOld = old.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS);
+                    if ( conflictsNew != conflictsOld)
+                    {
+                        if ( conflictsNew == null || conflictsOld == null || !conflictsNew.equals(conflictsOld))
+                        {
+                            Collection<Reservation> reservations = cache.getReservations();
+                            for ( Reservation reservation:reservations)
+                            {
+                                if ( dynamicType.equals(reservation.getClassification().getType()))
+                                {
+                                    Collection<AppointmentImpl> appointments = ((ReservationImpl)reservation).getAppointmentList();
+                                    for ( Appointment app: appointments )
+                                    {
+                                        updateBindings( toUpdate, reservation,app, true);
+                                    }
+                                    for ( Appointment app: appointments )
+                                    {
+                                        updateBindings( toUpdate, reservation,app, false);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
 			if ( raplaType ==  Allocatable.TYPE )
 			{
 				if ( operation instanceof UpdateResult.Remove)
