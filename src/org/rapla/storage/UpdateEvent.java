@@ -127,37 +127,37 @@ public class UpdateEvent
     	List list = getListMap().get( class1);
     	if ( list == null)
     	{
-            if ( class1== Reservation.class)
+            if ( class1.equals(Reservation.class))
             {
                 reservations = new ArrayList<ReservationImpl>();
                 list = reservations;
             }
-            else if ( class1== Allocatable.class)
+            else if ( class1.equals(Allocatable.class))
             {
                 resources = new ArrayList<AllocatableImpl>();
                 list = resources;
             }
-            else if ( class1== Preferences.class)
+            else if ( class1.equals(Preferences.class))
             {
     	        preferences = new ArrayList<PreferencesImpl>();
     	        list = preferences;
             }
-            else if ( class1 == Category.class)
+            else if ( class1.equals(Category.class))
             {
                 categories = new ArrayList<CategoryImpl>();
                 list = categories;
             }
-            else if ( class1 == User.class)
+            else if ( class1.equals(User.class))
             {
                 users = new ArrayList<UserImpl>();
                 list = users;
             }
-    	    else if ( class1 == DynamicType.class)
+    	    else if ( class1.equals(DynamicType.class))
     	    {
                 types = new ArrayList<DynamicTypeImpl>();
                 list = types;
     	    }
-            else if ( class1 == Conflict.class)
+            else if ( class1.equals(Conflict.class))
             {
                 conflicts = new ArrayList<ConflictImpl>();
                 list = conflicts;
