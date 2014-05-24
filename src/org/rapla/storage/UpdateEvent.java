@@ -14,6 +14,7 @@ package org.rapla.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,18 +47,18 @@ import org.rapla.facade.internal.ConflictImpl;
 public class UpdateEvent
 {
 	transient Map listMap;// = new HashMap<Class, List<Entity>>(); 
-	List<CategoryImpl> categories = createList(Category.class);
-	List<DynamicTypeImpl> types = createList(DynamicType.class);
-	List<UserImpl> users = createList(User.class);
-	List<PreferencePatch> preferencesPatches = new ArrayList<PreferencePatch>();
+	List<CategoryImpl> categories;
+	List<DynamicTypeImpl> types;
+	List<UserImpl> users;
+	List<PreferencePatch> preferencesPatches;
 
-	List<PreferencesImpl> preferences = createList(Preferences.class);
-	List<AllocatableImpl> resources = createList(Allocatable.class);
-	List<ReservationImpl> reservations =  createList(Reservation.class);
-	List<ConflictImpl> conflicts =  createList(Conflict.class);
+	List<PreferencesImpl> preferences;
+	List<AllocatableImpl> resources;
+	List<ReservationImpl> reservations;
+	List<ConflictImpl> conflicts;
 	
-	private Set<String> removeSet = new LinkedHashSet<String>();
-	private Set<String> storeSet = new LinkedHashSet<String>();
+	private Set<String> removeSet;
+	private Set<String> storeSet;
 
     private String userId;
     
@@ -70,13 +71,7 @@ public class UpdateEvent
 	public UpdateEvent() {
     }
 
-    private  <T> List<T> createList(@SuppressWarnings("unused") Class<? super T> clazz) {
-		ArrayList<T> list = new ArrayList<T>();
-		return list;
-	}
-
-
-	public void setUserId( String userId) {
+ 	public void setUserId( String userId) {
         this.userId = userId;
     }
     public String getUserId() {
@@ -84,57 +79,121 @@ public class UpdateEvent
     }
     
     private void addRemove(Entity entity) {
+        if ( removeSet == null)
+        {
+            removeSet = new LinkedHashSet<String>();
+        }
         removeSet.add( entity.getId());
         add( entity);
     }
 
 	private void addStore(Entity entity) {
+	    if ( storeSet == null)
+	    {
+	        storeSet = new LinkedHashSet<String>();
+	    }
         storeSet.add( entity.getId());
         add( entity);
     }
 	
-	@SuppressWarnings("unchecked")
-	public Map<Class, Collection<Entity>> getListMap() {
+	@SuppressWarnings({ "unchecked" })
+	private Map<Class, List<Entity>> getListMap() {
 		if ( listMap == null)
 		{
 			listMap = new HashMap<Class,Collection<Entity>>();
-			listMap.put( Preferences.class,preferences);
-			listMap.put( Allocatable.class,resources);
-			listMap.put(Category.class, categories);
-			listMap.put(User.class, users);
-			listMap.put(DynamicType.class, types);
-			listMap.put(Reservation.class, reservations);
-			listMap.put(Conflict.class, conflicts);
+            put(Reservation.class, reservations);
+			put( Allocatable.class,resources);
+            put( Preferences.class,preferences);
+			put(Category.class, categories);
+			put(User.class, users);
+			put(DynamicType.class, types);
+			put(Conflict.class, conflicts);
 		}
 		return listMap;
 	}
 
+	@SuppressWarnings("unchecked")
+    private <T extends Entity> void put(Class<T> class1, List<? extends T> list) {
+        if ( list != null)
+        {
+            listMap.put( class1, list );
+        }
+        
+    }
+
+    @SuppressWarnings({ "unchecked" })
     private void add(Entity entity) {
-    	@SuppressWarnings("unchecked")
 		Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
-    	Collection<Entity> list = getListMap().get( class1);
+    	List list = getListMap().get( class1);
     	if ( list == null)
     	{
-    		//listMap.put( class1, list);
-    		throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");
+            if ( class1== Reservation.class)
+            {
+                reservations = new ArrayList<ReservationImpl>();
+                list = reservations;
+            }
+            else if ( class1== Allocatable.class)
+            {
+                resources = new ArrayList<AllocatableImpl>();
+                list = resources;
+            }
+            else if ( class1== Preferences.class)
+            {
+    	        preferences = new ArrayList<PreferencesImpl>();
+    	        list = preferences;
+            }
+            else if ( class1 == Category.class)
+            {
+                categories = new ArrayList<CategoryImpl>();
+                list = categories;
+            }
+            else if ( class1 == User.class)
+            {
+                users = new ArrayList<UserImpl>();
+                list = users;
+            }
+    	    else if ( class1 == DynamicType.class)
+    	    {
+                types = new ArrayList<DynamicTypeImpl>();
+                list = types;
+    	    }
+            else if ( class1 == Conflict.class)
+            {
+                conflicts = new ArrayList<ConflictImpl>();
+                list = conflicts;
+            } 
+            else
+            {
+                throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");
+            }
+            listMap.put( class1, list);
     	}
-    	list.add( entity);
+    	
+    	list.add( entity );
 	}
     
     public void putPatch(PreferencePatch patch) 
     {
+        if ( preferencesPatches == null)
+        {
+            preferencesPatches = new ArrayList<PreferencePatch>();
+        }
         preferencesPatches.add( patch);
     }
 
 
     public Collection<Entity> getRemoveObjects()
     {
+        if ( removeSet == null)
+        {
+            return Collections.emptyList();
+        }
 		HashSet<Entity> objects = new LinkedHashSet<Entity>();
 		for ( Collection<Entity> list:getListMap().values())
         {
         	for ( Entity entity:list)
         	{
-        		if ( removeSet.contains( entity.getId()))
+        		if (  removeSet.contains( entity.getId()))
         		{
         			objects.add(entity);
         		}
@@ -146,6 +205,10 @@ public class UpdateEvent
 
     public Collection<Entity> getStoreObjects() 
     {
+        if ( storeSet == null)
+        {
+            return Collections.emptyList();
+        }
         // Needs to be a linked hashset to keep the order of the entities
 		HashSet<Entity> objects = new LinkedHashSet<Entity>();
 		for ( Collection<Entity> list:getListMap().values())
@@ -170,7 +233,7 @@ public class UpdateEvent
             for ( Entity entity:list)
             {
                 String id = entity.getId();
-                boolean contains = storeSet.contains( id) || (includeRemove && removeSet.contains( id));
+                boolean contains = (storeSet != null && storeSet.contains( id)) || (includeRemove && removeSet != null && removeSet.contains( id));
                 if ( contains && entity instanceof EntityReferencer)
                 {
                     EntityReferencer references = (EntityReferencer)entity;
@@ -178,7 +241,7 @@ public class UpdateEvent
                 }
             }
         }
-        for ( PreferencePatch patch:preferencesPatches)
+        for ( PreferencePatch patch:getPreferencePatches())
         {
             objects.add(patch);
         }
@@ -189,19 +252,23 @@ public class UpdateEvent
     
     public List<PreferencePatch> getPreferencePatches() 
     {
+        if ( preferencesPatches == null)
+        {
+            return Collections.emptyList();
+        }
         return preferencesPatches;
     }
     
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putStore(Entity entity) {
        
-        if (!storeSet.contains(entity.getId()))
+        if (storeSet == null || !storeSet.contains(entity.getId()))
             addStore(entity);
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putRemove(Entity entity) {
-        if (!removeSet.contains(entity.getId()))
+        if (removeSet == null || !removeSet.contains(entity.getId()))
             addRemove(entity);
     }
 
@@ -209,9 +276,9 @@ public class UpdateEvent
      * if no such entity is found. */
     public Entity findEntity(Entity original) {
         String originalId = original.getId();
-		if (!storeSet.contains( originalId))
+		if (storeSet == null || !storeSet.contains( originalId))
         {
-			if (!removeSet.contains( originalId))
+			if (removeSet == null || !removeSet.contains( originalId))
 	        {
 	        	return null;
 	        }
@@ -271,7 +338,7 @@ public class UpdateEvent
 
 
 	public boolean isEmpty() {
-        boolean isEmpty = removeSet.isEmpty() && storeSet.isEmpty() && invalidateInterval == null;
+        boolean isEmpty = removeSet == null && storeSet == null && invalidateInterval == null;
         return isEmpty;
 	}
 
