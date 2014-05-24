@@ -121,13 +121,15 @@
   <!-- Uncomment if you which to log all calls to the dispatch method
   <logger name="rapla.server.org.rapla.storage.dbrm.RemoteStorage.dispatch.arguments" level="DEBUG" additivity="false">
     <appender-ref ref="FILE_CALLS"/>
+    <appender-ref ref="STDOUT"/>
   </logger>
    -->
   <!-- Uncomment if you which to log all results to the dispatch methods
   <logger name="rapla.server.org.rapla.storage.dbrm.RemoteStorage.dispatch.result" level="DEBUG" additivity="false">
     <appender-ref ref="FILE_CALLS"/>
+    <appender-ref ref="STDOUT"/>
   </logger>
-   -->
+    -->
 
   
   <root level="info">

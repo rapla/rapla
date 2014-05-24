@@ -161,6 +161,12 @@ public class JsonServlet {
             }
         }
         final String out = formatResult(call);
+        String childLoggerName = class1.getName() + "." + call.method.getName() + ".result";
+        Logger childLogger = logger.getChildLogger(childLoggerName);
+        if ( childLogger.isDebugEnabled() )
+        {
+            childLogger.debug(  out);
+        }
         RPCServletUtils.writeResponse(servletContext, call.httpResponse, out, out.length() > 256 && RPCServletUtils.acceptsGzipEncoding(call.httpRequest));
     }
 
@@ -248,6 +254,7 @@ public class JsonServlet {
 
     private void parseGetRequest(final ActiveCall call) {
         final HttpServletRequest req = call.httpRequest;
+        
         if ("2.0".equals(req.getParameter("jsonrpc"))) {
             final JsonObject d = new JsonObject();
             d.addProperty("jsonrpc", "2.0");
@@ -281,6 +288,14 @@ public class JsonServlet {
             String body = (String)req.getAttribute("postBody");
             mapRequestToCall(call, req, body);
         }
+        
+        String childLoggerName = class1.getName() + "." + call.method.getName() + ".arguments";
+        Logger childLogger = logger.getChildLogger(childLoggerName);
+        if ( childLogger.isDebugEnabled() )
+        {
+            childLogger.debug(  req.getQueryString());
+        }        
+
     }
 
     public void mapRequestToCall(final ActiveCall call, final HttpServletRequest req, String body) {
@@ -460,6 +475,12 @@ public class JsonServlet {
                 gb.registerTypeAdapter(ActiveCall.class, new CallDeserializer(call, this));
                 Gson mapper = gb.create();
                 mapper.fromJson(postBody, ActiveCall.class);
+            }
+            String childLoggerName = class1.getName() + "." + call.method.getName() + ".arguments";
+            Logger childLogger = logger.getChildLogger(childLoggerName);
+            if ( childLogger.isDebugEnabled() )
+            {
+                childLogger.debug(  postBody );
             }
         } catch (JsonParseException err) {
             call.method = null;
