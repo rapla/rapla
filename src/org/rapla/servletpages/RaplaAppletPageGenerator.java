@@ -4,6 +4,7 @@
 package org.rapla.servletpages;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Collection;
 
 import javax.servlet.ServletContext;
@@ -51,6 +52,13 @@ public class RaplaAppletPageGenerator implements RaplaPageGenerator{
         out.println("     <param name=\"java_type\" value=\"application/x-java-applet;jpi-version=1.4.1\"/>");
         out.println("     <param name=\"codebase_lookup\" value=\"false\"/>");
         out.println("     <param name=\"scriptable\" value=\"true\"/>");
+        String passedUsername = request.getParameter("username");
+        if ( passedUsername != null)
+        {
+            String usernameProperty = "org.rapla.startupUser";
+            String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
+            out.println("  <param name=\"org.rapla.startupUser\" value=\""+safeUsername + "\"/>");
+        }
         out.println("      No Java support for APPLET tags please install java plugin for your browser!!");
         out.println("   </applet>");
         out.println("</body>");

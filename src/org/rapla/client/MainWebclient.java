@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 import java.net.URL;
+import java.net.URLDecoder;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaMainContainer;
@@ -32,6 +33,9 @@ public class MainWebclient
     RaplaStartupEnvironment env = new RaplaStartupEnvironment();
     Container raplaContainer;
 
+    String startupUser;
+    
+    
 
     void init(URL configURL,int mode) throws Exception {
         env.setStartupMode( mode );
@@ -39,8 +43,35 @@ public class MainWebclient
         env.setBootstrapLogger( getLogger() );
     }
 
+    public String getStartupUser() 
+    {
+        return startupUser;
+    }
+
+    public void setStartupUser(String startupUser) 
+    {
+        this.startupUser = startupUser;
+    }
+    
     void startRapla(final String id) throws Exception {
         ConnectInfo connectInfo = null;
+
+        try
+        {
+            if ( startupUser != null)
+            {
+                String decoded = URLDecoder.decode( startupUser, "UTF-8");
+                getLogger().warn("Starting rapla with username " + startupUser);
+                connectInfo = new ConnectInfo( decoded, "".toCharArray());
+            }
+            else
+            {
+                getLogger().warn("Starting rapla with login screen.");
+            }
+        } catch (Throwable ex)
+        {
+            getLogger().error("Error reading system property " , ex);
+        }
         startRapla(id, connectInfo);
     }
 

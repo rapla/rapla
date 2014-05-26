@@ -6,6 +6,7 @@ package org.rapla.servletpages;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -144,8 +145,16 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
     		out.println("  <all-permissions/>");
     		out.println("</security>");
 		}
-    	out.println("<resources>");
+        out.println("<resources>");
 		out.println("  <j2se version=\"1.4+\"/>");
+		
+		String passedUsername = request.getParameter("username");
+		if ( passedUsername != null)
+		{
+		    String usernameProperty = "jnlp.org.rapla.startupUser";
+		    String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
+		    out.println("  <property name=\"" +usernameProperty +"\" value=\"" + safeUsername + "\"/>");
+		}
 		out.println(getLibsJNLP(context, webstartRoot));
 		out.println("</resources>");
 		out.println("<application-desc main-class=\"org.rapla.client.MainWebstart\">");

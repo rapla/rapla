@@ -112,6 +112,8 @@ final public class MainApplet extends JApplet
                     startable = false;
                     updateStartable();
                     MainWebclient main = new MainWebclient();
+                    String startupUser = getParameter("org.rapla.startupUser");
+                    main.setStartupUser( startupUser);
                     URL configURL = new URL( getDocumentBase(), MainWebclient.CLIENT_CONFIG_SERVLET_URL );
                     main.init( configURL, StartupEnvironment.APPLET );
                     main.env.setDownloadURL( getDocumentBase() );

@@ -21,7 +21,9 @@ final public class MainWebstart
     	MainWebclient main = new MainWebclient();
         try {
         	main.init( ConfigTools.webstartConfigToURL( MainWebclient.CLIENT_CONFIG_SERVLET_URL),StartupEnvironment.WEBSTART);
-            main.startRapla("client");
+            String startupUser = System.getProperty("jnlp.org.rapla.startupUser");
+            main.setStartupUser( startupUser);
+        	main.startRapla("client");
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);
             main.raplaContainer.dispose();
