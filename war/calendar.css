@@ -9,12 +9,6 @@ a:hover{
     color: black;
     background-color: #FFFF88;
 }
-a img{
-    display: none;
-} 
-a:hover img{
-    display:block;
-}
 #calendar a span.tooltip {
     display: none;
 }
