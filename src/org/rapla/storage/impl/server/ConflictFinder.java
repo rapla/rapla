@@ -24,7 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
@@ -58,8 +57,7 @@ class ConflictFinder {
     	int conflictSize = 0;
         for (Allocatable allocatable:allocationMap.getAllocatables())
 		{
-        	Set<Conflict> conflictList = Collections.emptySet();
-        	Set<Conflict> newConflicts = updateConflicts(allocatable, null, today, conflictList);
+        	Set<Conflict> newConflicts = calculateConflicts(allocatable, today);
         	conflictMap.put( allocatable, newConflicts);
         	conflictSize+= newConflicts.size();
 		}
@@ -68,43 +66,43 @@ class ConflictFinder {
 	}
 	
     
-    private Set<Conflict> updateConflicts(Allocatable allocatable,AllocationChange change, Date today, Set<Conflict> oldList ) 
+    private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 
     {
         if ( isConflictIgnored(allocatable))
         {
             return Collections.emptySet();
         }
         Set<Appointment> allAppointments = allocationMap.getAppointments(allocatable);
-        Set<Appointment> changedAppointments;
-        Set<Appointment> removedAppointments;
-        if ( change == null)
-        {
-            changedAppointments = allAppointments;
-            removedAppointments = new TreeSet<Appointment>();
-        }
-        else
-        {
-            changedAppointments = change.toChange;
-            removedAppointments = change.toRemove;
-        }
-        if (allAppointments.isEmpty() || changedAppointments.isEmpty())
+//        Set<Appointment> changedAppointments;
+//        Set<Appointment> removedAppointments;
+//        if ( change == null)
+//        {
+//            changedAppointments = allAppointments;
+//            removedAppointments = new TreeSet<Appointment>();
+//        }
+//        else
+//        {
+//            changedAppointments = change.toChange;
+//            removedAppointments = change.toRemove;
+//        }
+        if (allAppointments.isEmpty() /*|| changedAppointments.isEmpty()*/)
         {
             return Collections.emptySet();
         }
-        Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
-        {
-            Set<String> idList1 = getIds( removedAppointments);
-            Set<String> idList2 = getIds( changedAppointments);
-            for ( Conflict conflict:oldList)
-            {
-                if (endsBefore(conflict, today) || contains(conflict, idList1) || contains(conflict, idList2))
-                {
-                    continue;
-                }
-                conflictList.add( conflict );
-            }
-        }
-        updateConflicts(allocatable, today, allAppointments, changedAppointments, conflictList);
+      //  Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
+//        {
+//            Set<String> idList1 = getIds( removedAppointments);
+//            Set<String> idList2 = getIds( changedAppointments);
+//            for ( Conflict conflict:oldList)
+//            {
+//                if (endsBefore(conflict, today) || contains(conflict, idList1) || contains(conflict, idList2))
+//                {
+//                    continue;
+//                }
+//                conflictList.add( conflict );
+//            }
+//        }
+        Set<Conflict> conflictList =   updateConflicts(allocatable, today, allAppointments);
         //updateConflictsOld(allocatable, today, allAppointments, changedAppointments, conflictList);
         if ( conflictList.isEmpty())
         {
@@ -203,7 +201,7 @@ class ConflictFinder {
 //        }
 //    }
     
-    private void updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
+    private  Set<Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
         Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
         createBlocks(today,allAppointments,allAppointmentBlocks, null);
 //        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
@@ -213,7 +211,7 @@ class ConflictFinder {
 //        {
 //            startTime = System.nanoTime();
 //        }
-        sweepLine(allocatable,today, conflictList, allAppointmentBlocks);
+        return sweepLine(allocatable,today, allAppointmentBlocks);
 //        if ( startTime > 0 )
 //        {
 //            long time = System.nanoTime() - startTime;
@@ -242,7 +240,8 @@ class ConflictFinder {
 
 
     // the sweep-line algorithm
-    public static void sweepLine(Allocatable allocatable, Date today, Set<Conflict> conflictList,Collection<AppointmentBlock> intervals) {
+    public static Set<Conflict> sweepLine(Allocatable allocatable, Date today, Collection<AppointmentBlock> intervals) {
+        Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
         Set<String> foundConflictIds = new HashSet<String>();
         // generate N random intervals
 
@@ -296,7 +295,7 @@ class ConflictFinder {
                 st.add(appBlock);
             }
         }
-
+        return conflictList;
 
     }
 
@@ -379,12 +378,12 @@ class ConflictFinder {
 		return false;
 	}
 
-	private boolean contains(Conflict conflict, Set<String> idList)
-	{
-	    String appointment1 = conflict.getAppointment1();
-        String appointment2 = conflict.getAppointment2();
-        return( idList.contains( appointment1) || idList.contains( appointment2));
-	}
+//	private boolean contains(Conflict conflict, Set<String> idList)
+//	{
+//	    String appointment1 = conflict.getAppointment1();
+//        String appointment2 = conflict.getAppointment2();
+//        return( idList.contains( appointment1) || idList.contains( appointment2));
+//	}
 	
     private void createBlocks(Date today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks, Set<AppointmentBlock> additionalSet) {
         // overlaps will be checked  260 weeks (5 years) from now on
@@ -528,7 +527,7 @@ class ConflictFinder {
     		{
     			conflictListBefore = new LinkedHashSet<Conflict>();
     		}
-			Set<Conflict> conflictListAfter = updateConflicts( allocatable, changedAppointments, today, conflictListBefore);
+			Set<Conflict> conflictListAfter = calculateConflicts( allocatable , today);
 			conflictMap.put( allocatable, conflictListAfter);
 			//User user = evt.getUser();
 		
