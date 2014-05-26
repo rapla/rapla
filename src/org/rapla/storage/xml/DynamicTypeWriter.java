@@ -39,10 +39,8 @@ public class DynamicTypeWriter extends RaplaXMLWriter
 
         openTag("relax:element");
         att("name","dynatt:" + type.getKey());
-        if (isPrintId())
-        {
-            att("id",getId(type));
-        }
+        att("id",getId(type));
+
         printTimestamp( type );
 
         closeTag();
