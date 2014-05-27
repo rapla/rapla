@@ -4840,20 +4840,43 @@ See French text.
     </entry>
     
    <entry key="sorting">
-        <text lang="en">sorting</text>
+        <text lang="en">Sort order</text>
         <text lang="de">Sortierung</text>
+        <text lang="fr">Ordre</text>
+        <text lang="es">Orden de Clasificación</text>
+        <text lang="cs">Seřadit Objednat</text>
+        <text lang="nl">Sorteervolgorde</text>
+        <text lang="pl">Sortuj Zamówienie</text>
+		<text lang="pt">Ordem de classificação</text>        
     </entry>
     <entry key="sorting.ascending">
         <text lang="en">ascending</text>
         <text lang="de">aufsteigend</text>
+        <text lang="fr">Croissant</text>
+        <text lang="es">Ascendente</text>
+        <text lang="cs">Vzestupně</text>
+        <text lang="nl">Stijgend</text>
+        <text lang="pl">rosnąco</text>
+		<text lang="pt">ascendente</text>   
     </entry>
     <entry key="sorting.descending">
         <text lang="en">descending</text>
         <text lang="de">absteigend</text>
+        <text lang="fr">Descendant</text>
+        <text lang="es">descendiente</text>
+        <text lang="cs">klesající</text>
+        <text lang="nl">Dalend</text>
+        <text lang="pl">malejąco</text>
+		<text lang="pt">descendente</text>   
     </entry>
     <entry key="sorting.nothing_selected">
         <text lang="en">no sorting</text>
         <text lang="de">keine Sortierung</text>
+        <text lang="fr">pas de tri</text>
+        <text lang="es">sin clasificación</text>
+        <text lang="cs">bez třídění</text>
+        <text lang="nl">Geen volgorde</text>
+        <text lang="pl">bez sortowania</text>
+		<text lang="pt">sem classificação</text>   
     </entry>
-    
 </resources>
