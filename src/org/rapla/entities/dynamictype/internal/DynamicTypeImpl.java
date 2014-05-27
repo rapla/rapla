@@ -20,13 +20,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.rapla.components.util.Assert;
+import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -40,6 +44,7 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.framework.RaplaException;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
@@ -371,6 +376,14 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public Attribute[] getAttributes() {
         return attributes.toArray(Attribute.ATTRIBUTE_ARRAY);
     }
+    
+    @SuppressWarnings("unchecked")
+    public Iterable<Attribute> getAttributeIterable()
+    {
+        List attributes2 = attributes;
+        return attributes2;
+    }
+    
 
     public AttributeImpl getAttribute(String key) {
     	if ( attributeIndex == null)
@@ -494,6 +507,44 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             }
         }
         return getAttribute(annotationKey);
+    }
+
+    public static void validate(DynamicType dynamicType,I18nBundle i18n) throws RaplaException {
+        Assert.notNull(dynamicType);
+        if ( dynamicType.getName(i18n.getLocale()).length() == 0)
+            throw new RaplaException(i18n.getString("error.no_name"));
+    
+        if (dynamicType.getKey().equals("")) {
+            throw new RaplaException(i18n.format("error.no_key",""));
+        }
+        checkKey(i18n,dynamicType.getKey());
+        Attribute[] attributes = dynamicType.getAttributes();
+        for (int i=0;i<attributes.length;i++) {
+            String key = attributes[i].getKey();
+            if (key == null || key.trim().equals(""))
+                throw new RaplaException(i18n.format("error.no_key","(" + i + ")"));
+            checkKey(i18n,key);
+            for (int j=i+1;j<attributes.length;j++) {
+                if ((key.equals(attributes[j].getKey()))) {
+                    throw new UniqueKeyException(i18n.format("error.not_unique",key));
+                }
+            }
+        }
+    }
+
+    private static void checkKey(I18nBundle i18n,String key) throws RaplaException {
+        if (key.length() ==0)
+            throw new RaplaException(i18n.getString("error.no_key"));
+        if (!Tools.isKey(key) || key.length()>50) 
+        {
+            Object[] param = new Object[3];
+            param[0] = key;
+            param[1] = "'-', '_'";
+            param[2] = "'_'";
+            throw new RaplaException(i18n.format("error.invalid_key", param));
+        }
+    
+    
     }
 
     public static boolean isInternalType(Classifiable classifiable) {

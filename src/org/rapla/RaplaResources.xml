@@ -4839,4 +4839,21 @@ See French text.
 		<text lang="pt">não com o mesmo tipo de evento</text>
     </entry>
     
+   <entry key="sorting">
+        <text lang="en">sorting</text>
+        <text lang="de">Sortierung</text>
+    </entry>
+    <entry key="sorting.ascending">
+        <text lang="en">ascending</text>
+        <text lang="de">aufsteigend</text>
+    </entry>
+    <entry key="sorting.descending">
+        <text lang="en">descending</text>
+        <text lang="de">absteigend</text>
+    </entry>
+    <entry key="sorting.nothing_selected">
+        <text lang="en">no sorting</text>
+        <text lang="de">keine Sortierung</text>
+    </entry>
+    
 </resources>

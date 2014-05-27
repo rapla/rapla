@@ -43,6 +43,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
@@ -192,6 +193,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     }
 
     public void dataChanged(ModificationEvent evt) throws RaplaException {
+        if ( evt == null)
+        {
+            return;
+        }
     	TimeInterval invalidateInterval = evt.getInvalidateInterval();
     	if ( invalidateInterval != null && invalidateInterval.getStart() == null)
     	{
@@ -199,7 +204,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     		 conflicts = new LinkedHashSet<Conflict>( Arrays.asList(conflictArray));
     		 updateTree();
     	}
-    	else if ( evt.isModified(Conflict.TYPE) || (evt.isModified( Preferences.TYPE) ) )
+    	else if ( evt.isModified() )
         {
         	Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);;
         	removeAll( conflicts,changed);

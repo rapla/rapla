@@ -132,9 +132,79 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     }
    
     public TreeModel createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations) {
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        Comparator<Classifiable> comp = new NamedComparator(getLocale());
+        @SuppressWarnings({ "rawtypes" })
+        Comparator<Classifiable> comp = new SortedClassifiableComparator(getLocale());
         return createClassifiableModel( classifiables, comp, useCategorizations);
+    }
+    
+    class SortedClassifiableComparator implements Comparator<Classifiable>
+    {
+        Locale locale;
+        NamedComparator comp;
+        public SortedClassifiableComparator(Locale locale) {
+            this.locale = locale;
+            comp = new NamedComparator(locale);
+        }
+
+        @Override
+        public int compare(Classifiable o1, Classifiable o2) 
+        {
+            Classification classification1 = o1.getClassification();
+            Classification classification2 = o2.getClassification();
+            if ( classification1 == classification2)
+            {
+                return 0;
+            }
+            DynamicType type1= classification1.getType();
+            DynamicType type2= classification2.getType();
+            if ( type1.equals( type2) )
+            {
+                for (Attribute attribute:type1.getAttributeIterable())
+                {
+                    String sorting = attribute.getAnnotation( AttributeAnnotations.KEY_SORTING);
+                    if ( sorting != null)
+                    {
+                        int order = 0;
+                        if ( sorting.equals(AttributeAnnotations.VALUE_SORTING_ASCENDING))
+                        {
+                            order = 1;
+                        }
+                        if ( sorting.equals(AttributeAnnotations.VALUE_SORTING_DESCENDING))
+                        {
+                            order = -1;
+                        }
+                        if ( order != 0)
+                        {
+                            Object value1 = classification1.getValue( attribute);
+                            Object value2 = classification2.getValue( attribute);
+                            if ( value1 != null )
+                            {
+                                if ( value2 == null)
+                                {
+                                    return order;
+                                }
+                                if ( value1 instanceof Comparable && value2 instanceof Comparable)
+                                {
+                                    int result = order * ((Comparable) value1).compareTo( value2);
+                                    if ( result != 0)
+                                    {
+                                        return result;
+                                    }
+                                } 
+                                // TODO if field is allocatable link, then we need to sort with this comparator 
+                                // what todo with links to allocatables that could cause infinite recursion
+                            }
+                            else if ( value2 != null)
+                            {
+                                return -order;
+                            }
+                        }
+                    }
+                }
+            }
+            return comp.compare(classification1, classification2);
+        }
+        
     }
     
     public TreeModel createClassifiableModel(Allocatable[] classifiables) {
@@ -242,7 +312,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 	}
 
     protected Attribute getCategorizationAttribute(Classification classification) {
-        for (Attribute attribute: classification.getType().getAttributes())
+        for (Attribute attribute: classification.getType().getAttributeIterable())
         {
             String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_CATEGORIZATION);
             if  ( annotation != null && annotation.equals("true"))
@@ -393,7 +463,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
         // adds elements to typ folders
         Allocatable[] allocatables = getQuery().getAllocatables();
-        Collection<Allocatable> sorted = sorted(Arrays.asList(allocatables));
+        Collection<Allocatable> sorted = sorted(Arrays.asList(allocatables), new SortedClassifiableComparator(getLocale()));
         Collection<Allocatable> filtered = new ArrayList<Allocatable>();
 		for (Allocatable classifiable: sorted) {
             if (!isInFilter(filter, classifiable)) {
@@ -420,6 +490,13 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         sortedList.addAll(allocatables);
         return sortedList;
     }
+    
+    private <T extends Classifiable> Collection<T> sorted(Collection<T> allocatables, Comparator<Classifiable> comp) {
+        TreeSet<T> sortedList = new TreeSet<T>(comp);
+        sortedList.addAll(allocatables);
+        return sortedList;
+    }
+    
 
     public TypeNode createReservationsModel() throws RaplaException {
         TypeNode treeNode = new TypeNode(Reservation.TYPE, getString("reservation_type"));
@@ -560,7 +637,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             Allocatable allocatable = conflict.getAllocatable();
             allocatables.add( allocatable );
         }
-        Collection<Allocatable> sorted = sorted(allocatables);
+        Collection<Allocatable> sorted = sorted(allocatables, new SortedClassifiableComparator(getLocale()));
         Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
         for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
             Conflict conflict = it.next();
@@ -568,7 +645,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             Allocatable allocatable = conflict.getAllocatable();
             for(NamedNode allocatableNode : childMap.get( allocatable))
             {
-            	allocatableNode.add(new NamedNode( conflict));
+                allocatableNode.add(new NamedNode( conflict));
             }
         }
         for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
@@ -979,7 +1056,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                     }
                     setClosedIcon(icon);
                     setOpenIcon(icon);
-                    String text = allocatable.getName(getLocale()) ;
+                    // can't be null because nodeInfo is not null
+                    @SuppressWarnings("null")
+                    String text = value.toString() ;
                     if ( value instanceof TreeNode)
                     {
                         text+= " (" + getRecursiveChildCount(((TreeNode) value)) +")";

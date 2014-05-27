@@ -1480,7 +1480,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			
 		for (Entity entity : evt.getStoreObjects()) {
 		    CategoryImpl superCategory = store.getSuperCategory();
-			if (Category.TYPE == entity.getRaplaType()) {
+			RaplaType raplaType = entity.getRaplaType();
+            if (Category.TYPE == raplaType) {
 				if (entity.equals(superCategory)) {
 					// Check if the user group is missing
 					Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
@@ -1519,9 +1520,34 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 						}
 					}
 				}
+			} 
+            else if ( Reservation.TYPE == raplaType)
+			{
+                Reservation reservation = (Reservation) entity;
+                checkReservation(reservation);
 			}
+            else if ( DynamicType.TYPE == raplaType)
+            {
+                DynamicType type = (DynamicType) entity;
+                DynamicTypeImpl.validate( type, i18n);
+            }
 		}
+		
 	}
+	
+	protected void checkReservation(Reservation reservation) throws RaplaException {
+        if (reservation.getAppointments().length == 0) {
+            throw new RaplaException(i18n.getString("error.no_appointment"));
+        }
+
+        Locale locale = i18n.getLocale();
+        String name = reservation.getName(locale);
+        if (name.trim().length() == 0) {
+            throw new RaplaException(i18n.getString("error.no_reservation_name"));
+        }
+    }
+
+	
 
 	protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException {
 		Collection<Entity> removeEntities = evt.getRemoveObjects();

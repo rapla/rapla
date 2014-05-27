@@ -55,7 +55,6 @@ public class RaplaAppletPageGenerator implements RaplaPageGenerator{
         String passedUsername = request.getParameter("username");
         if ( passedUsername != null)
         {
-            String usernameProperty = "org.rapla.startupUser";
             String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
             out.println("  <param name=\"org.rapla.startupUser\" value=\""+safeUsername + "\"/>");
         }

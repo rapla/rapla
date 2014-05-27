@@ -418,7 +418,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         }
         Category parent = c1.getParent();
         // We look who is first in the list
-        Category[] categories = parent.getCategories();
+        Collection<CategoryImpl> categories = ((CategoryImpl)parent).getSubEntities();
         for ( Category category: categories)
         {
         	if ( category.equals( c1))

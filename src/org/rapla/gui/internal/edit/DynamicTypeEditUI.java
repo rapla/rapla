@@ -29,12 +29,9 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.Assert;
-import org.rapla.components.util.Tools;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -232,7 +229,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 		dynamicType.getName().setTo( newName);
         dynamicType.setKey(elementKey.getValue());
         attributeEdit.confirmEdits();
-        validate();
+        DynamicTypeImpl.validate(dynamicType, getI18n());
         setAnnotations();
     }
 
@@ -410,43 +407,5 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 //	        	locationChooser.setSelectedIndex(1);
 //	        }
 //        }
-    }
-
-    private void validate() throws RaplaException {
-        Assert.notNull(dynamicType);
-        if ( getName( dynamicType ).length() == 0)
-            throw new RaplaException(getString("error.no_name"));
-
-        if (dynamicType.getKey().equals("")) {
-            throw new RaplaException(getI18n().format("error.no_key",""));
-        }
-        checkKey(dynamicType.getKey());
-        Attribute[] attributes = dynamicType.getAttributes();
-        for (int i=0;i<attributes.length;i++) {
-            String key = attributes[i].getKey();
-            if (key == null || key.trim().equals(""))
-                throw new RaplaException(getI18n().format("error.no_key","(" + i + ")"));
-            checkKey(key);
-            for (int j=i+1;j<attributes.length;j++) {
-                if ((key.equals(attributes[j].getKey()))) {
-                    throw new UniqueKeyException(getI18n().format("error.not_unique",key));
-                }
-            }
-        }
-    }
-
-    private void checkKey(String key) throws RaplaException {
-        if (key.length() ==0)
-            throw new RaplaException(getString("error.no_key"));
-        if (!Tools.isKey(key) || key.length()>50) 
-        {
-            Object[] param = new Object[3];
-            param[0] = key;
-            param[1] = "'-', '_'";
-            param[2] = "'_'";
-            throw new RaplaException(getI18n().format("error.invalid_key", param));
-        }
-
-
     }
 }

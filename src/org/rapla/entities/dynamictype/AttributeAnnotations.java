@@ -20,11 +20,15 @@ public interface AttributeAnnotations
     String VALUE_EDIT_VIEW_MAIN = "main-view";
     String VALUE_EDIT_VIEW_ADDITIONAL = "additional-view";
     String VALUE_EDIT_VIEW_NO_VIEW = "no-view";
-	
+    
+    
     String KEY_EXPECTED_ROWS = "expected-rows";
     String KEY_EXPECTED_COLUMNS = "expected-columns";
     String KEY_COLOR = "color";
     String KEY_EMAIL = "email";
+    String KEY_SORTING = "sorting";
+    String VALUE_SORTING_DESCENDING = "descending"; 
+    String VALUE_SORTING_ASCENDING = "ascending"; 
     String KEY_CATEGORIZATION = "categorization";
     String KEY_PERMISSION_MODIFY = "permission_modify";
     String KEY_PERMISSION_READ = "permission_read";

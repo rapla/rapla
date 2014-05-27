@@ -27,6 +27,8 @@ public interface DynamicType extends Entity<DynamicType>,MultiLanguageNamed,Anno
     final RaplaType<DynamicType> TYPE = new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
     
     Attribute[] getAttributes();
+    Iterable<Attribute> getAttributeIterable();
+    
     /** returns null if the attribute is not found */
     Attribute getAttribute(String key);
     void addAttribute(Attribute attribute);

@@ -414,6 +414,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     
     // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
     protected void testResolveInitial(Collection<? extends Entity> entities) throws EntityNotFoundException {
+        if (context.has(RemoteMethodStub.class))
+        {
+            return;
+        }
         EntityStore store = new EntityStore( this, getSuperCategory())
         {
             protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
