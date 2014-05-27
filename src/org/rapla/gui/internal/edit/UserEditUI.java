@@ -119,11 +119,16 @@ class UserEditUI  extends AbstractEditUI<User> {
 		
 		private Boolean isOneAdmin() throws RaplaException {
 	        User[] userList = getQuery().getUsers();
+	        if (objectList.size() != 1)
+	        {
+	            return true;
+	        }
+	        User user2 = objectList.get(0);
 	        for (final User user: userList) 
 	        {
-	        	if(!user.equals(this.user) && user.isAdmin())
+                if(!user.equals(user2) && user.isAdmin())
 	        	{
-		        		return true;
+                    return true;
 		        }
 	        }
 	        return false;
