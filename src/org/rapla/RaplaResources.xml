@@ -3162,7 +3162,7 @@ See French text.
     </entry>
     <entry key="appointment.search_free">
 		<text lang="en">free appointment >></text>
-		<text lang="de">Freier termin >></text>
+		<text lang="de">Freier Termin >></text>
 		<text lang="nl">Zoek vrije afspraak >></text>
 	</entry>
 	<entry key="appointment.convert">
