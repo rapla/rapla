@@ -185,7 +185,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                                 }
                                 if ( value1 instanceof Comparable && value2 instanceof Comparable)
                                 {
-                                    int result = order * ((Comparable) value1).compareTo( value2);
+                                    Comparable comparable = (Comparable) value1;
+                                    @SuppressWarnings("unchecked")
+                                    int result = order * comparable.compareTo( value2);
                                     if ( result != 0)
                                     {
                                         return result;
@@ -463,15 +465,15 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
         // adds elements to typ folders
         Allocatable[] allocatables = getQuery().getAllocatables();
-        Collection<Allocatable> sorted = sorted(Arrays.asList(allocatables), new SortedClassifiableComparator(getLocale()));
         Collection<Allocatable> filtered = new ArrayList<Allocatable>();
-		for (Allocatable classifiable: sorted) {
+        for (Allocatable classifiable: allocatables) {
             if (!isInFilter(filter, classifiable)) {
                 continue;
             }
             filtered.add( classifiable);
         }
-		addClassifiables(nodeMap, filtered, true);
+        Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
+		addClassifiables(nodeMap, sorted, true);
         
         for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
         {
