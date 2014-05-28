@@ -15,6 +15,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
@@ -174,8 +175,9 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         dialog.setTitle(getI18n().getString("changeownerto"));
         dialog.getButton(0).setEnabled(false);
         
-        final JTree tree = treeSelection.getTree();
-        tree.addMouseListener(new MouseAdapter() {
+        final JTree tree = treeSelection.getTree(); 
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        tree.addMouseListener(new MouseAdapter() { 
             // End dialog when a leaf is double clicked
             public void mousePressed(MouseEvent e) {
                 TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
@@ -199,7 +201,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         });
         
         dialog.start(); 
-        if (dialog.getSelectedIndex() == 1) {
+        if (dialog.getSelectedIndex() != 0) {
         	return null;
         }
 		return (User) treeSelection.getSelectedElement();
