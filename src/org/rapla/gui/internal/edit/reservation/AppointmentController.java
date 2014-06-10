@@ -526,6 +526,7 @@ public class AppointmentController extends RaplaGUIComponent
 				}
 				mapToAppointment();
 				getLogger().debug("SingleEditor adjusted");
+				mapFromAppointment();
 				listenerEnabled = true;
 				return true;
 			}
@@ -552,6 +553,7 @@ public class AppointmentController extends RaplaGUIComponent
 				}
 				mapToAppointment();
 				getLogger().debug("SingleEditor undo");
+				mapFromAppointment();
 				listenerEnabled = true;
 				return true;
 			}
