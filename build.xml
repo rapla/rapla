@@ -178,6 +178,7 @@ Definition as published by the Open Source Initiative (OSI).
         <property name="main.lib" value="rapla-${doc.version}.jar" />
     	<property name="main.client.lib" value="raplaclient.jar" /> 	       
         <property name="target" value="dist-bin" />
+        <property name="build.compiler" value="javac1.6"/>
         <available file="${keystore.file}" property="keystore.present" />
         
         <condition property="permissions.client" value="all-permissions" else="sandbox">
