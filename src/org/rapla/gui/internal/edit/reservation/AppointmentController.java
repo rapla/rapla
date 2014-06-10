@@ -542,6 +542,7 @@ public class AppointmentController extends RaplaGUIComponent
 				}
 				mapToAppointment();
 				getLogger().debug("SingleEditor undo");
+				mapFromAppointment();
 				listenerEnabled = true;
 				return true;
 			}
