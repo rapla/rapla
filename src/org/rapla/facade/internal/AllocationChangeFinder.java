@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -43,16 +42,13 @@ public class AllocationChangeFinder
         if ( updateResult == null)
             return;
         User user = updateResult.getUser();
-        for (Iterator<UpdateResult.Add> it = updateResult.getOperations( UpdateResult.Add.class );it.hasNext();) {
-            UpdateResult.Add addOp =  it.next();
+        for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
             added(  addOp.getNew(), user );
         }
-        for (Iterator<UpdateResult.Remove> it = updateResult.getOperations( UpdateResult.Remove.class );it.hasNext();) {
-            UpdateResult.Remove removeOp =  it.next();
+        for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
             removed( removeOp.getCurrent(), user );
         }
-        for (Iterator<UpdateResult.Change> it = updateResult.getOperations( UpdateResult.Change.class );it.hasNext();) {
-            UpdateResult.Change changeOp =  it.next();
+        for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
             Entity old =  changeOp.getOld();
             Entity newObj = changeOp.getNew();
             changed(old , newObj, user );

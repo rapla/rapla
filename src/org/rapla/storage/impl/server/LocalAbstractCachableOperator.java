@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +49,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.LastChangedTimestamp;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -118,7 +120,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private  String encryption = "sha-1";
 	private ConflictFinder conflictFinder;
 	private Map<String,SortedSet<Appointment>> appointmentMap;
-	private SortedSet<Timestamp> timestampSet;
+	private SortedSet<LastChangedTimestamp> timestampSet;
+    private SortedSet<DeleteEntry> deleteSet;
+
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
@@ -318,7 +322,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	@Override
 	public String createId(RaplaType raplaType) throws RaplaException {
-	    return UUID.randomUUID().toString();
+	    String string = UUID.randomUUID().toString();
+	    Character firstLetter = raplaType.getFirstLetter();
+	    String result = firstLetter + string.substring(1);
+        return result;
 	}
 	
 	public String createId(RaplaType raplaType,String seed) throws RaplaException {
@@ -635,9 +642,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 
 	
-	class TimestampComparator implements Comparator<Timestamp>
+	class TimestampComparator implements Comparator<LastChangedTimestamp>
 	{
-		public int compare(Timestamp o1, Timestamp o2) {
+		public int compare(LastChangedTimestamp o1, LastChangedTimestamp o2) {
 			if ( o1 == o2)
 			{
 				return 0;
@@ -685,7 +692,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	protected void initIndizes() {
-		timestampSet = new TreeSet<Timestamp>(new TimestampComparator());
+		timestampSet = new TreeSet<LastChangedTimestamp>(new TimestampComparator());
+		deleteSet = new TreeSet<DeleteEntry>();
+
 		timestampSet.addAll( cache.getDynamicTypes());
 		timestampSet.addAll( cache.getReservations());
 		timestampSet.addAll( cache.getAllocatables());
@@ -823,8 +832,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
-					Timestamp old = (Timestamp) current;
+					LastChangedTimestamp old = (LastChangedTimestamp) current;
 					timestampSet.remove( old);
+					addToDelete( current);
 				}
 				if ( operation instanceof UpdateResult.Add)
 				{
@@ -834,7 +844,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				if ( operation instanceof UpdateResult.Change)
 				{
 					Timestamp newEntity = (Timestamp) ((UpdateResult.Change) operation).getNew();
-					Timestamp oldEntity = (Timestamp) ((UpdateResult.Change) operation).getOld();
+					LastChangedTimestamp oldEntity = (LastChangedTimestamp) ((UpdateResult.Change) operation).getOld();
 					timestampSet.remove( oldEntity);
 					timestampSet.add( newEntity);
 				}
@@ -853,32 +863,100 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	   	Date today = today();
 	   	// processes the conflicts and adds the changes to the result
 		conflictFinder.updateConflicts(toUpdate,result, today, removedAllocatables);
+		for (Entity removed:result.getRemoved())
+		{
+		    if ( removed.getRaplaType() == Conflict.TYPE)
+		    {
+		        addToDelete( removed);
+		    }
+		}
 		checkAbandonedAppointments();
 	}
+	
+	private void addToDelete(Entity current) {
+	    Class typeClass = current.getRaplaType().getTypeClass();
+        @SuppressWarnings("unchecked")
+        Class<? extends Entity> type = (Class<? extends Entity>) typeClass;
+	    DeleteEntry entry = new DeleteEntry();
+	    entry.deleteTime = getCurrentTimestamp();
+	    String id = current.getId();
+        ReferenceInfo ref = new ReferenceInfo(id, type);
+        entry.deletedReference = ref;
+        deleteSet.add( entry );
+    }
+	
+    @Override
+	public Collection<ReferenceInfo> getDeletedEntities(User user,final Date timestamp) throws RaplaException {
+        DeleteEntry fromElement = new DeleteEntry();
+        Class<? extends Entity> type = Allocatable.class;
+        String id = "";
+        fromElement.deletedReference = new ReferenceInfo(id, type);
+        fromElement.deleteTime = timestamp;
+        SortedSet<DeleteEntry> tailSet = deleteSet.tailSet( fromElement);
+        LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
+        for ( DeleteEntry entry:tailSet)
+        {
+            ReferenceInfo deletedReference = entry.deletedReference;
+            // TODO check user and group rights
+            result.add( deletedReference);
+        }
+        return result;
+    }
+    
+    class DeleteEntry implements Comparable<DeleteEntry>
+    {
+        Date deleteTime;
+        ReferenceInfo deletedReference;
+        Set<String> affectedGroupIds; 
+        Set<String> affectedUserIds;
+        
+        @Override
+        public int compareTo(DeleteEntry o) {
+            if ( o == this)
+            {
+                return 0 ;
+            }
+            Date time1 = this.deleteTime;
+            Date time2 = o.deleteTime;
+            int result =  time1.compareTo( time2);
+            if ( result != 0)
+            {
+                return result;
+            }
+            String deleteId = getId();
+            result = deleteId.compareTo( o.getId());
+            return result;
+        }
+        
+        String getId()
+        {
+            return deletedReference.getId();
+        }
+        
+        @Override
+        public boolean equals(Object o) 
+        {
+            boolean equals = getId().equals( ((DeleteEntry)o).getId());
+            return equals;
+        }
+        
+        @Override
+        public int hashCode() {
+            return getId().hashCode();
+        }
+        
+        @Override
+        public String toString() {
+            return deletedReference + " removed on " + deleteTime;
+        }
+    }
 	
 	@Override
 	public Collection<Entity> getUpdatedEntities(final Date timestamp) throws RaplaException {
 
-		Timestamp fromElement = new Timestamp() {
-			
-			@Override
-			public User getLastChangedBy() {
-				return null;
-			}
-			
+		LastChangedTimestamp fromElement = new LastChangedTimestamp() {
 			@Override
 			public Date getLastChanged() {
-				return timestamp;
-			}
-			
-			@Override
-			public Date getLastChangeTime() {
-				return getLastChanged();
-			}
-			
-			@Override
-			public Date getCreateTime() 
-			{
 				return timestamp;
 			}
 		};
@@ -886,8 +964,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Collection<Entity> result = new ArrayList<Entity>();
 		try
 		{
-			SortedSet<Timestamp> tailSet = timestampSet.tailSet(fromElement);
-			for ( Timestamp entry : tailSet)
+			SortedSet<LastChangedTimestamp> tailSet = timestampSet.tailSet(fromElement);
+			for ( LastChangedTimestamp entry : tailSet)
 			{
 				result.add( (Entity) entry );
 			}
@@ -1056,13 +1134,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             	store.addAll(children);
             }
         }
-        Collection<Entity>removeObjects = evt.getRemoveObjects();
-        store.addAll( removeObjects );
-
-        for ( Entity entity:removeObjects)
-        {
-            ((EntityReferencer)entity).setResolver( store);
-        }
+//        Collection<Entity>removeObjects = evt.getRemoveIds();
+//        store.addAll( removeObjects );
+//
+//        for ( Entity entity:removeObjects)
+//        {
+//            ((EntityReferencer)entity).setResolver( store);
+//        }
         // add transitve changes to event
         addClosure( evt, store );
         // check event for inconsistencies
@@ -1080,7 +1158,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 */
 	protected void addClosure(final UpdateEvent evt,EntityStore store) throws RaplaException {
 		Collection<Entity> storeObjects = new ArrayList<Entity>(evt.getStoreObjects());
-		Collection<Entity> removeObjects = new ArrayList<Entity>(evt.getRemoveObjects());
+		Collection<String> removeIds = new ArrayList<String>(evt.getRemoveIds());
         for (Entity entity: storeObjects) 
 		{
             evt.putStore(entity);
@@ -1095,7 +1173,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			// The undo cache does not notice the change in type   
 			if ( entity instanceof Classifiable && entity instanceof Timestamp)
 			{
-				Date lastChanged = ((Timestamp) entity).getLastChanged();
+				Date lastChanged = ((LastChangedTimestamp) entity).getLastChanged();
 				ClassificationImpl classification = (ClassificationImpl) ((Classifiable) entity).getClassification();
 				DynamicTypeImpl dynamicType = classification.getType();
 				Date typeLastChanged = dynamicType.getLastChanged();
@@ -1123,9 +1201,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //			}
 		}
 
-		for (Entity entity: removeObjects) 
+		for (String removeId: removeIds) 
 		{
-		    evt.putRemove(entity);
+		    Entity entity = store.tryResolve(removeId);
+		    if  ( entity == null)
+		    {
+		        continue;
+		    }
 	        if (DynamicType.TYPE == entity.getRaplaType()) {
 	            DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
 	            addChangedDynamicTypeDependant(evt, store,dynamicType, true);
@@ -1276,20 +1358,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return Collections.emptySet();
 	}
 
-	protected List<Entity> getReferencingEntities(Entity entity, EntityStore store) {
+	private List<Entity> getReferencingEntities(Entity entity, EntityStore store) {
 		List<Entity> result = new ArrayList<Entity>();
 		addReferers(cache.getReservations(), entity, result);
 		addReferers(cache.getAllocatables(), entity, result);
-        addReferers(cache.getUsers(), entity, result);
+        Collection<User> users = cache.getUsers();
+        addReferers(users, entity, result);
         addReferers(cache.getDynamicTypes(), entity, result);
-        Iterable<Preferences> preferenceList = getPreferences(store);
-        addReferers(preferenceList, entity, result);
-		return result;
-	}
-
-    private Iterable<Preferences> getPreferences(EntityStore store) {
+      
         List<Preferences> preferenceList = new ArrayList<Preferences>();
-        for ( User user:cache.getUsers())
+        for ( User user:users)
         {
             PreferencesImpl preferences = cache.getPreferencesForUserId( user.getId() );
             if ( preferences != null)
@@ -1302,10 +1380,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             preferenceList.add( systemPreferences );
         }
-        return preferenceList;
-    }
-	
-	private  void addReferers(Iterable<? extends Entity> refererList,Entity object, List<Entity> result) {
+        addReferers(preferenceList, entity, result);
+		return result;
+	}
+
+	private void addReferers(Iterable<? extends Entity> refererList,Entity object, List<Entity> result) {
         for ( Entity referer: refererList)
         {
             if (referer != null && !referer.isIdentical(object) )
@@ -1366,7 +1445,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 */
 	final protected void setResolverAndCheckReferences(UpdateEvent evt, EntityStore store)	throws RaplaException {
 		
-		for (EntityReferencer entity: evt.getEntityReferences(false)) {
+		for (EntityReferencer entity: evt.getEntityReferences()) {
 		    entity.setResolver( store );
 			for (ReferenceInfo info: entity.getReferenceInfo())
 			{				
@@ -1442,8 +1521,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			{
 				if (( persistantVersion instanceof Timestamp))
 				{
-					Date lastChangeTimePersistant = ((Timestamp)persistantVersion).getLastChanged();
-					Date lastChangeTime = ((Timestamp)entity).getLastChanged();
+					Date lastChangeTimePersistant = ((LastChangedTimestamp)persistantVersion).getLastChanged();
+					Date lastChangeTime = ((LastChangedTimestamp)entity).getLastChanged();
 					if ( lastChangeTimePersistant != null && lastChangeTime != null && lastChangeTimePersistant.after( lastChangeTime) )
 					{
 						getLogger().warn(
@@ -1462,7 +1541,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	/** Check if the objects are consistent, so that they can be safely stored. */
 	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
-		Collection<EntityReferencer> entityReferences = evt.getEntityReferences(false);
+		Collection<EntityReferencer> entityReferences = evt.getEntityReferences();
         for (EntityReferencer referencer : entityReferences) {
 		    for (ReferenceInfo referenceInfo:referencer.getReferenceInfo())
 			{
@@ -1550,11 +1629,20 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 
 	protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException {
-		Collection<Entity> removeEntities = evt.getRemoveObjects();
+		Collection<String> removedIds = evt.getRemoveIds();
 		Collection<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
 		HashSet<Entity> dep = new HashSet<Entity>();
 		Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
-		IterableChain<Entity> iteratorChain = new IterableChain<Entity>( deletedCategories,removeEntities);
+		Collection<Entity> removeEntities= new ArrayList<Entity>();
+		for (String id:removedIds)
+		{
+		    Entity persistant = store.tryResolve(id);
+		    if ( persistant  != null)
+		    {
+		        removeEntities.add( persistant );
+		    }
+		}
+        IterableChain<Entity> iteratorChain = new IterableChain<Entity>( deletedCategories,removeEntities);
 
 		for (Entity entity : iteratorChain) {
 		    // First we add the dependencies from the stored object list

@@ -64,7 +64,6 @@ class ConflictFinder {
         logger.info("Conflict initialization found " + conflictSize + " conflicts and took " + (System.currentTimeMillis()- startTime) + "ms. " ); 
         this.resolver = resolver;
 	}
-	
     
     private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 
     {
@@ -480,10 +479,9 @@ class ConflictFinder {
 
 	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult evt, Date today,Collection<Allocatable> removedAllocatables)
 	{
-		Iterator<Change> it = evt.getOperations(UpdateResult.Change.class);
-		while (it.hasNext())
+		Iterable<Change> it = evt.getOperations(UpdateResult.Change.class);
+		for (Change next:it)
 		{
-			Change next = it.next();
 			RaplaObject current = next.getNew();
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{

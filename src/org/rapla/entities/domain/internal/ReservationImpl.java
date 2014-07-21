@@ -22,18 +22,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -52,6 +56,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 {
     private ClassificationImpl classification;
     private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>(1);
+    private Set<PermissionImpl> permissions = new LinkedHashSet<PermissionImpl>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private Date lastChanged;
@@ -61,6 +66,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         
 	// this is only used when you add a resource that is not yet stored, so the resolver won't find it
 	transient Map<String,AllocatableImpl> nonpersistantAllocatables;
+    transient private boolean permissionArrayUpToDate = false;
+    transient private PermissionImpl[] permissionArray;
 	
     ReservationImpl() {
         this (null, null);
@@ -109,6 +116,43 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         checkWritable();
         this.classification = (ClassificationImpl) classification;
     }
+    
+    public void addPermission(Permission permission) {
+        checkWritable();
+        permissionArrayUpToDate = false;
+        permissions.add((PermissionImpl)permission);
+    }
+
+    public boolean removePermission(Permission permission) {
+        checkWritable();
+        permissionArrayUpToDate = false;
+        return permissions.remove(permission);
+    }
+
+    public Permission newPermission() {
+        PermissionImpl permissionImpl = new PermissionImpl();
+        if ( resolver != null)
+        {
+            permissionImpl.setResolver( resolver);
+        }
+        return permissionImpl;
+    }
+
+    public Permission[] getPermissions() {
+        updatePermissionArray();
+        return permissionArray;
+    }
+
+    private void updatePermissionArray() {
+        if ( permissionArrayUpToDate )
+            return;
+
+         synchronized ( this) {
+            permissionArray = permissions.toArray(new PermissionImpl[] {});
+            permissionArrayUpToDate = true;
+        }
+    }
+
 
     public String getName(Locale locale) {
         Classification c = getClassification();
@@ -162,6 +206,11 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             (
              super.getReferenceInfo()
              ,classification.getReferenceInfo()
+             ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) {
+                    public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
+                        return obj.getReferenceInfo();
+                    }
+                 }
              );
     }
 
@@ -444,7 +493,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         appointments.add(appointmentId);
     }
 
-
 	public List<String> getRestrictionPrivate(String allocatableId) {
         Assert.notNull(allocatableId,"Allocatable object has no ID");
         if (restrictions != null) {
@@ -533,8 +581,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public ReservationImpl clone() {
         ReservationImpl clone = new ReservationImpl();
         super.deepClone(clone);
-        // First we must invalidate the arrays.
-        clone.classification = (ClassificationImpl) classification.clone();
+        clone.permissionArrayUpToDate = false;
+        clone.classification =  classification.clone();
+        clone.permissions.clear();
+        for (PermissionImpl perm:permissions) {
+            PermissionImpl permClone = perm.clone();
+            clone.permissions.add(permClone);
+        }
         for (String resourceId:getIds("resources"))
         {
         	if ( restrictions != null)

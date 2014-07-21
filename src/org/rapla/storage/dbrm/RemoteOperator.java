@@ -526,16 +526,17 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         checkConnected();
         // Store on server
         if (getLogger().isDebugEnabled()) {
-            Iterator<Entity>it =evt.getStoreObjects().iterator();
-            while (it.hasNext()) {
-                Entity entity = it.next();
+            for (Entity entity:evt.getStoreObjects()) {
                 getLogger().debug("dispatching store for: " + entity);
             }
-            it =evt.getRemoveObjects().iterator();
-            while (it.hasNext()) {
-                Entity entity = it.next();
-                getLogger().debug("dispatching remove for: " + entity);
+            for (String id:evt.getRemoveIds()) {
+                getLogger().debug("dispatching remove for: " + id);
             }
+//            Iterator<Entity> it =evt.getRemoveObjects().iterator();
+//            while (it.hasNext()) {
+//                Entity entity = it.next();
+//                getLogger().debug("dispatching remove for: " + entity);
+//            }
         }
         RemoteStorage serv = getRemoteStorage();
         evt.setLastValidated(lastSyncedTime);
@@ -840,7 +841,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	testResolve(evt.getStoreObjects());
     	setResolver(evt.getStoreObjects());
     	// we don't test the references of the removed objects
-    	setResolver(evt.getRemoveObjects());
+    	//setResolver(evt.getRemoveObjects());
     	if ( bSessionActive  &&   !evt.isEmpty()  ) 
     	{
     	    getLogger().debug("Objects updated!");

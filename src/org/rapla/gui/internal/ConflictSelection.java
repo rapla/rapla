@@ -102,7 +102,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         @Override
         public void showPopup( PopupEvent evt ) {
             //disabled conflict until storage is implemented 
-            //showTreePopup( evt );
+            showTreePopup( evt );
         }
     }
    

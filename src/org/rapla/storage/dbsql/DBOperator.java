@@ -627,9 +627,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         Collection<Entity> storeObjects = evt.getStoreObjects();
         raplaSQLOutput.store( connection, storeObjects);
         raplaSQLOutput.storePatches( connection, evt.getPreferencePatches());
-        Collection<Entity> removeObjects = evt.getRemoveObjects();
-        for (Entity entityStore: removeObjects) {
-             Comparable id = entityStore.getId();
+        Collection<String> removeObjects = evt.getRemoveIds();
+        for (String id: removeObjects) {
              Entity entity = cache.get(id);
              if (entity != null)
                  raplaSQLOutput.remove( connection, entity);

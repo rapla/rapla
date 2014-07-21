@@ -57,6 +57,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -108,7 +109,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     ClientFacade facade;
     RaplaLocale raplaLocale;
     
-    //private Map<String,Long> updateMap = new HashMap<String,Long>();
     //private Map<String,Long> removeMap = new HashMap<String,Long>();
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
@@ -165,26 +165,23 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             saveEvent.setUserId( user.getId() );
         }
         {
-            Iterator<UpdateResult.Add> it = updateResult.getOperations( UpdateResult.Add.class );
-            while ( it.hasNext() )
+            for (UpdateResult.Add add: updateResult.getOperations( UpdateResult.Add.class ))
             {
-                Entity newEntity = (Entity) (  it.next() ).getNew();
+                Entity newEntity = (Entity) (  add ).getNew();
 				saveEvent.putStore( newEntity );
             }
         }
         {
-            Iterator<UpdateResult.Change> it = updateResult.getOperations( UpdateResult.Change.class );
-            while ( it.hasNext() )
+            for ( UpdateResult.Change change:updateResult.getOperations( UpdateResult.Change.class ) )
             {
-                Entity newEntity = (Entity) ( it.next() ).getNew();
+                Entity newEntity = (Entity)  change.getNew();
 				saveEvent.putStore( newEntity );
             }
         }
         {
-            Iterator<UpdateResult.Remove> it = updateResult.getOperations( UpdateResult.Remove.class );
-            while ( it.hasNext() )
+            for (UpdateResult.Remove remove: updateResult.getOperations( UpdateResult.Remove.class ))
             {
-                Entity removeEntity = (Entity) (it.next() ).getCurrent();
+                Entity removeEntity = (Entity) remove.getCurrent();
 				saveEvent.putRemove( removeEntity );
             }
         }
@@ -195,14 +192,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     private Map<String,Long> needResourceRefresh = new ConcurrentHashMap<String,Long>();
     private SortedMap<Long, TimeInterval> invalidateMap = Collections.synchronizedSortedMap(new TreeMap<Long,TimeInterval>());
    
-    
  // Implementation of StorageUpdateListener
     public void objectsUpdated( UpdateResult evt )
     {
     	long repositoryVersion = operator.getCurrentTimestamp().getTime();
         // notify the client for changes
         TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
-        
           
         if ( invalidateInterval != null)
         {
@@ -236,10 +231,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         	{
         		continue;
         	}
-            if (  obj instanceof Conflict)
-            {
-                addAllUsersToConflictRefresh = true;
-            }
+//            if (  obj instanceof Conflict)
+//            {
+//                addAllUsersToConflictRefresh = true;
+//            }
             if (  obj instanceof DynamicType)
             {
                 addAllUsersToConflictRefresh = true;
@@ -260,10 +255,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         Set<Permission> invalidatePermissions = new HashSet<Permission>();
         boolean addAllUsersToResourceRefresh = false;
         {
-			Iterator<Remove> operations = evt.getOperations(UpdateResult.Remove.class);
-	        while ( operations.hasNext())
+	        for ( Remove operation: evt.getOperations(UpdateResult.Remove.class) )
 	        {
-	        	Remove operation = operations.next();
 				Entity obj =  operation.getCurrent();
 	        	if ( obj instanceof User)
 	        	{
@@ -278,18 +271,18 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
 	        	if ( obj instanceof Allocatable)
 	        	{
-	        		Permission[] oldPermissions = ((Allocatable)obj).getPermissions();
-					invalidatePermissions.addAll( Arrays.asList( oldPermissions));	
+	        		Collection<Permission> oldPermissions = ((Allocatable)obj).getPermissionList();
+					invalidatePermissions.addAll( oldPermissions);	
 	        	}
 	        	if (  obj instanceof DynamicType)
 	        	{
 	        		addAllUsersToResourceRefresh = true;
 	        		addAllUsersToConflictRefresh = true;
 	        	}
-	        	if (  obj instanceof Conflict)
-	        	{
-	        	    addAllUsersToConflictRefresh = true;
-	        	}
+//	        	if (  obj instanceof Conflict)
+//	        	{
+//	        	    addAllUsersToConflictRefresh = true;
+//	        	}
 //	            if ( obj  instanceof Conflict)
 //	            {
 //	                String id = obj.getId();
@@ -356,30 +349,28 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         	return;
 		}
 		
-		// We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
-        // If that is the case we trigger an invalidate of the conflicts for a user
 		Set<User> usersResourceRefresh = new HashSet<User>();
         Category superCategory = operator.getSuperCategory();
 		Set<Category> groupsConflictRefresh = new HashSet<Category>();
 		Set<User> usersConflictRefresh = new HashSet<User>();
-		Iterator<Change> operations = evt.getOperations(UpdateResult.Change.class);
-		while ( operations.hasNext())
+		for (Change operation:evt.getOperations(UpdateResult.Change.class))
 		{
-			Change operation = operations.next();
 			Entity newObject = operation.getNew();
+			// we get all the permissions that have changed on an allocatable
 			if ( newObject.getRaplaType().is( Allocatable.TYPE) && isTransferedToClient(newObject))
 			{
 				Allocatable newAlloc = (Allocatable) newObject;
 				Allocatable current = (Allocatable) operation.getOld();
-				Permission[] oldPermissions = current.getPermissions();
-				Permission[] newPermissions = newAlloc.getPermissions();
+				Collection<Permission> oldPermissions = current.getPermissionList();
+				Collection<Permission> newPermissions = newAlloc.getPermissionList();
 				// we leave this condition for a faster equals check
-				if  (oldPermissions.length == newPermissions.length)
+				int size = oldPermissions.size();
+                if  (size == newPermissions.size())
 				{
-					for (int i=0;i<oldPermissions.length;i++)
+                    Iterator<Permission> newPermissionsIt = newPermissions.iterator();
+					for (Permission oldPermission:oldPermissions)
 					{
-						Permission oldPermission = oldPermissions[i];
-						Permission newPermission = newPermissions[i];
+                        Permission newPermission = newPermissionsIt.next();
 						if (!oldPermission.equals(newPermission))
 						{
 							invalidatePermissions.add( oldPermission);
@@ -389,8 +380,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
 				else
 				{
-					HashSet<Permission> newSet = new HashSet<Permission>(Arrays.asList(newPermissions));
-					HashSet<Permission> oldSet = new HashSet<Permission>(Arrays.asList(oldPermissions));
+					HashSet<Permission> newSet = new HashSet<Permission>(newPermissions);
+					HashSet<Permission> oldSet = new HashSet<Permission>(oldPermissions);
 					{
 						HashSet<Permission> changed = new HashSet<Permission>( newSet);
 						changed.removeAll( oldSet);
@@ -403,6 +394,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					}
 				}
 			}
+			// We trigger a resource refresh if the groups of the user have changed 
 			if ( newObject.getRaplaType().is( User.TYPE))
 			{
 				User newUser = (User) newObject;
@@ -415,6 +407,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
 				
 			}
+	        // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
+	        // If that is the case we trigger an invalidate of the conflicts for a user
 			if ( newObject.getRaplaType().is( Reservation.TYPE))
 			{
 				Reservation newEvent = (Reservation) newObject;
@@ -439,9 +433,9 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			}
 		}
 		boolean addAllUsersToConflictRefresh = groupsConflictRefresh.contains( superCategory);
-		Set<Category> groupsResourceRefrsesh = new HashSet<Category>();
 		if ( !invalidatePermissions.isEmpty() || ! addAllUsersToConflictRefresh || !! groupsConflictRefresh.isEmpty())
 		{
+		    Set<Category> groupsResourceRefresh = new HashSet<Category>();
 	    	for ( Permission permission:invalidatePermissions)
 	        {
 	        	User user = permission.getUser();
@@ -452,7 +446,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	Category group = permission.getGroup();
 	        	if ( group != null)
 	        	{
-	        		groupsResourceRefrsesh.add( group);
+	        		groupsResourceRefresh.add( group);
 	        	}
 	        	if ( user == null && group == null)
 	        	{
@@ -460,6 +454,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        		break;
 	        	}
 	        }
+	    	// we add all users belonging to group marked for refresh 
 	        for ( User user:allUsers)
 	        {
 	        	if ( usersResourceRefresh.contains( user))
@@ -468,7 +463,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
 	        	for (Category group:user.getGroups())
 	        	{
-	        		if ( groupsResourceRefrsesh.contains( group))
+	        		if ( groupsResourceRefresh.contains( group))
 	        		{
 	        			usersResourceRefresh.add( user);
 	        			break;
@@ -476,7 +471,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        		if ( addAllUsersToConflictRefresh || groupsConflictRefresh.contains( group))
 	        		{
 	        			usersConflictRefresh.add( user);
-	        			break;
 	        		}
 	        	}
 	        }
@@ -1013,7 +1007,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     Collection<Entity>storeObjects = evt.getStoreObjects();
                     EntityStore store = new EntityStore(operator, operator.getSuperCategory());
             		store.addAll(storeObjects);
-                    for (EntityReferencer references:evt.getEntityReferences( true)) 
+                    for (EntityReferencer references:evt.getEntityReferences()) 
                     {
                         references.setResolver( store);
                     }                    
@@ -1026,10 +1020,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                         security.checkWritePermissions(user,patch);
                     }
-                    Collection<Entity>removeObjects = evt.getRemoveObjects();
-                    for ( Entity entity:removeObjects)
+                    Collection<String>removeObjects = evt.getRemoveIds();
+                    for ( String id:removeObjects)
                     {
-                    	security.checkWritePermissions(user,entity);
+                    	Entity entity = operator.tryResolve( id);
+                    	if ( entity!=null)
+                    	{
+                    	    security.checkWritePermissions(user,entity);
+                    	}
                     }
                     if (this.getLogger().isDebugEnabled())
                         this.getLogger().debug("Dispatching changes to " + operator.getClass());
@@ -1094,7 +1092,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     safeResultEvent.setNeedResourcesRefresh( resourceRefresh);
                     safeResultEvent.setInvalidateInterval( invalidateInterval);
                 }
-
                 if ( !safeResultEvent.isNeedResourcesRefresh())
                 {
 	            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(lastSynced );
@@ -1102,6 +1099,16 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                     	processClientReadable( user, safeResultEvent, obj, false);
                     }
+                    Collection<ReferenceInfo> removedEntities = operator.getDeletedEntities(user,lastSynced );
+                    for ( ReferenceInfo ref: removedEntities )
+                    {
+                        String id = ref.getId();
+                        Class<? extends Entity> type = ref.getType();
+                        if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class )
+                        {
+                            safeResultEvent.putRemoveId(id);
+                        }
+                    }    
                 }
                 return safeResultEvent;
             }
@@ -1123,7 +1130,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				        {
 				        	clientStore = false;
 				        }
-				        else
+				        else 
 				        {
 				            obj = removeServerOnlyPreferences(preferences);
 				        }

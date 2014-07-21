@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+
 public interface Entity<T> extends RaplaObject<T> {
     /** returns true, if the passed object is an instance of Entity
      * and has the same id as the object. If both Entities have
@@ -37,8 +38,7 @@ public interface Entity<T> extends RaplaObject<T> {
     boolean isReadOnly();
     
     public static Entity<?>[] ENTITY_ARRAY = new Entity[0];
-    
-}
+}    
 
 
 

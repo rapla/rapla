@@ -30,6 +30,7 @@ public class RaplaType<T>  {
 
     private Class<T> type;
     private String localname;
+    private Character firstLetter;
     private static Map<Class<? extends RaplaObject>,RaplaType> registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
     private static Map<String,RaplaType> registeredTypeNames = new HashMap<String,RaplaType>();
 
@@ -38,6 +39,7 @@ public class RaplaType<T>  {
 //		Class<? extends RaplaObject> clazz2 = clazz;
 		this.type = clazz;
         this.localname = localname;
+        firstLetter = localname.charAt( 0);
         if ( registeredTypes == null)
         {
             registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
@@ -50,6 +52,11 @@ public class RaplaType<T>  {
 		Class<? extends RaplaObject> casted = (Class<? extends RaplaObject>) type;
 		registeredTypes.put( casted, this);
         registeredTypeNames.put( localname, this);
+    }
+	
+	public RaplaType(Class<T> clazz, String localname, Character firstLetter) {
+	    this(clazz, localname);
+	    this.firstLetter = firstLetter;
     }
 
     static public RaplaType find( String typeName) throws RaplaException 
@@ -96,6 +103,11 @@ public class RaplaType<T>  {
     public Class<T> getTypeClass()
     {
     	return type;
+    }
+    
+    public Character getFirstLetter()
+    {
+        return firstLetter;
     }
     
     @SuppressWarnings("unchecked")

@@ -144,8 +144,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
     }
     
-    private boolean hasAccess( User user, int accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
-        Permission[] permissions = getPermissions();
+    static private boolean hasAccess(Iterable<? extends Permission> permissions, User user, int accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
         if ( user == null || user.isAdmin() )
             return true;
       
@@ -169,8 +168,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         		parent = parent.getParent();
         	}
         }
-        for ( int i = 0; i < permissions.length; i++ ) {
-            Permission p = permissions[i];
+        for ( Permission p:permissions ) {
             int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
 
             if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION)
@@ -207,14 +205,13 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     public TimeInterval getAllocateInterval( User user, Date today) {
-    	Permission[] permissions = getPermissions();
         if ( user == null || user.isAdmin() )
             return new TimeInterval( null, null);
       
         TimeInterval interval = null;
         int maxEffectLevel = Permission.NO_PERMISSION;
-        for ( int i = 0; i < permissions.length; i++ ) {
-            Permission p = permissions[i];
+        for ( Permission p:permissions) 
+        {
             int effectLevel = p.getUserEffect(user);
             int accessLevel = p.getAccessLevel();
 			if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION && accessLevel>= Permission.ALLOCATE)
@@ -250,7 +247,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     private boolean hasAccess( User user, int accessLevel ) {
-        return hasAccess(user, accessLevel, null, null, null, false);
+        return hasAccess(permissions,user, accessLevel, null, null, null, false);
     }
 
     public boolean canCreateConflicts( User user ) {
@@ -283,7 +280,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     public boolean canAllocate( User user,Date today ) {
-        boolean hasAccess = hasAccess(user, Permission.ALLOCATE, null, null, today, true);
+        boolean hasAccess = hasAccess(permissions,user, Permission.ALLOCATE, null, null, today, true);
         if ( !hasAccess )
         {
         	return false;
@@ -293,7 +290,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     public boolean canAllocate( User user, Date start, Date end, Date today ) {
-        return hasAccess(user, Permission.ALLOCATE,start, end, today, false);
+        return hasAccess(permissions,user, Permission.ALLOCATE,start, end, today, false);
     }
 
     public void addPermission(Permission permission) {
@@ -317,6 +314,14 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 		return permissionImpl;
     }
 
+    public Collection<Permission> getPermissionList()
+    {
+        Collection uncasted = permissions;
+        @SuppressWarnings("unchecked")
+        Collection<Permission> casted = uncasted;
+        return casted;
+    }
+    
     public Permission[] getPermissions() {
         updatePermissionArray();
         return permissionArray;
@@ -393,18 +398,15 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
-    
-
     public Allocatable clone() {
         AllocatableImpl clone = new AllocatableImpl();
         super.deepClone(clone);
         clone.permissionArrayUpToDate = false;
         clone.classification =  classification.clone();
-
         clone.permissions.clear();
-        Iterator<PermissionImpl> it = permissions.iterator();
-        while ( it.hasNext() ) {
-            clone.permissions.add(it.next().clone());
+        for (PermissionImpl perm:permissions) {
+            PermissionImpl permClone = perm.clone();
+            clone.permissions.add(permClone);
         }
 
         clone.createDate = createDate;

@@ -71,7 +71,7 @@ public class UpdateResult implements ModificationEvent
     }
     
     @SuppressWarnings("unchecked")
-	public <T extends UpdateOperation> Iterator<T> getOperations( final Class<T> operationClass) {
+	public <T extends UpdateOperation> Collection<T> getOperations( final Class<T> operationClass) {
         Iterator<UpdateOperation> operationsIt =  operations.iterator();
         if ( operationClass == null)
             throw new IllegalStateException( "OperationClass can't be null" );
@@ -85,7 +85,7 @@ public class UpdateResult implements ModificationEvent
             }
         }
         
-        return list.iterator();
+        return list;
     }
     
     public Iterable<UpdateOperation> getOperations()
@@ -97,9 +97,8 @@ public class UpdateResult implements ModificationEvent
         Set<Entity> set = new HashSet<Entity>();
         if ( operationClass == null)
             throw new IllegalStateException( "OperationClass can't be null" );
-        Iterator<? extends UpdateOperation> it= getOperations( operationClass);
-        while (it.hasNext() ) {
-            UpdateOperation next = it.next();
+        Collection<? extends UpdateOperation> it= getOperations( operationClass);
+        for (UpdateOperation next:it ) {
             Entity current = next.getCurrent();
 			set.add( current);
         }
@@ -179,27 +178,24 @@ public class UpdateResult implements ModificationEvent
     public TimeInterval calulateInvalidateInterval() {
 		TimeInterval currentInterval = null;
 		{
-			Iterator<Change> operations = getOperations( Change.class);
-			while (operations.hasNext())
+			Collection<Change> operations = getOperations( Change.class);
+			for (Change change:operations)
 			{
-				Change change = operations.next();
 				currentInterval = expandInterval( change.getNew(), currentInterval);
 				currentInterval = expandInterval( change.getOld(), currentInterval);
 			}
 		}
 		{
-			Iterator<Add> operations = getOperations( Add.class);
-			while (operations.hasNext())
+			Collection<Add> operations = getOperations( Add.class);
+			for (Add change:operations)
 			{
-				Add change = operations.next();
 	    		currentInterval = expandInterval( change.getNew(), currentInterval);
 			}
 		}
 		{
-			Iterator<Remove> operations = getOperations( Remove.class);
-			while (operations.hasNext())
+			Collection<Remove> operations = getOperations( Remove.class);
+			for (Remove change:operations)
 			{
-				Remove change = operations.next();
 	    		currentInterval = expandInterval( change.getCurrent(), currentInterval);
 			}
 		}
@@ -247,11 +243,11 @@ public class UpdateResult implements ModificationEvent
         return RaplaType.retainObjects(getChanged(),col);
     }
 
-    /** returns the modified objects from a given set.
-     * @deprecated use the retainObjects instead in combination with getChanged*/
-    public <T extends RaplaObject> Set<T> getRemoved(Collection<T> col) {
-        return RaplaType.retainObjects(getRemoved(),col);
-    }
+//    /** returns the modified objects from a given set.
+//     * @deprecated use the retainObjects instead in combination with getChanged*/
+//    public <T extends RaplaObject> Set<T> getRemoved(Collection<T> col) {
+//        return RaplaType.retainObjects(getRemoved(),col);
+//    }
 
 	public Set<Entity> getChanged() {
 		Set<Entity> result  = new HashSet<Entity>(getAddObjects());

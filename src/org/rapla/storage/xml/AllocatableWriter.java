@@ -60,9 +60,8 @@ public class AllocatableWriter extends ClassifiableWriter {
         printAnnotations( allocatable);
         printClassification(allocatable.getClassification());
 
-        Permission[] permissions = allocatable.getPermissions();
-        for ( int i = 0; i < permissions.length; i++ ){
-            printPermission(permissions[i]);
+        for ( Permission p : allocatable.getPermissionList() ){
+            printPermission(p);
         }
         closeElement(tagName);
     }

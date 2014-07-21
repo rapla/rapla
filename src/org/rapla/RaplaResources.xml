@@ -3383,6 +3383,16 @@ See French text.
         <text lang="pl">Dostęp</text>
 		<text lang="pt">Acesso</text>
     </entry>
+    <entry key="permission.edit">
+    <text lang="en">Edit</text>
+        <text lang="de">Bearbeiten</text>
+        <text lang="fr">Modifier</text>
+        <text lang="es">Editar</text>
+        <text lang="cs">Upravit</text>
+        <text lang="nl">Bewerk</text>
+        <text lang="pl">Edytuj</text>
+		<text lang="pt">Editar</text>
+    </entry>
     <entry key="permission.denied">
         <text lang="en">Denied</text>
         <text lang="de">gesperrt</text>

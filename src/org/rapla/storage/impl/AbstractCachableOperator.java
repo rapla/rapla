@@ -57,6 +57,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -83,7 +84,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected RaplaLocale raplaLocale;
 	
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
-	Map<String,String> createdPreferenceIds = new HashMap<String,String>(); 
 	protected LocalCache cache;
 	protected I18nBundle i18n;
 	protected RaplaContext context;
@@ -645,16 +645,27 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			cache.put(entity);
 			updatedEntities.add(entity);	
 		}
-		Collection<Entity> removeObjects = evt.getRemoveObjects();
+		Collection<String> removedIds = evt.getRemoveIds();
 		Collection<Entity> toRemove = new HashSet<Entity>();
-		for (Entity entity : removeObjects) {
-			Entity persistantVersion = findPersistant(entity);
+		for (String id: removedIds) {
+            Entity persistantVersion = cache.tryResolve(id );
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
 			    ((RefEntity)persistantVersion).setReadOnly();
+			    toRemove.add( persistantVersion);
 			}
-			toRemove.add( entity);
+			else if ( ConflictImpl.isConflictId( id ))
+			{
+			    Date today = getCurrentTimestamp();
+			    ConflictImpl conflict = new ConflictImpl( id, today);
+			    toRemove.add( conflict );
+			}
 		}
+//		Collection<ConflictImpl> removedConflicts = evt.getRemoveConflicts();
+//		for (Conflict conflict: removedConflicts)
+//		{
+//	           toRemove.add( conflict );
+//		}
 		setResolver(updatedEntities);
 		TimeInterval invalidateInterval = evt.getInvalidateInterval();
 		String userId = evt.getUserId();

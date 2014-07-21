@@ -16,7 +16,6 @@ import java.util.Date;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Annotatable;
-import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
@@ -27,7 +26,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation
  */
-public interface Allocatable extends Entity<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
+public interface Allocatable extends EntityPermissionContainer<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
     
 	final RaplaType<Allocatable> TYPE = new RaplaType<Allocatable>(Allocatable.class, "resource");
     
@@ -37,9 +36,7 @@ public interface Allocatable extends Entity<Allocatable>,Named,Classifiable,Owna
     boolean isHoldBackConflicts();
     /** Static empty dummy Array. Mainly for using the toArray() method of the collection interface */
     Allocatable[] ALLOCATABLE_ARRAY = new Allocatable[0];
-    // adds a permission. Permissions are stored in a hashset so the same permission can't be added twice
-    void addPermission( Permission permission );
-    boolean removePermission( Permission permission );
+
 
     /** returns if the user has the permission to allocate the resource in the given
         time. It returns <code>true</code> if for at least one permission calling
@@ -50,24 +47,18 @@ public interface Allocatable extends Entity<Allocatable>,Named,Classifiable,Owna
    
     /** returns if the user has the permission to allocate the resource in at a time in the future without specifying the exact time  */
     boolean canAllocate(User user, Date today);
+
+    /** @deprecated use getPermissionList instead */
+    @Deprecated
+    Permission[] getPermissions();
     
     /** returns the interval in which the user can allocate the resource. Returns null if the user can't allocate the resource */
     TimeInterval getAllocateInterval( User user, Date today);
 
     /** returns if the user has the permission to create a conflict for the resource.*/
     boolean canCreateConflicts( User user );
-    /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
-    boolean canModify( User user );
-    
-    /** returns if the user has the permission to read the information and the allocations of this resource.*/
-    boolean canRead( User user );
-    
-    /** returns if the user has the permission to read only the information but not the allocations of this resource.*/
-    boolean canReadOnlyInformation( User user );
-    
-    Permission[] getPermissions();
-    Permission newPermission();
-	boolean isPerson();
+
+    boolean isPerson();
 }
 
 

@@ -78,14 +78,26 @@ public class UpdateEvent
         return userId;
     }
     
-    private void addRemove(Entity entity) {
+    private void addRemove(String id) {
         if ( removeSet == null)
         {
             removeSet = new LinkedHashSet<String>();
         }
-        removeSet.add( entity.getId());
-        add( entity);
+        removeSet.add( id);
+//        if ( entity instanceof ConflictImpl)
+//        {
+//            removeConflicts.add( (ConflictImpl) entity);
+//        }
+    //    add( entity);
     }
+    
+//    public Collection<ConflictImpl> getRemoveConflicts() {
+//        if ( removeConflicts == null)
+//        {
+//            return Collections.emptySet();
+//        }
+//        return removeConflicts;
+//    }
 
 	private void addStore(Entity entity) {
 	    if ( storeSet == null)
@@ -182,24 +194,25 @@ public class UpdateEvent
     }
 
 
-    public Collection<Entity> getRemoveObjects()
+    public Collection<String> getRemoveIds()
     {
         if ( removeSet == null)
         {
             return Collections.emptyList();
         }
-		HashSet<Entity> objects = new LinkedHashSet<Entity>();
-		for ( Collection<Entity> list:getListMap().values())
-        {
-        	for ( Entity entity:list)
-        	{
-        		if (  removeSet.contains( entity.getId()))
-        		{
-        			objects.add(entity);
-        		}
-        	}
-        }
-		return objects;
+        return removeSet;
+//		HashSet<Entity> objects = new LinkedHashSet<Entity>();
+//		for ( Collection<Entity> list:getListMap().values())
+//        {
+//        	for ( Entity entity:list)
+//        	{
+//        		if (  removeSet.contains( entity.getId()))
+//        		{
+//        			objects.add(entity);
+//        		}
+//        	}
+//        }
+//		return objects;
 
     }
 
@@ -225,7 +238,7 @@ public class UpdateEvent
 
     }
     
-    public Collection<EntityReferencer> getEntityReferences(boolean includeRemove) 
+    public Collection<EntityReferencer> getEntityReferences() 
     {
         HashSet<EntityReferencer> objects = new HashSet<EntityReferencer>();
         for ( Collection<Entity> list:getListMap().values())
@@ -233,7 +246,7 @@ public class UpdateEvent
             for ( Entity entity:list)
             {
                 String id = entity.getId();
-                boolean contains = (storeSet != null && storeSet.contains( id)) || (includeRemove && removeSet != null && removeSet.contains( id));
+                boolean contains = (storeSet != null && storeSet.contains( id)) ;
                 if ( contains && entity instanceof EntityReferencer)
                 {
                     EntityReferencer references = (EntityReferencer)entity;
@@ -241,6 +254,7 @@ public class UpdateEvent
                 }
             }
         }
+        
         for ( PreferencePatch patch:getPreferencePatches())
         {
             objects.add(patch);
@@ -261,15 +275,19 @@ public class UpdateEvent
     
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putStore(Entity entity) {
-       
         if (storeSet == null || !storeSet.contains(entity.getId()))
             addStore(entity);
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
     public void putRemove(Entity entity) {
-        if (removeSet == null || !removeSet.contains(entity.getId()))
-            addRemove(entity);
+        String id = entity.getId();
+        putRemoveId(id);
+    }
+
+    public void putRemoveId(String id) {
+        if (removeSet == null || !removeSet.contains(id))
+            addRemove(id);
     }
 
     /** find an entity in the update-event that matches the passed original. Returns null
@@ -324,18 +342,17 @@ public class UpdateEvent
 		this.needResourcesRefresh = needResourcesRefresh;
 	}
 
-	public Collection<Entity> getAllObjects() {
-		HashSet<Entity> objects = new HashSet<Entity>();
-		for ( Collection<Entity> list:getListMap().values())
-        {
-        	for ( Entity entity:list)
-        	{
-        		objects.add(entity);
-        	}
-        }
-		return objects;
-	}
-
+//	public Collection<Entity> getAllObjects() {
+//		HashSet<Entity> objects = new HashSet<Entity>();
+//		for ( Collection<Entity> list:getListMap().values())
+//        {
+//        	for ( Entity entity:list)
+//        	{
+//        		objects.add(entity);
+//        	}
+//        }
+//		return objects;
+//	}
 
 	public boolean isEmpty() {
         boolean isEmpty = removeSet == null && storeSet == null && invalidateInterval == null;

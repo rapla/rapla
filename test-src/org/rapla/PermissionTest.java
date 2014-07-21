@@ -86,7 +86,7 @@ public class PermissionTest extends ServletTestBase {
         Allocatable allocatable = adminFacade.newResource();
         allocatable.getClassification().setValue("name","test-allocatable");
         //remove default permission.
-        allocatable.removePermission( allocatable.getPermissions()[0] );
+        allocatable.removePermission( allocatable.getPermissionList().iterator().next() );
         Permission permission = allocatable.newPermission();
         Category testGroup = adminFacade.getUserGroupsCategory().getCategory("test-group");
         assertNotNull( testGroup);
@@ -105,7 +105,7 @@ public class PermissionTest extends ServletTestBase {
         Allocatable allocatable = adminFacade.newResource();
         allocatable.getClassification().setValue("name","test-allocatable");
         //remove default permission.
-        allocatable.removePermission( allocatable.getPermissions()[0] );
+        allocatable.removePermission( allocatable.getPermissionList().iterator().next() );
         Permission permission = allocatable.newPermission();
         Category testGroup = adminFacade.getUserGroupsCategory().getCategory("test-group");
         permission.setGroup ( testGroup );
@@ -127,7 +127,7 @@ public class PermissionTest extends ServletTestBase {
         testFacade.store( evt );
 
         allocatable = adminFacade.edit( allocatable );
-        allocatable.getPermissions()[0].setAccessLevel( Permission.READ);
+        allocatable.getPermissionList().iterator().next().setAccessLevel( Permission.READ);
         adminFacade.store( allocatable );
 
         testFacade.refresh();

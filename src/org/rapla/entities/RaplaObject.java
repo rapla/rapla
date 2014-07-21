@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+
 /**This interface is a marker to distinct the different rapla classes
  * like Reservation, Allocatable and Category.
  * It is something like the java instanceof keyword. But it must be unique for each
@@ -22,7 +23,7 @@ public interface RaplaObject<T> extends Cloneable {
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
 	RaplaType<T> getRaplaType();
-
+	
 	T clone();
 }
 

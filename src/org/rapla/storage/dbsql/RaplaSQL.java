@@ -47,7 +47,9 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
@@ -510,12 +512,12 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     Map<String,Classification> classificationMap = new HashMap<String,Classification>();
     Map<String,Allocatable> allocatableMap = new HashMap<String,Allocatable>();
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
-    PermissionStorage permissionStorage;
+    PermissionStorage<Allocatable> permissionStorage;
 
     public AllocatableStorage(RaplaContext context ) throws RaplaException {
         super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
-        permissionStorage = new PermissionStorage( context, allocatableMap);
+        permissionStorage = new PermissionStorage<Allocatable>( context, allocatableMap);
         addSubStorage(resourceAttributeStorage);
         addSubStorage(permissionStorage );
     }
@@ -810,17 +812,18 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     }
 }
 
-class PermissionStorage extends EntityStorage<Allocatable>  {
-    Map<String,Allocatable> allocatableMap;
-    public PermissionStorage(RaplaContext context,Map<String,Allocatable> allocatableMap) throws RaplaException {
+ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  {
+    Map<String,T> allocatableMap;
+    public PermissionStorage(RaplaContext context,Map<String,T> allocatableMap) throws RaplaException {
         super(context,"PERMISSION",new String[] {"RESOURCE_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.allocatableMap = allocatableMap;
     }
 
-    protected int write(PreparedStatement stmt, Allocatable allocatable) throws SQLException, RaplaException {
+    protected int write(PreparedStatement stmt, EntityPermissionContainer container) throws SQLException, RaplaException {
         int count = 0;
-        for (Permission s:allocatable.getPermissions()) {
-			setId(stmt,1,allocatable);
+        Iterable<Permission> permissionList = container.getPermissionList();
+        for (Permission s:permissionList) {
+			setId(stmt,1,container);
 			setId(stmt,2,s.getUser());
 			setId(stmt,3,s.getGroup());
 			setInt(stmt,4, s.getAccessLevel());
@@ -836,7 +839,7 @@ class PermissionStorage extends EntityStorage<Allocatable>  {
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         String allocatableIdInt = readId(rset, 1, Allocatable.class);
-        Allocatable allocatable = allocatableMap.get(allocatableIdInt);
+        PermissionContainer allocatable = allocatableMap.get(allocatableIdInt);
         if ( allocatable == null)
         {
         	getLogger().warn("Could not find resource object with id "+ allocatableIdInt + " for permission. Maybe the resource was deleted from the database.");

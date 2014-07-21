@@ -17,14 +17,10 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
-import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -34,12 +30,15 @@ public class AllocatableReader extends RaplaXMLReader
     private AllocatableImpl allocatable;
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
+	private PermissionReader permissionHandler;
 	
     public AllocatableReader( RaplaContext context ) throws RaplaException
     {
         super( context );
         dynAttHandler = new DynAttReader( context );
+        permissionHandler = new PermissionReader( context );
         addChildHandler( dynAttHandler );
+        addChildHandler( permissionHandler );
     }
 
     @Override
@@ -68,67 +67,14 @@ public class AllocatableReader extends RaplaXMLReader
 
         if (localName.equals( "permission" ))
         {
-            PermissionImpl permission = new PermissionImpl();
-            permission.setResolver( store );
-            // process user
-            String userString = atts.getValue( "user" );
-            ReferenceHandler referenceHandler = permission.getReferenceHandler();
-            if (userString != null)
-            {
-                referenceHandler.putId("user", getId(User.TYPE,userString));
-            }
-
-            // process group
-            String groupId = atts.getValue( "groupidref" );
-            if (groupId != null)
-            {
-            	referenceHandler.putId("group", getId(Category.TYPE,groupId));
-            }
-            else
-            {
-                String groupName = atts.getValue( "group" );
-                if (groupName != null)
-                {
-                    Category group= getGroup( groupName);
-                    permission.setGroup( group);
-                }
-            }
-
-            String startDate = getString( atts, "start-date", null );
-            if (startDate != null)
-            {
-                permission.setStart( parseDate( startDate, false ) );
-            }
-
-            String endDate = getString( atts, "end-date", null );
-            if (endDate != null)
-            {
-                permission.setEnd( parseDate( endDate, false ) );
-            }
-
-            String minAdvance = getString( atts, "min-advance", null );
-            if (minAdvance != null)
-            {
-                permission.setMinAdvance( parseLong( minAdvance ).intValue() );
-            }
-
-            String maxAdvance = getString( atts, "max-advance", null );
-            if (maxAdvance != null)
-            {
-                permission.setMaxAdvance( parseLong( maxAdvance ).intValue() );
-            }
-
-            String accessLevel = getString(
-                atts,
-                "access",
-                Permission.ACCESS_LEVEL_NAMEMAP.get( Permission.ALLOCATE_CONFLICTS ) );
-            Integer matchingLevel = Permission.ACCESS_LEVEL_NAMEMAP.findAccessLevel( accessLevel );
-            if (matchingLevel  == null)
-            {
-                throw createSAXParseException( "Unknown access level '" + accessLevel + "'" );
-            }
-            permission.setAccessLevel( matchingLevel );
-            allocatable.addPermission( permission );
+            permissionHandler.setContainer( allocatable);
+            delegateElement(
+                    permissionHandler,
+                    namespaceURI,
+                    localName,
+                    atts );
+            return;
+            
         }
         else if (localName.equals( "annotation" ) )
         {
@@ -169,7 +115,7 @@ public class AllocatableReader extends RaplaXMLReader
 
         if (localName.equals( "resource" ) || localName.equals( "person" ) )
         {
-            if (allocatable.getPermissions().length == 0)
+            if (allocatable.getPermissionList().size() == 0)
                 allocatable.addPermission( new PermissionImpl() );
             add( allocatable );
         }

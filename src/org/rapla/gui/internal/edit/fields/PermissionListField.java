@@ -19,7 +19,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -35,8 +35,8 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.edit.RaplaListEdit;
@@ -51,7 +51,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	PermissionField permissionField;
 	private RaplaListEdit<Permission> listEdit;
 	Listener listener = new Listener();
-	Allocatable firstAllocatable;
+	PermissionContainer firstAllocatable;
 	DefaultListModel model = new DefaultListModel();
 	Permission selectedPermission = null;
 	int selectedIndex = 0;
@@ -79,10 +79,10 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	    return layout;
 	}
 	
-	public void mapTo(List<Allocatable> list) {
-		for (Allocatable allocatable :list)
+	public void mapTo(List<? extends PermissionContainer> list) {
+		for (PermissionContainer allocatable :list)
 		{
-	    	for (Permission perm : allocatable.getPermissions())
+	    	for (Permission perm : allocatable.getPermissionList())
 	    	{
 	    		if (!model.contains( perm) )
 	    		{
@@ -103,8 +103,8 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     }
 		
 
-	private boolean hasPermission(Allocatable allocatable, Permission permission) {
-		for (Permission perm: allocatable.getPermissions())
+	private boolean hasPermission(PermissionContainer allocatable, Permission permission) {
+		for (Permission perm: allocatable.getPermissionList())
 		{
 			if  (perm.equals( permission))
 			{
@@ -115,22 +115,22 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	}
 
 	@SuppressWarnings("unchecked")
-	public void mapFrom(List<Allocatable> list) {
+	public void mapFrom(List<? extends PermissionContainer> list) {
 		model.clear();
 		firstAllocatable = list.size() > 0 ? list.get(0) : null;
 		Set<Permission> permissions = new LinkedHashSet<Permission>();
-		for (Allocatable allocatable :list)
+		for (PermissionContainer allocatable :list)
 		{
-			List<Permission> permissionList = Arrays.asList(allocatable.getPermissions());
+			Collection<Permission> permissionList = allocatable.getPermissionList();
 			permissions.addAll(permissionList);
 		}
 
 		Set<Permission> set = new LinkedHashSet<Permission>();
 		for (Permission perm : permissions) {
 			model.addElement(perm);
-			 for (Allocatable allocatable:list)
+			 for (PermissionContainer allocatable:list)
 			 {
-				List<Permission> asList = Arrays.asList(allocatable.getPermissions());
+				Collection<Permission> asList = allocatable.getPermissionList();
 				if (!asList.contains(perm))
 				{
 					set.add( perm);

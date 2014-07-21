@@ -37,6 +37,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaException;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different
@@ -59,14 +60,60 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	}
 	
     public ConflictImpl(
-                    Allocatable allocatable,
-                    Appointment app1,
-                    Appointment app2,
-                    Date today
-                    )
+            String id,
+            Date today
+        ) throws RaplaException
 	{
-	    this(allocatable,app1,app2, today,createId(allocatable.getId(), app1.getId(), app2.getId()));
+        startDate = today;
+        reservation1Name ="";
+        reservation2Name ="";
+        setId(id);
+        String[] split = splitConflictId( id );
+        if ( split == null)
+        {
+            throw new RaplaException(id + " is no conflict id");
+        }
+        String allocId = split[1];
+        String app1Id = split[2];
+        String app2Id = split[3];
+        putId("allocatable", allocId);
+        putId("appointment1", app1Id);
+        putId("appointment2", app2Id);
+       
 	}
+    
+    static private String[] splitConflictId(String id)
+    {
+        String[] split = id.split(";");
+        if (split.length <4)
+        {
+            if ( !split[0].equalsIgnoreCase("CONFLICT"))
+            {
+                return null;
+            }
+            return split;
+        }   
+        else
+        {
+            return null;
+        }
+    }
+    
+    public static boolean isConflictId(String id)
+    {
+        return splitConflictId(id) != null;
+    }
+    
+    public ConflictImpl(
+            Allocatable allocatable,
+            Appointment app1,
+            Appointment app2,
+            Date today
+            )
+    {
+        this(allocatable,app1,app2, today,createId(allocatable.getId(), app1.getId(), app2.getId()));
+    }
+    
     public ConflictImpl(
             Allocatable allocatable,
             Appointment app1,
@@ -144,6 +191,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     	{
     	    throw new IllegalStateException("ids of conflicting appointments are the same " + id1);
     	}
+    	buf.append("CONFLICT;");
     	buf.append(allocId);
     	buf.append(';');
     	buf.append(id1.compareTo( id2) > 0 ? id1 : id2);

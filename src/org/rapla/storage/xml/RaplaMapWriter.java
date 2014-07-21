@@ -40,7 +40,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
         for (Iterator<String> it = map.keySet().iterator();it.hasNext();) {
             Object key = it.next();
             Object obj =  map.get( key);
-            printEntityReference( key, obj);
+            printRaplaObject( key, obj);
         }
         closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
     }
@@ -63,7 +63,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
     }
 
     
-    private void printEntityReference(Object key,Object obj) throws RaplaException, IOException {
+    private void printRaplaObject(Object key,Object obj) throws RaplaException, IOException {
         if (obj == null)
         {
             getLogger().warn( "Map contains empty value under key " + key );

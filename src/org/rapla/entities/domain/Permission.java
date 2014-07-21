@@ -41,6 +41,7 @@ public interface Permission
     int READ = 100;
     int ALLOCATE =200;
     int ALLOCATE_CONFLICTS = 300;
+    int EDIT = 350;
     int ADMIN = 400;
 
     int NO_PERMISSION = -2;
@@ -58,6 +59,7 @@ public interface Permission
     		map.put( READ,"read");
     		map.put( ALLOCATE, "allocate");
     		map.put( ALLOCATE_CONFLICTS, "allocate-conflicts");
+            map.put( EDIT, "edit");
      		map.put( ADMIN, "admin");
     	}
 		public String get(int accessLevel) 

@@ -29,7 +29,6 @@ public interface EntityReferencer
     
     public class ReferenceInfo
     {
-
         final private String id;
         final private Class<? extends Entity> type;
 

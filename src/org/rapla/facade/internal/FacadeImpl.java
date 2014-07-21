@@ -740,10 +740,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         }
         Date start = appointment.getStart();
         Date end = appointment.getMaxEnd();
-        Permission[] permissions = allocatable.getPermissions();
-        for ( int i = 0; i < permissions.length; i++) 
+        for ( Permission p:allocatable.getPermissionList()) 
         {
-            Permission p = permissions[i];
             int accessLevel = p.getAccessLevel();
             if ( (!p.affectsUser( user )) ||  accessLevel< Permission.READ) {
                 continue;

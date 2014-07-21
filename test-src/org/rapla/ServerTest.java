@@ -466,7 +466,7 @@ public class ServerTest extends ServletTestBase {
 		Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
 		assertTrue(testResource.canAllocate(facade2.getUser("monty"), null,
 				null, null));
-		testResource.removePermission(testResource.getPermissions()[0]);
+		testResource.removePermission(testResource.getPermissionList().iterator().next());
 		Permission newPermission = testResource.newPermission();
 		newPermission.setGroup(facade1.getUserGroupsCategory().getCategory(
 				"my-group"));

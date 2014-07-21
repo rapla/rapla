@@ -151,10 +151,8 @@ public class RaplaComponent
         {
         	return false;
         }
-        for ( int i=0;i<allocatables.length;i++) {
-            Permission[] permissions = allocatables[i].getPermissions();
-            for ( int j=0;j<permissions.length;j++) {
-                Permission p = permissions[j];
+        for ( Allocatable a:allocatables) {
+            for ( Permission p: a.getPermissionList()) {
                 if (!p.affectsUser( user ))
                 {
                     continue;

@@ -21,7 +21,6 @@ public interface AttributeAnnotations
     String VALUE_EDIT_VIEW_ADDITIONAL = "additional-view";
     String VALUE_EDIT_VIEW_NO_VIEW = "no-view";
     
-    
     String KEY_EXPECTED_ROWS = "expected-rows";
     String KEY_EXPECTED_COLUMNS = "expected-columns";
     String KEY_COLOR = "color";

@@ -20,6 +20,7 @@ import java.util.TimeZone;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 public interface CachableStorageOperator extends StorageOperator {
@@ -29,9 +30,10 @@ public interface CachableStorageOperator extends StorageOperator {
     String authenticate(String username,String password) throws RaplaException;
     void saveData(LocalCache cache) throws RaplaException;
     
-    public Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
-    public Collection<Entity> getUpdatedEntities(Date timestamp) throws RaplaException;
-    
+    Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
+    Collection<Entity> getUpdatedEntities(Date timestamp) throws RaplaException;
+    Collection<ReferenceInfo> getDeletedEntities(final User user, final Date timestamp) throws RaplaException;
+
     TimeZone getTimeZone();
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
