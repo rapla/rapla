@@ -89,6 +89,16 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 		       }
 	        }
 		}
+		int size = list.size();
+		for (int i=0;i< size;i++)
+		{
+		    String entry = list.get(i);
+		    if ( entry.indexOf("raplaclient")>=0)
+		    {
+		        list.remove(i);
+		        list.add(0, entry);
+		    }
+		}
 		return list;
 	}
     
