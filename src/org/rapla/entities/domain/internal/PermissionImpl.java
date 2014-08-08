@@ -282,7 +282,10 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
  	public boolean equals(Object o) {
  		if (o == null)
  			return false;
-
+ 		if ( o == this)
+ 		{
+ 		    return true;
+ 		}
  		PermissionImpl perm = (PermissionImpl) o;
  		if (equalValues(this.getReferenceHandler().getId("user"), perm.getReferenceHandler().getId("user"))
  				&& equalValues(this.getReferenceHandler().getId("group"), perm.getReferenceHandler().getId("group"))
@@ -307,7 +310,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
  	private void append(StringBuilder buf, Object obj) {
  		if ( obj != null)
  		{
- 			buf.append( obj.hashCode());
+ 			buf.append( obj.toString());
  		}
 	}
 

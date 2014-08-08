@@ -33,17 +33,17 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     BooleanField holdBackConflictsField;
     boolean internal =false;
     
-    public AllocatableEditUI(RaplaContext contest, boolean internal) throws RaplaException {
-        super(contest);
+    public AllocatableEditUI(RaplaContext context, boolean internal) throws RaplaException {
+        super(context);
         this.internal = internal;
         ArrayList<EditField> fields = new ArrayList<EditField>();
-        classificationField = new ClassificationField<Allocatable>(contest);
+        classificationField = new ClassificationField<Allocatable>(context);
         fields.add(classificationField );
-        permissionField = new PermissionListField(contest,getString("permissions"));
+        permissionField = new PermissionListField(context,getString("permissions"));
         fields.add( permissionField );
         if ( !internal)
         {
-            holdBackConflictsField = new BooleanField(contest,getString("holdbackconflicts"));
+            holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
             fields.add(holdBackConflictsField );
         }
         setFields(fields);

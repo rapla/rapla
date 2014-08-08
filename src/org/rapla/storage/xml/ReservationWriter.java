@@ -58,7 +58,7 @@ public class ReservationWriter extends ClassifiableWriter {
             printIdRef( allocatable );
             closeElementTag();
         }
-
+        printPermissions( r);
         closeElement("rapla:reservation");
     }
     

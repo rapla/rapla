@@ -87,8 +87,8 @@ class RaplaSQL {
         logger =  context.lookup( Logger.class);
         // The order is important. e.g. appointments can only be loaded if the reservation they are refering to are already loaded.
 	    stores.add(new CategoryStorage( context));
-	    stores.add(new DynamicTypeStorage( context));
 	    stores.add(new UserStorage( context));
+	    stores.add(new DynamicTypeStorage( context));
 	    stores.add(new AllocatableStorage( context));
 	    preferencesStorage = new PreferenceStorage( context);
         stores.add(preferencesStorage);
@@ -517,7 +517,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     public AllocatableStorage(RaplaContext context ) throws RaplaException {
         super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
-        permissionStorage = new PermissionStorage<Allocatable>( context, allocatableMap);
+        permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap);
         addSubStorage(resourceAttributeStorage);
         addSubStorage(permissionStorage );
     }
@@ -583,11 +583,14 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     AttributeValueStorage<Reservation> attributeValueStorage;
     // appointmentstorage is not a sub store but a delegate
 	AppointmentStorage appointmentStorage;
+	PermissionStorage<Reservation> permissionStorage;
 
     public ReservationStorage(RaplaContext context) throws RaplaException {
         super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
+        permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap);
+        addSubStorage(permissionStorage );
     }
      
     public void setAppointmentStorage(AppointmentStorage appointmentStorage)
@@ -813,10 +816,10 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
 }
 
  class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  {
-    Map<String,T> allocatableMap;
-    public PermissionStorage(RaplaContext context,Map<String,T> allocatableMap) throws RaplaException {
-        super(context,"PERMISSION",new String[] {"RESOURCE_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
-        this.allocatableMap = allocatableMap;
+    Map<String,T> referenceMap;
+    public PermissionStorage(RaplaContext context,String type,Map<String,T> idMap) throws RaplaException {
+        super(context,type+"_PERMISSION",new String[] {type + "_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
+        this.referenceMap = idMap;
     }
 
     protected int write(PreparedStatement stmt, EntityPermissionContainer container) throws SQLException, RaplaException {
@@ -838,11 +841,12 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        String allocatableIdInt = readId(rset, 1, Allocatable.class);
-        PermissionContainer allocatable = allocatableMap.get(allocatableIdInt);
+        Class<? extends Entity> clazz = null;
+        String referenceIdInt = readId(rset, 1, clazz);
+        PermissionContainer allocatable = referenceMap.get(referenceIdInt);
         if ( allocatable == null)
         {
-        	getLogger().warn("Could not find resource object with id "+ allocatableIdInt + " for permission. Maybe the resource was deleted from the database.");
+        	getLogger().warn("Could not find resource object with id "+ referenceIdInt + " for permission. Maybe the resource was deleted from the database.");
         	return;
         }
         PermissionImpl permission = new PermissionImpl();
@@ -1043,8 +1047,13 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
 
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
+    PermissionStorage<DynamicType> permissionStorage;
+    Map<String, DynamicType> idMap;
+    
     public DynamicTypeStorage(RaplaContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
+        permissionStorage = new PermissionStorage<DynamicType>( context, "TYPE", idMap);
+        addSubStorage(permissionStorage );
     }
 
     @Override
@@ -1070,14 +1079,17 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 	}
 
 	protected void load(ResultSet rset) throws SQLException,RaplaException {
-    	String xml = getText(rset,3);
-    	processXML( DynamicType.TYPE, xml );
+    	String id = readId(rset, 1, DynamicType.class);
+	    String xml = getText(rset,3);
+    	RaplaXMLReader reader = processXML( DynamicType.TYPE, xml );
 //    	final Date createDate = getDate( rset, 4);
 //    	final Date lastChanged = getDate( rset, 5);
 //     	
 //    	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
 //    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
-
+    	
+    	DynamicType type = reader.getStore().resolve(id, DynamicType.class);
+    	idMap.put( id, type);
 	}
 
 }

@@ -46,11 +46,14 @@ public class DynamicTypeReader extends RaplaXMLReader
     HashMap<String,String> typeAnnotations = new LinkedHashMap<String,String>();
     HashMap<String,String> attributeAnnotations = new LinkedHashMap<String,String>();
 	private HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<String, Map<Attribute,String>>();
-
+	private PermissionReader permissionHandler;
+	
     public DynamicTypeReader( RaplaContext context ) throws RaplaException
     {
         super( context );
         unresolvedDynamicTypeConstraints.clear();
+        permissionHandler = new PermissionReader( context );
+        addChildHandler( permissionHandler);
     }
 
     @Override
@@ -59,7 +62,6 @@ public class DynamicTypeReader extends RaplaXMLReader
         String localName,
         RaplaSAXAttributes atts ) throws RaplaSAXParseException
     {
-
         if (localName.equals( "element" ))
         {
             String qname = getString( atts, "name" );
@@ -118,6 +120,17 @@ public class DynamicTypeReader extends RaplaXMLReader
             }
         }
 
+        if (localName.equals( "permission" ))
+        {
+            permissionHandler.setContainer( dynamicType );
+            delegateElement(
+                    permissionHandler,
+                    namespaceURI,
+                    localName,
+                    atts );
+            return;
+            
+        }
         if (localName.equals( "constraint" ) && namespaceURI.equals( RAPLA_NS ))
         {
             constraintKey = atts.getValue( "name" );

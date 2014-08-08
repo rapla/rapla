@@ -29,6 +29,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -114,13 +115,11 @@ public class SecurityManager
         if ( !permitted && entity instanceof Allocatable ){
             if ( original == null ) {
                 permitted = isRegisterer(user);
-            } else {
-                permitted =  ((Allocatable)original).canModify( user );
-            }
+            } 
         }
-        if ( !permitted && original != null)
+        if ( !permitted && original != null && original instanceof PermissionContainer)
         {
-            permitted = RaplaComponent.checkClassifiableModifyPermissions(original, user);
+            permitted = PermissionContainer.Util.canModify((PermissionContainer)original, user);
             
         }
         if (!permitted && entity instanceof Appointment)
@@ -129,7 +128,7 @@ public class SecurityManager
             Reservation originalReservation = operator.tryResolve(reservation.getId(), Reservation.class);
             if ( originalReservation != null)
             {
-            	permitted = RaplaComponent.checkClassifiableModifyPermissions(originalReservation, user);
+            	permitted = PermissionContainer.Util.canModify(originalReservation, user);
             }
         }
 

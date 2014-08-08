@@ -14,24 +14,8 @@
 package org.rapla.entities.domain;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.User;
 
 
 public interface EntityPermissionContainer<T> extends Entity<T>,PermissionContainer 
 {
-    // adds a permission. Permissions are stored in a hashset so the same permission can't be added twice
-    void addPermission( Permission permission );
-    boolean removePermission( Permission permission );
-    
-    /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
-    boolean canModify( User user );
-    
-    /** returns if the user has the permission to read the information and the allocations of this resource.*/
-    boolean canRead( User user );
-    
-    /** returns if the user has the permission to read only the information but not the allocations of this resource.*/
-    boolean canReadOnlyInformation( User user );
-    
-    Permission[] getPermissions();
-    Permission newPermission();
 }

@@ -38,18 +38,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ConstraintIds;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
@@ -279,29 +272,24 @@ public class RaplaComponent
             {
                 return true;
             }
-			if (object instanceof Allocatable) {
-	            Allocatable allocatable = (Allocatable) object;
-	            if (allocatable.canModify( user ))
-	            {
-	                return true;
-	            }
-	            if ( owner == null)
-	            {
-	            	Category[] groups = user.getGroups();
-	            	for ( Category group: groups)
-	            	{
-	            		if (group.getKey().equals(Permission.GROUP_REGISTERER_KEY))
-	            		{
-	            			return true;
-	            		}
-	            	}
-	            }
-	        }
+			if ( owner == null && object instanceof Allocatable)
+			{
+			    Category[] groups = user.getGroups();
+			    for ( Category group: groups)
+			    {
+			        if (group.getKey().equals(Permission.GROUP_REGISTERER_KEY))
+			        {
+			            return true;
+			        }
+			    }
+			}
         }
-        
-        if (checkClassifiableModifyPermissions(object, user))
-        {
-            return true;
+        if (object instanceof PermissionContainer) {
+            PermissionContainer permissionContainer = (PermissionContainer) object;
+            if (PermissionContainer.Util.canModify(permissionContainer, user))
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -328,7 +316,7 @@ public class RaplaComponent
     	{
     		return false;
     	}
-    	if (checkClassifiablerReadPermissions(reservation, user))
+    	if (PermissionContainer.Util.canRead(reservation, user))
     	{
     		return true;
     	}
@@ -340,7 +328,7 @@ public class RaplaComponent
        {
     	   return true;
        }
-       if (checkClassifiablerReadPermissions(allocatable, user))
+       if (PermissionContainer.Util.canRead(allocatable, user))
        {
            return true;
        }
@@ -348,103 +336,98 @@ public class RaplaComponent
     }
 
     /** We check if an attribute with the permission_modify exists and look if the permission is set either globally (if boolean type is used) or for a specific user group (if category type is used)*/
-	public static boolean checkClassifiableModifyPermissions(Object object,
-			User user) {
-		return checkClassifiablePermissions(object, user, AttributeAnnotations.KEY_PERMISSION_MODIFY, false);
-	}
-	
-	public static boolean checkClassifiablerReadPermissions(
-			Object object, User user) {
-		return checkClassifiablePermissions(object, user, AttributeAnnotations.KEY_PERMISSION_READ, true);
-	}
-    
- 	static Category dummyCategory = new CategoryImpl(new Date(), new Date());
-    // The dummy category is used if no permission attribute is found. Use permissionNotFoundReturns to set whether this means permssion granted or not
-    private static boolean checkClassifiablePermissions(Object object, User user, String permissionKey, boolean permssionNotFoundReturnsYesCategory) {
-    	Collection<Category> cat = getPermissionGroups(object, dummyCategory,permissionKey, permssionNotFoundReturnsYesCategory);
-    	if ( cat == null)
-    	{
-    		return false;
-    	}
-    	if ( cat.size() == 1 && cat.iterator().next() == dummyCategory)
-    	{
-    		return true;
-    	}
-    	for (Category c: cat)
-    	{
-    		if (user.belongsTo( c) )
-    		{
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-    
-    /** returns the group that is has the requested permission on the object
-     **/
-    public static Collection<Category> getPermissionGroups(Object object, Category yesCategory, String permissionKey, boolean permssionNotFoundReturnsYesCategory) 
-	{
-    	if (object instanceof Classifiable ) {
-            final Classifiable classifiable = (Classifiable) object;
-            
-            Classification classification = classifiable.getClassification();
-            if ( classification != null)
-            {
-                final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
-                final Attribute attribute = type.getFirstAttributeWithAnnotation(permissionKey);
-                if ( attribute != null)
-                {
-                    return getPermissionGroups(classification, yesCategory, attribute);
-                }
-                else
-                {
-                	if ( permssionNotFoundReturnsYesCategory  && yesCategory != null)
-                	{
-                		return Collections.singleton(yesCategory);
-                	}
-                	else
-                	{
-                		return null;
-                	}
-                	
-                }
-            }
-        }
-        return null;
-	}
-
-	private static Collection<Category> getPermissionGroups(Classification classification,
-			Category yesCategory, final Attribute attribute) {
-		final AttributeType type2 = attribute.getType();
-		if (type2 == AttributeType.BOOLEAN)
-		{
-		    final Object value = classification.getValue( attribute);
-		    if  (Boolean.TRUE.equals(value))
-		    {
-		    	return Collections.singleton(yesCategory);
-		    }
-		    else
-		    {
-		    	return null;
-		    }
-		}
-		if ( type2 == AttributeType.CATEGORY)
-		{
-			 Collection<?> values = classification.getValues( attribute);
-			 @SuppressWarnings("unchecked")
-			Collection<Category> cat = (Collection<Category>) values;
-             if ( cat == null || cat.size() == 0)
-             {
-                 Category rootCat = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-                 if ( rootCat.getCategories().length == 0)
-                 {
-                     cat = Collections.singleton(rootCat);
-                 }
-             }
-		    return cat;
-		}
-		return null;
-	}
+//	public static boolean checkClassifiableModifyPermissions(PermissionContainer object,	User user) {
+//	    return checkClassifiablePermissions(object, user, AttributeAnnotations.KEY_PERMISSION_MODIFY, false);
+//	}
+//	
+//    
+// 	static Category dummyCategory = new CategoryImpl(new Date(), new Date());
+//    // The dummy category is used if no permission attribute is found. Use permissionNotFoundReturns to set whether this means permssion granted or not
+//    private static boolean checkClassifiablePermissions(Object object, User user, String permissionKey, boolean permssionNotFoundReturnsYesCategory) {
+//    	Collection<Category> cat = getPermissionGroups(object, dummyCategory,permissionKey, permssionNotFoundReturnsYesCategory);
+//    	if ( cat == null)
+//    	{
+//    		return false;
+//    	}
+//    	if ( cat.size() == 1 && cat.iterator().next() == dummyCategory)
+//    	{
+//    		return true;
+//    	}
+//    	for (Category c: cat)
+//    	{
+//    		if (user.belongsTo( c) )
+//    		{
+//    			return true;
+//    		}
+//    	}
+//    	return false;
+//    }
+//    
+//    /** returns the group that is has the requested permission on the object
+//     **/
+//    public static Collection<Category> getPermissionGroups(Object object, Category yesCategory, String permissionKey, boolean permssionNotFoundReturnsYesCategory) 
+//	{
+//    	if (object instanceof Classifiable ) {
+//            final Classifiable classifiable = (Classifiable) object;
+//            
+//            Classification classification = classifiable.getClassification();
+//            if ( classification != null)
+//            {
+//                final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
+//                final Attribute attribute = type.getFirstAttributeWithAnnotation(permissionKey);
+//                if ( attribute != null)
+//                {
+//                    return getPermissionGroups(classification, yesCategory, attribute);
+//                }
+//                else
+//                {
+//                	if ( permssionNotFoundReturnsYesCategory  && yesCategory != null)
+//                	{
+//                		return Collections.singleton(yesCategory);
+//                	}
+//                	else
+//                	{
+//                		return null;
+//                	}
+//                	
+//                }
+//            }
+//        }
+//        return null;
+//	}
+//
+//	private static Collection<Category> getPermissionGroups(Classification classification,
+//			Category yesCategory, final Attribute attribute) {
+//		final AttributeType type2 = attribute.getType();
+//		if (type2 == AttributeType.BOOLEAN)
+//		{
+//		    final Object value = classification.getValue( attribute);
+//		    if  (Boolean.TRUE.equals(value))
+//		    {
+//		    	return Collections.singleton(yesCategory);
+//		    }
+//		    else
+//		    {
+//		    	return null;
+//		    }
+//		}
+//		if ( type2 == AttributeType.CATEGORY)
+//		{
+//			 Collection<?> values = classification.getValues( attribute);
+//			 @SuppressWarnings("unchecked")
+//			Collection<Category> cat = (Collection<Category>) values;
+//             if ( cat == null || cat.size() == 0)
+//             {
+//                 Category rootCat = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+//                 if ( rootCat.getCategories().length == 0)
+//                 {
+//                     cat = Collections.singleton(rootCat);
+//                 }
+//             }
+//		    return cat;
+//		}
+//		return null;
+//	}
 
 
     public CalendarOptions getCalendarOptions() {

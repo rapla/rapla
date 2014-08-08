@@ -22,11 +22,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
@@ -56,7 +54,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 {
     private ClassificationImpl classification;
     private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>(1);
-    private Set<PermissionImpl> permissions = new LinkedHashSet<PermissionImpl>(1);
+    private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private Date lastChanged;
@@ -66,8 +64,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         
 	// this is only used when you add a resource that is not yet stored, so the resolver won't find it
 	transient Map<String,AllocatableImpl> nonpersistantAllocatables;
-    transient private boolean permissionArrayUpToDate = false;
-    transient private PermissionImpl[] permissionArray;
 	
     ReservationImpl() {
         this (null, null);
@@ -92,7 +88,12 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
         	classification.setResolver( resolver);
         }
+        for (PermissionImpl p:permissions)
+        {
+             p.setResolver( resolver);
+        }
     }
+    
     
     public void addEntity(Entity entity) {
         checkWritable();
@@ -119,13 +120,11 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public void addPermission(Permission permission) {
         checkWritable();
-        permissionArrayUpToDate = false;
         permissions.add((PermissionImpl)permission);
     }
 
     public boolean removePermission(Permission permission) {
         checkWritable();
-        permissionArrayUpToDate = false;
         return permissions.remove(permission);
     }
 
@@ -137,22 +136,14 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         return permissionImpl;
     }
-
-    public Permission[] getPermissions() {
-        updatePermissionArray();
-        return permissionArray;
+    
+    public Collection<Permission> getPermissionList()
+    {
+        Collection uncasted = permissions;
+        @SuppressWarnings("unchecked")
+        Collection<Permission> casted = uncasted;
+        return casted;
     }
-
-    private void updatePermissionArray() {
-        if ( permissionArrayUpToDate )
-            return;
-
-         synchronized ( this) {
-            permissionArray = permissions.toArray(new PermissionImpl[] {});
-            permissionArrayUpToDate = true;
-        }
-    }
-
 
     public String getName(Locale locale) {
         Classification c = getClassification();
@@ -581,7 +572,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public ReservationImpl clone() {
         ReservationImpl clone = new ReservationImpl();
         super.deepClone(clone);
-        clone.permissionArrayUpToDate = false;
         clone.classification =  classification.clone();
         clone.permissions.clear();
         for (PermissionImpl perm:permissions) {

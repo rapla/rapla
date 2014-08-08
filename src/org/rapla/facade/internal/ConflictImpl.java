@@ -160,7 +160,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         return enabled;
     }
 
-
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }

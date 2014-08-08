@@ -37,6 +37,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.edit.RaplaListEdit;
@@ -82,26 +83,35 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	public void mapTo(List<? extends PermissionContainer> list) {
 		for (PermissionContainer allocatable :list)
 		{
-	    	for (Permission perm : allocatable.getPermissionList())
+	    	for (Permission perm : new ArrayList<Permission>(allocatable.getPermissionList()))
 	    	{
 	    		if (!model.contains( perm) )
 	    		{
 	    			allocatable.removePermission(perm);
 	    		}
 	    	}
-	    	@SuppressWarnings({ "unchecked", "cast" })
-			Enumeration<Permission> it = (Enumeration<Permission>) model.elements();
-	    	while (it.hasMoreElements())
+	    	for (Permission perm: getPermissionList())
 	    	{
-	    		Permission perm= it.nextElement();
 	    		if ( !hasPermission(allocatable, perm) && !isNotForAll( perm))
 	    		{
-	    			allocatable.addPermission( perm);
+	    			allocatable.addPermission( ((PermissionImpl)perm).clone());
 	    		}
 	    	}
 		}
     }
-		
+	
+	public Collection<Permission> getPermissionList()
+	{
+	    Collection<Permission> result = new ArrayList<Permission>();
+        @SuppressWarnings("unchecked")
+        Enumeration<Permission> it = (Enumeration<Permission>) model.elements();
+        while ( it.hasMoreElements())
+        {
+            Permission perm= it.nextElement();
+            result.add( perm);
+        }
+        return result;
+	}
 
 	private boolean hasPermission(PermissionContainer allocatable, Permission permission) {
 		for (Permission perm: allocatable.getPermissionList())
@@ -127,13 +137,14 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 
 		Set<Permission> set = new LinkedHashSet<Permission>();
 		for (Permission perm : permissions) {
-			model.addElement(perm);
+		    Permission permissionClone = ((PermissionImpl)perm).clone();  
+			model.addElement(permissionClone);
 			 for (PermissionContainer allocatable:list)
 			 {
 				Collection<Permission> asList = allocatable.getPermissionList();
-				if (!asList.contains(perm))
+				if (!asList.contains(permissionClone))
 				{
-					set.add( perm);
+					set.add( permissionClone);
 				}
 			}
 		}
@@ -228,6 +239,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 				// processing
 				permissionField.setValue(selectedPermission);
 			}
+			fireContentChanged();
 		}
 
 		@SuppressWarnings("unchecked")
@@ -244,8 +256,13 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 					it.remove();
 				}
 			}
+			fireContentChanged();
 		}
 	}
+
+	public void setPermissionLevels(Integer... permissionLevels) {
+        this.permissionField.setPermissionLevels(permissionLevels);
+    }
 
 
 

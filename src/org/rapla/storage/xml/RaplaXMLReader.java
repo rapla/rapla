@@ -444,5 +444,8 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 		return xmlWithNamespaces;
 	}
 
-
+	public EntityStore getStore()
+	{
+	    return store;
+	}
 }

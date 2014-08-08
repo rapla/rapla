@@ -174,7 +174,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setKey(key);
             type.setId( key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-            type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, null);
             addAttributeWithInternalId(type,"name", AttributeType.STRING);
             addAttributeWithInternalId(type,"start", AttributeType.DATE);
             addAttributeWithInternalId(type,"end", AttributeType.DATE);
@@ -2246,6 +2245,5 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			
 		}
 	}
-	
 	
 }

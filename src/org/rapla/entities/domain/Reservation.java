@@ -16,7 +16,6 @@ package org.rapla.entities.domain;
 import java.util.Date;
 
 import org.rapla.entities.Annotatable;
-import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
@@ -36,7 +35,7 @@ import org.rapla.entities.dynamictype.Classifiable;
  *  @see Appointment
  *  @see Allocatable
  */
-public interface Reservation extends Entity<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable
+public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable
 {
 	final RaplaType<Reservation> TYPE = new RaplaType<Reservation>(Reservation.class,"reservation",'e');
 

@@ -30,6 +30,8 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
@@ -117,6 +119,44 @@ abstract public class RaplaXMLWriter extends XMLWriter
             println();
         }
     }
+    
+    protected void printPermissions(PermissionContainer permissionContainer) throws IOException, RaplaException 
+    {
+        for ( Permission p : permissionContainer.getPermissionList() ){
+            printPermission(p);
+        }
+    }
+
+    protected void printPermission(Permission p) throws IOException,RaplaException {
+        openTag("rapla:permission");
+        if ( p.getUser() != null ) {
+            att("user", getId( p.getUser() ));
+        } else if ( p.getGroup() != null ) {
+            att( "group", getGroupPath( p.getGroup() ) );
+        }
+        if ( p.getMinAdvance() != null ) {
+            att ( "min-advance", p.getMinAdvance().toString() );
+        }
+        if ( p.getMaxAdvance() != null ) {
+            att ( "max-advance", p.getMaxAdvance().toString() );
+        }
+        if ( p.getStart() != null ) {
+            att ( "start-date", dateTimeFormat.formatDate(  p.getStart() ) );
+        }
+        if ( p.getEnd() != null ) {
+            att ( "end-date", dateTimeFormat.formatDate(  p.getEnd() ) );
+        }
+        if ( p.getAccessLevel() != Permission.ALLOCATE_CONFLICTS ) {
+            att("access", Permission.ACCESS_LEVEL_NAMEMAP.get( p.getAccessLevel() ) );
+        }
+        closeElementTag();
+    }
+
+    private String getGroupPath( Category category) throws EntityNotFoundException {
+        Category rootCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        return ((CategoryImpl) rootCategory ).getPathForCategory(category);
+    }
+
 
     protected void printAnnotations(Annotatable annotatable, boolean includeTags) throws IOException{
         String[] keys = annotatable.getAnnotationKeys();

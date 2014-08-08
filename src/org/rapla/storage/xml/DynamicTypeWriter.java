@@ -52,7 +52,9 @@ public class DynamicTypeWriter extends RaplaXMLWriter
         for (int i = 0; i< att.length; i ++) {
             printAttribute(att[i]);
         }
-        
+
+        printPermissions( type );
+
         closeElement("relax:element");
         closeElement("relax:define");
     }

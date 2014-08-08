@@ -15,14 +15,10 @@ package org.rapla.storage.xml;
 
 import java.io.IOException;
 
-import org.rapla.entities.Category;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -60,47 +56,16 @@ public class AllocatableWriter extends ClassifiableWriter {
         printAnnotations( allocatable);
         printClassification(allocatable.getClassification());
 
-        for ( Permission p : allocatable.getPermissionList() ){
-            printPermission(p);
-        }
+        printPermissions(allocatable);
         closeElement(tagName);
     }
+
     
     public void writeObject(RaplaObject object) throws IOException, RaplaException {
         printAllocatable( (Allocatable) object);
     }
 
-
-    protected void printPermission(Permission p) throws IOException,RaplaException {
-        openTag("rapla:permission");
-        if ( p.getUser() != null ) {
-            att("user", getId( p.getUser() ));
-        } else if ( p.getGroup() != null ) {
-        	att( "group", getGroupPath( p.getGroup() ) );
-        }
-        if ( p.getMinAdvance() != null ) {
-            att ( "min-advance", p.getMinAdvance().toString() );
-        }
-        if ( p.getMaxAdvance() != null ) {
-            att ( "max-advance", p.getMaxAdvance().toString() );
-        }
-        if ( p.getStart() != null ) {
-            att ( "start-date", dateTimeFormat.formatDate(  p.getStart() ) );
-        }
-        if ( p.getEnd() != null ) {
-            att ( "end-date", dateTimeFormat.formatDate(  p.getEnd() ) );
-        }
-        if ( p.getAccessLevel() != Permission.ALLOCATE_CONFLICTS ) {
-            att("access", Permission.ACCESS_LEVEL_NAMEMAP.get( p.getAccessLevel() ) );
-        }
-        closeElementTag();
-    }
-
-    private String getGroupPath( Category category) throws EntityNotFoundException {
-        Category rootCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        return ((CategoryImpl) rootCategory ).getPathForCategory(category);
-    }
-
+  
 
 
 

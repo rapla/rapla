@@ -52,12 +52,20 @@ public interface Allocatable extends EntityPermissionContainer<Allocatable>,Name
     @Deprecated
     Permission[] getPermissions();
     
+    boolean canRead(User user);
+    
+    boolean canModify(User user);
+   
+    boolean canReadOnlyInformation(User user);
+    
     /** returns the interval in which the user can allocate the resource. Returns null if the user can't allocate the resource */
     TimeInterval getAllocateInterval( User user, Date today);
 
     /** returns if the user has the permission to create a conflict for the resource.*/
     boolean canCreateConflicts( User user );
 
+    /** same as  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(allocatable.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
+     */
     boolean isPerson();
 }
 

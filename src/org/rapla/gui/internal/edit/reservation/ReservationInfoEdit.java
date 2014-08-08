@@ -17,6 +17,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
@@ -24,6 +25,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -31,7 +33,10 @@ import javax.swing.event.ChangeListener;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -44,6 +49,7 @@ import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
 import org.rapla.gui.internal.edit.ClassificationEditUI;
+import org.rapla.gui.internal.edit.fields.PermissionListField;
 import org.rapla.gui.internal.edit.fields.SetGetField;
 import org.rapla.gui.toolkit.EmptyLineBorder;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -58,9 +64,11 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     implements
         RaplaWidget
         ,ActionListener
+        ,ChangeListener
 {
     JPanel content = new JPanel();
     MyClassificationEditUI editUI;
+    PermissionListField permissionField;
     
     private Classification classification;
     private Classification lastClassification = null;
@@ -71,15 +79,24 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     ArrayList<DetailListener> detailListenerList = new ArrayList<DetailListener>();
     RaplaListComboBox typeSelector;
     RaplaButton tabSelector = new RaplaButton();
-    boolean isMainViewSelected = true;
+//    RaplaButton permissionButton = new RaplaButton();
     private boolean internalUpdate = false;
-
-    public ReservationInfoEdit(RaplaContext sm, CommandHistory commandHistory)  
+    enum TabSelected
     {
-        super( sm);
-        typeSelector = new RaplaListComboBox( sm );
+        Main,
+        Info
+    }
+    
+    TabSelected selectedView = TabSelected.Main;
+
+    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory) throws RaplaException  
+    {
+        super( context);
+        typeSelector = new RaplaListComboBox( context );
         this.commandHistory = commandHistory;
-        editUI = new MyClassificationEditUI(sm);
+        editUI = new MyClassificationEditUI(context);
+        permissionField = new PermissionListField(context, "permissions");
+        permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
     }
 
     public JComponent getComponent() {
@@ -91,17 +108,17 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         editUI.requestFocus();
     }
 
-    private boolean hasSecondTab(Classification classification) {
-        Attribute[] atts = classification.getAttributes();
-        for ( int i=0; i < atts.length; i++ ) {
-            String view = atts[i].getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW,AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
-            if ( view.equals(AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
+//    private boolean hasSecondTab(Classification classification) {
+//        Attribute[] atts = classification.getAttributes();
+//        for ( int i=0; i < atts.length; i++ ) {
+//            String view = atts[i].getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW,AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
+//            if ( view.equals(AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL)) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+    JScrollPane scrollPane;
     public void setReservation(Classifiable classifiable) throws RaplaException {
         content.removeAll();
         this.classifiable = classifiable;
@@ -116,33 +133,49 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         typeSelector.setEnabled( types.length > 1);
         typeSelector.setSelectedItem(dynamicType);
         setRenderer();
-        typeSelector.addActionListener( this );
 
 
         content.setLayout( new BorderLayout());
         JPanel header = new JPanel();
         header.setLayout( null );
         header.add( typeSelector );
+        header.add( tabSelector );
+  //      header.add( permissionButton );
+        
         Border border = new EmptyLineBorder();
         header.setBorder(  BorderFactory.createTitledBorder( border, getString("reservation_type") +":"));
         Dimension dim = typeSelector.getPreferredSize();
         typeSelector.setBounds(135,0, dim.width,dim.height);
-        tabSelector.setText(getString("additional-view"));
-        tabSelector.addActionListener( this );
-        Dimension dim2 = tabSelector.getPreferredSize();
-        tabSelector.setBounds(145 + dim.width ,0,dim2.width,dim2.height);
-        header.add( tabSelector );
-        header.setPreferredSize( new Dimension(600, Math.max(dim2.height, dim.height)));
+        
+//        permissionButton.setText(getString("permissions"));
+//        Dimension dim2 = permissionButton.getPreferredSize();
+//        permissionButton.setBounds(145 + dim.width,0, dim2.width,dim2.height);
+
+        tabSelector.setText(getInfoButton() );
+        Dimension dim3 = tabSelector.getPreferredSize();
+        tabSelector.setBounds(155 + dim.width  ,0,dim3.width,dim3.height);
+        
+        
+        header.setPreferredSize( new Dimension(600, Math.max(dim.height, dim3.height)));
         content.add( header,BorderLayout.NORTH);
         content.add( editUI.getComponent(),BorderLayout.CENTER);
-        
-        tabSelector.setVisible( hasSecondTab( classification ) || !isMainViewSelected);
+        content.add( permissionField.getComponent(), BorderLayout.SOUTH);
+        permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+        //tabSelector.setVisible( hasSecondTab( classification ) || selectedView == TabSelected.Info);
         editUI.setObjects( Collections.singletonList(classification ));
+        permissionField.mapFrom( Collections.singletonList((Reservation) classifiable ));
         
+        permissionField.addChangeListener( this);
         editUI.getComponent().validate();
+        typeSelector.addActionListener( this );
+        tabSelector.addActionListener( this );
         updateHeight();
         content.validate();
         
+    }
+
+    private String getInfoButton() {
+        return getString("permissions") + "/" + getString("additional-view");
     }
 
 	@SuppressWarnings("unchecked")
@@ -202,6 +235,25 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             listeners[i].stateChanged(evt);
         }
     }
+    
+    public void stateChanged(ChangeEvent evt) {
+        if ( evt.getSource() != permissionField)
+        {
+            return;
+        }
+        if (internalUpdate) return;
+        try {
+            PermissionContainer permissionContainer = (PermissionContainer)classifiable;
+            Collection<Permission> oldPermissions = permissionContainer.getPermissionList();
+            Collection<Permission> newPermissions = permissionField.getPermissionList();
+            if ( PermissionContainer.Util.differs( oldPermissions, newPermissions)) {
+                UndoPermissionChange permissionChange = new UndoPermissionChange(oldPermissions, newPermissions);
+                commandHistory.storeAndExecute(permissionChange);   
+            }
+        } catch (RaplaException ex) {
+            showException(ex, this.getComponent());
+        }
+    }
 
     // The DynamicType has changed
     public void actionPerformed(ActionEvent event) {
@@ -223,18 +275,70 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             }
             
             if (source == tabSelector ) {
-                isMainViewSelected = !isMainViewSelected;
+                boolean tabSelected = selectedView == TabSelected.Info;
+                selectedView = tabSelected ? TabSelected.Main : TabSelected.Info;
                 fireDetailChanged();
+                if ( selectedView == TabSelected.Info )
+                {
+                    //editUI.getComponent().setSize( new Dimension( 600,500));
+                    content.remove( editUI.getComponent());
+                    if ( scrollPane == null)
+                    {
+                        scrollPane = new JScrollPane(editUI.getComponent());
+                    }
+                    else
+                    {
+                        scrollPane.setViewportView( editUI.getComponent());
+                    }
+                    content.add( scrollPane, BorderLayout.CENTER);
+                }
+                else
+                {
+                    if ( scrollPane != null)
+                    {
+                        content.remove( scrollPane);
+                    }
+                    content.add( editUI.getComponent(), BorderLayout.CENTER);
+                }
                 editUI.layout();
-                tabSelector.setText( isMainViewSelected ?
-                        getString("additional-view")
+                if ( selectedView == TabSelected.Info )
+                {
+                    editUI.getComponent().setPreferredSize(new Dimension( 600,500));
+                }
+                else
+                {
+                    int newHeight = editUI.getHeight();
+                //scrollPane.setPreferredSize(new Dimension(600,newHeight));
+                    editUI.getComponent().setPreferredSize(new Dimension(600,newHeight));
+                }
+                permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+                content.validate();
+                tabSelector.setText( tabSelected ?
+                        getInfoButton()
                         :getString("appointments")
                         );
-                tabSelector.setIcon( isMainViewSelected ?
+                tabSelector.setIcon( tabSelected ?
                         null
                         : getIcon("icon.list")
                         );
+                
             }
+//            if (source == permissionButton ) {
+//                boolean tabSelected = selectedView == TabSelected.Permission;
+//                selectedView = tabSelected ? TabSelected.Main : TabSelected.Permission;
+//                //isMainViewSelected = !isMainViewSelected;
+//                fireDetailChanged();
+//                editUI.layout();
+//                tabSelector.setText( tabSelected ?
+//                        getString("permissions")
+//                        :getString("appointments")
+//                        );
+//                tabSelector.setIcon( tabSelected ?
+//                        null
+//                        : getIcon("icon.list")
+//                        );
+//            }
+
         } catch (RaplaException ex) {
             showException(ex, content);
         }
@@ -242,9 +346,17 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     private void updateHeight()
     {
-        int newHeight = editUI.getHeight();
-        editUI.getComponent().setPreferredSize(new Dimension(600,newHeight));
+        if ( selectedView == TabSelected.Main ) {
+            int newHeight = editUI.getHeight();
+            //scrollPane.setPreferredSize(new Dimension(600,newHeight));
+            editUI.getComponent().setPreferredSize(new Dimension(600,newHeight));
+        }
+        else
+        {
+         //   editUI.getComponent().setPreferredSize(null);
+        }
     }
+    
 
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
@@ -256,10 +368,11 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         {
             return height;
         }
+        
         protected void layout() {
             editPanel.removeAll();
             editPanel.setLayout( null );
-            if ( !isMainViewSelected ) {
+            if ( selectedView == TabSelected.Info ) {
                 super.layout();
                 return;
             }
@@ -443,10 +556,12 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 			}
 			
         }
+        
+        
     }
 
     public boolean isMainView() {
-        return isMainViewSelected;
+        return selectedView == TabSelected.Main;
     }
 
     
@@ -496,7 +611,10 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 	        
 	        classifiable.setClassification(classification);
 	        editUI.setObjects(Collections.singletonList(classification));
-	        tabSelector.setVisible(hasSecondTab(classification) || !isMainViewSelected);
+	        permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+	        //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
+	        editUI.layout();
+	        editUI.getComponent().invalidate();
 	        content.validate();
 	        updateHeight();
 	        content.repaint();
@@ -509,4 +627,67 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 		}
 	
 	}
+	
+	public class UndoPermissionChange implements CommandUndo<RaplaException>{
+        private final Collection<Permission> oldPermissions;
+        private final Collection<Permission> newPermissions;
+        boolean first =true;
+        
+        public UndoPermissionChange(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            
+            this.oldPermissions = fillWithClones( oldPermissions);
+            
+            this.newPermissions = fillWithClones(newPermissions);
+        }
+        
+        private Collection<Permission> fillWithClones(Collection<Permission> oldPermissions2) {
+            ArrayList<Permission> test = new ArrayList<Permission>();
+            for ( Permission p:oldPermissions2)
+            {
+                test.add( ((PermissionImpl)p).clone() );
+            }
+            return test;
+        }
+
+        public boolean execute() throws RaplaException {
+            setPermissions(newPermissions);
+            return true;
+        }
+        
+        public boolean undo() throws RaplaException  {
+            setPermissions(oldPermissions);
+            return true;
+        }
+
+        protected void setPermissions(Collection<Permission> permissions) {
+            
+            PermissionContainer permissionContainer = (PermissionContainer) classifiable;
+            internalUpdate = true;
+            try {
+                PermissionContainer.Util.replace( permissionContainer, permissions);
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    permissionField.mapFrom( Collections.singletonList( permissionContainer));
+                }
+                permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+                //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
+                content.validate();
+                updateHeight();
+                content.repaint();
+            } finally {
+                internalUpdate = false;
+            }
+            fireInfoChanged();
+        }
+    
+        public String getCommandoName() 
+        {
+            return getString("change") + " " + getString("permissions");
+        }
+    
+    }
 }

@@ -58,6 +58,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     ListField<Integer> accessField;
 
+    Collection<Integer> permissionLevels = Permission.ACCESS_LEVEL_NAMEMAP.keySet();
+
     @SuppressWarnings("unchecked")
 	public PermissionField(RaplaContext context) throws RaplaException {
         super( context);
@@ -132,12 +134,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(getString("permission.access") + ":"), "0,4,f,f" );
-        Collection<Integer> vector = new ArrayList<Integer>();
-        for (Integer accessLevel:Permission.ACCESS_LEVEL_NAMEMAP.keySet()) 
-        {
-            vector.add( accessLevel ) ;
-        }
-        accessField = new ListField<Integer>(context, vector );
+        accessField = new ListField<Integer>(context, permissionLevels );
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -316,6 +313,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         }
     }
 
+    
+    public void setPermissionLevels(Integer... permissionLevels) {
+        this.permissionLevels = Arrays.asList( permissionLevels);
+        accessField.setVector( this.permissionLevels);
+    }
 }
 
 

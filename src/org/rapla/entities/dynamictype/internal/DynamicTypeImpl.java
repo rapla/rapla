@@ -31,6 +31,8 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.UniqueKeyException;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -53,6 +55,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
+    private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>(1);
     MultiLanguageName name  = new MultiLanguageName();
     String key = "";
     //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
@@ -80,6 +83,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 				annotation.init(parseContext);
 			} catch (IllegalAnnotationException e) {
 			}
+    	}
+    	for (PermissionImpl p:permissions)
+    	{
+    	    p.setResolver( resolver);
     	}
     }
 
@@ -120,7 +127,32 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return classification;
     }
     
-   
+    public void addPermission(Permission permission) {
+        checkWritable();
+        permissions.add((PermissionImpl)permission);
+    }
+
+    public boolean removePermission(Permission permission) {
+        checkWritable();
+        return permissions.remove(permission);
+    }
+
+    public Permission newPermission() {
+        PermissionImpl permissionImpl = new PermissionImpl();
+        if ( resolver != null)
+        {
+            permissionImpl.setResolver( resolver);
+        }
+        return permissionImpl;
+    }
+    
+    public Collection<Permission> getPermissionList()
+    {
+        Collection uncasted = permissions;
+        @SuppressWarnings("unchecked")
+        Collection<Permission> casted = uncasted;
+        return casted;
+    }
 
     public Classification newClassification(Classification original) {
         if ( !isReadOnly()) {
@@ -410,6 +442,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public DynamicTypeImpl clone() {
         DynamicTypeImpl clone = new DynamicTypeImpl();
         super.deepClone(clone);
+        clone.permissions.clear();
+        for (PermissionImpl perm:permissions) {
+            PermissionImpl permClone = perm.clone();
+            clone.permissions.add(permClone);
+        }
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;
         clone.name = (MultiLanguageName) name.clone();
@@ -653,7 +690,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 		}
 	}
-
 
 	public static boolean isTransferedToClient(Classifiable classifiable) {
 		if ( classifiable == null)

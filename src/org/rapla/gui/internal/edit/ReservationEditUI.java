@@ -19,21 +19,27 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditField;
 import org.rapla.gui.internal.edit.fields.ClassificationField;
+import org.rapla.gui.internal.edit.fields.PermissionListField;
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
 class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
-    public ReservationEditUI(RaplaContext context) {
+    PermissionListField permissionField;
+    
+    public ReservationEditUI(RaplaContext context) throws RaplaException {
         super(context);
         ArrayList<EditField> fields = new ArrayList<EditField>();
         classificationField = new ClassificationField<Reservation>(context);
         fields.add( classificationField);
+        permissionField = new PermissionListField(context,getString("permissions"));
+        fields.add( permissionField );
         setFields(fields);
     }
 
     public void mapToObjects() throws RaplaException {
         classificationField.mapTo( objectList);
+        permissionField.mapTo( objectList);
         if ( getName(objectList).length() == 0)
             throw new RaplaException(getString("error.no_name"));
 
@@ -41,6 +47,7 @@ class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
+        permissionField.mapFrom( objectList);
     }
 
 

@@ -13,9 +13,17 @@
 
 package org.rapla.entities.domain;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
+import org.rapla.entities.Category;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.internal.PermissionImpl;
 
 
 public interface PermissionContainer 
@@ -25,16 +33,144 @@ public interface PermissionContainer
     
     boolean removePermission( Permission permission );
     
-    /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
-    boolean canModify( User user );
-    
-    /** returns if the user has the permission to read the information and the allocations of this resource.*/
-    boolean canRead( User user );
-    
-    /** returns if the user has the permission to read only the information but not the allocations of this resource.*/
-    boolean canReadOnlyInformation( User user );
-    
     Permission newPermission();
 
     Collection<Permission> getPermissionList();
+    
+    class Util
+    {
+        static public boolean hasAccess(PermissionContainer container, User user, int accessLevel ) {
+            Iterable<? extends Permission> permissions = container.getPermissionList();
+            return hasAccess(permissions,user, accessLevel, null, null, null, false);
+        }
+
+        /** returns if the user has the permission to read the information and the allocations of this resource.*/
+        static public boolean canModify(PermissionContainer container,User user) {
+            return hasAccess( container,user, Permission.ADMIN);
+        }
+
+        /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
+        static public boolean canRead(PermissionContainer container,User user) 
+        {
+            return hasAccess( container,user, Permission.READ );
+        }
+        
+        static public boolean hasAccess(Iterable<? extends Permission> permissions, User user, int accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
+            if ( user == null || user.isAdmin() )
+                return true;
+          
+            int maxAccessLevel = 0;
+            int maxEffectLevel = Permission.NO_PERMISSION;
+            Category[] originalGroups = user.getGroups();
+            Collection<Category> groups = new HashSet<Category>( Arrays.asList( originalGroups));
+            for ( Category group: originalGroups)
+            {
+                Category parent = group.getParent();
+                while ( parent != null)
+                {
+                    if ( ! groups.contains( parent))
+                    {
+                        groups.add( parent);
+                    }
+                    if ( parent == group)
+                    {
+                        throw new IllegalStateException("Parent added to own child");
+                    }
+                    parent = parent.getParent();
+                }
+            }
+            for ( Permission p:permissions ) {
+                int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+
+                if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION)
+                {
+                    if ( p.hasTimeLimits() && accessLevel >= Permission.ALLOCATE && today!= null)
+                    {
+                        if (p.getAccessLevel() != Permission.ADMIN  )
+                        {
+                            if  ( checkOnlyToday )
+                            {
+                                if (!((PermissionImpl)p).valid(today))
+                                {
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                if (!p.covers( start, end, today ))
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    if ( maxAccessLevel < p.getAccessLevel() || effectLevel > maxEffectLevel)
+                    {
+                        maxAccessLevel = p.getAccessLevel();
+                    }
+                    maxEffectLevel = effectLevel;
+                }
+            }
+            boolean granted = maxAccessLevel >= accessLevel ;
+            return granted;
+        }
+        
+        static public void addDifferences(Set<Permission> invalidatePermissions, PermissionContainer oldContainer, PermissionContainer newContainer) {
+            Collection<Permission> oldPermissions = oldContainer.getPermissionList();
+            Collection<Permission> newPermissions = newContainer.getPermissionList();
+            addDifferences(invalidatePermissions, oldPermissions, newPermissions);
+        }
+
+        private static void addDifferences(Set<Permission> invalidatePermissions, Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            // we leave this condition for a faster equals check
+            int size = oldPermissions.size();
+            if  (size == newPermissions.size())
+            {
+                Iterator<Permission> newPermissionsIt = newPermissions.iterator();
+            	for (Permission oldPermission:oldPermissions)
+            	{
+                    Permission newPermission = newPermissionsIt.next();
+            		if (!oldPermission.equals(newPermission))
+            		{
+            			invalidatePermissions.add( oldPermission);
+            			invalidatePermissions.add( newPermission);
+            		}
+            	}
+            }
+            else
+            {
+            	HashSet<Permission> newSet = new HashSet<Permission>(newPermissions);
+            	HashSet<Permission> oldSet = new HashSet<Permission>(oldPermissions);
+            	{
+            		HashSet<Permission> changed = new HashSet<Permission>( newSet);
+            		changed.removeAll( oldSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            	{
+            		HashSet<Permission> changed = new HashSet<Permission>(oldSet);
+            		changed.removeAll( newSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            }
+        }
+
+        public static boolean differs(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            HashSet<Permission> set = new HashSet<Permission>();
+            addDifferences(set, oldPermissions, newPermissions);
+            return set.size() > 0;
+        }
+
+        public static void replace(PermissionContainer permissionContainer, Collection<Permission> permissions) {
+            Collection<Permission> permissionList = new ArrayList<Permission>(permissionContainer.getPermissionList());
+            for (Permission p:permissionList)
+            {
+                permissionContainer.removePermission(p);
+            }                
+            for (Permission p:permissions)
+            {
+                permissionContainer.addPermission( p );
+            }
+        }
+        
+    }
 }

@@ -145,7 +145,7 @@ public class RaplaPre18SQL {
         storage.setConnection(con);
         try
         {
-        	storage.loadAll();
+            storage.loadAll();
         }
         finally
         {
@@ -652,8 +652,15 @@ class AttributeValueStorage<T extends Entity<T>> extends OldEntityStorage<T> {
 class PermissionStorage extends OldEntityStorage<Allocatable>  {
     Map<String,Allocatable> allocatableMap;
     public PermissionStorage(RaplaContext context,Map<String,Allocatable> allocatableMap) throws RaplaException {
-        super(context,"PERMISSION",new String[] {"RESOURCE_ID INTEGER NOT NULL KEY","USER_ID INTEGER","GROUP_ID INTEGER","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
+        super(context,"RESOURCE_PERMISSION",new String[] {"RESOURCE_ID INTEGER NOT NULL KEY","USER_ID INTEGER","GROUP_ID INTEGER","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.allocatableMap = allocatableMap;
+    }
+    
+    @Override
+    public void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary( schema);
+        checkRenameTable(schema, "PERMISSON");
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {

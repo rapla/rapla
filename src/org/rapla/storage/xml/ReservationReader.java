@@ -38,11 +38,14 @@ public class ReservationReader extends RaplaXMLReader {
     private DynAttReader dynAttHandler;
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
+	private PermissionReader permissionHandler;
 
     public ReservationReader( RaplaContext context) throws RaplaException  {
         super( context);
         dynAttHandler = new DynAttReader( context);
+        permissionHandler = new PermissionReader( context );
         addChildHandler(dynAttHandler);
+        addChildHandler( permissionHandler);
     }
 
     @Override
@@ -59,6 +62,17 @@ public class ReservationReader extends RaplaXMLReader {
         if (!namespaceURI.equals(RAPLA_NS))
             return;
 
+        if (localName.equals( "permission" ))
+        {
+            permissionHandler.setContainer( reservation);
+            delegateElement(
+                    permissionHandler,
+                    namespaceURI,
+                    localName,
+                    atts );
+            return;
+            
+        }
         if ( localName.equals( "reservation" ) ) 
         {
             TimestampDates ts = readTimestamps( atts);
