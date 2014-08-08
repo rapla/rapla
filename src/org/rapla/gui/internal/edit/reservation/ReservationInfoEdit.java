@@ -97,6 +97,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         editUI = new MyClassificationEditUI(context);
         permissionField = new PermissionListField(context, "permissions");
         permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        permissionField.setDefaultAccessLevel( Permission.READ );
     }
 
     public JComponent getComponent() {

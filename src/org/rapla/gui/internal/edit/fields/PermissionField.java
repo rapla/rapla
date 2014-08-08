@@ -318,6 +318,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         this.permissionLevels = Arrays.asList( permissionLevels);
         accessField.setVector( this.permissionLevels);
     }
+    
+    public Collection<Integer> getPermissionLevels() 
+    {
+        return permissionLevels;
+    }
 }
 
 
