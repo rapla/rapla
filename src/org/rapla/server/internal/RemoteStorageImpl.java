@@ -90,7 +90,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -564,11 +563,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     @Override
     public RemoteStorage createService(final RemoteSession session) {
         return new RemoteStorage() {
-            @Override
-            public void setConnectInfo(RemoteConnectionInfo info) {
-                // do nothing here
-            }
-
             public FutureResult<UpdateEvent> getResources()
             {
             	try

@@ -6,8 +6,7 @@ public class LoginTokens {
     String accessToken;
     Date validUntil;
     
-    @SuppressWarnings("unused")
-    private LoginTokens() {
+    public LoginTokens() {
     }
     
     public LoginTokens(String accessToken, Date validUntil) {

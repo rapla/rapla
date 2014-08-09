@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -235,7 +234,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 	static public <T extends Entity> void checkResolveResult(String id, Class<T> entityClass, T entity) throws EntityNotFoundException {
         if ( entity == null)
         {
-            Serializable serializable = entityClass != null ? entityClass : "Object";
+            Object serializable = entityClass != null ? entityClass : "Object";
             throw new EntityNotFoundException(serializable +" for id [" + id + "] not found for class ", id);
         }
     }

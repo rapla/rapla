@@ -101,8 +101,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         this.remoteStorage = remoteStorage;
     	commandQueue = context.lookup( CommandScheduler.class);
     	this.connectionInfo = new RemoteConnectionInfo();
-    	remoteStorage.setConnectInfo( connectionInfo );
-    	remoteServer.setConnectInfo( connectionInfo );
+    	//remoteStorage.setConnectInfo( connectionInfo );
+    	//remoteServer.setConnectInfo( connectionInfo );
     	if ( config != null)
     	{
     	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");

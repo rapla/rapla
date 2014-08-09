@@ -153,17 +153,24 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
             RaplaType raplaType;
             try {
                 raplaType = RaplaType.find(localname);
+            }
+            catch (RaplaException ex)
+            {
+                throw new IllegalArgumentException(ex.getMessage());
+            }
+            try {
                 Class typeClass = raplaType.getTypeClass();
-                if ( Entity.class.isAssignableFrom(typeClass ))
+                //if ( Entity.class.isAssignableFrom(typeClass ))
                 {
                     @SuppressWarnings("unchecked")
                     Class<? extends Entity> casted = (Class<? extends Entity>)typeClass;
                     type = casted;
                 }
-            } catch (RaplaException e) {
+                ReferenceInfo referenceInfo = new ReferenceInfo(id, type);
+                selectedInfo.add( referenceInfo);    
+            } catch ( ClassCastException e) {
             }
-            ReferenceInfo referenceInfo = new ReferenceInfo(id, type);
-            selectedInfo.add( referenceInfo);    
+            
         }
         return new IterableChain<ReferenceInfo>(references, selectedInfo);
     }
