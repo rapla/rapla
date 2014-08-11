@@ -32,6 +32,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -46,6 +47,7 @@ import org.rapla.gui.EditComponent;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.gui.internal.edit.fields.PermissionListField;
 import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -85,7 +87,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     //boolean isEventType;
     AnnotationEditUI annotationEdit;
     DialogUI dialog;
-
+    PermissionListField permissionField;
+    
     public DynamicTypeEditUI(RaplaContext context) throws RaplaException {
         super(context);
         Collection<AnnotationEditExtension> annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT);
@@ -106,7 +109,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         double PRE = TableLayout.PREFERRED;
         double[][] sizes = new double[][] {
             {5,PRE,5,TableLayout.FILL,5}
-            ,{PRE,5,PRE,5,PRE,5,PRE,5,TableLayout.FILL,5,PRE}
+            ,{PRE,5,PRE,5,PRE,5,PRE,5,TableLayout.FILL,5,PRE,5,PRE}
         };
         TableLayout tableLayout = new TableLayout(sizes);
         editPanel.setLayout(tableLayout);
@@ -152,6 +155,9 @@ class DynamicTypeEditUI extends RaplaGUIComponent
             }
         });
      
+        permissionField = new PermissionListField(context,getString("permissions"));
+        editPanel.add(permissionField.getComponent(),"1,10,3,10");
+        permissionField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
         float newSize = (float) (annotationDescription.getFont().getSize() * 0.8);
         annotationDescription.setFont(annotationDescription.getFont().deriveFont( newSize));
@@ -229,6 +235,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 		dynamicType.getName().setTo( newName);
         dynamicType.setKey(elementKey.getValue());
         attributeEdit.confirmEdits();
+        permissionField.mapTo( Collections.singletonList( dynamicType));
         DynamicTypeImpl.validate(dynamicType, getI18n());
         setAnnotations();
     }
@@ -335,6 +342,14 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         name.setValue( dynamicType.getName());
         elementKey.setValue( dynamicType.getKey());
         attributeEdit.setDynamicType(dynamicType);
+        String annotation = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        if ( annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
+        {
+            permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+            permissionField.setDefaultAccessLevel( Permission.READ );
+        }
+
+        permissionField.mapFrom( Collections.singletonList(dynamicType));
 //        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 //		isEventType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 //		isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);

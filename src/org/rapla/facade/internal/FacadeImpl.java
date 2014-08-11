@@ -48,9 +48,9 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -1062,6 +1062,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         	reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
         }
         reservation.setClassification(classification);
+        Collection<Permission> permissionList = classification.getType().getPermissionList();
+        for ( Permission p:permissionList)
+        {
+            Permission clone = p.clone();
+            reservation.addPermission( clone);
+        }
         setNew(reservation, user);
         return reservation;
     }
@@ -1083,7 +1089,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         }
         if ( !type.isInternal())
         {
-        	allocatable.addPermission(allocatable.newPermission());
+        	//allocatable.addPermission(allocatable.newPermission());
             if (user != null && !user.isAdmin()) {
                 Permission permission = allocatable.newPermission();
                 permission.setUser(user);
@@ -1092,6 +1098,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             }
         }
         allocatable.setClassification(classification);
+        Collection<Permission> permissionList = classification.getType().getPermissionList();
+        for ( Permission p:permissionList)
+        {
+            Permission clone = p.clone();
+            allocatable.addPermission( clone);
+        }
+
         setNew(allocatable, user);
         return allocatable;
     }

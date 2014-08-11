@@ -44,7 +44,8 @@ import org.rapla.framework.RaplaException;
 public class PermissionField extends AbstractEditField implements  ChangeListener, ActionListener {
     SetGetField<Category> groupSelect;
     ListField<User> userSelect;
-
+    JLabel userLabel;
+    
     JPanel panel = new JPanel();
     JPanel reservationPanel;
     Permission permission;
@@ -81,7 +82,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                                           ));
 
         userSelect = new UserListField( context );
-        userPanel.add( new JLabel(getString("user") + ":"), "0,0,l,f" );
+        userLabel = new JLabel(getString("user") + ":");
+        userPanel.add( userLabel, "0,0,l,f" );
         userPanel.add( userSelect.getComponent(),"2,0,l,f" );
 
         Category rootCategory =   getQuery().getUserGroupsCategory();
@@ -322,6 +324,16 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     public Collection<Integer> getPermissionLevels() 
     {
         return permissionLevels;
+    }
+    
+    public void setUserVisible(boolean userVisible) {
+        userSelect.getComponent().setVisible( userVisible );
+        userLabel.setVisible( userVisible);
+    }
+    
+    public boolean isUserVisible() 
+    {
+        return userSelect.getComponent().isVisible();
     }
 }
 

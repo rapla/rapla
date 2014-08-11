@@ -14,6 +14,7 @@ package org.rapla.gui.internal.edit;
 
 import java.util.ArrayList;
 
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -34,6 +35,8 @@ class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         fields.add( classificationField);
         permissionField = new PermissionListField(context,getString("permissions"));
         fields.add( permissionField );
+        permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        permissionField.setDefaultAccessLevel( Permission.READ );
         setFields(fields);
     }
 

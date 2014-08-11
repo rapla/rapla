@@ -283,6 +283,11 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         this.defaultAccessLevel = defaultAccessLevel;
     }
 	
+	public void setUserSelectVisible(boolean userSelectVisible)
+	{
+	    permissionField.setUserVisible( userSelectVisible );
+	}
+	
 	public Integer getDefaultAccessLevel() 
 	{
         return defaultAccessLevel;

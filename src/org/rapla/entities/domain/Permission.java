@@ -169,5 +169,7 @@ public interface Permission
     /** Static empty dummy Array.
      * Mainly for using the toArray() method of the collection interface */
     Permission[] PERMISSION_ARRAY = new Permission[0];
+    
+    Permission clone();
 
 }

@@ -176,7 +176,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
 
     private String getInfoButton() {
-        return getString("permissions") + "/" + getString("additional-view");
+        return getString("additional-view") + " / " +getString("permissions");
     }
 
 	@SuppressWarnings("unchecked")
