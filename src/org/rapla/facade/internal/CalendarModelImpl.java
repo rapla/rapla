@@ -900,7 +900,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     
 	private Set<User> getUserRestrictions() {
     	User currentUser = getUser();
-    	if (  currentUser != null &&  isOnlyCurrentUserSelected() || !m_facade.canReadReservationsFromOthers( currentUser)) 
+    	if (  currentUser != null &&  isOnlyCurrentUserSelected() ) 
     	{
     		return Collections.singleton( currentUser );
     	}

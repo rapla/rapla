@@ -477,8 +477,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         
         for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
         {
+            DynamicType key = entry.getKey();
         	MutableTreeNode value = entry.getValue();
-        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer()))
+        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
         	{
         		treeNode.remove( value);
         	}

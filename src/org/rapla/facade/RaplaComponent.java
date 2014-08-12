@@ -43,6 +43,8 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
@@ -106,17 +108,42 @@ public class RaplaComponent
     }
 
     /** returns if the session user is a registerer */
-    final public boolean isRegisterer() {
+    final public boolean isRegisterer(DynamicType type) {
         if (isAdmin())
         {
             return true;
         }
+        User user;
         try {
-            Category registererGroup = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-            return getUser().belongsTo(registererGroup);
+            //Category registererGroup = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
+            user = getUser();
+            if ( type == null)
+            {
+                for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
+                {
+                    if (PermissionContainer.Util.canCreate( type1, user))
+                    {
+                        return true;
+                    }
+                }
+                for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
+                {
+                    if (PermissionContainer.Util.canCreate( type1, user))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                boolean result = PermissionContainer.Util.canCreate( type, user);
+                return result;
+            }
         } catch (RaplaException ex) {
+            return false;
         }
-        return false;
+
     }
 
     final public boolean isModifyPreferencesAllowed() {
@@ -159,9 +186,20 @@ public class RaplaComponent
         return false;
     }
     
-    final public boolean canCreateReservation(User user) {
-    	boolean result = getQuery().canCreateReservations(user);
-		return result;
+    final public boolean canCreateReservation(User user) 
+    {
+        try {
+            for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
+            {
+                if (PermissionContainer.Util.canCreate( type1, user))
+                {
+                    return true;
+                }
+            }
+        } catch (RaplaException e) {
+            return false;
+        }
+		return false;
     }
     
     
@@ -274,13 +312,9 @@ public class RaplaComponent
             }
 			if ( owner == null && object instanceof Allocatable)
 			{
-			    Category[] groups = user.getGroups();
-			    for ( Category group: groups)
+			    if (PermissionContainer.Util.canCreate( (Allocatable)object, user))
 			    {
-			        if (group.getKey().equals(Permission.GROUP_REGISTERER_KEY))
-			        {
-			            return true;
-			        }
+			        return true;
 			    }
 			}
         }
@@ -297,12 +331,11 @@ public class RaplaComponent
     public boolean canRead(Appointment appointment,User user)
     {
     	Reservation  reservation = appointment.getReservation();
-    	boolean canReadReservationsFromOthers = getQuery().canReadReservationsFromOthers( user);
-		boolean result = canRead(reservation, user, canReadReservationsFromOthers);
+    	boolean result = canRead(reservation, user);
 		return result;
     }
     
-    static public boolean canRead(Reservation reservation,User user, boolean canReadReservationsFromOthers)
+    static public boolean canRead(Reservation reservation,User user)
     {
     	if ( user == null)
     	{
@@ -312,10 +345,6 @@ public class RaplaComponent
         {
      	   return true;
         }
-    	if ( !canReadReservationsFromOthers)
-    	{
-    		return false;
-    	}
     	if (PermissionContainer.Util.canRead(reservation, user))
     	{
     		return true;

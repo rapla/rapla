@@ -3423,6 +3423,16 @@ See French text.
         <text lang="pl">Może odczytać przydział zasobów</text>
 		<text lang="pt">Pode ler atribuições</text>
     </entry>
+     <entry key="permission.create">
+        <text lang="en">Create</text>
+        <text lang="de">Erstellen</text>
+        <text lang="fr">Créer</text>
+        <text lang="es">Crear</text>
+        <text lang="cs">Vytvořit</text>
+        <text lang="nl">Aanmaken</text>
+        <text lang="pl">Utwórz</text>
+		<text lang="pt">Criar</text>
+    </entry>
     <entry key="permission.allocate">
         <text lang="en">can allocate</text>
         <text lang="de">darf belegen</text>

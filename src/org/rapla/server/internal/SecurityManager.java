@@ -31,6 +31,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -114,7 +115,7 @@ public class SecurityManager
         } 
         if ( !permitted && entity instanceof Allocatable ){
             if ( original == null ) {
-                permitted = isRegisterer(user);
+                permitted = PermissionContainer.Util.canCreate((Classifiable)original, user);
             } 
         }
         if ( !permitted && original != null && original instanceof PermissionContainer)
@@ -148,8 +149,9 @@ public class SecurityManager
             }
             if ( originalReservation == null)
             {
-            	Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
-            	if (group != null && !user.belongsTo(group))
+                boolean canCreate = PermissionContainer.Util.canCreate(originalReservation, user);
+                //Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
+            	if (!canCreate)
             	{
             		throw new RaplaSecurityException(i18n.format("error.create_not_allowed", new Object []{ user.toString(),entity.toString()}));
             	} 
@@ -163,14 +165,14 @@ public class SecurityManager
         return logger;
     }
 
-    protected boolean isRegisterer(User user) throws RaplaSecurityException {
-        try {
-            Category registererGroup = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-            return user.belongsTo(registererGroup);
-        } catch (RaplaException ex) {
-            throw new RaplaSecurityException(ex );
-        }
-    }
+//    protected boolean isRegisterer(User user) throws RaplaSecurityException {
+//        try {
+//            Category registererGroup = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
+//            return user.belongsTo(registererGroup);
+//        } catch (RaplaException ex) {
+//            throw new RaplaSecurityException(ex );
+//        }
+//    }
 
     public Category getUserGroupsCategory() throws RaplaSecurityException {
         Category userGroups = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);

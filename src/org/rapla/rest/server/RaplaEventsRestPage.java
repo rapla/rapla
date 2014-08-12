@@ -47,13 +47,12 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
  
         ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         Map<String, String> annotationQuery = null;
-        boolean canReadReservationsFromOthers = getQuery().canReadReservationsFromOthers(user);
         User owner = null;
         Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery);
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         for ( Reservation r:reservations)
         {
-            if ( RaplaComponent.canRead(r, user, canReadReservationsFromOthers))
+            if ( RaplaComponent.canRead(r, user ))
             {
                 result.add((ReservationImpl) r);
             }
@@ -64,8 +63,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        boolean canReadReservationsFromOthers = getQuery().canReadReservationsFromOthers(user);
-        if (!RaplaComponent.canRead(event, user, canReadReservationsFromOthers))
+        if (!RaplaComponent.canRead(event, user ))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -86,7 +84,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     
     public ReservationImpl create(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
     {
-        if (!getQuery().canCreateReservations(user))
+        if (!getQuery().canCreateReservations(event.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

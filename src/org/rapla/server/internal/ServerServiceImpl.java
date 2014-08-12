@@ -88,6 +88,7 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -582,10 +583,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 }
             }
             
-//            @Override
-//            public FutureResult<VoidResult> setConnectInfo(RemoteConnectionInfo info) {
-//                return ResultImpl.VOID;
-//            }
+            @Override
+            public FutureResult<VoidResult> setConnectInfo(RemoteConnectionInfo info) {
+                return ResultImpl.VOID;
+            }
             
             @Override
             public FutureResult<VoidResult> logout() 

@@ -24,6 +24,8 @@ import java.util.Set;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.DynamicType;
 
 
 public interface PermissionContainer 
@@ -54,6 +56,18 @@ public interface PermissionContainer
         {
             return hasAccess( container,user, Permission.READ );
         }
+        
+        public static boolean canCreate(Classifiable original, User user) {
+            DynamicType type = original.getClassification().getType();
+            return canCreate(type, user);
+        }
+
+        public static boolean canCreate(DynamicType type, User user) {
+            Collection<Permission> permissionList = type.getPermissionList();
+            boolean result = hasAccess( permissionList, user, Permission.CREATE, null, null, null, false);
+            return result;
+        }
+
         
         static public boolean hasAccess(Iterable<? extends Permission> permissions, User user, int accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
             if ( user == null || user.isAdmin() )
@@ -171,6 +185,7 @@ public interface PermissionContainer
                 permissionContainer.addPermission( p );
             }
         }
+
         
     }
 }

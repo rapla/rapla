@@ -37,6 +37,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
@@ -196,15 +197,26 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         }
         boolean allocatableType = false;
         boolean reservationType = false;
+        DynamicType type = null;
         if ( focusedObject instanceof DynamicType)
         {
-            DynamicType type = (DynamicType) focusedObject;
+            type = (DynamicType) focusedObject;
+        }
+        else if ( focusedObject instanceof Classifiable)
+        {
+            type = ((Classifiable) focusedObject).getClassification().getType();
+        }
+
+        if ( type != null)
+        {
             String classificationType = type.getAnnotation( DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE );
             allocatableType = classificationType.equals(  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON ) || classificationType.equals(  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE );
             reservationType = classificationType.equals(  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION );
         }
+
+            
         boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable  || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
-        if ( isRegisterer() || isAdmin()) {
+        if ( isRegisterer(type) || isAdmin()) {
             if ( allocatableNodeContext)
             {
                 menu.addSeparator();

@@ -30,10 +30,7 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Permission;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -223,27 +220,27 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		boolean isSelected = model.isOnlyCurrentUserSelected();
 		ownReservationsMenu.setIcon(isSelected ? getIcon("icon.checked") : getIcon("icon.unchecked"));
 		ownReservationsMenu.setSelected(isSelected);
-        boolean canSeeEventsFromOthers = canSeeEventsFromOthers();
-		ownReservationsMenu.setEnabled( canSeeEventsFromOthers);
-        if ( !canSeeEventsFromOthers && !isSelected)
-        {
-        	model.setOption(CalendarModel.ONLY_MY_EVENTS, "true");
-        }
+//        boolean canSeeEventsFromOthers = canSeeEventsFromOthers();
+//		ownReservationsMenu.setEnabled( canSeeEventsFromOthers);
+//        if ( !canSeeEventsFromOthers && !isSelected)
+//        {
+//        	model.setOption(CalendarModel.ONLY_MY_EVENTS, "true");
+//        }
 	}
 
     
-    private boolean canSeeEventsFromOthers() {
-        try {
-            Category category = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-            if (category == null) {
-                return true;
-            }
-            User user = getUser();
-            return user.isAdmin() || user.belongsTo(category);
-        } catch (RaplaException ex) {
-            return false;
-        }
-    }
+//    private boolean canSeeEventsFromOthers() {
+//        try {
+//            Category category = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+//            if (category == null) {
+//                return true;
+//            }
+//            User user = getUser();
+//            return user.isAdmin() || user.belongsTo(category);
+//        } catch (RaplaException ex) {
+//            return false;
+//        }
+//    }
 
     public void dataChanged(ModificationEvent evt) throws RaplaException {
     	listenersDisabled = true;
