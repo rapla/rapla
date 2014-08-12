@@ -90,6 +90,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -427,9 +428,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				Ownable oldOwnable = (Ownable) operation.getOld();
 				User newOwner = newOwnable.getOwner();
 				User oldOwner = oldOwnable.getOwner();
-				if ( newOwner != null && oldOwner != null && (newOwner.equals( oldOwner)) )
+				if ( newOwner != null && oldOwner != null && (!newOwner.equals( oldOwner)) )
 				{
-				    
 				    if ( !newObject.getRaplaType().is( Reservation.TYPE))
 				    {
 				        usersResourceRefresh.add( newOwner);
@@ -757,8 +757,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             
 			private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {
 				ReservationImpl reservation =(ReservationImpl) entity;
-				boolean canReadFromOthers = facade.canReadReservationsFromOthers(sessionUser);
-				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser, canReadFromOthers);
+				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser);
 				// check if the user is allowed to read the reservation info 
 				if ( !reservationVisible )
 				{
@@ -1282,6 +1281,12 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
 			}
 
+            @Override
+            public FutureResult<VoidResult> setConnectInfo(RemoteConnectionInfo info) {
+                return ResultImpl.VOID;
+            }
+
+			
 			@Override
 			public FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds)
 			{

@@ -135,9 +135,7 @@ public interface QueryModule
      * The User cannot change appointments.*/
     boolean canExchangeAllocatables(Reservation reservation);
     
-    boolean canReadReservationsFromOthers(User user);
-    
-    boolean canCreateReservations(User user);
+    boolean canCreateReservations(DynamicType type, User user);
     
 	boolean canEditTemplats(User user);
 

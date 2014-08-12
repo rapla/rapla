@@ -145,7 +145,7 @@ public class RaplaObjectAction extends RaplaAction {
             enabled = canModify(object);
 
         } else if (type == NEW ) {
-            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && isRegisterer()) || isAdmin();
+            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && isRegisterer(null)) || isAdmin();
         } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
             if (objectList != null && objectList.size() > 0 ) {
                 Iterator<Entity<?>> it = objectList.iterator();

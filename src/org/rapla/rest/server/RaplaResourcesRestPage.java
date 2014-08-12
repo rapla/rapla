@@ -70,7 +70,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
     
     public AllocatableImpl create(@WebParam(name="user") User user, AllocatableImpl resource) throws RaplaException
     {
-        if (!getQuery().canCreateReservations(user))
+        if (!getQuery().canCreateReservations(resource.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
         }

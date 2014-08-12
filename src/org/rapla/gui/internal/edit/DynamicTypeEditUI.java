@@ -345,7 +345,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         String annotation = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if ( annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
         {
-            permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+            permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.CREATE,Permission.EDIT, Permission.ADMIN);
             permissionField.setDefaultAccessLevel( Permission.READ );
         }
 

@@ -30,17 +30,19 @@ public interface Permission
 {
     String GROUP_CATEGORY_KEY = "user-groups";
     
-    String GROUP_REGISTERER_KEY = "registerer";
     String GROUP_MODIFY_PREFERENCES_KEY = "modify-preferences";
+    String GROUP_CAN_EDIT_TEMPLATES = "edit-templates";
+
+    String GROUP_REGISTERER_KEY = "registerer";
     String GROUP_CAN_READ_EVENTS_FROM_OTHERS = "read-events-from-others";
     String GROUP_CAN_CREATE_EVENTS = "create-events";
-    String GROUP_CAN_EDIT_TEMPLATES = "edit-templates";
     
     int DENIED = 0;
     int READ_ONLY_INFORMATION = 50;
     int READ = 100;
     int ALLOCATE =200;
     int ALLOCATE_CONFLICTS = 300;
+    int CREATE = 325;
     int EDIT = 350;
     int ADMIN = 400;
 
@@ -59,6 +61,7 @@ public interface Permission
     		map.put( READ,"read");
     		map.put( ALLOCATE, "allocate");
     		map.put( ALLOCATE_CONFLICTS, "allocate-conflicts");
+    		map.put( CREATE, "create");
             map.put( EDIT, "edit");
      		map.put( ADMIN, "admin");
     	}
