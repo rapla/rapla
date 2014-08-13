@@ -5,9 +5,9 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 public class RemoteConnectionInfo 
 {
     String accessToken;
-    FutureResult<String> reAuthenticateCommand;
+    transient FutureResult<String> reAuthenticateCommand;
     String serverURL;
-    StatusUpdater statusUpdater;
+    transient StatusUpdater statusUpdater;
     public void setStatusUpdater(StatusUpdater statusUpdater) {
         this.statusUpdater = statusUpdater;
     }
