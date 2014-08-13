@@ -11,7 +11,9 @@ import java.util.Map;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -92,6 +94,12 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		for ( T entity: entities)
 		{
             Entity<T>  mutableEntity = entity.clone();
+            // we change the owner of deleted entities because we can't create new objects with owners others than the current user
+            if ( mutableEntity instanceof Ownable)
+            {
+                User user = getUser();
+                ((Ownable) mutableEntity).setOwner( user);
+            }
 			toStore.add( mutableEntity);
 		}
 		Collection<Category> categoriesToStore2 = new LinkedHashSet<Category>();
