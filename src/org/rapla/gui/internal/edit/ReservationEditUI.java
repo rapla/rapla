@@ -14,8 +14,10 @@ package org.rapla.gui.internal.edit;
 
 import java.util.ArrayList;
 
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditField;
