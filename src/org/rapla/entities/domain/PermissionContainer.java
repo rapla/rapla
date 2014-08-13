@@ -48,6 +48,10 @@ public interface PermissionContainer
 
         /** returns if the user has the permission to read the information and the allocations of this resource.*/
         static public boolean canModify(PermissionContainer container,User user) {
+            return hasAccess( container,user, Permission.EDIT);
+        }
+        
+        static public boolean canAdmin(PermissionContainer container,User user) {
             return hasAccess( container,user, Permission.ADMIN);
         }
 

@@ -85,7 +85,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     static private String[] splitConflictId(String id)
     {
         String[] split = id.split(";");
-        if (split.length <4)
+        if (split.length <5)
         {
             if ( !split[0].equalsIgnoreCase("CONFLICT"))
             {

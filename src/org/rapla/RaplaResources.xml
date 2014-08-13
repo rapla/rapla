@@ -1541,6 +1541,10 @@ See French text.
         <text lang="pl">Użytkownikowi ''{0}'' nie wolno modyfikować obiektu ''{1}''.</text>
 		<text lang="pt">Usuário ''{0}'' sem permissão para modificar o objeto ''{1}''.</text>
     </entry>
+        <entry key="error.admin_not_allowed">
+        <text lang="en">User ''{0}'' is not allowed to administer the object ''{1}''.</text>
+        <text lang="de">Benutzer ''{0}'' hat keine Adminberechtigung für das Objekt ''{1}''.</text>
+    </entry>
     <entry key="error.read_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to read the object ''{1}''.</text>
         <text lang="de">Benutzer ''{0}'' hat keine Leseberechtigung für das Objekt ''{1}''.</text>

@@ -292,6 +292,15 @@ public class RaplaComponent
         }
     }
 
+    final public boolean canAdmin(Object object) {
+        try {
+            User user = getUser();
+            return canAdmin(object, user);
+        } catch (RaplaException ex) {
+            return false;
+        }
+    }
+
     static public boolean canModify(Object object, User user) {
         if (object == null || !(object instanceof RaplaObject))
         {
@@ -321,6 +330,38 @@ public class RaplaComponent
         if (object instanceof PermissionContainer) {
             PermissionContainer permissionContainer = (PermissionContainer) object;
             if (PermissionContainer.Util.canModify(permissionContainer, user))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    static public boolean canAdmin(Object object, User user) {
+        if ( !canModify(object, user))
+        {
+            return false;
+        }
+        if (user.isAdmin())
+            return true;
+        if (object instanceof Ownable) {
+            Ownable ownable = (Ownable) object;
+            User owner = ownable.getOwner();
+            if  ( owner != null && user.equals(owner))
+            {
+                return true;
+            }
+            if ( owner == null && object instanceof Allocatable)
+            {
+                if (PermissionContainer.Util.canCreate( (Allocatable)object, user))
+                {
+                    return true;
+                }
+            }
+        }
+        if (object instanceof PermissionContainer) {
+            PermissionContainer permissionContainer = (PermissionContainer) object;
+            if (PermissionContainer.Util.canAdmin(permissionContainer, user))
             {
                 return true;
             }

@@ -122,9 +122,9 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             
             // only is allowed to exchange allocations
             c.editReservation(reservation, appointmentBlock);
+            c.deleteButton.setEnabled( canAdmin( reservation ));
             if ( !canModify( reservation) ) 
             {
-            	c.deleteButton.setEnabled( false);
                 disableComponentAndAllChildren(c.appointmentEdit.getComponent());
                 disableComponentAndAllChildren(c.reservationInfo.getComponent());
             }

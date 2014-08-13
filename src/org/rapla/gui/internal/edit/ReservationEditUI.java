@@ -51,6 +51,18 @@ class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
         permissionField.mapFrom( objectList);
+        boolean canAdmin = true;
+        for ( Reservation event:objectList)
+        {
+            if ( !canAdmin( event))
+            {
+                canAdmin = false;
+            }
+        }
+        if ( canAdmin == false)
+        {
+            permissionField.getComponent().setVisible( false );
+        }
     }
 
 

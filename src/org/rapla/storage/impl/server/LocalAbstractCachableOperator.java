@@ -31,12 +31,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 
+import org.apache.commons.collections4.SortedBidiMap;
+import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -63,6 +66,7 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
+import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
@@ -120,13 +124,27 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private  String encryption = "sha-1";
 	private ConflictFinder conflictFinder;
 	private Map<String,SortedSet<Appointment>> appointmentMap;
-	private SortedSet<LastChangedTimestamp> timestampSet;
-    private SortedSet<DeleteEntry> deleteSet;
+	//private SortedSet<LastChangedTimestamp> timestampSet;
+    private SortedBidiMap<String,DeleteUpdateEntry> deleteUpdateSet;
 
+    
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
     MessageDigest md;
+    
+    public class ValueComparator implements Comparator {
+       
+        public int compare(Object keyA, Object keyB){
+       
+          Comparable valueA = (Comparable)deleteUpdateSet.get(keyA);
+          Comparable valueB = (Comparable)deleteUpdateSet.get(keyB);
+       
+          //System.out.println(valueA +" - "+valueB);
+          return valueA.compareTo(valueB);
+       
+        }
+      }
     
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -231,8 +249,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			allocatables = Collections.singleton( null);
 		}
-		
-        for ( Allocatable allocatable: allocatables)
+		for ( Allocatable allocatable: allocatables)
         {
         	Lock readLock = readLock();
 			SortedSet<Appointment> appointments;
@@ -691,13 +708,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	protected void initIndizes() {
-		timestampSet = new TreeSet<LastChangedTimestamp>(new TimestampComparator());
-		deleteSet = new TreeSet<DeleteEntry>();
+		deleteUpdateSet = new DualTreeBidiMap<String,DeleteUpdateEntry>();
 
-		timestampSet.addAll( cache.getDynamicTypes());
-		timestampSet.addAll( cache.getReservations());
-		timestampSet.addAll( cache.getAllocatables());
-		timestampSet.addAll( cache.getUsers());
+		timestampSetAddAll( cache.getDynamicTypes());
+		timestampSetAddAll( cache.getReservations());
+		timestampSetAddAll( cache.getAllocatables());
+		timestampSetAddAll( cache.getUsers());
 		// The appointment map
 		appointmentMap = new HashMap<String, SortedSet<Appointment>>();
     	for ( Reservation r: cache.getReservations())
@@ -744,7 +760,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		cleanConflictsTask = scheduler.schedule( cleanUpConflicts, delay, period);
 	}
 	
-	/** updates the bindings of the resources and returns a map with all processed allocation changes*/
+	private void timestampSetAddAll(Collection<? extends Entity> entities) {
+        for ( Entity entity: entities)
+        {
+            boolean isDelete = false;
+            addToDeleteUpdate(entity, isDelete);
+        }
+    }
+
+    /** updates the bindings of the resources and returns a map with all processed allocation changes*/
 	private void updateIndizes(UpdateResult result) {
 		Map<Allocatable,AllocationChange> toUpdate = new HashMap<Allocatable,AllocationChange>();
 		List<Allocatable> removedAllocatables = new ArrayList<Allocatable>();
@@ -827,27 +851,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					removedAllocatables.add( old);
 				}
 			}
-			if (raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE )
-			{
-				if ( operation instanceof UpdateResult.Remove)
-				{
-					LastChangedTimestamp old = (LastChangedTimestamp) current;
-					timestampSet.remove( old);
-					addToDelete( current);
-				}
-				if ( operation instanceof UpdateResult.Add)
-				{
-					Timestamp newEntity = (Timestamp) ((UpdateResult.Add) operation).getNew();
-					timestampSet.add( newEntity);
-				}
-				if ( operation instanceof UpdateResult.Change)
-				{
-					Timestamp newEntity = (Timestamp) ((UpdateResult.Change) operation).getNew();
-					LastChangedTimestamp oldEntity = (LastChangedTimestamp) ((UpdateResult.Change) operation).getOld();
-					timestampSet.remove( oldEntity);
-					timestampSet.add( newEntity);
-				}
-			}
 		}
 
 		for ( Allocatable alloc: removedAllocatables)
@@ -862,61 +865,160 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	   	Date today = today();
 	   	// processes the conflicts and adds the changes to the result
 		conflictFinder.updateConflicts(toUpdate,result, today, removedAllocatables);
-		for (Entity removed:result.getRemoved())
-		{
-		    if ( removed.getRaplaType() == Conflict.TYPE)
-		    {
-		        addToDelete( removed);
-		    }
-		}
 		checkAbandonedAppointments();
+        for (UpdateOperation operation: result.getOperations())
+        {
+            Entity current = operation.getCurrent();
+            RaplaType raplaType = current.getRaplaType();
+            if (raplaType == Conflict.TYPE ||raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE )
+            {
+                if ( operation instanceof UpdateResult.Remove)
+                {
+                    //LastChangedTimestamp old = (LastChangedTimestamp) current;
+                    //timestampSet.remove( old);
+                    addToDeleteUpdate(current, true);
+                }
+                if ( operation instanceof UpdateResult.Add)
+                {
+                    Entity newEntity = ((UpdateResult.Add) operation).getNew();
+                    addToDeleteUpdate(newEntity, false);
+                }
+                if ( operation instanceof UpdateResult.Change)
+                {
+                    Entity newEntity = ((UpdateResult.Change) operation).getNew();
+                    //LastChangedTimestamp oldEntity = (LastChangedTimestamp) ((UpdateResult.Change) operation).getOld();
+                    addToDeleteUpdate(newEntity, false);
+                }
+            }
+        }
 	}
 	
-	private void addToDelete(Entity current) {
+	private void addToDeleteUpdate(Entity current, boolean isDelete) {
 	    Class typeClass = current.getRaplaType().getTypeClass();
+        String id = current.getId();
         @SuppressWarnings("unchecked")
         Class<? extends Entity> type = (Class<? extends Entity>) typeClass;
-	    DeleteEntry entry = new DeleteEntry();
-	    entry.deleteTime = getCurrentTimestamp();
-	    String id = current.getId();
+        DeleteUpdateEntry entry = deleteUpdateSet.get( id);
+        boolean isNewInMap = entry == null;
+        if ( isNewInMap)
+        {
+            entry = new DeleteUpdateEntry();
+        } 
+        else
+        {
+            DeleteUpdateEntry remove = deleteUpdateSet.remove( id);
+            if ( isDelete && remove == null)
+            {
+                getLogger().warn("Can't remove entry for id " + id);
+            }
+        }
+	    if ( !isDelete && current instanceof LastChangedTimestamp)
+	    {
+	        entry.timestamp = ((LastChangedTimestamp) current).getLastChanged();
+	    }
+	    else
+	    {
+	        entry.timestamp = getCurrentTimestamp();
+	    }
         ReferenceInfo ref = new ReferenceInfo(id, type);
-        entry.deletedReference = ref;
-        deleteSet.add( entry );
+        entry.isDelete = isDelete;
+        entry.reference = ref;
+        if ( current instanceof EntityPermissionContainer)
+        {
+            entry.addPermissions((EntityPermissionContainer)current, Permission.READ_ONLY_INFORMATION);
+        }
+        else if ( current instanceof Conflict)
+        {
+            if ( isDelete)
+            {
+                entry.affectAll = true;
+            }
+            else
+            {
+                Conflict conflict = (Conflict) current;
+                addPermissions(entry, conflict.getReservation1());
+                addPermissions(entry, conflict.getReservation2());
+            }
+        }
+        deleteUpdateSet.put( entry.getId(),entry );
+    }
+
+    private void addPermissions(DeleteUpdateEntry entry, String reservation1) {
+        Reservation event = tryResolve(reservation1, Reservation.class);
+        if ( event != null)
+        {
+            entry.addPermissions(event, Permission.EDIT);
+        }
+        else
+        {
+            DeleteUpdateEntry deleteUpdateEntry = deleteUpdateSet.get( event);
+            if ( deleteUpdateEntry != null)
+            {
+                entry.addPermssions( deleteUpdateEntry);
+            }
+        }
     }
 	
     @Override
 	public Collection<ReferenceInfo> getDeletedEntities(User user,final Date timestamp) throws RaplaException {
-        DeleteEntry fromElement = new DeleteEntry();
-        Class<? extends Entity> type = Allocatable.class;
-        String id = "";
-        fromElement.deletedReference = new ReferenceInfo(id, type);
-        fromElement.deleteTime = timestamp;
-        SortedSet<DeleteEntry> tailSet = deleteSet.tailSet( fromElement);
-        LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
-        for ( DeleteEntry entry:tailSet)
-        {
-            ReferenceInfo deletedReference = entry.deletedReference;
-            // TODO check user and group rights
-            result.add( deletedReference);
-        }
+        boolean isDelete = true;
+        Collection<ReferenceInfo> result = getEntities(user, timestamp, isDelete);
         return result;
     }
+
+    private boolean isAffected(DeleteUpdateEntry entry, User user) {
+        if ( entry.affectAll )
+        {
+            return true;
+        }
+        else
+        {
+            if (entry.affectedGroupIds != null)
+            {
+                for ( String id:entry.affectedGroupIds)
+                {
+                    Category group = tryResolve(id, Category.class);
+                    if (group != null)
+                    {
+                        if ( user.belongsTo( group))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            if ( entry.affectedUserIds != null)
+            {
+                String userId = user.getId();
+                for ( String id:entry.affectedGroupIds)
+                {
+                    if ( id.equals( userId))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     
-    class DeleteEntry implements Comparable<DeleteEntry>
+    class DeleteUpdateEntry implements Comparable<DeleteUpdateEntry>
     {
-        Date deleteTime;
-        ReferenceInfo deletedReference;
+        public boolean affectAll;
+        Date timestamp;
+        ReferenceInfo reference;
         Set<String> affectedGroupIds; 
         Set<String> affectedUserIds;
+        boolean isDelete;
         
         @Override
-        public int compareTo(DeleteEntry o) {
+        public int compareTo(DeleteUpdateEntry o) {
             if ( o == this)
             {
                 return 0 ;
             }
-            Date time1 = this.deleteTime;
-            Date time2 = o.deleteTime;
+            Date time1 = this.timestamp;
+            Date time2 = o.timestamp;
             int result =  time1.compareTo( time2);
             if ( result != 0)
             {
@@ -927,15 +1029,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return result;
         }
         
+        public void addPermssions(DeleteUpdateEntry deleteUpdateEntry) {
+            if (deleteUpdateEntry.affectAll)
+            {
+                affectAll = true;
+            }
+            if ( deleteUpdateEntry.affectedGroupIds != null)
+            {
+                if ( affectedGroupIds == null)
+                {
+                    affectedGroupIds = new HashSet<String>(1);
+                }
+                affectedGroupIds.addAll( deleteUpdateEntry.affectedGroupIds);
+            }
+            if ( deleteUpdateEntry.affectedUserIds != null)
+            {
+                if ( affectedUserIds == null)
+                {
+                    affectedUserIds = new HashSet<String>(1);
+                }
+                affectedUserIds.addAll( deleteUpdateEntry.affectedUserIds);
+            }
+        }
+
         String getId()
         {
-            return deletedReference.getId();
+            return reference.getId();
         }
         
         @Override
         public boolean equals(Object o) 
         {
-            boolean equals = getId().equals( ((DeleteEntry)o).getId());
+            boolean equals = getId().equals( ((DeleteUpdateEntry)o).getId());
             return equals;
         }
         
@@ -946,35 +1071,117 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         
         @Override
         public String toString() {
-            return deletedReference + " removed on " + deleteTime;
+            return reference + (isDelete ? " removed on " : "changed on ") + timestamp;
         }
+        
+        private void addPermissions( EntityPermissionContainer current, int minimumLevel) {
+            DeleteUpdateEntry entry =this;
+            Collection<Permission> permissions =  current.getPermissionList();
+            for ( Permission p:permissions)
+            {
+                Category group = p.getGroup();
+                User user = p.getUser();
+                int accessLevel = p.getAccessLevel();
+                if ( accessLevel <= minimumLevel)
+                {
+                    continue;
+                }
+                if (group != null)
+                {
+                    if ( entry.affectedGroupIds == null)
+                    {
+                        entry.affectedGroupIds = new HashSet<String>(1);
+                    }
+                    entry.affectedGroupIds.add( group.getId() );
+                } 
+                else if ( user != null)
+                {
+                    if ( entry.affectedUserIds == null)
+                    {
+                        entry.affectedUserIds = new HashSet<String>(1);
+                    }
+                    entry.affectedUserIds.add( user.getId() );
+                }
+                else
+                {
+                    // we have an all usere group here
+                    entry.affectAll = true;
+                    break;
+                }
+            }
+        }
+
     }
 	
 	@Override
-	public Collection<Entity> getUpdatedEntities(final Date timestamp) throws RaplaException {
-
-		LastChangedTimestamp fromElement = new LastChangedTimestamp() {
-			@Override
-			public Date getLastChanged() {
-				return timestamp;
-			}
-		};
-		Lock lock = readLock();
-		Collection<Entity> result = new ArrayList<Entity>();
-		try
-		{
-			SortedSet<LastChangedTimestamp> tailSet = timestampSet.tailSet(fromElement);
-			for ( LastChangedTimestamp entry : tailSet)
-			{
-				result.add( (Entity) entry );
-			}
-		}
-		finally
-		{
-			unlock(lock);
-		}
-		return result;
+	public Collection<Entity> getUpdatedEntities(final User user,final Date timestamp) throws RaplaException {
+	    boolean isDelete = false;
+        Collection<ReferenceInfo> references = getEntities(user, timestamp, isDelete);
+        ArrayList<Entity> result = new ArrayList<Entity>();
+        for ( ReferenceInfo info:references){
+            String id = info.getId();
+            Class<? extends Entity> entityClass = info.getType();
+            if ( entityClass != null && entityClass == Conflict.class)
+            {
+                Conflict conflict = conflictFinder.findConflict(id, timestamp);
+                if ( conflict != null)
+                {
+                    result.add( conflict);
+                }
+            }
+            else
+            {
+                Entity entity = tryResolve(id, entityClass);
+                if ( entity != null)
+                {
+                    result.add( entity);
+                }
+                else
+                {
+                    getLogger().warn("Can't find updated entity for id " + id);
+                }
+            }
+        }
+	    
+	    return result;
 	}
+	
+    private Collection<ReferenceInfo> getEntities(User user,final Date timestamp, boolean isDelete) throws RaplaException {
+        DeleteUpdateEntry fromElement = new DeleteUpdateEntry();
+        Class<? extends Entity> type = Allocatable.class;
+        String dummyId = "";
+        fromElement.reference = new ReferenceInfo(dummyId, type);
+        fromElement.timestamp = timestamp;
+        LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
+        
+        Lock lock = readLock();
+        try
+        {
+            SortedMap<DeleteUpdateEntry, String> tailMap = deleteUpdateSet.inverseBidiMap().tailMap( fromElement);
+            Set<DeleteUpdateEntry> tailSet = tailMap.keySet();
+            for ( DeleteUpdateEntry entry:tailSet)
+            {
+                if ( entry.isDelete != isDelete)
+                {
+                    continue;
+                }
+                if ( isAffected(entry, user))
+                {
+                    ReferenceInfo deletedReference = entry.reference;
+                    result.add( deletedReference);
+                }
+            }
+        }
+        finally
+        {
+            unlock(lock);
+        }
+        return result;
+    }
+
+	
+
+	
 
 	protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate,Reservation reservation,Appointment app, boolean remove)  {
 		
