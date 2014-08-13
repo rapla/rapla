@@ -504,7 +504,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         ArrayList<Entity<?>> deletableObjects = new ArrayList<Entity<?>>();
         while (it.hasNext()) {
             Object o = it.next();
-			if (canModify(o) && !o.equals( superCategory) )
+			if (canAdmin(o) && !o.equals( superCategory) )
                 deletableObjects.add((Entity<?>)o);
         }
         return deletableObjects;

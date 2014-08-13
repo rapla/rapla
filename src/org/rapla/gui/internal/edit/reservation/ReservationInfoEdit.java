@@ -156,12 +156,11 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         Dimension dim3 = tabSelector.getPreferredSize();
         tabSelector.setBounds(155 + dim.width  ,0,dim3.width,dim3.height);
         
-        
         header.setPreferredSize( new Dimension(600, Math.max(dim.height, dim3.height)));
         content.add( header,BorderLayout.NORTH);
         content.add( editUI.getComponent(),BorderLayout.CENTER);
         content.add( permissionField.getComponent(), BorderLayout.SOUTH);
-        permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+        updatePermissionFieldVisiblity();
         //tabSelector.setVisible( hasSecondTab( classification ) || selectedView == TabSelected.Info);
         editUI.setObjects( Collections.singletonList(classification ));
         permissionField.mapFrom( Collections.singletonList((Reservation) classifiable ));
@@ -173,6 +172,12 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         updateHeight();
         content.validate();
         
+        
+    }
+
+    private void updatePermissionFieldVisiblity() {
+        boolean canAdmin = canAdmin((Reservation)classifiable);
+        permissionField.getComponent().setVisible( selectedView == TabSelected.Info && canAdmin);
     }
 
     private String getInfoButton() {
@@ -312,7 +317,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 //scrollPane.setPreferredSize(new Dimension(600,newHeight));
                     editUI.getComponent().setPreferredSize(new Dimension(600,newHeight));
                 }
-                permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+                updatePermissionFieldVisiblity();
                 content.validate();
                 tabSelector.setText( tabSelected ?
                         getInfoButton()

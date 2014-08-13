@@ -61,7 +61,7 @@ public class SecurityManager
         this.context = context;
     }
 
-    void checkWritePermissions(User user,Entity entity) throws RaplaSecurityException {
+    void checkWritePermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException {
         if (user.isAdmin())
             return;
 
@@ -107,7 +107,7 @@ public class SecurityManager
                     getLogger().debug("Permissions for existing object " + entity
                             + "\nUser check: " + user  + " = " + entityOwner + " = " + originalOwner);
                 permitted = (originalOwner != null) && originalOwner.isIdentical(user) && originalOwner.isIdentical(entityOwner);
-                if ( !permitted ) {
+                if ( !permitted && !admin) {
                 	canExchange = canExchange( user, entity, original );
                 	permitted = canExchange;
                 }
@@ -120,7 +120,14 @@ public class SecurityManager
         }
         if ( !permitted && original != null && original instanceof PermissionContainer)
         {
-            permitted = PermissionContainer.Util.canModify((PermissionContainer)original, user);
+            if ( admin)
+            {
+                permitted = PermissionContainer.Util.canAdmin((PermissionContainer)original, user);
+            }
+            else
+            {
+                permitted = PermissionContainer.Util.canModify((PermissionContainer)original, user);
+            }
             
         }
         if (!permitted && entity instanceof Appointment)
@@ -134,7 +141,11 @@ public class SecurityManager
         }
 
         if (!permitted)
-    		throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", new Object []{ user.toString(),entity.toString()}));
+        {
+            String text = admin ? "error.admin_not_allowed" : "error.modify_not_allowed";
+            throw new RaplaSecurityException(i18n.format(text, new Object []{ user.toString(),entity.toString()}));
+            
+        }
 
         // Check if the user can change the reservation
         if ( Reservation.TYPE ==entity.getRaplaType() )
@@ -149,7 +160,7 @@ public class SecurityManager
             }
             if ( originalReservation == null)
             {
-                boolean canCreate = PermissionContainer.Util.canCreate(originalReservation, user);
+                boolean canCreate = PermissionContainer.Util.canCreate(reservation, user);
                 //Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
             	if (!canCreate)
             	{

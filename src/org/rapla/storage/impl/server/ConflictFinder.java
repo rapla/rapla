@@ -40,6 +40,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
@@ -65,6 +66,34 @@ class ConflictFinder {
         this.resolver = resolver;
 	}
     
+    public Conflict findConflict(String id,Date date)
+    {
+        ConflictImpl conflict;
+        try {
+            conflict = new ConflictImpl(id, date);
+        } catch (RaplaException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+        conflict.setResolver( resolver);
+        Allocatable allocatable = conflict.getAllocatable();
+        Set<Conflict> set = conflictMap.get( allocatable);
+        if ( set == null)
+        {
+            return null;
+        }
+        else
+        {
+            for ( Conflict c:set)
+            {
+                if ( c.getId().equals( id))
+                {
+                    return c;
+                }
+            }
+        }
+        return null;
+    }
     private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 
     {
         if ( isConflictIgnored(allocatable))

@@ -274,54 +274,54 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	{
 	        		continue;
 	        	}
-	        	if ( obj instanceof Allocatable)
-	        	{
-	        		Collection<Permission> oldPermissions = ((Allocatable)obj).getPermissionList();
-					invalidatePermissions.addAll( oldPermissions);	
-	        	}
+//	        	if ( obj instanceof Allocatable)
+//	        	{
+//	        		Collection<Permission> oldPermissions = ((Allocatable)obj).getPermissionList();
+//					invalidatePermissions.addAll( oldPermissions);	
+//	        	}
 	        	if (  obj instanceof DynamicType)
 	        	{
 	        		addAllUsersToResourceRefresh = true;
 	        		addAllUsersToConflictRefresh = true;
 	        	}
-	        	if (  obj instanceof Reservation)
-	        	{
-	        	    Reservation event = (Reservation)obj;
-	        	    Collection<Permission> permissions = event.getPermissionList();
-	        	    invalidateEventPermissions.addAll( permissions);
-	        	}
-	        	if (  obj instanceof Appointment)
-                {
-                    Reservation event = (Reservation)((Appointment)obj).getReservation();
-                    if ( event != null)
-                    {
-                        Collection<Permission> permissions = event.getPermissionList();
-                        invalidateEventPermissions.addAll( permissions);
-                    }
-                }
+//	        	if (  obj instanceof Reservation)
+//	        	{
+//	        	    Reservation event = (Reservation)obj;
+//	        	    Collection<Permission> permissions = event.getPermissionList();
+//	        	    invalidateEventPermissions.addAll( permissions);
+//	        	}
+//	        	if (  obj instanceof Appointment)
+//                {
+//                    Reservation event = (Reservation)((Appointment)obj).getReservation();
+//                    if ( event != null)
+//                    {
+//                        Collection<Permission> permissions = event.getPermissionList();
+//                        invalidateEventPermissions.addAll( permissions);
+//                    }
+//                }
 	        	// If the conflict is removed, check if the events are still in place and add their permissions.
 	        	// if the events are also removed the notify will work because the event removal triggers the permission invalidate above
-	        	if ( obj instanceof Conflict)
-	        	{
-	        	    {
-	        	        String id= ((Conflict)obj).getReservation1();
-	        	        Reservation event = operator.tryResolve( id, Reservation.class);
-	        	        if ( event != null)
-	        	        {
-	        	            Collection<Permission> permissions = event.getPermissionList();
-	        	            invalidateEventPermissions.addAll( permissions);
-	        	        }
-	        	    }
-	        	    {
-	        	        String id= ((Conflict)obj).getReservation2();
-	        	        Reservation event = operator.tryResolve( id, Reservation.class);
-	        	        if ( event != null)
-	        	        {
-	        	            Collection<Permission> permissions = event.getPermissionList();
-	        	            invalidateEventPermissions.addAll( permissions);
-	        	        }
-	        	    }
-	        	}
+//	        	if ( obj instanceof Conflict)
+//	        	{
+//	        	    {
+//	        	        String id= ((Conflict)obj).getReservation1();
+//	        	        Reservation event = operator.tryResolve( id, Reservation.class);
+//	        	        if ( event != null)
+//	        	        {
+//	        	            Collection<Permission> permissions = event.getPermissionList();
+//	        	            invalidateEventPermissions.addAll( permissions);
+//	        	        }
+//	        	    }
+//	        	    {
+//	        	        String id= ((Conflict)obj).getReservation2();
+//	        	        Reservation event = operator.tryResolve( id, Reservation.class);
+//	        	        if ( event != null)
+//	        	        {
+//	        	            Collection<Permission> permissions = event.getPermissionList();
+//	        	            invalidateEventPermissions.addAll( permissions);
+//	        	        }
+//	        	    }
+//	        	}
 	        }
         }
         if (addAllUsersToResourceRefresh || addAllUsersToConflictRefresh)
@@ -390,11 +390,14 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             {
                 Ownable ownable = (Ownable) obj;
                 User owner = ownable.getOwner();
-                if ( !obj.getRaplaType().is( Reservation.TYPE))
+                if ( owner != null)
                 {
-                    usersResourceRefresh.add( owner);
+                    if ( !obj.getRaplaType().is( Reservation.TYPE))
+                    {
+                        usersResourceRefresh.add( owner);
+                    }
+                    usersConflictRefresh.add( owner);
                 }
-                usersConflictRefresh.add( owner);
             }
         }
 		for (Change operation:evt.getOperations(UpdateResult.Change.class))
@@ -1039,7 +1042,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     }                    
                     for (Entity entity:storeObjects) 
                     {
-                        security.checkWritePermissions(user,entity);
+                        security.checkWritePermissions(user,entity, false);
                     }
                     List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
                     for (PreferencePatch patch:preferencePatches) 
@@ -1052,7 +1055,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     	Entity entity = operator.tryResolve( id);
                     	if ( entity!=null)
                     	{
-                    	    security.checkWritePermissions(user,entity);
+                    	    security.checkWritePermissions(user,entity, true);
                     	}
                     }
                     if (this.getLogger().isDebugEnabled())
@@ -1120,7 +1123,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 }
                 if ( !safeResultEvent.isNeedResourcesRefresh())
                 {
-	            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(lastSynced );
+	            	Collection<Entity> updatedEntities = operator.getUpdatedEntities(user,lastSynced );
                     for ( Entity obj: updatedEntities )
                     {
                     	processClientReadable( user, safeResultEvent, obj, false);
