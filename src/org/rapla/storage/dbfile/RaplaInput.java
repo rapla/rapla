@@ -40,19 +40,12 @@ public final class RaplaInput {
     private URL fileSource;
     private Reader reader;
     
-    private boolean wasConverted;
-
     public RaplaInput(Logger logger) {
         this.logger = logger;
     }
 
     protected Logger getLogger() {
         return logger;
-    }
-
-    /** returns if the data was converted during read.*/
-    public boolean wasConverted() {
-        return wasConverted;
     }
 
     public void read(URL file, RaplaSAXHandler handler, boolean validate) throws RaplaException,IOException {

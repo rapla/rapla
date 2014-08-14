@@ -88,10 +88,7 @@ public class CategoryReader extends RaplaXMLReader
                     if (  parentId!= null)
                     {
                     	if (parentId.equals(Category.SUPER_CATEGORY_ID)) {
-                    	    if ( !superCategory.isReadOnly())
-                    	    {
-                    	        superCategory.addCategory( category);
-                    	    }
+                    	    superCategory.addCategory( category);
                     	    category.putEntity("parent", superCategory);
                     	} else {
                     		String parentIdN = getId( Category.TYPE, parentId);
@@ -103,10 +100,8 @@ public class CategoryReader extends RaplaXMLReader
                         superCategory.addCategory( category);
                     }
                 }
-               
             }
             categoryStack.push( category );
-               
            /*
             Category test = category;
             String output = "";

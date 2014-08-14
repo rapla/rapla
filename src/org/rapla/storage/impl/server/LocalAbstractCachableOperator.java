@@ -185,6 +185,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addAttributeWithInternalId(type,"end", AttributeType.DATE);
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
             type.setResolver( this);
+            Permission newPermission =type.newPermission();
+            newPermission.setAccessLevel( Permission.READ);
+            type.addPermission(newPermission);
             type.setReadOnly();
             cache.put( type);
         }

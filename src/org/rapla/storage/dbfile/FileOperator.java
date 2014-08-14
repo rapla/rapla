@@ -40,6 +40,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
@@ -226,7 +227,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
             EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
-            RaplaContext inputContext = new IOContext().createInputContext( context, entityStore, this );
+            RaplaDefaultContext inputContext = new IOContext().createInputContext( context, entityStore, this );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();

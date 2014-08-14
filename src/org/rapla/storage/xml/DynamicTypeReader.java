@@ -13,6 +13,7 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -25,11 +26,14 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -204,6 +208,10 @@ public class DynamicTypeReader extends RaplaXMLReader
                 addAnnotations( dynamicType, typeAnnotations );
                 setCurrentTranslations(dynamicType.getName());
                 dynamicType.setResolver( store);
+                if ( isBefore1_2())
+                {
+                    addNewPermissions( dynamicType );
+                }
                 add( dynamicType );
                 // We ensure the dynamic type is not modified anymore
                 dynamicType.setReadOnly(  );
@@ -344,6 +352,43 @@ public class DynamicTypeReader extends RaplaXMLReader
             }
             attribute.setDefaultValue(defaultValue );
         }
+    }
+
+    private void addNewPermissions(DynamicTypeImpl dynamicType) {
+        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE) || classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
+            @SuppressWarnings("deprecation")
+            String registerer = Permission.GROUP_REGISTERER_KEY;
+            addNewPermissionWithGroup(dynamicType, Permission.CREATE, registerer, false);
+        } else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
+            addNewPermissionWithGroup(dynamicType, Permission.READ, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, true);
+            addNewPermissionWithGroup(dynamicType, Permission.CREATE, Permission.GROUP_CAN_CREATE_EVENTS, true);
+        }
+    }
+
+    private void addNewPermissionWithGroup(DynamicTypeImpl dynamicType, int acceassLevel, String groupKey, boolean create) {
+        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        Category group = userGroups.getCategory(groupKey);
+        if ( group == null)
+        {   
+            if ( !create )
+            {
+                return;
+            }
+            Date date = getReadTimestamp();
+            CategoryImpl category = new CategoryImpl(date, date);
+            category.setKey( groupKey );
+            category.getName().setName("en", groupKey);
+            userGroups.addCategory(category);
+            group = category;
+        }
+        Permission permission = dynamicType.newPermission();
+        permission.setAccessLevel( acceassLevel);
+        permission.setGroup( group);
+        dynamicType.addPermission( permission);
     }
 
     

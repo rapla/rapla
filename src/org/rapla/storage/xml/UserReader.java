@@ -13,9 +13,14 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Date;
+
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -103,7 +108,28 @@ public class UserReader extends RaplaXMLReader
         if (localName.equals( "user" ))
         {
             preferenceHandler.setUser( null );
+            if ( isBefore1_2())
+            {
+                addNewGroup(user, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+                addNewGroup(user, Permission.GROUP_CAN_CREATE_EVENTS);
+            }
             add( user );
+        }
+    }
+    
+    private void addNewGroup(User user, String groupKey) throws RaplaSAXParseException {
+        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        Category group = userGroups.getCategory(groupKey);
+        if ( group != null)
+        {   
+            // add the groups to the user if the groups were not there in a previous version
+            Date createTime = group.getCreateTime();
+            RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.TYPE);
+            Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
+            if ( categoryCreateTime.equals(createTime ))
+            {
+                user.addGroup( group);
+            }
         }
     }
 

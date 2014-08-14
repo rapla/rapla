@@ -43,6 +43,7 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -319,9 +320,9 @@ public class RaplaComponent
             {
                 return true;
             }
-			if ( owner == null && object instanceof Allocatable)
+			if ( owner == null && object instanceof Classifiable)
 			{
-			    if (PermissionContainer.Util.canCreate( (Allocatable)object, user))
+			    if (PermissionContainer.Util.canCreate( (Classifiable)object, user))
 			    {
 			        return true;
 			    }

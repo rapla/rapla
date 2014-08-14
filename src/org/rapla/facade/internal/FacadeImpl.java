@@ -230,7 +230,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			operator.refresh();
 		}
 	}
-	
 
 	void setName(MultiLanguageName name, String to)
 	{
@@ -1090,23 +1089,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
-        DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
-        if ( type.getElementKey().equals(StorageOperator.PERIOD_TYPE))
-        {
-            Permission newPermission =allocatable.newPermission();
-            newPermission.setAccessLevel( Permission.READ);
-            allocatable.addPermission(newPermission);
-        }
-        if ( !type.isInternal())
-        {
-        	//allocatable.addPermission(allocatable.newPermission());
-            if (user != null && !user.isAdmin()) {
-                Permission permission = allocatable.newPermission();
-                permission.setUser(user);
-                permission.setAccessLevel(Permission.ADMIN);
-                allocatable.addPermission(permission);
-            }
-        }
+// Not necessary anymore as owner has admin rights
+        //        DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
+//        if ( !type.isInternal())
+//        {
+//            // add personal 
+//            if (user != null && !user.isAdmin()) {
+//                Permission permission = allocatable.newPermission();
+//                permission.setUser(user);
+//                permission.setAccessLevel(Permission.ADMIN);
+//                allocatable.addPermission(permission);
+//            }
+//        }
         allocatable.setClassification(classification);
         copyPermissions(classification.getType(), allocatable);
         setNew(allocatable, user);
@@ -1179,33 +1173,65 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
 		Date now = operator.getCurrentTimestamp();
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
-		dynamicType.setAnnotation("classification-type", classificationType);
+		dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, classificationType);
 		dynamicType.setKey(createDynamicTypeKey(classificationType));
 		setNew(dynamicType);
 		if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)) {
 			dynamicType.addAttribute(createStringAttribute("name", "name"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
+			addDefaultResourcePermissions(dynamicType);
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
 			dynamicType.addAttribute(createStringAttribute("name","eventname"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-			Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-			if ( canReadEventsFromOthers != null)
-			{
-			    Permission permission = dynamicType.newPermission();
-			    permission.setAccessLevel( Permission.READ);
-			    permission.setGroup( canReadEventsFromOthers);
-			}
+			addDefaultEventPermissions(dynamicType);
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
 			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
 			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
 			dynamicType.addAttribute(createStringAttribute("email", "email"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+            addDefaultResourcePermissions(dynamicType);
 		}
 		return dynamicType;
 	}
+
+    private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException {
+        Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+        if ( canReadEventsFromOthers != null)
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ);
+            permission.setGroup( canReadEventsFromOthers);
+            dynamicType.addPermission( permission);
+        }
+        Category canCreate = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_CREATE_EVENTS);
+        if ( canCreate != null)
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.CREATE);
+            permission.setGroup( canCreate);
+            dynamicType.addPermission( permission);
+        }
+    }
+
+    private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) throws RaplaException {
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
+        }
+        @SuppressWarnings("deprecation")
+        Category registerer = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
+        if ( registerer != null)
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.CREATE);
+            permission.setGroup( registerer);
+            dynamicType.addPermission( permission);
+        }
+    }
 
 	public Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
 		AttributeImpl attribute = new AttributeImpl(attributeType);

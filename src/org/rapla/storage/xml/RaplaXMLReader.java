@@ -40,34 +40,55 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
-    EntityStore store;
-    Logger logger;
-    IdCreator idTable;
-    RaplaContext context;
-    Map<String,RaplaType> localnameMap;
-    Map<RaplaType,RaplaXMLReader> readerMap;
-    SerializableDateTimeFormat dateTimeFormat;
-    I18nBundle i18n;
-    Date now;
+    public static TypedComponentRole<Double> VERSION = new TypedComponentRole<Double>("org.rapla.version");
+    protected EntityStore store;
+    private Logger logger;
+    private IdCreator idTable;
+    private Map<String,RaplaType> localnameMap;
+    private Map<RaplaType,RaplaXMLReader> readerMap;
+    private SerializableDateTimeFormat dateTimeFormat;
+    private I18nBundle i18n;
+    private Date now;
+    private RaplaContext context;
     
     public static class TimestampDates
     {
     	public Date createTime;
     	public Date changeTime;
     }
-
+    
+    public Date getReadTimestamp()
+    {
+        return now;
+    }
+    
+    public boolean isBefore1_2()
+    {
+        if (context.has(VERSION))
+        {
+            try {
+                Double version = context.lookup( VERSION);
+                return version <1.2;
+            } catch (RaplaContextException e) {
+            }
+        }
+        return false;
+    }
+    
     public RaplaXMLReader( RaplaContext context ) throws RaplaException
     {
-        logger = context.lookup( Logger.class );
         this.context = context;
+        logger = context.lookup( Logger.class );
         this.i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
         this.store = context.lookup( EntityStore.class); 
         this.idTable = context.lookup( IdCreator.class );

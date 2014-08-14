@@ -24,6 +24,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -31,7 +32,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 
 public class RaplaMainReader extends RaplaXMLReader
@@ -40,16 +41,16 @@ public class RaplaMainReader extends RaplaXMLReader
     public final static String INPUT_FILE_VERSION = RaplaMainWriter.OUTPUT_FILE_VERSION;
     private TimeInterval invalidateInterval = null;
     private boolean resourcesRefresh = false;
-    
+    RaplaDefaultContext writeableContext;
   
-	public RaplaMainReader( RaplaContext context ) throws RaplaException
+	public RaplaMainReader( RaplaDefaultContext context ) throws RaplaException
     {
         super( context );
-      
+        writeableContext = context;
+        Map<RaplaType,RaplaXMLReader> readerMap = context.lookup( PreferenceReader.READERMAP );
         // Setup the delegation classes
         localnameTable.put( "grammar", readerMap.get( DynamicType.TYPE ) );
         localnameTable.put( "element", readerMap.get( DynamicType.TYPE ) );
-
         localnameTable.put( "user", readerMap.get( User.TYPE ) );
         localnameTable.put( "category", readerMap.get( Category.TYPE ) );
         localnameTable.put( "preferences", readerMap.get( Preferences.TYPE ) );
@@ -59,9 +60,6 @@ public class RaplaMainReader extends RaplaXMLReader
         localnameTable.put( "period", readerMap.get( Period.TYPE ) );
         localnameTable.put( "reservation", readerMap.get( Reservation.TYPE ) );
         localnameTable.put( "conflict", readerMap.get( Conflict.TYPE ) );
-        localnameTable.put( "remove", readerMap.get( "remove") );
-        localnameTable.put( "store", readerMap.get( "store") );
-        localnameTable.put( "reference", readerMap.get( "reference") );
         addChildHandler( readerMap.values() );
     }
 
@@ -134,7 +132,9 @@ public class RaplaMainReader extends RaplaXMLReader
                                              + " greater than " + RaplaMainReader.INPUT_FILE_VERSION
                                              + ", try out the latest version.");
                 getLogger().warn( "Older version detected. " );
+                this.writeableContext.put(VERSION, versionNr);
             }
+            
             getLogger().debug( "Found compatible version-number." );
             // We've got the right version. We can proceed.
         }

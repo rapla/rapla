@@ -19,9 +19,12 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
+import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -196,6 +199,10 @@ public class ReservationReader extends RaplaXMLReader {
         }
         if (localName.equals("reservation"))
         {
+            if (isBefore1_2())
+            {
+                addNewPermissionWithGroup(reservation, Permission.READ, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+            }
             add(reservation);
         }
         
@@ -210,6 +217,15 @@ public class ReservationReader extends RaplaXMLReader {
             {
             }
         }
+    }
+	
+	private void addNewPermissionWithGroup(PermissionContainer container, int acceassLevel, String groupKey) {
+        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+        Category group = userGroups.getCategory(groupKey);
+        Permission permission = container.newPermission();
+        permission.setAccessLevel( acceassLevel);
+        permission.setGroup( group);
+        container.addPermission( permission);
     }
 }
 
