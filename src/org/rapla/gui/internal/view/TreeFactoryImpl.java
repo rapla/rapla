@@ -299,7 +299,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 				DefaultMutableTreeNode childNode = map.get(cat);
 				parentNode.add(childNode);
 			}
-			
 		}
 		
 		for ( DynamicType type: uncategorized.keySet())
@@ -322,7 +321,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 return attribute;
             }
         }
-        return classification.getAttribute("categorization");
+        return null;
     }
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

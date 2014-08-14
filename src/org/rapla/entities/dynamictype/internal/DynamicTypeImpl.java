@@ -543,7 +543,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 return attribute;
             }
         }
-        return getAttribute(annotationKey);
+        return null;
     }
 
     public static void validate(DynamicType dynamicType,I18nBundle i18n) throws RaplaException {

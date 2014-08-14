@@ -260,7 +260,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        // It is important to do the read only later because some resolve might involve write to referenced objects
 	        if ( inputContext.lookup(RaplaMainReader.VERSION)< 1.2)
 	        {
-	            migratePermissionModify( list);
+	            migrateSpecialAttributes( list);
 	        }
             for (Entity entity: list) {
                 ((RefEntity)entity).setReadOnly();
@@ -297,7 +297,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
     
-    private void migratePermissionModify(Collection<Entity> list) {
+    private void migrateSpecialAttributes(Collection<Entity> list) {
         for ( Entity entity:list)
         {
             if ( entity instanceof Classifiable && entity instanceof PermissionContainer)

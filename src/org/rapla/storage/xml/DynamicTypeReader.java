@@ -28,6 +28,7 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -211,6 +212,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 if ( isBefore1_2())
                 {
                     addNewPermissions( dynamicType );
+                    addAnnotationsToSpecialAttributes( dynamicType);
                 }
                 add( dynamicType );
                 // We ensure the dynamic type is not modified anymore
@@ -393,6 +395,28 @@ public class DynamicTypeReader extends RaplaXMLReader
     }
 
     
+    private void addAnnotationsToSpecialAttributes(DynamicTypeImpl dynamicType) throws RaplaSAXParseException {
+        try
+        {
+            for (Attribute att:dynamicType.getAttributeIterable())
+            {
+                String key = att.getKey();
+                if (key.equals("color"))
+                {
+                    att.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
+                }
+                else if (key.equals("categorization"))
+                {
+                    att.setAnnotation(AttributeAnnotations.KEY_CATEGORIZATION, "true");
+                }
+            }
+        }
+        catch (IllegalAnnotationException ex)
+        {
+            throw createSAXParseException(ex.getMessage(), ex );
+        }
+    }
 
+    
    
 }
