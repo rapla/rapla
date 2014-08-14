@@ -133,19 +133,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private Cancelable cleanConflictsTask;
     MessageDigest md;
     
-    public class ValueComparator implements Comparator {
-       
-        public int compare(Object keyA, Object keyB){
-       
-          Comparable valueA = (Comparable)deleteUpdateSet.get(keyA);
-          Comparable valueB = (Comparable)deleteUpdateSet.get(keyB);
-       
-          //System.out.println(valueA +" - "+valueB);
-          return valueA.compareTo(valueB);
-       
-        }
-      }
-    
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
 		{
@@ -169,7 +156,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
 			type.setResolver( this);
-			cache.put( type);
+		    type.setReadOnly();
+	        cache.put( type);
 		}
 		
 		{
@@ -899,8 +887,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         @SuppressWarnings("unchecked")
         Class<? extends Entity> type = (Class<? extends Entity>) typeClass;
         DeleteUpdateEntry entry = deleteUpdateSet.get( id);
-        boolean isNewInMap = entry == null;
-        if ( isNewInMap)
+        if ( entry == null)
         {
             entry = new DeleteUpdateEntry();
         } 
@@ -990,7 +977,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if ( entry.affectedUserIds != null)
             {
                 String userId = user.getId();
-                for ( String id:entry.affectedGroupIds)
+                for ( String id:entry.affectedUserIds)
                 {
                     if ( id.equals( userId))
                     {

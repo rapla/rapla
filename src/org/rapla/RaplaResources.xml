@@ -3389,13 +3389,13 @@ See French text.
     </entry>
     <entry key="permission.edit">
     <text lang="en">Edit</text>
-        <text lang="de">Bearbeiten</text>
-        <text lang="fr">Modifier</text>
-        <text lang="es">Editar</text>
-        <text lang="cs">Upravit</text>
-        <text lang="nl">Bewerk</text>
-        <text lang="pl">Edytuj</text>
-		<text lang="pt">Editar</text>
+        <text lang="de">bearbeiten</text>
+        <text lang="fr">modifier</text>
+        <text lang="es">editar</text>
+        <text lang="cs">upravit</text>
+        <text lang="nl">bewerk</text>
+        <text lang="pl">edytuj</text>
+		<text lang="pt">editar</text>
     </entry>
     <entry key="permission.denied">
         <text lang="en">Denied</text>
@@ -3408,64 +3408,64 @@ See French text.
 		<text lang="pt">Negado</text>
     </entry>
     <entry key="permission.read_no_allocation">
-        <text lang="en">can read</text>
-        <text lang="de">darf lesen</text>
-        <text lang="fr">peut lire</text>
-        <text lang="es">Puede leer</text>
-        <text lang="cs">může číst</text>
-        <text lang="nl">Kan lezen</text>
-        <text lang="pl">Może odczytać bez przydziałów</text>
-		<text lang="pt">Pode ler</text>
+        <text lang="en">read (no allocations)</text>
+        <text lang="de">lesen (keine Belegungen)</text>
+        <text lang="fr">lire (les allocations)</text>
+        <text lang="es">leer (sin asignaciones)</text>
+        <text lang="cs">číst (no rozvržení)</text>
+        <text lang="nl">lezen (zonder Toewijzing)</text>
+        <text lang="pt">ler (sin atribuições)</text>
     </entry>
     <entry key="permission.read">
-        <text lang="en">can read allocations</text>
-        <text lang="de">darf Belegungen lesen</text>
-        <text lang="fr">peut lire les allocations</text>
-        <text lang="es">Puede leer asignaciones</text>
-        <text lang="cs">může číst rozvržení</text>
-        <text lang="nl">Kan toewijzingen lezen</text>
-        <text lang="pl">Może odczytać przydział zasobów</text>
-		<text lang="pt">Pode ler atribuições</text>
+		<text lang="en">read</text>
+        <text lang="de">lesen</text>
+        <text lang="fr">lire</text>
+        <text lang="es">leer</text>
+        <text lang="cs">číst</text>
+        <text lang="nl">lezen</text>
+        <text lang="pl">odczytać bez przydziałów</text>
+		<text lang="pt">ler</text>
+        
     </entry>
      <entry key="permission.create">
-        <text lang="en">Create</text>
-        <text lang="de">Erstellen</text>
-        <text lang="fr">Créer</text>
-        <text lang="es">Crear</text>
-        <text lang="cs">Vytvořit</text>
-        <text lang="nl">Aanmaken</text>
-        <text lang="pl">Utwórz</text>
-		<text lang="pt">Criar</text>
+        <text lang="en">create</text>
+        <text lang="de">erstellen</text>
+        <text lang="fr">créer</text>
+        <text lang="es">crear</text>
+        <text lang="cs">vytvořit</text>
+        <text lang="nl">aanmaken</text>
+        <text lang="pl">utwórz</text>
+		<text lang="pt">criar</text>
     </entry>
     <entry key="permission.allocate">
-        <text lang="en">can allocate</text>
-        <text lang="de">darf belegen</text>
-        <text lang="fr">peut allouer</text>
-        <text lang="es">Puede asignar</text>
-        <text lang="cs">může alokovat</text>
-        <text lang="nl">Kan toewijzen</text>
-        <text lang="pl">Może przydzielać zasoby</text>
-		<text lang="pt">Pode atribuir</text>
+        <text lang="en">allocate</text>
+        <text lang="de">belegen</text>
+        <text lang="fr">allouer</text>
+        <text lang="es">asignar</text>
+        <text lang="cs">alokovat</text>
+        <text lang="nl">toewijzen</text>
+        <text lang="pl">przydzielać zasoby</text>
+		<text lang="pt">atribuir</text>
     </entry>
     <entry key="permission.allocate-conflicts">
-        <text lang="en">can allocate &amp; create conflicts</text>
-        <text lang="de">darf belegen &amp; Konflikte erzeugen</text>
-        <text lang="fr">Peut allouer &amp; Créer des conflits</text>
-        <text lang="es">Puede asignar y crear conflictos</text>
-        <text lang="cs">může alokovat &amp; vytvářet konflikty</text>
-        <text lang="nl">Kan toewijzen &amp; conflicten aanmaken</text>
-        <text lang="pl">Może przydzielać zasoby i tworzyć konflikty</text>
-		<text lang="pt">Pode atribuir e criar conflitos</text>
+        <text lang="en">allocate &amp; create conflicts</text>
+        <text lang="de">belegen &amp; Konflikte erzeugen</text>
+        <text lang="fr">allouer &amp; Créer des conflits</text>
+        <text lang="es">asignar y crear conflictos</text>
+        <text lang="cs">alokovat &amp; vytvářet konflikty</text>
+        <text lang="nl">toewijzen &amp; conflicten aanmaken</text>
+        <text lang="pl">przydzielać zasoby i tworzyć konflikty</text>
+		<text lang="pt">atribuir e criar conflitos</text>
     </entry>
     <entry key="permission.admin">
-        <text lang="en">administrator rights</text>
-        <text lang="de">Administrationsrechte</text>
-        <text lang="fr">Droits d'administrateur</text>
-        <text lang="es">Derechos de administrador</text>
-        <text lang="cs">Administrátorské práva</text>
-        <text lang="nl">Beheren</text>
-        <text lang="pl">Uprawnienia administratora</text>
-		<text lang="pt">Direitos de Administrador</text>
+        <text lang="en">administrator</text>
+        <text lang="de">administration</text>
+        <text lang="fr">administrateur</text>
+        <text lang="es">administrador</text>
+        <text lang="cs">administrátorské</text>
+        <text lang="nl">beheren</text>
+        <text lang="pl">administratora</text>
+		<text lang="pt">administrador</text>
     </entry>
     <!-- Period -->
     <entry key="period.format.start">

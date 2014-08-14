@@ -369,7 +369,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     {
         Conflict conflict =  this;
         StringBuffer buf = new StringBuffer();
-        buf.append( "Conflict for");
+        buf.append( "Conflict for ");
         buf.append( conflict.getAllocatable());
         buf.append( " " );
         buf.append( conflict.getAppointment1());

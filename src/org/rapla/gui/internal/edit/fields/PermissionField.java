@@ -34,6 +34,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
@@ -142,7 +143,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 if (value != null) {
-                   String key = Permission.ACCESS_LEVEL_NAMEMAP.get( ((Integer) value).intValue() );
+                   int intValue = ((Integer) value).intValue();
+                   Assert.isTrue( intValue >=0);
+                   String key = Permission.ACCESS_LEVEL_NAMEMAP.get( intValue );
                    value = getI18n().getString("permission." + key );
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );

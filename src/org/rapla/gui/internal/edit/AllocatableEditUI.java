@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -46,6 +47,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
             fields.add(holdBackConflictsField );
         }
+        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_ONLY_INFORMATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         setFields(fields);
     }
 
