@@ -28,7 +28,7 @@ public interface CachableStorageOperator extends StorageOperator {
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     String authenticate(String username,String password) throws RaplaException;
-    void saveData(LocalCache cache) throws RaplaException;
+    void saveData(LocalCache cache, String version) throws RaplaException;
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
     Collection<Entity> getUpdatedEntities(final User user,Date timestamp) throws RaplaException;

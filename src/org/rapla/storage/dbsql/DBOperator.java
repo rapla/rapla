@@ -43,6 +43,9 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
@@ -417,7 +420,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             loadOldData(c, cache );
             
             getLogger().info("Old database loaded in memory. Now exporting to xml: " + sourceOperator);
-            sourceOperator.saveData(cache);
+            sourceOperator.saveData(cache, "1.1");
             getLogger().info("XML export done.");
             
             //close( c);
@@ -473,6 +476,22 @@ public class DBOperator extends LocalAbstractCachableOperator
             return true;
         }
         return false;
+    }
+    
+    protected void resolveInitial(Collection<? extends Entity> entities,EntityResolver resolver) throws RaplaException {
+        testResolve(entities);
+        
+        for (Entity entity: entities) {
+            if ( entity instanceof EntityReferencer)
+            {
+                ((EntityReferencer)entity).setResolver(resolver);
+            }
+        }
+        processUserPersonLink(entities);
+        // It is important to do the read only later because some resolve might involve write to referenced objects
+        for (Entity entity: entities) {
+             ((RefEntity)entity).setReadOnly();
+        }
     }
     
 	private Map<String, TableDef> loadDBSchema(Connection c)
@@ -654,7 +673,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
     
-    public synchronized void saveData(LocalCache cache) throws RaplaException {
+    public synchronized void saveData(LocalCache cache, String version) throws RaplaException {
     	Connection connection = createConnection();
     	try {
     		Map<String, TableDef> schema = loadDBSchema(connection);

@@ -1064,24 +1064,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         	reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
         }
         reservation.setClassification(classification);
-        copyPermissions(classification.getType(), reservation);
+        PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
         setNew(reservation, user);
         return reservation;
     }
 
-    private void copyPermissions(DynamicType type, PermissionContainer permissionContainer) {
-        Collection<Permission> permissionList = type.getPermissionList();
-        for ( Permission p:permissionList)
-        {
-            Permission clone = p.clone();
-            if (clone.getAccessLevel() != Permission.CREATE)
-            {
-                permissionContainer.addPermission( clone);
-            }
-        }
-    }
-
-	public Allocatable newAllocatable( Classification classification) throws RaplaException 
+    public Allocatable newAllocatable( Classification classification) throws RaplaException 
 	{
 		return newAllocatable(classification, getUser());
 	}
@@ -1102,7 +1090,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //            }
 //        }
         allocatable.setClassification(classification);
-        copyPermissions(classification.getType(), allocatable);
+        PermissionContainer.Util.copyPermissions(classification.getType(), allocatable);
         setNew(allocatable, user);
         return allocatable;
     }

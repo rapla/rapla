@@ -68,6 +68,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -498,21 +499,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 	
 	protected void resolveInitial(Collection<? extends Entity> entities,EntityResolver resolver) throws RaplaException {
-		testResolve(entities);
-		
-		for (Entity entity: entities) {
-		    if ( entity instanceof EntityReferencer)
-		    {
-		        ((EntityReferencer)entity).setResolver(resolver);
-		    }
-		}
-		processUserPersonLink(entities);
-		// It is important to do the read only later because some resolve might involve write to referenced objects
-		for (Entity entity: entities) {
-			 ((RefEntity)entity).setReadOnly();
-		}
-	}
-
+        testResolve(entities);
+        
+        for (Entity entity: entities) {
+            if ( entity instanceof EntityReferencer)
+            {
+                ((EntityReferencer)entity).setResolver(resolver);
+            }
+        }
+        processUserPersonLink(entities);
+    }
+	
     protected void processUserPersonLink(Collection<? extends Entity> entities) throws RaplaException {
         // resolve emails
 		Map<String,Allocatable> resolvingMap = new HashMap<String,Allocatable>();
@@ -1596,7 +1593,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-
 	private int countDynamicTypes(Collection<? extends RaplaObject> entities, String classificationType) throws RaplaException {
 		Iterator<? extends RaplaObject> it = entities.iterator();
 		int count = 0;
@@ -2297,21 +2293,29 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 
+    private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups) 
+    {
+        Category canReadEventsFromOthers = userGroups.getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+        if ( canReadEventsFromOthers != null)
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ);
+            permission.setGroup( canReadEventsFromOthers);
+            dynamicType.addPermission( permission);
+        }
+        Category canCreate = userGroups.getCategory(Permission.GROUP_CAN_CREATE_EVENTS);
+        if ( canCreate != null)
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.CREATE);
+            permission.setGroup( canCreate);
+            dynamicType.addPermission( permission);
+        }
+    }
+
     protected void createDefaultSystem(LocalCache cache) throws RaplaException
 	{
     	EntityStore store = new EntityStore( null, cache.getSuperCategory() );
-        
-    	DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,"resource");
-		setName(resourceType.getName(), "resource");
-		add(store, resourceType);
-		
-		DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,"person");
-		setName(personType.getName(), "person");
-		add(store, personType);
-		
-		DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event");
-		setName(eventType.getName(), "event");
-		add(store, eventType);
 		
 		String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
 		Date now = getCurrentTimestamp();
@@ -2330,6 +2334,20 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			store.put( group);
 		}
 		cache.getSuperCategory().addCategory( groupsCategory);
+
+		DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,"resource", groupsCategory);
+		setName(resourceType.getName(), "resource");
+		add(store, resourceType);
+		
+		DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,"person", groupsCategory);
+		setName(personType.getName(), "person");
+		add(store, personType);
+		
+		DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event", groupsCategory);
+		setName(eventType.getName(), "event");
+		add(store, eventType);
+
+		
 		UserImpl admin = new UserImpl(now,now);
 		admin.setUsername("admin");
 		admin.setAdmin( true);
@@ -2348,9 +2366,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 		AllocatableImpl allocatable = new AllocatableImpl(now, now);
 		allocatable.setResolver( this);
-		allocatable.addPermission(allocatable.newPermission());
-        Classification classification = cache.getDynamicType("resource").newClassification();
+        DynamicType dynamicType = cache.getDynamicType("resource");
+        Classification classification = dynamicType.newClassification();
         allocatable.setClassification(classification);
+        PermissionContainer.Util.copyPermissions(dynamicType, allocatable);
         setNew(allocatable);
         classification.setValue("name", getString("test_resource"));
         allocatable.setOwner( user);
@@ -2381,7 +2400,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		dynamicType.addAttribute( attribute);
 	}
 	
-	private DynamicTypeImpl newDynamicType(String classificationType, String key) throws RaplaException {
+	private DynamicTypeImpl newDynamicType(String classificationType, String key,Category userGroups) throws RaplaException {
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
 		dynamicType.setAnnotation("classification-type", classificationType);
 		dynamicType.setKey(key);
@@ -2390,16 +2409,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			dynamicType.addAttribute(createStringAttribute("name", "name"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
 			dynamicType.addAttribute(createStringAttribute("name","eventname"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+			addDefaultEventPermissions(dynamicType, userGroups);
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
 			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
 			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
 			dynamicType.addAttribute(createStringAttribute("email", "email"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
 		}
 		dynamicType.setResolver( this);
 		return dynamicType;

@@ -31,10 +31,18 @@ import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
@@ -249,7 +257,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
 			}
 
 	        resolveInitial( list, this);
-            cache.getSuperCategory().setReadOnly();
+	        // It is important to do the read only later because some resolve might involve write to referenced objects
+	        if ( inputContext.lookup(RaplaMainReader.VERSION)< 1.2)
+	        {
+	            migratePermissionModify( list);
+	        }
+            for (Entity entity: list) {
+                ((RefEntity)entity).setReadOnly();
+           }
+	        cache.getSuperCategory().setReadOnly();
             for (User user:cache.getUsers())
             {
                 String id = user.getId();
@@ -281,6 +297,50 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
     
+    private void migratePermissionModify(Collection<Entity> list) {
+        for ( Entity entity:list)
+        {
+            if ( entity instanceof Classifiable && entity instanceof PermissionContainer)
+            {
+                Classification c = ((Classifiable)entity).getClassification();
+                PermissionContainer permCont = (PermissionContainer) entity;
+                if ( c == null)
+                {
+                    continue;
+                }
+                Attribute attribute = c.getAttribute("permission_modify");
+                if ( attribute == null)
+                {
+                    continue;
+                }
+                Collection<Object> values = c.getValues( attribute);
+                if ( values == null || values.size() == 0)
+                {
+                    continue; 
+                }
+                if ( attribute.getType() == AttributeType.BOOLEAN)
+                {
+                    if (values.iterator().next().equals( Boolean.TRUE))
+                    {
+                        Permission permission = permCont.newPermission();
+                        permission.setAccessLevel(Permission.ADMIN);
+                        permCont.addPermission(permission);
+                    }
+                }
+                else if ( attribute.getType() == AttributeType.CATEGORY)
+                {
+                    for (Object value: values)
+                    {
+                        Permission permission = permCont.newPermission();
+                        permission.setAccessLevel(Permission.ADMIN);
+                        permission.setGroup( (Category) value);
+                        permCont.addPermission(permission);
+                    }
+                }
+            }
+        }
+    }
+
     private void parseData( RaplaSAXHandler reader)  throws RaplaException,IOException {
             ContentHandler contentHandler = new RaplaContentHandler( reader);
             try {
@@ -323,7 +383,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
     	 	result = update( evt);
-	        saveData(cache, includeIds);
+	        saveData(cache, null, includeIds);
         }
         finally
         {
@@ -332,12 +392,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
         fireStorageUpdated( result );
     }
 
-    synchronized final public void saveData(LocalCache cache) throws RaplaException
+    synchronized final public void saveData(LocalCache cache, String version) throws RaplaException
     {
-    	saveData( cache, true);
+    	saveData( cache,version, true);
     }
 
-    synchronized final private void saveData(LocalCache cache, boolean includeIds) throws RaplaException
+    synchronized final private void saveData(LocalCache cache, String version, boolean includeIds) throws RaplaException
     {
         try
         {
@@ -346,7 +406,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 return;
             }
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            writeData( buffer,cache, includeIds );
+            writeData( buffer,cache, version, includeIds );
             byte[] data = buffer.toByteArray();
             buffer.close();
             File parentFile = storageFile.getParentFile();
@@ -367,11 +427,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    private void writeData( OutputStream out, LocalCache cache, boolean includeIds ) throws IOException, RaplaException
+    private void writeData( OutputStream out, LocalCache cache,String version, boolean includeIds ) throws IOException, RaplaException
     {
         RaplaContext outputContext = new IOContext().createOutputContext( context, cache.getSuperCategoryProvider(), includeIds );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
+        if ( version != null)
+        {
+            writer.setVersion( version );
+        }
         BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,encoding));
         writer.setWriter(w);
         writer.printContent();

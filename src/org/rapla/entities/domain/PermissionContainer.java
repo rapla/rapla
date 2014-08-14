@@ -39,8 +39,21 @@ public interface PermissionContainer
 
     Collection<Permission> getPermissionList();
     
+
     class Util
     {
+        public static void copyPermissions(DynamicType type, PermissionContainer permissionContainer) {
+            Collection<Permission> permissionList = type.getPermissionList();
+            for ( Permission p:permissionList)
+            {
+                Permission clone = p.clone();
+                if (clone.getAccessLevel() != Permission.CREATE)
+                {
+                    permissionContainer.addPermission( clone);
+                }
+            }
+        }
+
         static public boolean hasAccess(PermissionContainer container, User user, int accessLevel ) {
             Iterable<? extends Permission> permissions = container.getPermissionList();
             return hasAccess(permissions,user, accessLevel, null, null, null, false);

@@ -80,7 +80,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     	cachableStorageOperator1.runWithReadLock( new CachableStorageOperatorCommand() {
 			
 			public void execute(LocalCache cache) throws RaplaException {
-		    	cachableStorageOperator2.saveData(cache);				
+		    	cachableStorageOperator2.saveData(cache, null);				
 			}
 		});
 

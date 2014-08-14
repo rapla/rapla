@@ -1,7 +1,7 @@
 /*--------------------------------------------------------------------------*
   |                                                                          |
   | This program is free software; you can redistribute it and/or modify     |
-  | it under the terms of the GNU General Public License as published by the |
+  | it under the terms of the GNU Genseral Public License as published by the |
   | Free Software Foundation. A copy of the license has been included with   |
   | these distribution in the COPYING file, if not go to www.fsf.org         |
   |                                                                          |
@@ -40,13 +40,22 @@ public class RaplaMainWriter extends RaplaXMLWriter
     protected final static String OUTPUT_FILE_VERSION="1.2";
 	String encoding = "utf-8";
     protected LocalCache cache;
+    private String version = OUTPUT_FILE_VERSION;
 
     public RaplaMainWriter(RaplaContext context, LocalCache cache) throws RaplaException {
         super(context);
         this.cache = cache;
         Assert.notNull(cache);
+    }    
+
+    public String getVersion() {
+        return version;
     }
-    
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     public void setWriter( Appendable writer ) {
         super.setWriter( writer );
         for ( RaplaXMLWriter xmlWriter: writerMap.values()) {
@@ -192,7 +201,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
             }
             println();
         }
-        att("version", RaplaMainWriter.OUTPUT_FILE_VERSION);
+        att("version", version);
         if ( repositoryVersion > 0)
         {
             att("repositoryVersion", String.valueOf(repositoryVersion));
