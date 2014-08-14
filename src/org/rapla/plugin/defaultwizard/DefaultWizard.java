@@ -16,15 +16,19 @@ package org.rapla.plugin.defaultwizard;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.MenuElement;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -53,33 +57,54 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 
  	public MenuElement getMenuElement() {
  		typeMap.clear();
-		DynamicType[] eventTypes;
+		List<DynamicType> eventTypes = new ArrayList<DynamicType>();
 		try {
-			eventTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+			DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+            User user = getUser();
+			for ( DynamicType type: types)
+			{
+                if (PermissionContainer.Util.canCreate( type, user))
+			    {
+			        eventTypes.add( type );
+			    }
+			}
 		} catch (RaplaException e) {
 			return null;
 		}
-		boolean canCreateReservation = canCreateReservation();
+		boolean canCreateReservation = eventTypes.size() > 0;
 		MenuElement element;
-		if ( eventTypes.length == 1)
+		String newEventText = getString("new_reservation");
+        if ( eventTypes.size() == 1)
 		{
-			RaplaMenuItem item = new RaplaMenuItem( getId());
-			item.setEnabled( canAllocate() && canCreateReservation);
-			item.setText(getString("new_reservation"));
-			item.setIcon( getIcon("icon.new"));item.addActionListener( this);
-			typeMap.put( item, eventTypes[0]);
+		    RaplaMenuItem item = new RaplaMenuItem( getId());
+            item.setEnabled( canAllocate() && canCreateReservation);
+            DynamicType type = eventTypes.get(0);
+            String name = type.getName( getLocale());
+            if ( newEventText.endsWith( name))
+            {
+                item.setText(newEventText );
+            }
+            else
+            {
+                item.setText(newEventText + " " + name);
+            }
+            item.setIcon( getIcon("icon.new"));
+			item.addActionListener( this);
+			
+            typeMap.put( item, type);
 			element = item;
 		}
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
 			item.setEnabled( canAllocate() && canCreateReservation);
-			item.setText(getString("new_reservation"));
+			item.setText(newEventText);
 			item.setIcon( getIcon("icon.new"));
 			for ( DynamicType type:eventTypes)
 			{
 				RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());
-				newItem.setText( type.getName( getLocale()));
+				String name = type.getName( getLocale());
+                newItem.setText( name);
 				item.add( newItem);
 				newItem.addActionListener( this);
 				typeMap.put( newItem, type);

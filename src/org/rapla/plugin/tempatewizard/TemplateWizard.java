@@ -74,7 +74,6 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
         return templateNames = getQuery().getTemplateNames();
     }
 
-
     public MenuElement getMenuElement() {
     	componentMap.clear();
 

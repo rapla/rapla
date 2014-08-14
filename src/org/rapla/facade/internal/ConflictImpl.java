@@ -364,7 +364,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         return Conflict.TYPE;
     }
 
-
     public String toString()
     {
         Conflict conflict =  this;

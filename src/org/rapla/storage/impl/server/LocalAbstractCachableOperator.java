@@ -954,7 +954,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     private boolean isAffected(DeleteUpdateEntry entry, User user) {
-        if ( entry.affectAll )
+        if ( entry.affectAll || user.isAdmin())
         {
             return true;
         }
@@ -2310,7 +2310,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		setName(eventType.getName(), "event");
 		add(store, eventType);
 		
-		String[] userGroups = new String[] {Permission.GROUP_REGISTERER_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
+		String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
 		Date now = getCurrentTimestamp();
 		CategoryImpl groupsCategory = new CategoryImpl(now,now);
 		groupsCategory.setKey("user-groups");

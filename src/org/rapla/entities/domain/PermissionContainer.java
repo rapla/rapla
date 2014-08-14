@@ -61,8 +61,8 @@ public interface PermissionContainer
             return hasAccess( container,user, Permission.READ );
         }
         
-        public static boolean canCreate(Classifiable original, User user) {
-            DynamicType type = original.getClassification().getType();
+        public static boolean canCreate(Classifiable classifiable, User user) {
+            DynamicType type = classifiable.getClassification().getType();
             return canCreate(type, user);
         }
 

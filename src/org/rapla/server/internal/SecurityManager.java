@@ -113,9 +113,9 @@ public class SecurityManager
                 }
             }
         } 
-        if ( !permitted && entity instanceof Allocatable ){
+        if ( !permitted && entity instanceof Classifiable ){
             if ( original == null ) {
-                permitted = PermissionContainer.Util.canCreate((Classifiable)original, user);
+                permitted = PermissionContainer.Util.canCreate((Classifiable)entity, user);
             } 
         }
         if ( !permitted && original != null && original instanceof PermissionContainer)

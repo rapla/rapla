@@ -33,9 +33,10 @@ public interface Permission
     String GROUP_MODIFY_PREFERENCES_KEY = "modify-preferences";
     String GROUP_CAN_EDIT_TEMPLATES = "edit-templates";
 
-    String GROUP_REGISTERER_KEY = "registerer";
     String GROUP_CAN_READ_EVENTS_FROM_OTHERS = "read-events-from-others";
     String GROUP_CAN_CREATE_EVENTS = "create-events";
+    @Deprecated
+    String GROUP_REGISTERER_KEY = "registerer";
     
     int DENIED = 0;
     int READ_ONLY_INFORMATION = 50;
