@@ -1109,7 +1109,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         }
         allocatable.setClassification(classification);
         copyPermissions(classification.getType(), allocatable);
-
         setNew(allocatable, user);
         return allocatable;
     }
@@ -1191,6 +1190,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			dynamicType.addAttribute(createStringAttribute("name","eventname"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+			Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+			if ( canReadEventsFromOthers != null)
+			{
+			    Permission permission = dynamicType.newPermission();
+			    permission.setAccessLevel( Permission.READ);
+			    permission.setGroup( canReadEventsFromOthers);
+			}
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
 			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
 			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
