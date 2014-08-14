@@ -168,7 +168,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     public DynamicTypeImpl getType() {
     	if ( resolver == null)
     	{
-    		throw new IllegalStateException("Resolver not set on "+ toString());
+    		throw new IllegalStateException("Resolver not set on classification  ");
     	}
         String parentId = getParentId();
 		DynamicTypeImpl type = (DynamicTypeImpl) resolver.tryResolve( parentId, DynamicType.class);

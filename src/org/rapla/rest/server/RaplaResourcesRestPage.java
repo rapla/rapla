@@ -12,7 +12,9 @@ import javax.jws.WebService;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -70,7 +72,10 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
     
     public AllocatableImpl create(@WebParam(name="user") User user, AllocatableImpl resource) throws RaplaException
     {
-        if (!getQuery().canCreateReservations(resource.getClassification().getType(), user))
+        resource.setResolver( operator);
+        Classification classification = resource.getClassification();
+        DynamicType type = classification.getType();
+        if (!getQuery().canCreateReservations(type, user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
         }

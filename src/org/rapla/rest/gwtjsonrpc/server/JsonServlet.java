@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
@@ -451,7 +452,9 @@ public class JsonServlet {
             d.onMalformedInput(CodingErrorAction.REPORT);
             d.onUnmappableCharacter(CodingErrorAction.REPORT);
             try {
-                return d.decode(ByteBuffer.wrap(body)).toString();
+                ByteBuffer wrap = ByteBuffer.wrap(body);
+                CharBuffer decode = d.decode(wrap);
+                return decode.toString();
             } catch (CharacterCodingException e) {
                 throw new JsonParseException("Invalid Request Not UTF-8", e);
             }

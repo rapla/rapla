@@ -84,6 +84,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     
     public ReservationImpl create(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
     {
+        event.setResolver( operator);
         if (!getQuery().canCreateReservations(event.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
@@ -94,7 +95,6 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         }
         String eventId = operator.createIdentifier(Reservation.TYPE, 1)[0];
         event.setId( eventId);
-        event.setResolver( operator);
         event.setCreateDate( operator.getCurrentTimestamp());
         Appointment[] appointments = event.getAppointments();
         String[] appointmentIds = operator.createIdentifier(Appointment.TYPE, 1);
