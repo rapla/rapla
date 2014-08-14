@@ -319,11 +319,10 @@ final public class RaplaTree extends JScrollPane {
                     selected.add( obj );
             }
         }
-        tree.setModel(model);
+		tree.setModel(model);
         if ( model instanceof DefaultTreeModel ) {
             ((DefaultTreeModel)model).reload();
         }
-
         if (expanded.size() ==0 && selected.size() == 0)
         {
             TreeNode root = (TreeNode)model.getRoot();

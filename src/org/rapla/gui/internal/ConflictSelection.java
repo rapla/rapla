@@ -304,6 +304,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 
     private void updateTree() throws RaplaException {
       
+        Collection<Conflict> selectedConflicts = new ArrayList<Conflict>(getSelectedConflicts());
         Collection<Conflict> conflicts = getConflicts();
 		TreeModel treeModel =  getTreeFactory().createConflictModel(conflicts);
         try {
@@ -312,11 +313,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         } finally {
         }
         summary.setText( getString("conflicts") + " (" + conflicts.size() + ") ");
-        Collection<Conflict> selectedConflicts = new ArrayList<Conflict>(getSelectedConflicts());
         Collection<Conflict> inModel = new ArrayList<Conflict>(getSelectedConflictsInModel());
         if ( !selectedConflicts.equals( inModel ))
         {
-            showConflicts(selectedConflicts);
+            showConflicts(inModel);
         }
     }
     

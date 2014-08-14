@@ -576,26 +576,78 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         return new DefaultTreeModel(root);
     }
     
+    private class ConflictRoot
+    {
+        final String text;
+        int conflictNumber = 0;
+        
+
+        ConflictRoot(String text)
+        {
+            this.text = text;
+        }
+
+        public void setConflictNumber(int conflictNumber) {
+            this.conflictNumber = conflictNumber;
+        }
+
+        
+        @Override
+        public String toString() {
+            String result =getI18n().format(text, conflictNumber);
+            return result;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((text == null) ? 0 : text.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            ConflictRoot other = (ConflictRoot) obj;
+//            if (conflictNumber != other.conflictNumber)
+//                return false;
+            if (text == null) {
+                if (other.text != null)
+                    return false;
+            } else if (!text.equals(other.text))
+                return false;
+            return true;
+        }
+
+       
+        
+    }
     public DefaultTreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException {
 	    DefaultMutableTreeNode rootNode = new TypeNode(Conflict.TYPE, "root");
-		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.TYPE, getI18n().format("conflictUC", 0));
-		DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.TYPE, "disabledConflicts");
+	    ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");
+		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.TYPE, conflictRootObj);
 		rootNode.add( treeNode );
         if ( conflicts != null )
         {
             {
                 Iterable<Conflict> filteredConflicts = filter(conflicts, true);
                 int conflict_number = addConflicts(filteredConflicts, treeNode);
-                String conflictText = getI18n().format("conflictUC", conflict_number);
-                treeNode.setUserObject( conflictText);
+                conflictRootObj.setConflictNumber( conflict_number);
             }
             {
                 Iterable<Conflict> filteredConflicts = filter(conflicts, false);
+                ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC");
+                DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.TYPE, conflictDisabledRootObj);
                 int conflict_number = addConflicts(filteredConflicts, treeNode2);
-                String conflictText = getI18n().format("disabledConflictUC", conflict_number);
-                treeNode2.setUserObject( conflictText);
                 if ( conflict_number > 0 )
                 {
+                    conflictDisabledRootObj.setConflictNumber(conflict_number);
                     rootNode.add( treeNode2);
                 }
             } 
