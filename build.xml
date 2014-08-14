@@ -559,7 +559,7 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    <jar jarfile="${webapp.dir}/webclient/gson-2.2.4.jar" update="true">
+	    <jar jarfile="${webapp.dir}/webclient/gson-2.3.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
 	            <attribute name="Application-Name" value ="${application.name}"/>
@@ -597,7 +597,8 @@ Definition as published by the Open Source Initiative (OSI).
 	         <srcfiles dir="${webapp.dir}/webclient" includes="*.jar"/>
 	    </uptodate>
     </target>
-		    
+	
+	
 	<target name="sign" if="keystore.present">
 	   <signjar
         alias="rapla" keystore="${keystore.file}"

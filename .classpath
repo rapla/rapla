@@ -48,7 +48,7 @@
 		</accessrules>
 		 -->
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/common/gson-2.2.4.jar"/>
+	<classpathentry kind="lib" path="lib/common/gson-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/logging/slf4j-api-1.7.5.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
