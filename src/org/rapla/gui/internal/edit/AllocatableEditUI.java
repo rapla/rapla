@@ -19,6 +19,7 @@ import java.util.Set;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditField;
@@ -74,8 +75,13 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         permissionField.mapFrom( objectList);
         Set<Boolean> values = new HashSet<Boolean>();
         boolean canAdmin = true;
+        boolean allPermissions = true;
         for ( Allocatable alloc:objectList)
         {
+            if ((( DynamicTypeImpl)alloc.getClassification().getType()).isInternal())
+            {
+                allPermissions = false;
+            }
             String annotation = alloc.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
 			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
 			values.add(holdBackConflicts);
@@ -87,6 +93,14 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         if ( canAdmin == false)
         {
             permissionField.getComponent().setVisible( false );
+        }
+        if ( allPermissions)
+        {
+            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_ONLY_INFORMATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+        }
+        else
+        {
+            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ );
         }
         if ( !internal)
         {   

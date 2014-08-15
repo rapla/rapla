@@ -145,8 +145,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 			type.setResolver( this);
+			{
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ_TYPE);
+                type.addPermission(newPermission);
+            }
 			type.setReadOnly( );
-			cache.put( type);
+            cache.put( type);
 		}
 		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
@@ -157,6 +162,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
 			type.setResolver( this);
+		    {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ_TYPE);
+                type.addPermission(newPermission);
+            }
 		    type.setReadOnly();
 	        cache.put( type);
 		}
@@ -171,6 +181,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addAttributeWithInternalId(type,"surname", AttributeType.STRING);
             addAttributeWithInternalId(type,"firstname", AttributeType.STRING);
             addAttributeWithInternalId(type,"email", AttributeType.STRING);
+            {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ_TYPE);
+                type.addPermission(newPermission);
+            }
             type.setResolver( this);
             type.setReadOnly();
             cache.put( type);
@@ -186,9 +201,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addAttributeWithInternalId(type,"end", AttributeType.DATE);
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
             type.setResolver( this);
-            Permission newPermission =type.newPermission();
-            newPermission.setAccessLevel( Permission.READ);
-            type.addPermission(newPermission);
+            {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ);
+                type.addPermission(newPermission);
+            }
+            {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ_TYPE);
+                type.addPermission(newPermission);
+            }
             type.setReadOnly();
             cache.put( type);
         }
