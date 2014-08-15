@@ -3388,7 +3388,7 @@ See French text.
 		<text lang="pt">Acesso</text>
     </entry>
     <entry key="permission.edit">
-    <text lang="en">Edit</text>
+    	<text lang="en">Edit</text>
         <text lang="de">bearbeiten</text>
         <text lang="fr">modifier</text>
         <text lang="es">editar</text>
@@ -3406,6 +3406,10 @@ See French text.
         <text lang="nl">Verboden</text>
         <text lang="pl">Odrzucono</text>
 		<text lang="pt">Negado</text>
+    </entry>
+    <entry key="permission.read_type">
+        <text lang="en">read type</text>
+        <text lang="de">Typ lesen</text>
     </entry>
     <entry key="permission.read_no_allocation">
         <text lang="en">read (no allocations)</text>

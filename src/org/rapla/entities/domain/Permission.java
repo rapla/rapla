@@ -39,11 +39,12 @@ public interface Permission
     String GROUP_REGISTERER_KEY = "registerer";
     
     int DENIED = 0;
+    int READ_TYPE = 20;
+    int CREATE = 30;
     int READ_ONLY_INFORMATION = 50;
     int READ = 100;
     int ALLOCATE =200;
     int ALLOCATE_CONFLICTS = 300;
-    int CREATE = 325;
     int EDIT = 350;
     int ADMIN = 400;
 
@@ -52,18 +53,18 @@ public interface Permission
     int GROUP_PERMISSION = 5000;
     int USER_PERMISSION = 10000;
     
-
     public static class AccessTable 
     {
     	final LinkedHashMap<Integer,String> map = new LinkedHashMap<Integer,String>();
     	{
-    		map.put( DENIED,"denied");
-    		map.put( READ_ONLY_INFORMATION,"read_no_allocation");
+    		map.put( READ_TYPE,"read_type");
+    		map.put( CREATE, "create");
+            map.put( DENIED,"denied");
+            map.put( READ_ONLY_INFORMATION,"read_no_allocation");
     		map.put( READ,"read");
     		map.put( ALLOCATE, "allocate");
     		map.put( ALLOCATE_CONFLICTS, "allocate-conflicts");
-    		map.put( CREATE, "create");
-            map.put( EDIT, "edit");
+    		map.put( EDIT, "edit");
      		map.put( ADMIN, "admin");
     	}
 		public String get(int accessLevel) 

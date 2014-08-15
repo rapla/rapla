@@ -236,7 +236,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		removeFilteredClassifications(allocatables, filters);
 		return allocatables;
-		
 	}
 
 	protected void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {

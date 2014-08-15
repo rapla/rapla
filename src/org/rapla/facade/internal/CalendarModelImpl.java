@@ -118,7 +118,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if ( types.length == 0 ) {
             types = m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
         }
-        setSelectedObjects( Collections.singletonList( types[0]) );
+        setSelectedObjects( types.length > 0 ? Collections.singletonList( types[0]) : Collections.emptyList());
         setViewId( DEFAULT_VIEW);
         this.user = user;
         if ( user != null && !user.isAdmin()) {

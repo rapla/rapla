@@ -22,6 +22,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -82,7 +83,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
             {
                 defaultResourceTypes = false;
             }
-            filter = dynamicType.newClassificationFilter();
+            filter = ((DynamicTypeImpl)dynamicType).newClassificationFilterWithoutCheck();
             ruleCount = 0;
             filterList.add(filter);
         }

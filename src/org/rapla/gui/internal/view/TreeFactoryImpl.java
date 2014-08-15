@@ -260,6 +260,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             DynamicType type = classification.getType();
             Assert.notNull(type);
             DefaultMutableTreeNode typeNode = nodeMap.get(type);
+            // type not found, could be because type is not visible
+            if ( typeNode == null)
+            {
+                continue;
+            }
             DefaultMutableTreeNode parentNode = typeNode;
             Attribute categorizationAtt = getCategorizationAttribute(classification);
             if (useCategorizations && categorizationAtt != null && classification.getValues(categorizationAtt).size() > 0)

@@ -792,6 +792,14 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return clone;
     }
     
+    /**
+     * @param sortedAppointmentList the list of appointments to be searched
+     * @param user the owner of the reservation
+     * @param start
+     * @param end
+     * @param excludeExceptions
+     * @return
+     */
     static public SortedSet<Appointment> getAppointments(SortedSet<Appointment> sortedAppointmentList,User user,Date start,Date end, boolean excludeExceptions) {
 	    SortedSet<Appointment> appointmentSet = new TreeSet<Appointment>(new AppointmentStartComparator());
 	    Iterator<Appointment> it;

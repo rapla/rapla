@@ -25,6 +25,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 
 
@@ -47,7 +48,8 @@ public interface PermissionContainer
             for ( Permission p:permissionList)
             {
                 Permission clone = p.clone();
-                if (clone.getAccessLevel() != Permission.CREATE)
+                int accessLevel = clone.getAccessLevel();
+                if (accessLevel != Permission.CREATE && accessLevel != Permission.READ_TYPE)
                 {
                     permissionContainer.addPermission( clone);
                 }
@@ -71,7 +73,31 @@ public interface PermissionContainer
         /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
         static public boolean canRead(PermissionContainer container,User user) 
         {
-            return hasAccess( container,user, Permission.READ );
+            if ( container instanceof Classifiable)
+            {
+                if (!canReadType((Classifiable)container, user))
+                {
+                    return false;
+                }
+            }
+            if ( container instanceof DynamicType)
+            {
+                return canRead( (DynamicType) container, user);
+            }
+            else
+            {
+                return hasAccess( container,user, Permission.READ );
+            }
+        }
+
+        public static boolean canReadType(Classifiable classifiable, User user) {
+            Classification classification = classifiable.getClassification();
+            if ( classification != null)
+            {
+                DynamicType type = classification.getType();
+                return canRead(type, user);
+            }
+            return true;
         }
         
         public static boolean canCreate(Classifiable classifiable, User user) {
@@ -81,8 +107,33 @@ public interface PermissionContainer
 
         public static boolean canCreate(DynamicType type, User user) {
             Collection<Permission> permissionList = type.getPermissionList();
-            boolean result = hasAccess( permissionList, user, Permission.CREATE, null, null, null, false);
+            boolean result = matchesAccessLevel( permissionList, user, Permission.CREATE);
             return result;
+        }
+        
+        public static boolean canRead(DynamicType type, User user) {
+            Collection<Permission> permissionList = type.getPermissionList();
+            boolean result = matchesAccessLevel( permissionList, user, Permission.READ_TYPE);
+            return result;
+        }
+
+        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, int accessLevel ) {
+            if ( user == null || user.isAdmin() )
+                return true;
+          
+            Collection<Category> groups = getGroupsIncludingParents(user);
+            for ( Permission p:permissions ) 
+            {
+                if (p.getAccessLevel() == accessLevel)
+                {
+                    int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+                    if ( effectLevel > Permission.NO_PERMISSION)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         
@@ -92,24 +143,7 @@ public interface PermissionContainer
           
             int maxAccessLevel = 0;
             int maxEffectLevel = Permission.NO_PERMISSION;
-            Category[] originalGroups = user.getGroups();
-            Collection<Category> groups = new HashSet<Category>( Arrays.asList( originalGroups));
-            for ( Category group: originalGroups)
-            {
-                Category parent = group.getParent();
-                while ( parent != null)
-                {
-                    if ( ! groups.contains( parent))
-                    {
-                        groups.add( parent);
-                    }
-                    if ( parent == group)
-                    {
-                        throw new IllegalStateException("Parent added to own child");
-                    }
-                    parent = parent.getParent();
-                }
-            }
+            Collection<Category> groups = getGroupsIncludingParents(user);
             for ( Permission p:permissions ) {
                 int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
 
@@ -144,6 +178,28 @@ public interface PermissionContainer
             }
             boolean granted = maxAccessLevel >= accessLevel ;
             return granted;
+        }
+
+        private static Collection<Category> getGroupsIncludingParents(User user) {
+            Category[] originalGroups = user.getGroups();
+            Collection<Category> groups = new HashSet<Category>( Arrays.asList( originalGroups));
+            for ( Category group: originalGroups)
+            {
+                Category parent = group.getParent();
+                while ( parent != null)
+                {
+                    if ( ! groups.contains( parent))
+                    {
+                        groups.add( parent);
+                    }
+                    if ( parent == group)
+                    {
+                        throw new IllegalStateException("Parent added to own child");
+                    }
+                    parent = parent.getParent();
+                }
+            }
+            return groups;
         }
         
         static public void addDifferences(Set<Permission> invalidatePermissions, PermissionContainer oldContainer, PermissionContainer newContainer) {

@@ -234,6 +234,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 
+	/**
+	 * @param user the owner of the reservation or null for reservations from all users
+	 */
 	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] filters,Map<String,String> annotationQuery) throws RaplaException {
 		boolean excludeExceptions = false;
 		HashSet<Reservation> reservationSet = new HashSet<Reservation>();
@@ -2295,6 +2298,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups) 
     {
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
+        }
         Category canReadEventsFromOthers = userGroups.getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
         if ( canReadEventsFromOthers != null)
         {
@@ -2409,9 +2417,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			dynamicType.addAttribute(createStringAttribute("name", "name"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
-            dynamicType.addPermission( permission);
+			addDefaultResourcePermissions(dynamicType);
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
 			dynamicType.addAttribute(createStringAttribute("name","eventname"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
@@ -2423,13 +2429,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			dynamicType.addAttribute(createStringAttribute("email", "email"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
-            dynamicType.addPermission( permission);
+            addDefaultResourcePermissions(dynamicType);
 		}
 		dynamicType.setResolver( this);
 		return dynamicType;
 	}
+
+    private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) {
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
+        }
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
+        }
+    }
 
 	private Attribute newAttribute(AttributeType attributeType,String id)	throws RaplaException {
 		AttributeImpl attribute = new AttributeImpl(attributeType);

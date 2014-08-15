@@ -359,13 +359,25 @@ public class DynamicTypeReader extends RaplaXMLReader
     private void addNewPermissions(DynamicTypeImpl dynamicType) throws RaplaSAXParseException {
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE) || classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
-            dynamicType.addPermission( permission);
+            {
+                Permission permission = dynamicType.newPermission();
+                permission.setAccessLevel( Permission.READ_TYPE);
+                dynamicType.addPermission( permission);
+            }
+            {
+                Permission permission = dynamicType.newPermission();
+                permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+                dynamicType.addPermission( permission);
+            }
             @SuppressWarnings("deprecation")
             String registerer = Permission.GROUP_REGISTERER_KEY;
             addNewPermissionWithGroup(dynamicType, Permission.CREATE, registerer, false);
         } else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
+            {
+                Permission permission = dynamicType.newPermission();
+                permission.setAccessLevel( Permission.READ_TYPE);
+                dynamicType.addPermission( permission);
+            }
             addNewPermissionWithGroup(dynamicType, Permission.READ, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, true);
             addNewPermissionWithGroup(dynamicType, Permission.CREATE, Permission.GROUP_CAN_CREATE_EVENTS, true);
         }

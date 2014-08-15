@@ -197,20 +197,28 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     
     public boolean canReadOnlyInformation(User user) 
     {
+        if ( !PermissionContainer.Util.canReadType(this, user))
+        {
+            return false;
+        }
         return PermissionContainer.Util.hasAccess( this,user, Permission.READ_ONLY_INFORMATION );
     }
     
     public boolean canRead(User user) 
     {
-        return PermissionContainer.Util.hasAccess( this,user, Permission.READ );
+        return PermissionContainer.Util.canRead( this,user);
     }
     
     public boolean canModify(User user) 
     {
-        return PermissionContainer.Util.hasAccess( this,user, Permission.EDIT );
+        return PermissionContainer.Util.canModify(this,user);
     }
     
     public boolean canAllocate( User user,Date today ) {
+        if ( !PermissionContainer.Util.canReadType(this, user))
+        {
+            return false;
+        }
         boolean hasAccess = PermissionContainer.Util.hasAccess(permissions,user, Permission.ALLOCATE, null, null, today, true);
         if ( !hasAccess )
         {
@@ -221,6 +229,10 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     public boolean canCreateConflicts(User user ) {
+        if ( !PermissionContainer.Util.canReadType(this, user))
+        {
+            return false;
+        }
         return PermissionContainer.Util.hasAccess( this,user, Permission.ALLOCATE_CONFLICTS);
     }
 

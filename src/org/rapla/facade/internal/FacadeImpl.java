@@ -637,6 +637,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			{
 				continue;
 			}
+			User workingUser = getWorkingUser();
+			if ( workingUser != null && !PermissionContainer.Util.canRead( type, workingUser))
+			{
+			    continue;
+			}
 			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
 				result.add(type);
 			}
@@ -1186,6 +1191,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
     private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException {
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
+        }
         Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
         if ( canReadEventsFromOthers != null)
         {
@@ -1205,6 +1215,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
     }
 
     private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) throws RaplaException {
+        {
+            Permission permission = dynamicType.newPermission();
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
+        }
         {
             Permission permission = dynamicType.newPermission();
             permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);

@@ -13,6 +13,7 @@
 package org.rapla.gui.internal.edit.fields;
 
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -142,13 +143,21 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
             private static final long serialVersionUID = 1L;
 
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                int intValue = -1;
                 if (value != null) {
-                   int intValue = ((Integer) value).intValue();
+                   intValue = ((Integer) value).intValue();
                    Assert.isTrue( intValue >=0);
                    String key = Permission.ACCESS_LEVEL_NAMEMAP.get( intValue );
                    value = getI18n().getString("permission." + key );
+
                 }
-                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );
+                Component listCellRendererComponent = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );
+                if ( intValue == Permission.CREATE || intValue == Permission.READ_TYPE)
+                {   
+                    Font newFont = listCellRendererComponent.getFont().deriveFont(Font.BOLD);
+                    listCellRendererComponent.setFont( newFont);
+                }
+                return listCellRendererComponent;
             }}
         );
         
