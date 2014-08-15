@@ -1075,7 +1075,16 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 	
 	@Override
 	void insertAll() throws SQLException, RaplaException {
-		insert( cache.getDynamicTypes());
+		Collection<DynamicType> dynamicTypes = new ArrayList<DynamicType>(cache.getDynamicTypes());
+		Iterator<DynamicType> it = dynamicTypes.iterator();
+		while ( it.hasNext())
+		{
+		    if (((DynamicTypeImpl)it.next()).isInternal())
+		    {
+		        it.remove();
+		    }
+		}
+        insert( dynamicTypes);
 	}
 
 	protected void load(ResultSet rset) throws SQLException,RaplaException {
