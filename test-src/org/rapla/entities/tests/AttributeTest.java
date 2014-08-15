@@ -53,6 +53,7 @@ public class AttributeTest extends RaplaTestCase {
         Attribute a1 = modificationMod.newAttribute(AttributeType.STRING);
         a1.setKey("test-attribute");
         a1.setAnnotation("expected-rows", "5");
+        type.getName().setName("en", "test-type");
         type.addAttribute( a1 );
         modificationMod.store( type );
 

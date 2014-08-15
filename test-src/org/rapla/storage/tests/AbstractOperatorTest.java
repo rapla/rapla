@@ -101,8 +101,8 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
         {
             User u = facade.getUser("kohlhaas");
             Category[] groups = u.getGroups();
-            assertEquals( groups.length, 2 );
-            assertEquals( facade.getUserGroupsCategory().getCategory("my-group"), groups[1]);
+            assertEquals( groups.length, 4 );
+            assertEquals( facade.getUserGroupsCategory().getCategory("my-group"), groups[3]);
             assertFalse( u.isAdmin() );
         }
     }

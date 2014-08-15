@@ -80,6 +80,7 @@ public class ClassificationTest extends RaplaTestCase {
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c1 );
     	a1.setConstraint( ConstraintIds.KEY_MULTI_SELECT, true);
     	type.addAttribute( a1 );
+    	type.getName().setName("en", "test-type");
 
     	try {
     		modificationMod.store(  type  );

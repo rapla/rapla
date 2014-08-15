@@ -383,7 +383,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        // call of update must be first to update the cache.
 	        // then saveData() saves all the data in the cache
     	 	result = update( evt);
-	        saveData(cache, null, includeIds);
+    	 	saveData(cache, null, includeIds);
         }
         finally
         {
@@ -392,6 +392,18 @@ final public class FileOperator extends LocalAbstractCachableOperator
         fireStorageUpdated( result );
     }
 
+    synchronized final public void saveData() throws RaplaException
+    {
+        final Lock writeLock = writeLock();
+        try
+        {
+            saveData(cache, null, includeIds);
+        }
+        finally
+        {
+            unlock( writeLock );
+        }
+    }
     synchronized final public void saveData(LocalCache cache, String version) throws RaplaException
     {
     	saveData( cache,version, true);

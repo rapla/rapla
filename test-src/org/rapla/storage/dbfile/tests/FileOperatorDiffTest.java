@@ -15,18 +15,14 @@ package org.rapla.storage.dbfile.tests;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.rapla.RaplaTestCase;
-import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.dbfile.FileOperator;
 
 
 public class FileOperatorDiffTest extends RaplaTestCase {
@@ -88,15 +84,7 @@ public class FileOperatorDiffTest extends RaplaTestCase {
         String testFile = "test-src/testdefault.xml";
         assertTrue(differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false);
         operator.connect();
-        Entity obj = operator.getUsers().iterator().next();
-        Set<Entity>singleton = Collections.singleton(obj);
-		Collection<Entity> r = operator.editObjects(singleton, null);
-        Entity clone = r.iterator().next();
-        
-        Collection<Entity> storeList = new ArrayList<Entity>(1);
-        storeList.add( clone);
-		Collection<Entity> removeList = Collections.emptyList();
-		operator.storeAndRemove(storeList, removeList, null);
+        ((FileOperator)operator).saveData();
         assertTrue("stored version differs from orginal " + testFile
                    , differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false );
     }

@@ -118,22 +118,22 @@ public class RaplaMainReader extends RaplaXMLReader
             if (version == null)
                 throw createSAXParseException( "Invalid Format. Could not read data." );
 
+            double versionNr;
+            try {
+                versionNr = new Double(version).doubleValue();
+            } catch (NumberFormatException ex) {
+                throw new RaplaException("Invalid version tag (double-value expected)!");
+            }
             if (!version.equals( INPUT_FILE_VERSION ))
             {
-                double versionNr;
-                try {
-                    versionNr = new Double(version).doubleValue();
-                } catch (NumberFormatException ex) {
-                    throw new RaplaException("Invalid version tag (double-value expected)!");
-                }
                 // get the version number of the data-schema
                 if (versionNr > new Double(RaplaMainReader.INPUT_FILE_VERSION).doubleValue())
                     throw new RaplaException("This version of Rapla cannot read files with a version-number"
                                              + " greater than " + RaplaMainReader.INPUT_FILE_VERSION
                                              + ", try out the latest version.");
                 getLogger().warn( "Older version detected. " );
-                this.writeableContext.put(VERSION, versionNr);
             }
+            this.writeableContext.put(VERSION, versionNr);
             
             getLogger().debug( "Found compatible version-number." );
             // We've got the right version. We can proceed.
