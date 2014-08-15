@@ -13,6 +13,7 @@
 package org.rapla.plugin.mail.server;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
@@ -57,16 +58,18 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
         	return;
         
         Class<? extends  MailInterface> mailClass = null;
-        String mailClassConfig =config.getChild("mailinterface").getValue( null);
-        if (  mailClassConfig != null)
-        {
-            try {
+        ClientFacade lookup = container.getContext().lookup( ClientFacade.class );
+        try {
+                
+            String mailClassConfig = lookup.getSystemPreferences().getEntry(MailPlugin.MAILSERVER_CONFIG).getChild("mailinterface").getValue( null);
+            if (  mailClassConfig != null)
+            {
                 @SuppressWarnings("unchecked")
                 Class<? extends MailInterface> forName = (Class<? extends MailInterface>) Class.forName( mailClassConfig);
                 mailClass = forName;
-            } catch (Exception e) {
-                container.getContext().lookup(Logger.class).error( "Error loading mailinterface " +e.getMessage() );
             }
+        } catch (Exception e) {
+            container.getContext().lookup(Logger.class).error( "Error loading mailinterface " +e.getMessage() );
         }
         if ( mailClass == null)
         {

@@ -48,6 +48,11 @@ public class DefaultConfiguration implements Configuration {
     }
 
     public void setAttribute(String name, String value) {
+        if ( value == null)
+        {
+            attributes.remove( name);
+            return;
+        }
         attributes.put( name, value);
     }
 

@@ -6,43 +6,43 @@
  xmlns:doc="http://rapla.sourceforge.net/annotation"
  version="1.2">
    <rapla:categories>
-      <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="cbd5bb1b-854f-46a0-8f54-063374332d1f" key="department">
+      <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c46c87a7-2700-4065-8fed-0a5f0f52a4df" key="department">
          <doc:name lang="de">Abteilung</doc:name>
          <doc:name lang="en">department</doc:name>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="cdde1fea-9a44-4853-81e8-1faae4f94d43" key="channel-6">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c25d8971-2936-4ea9-b2d9-af63802155cc" key="channel-6">
             <doc:name lang="en">channel-6</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="c72a1982-7a1c-445e-ac08-c944d669df83" key="elementary-springfield">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c215928e-b195-4e61-8cd4-1d69c3b43d35" key="elementary-springfield">
             <doc:name lang="en">elementary-springfield</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="ce34ff07-68b0-4997-ac6a-924faf2525fc" key="springfield-powerplant">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c7fd0cd1-c698-431f-abab-82cf684cb309" key="springfield-powerplant">
             <doc:name lang="en">springfield powerplant</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="cb93d486-7fe5-40f2-af9f-ff149d00e472" key="testdepartment">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c468f8a2-aa73-47aa-8597-91eda93941f8" key="testdepartment">
             <doc:name lang="en">test department</doc:name>
          </rapla:category>
       </rapla:category>
-      <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="cd22546b-7f57-432b-b1f2-b8c5f7ea64a2" key="user-groups">
+      <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c7c2e9e7-d61e-455f-ac6c-14fda82478c8" key="user-groups">
          <doc:name lang="de">Benutzergruppen</doc:name>
          <doc:name lang="en">user-groups</doc:name>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="c7a7d779-1e1d-4a5c-8a40-6021a83dbf93" key="my-group">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c2642cdd-6144-4e66-bf54-b3ff76c76f04" key="my-group">
             <doc:name lang="en">my-group</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="c0e35df3-d854-4e69-8073-b885f8eb741a" key="registerer">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c1de624a-5be1-488a-a43f-93a772d8fc48" key="registerer">
             <doc:name lang="de">Ressourcen eintragen</doc:name>
             <doc:name lang="en">register resources</doc:name>
             <doc:name lang="fr">Enregistrer des ressources</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="c90f29f7-bc17-4b04-9bfe-684e9be9110f" key="modify-preferences">
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c727abe5-ea4f-41b2-9240-c9a4a6900c9b" key="modify-preferences">
             <doc:name lang="de">Einstellungen bearbeiten</doc:name>
             <doc:name lang="en">modify preferences</doc:name>
             <doc:name lang="fr">Modifier la préférence</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="c498e463-f5f4-45fe-a79a-cee925f567ce" key="read-events-from-others">
+         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c309ea1f-7b5c-400a-8546-ae7e692b32d7" key="read-events-from-others">
             <doc:name lang="de">Die Veranstaltungen anderer sehen</doc:name>
             <doc:name lang="en">read-events-from-others</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" id="cb1c644c-83ed-4f30-8c69-42a7f3bd4ff1" key="create-events">
+         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c5a6ade9-9546-44f7-8643-1684608746f0" key="create-events">
             <doc:name lang="de">Veranstaltungen anlegen</doc:name>
             <doc:name lang="en">create-events</doc:name>
          </rapla:category>
@@ -51,7 +51,7 @@
 
    <relax:grammar>
       <relax:define name="room">
-         <relax:element name="dynatt:room" id="d8c58ccb-98e4-4618-a9ef-78e8b349d4dc" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+         <relax:element name="dynatt:room" id="d5557636-7c52-4e19-b9b5-3161b0dfc233" created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z">
             <doc:name lang="de">Raum</doc:name>
             <doc:name lang="en">room</doc:name>
             <doc:annotations>
@@ -75,13 +75,14 @@
                <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
                <rapla:constraint name="multi-select">false</rapla:constraint>
             </relax:element>
+            <rapla:permission access="read_type"/>
             <rapla:permission/>
             <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
 
       <relax:define name="lecturer">
-         <relax:element name="dynatt:lecturer" id="dddfbfc9-16e5-4ef3-aa42-3b6b1f3afb68" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+         <relax:element name="dynatt:lecturer" id="d0dcf151-eaee-40f4-87af-20a756dcbfb6" created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z">
             <doc:name lang="de">Dozent</doc:name>
             <doc:name lang="en">lecturer</doc:name>
             <doc:annotations>
@@ -103,13 +104,14 @@
                <doc:name lang="en">forename</doc:name>
                <relax:data type="string"/>
             </relax:element>
+            <rapla:permission access="read_type"/>
             <rapla:permission/>
             <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
 
       <relax:define name="event">
-         <relax:element name="dynatt:event" id="daa0a097-8e1d-4d92-82fe-4e4ab37a3748" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+         <relax:element name="dynatt:event" id="dd6c8e40-4c7a-47af-a194-a29e11463abc" created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z">
             <doc:name lang="de">Veranstaltung</doc:name>
             <doc:name lang="en">event</doc:name>
             <doc:annotations>
@@ -137,6 +139,7 @@
                </doc:annotations>
                <relax:data type="string"/>
             </relax:element>
+            <rapla:permission access="read_type"/>
             <rapla:permission group="category[key='read-events-from-others']" access="read"/>
             <rapla:permission group="category[key='create-events']" access="create"/>
          </relax:element>
@@ -166,36 +169,41 @@
       </rapla:entry>
       <rapla:entry key="org.rapla.plugin.mail.server.Config">
          <rapla:config>
-            <plugin enabled="" class="">
+            <plugin>
                <mailinterface>org.rapla.MockMailer</mailinterface>
             </plugin>
          </rapla:config>
       </rapla:entry>
       <rapla:entry key="org.rapla.plugin.export2ical.server.Config">
          <rapla:config>
-            <plugin enabled="" class="">
+            <plugin>
                <first_plugin_startdate>2012-12-20</first_plugin_startdate>
             </plugin>
          </rapla:config>
       </rapla:entry>
-      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCCyAXDsA93rjNnxxepNIGjjXp9ssiPtypLMA-vpUSNRgtzo6h08bJCL2lHusxH7XOZJm1cDxWqhjJ5Ean3CY9JPeNI45bLxH5F_XGmU6NDwDqQfKgwTJ_y0YjHIQLY9bsjggyOuiMw4iawEDfhG_g1X3Anq1KaZp08AGWpysr2NODWqNYkgzy1MFWb-JxHGxOFbtqAYmrp5lNQKvjx7Z1Xq7QXx9LtOTTiqYf40Rm0QhJ30BDuwzz5-UC9VQVk0ZPbj7LpHySyxYJbg3VDFi0NmbJa2xz8t1kyYVemUBYWKKPEFl_qa-psl6gBCjl9AJd4HNkYRRJFSZWRFoxrxOXjAgMBAAECggEAHi4yxloW97OHwWc8mpu3XxsDLYbYqfHHHNrWg95L155WfjVCZtpwHL38OcVt5xtxFeK8UgZZJaUaeL4OzyexnWFe1i9PWW7bBSPb2lpqzvPJkBZ0adEFCHA6dFm14oOy0Bru8vEZteo6q17SxmxB928y3rS2t1L-7h3ZWDmoZPCwvaO-vM9GW7oWjc-IjvZ4iXPhpyqP_-vBw8hwwgCuQ0kpYDuGiEyNoZPAmTC9vS1s4iK3GJQpRg3fwhif-2HhNUMcqRcikXH7hIpOYJsKXkxzzBuoHgjE2-9E8seQSW06EU3gUXZejhC3jdgd93Wtq3krdluzcgDWfoiHrqiYQQKBgQDhEJu60l7STUUjfEAHVCoHcZFJsXu9MZ4whFQDIFyefI2jDrC2u7jJ7w-HTkzheQUGk9L7YVburGpoBS7TUMb-GFG85vodgKo4SM6zQiRyzD6slaE6s32T1xw_b8GO8TZ9WOJuUiGwGvoelcRBilC7VZNbk3u2vbX5Lo24SJqjSQKBgQCUwdhbS2e6_n3PegG7opcBYZYDuRiGaGRGAvvIneGynlOLORRJj1vkHGfLgAqi1l6GyUBL3Yhwy8c3PR6CckIG6l8JgSqV-tkw6T0R--jxae6WlgspjYboarR1I9xoHiZLAWC8_24LY_nt66a5mNiIXKY3UIfsDhsEMLf7n88TywKBgQCfr2v-0rIqXl62vbqkOIgVffOKqN3Vr7XAULNXAIgWfuLzlUG2dVy4EeEfrGOJ-pahQxMH_tlyQGzC3yKJFiAKOvELqYo-koKzqpzVvRElTlsNkqCxiJaJ5a8KJ13a8LQrnXwSsD1suMdMGhEEO4HqWN5TtEGrt9C8OtacsQ7e2QKBgGm0nXOyT5G3SdtnDVgyHy_iEmGu49iO0cJWWGikmD7-9srV0q666kdcT_1xjR1NS3poBAJk95F_nJ6KFeYIHxce8E2mtYZB7JgvBTCEW3FBH0Nud5wdb6I0QOuEghiSZA-keQOUVrRNZMpGTAFStXugqpRf61Y4Z8ZAgFyToOilAoGBAKIg-JKM-_pMNg2zFsjSkzDqb8iPo6TXujRKyKhq32BWq4D1sgt8ZvEW7ofNGPLFQf99Pm5fx0Zxq_3ZYbDc8-2-PvrnpzvRcxCJsvD4KnOTX9NJqRzcgyhtzGl8knE6PUGVyBX7i-lJU_l0Tt9xs4dLqA-J6WGnAGZEVsmCPUMe"/>
-      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgsgFw7APd64zZ8cXqTSBo416fbLIj7cqSzAPr6VEjUYLc6OodPGyQi9pR7rMR-1zmSZtXA8VqoYyeRGp9wmPST3jSOOWy8R-Rf1xplOjQ8A6kHyoMEyf8tGIxyEC2PW7I4IMjrojMOImsBA34Rv4NV9wJ6tSmmadPABlqcrK9jTg1qjWJIM8tTBVm_icRxsThW7agGJq6eZTUCr48e2dV6u0F8fS7Tk04qmH-NEZtEISd9AQ7sM8-flAvVUFZNGT24-y6R8kssWCW4N1QxYtDZmyWtsc_LdZMmFXplAWFiijxBZf6mvqbJeoAQo5fQCXeBzZGEUSRUmVkRaMa8Tl4wIDAQAB"/>
+      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDfzuhPhvKd4ALE61uoPGlbBJrYumGF2Yv8-RwEaWfG2tE6_pitV74Rb9kyJVREpJ8GRFOVKp-B6L-hIEZjJ9LDrr593_l5JmxoCUfiSDlUHl0L36VCAw2RwnTWboO1-bUnXNwnU3sT23ZRiYlwoPolSX94qcHGgsGOIA4apEttZiAPkxN5e3pAQUS97ce-RUs8F3mKNtrqG9_8sPofz015-DnL-deXPle62G__2pfJZMnnQkcSYa0SvSmVCWvTlUMRQmpaMoLcyIUBbahCBBN9B-MGmEUrtT39ZsfVuDDh2U66Uet_aK2Si9ov11DAPblvcxRVrN9GE9L8_Xn0IqCFAgMBAAECggEBAMwz6NrG8g8CGQS7CcISfL5DEVW1mM2blJKYZ-vOkJVriYQeUAe5Cv614qJSVPTcjwwUw35SiX7qcg39eLt31mIcyknnVaQoXrj93syjwUry-UqgIBR-3J6loh0UcLBUyejEXUq0bJPNpcL3jqNo_VOQH_JkUR1iqF-Y98VvKjMBSaXTK5PA2yesCzDvUNuLMF0rvgHksPuaGinuP-47BI-cM1hnhJHqUqozc-yX_tS0RSOIKOq08lQtXA1k0KAygP698Xj4pem6VaSs9L_p_AvFmEYOBK3hF1bsgSO751bhN0S1omWq-HA_0X4UR8b6EIAWKCsonpUAMSsb06pmhHECgYEA_gQaXWtGdpmtLb_le3icmyvFEXPKqwg51zwhvc5pyYKdxiP54sK-Ra_IueGxh7ujQ-uerxys3XjsZbnooMY9nSHtwWLduS-ir1w1sFCCbC7msRJpaZeq64yCsSE2grskg_AeuXvfbXjUhKkugyo-h2v0lTNV6LDxw_CDxOJuH6cCgYEA4Y5nqndwDGY1nd0f8JK85UCLjk2n7Gi2DMbBx8OOOf4Y5vSfGAP-CegZtAdDx65Sob5GZeQ2u6mj5ZjrZ_9Wg0kwhoy8nuwmMmXlkxdXPD_-nqoFvwx0eVlCYMlPECUg268R_niLbvC8NQyRhbup6me_vcnaHYSCkL0QIzlbY_MCgYAC_v9knLBPE870HDBTvX9zYRfI9emtDMLJ5B6tw3KB-vVrcd8vqoZeAg3HC39xj2gElBHiFN-BGT0IkiHJS61MXisUvdrJpWMw2FCVzM1NA1ybOBFgOna8ooKkHjUrY5OxrrJeE7T18JfpHKm8yFHGfSJ8ZAeeX__qBLs5JkaQPwKBgCjgau8cyCSnHU5ntZMetLcDVIdMkYMpktyL5LB0Q0FFSHQKnw52IsLe2lGjA2ibsgP3_MAYdMbbvoUsinUFdENEr1OjC8ftWhrGFq3qi_eyTU2p2HLAKheX0ozBzt9JK0RE3Qj2BabsX99pULIgyXFergQSIcI5soPSj6siiOp7AoGAfwTkjnIfQzsDS73965tO13fc81WLjzSlwxkXlvlfNckj6AdQzjtYU-SbppByd7mk7t1v-eN9AWuDEXR67qN1rhNdWvbRTS34wqVTB2RsfpQ66fjmcn_sNGYrcHXq3ha117jIH4orzOJS8HiiDuf0CQeoCBhMQJ1UcMJbYqjRGOM"/>
+      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA387oT4byneACxOtbqDxpWwSa2LphhdmL_PkcBGlnxtrROv6YrVe-EW_ZMiVURKSfBkRTlSqfgei_oSBGYyfSw66-fd_5eSZsaAlH4kg5VB5dC9-lQgMNkcJ01m6Dtfm1J1zcJ1N7E9t2UYmJcKD6JUl_eKnBxoLBjiAOGqRLbWYgD5MTeXt6QEFEve3HvkVLPBd5ijba6hvf_LD6H89Nefg5y_nXlz5Xuthv_9qXyWTJ50JHEmGtEr0plQlr05VDEUJqWjKC3MiFAW2oQgQTfQfjBphFK7U9_WbH1bgw4dlOulHrf2itkovaL9dQwD25b3MUVazfRhPS_P159CKghQIDAQAB"/>
    </rapla:preferences>
 
    <rapla:users>
       <!-- Users of the system -->
-      <rapla:user id="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T12:02:06.0827Z" username="homer" password="duffs" name="" email="homer@rapla.dummy.rapla" isAdmin="true">
+      <rapla:user id="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2014-08-15T15:37:58.0125Z" last-changed="2014-08-15T15:37:58.0125Z" username="homer" password="duffs" name="" email="homer@rapla.dummy.rapla" isAdmin="true">
          <rapla:group key="category[key='read-events-from-others']"/>
          <rapla:group key="category[key='create-events']"/>
          <rapla:preferences>
+            <rapla:entry key="org.rapla.plugin.notification.allocationlisteners">
+               <rapla:map>
+               </rapla:map>
+            </rapla:entry>
             <rapla:entry key="org.rapla.SessionTest">
                <rapla:config>
                   <myconfig test="testvalue"/>
                </rapla:config>
             </rapla:entry>
+            <rapla:entry key="org.rapla.plugin.notification.notify_if_owner" value="true"/>
          </rapla:preferences>
       </rapla:user>
-      <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z" username="monty" password="burns" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
+      <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T15:37:58.0125Z" last-changed="2014-08-15T15:37:58.0125Z" username="monty" password="burns" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
          <rapla:group key="category[key='modify-preferences']"/>
          <rapla:group key="category[key='my-group']"/>
          <rapla:group key="category[key='read-events-from-others']"/>
@@ -205,7 +213,7 @@
 
    <rapla:resources>
       <!-- resources -->
-      <rapla:extension id="period_1" created-at="2014-08-15T11:59:12.0178Z" last-changed="2014-08-15T11:59:12.0178Z">
+      <rapla:extension id="period_1" created-at="2014-08-15T15:37:58.0445Z" last-changed="2014-08-15T15:37:58.0445Z">
          <ext:period>
             <ext:name>SS 2001</ext:name>
             <ext:start>2001-04-10</ext:start>
@@ -213,7 +221,7 @@
          </ext:period>
          <rapla:permission access="read"/>
       </rapla:extension>
-      <rapla:extension id="period_2" created-at="2014-08-15T11:59:12.0178Z" last-changed="2014-08-15T11:59:12.0178Z">
+      <rapla:extension id="period_2" created-at="2014-08-15T15:37:58.0447Z" last-changed="2014-08-15T15:37:58.0447Z">
          <ext:period>
             <ext:name>WS 2001/2002</ext:name>
             <ext:start>2001-10-15</ext:start>
@@ -221,7 +229,7 @@
          </ext:period>
          <rapla:permission access="read"/>
       </rapla:extension>
-      <rapla:extension id="period_3" created-at="2014-08-15T11:59:12.0178Z" last-changed="2014-08-15T11:59:12.0178Z">
+      <rapla:extension id="period_3" created-at="2014-08-15T15:37:58.0447Z" last-changed="2014-08-15T15:37:58.0447Z">
          <ext:period>
             <ext:name>SS 2002</ext:name>
             <ext:start>2002-04-10</ext:start>
@@ -229,7 +237,7 @@
          </ext:period>
          <rapla:permission access="read"/>
       </rapla:extension>
-      <rapla:resource id="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+      <rapla:resource id="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:room>
             <dynatt:name>erwin</dynatt:name>
             <dynatt:seats>10</dynatt:seats>
@@ -237,7 +245,7 @@
          </dynatt:room>
          <rapla:permission access="allocate"/>
       </rapla:resource>
-      <rapla:resource id="c24ce517-4697-4e52-9917-ec000c84563c" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+      <rapla:resource id="c24ce517-4697-4e52-9917-ec000c84563c" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:room>
             <dynatt:name>Room A66</dynatt:name>
             <dynatt:seats>30</dynatt:seats>
@@ -245,7 +253,7 @@
          </dynatt:room>
          <rapla:permission/>
       </rapla:resource>
-      <rapla:person id="f92e9a11-c342-4413-a924-81eee17ccf92" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+      <rapla:person id="f92e9a11-c342-4413-a924-81eee17ccf92" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:lecturer>
             <dynatt:title>Mr.</dynatt:title>
             <dynatt:surname>Burns</dynatt:surname>
@@ -253,7 +261,7 @@
          </dynatt:lecturer>
          <rapla:permission/>
       </rapla:person>
-      <rapla:person id="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2" created-at="2014-08-15T11:59:12.0173Z" last-changed="2014-08-15T11:59:12.0173Z">
+      <rapla:person id="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:lecturer>
             <dynatt:surname>Simpson</dynatt:surname>
             <dynatt:forename>Homer</dynatt:forename>
@@ -270,10 +278,10 @@
             <dynatt:description>with all my friends
 and all the rest</dynatt:description>
          </dynatt:event>
-         <rapla:appointment id="a939e347-ffda-4d95-84b3-b8afce4b51c0" start-date="2001-10-15" start-time="17:00:00" end-date="2001-10-15" end-time="20:00:00">
+         <rapla:appointment id="a644e379-344e-4e1f-9ea3-2ed22ee12e94" start-date="2001-10-15" start-time="17:00:00" end-date="2001-10-15" end-time="20:00:00">
             <rapla:repeating type="weekly" end-date="2002-07-10"/>
          </rapla:appointment>
-         <rapla:appointment id="ac108c69-5b43-4bf9-837f-2dcd83c434ea" start-date="2001-10-20" start-time="17:00:00" end-date="2001-10-20" end-time="20:00:00">
+         <rapla:appointment id="a20a4b9e-0362-47ab-9f5e-807a5459a4cf" start-date="2001-10-20" start-time="17:00:00" end-date="2001-10-20" end-time="20:00:00">
             <rapla:repeating type="weekly" end-date="2002-07-10"/>
             <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
          </rapla:appointment>
@@ -284,8 +292,8 @@ and all the rest</dynatt:description>
          <dynatt:event>
             <dynatt:name>Reservation 2</dynatt:name>
          </dynatt:event>
-         <rapla:appointment id="abc32599-5531-4ad7-ae17-989890d03888" start-date="2001-10-16" start-time="12:00:00" end-date="2001-10-16" end-time="19:00:00"/>
-         <rapla:appointment id="a742c8fd-5086-4f36-96f1-77bd1c1c85fd" start-date="2006-09-04" start-time="13:00:00" end-date="2006-09-04" end-time="14:00:00">
+         <rapla:appointment id="aa4b5e33-3b97-4acc-9d21-6c8800518f09" start-date="2001-10-16" start-time="12:00:00" end-date="2001-10-16" end-time="19:00:00"/>
+         <rapla:appointment id="a792160c-3f7d-4b10-b45d-d99d6141d8d4" start-date="2006-09-04" start-time="13:00:00" end-date="2006-09-04" end-time="14:00:00">
             <rapla:repeating type="monthly" end-date="2010-09-04"/>
          </rapla:appointment>
          <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
@@ -298,11 +306,11 @@ and all the rest</dynatt:description>
             <dynatt:name>power planting</dynatt:name>
             <dynatt:description>new demands for energy</dynatt:description>
          </dynatt:event>
-         <rapla:appointment id="a0861e3d-582a-4159-af1f-560cc55d4838" start-date="2002-04-10" start-time="10:00:00" end-date="2002-04-10" end-time="12:00:00">
+         <rapla:appointment id="a8edbf51-a374-4450-800c-2907bb519af2" start-date="2002-04-10" start-time="10:00:00" end-date="2002-04-10" end-time="12:00:00">
             <rapla:repeating type="weekly" end-date="2002-07-10"/>
             <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
          </rapla:appointment>
-         <rapla:appointment id="a59a5692-60d8-4df5-be89-f1abf7e7e8eb" start-date="2002-04-12" start-time="10:00:00" end-date="2002-04-12" end-time="12:00:00">
+         <rapla:appointment id="a543f612-c97d-4b95-a0b8-2342f0cd2c2d" start-date="2002-04-12" start-time="10:00:00" end-date="2002-04-12" end-time="12:00:00">
             <rapla:repeating type="weekly" end-date="2002-07-10"/>
          </rapla:appointment>
          <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>

@@ -384,7 +384,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             Configuration pluginConfig = null;
             if ( raplaConfig != null )
             {
-            	// TODO should be replaced with a more desciptve approach instead of looking for the config by guessing from the package name
+            	// TODO should be replaced with a more descriptive approach instead of looking for the config by guessing from the package name
             	pluginConfig = raplaConfig.find( "class", pluginClassname );
 	            // If no plugin config for server is found look for plugin config for client plugin
 	            if ( pluginConfig == null )
@@ -454,119 +454,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 getLogger().error( e.getMessage() );
         }
     }
-
-//    public byte[] dispatch(RemoteSession remoteSession, String methodName, Map<String,String> args ) throws Exception
-//    {
-//        ByteArrayOutputStream out = new ByteArrayOutputStream();
-//        int indexRole = methodName.indexOf( "/" );
-//        String interfaceName = RemoteStorage.class.getName();
-//        if ( indexRole > 0 )
-//        {
-//            interfaceName = methodName.substring( 0, indexRole );
-//            methodName = methodName.substring( indexRole + 1 );
-//        }
-//        try
-//        {
-//            final Object serviceUncasted;
-//            {
-//	            Logger debugLogger = getLogger().getChildLogger(interfaceName+"."+ methodName  + ".arguments" );
-//	            if ( debugLogger.isDebugEnabled())
-//	            {
-//	            	debugLogger.debug(args.toString());            	
-//	            }
-//            }
-//            RemoteMethodFactory<?> factory = getRemoteMethod(interfaceName);
-//            Class<?> interfaceClass = Class.forName( interfaceName);
-//            
-//            serviceUncasted = factory.createService( remoteSession);
-//            Method method = findMethod( interfaceClass, methodName, args);
-//            if ( method == null)
-//            {
-//                throw new RaplaException("Can't find method with name " + methodName);
-//            }
-//            Class<?>[] parameterTypes = method.getParameterTypes();
-//			Object[] convertedArgs = remoteMethodService.deserializeArguments(parameterTypes,args);
-//            Object result = null;
-//            try
-//            {
-//                result = method.invoke( serviceUncasted, convertedArgs);
-//            }
-//            catch (InvocationTargetException ex)
-//            {
-//                Throwable cause = ex.getCause();
-//                if (cause instanceof RaplaException)
-//                {
-//                    throw (RaplaException)cause;
-//                }
-//                else
-//                {
-//                    throw new RaplaException( cause.getMessage(), cause );
-//                } 
-//            }
-//            User user = remoteSession.isAuthentified() ? remoteSession.getUser() : null;
-//            
-//            if ( result != null)
-//            {
-//                BufferedWriter outWriter = new BufferedWriter( new OutputStreamWriter( out,"utf-8"));
-//                Appendable appendable = outWriter;
-//                // we don't trasmit password settings in the general preference entry when the user is not an admin
-//                remoteMethodService.serializeReturnValue(user, result, appendable);
-//                outWriter.flush();
-//            }
-//            else
-//            {
-////            	BufferedWriter outWriter = new BufferedWriter( new OutputStreamWriter( out,"utf-8"));
-////            	outWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-////            	outWriter.write("/n");
-////            	outWriter.write("<data/>");
-////                outWriter.flush();
-//            }
-//            out.flush();
-//        }
-//        catch (EntityNotFoundException ex)
-//        {
-//            throw ex;
-//        }
-//        catch (DependencyException ex)
-//        {
-//            throw ex;
-//        }
-//        catch (RaplaNewVersionException ex)
-//        {
-//            throw ex;
-//        }
-//        catch (RaplaSecurityException ex)
-//        {
-//            getLogger().getChildLogger( interfaceName + "." + methodName).warn( ex.getMessage());
-//            throw ex;
-//        }
-//        catch ( Exception ex )
-//        {
-//            getLogger().getChildLogger( interfaceName + "." + methodName).error( ex.getMessage(), ex );
-//            throw ex;
-//        }
-//        out.close();
-//        return out.toByteArray();
-//    }
-
-//    private Method findMethod( Class inter,String methodName,Map<String,String> args) 
-//    {
-//        Method[] methods = inter.getMethods();
-//        for ( Method method: methods)
-//        {
-//            if ( method.getName().equals( methodName) )
-//            {
-//            	Class<?>[] parameterTypes = method.getParameterTypes();
-//            	Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-//            	int length = parameterTypes.length;
-//            	//	Map 
-//            	//for ( int i=0;)
-//            	if (parameterTypes.length == args.size())
-//                return method;
-//            }
-//        }
-//        return null;
-//    }
 
     public RemoteServer createService(final RemoteSession session) {
         return new RemoteServer() {

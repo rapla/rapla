@@ -1544,7 +1544,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	 */
 	final protected Set<Entity> getDependencies(Entity entity, EntityStore store)  {
 		RaplaType type = entity.getRaplaType();
-		final Collection<Entity>referencingEntities;
+		final Collection<Entity>referencingEntities; 
 		if (Category.TYPE == type || DynamicType.TYPE == type || Allocatable.TYPE == type || User.TYPE == type) {
 		    HashSet<Entity> dependencyList = new HashSet<Entity>();
 			referencingEntities = getReferencingEntities(entity, store);
