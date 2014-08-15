@@ -216,7 +216,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 }
                 add( dynamicType );
                 // We ensure the dynamic type is not modified anymore
-                dynamicType.setReadOnly(  );
+                //dynamicType.setReadOnly(  );
                 isDynamictypeActive = false;
             }
             else

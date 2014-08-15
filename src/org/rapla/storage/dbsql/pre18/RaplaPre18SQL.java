@@ -59,6 +59,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
@@ -490,7 +491,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
             return;
         }
 		allocatable.setOwner( resolveFromId(rset, 3, User.class) );
-    	Classification classification = type.newClassification(false);
+    	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
     	allocatable.setClassification( classification );
     	classificationMap.put( id, classification );
     	allocatableMap.put( id, allocatable);
@@ -562,7 +563,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         
     	event.setOwner( user );
         event.setLastChangedBy( resolveFromId(rset, 6, User.class) );
-    	Classification classification = type.newClassification(false);
+    	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck( false);
     	event.setClassification( classification );
     	classificationMap.put( id, classification );
     	reservationMap.put( id, event );

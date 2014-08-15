@@ -20,6 +20,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
@@ -56,7 +57,7 @@ class DynAttReader extends RaplaXMLReader {
 
             }
 
-        	Classification newClassification = dynamicType.newClassification(false);
+        	Classification newClassification = ((DynamicTypeImpl)dynamicType).newClassificationWithoutCheck(false);
             classification = (ClassificationImpl)newClassification;
             classifiable.setClassification(classification);
             classification.setResolver( store);

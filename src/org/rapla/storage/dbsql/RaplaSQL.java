@@ -563,7 +563,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
             return;
         }
 		allocatable.setOwner( resolveFromId(rset, 3, User.class) );
-    	Classification classification = type.newClassification(false);
+    	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
     	allocatable.setClassification( classification );
     	classificationMap.put( id, classification );
     	allocatableMap.put( id, allocatable);
@@ -661,7 +661,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         
     	event.setOwner( user );
         event.setLastChangedBy( resolveFromId(rset, 6, User.class) );
-    	Classification classification = type.newClassification(false);
+    	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
     	event.setClassification( classification );
     	classificationMap.put( id, classification );
     	reservationMap.put( id, event );
@@ -1052,6 +1052,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
     
     public DynamicTypeStorage(RaplaContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
+        idMap = new HashMap<String, DynamicType>();
         permissionStorage = new PermissionStorage<DynamicType>( context, "TYPE", idMap);
         addSubStorage(permissionStorage );
     }
@@ -1072,7 +1073,6 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
         return 1;
     }
 	
-
 	@Override
 	void insertAll() throws SQLException, RaplaException {
 		insert( cache.getDynamicTypes());
