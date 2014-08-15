@@ -1973,14 +1973,14 @@ See French text.
 		<text lang="pt">Seleção de cor automática</text>
     </entry>
     <entry key="color.manual">
-        <text lang="en">attribute "color"</text>
-        <text lang="de">Attribut "color"</text>
-        <text lang="fr">Attribut "color"</text>
-        <text lang="es">Atributo "color"</text>
-        <text lang="cs">Vlastnost "color"</text>
-        <text lang="nl">Attribuut "color"</text>
-        <text lang="pl">Atrybut "color"</text>
-		<text lang="pt">Atributo "color"</text>
+        <text lang="en">attribute preference "color"</text>
+        <text lang="de">Attributeinstellung "color"</text>
+        <text lang="fr">Attribut préférence "color"</text>
+        <text lang="es">Atributo Preferencia "color"</text>
+        <text lang="cs">Vlastnost Předvolby "color"</text>
+        <text lang="nl">Attribuut Voorkeuren "color"</text>
+        <text lang="pl">Atrybut Preferencje "color"</text>
+		<text lang="pt">Atributo Preferências "color"</text>
     </entry>
     <entry key="type">
         <text lang="en">Type</text>

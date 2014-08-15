@@ -116,8 +116,14 @@ public class AttributeEdit extends RaplaGUIComponent
         return constraintPanel;
     }
     
+    public Attribute getSelectedAttribute()
+    {
+        return listEdit.getSelectedValue();
+    }
+    
     public void selectAttribute( Attribute attribute)
     {
+        
         boolean shouldScroll = true;
         listEdit.getList().setSelectedValue( attribute, shouldScroll);
     }

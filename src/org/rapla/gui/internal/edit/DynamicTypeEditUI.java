@@ -70,6 +70,8 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     TextField elementKey;
     AttributeEdit attributeEdit;
 
+    private boolean ignoreListeners = false;
+    
     JLabel annotationLabel = new JLabel();
     JLabel annotationDescription = new JLabel();
     
@@ -176,54 +178,74 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         colorChooser.addActionListener(new ActionListener() {
 			
     			public void actionPerformed(ActionEvent e) {
-    				try {
+    			    if ( ignoreListeners )
+    			    {
+    			        return;
+    			    }
+    			    try {
     					int selectedIndex = colorChooser.getSelectedIndex();
                         Attribute firstAttributeWithAnnotation = ((DynamicTypeImpl)dynamicType).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
                         if ( firstAttributeWithAnnotation != null || selectedIndex != 1)
     					{
     						return;
     					}
-    					
-    					DialogUI ui = DialogUI.create(getContext(), getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
-						ui.start();
-						if (ui.getSelectedIndex() == 0)
-						{
-							Attribute colorAttribute = getModification().newAttribute(AttributeType.STRING);
-							colorAttribute.setKey( "color");
-							colorAttribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
-							colorAttribute.getName().setName(getLocale().getLanguage(), getString("color"));
-							colorAttribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW);
-							dynamicType.addAttribute( colorAttribute);
-							attributeEdit.setDynamicType(dynamicType);
-						}
-						else
-						{
-							colorChooser.setSelectedIndex(2);
-						}
+                        Attribute attribute = dynamicType.getAttribute("color");
+                        if ( attribute == null)
+                        {
+                            attribute = attributeEdit.getSelectedAttribute();
+                        }
+
+                        if ( attribute != null)
+                        {
+                            AttributeType type = attribute.getType();
+                            if ( type != AttributeType.STRING  && type != AttributeType.CATEGORY)
+                            {
+                                showWarning("Only string or category types are allowed for color attribute", getComponent());
+                                colorChooser.setSelectedIndex(2);
+                                return;
+                            }
+                            DialogUI ui = DialogUI.create(getContext(), getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            ui.start();
+                            if (ui.getSelectedIndex() == 0)
+                            {
+                                attribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
+                                attributeEdit.setDynamicType( dynamicType);
+                            }
+                            else
+                            {
+                                colorChooser.setSelectedIndex(2);
+                            }
+                        }
+                        else
+                        {
+        					DialogUI ui = DialogUI.create(getContext(), getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+    						ui.start();
+    						if (ui.getSelectedIndex() == 0)
+    						{
+    							createNewColorAttribute();
+    						}
+    						else
+    						{
+    							colorChooser.setSelectedIndex(2);
+    						}
+                        }
     				} catch (RaplaException ex) {
 						showException(ex, getMainComponent());
 					}
     				
     			}
+
+                private void createNewColorAttribute() throws RaplaException, IllegalAnnotationException {
+                    Attribute colorAttribute = getModification().newAttribute(AttributeType.STRING);
+                    colorAttribute.setKey( "color");
+                    colorAttribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
+                    colorAttribute.getName().setName(getLocale().getLanguage(), getString("color"));
+                    colorAttribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW);
+                    dynamicType.addAttribute( colorAttribute);
+                    attributeEdit.setDynamicType(dynamicType);
+                }
     		});
         
-        /*
-        annotationText.addFocusListener( new FocusAdapter() {
-
-            public void focusLost( FocusEvent e )
-            {
-                try
-                {
-                    setAnnotations();
-                }
-                catch ( RaplaException ex )
-                {
-                    showException( ex, getComponent());
-                }
-            }
-
-        });
-*/
     }
 
     public JComponent getComponent() {
@@ -362,13 +384,16 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     }
 
     private void updateAnnotations() throws RaplaException {
+        
+        
         annotationText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT ) );
         //annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
         List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
         annotationEdit.setObjects(asList);
-        
+        try
         {
-	        String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_COLORS); 
+            ignoreListeners = true;
+            String annotation = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_COLORS); 
 	        if (annotation  == null)
 	        {
 	        	annotation =  dynamicType.getAttribute("color") != null ? DynamicTypeAnnotations.VALUE_COLORS_COLOR_ATTRIBUTE: DynamicTypeAnnotations.VALUE_COLORS_AUTOMATED;
@@ -385,6 +410,10 @@ class DynamicTypeEditUI extends RaplaGUIComponent
 	        {
 	         	colorChooser.setSelectedIndex(2);
 	        }
+        }
+        finally
+        {
+            ignoreListeners = false;
         }
 //        if ( isEventType)
 //        {
