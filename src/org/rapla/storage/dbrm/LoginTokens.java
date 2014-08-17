@@ -3,6 +3,7 @@ package org.rapla.storage.dbrm;
 import java.util.Date;
 
 public class LoginTokens {
+ 
     String accessToken;
     Date validUntil;
     
@@ -22,5 +23,25 @@ public class LoginTokens {
     public Date getValidUntil()
     {
         return validUntil;
+    }
+    
+    public String toString()
+    {
+        return accessToken + "#" + validUntil.getTime();
+    }
+   
+    public static LoginTokens fromString(String s){
+        String[] split = s.split("#");
+        String accessToken2 = split[0];
+        long parseLong = Long.parseLong(split[1]);
+        Date validUntil2 = new Date(parseLong);
+        return       new LoginTokens(accessToken2, validUntil2);
+    }
+
+    public boolean isValid() {
+        long currentTimeMillis = System.currentTimeMillis();
+        long time = this.validUntil.getTime();
+        boolean valid = currentTimeMillis < time;
+        return valid;
     }
 }

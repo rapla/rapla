@@ -113,23 +113,26 @@ public interface PermissionContainer
         
         public static boolean canRead(DynamicType type, User user) {
             Collection<Permission> permissionList = type.getPermissionList();
-            boolean result = matchesAccessLevel( permissionList, user, Permission.READ_TYPE);
+            boolean result = matchesAccessLevel( permissionList, user, Permission.READ_TYPE, Permission.CREATE);
             return result;
         }
 
-        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, int accessLevel ) {
+        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, int... accessLevels ) {
             if ( user == null || user.isAdmin() )
                 return true;
           
             Collection<Category> groups = getGroupsIncludingParents(user);
             for ( Permission p:permissions ) 
             {
-                if (p.getAccessLevel() == accessLevel)
+                for ( int accessLevel:accessLevels)
                 {
-                    int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
-                    if ( effectLevel > Permission.NO_PERMISSION)
+                    if (p.getAccessLevel() == accessLevel)
                     {
-                        return true;
+                        int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+                        if ( effectLevel > Permission.NO_PERMISSION)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
