@@ -45,7 +45,7 @@ public class IteratorChain<T> implements Iterator<T> {
         {
         	firstIt = null;
         }
-        else if (secondIt!=null  && !secondIt.hasNext())
+        if (secondIt!=null  && !secondIt.hasNext())
         {
         	secondIt = null;
         }

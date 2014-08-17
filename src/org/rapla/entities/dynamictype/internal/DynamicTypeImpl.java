@@ -257,14 +257,21 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() 
     {
-        return new IterableChain<ReferenceInfo>(super.getReferenceInfo(), 
-                new NestedIterable<ReferenceInfo,AttributeImpl>( attributes ) 
-        {
-            public Iterable<ReferenceInfo> getNestedIterable(AttributeImpl obj) {
-                return obj.getReferenceInfo();
-            }
-        }
-                );
+        return new IterableChain<ReferenceInfo>(
+                super.getReferenceInfo() 
+                ,new NestedIterable<ReferenceInfo,AttributeImpl>( attributes ) 
+                {
+                    public Iterable<ReferenceInfo> getNestedIterable(AttributeImpl obj) {
+                        return obj.getReferenceInfo();
+                    }  
+                }
+                ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) 
+                {
+                    public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
+                        return obj.getReferenceInfo();
+                    }
+                }
+           );
     }
 
     @Override
