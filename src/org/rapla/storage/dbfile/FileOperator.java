@@ -280,6 +280,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         catch ( FileNotFoundException ex )
         {
+            getLogger().warn( "Data file not found " + loadingURL + " creating default system.");
         	createDefaultSystem(cache);
         }
         catch ( IOException ex )
