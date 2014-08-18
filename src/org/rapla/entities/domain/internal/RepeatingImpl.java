@@ -159,7 +159,9 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         if (!isFixedNumber)
             return end;
         if ( this.appointment == null)
-            return null;
+        {
+            throw new IllegalStateException("Appointment not set");
+        }
 
         if (endTime == null)
             endTime = new Date();

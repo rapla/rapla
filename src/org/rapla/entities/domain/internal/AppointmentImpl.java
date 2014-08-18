@@ -194,6 +194,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     */
     public Date getMaxEnd() {
         long end = (this.end!= null) ? this.end.getTime():0;
+        Repeating repeating = getRepeating();
         if  (repeating != null)
             if (repeating.getEnd() != null)
                 end = Math.max(end
@@ -209,7 +210,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return maxDate;
     }
 
-    public Repeating getRepeating() {
+    public RepeatingImpl getRepeating() {
         if ( repeating != null && repeating.getAppointment() == null)
         {
             repeating.setAppointment( this);
@@ -297,7 +298,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (!equalsOrBothNull(this.end, a2.getEnd()))
             return false;
         
-        Repeating r1 = this.repeating;
+        Repeating r1 = getRepeating();
         Repeating r2 = a2.getRepeating();
 
         // No repeatings. The two appointments match
@@ -361,6 +362,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         long c2 = end;
         long s = this.start.getTime();
         long e = this.end.getTime();
+        RepeatingImpl repeating = getRepeating();
         // if there is no repeating
         if (repeating==null) {
             if (s <c2 && e>c1) {
@@ -413,7 +415,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         long maxEnding = Long.MAX_VALUE;
         if ( maxNumber >= 0)
         {
-            maxEnding = repeating.getEnd().getTime();
+            Date end2 = repeating.getEnd();
+            maxEnding = end2.getTime();
         }
         
         DD=DE?BUG: print("l = repeatingInterval (in minutes), x = stepcount");
@@ -522,7 +525,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         long s2 = start2.getTime();
         long e1 = this.end.getTime();
         long e2 = a2.getEnd().getTime();
-        RepeatingImpl r1 = this.repeating;
+        RepeatingImpl r1 = getRepeating();
         RepeatingImpl r2 = (RepeatingImpl)a2.getRepeating();
         DD=DE?BUG: print("Testing overlap of");
         DD=DE?BUG: print(" A1: " + toString());
@@ -653,7 +656,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
        auf Ausnahmen. Gibt es fuer einen Punkt keine Ausnahme wird false zurueckgeliefert.
     */
     private boolean hasExceptionForEveryPossibleCollisionInInterval(long s1,long s2,RepeatingImpl r2) {
-        RepeatingImpl r1 = repeating;
+        RepeatingImpl r1 = getRepeating();
         Date end= getOverlappingEnd(r1,r2);
         if (end == null)
             return false;
