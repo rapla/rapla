@@ -100,27 +100,27 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
-	<classpathentry kind="lib" path="lib/jetty-continuation-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-continuation-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-http-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-http-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-io-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-io-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-security-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-security-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-server-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-server-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="accessible" pattern="org/eclipse/jetty/server/Handler"/>
 			<accessrule kind="accessible" pattern="org/eclipse/jetty/server/Server"/>
@@ -129,41 +129,41 @@
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-servlet-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-servlet-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="org/eclipse/jetty/servlet/ServletHandler"/>
 			<accessrule kind="discouraged" pattern="org/eclipse/jetty/servlet/ServletHolder"/>
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-util-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-util-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="accessible" pattern="org/eclipse/jetty/util/component/AbstractLifeCycle"/>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-webapp-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-webapp-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="accessible" pattern="org/eclipse/jetty/webapp/WebAppContext"/>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-xml-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-xml-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-plus-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-plus-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-jndi-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-jndi-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/jetty-deploy-8.1.14.v20131031.jar">
+	<classpathentry kind="lib" path="lib/jetty-deploy-8.1.15.v20140411.jar">
 		<accessrules>
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
