@@ -35,7 +35,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
@@ -59,9 +58,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     LongField minAdvance;
     LongField maxAdvance;
 
-    ListField<Integer> accessField;
+    ListField<Permission.AccessLevel> accessField;
 
-    Collection<Integer> permissionLevels = Permission.ACCESS_LEVEL_NAMEMAP.keySet();
+    Collection<Permission.AccessLevel> permissionLevels = Arrays.asList(Permission.AccessLevel.values());
 
     @SuppressWarnings("unchecked")
 	public PermissionField(RaplaContext context) throws RaplaException {
@@ -138,16 +137,15 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(getString("permission.access") + ":"), "0,4,f,f" );
-        accessField = new ListField<Integer>(context, permissionLevels );
+        accessField = new ListField<Permission.AccessLevel>(context, permissionLevels );
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                int intValue = -1;
+                Permission.AccessLevel intValue = null;
                 if (value != null) {
-                   intValue = ((Integer) value).intValue();
-                   Assert.isTrue( intValue >=0);
-                   String key = Permission.ACCESS_LEVEL_NAMEMAP.get( intValue );
+                   intValue = ((Permission.AccessLevel) value);
+                   String key = intValue.name().toLowerCase();
                    value = getI18n().getString("permission." + key );
 
                 }
@@ -194,8 +192,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
 
     private void toggleVisibility() {
-        int level = accessField.getValue().intValue();
-        reservationPanel.setVisible( level >= Permission.ALLOCATE && level < Permission.ADMIN);
+        Permission.AccessLevel level = accessField.getValue();
+        reservationPanel.setVisible( level.includes(Permission.ALLOCATE) && level.excludes(Permission.ADMIN));
         
         int i = startSelection.getSelectedIndex();
         startDate.getComponent().setVisible( i == 1 );
@@ -328,12 +326,12 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     }
 
     
-    public void setPermissionLevels(Integer... permissionLevels) {
+    public void setPermissionLevels(Permission.AccessLevel... permissionLevels) {
         this.permissionLevels = Arrays.asList( permissionLevels);
         accessField.setVector( this.permissionLevels);
     }
     
-    public Collection<Integer> getPermissionLevels() 
+    public Collection<Permission.AccessLevel> getPermissionLevels() 
     {
         return permissionLevels;
     }

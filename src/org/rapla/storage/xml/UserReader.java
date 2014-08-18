@@ -99,6 +99,7 @@ public class UserReader extends RaplaXMLReader
         }
     }
     
+    @SuppressWarnings("deprecation")
     @Override
     public void processEnd( String namespaceURI, String localName ) throws RaplaSAXParseException
     {

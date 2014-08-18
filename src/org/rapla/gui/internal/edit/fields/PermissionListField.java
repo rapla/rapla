@@ -56,7 +56,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	DefaultListModel model = new DefaultListModel();
 	Permission selectedPermission = null;
 	int selectedIndex = 0;
-	Integer defaultAccessLevel = null;
+	Permission.AccessLevel defaultAccessLevel = null;
 	
 	List<Permission> notAllList = new ArrayList<Permission>();
 	public PermissionListField(RaplaContext context, String fieldName) throws RaplaException {
@@ -227,8 +227,8 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	    {
 	        permission.setAccessLevel( defaultAccessLevel );
 	    }
-	    int accessLevel = permission.getAccessLevel();
-	    Collection<Integer> permissionLevels = permissionField.getPermissionLevels();
+	    Permission.AccessLevel accessLevel = permission.getAccessLevel();
+	    Collection<Permission.AccessLevel> permissionLevels = permissionField.getPermissionLevels();
         if ( !permissionLevels.contains( accessLevel))
 	    {
 	        permission.setAccessLevel( permissionLevels.iterator().next());
@@ -275,11 +275,11 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	}
 	
 
-	public void setPermissionLevels(Integer... permissionLevels) {
+	public void setPermissionLevels(Permission.AccessLevel... permissionLevels) {
         this.permissionField.setPermissionLevels(permissionLevels);
     }
 
-	public void setDefaultAccessLevel(Integer defaultAccessLevel) {
+	public void setDefaultAccessLevel(Permission.AccessLevel defaultAccessLevel) {
         this.defaultAccessLevel = defaultAccessLevel;
     }
 	
@@ -288,7 +288,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	    permissionField.setUserVisible( userSelectVisible );
 	}
 	
-	public Integer getDefaultAccessLevel() 
+	public Permission.AccessLevel getDefaultAccessLevel() 
 	{
         return defaultAccessLevel;
     }

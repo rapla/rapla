@@ -178,7 +178,7 @@ public class RaplaComponent
                 {
                     continue;
                 }
-                if ( p.getAccessLevel() > Permission.READ)
+                if ( p.getAccessLevel().includes(Permission.ALLOCATE))
                 {
                     return true;
                 }

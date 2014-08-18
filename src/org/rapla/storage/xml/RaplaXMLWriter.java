@@ -146,9 +146,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
         if ( p.getEnd() != null ) {
             att ( "end-date", dateTimeFormat.formatDate(  p.getEnd() ) );
         }
-        if ( p.getAccessLevel() != Permission.ALLOCATE_CONFLICTS ) {
-            att("access", Permission.ACCESS_LEVEL_NAMEMAP.get( p.getAccessLevel() ) );
-        }
+        att("access", p.getAccessLevel().name().toLowerCase() );
         closeElementTag();
     }
 

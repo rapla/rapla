@@ -937,7 +937,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         entry.reference = ref;
         if ( current instanceof EntityPermissionContainer)
         {
-            entry.addPermissions((EntityPermissionContainer)current, Permission.READ_ONLY_INFORMATION);
+            entry.addPermissions((EntityPermissionContainer)current, Permission.READ_NO_ALLOCATION);
         }
         else if ( current instanceof Conflict)
         {
@@ -1086,15 +1086,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return reference + (isDelete ? " removed on " : "changed on ") + timestamp;
         }
         
-        private void addPermissions( EntityPermissionContainer current, int minimumLevel) {
+        private void addPermissions( EntityPermissionContainer current, Permission.AccessLevel minimumLevel) {
             DeleteUpdateEntry entry =this;
             Collection<Permission> permissions =  current.getPermissionList();
             for ( Permission p:permissions)
             {
                 Category group = p.getGroup();
                 User user = p.getUser();
-                int accessLevel = p.getAccessLevel();
-                if ( accessLevel <= minimumLevel)
+                Permission.AccessLevel accessLevel = p.getAccessLevel();
+                if ( minimumLevel.includes(accessLevel))
                 {
                     continue;
                 }
@@ -2318,6 +2318,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 
+    @SuppressWarnings("deprecation")
     private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups) 
     {
         {
@@ -2347,7 +2348,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	{
     	EntityStore store = new EntityStore( null, cache.getSuperCategory() );
 		
-		String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
+		@SuppressWarnings("deprecation")
+        String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
 		Date now = getCurrentTimestamp();
 		CategoryImpl groupsCategory = new CategoryImpl(now,now);
 		groupsCategory.setKey("user-groups");

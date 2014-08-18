@@ -3451,7 +3451,7 @@ See French text.
         <text lang="pl">przydzielać zasoby</text>
 		<text lang="pt">atribuir</text>
     </entry>
-    <entry key="permission.allocate-conflicts">
+    <entry key="permission.allocate_conflicts">
         <text lang="en">allocate &amp; create conflicts</text>
         <text lang="de">belegen &amp; Konflikte erzeugen</text>
         <text lang="fr">allouer &amp; Créer des conflits</text>

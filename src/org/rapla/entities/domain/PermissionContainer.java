@@ -21,8 +21,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -48,15 +50,15 @@ public interface PermissionContainer
             for ( Permission p:permissionList)
             {
                 Permission clone = p.clone();
-                int accessLevel = clone.getAccessLevel();
-                if (accessLevel != Permission.CREATE && accessLevel != Permission.READ_TYPE)
+                Permission.AccessLevel accessLevel = clone.getAccessLevel();
+                if (!accessLevel.equals(Permission.CREATE) && !accessLevel.equals(Permission.READ_TYPE))
                 {
                     permissionContainer.addPermission( clone);
                 }
             }
         }
 
-        static public boolean hasAccess(PermissionContainer container, User user, int accessLevel ) {
+        static public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel ) {
             Iterable<? extends Permission> permissions = container.getPermissionList();
             return hasAccess(permissions,user, accessLevel, null, null, null, false);
         }
@@ -117,19 +119,19 @@ public interface PermissionContainer
             return result;
         }
 
-        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, int... accessLevels ) {
+        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, AccessLevel... accessLevels ) {
             if ( user == null || user.isAdmin() )
                 return true;
           
             Collection<Category> groups = getGroupsIncludingParents(user);
             for ( Permission p:permissions ) 
             {
-                for ( int accessLevel:accessLevels)
+                for ( AccessLevel accessLevel:accessLevels)
                 {
                     if (p.getAccessLevel() == accessLevel)
                     {
                         int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
-                        if ( effectLevel > Permission.NO_PERMISSION)
+                        if ( effectLevel > PermissionImpl.NO_PERMISSION)
                         {
                             return true;
                         }
@@ -140,19 +142,19 @@ public interface PermissionContainer
         }
 
         
-        static public boolean hasAccess(Iterable<? extends Permission> permissions, User user, int accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
+        static public boolean hasAccess(Iterable<? extends Permission> permissions, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
             if ( user == null || user.isAdmin() )
                 return true;
           
-            int maxAccessLevel = 0;
-            int maxEffectLevel = Permission.NO_PERMISSION;
+            AccessLevel maxAccessLevel = AccessLevel.DENIED;
+            int maxEffectLevel = PermissionImpl.NO_PERMISSION;
             Collection<Category> groups = getGroupsIncludingParents(user);
             for ( Permission p:permissions ) {
                 int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
 
-                if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION)
+                if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
                 {
-                    if ( p.hasTimeLimits() && accessLevel >= Permission.ALLOCATE && today!= null)
+                    if ( p.hasTimeLimits() && accessLevel.includes( Permission.ALLOCATE) && today!= null)
                     {
                         if (p.getAccessLevel() != Permission.ADMIN  )
                         {
@@ -172,15 +174,57 @@ public interface PermissionContainer
                             }
                         }
                     }
-                    if ( maxAccessLevel < p.getAccessLevel() || effectLevel > maxEffectLevel)
+                    if ( maxAccessLevel.excludes( p.getAccessLevel()) || effectLevel > maxEffectLevel)
                     {
                         maxAccessLevel = p.getAccessLevel();
                     }
                     maxEffectLevel = effectLevel;
                 }
             }
-            boolean granted = maxAccessLevel >= accessLevel ;
+            boolean granted = maxAccessLevel.includes( accessLevel) ;
             return granted;
+        }
+        
+        static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,Date today,  Permission.AccessLevel requestedAccessLevel ) {
+            if ( user == null || user.isAdmin() )
+                return new TimeInterval( null, null);
+          
+            TimeInterval interval = null;
+            int maxEffectLevel = PermissionImpl.NO_PERMISSION;
+            for ( Permission p:permissionList) 
+            {
+                int effectLevel = ((PermissionImpl)p).getUserEffect(user);
+                Permission.AccessLevel accessLevel = p.getAccessLevel();
+                if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
+                {
+                    Date start;
+                    Date end;
+                    if (accessLevel!= Permission.ADMIN  )
+                    {
+                        start = p.getMinAllowed( today);
+                        end = p.getMaxAllowed(today);
+                        if ( end != null && end.before( today))
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        start = null;
+                        end = null;
+                    }
+                    if ( interval == null || effectLevel > maxEffectLevel)
+                    {
+                        interval = new TimeInterval(start, end);
+                    }
+                    else
+                    {
+                        interval = interval.union(new TimeInterval(start, end));
+                    }
+                    maxEffectLevel = effectLevel;
+                }
+            }
+            return interval;
         }
 
         private static Collection<Category> getGroupsIncludingParents(User user) {

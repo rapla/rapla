@@ -48,7 +48,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
             fields.add(holdBackConflictsField );
         }
-        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_ONLY_INFORMATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         setFields(fields);
     }
 
@@ -96,7 +96,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         }
         if ( allPermissions)
         {
-            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_ONLY_INFORMATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         }
         else
         {

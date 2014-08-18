@@ -356,6 +356,7 @@ public class DynamicTypeReader extends RaplaXMLReader
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void addNewPermissions(DynamicTypeImpl dynamicType) throws RaplaSAXParseException {
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE) || classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
@@ -369,7 +370,6 @@ public class DynamicTypeReader extends RaplaXMLReader
                 permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
                 dynamicType.addPermission( permission);
             }
-            @SuppressWarnings("deprecation")
             String registerer = Permission.GROUP_REGISTERER_KEY;
             addNewPermissionWithGroup(dynamicType, Permission.CREATE, registerer, false);
         } else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
@@ -383,7 +383,7 @@ public class DynamicTypeReader extends RaplaXMLReader
         }
     }
 
-    private void addNewPermissionWithGroup(DynamicTypeImpl dynamicType, int acceassLevel, String groupKey, boolean create) throws RaplaSAXParseException {
+    private void addNewPermissionWithGroup(DynamicTypeImpl dynamicType, Permission.AccessLevel acceassLevel, String groupKey, boolean create) throws RaplaSAXParseException {
         Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
         Category group = userGroups.getCategory(groupKey);
         if ( group == null)
