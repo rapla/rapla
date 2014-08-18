@@ -130,6 +130,10 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	        	idEntries = new ArrayList<String>();
 	        	links.put(key, idEntries);
 	        }
+	        if ( idEntries.contains( id))
+	        {
+	            return;
+	        }
 			idEntries.add(id);
         }
     }
