@@ -13,7 +13,6 @@
 package org.rapla.storage.tests;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -140,9 +139,15 @@ public class LocalCacheTest extends RaplaTestCase {
 		            }
 		        }
 		        {
-		            Iterator<Allocatable> it = cache.getAllocatables().iterator();
-		            assertEquals("erwin",it.next().getName(locale));
-		            assertEquals("Room A66",it.next().getName(locale));
+		            for (Allocatable next:cache.getAllocatables())
+		            {
+		                if ( ((DynamicTypeImpl)next.getClassification().getType()).isInternal())
+		                {
+		                    continue;
+		                }
+		                assertEquals("erwin",next.getName(locale));
+		                break;
+		            }
 		        }		
 			}
 		});

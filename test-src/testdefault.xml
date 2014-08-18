@@ -76,7 +76,7 @@
                <rapla:constraint name="multi-select">false</rapla:constraint>
             </relax:element>
             <rapla:permission access="read_type"/>
-            <rapla:permission/>
+            <rapla:permission access="allocate_conflicts"/>
             <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
@@ -105,7 +105,7 @@
                <relax:data type="string"/>
             </relax:element>
             <rapla:permission access="read_type"/>
-            <rapla:permission/>
+            <rapla:permission access="allocate_conflicts"/>
             <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
@@ -251,7 +251,7 @@
             <dynatt:seats>30</dynatt:seats>
             <dynatt:belongsto>category[key='springfield-powerplant']</dynatt:belongsto>
          </dynatt:room>
-         <rapla:permission/>
+         <rapla:permission access="allocate_conflicts"/>
       </rapla:resource>
       <rapla:person id="f92e9a11-c342-4413-a924-81eee17ccf92" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:lecturer>
@@ -259,14 +259,14 @@
             <dynatt:surname>Burns</dynatt:surname>
             <dynatt:forename>Monty</dynatt:forename>
          </dynatt:lecturer>
-         <rapla:permission/>
+         <rapla:permission access="allocate_conflicts"/>
       </rapla:person>
       <rapla:person id="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:lecturer>
             <dynatt:surname>Simpson</dynatt:surname>
             <dynatt:forename>Homer</dynatt:forename>
          </dynatt:lecturer>
-         <rapla:permission/>
+         <rapla:permission access="allocate_conflicts"/>
       </rapla:person>
 
    </rapla:resources>
