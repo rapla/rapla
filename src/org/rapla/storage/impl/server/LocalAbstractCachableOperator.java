@@ -985,7 +985,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     private boolean isAffected(DeleteUpdateEntry entry, User user) {
-        if ( entry.affectAll || user.isAdmin())
+        if ( entry.affectAll || user.isAdmin() )
         {
             return true;
         }

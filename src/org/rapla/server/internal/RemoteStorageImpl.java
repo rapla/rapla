@@ -383,23 +383,23 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         //Category superCategory = operator.getSuperCategory();
 		//Set<Category> groupsConflictRefresh = new HashSet<Category>();
 		Set<User> usersConflictRefresh = new HashSet<User>();
-		for (Remove operation:evt.getOperations(UpdateResult.Remove.class))
-        {
-		    Entity obj = operation.getCurrent();
-            if ( obj instanceof Ownable)
-            {
-                Ownable ownable = (Ownable) obj;
-                User owner = ownable.getOwner();
-                if ( owner != null)
-                {
-                    if ( !obj.getRaplaType().is( Reservation.TYPE))
-                    {
-                        usersResourceRefresh.add( owner);
-                    }
-                    usersConflictRefresh.add( owner);
-                }
-            }
-        }
+//		for (Remove operation:evt.getOperations(UpdateResult.Remove.class))
+//        {
+//		    Entity obj = operation.getCurrent();
+//            if ( obj instanceof Ownable)
+//            {
+//                Ownable ownable = (Ownable) obj;
+//                User owner = ownable.getOwner();
+//                if ( owner != null)
+//                {
+//                    if ( !obj.getRaplaType().is( Reservation.TYPE))
+//                    {
+//                        usersResourceRefresh.add( owner);
+//                    }
+//                    usersConflictRefresh.add( owner);
+//                }
+//            }
+//        }
 		for (Change operation:evt.getOperations(UpdateResult.Change.class))
 		{
 			Entity newObject = operation.getNew();
@@ -1133,7 +1133,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                     {
                         String id = ref.getId();
                         Class<? extends Entity> type = ref.getType();
-                        if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class )
+                        if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
                         {
                             safeResultEvent.putRemoveId(id);
                         }
