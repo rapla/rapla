@@ -747,8 +747,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         Date end = appointment.getMaxEnd();
         for ( Permission p:allocatable.getPermissionList()) 
         {
-            int accessLevel = p.getAccessLevel();
-            if ( (!p.affectsUser( user )) ||  accessLevel< Permission.READ) {
+            Permission.AccessLevel accessLevel = p.getAccessLevel();
+            if ( (!p.affectsUser( user )) ||  accessLevel.excludes(Permission.READ)) {
                 continue;
             }
             
@@ -758,7 +758,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
                 return true;
             }
            
-            if ( accessLevel >= Permission.ALLOCATE && p.covers( start, end, today ) ) 
+            if ( accessLevel.includes(Permission.ALLOCATE) && p.covers( start, end, today ) ) 
             {
                 return true;
             }
@@ -784,7 +784,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             {
                 return true;
             }
-            if ( accessLevel >= Permission.ALLOCATE )
+            if ( accessLevel.includes(Permission.ALLOCATE ))
             {
             	Date maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
                 if (maxTime == null)
@@ -1190,6 +1190,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return dynamicType;
 	}
 
+    @SuppressWarnings("deprecation")
     private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException {
         {
             Permission permission = dynamicType.newPermission();
@@ -1246,7 +1247,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date now = operator.getCurrentTimestamp();
 		UserImpl user = new UserImpl( now, now);
 		setNew(user);
-		String[] defaultGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS};
+		@SuppressWarnings("deprecation")
+        String[] defaultGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS};
 		for ( String groupKey: defaultGroups)
 		{
 			Category group = getUserGroupsCategory().getCategory( groupKey);

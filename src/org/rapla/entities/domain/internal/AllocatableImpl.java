@@ -141,46 +141,10 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     
     
     public TimeInterval getAllocateInterval( User user, Date today) {
-        if ( user == null || user.isAdmin() )
-            return new TimeInterval( null, null);
-      
-        TimeInterval interval = null;
-        int maxEffectLevel = Permission.NO_PERMISSION;
-        for ( Permission p:permissions) 
-        {
-            int effectLevel = p.getUserEffect(user);
-            int accessLevel = p.getAccessLevel();
-			if ( effectLevel >= maxEffectLevel && effectLevel > Permission.NO_PERMISSION && accessLevel>= Permission.ALLOCATE)
-            {
-				Date start;
-				Date end;
-        		if (accessLevel != Permission.ADMIN  )
-        		{
-        			start = p.getMinAllowed( today);
-        			end = p.getMaxAllowed(today);
-        			if ( end != null && end.before( today))
-        			{
-        				continue;
-        			}
-        		}
-        		else
-        		{
-        			start = null;
-        			end = null;
-        		}
-        		if ( interval == null || effectLevel > maxEffectLevel)
-        		{
-        			interval = new TimeInterval(start, end);
-        		}
-        		else
-            	{
-          			interval = interval.union(new TimeInterval(start, end));
-            	}
-            	maxEffectLevel = effectLevel;
-            }
-        }
-        return interval;
+        return PermissionContainer.Util.getInterval(permissions,user, today, Permission.ALLOCATE);
     }
+
+   
     
    
     
@@ -201,7 +165,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         {
             return false;
         }
-        return PermissionContainer.Util.hasAccess( this,user, Permission.READ_ONLY_INFORMATION );
+        return PermissionContainer.Util.hasAccess( this,user, Permission.READ_NO_ALLOCATION );
     }
     
     public boolean canRead(User user) 

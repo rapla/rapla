@@ -98,8 +98,8 @@ public class PermissionReader extends RaplaXMLReader
             String accessLevel = getString(
                 atts,
                 "access",
-                Permission.ACCESS_LEVEL_NAMEMAP.get( Permission.ALLOCATE_CONFLICTS ) );
-            Integer matchingLevel = Permission.ACCESS_LEVEL_NAMEMAP.findAccessLevel( accessLevel );
+                Permission.ALLOCATE_CONFLICTS.name() );
+            Permission.AccessLevel matchingLevel = Permission.AccessLevel.find( accessLevel);
             if (matchingLevel  == null)
             {
                 throw createSAXParseException( "Unknown access level '" + accessLevel + "'" );

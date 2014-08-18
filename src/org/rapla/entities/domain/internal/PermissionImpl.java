@@ -36,7 +36,11 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     Date pStart = null;
     Integer maxAdvance = null;
     Integer minAdvance = null;
-    int accessLevel = ALLOCATE_CONFLICTS;
+    AccessLevel accessLevel = AccessLevel.ALLOCATE_CONFLICTS;
+    public static final int NO_PERMISSION = -2;
+    public static final int ALL_USER_PERMISSION = -1;
+    public static final int USER_PERMISSION = 10000;
+    public static final int GROUP_PERMISSION = 5000;
 
     public void setUser(User user) {
         checkWritable();
@@ -118,9 +122,16 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public boolean affectsUser(User user) {
         int userEffect = getUserEffect( user );
-		return userEffect> NO_PERMISSION;
+		return userEffect> PermissionImpl.NO_PERMISSION;
     }
     
+    /**
+     * 
+     * @return NO_PERMISSION if permission does not effect user
+     * @return ALL_USER_PERMISSION if permission affects all users 
+     * @return USER_PERMISSION if permission specifies the current user
+     * @return if the permission affects a users group the depth of the permission group category specified 
+     */
     public int getUserEffect(User user) {
         return getUserEffect(user, null);
     }
@@ -130,11 +141,11 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         Category pGroup = getGroup();
         if ( pUser == null  && pGroup == null ) 
         {
-            return ALL_USER_PERMISSION;
+            return PermissionImpl.ALL_USER_PERMISSION;
         }
         if ( pUser != null  && user.equals( pUser ) ) 
         {
-            return USER_PERMISSION;
+            return PermissionImpl.USER_PERMISSION;
         } 
         else if ( pGroup != null ) 
         {
@@ -142,30 +153,26 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         	{
         		if ( user.belongsTo( pGroup))
         		{
-        			return GROUP_PERMISSION;	
+        			return PermissionImpl.GROUP_PERMISSION;	
         		}
         	}
         	else
         	{
         		if ( groups.contains(pGroup))
         		{
-        			return GROUP_PERMISSION;
+        			return PermissionImpl.GROUP_PERMISSION;
         		}
         	}
         }
-        return NO_PERMISSION;
+        return PermissionImpl.NO_PERMISSION;
 	}
-	
-    public void setAccessLevel(int accessLevel) 
+		
+    public void setAccessLevel(AccessLevel accessLevel) 
     {
-    	if  (accessLevel <5)
-    	{
-    		accessLevel*= 100;
-    	}
     	this.accessLevel = accessLevel;
     }
 
-    public int getAccessLevel() {
+    public AccessLevel getAccessLevel() {
         return accessLevel;
     }
 

@@ -14,9 +14,6 @@
 package org.rapla.entities.domain;
 
 import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -29,66 +26,115 @@ import org.rapla.entities.User;
 public interface Permission
 {
     String GROUP_CATEGORY_KEY = "user-groups";
-    
     String GROUP_MODIFY_PREFERENCES_KEY = "modify-preferences";
     String GROUP_CAN_EDIT_TEMPLATES = "edit-templates";
-
+    @Deprecated
     String GROUP_CAN_READ_EVENTS_FROM_OTHERS = "read-events-from-others";
+    @Deprecated
     String GROUP_CAN_CREATE_EVENTS = "create-events";
     @Deprecated
     String GROUP_REGISTERER_KEY = "registerer";
     
-    int DENIED = 0;
-    int READ_TYPE = 20;
-    int CREATE = 30;
-    int READ_ONLY_INFORMATION = 50;
-    int READ = 100;
-    int ALLOCATE =200;
-    int ALLOCATE_CONFLICTS = 300;
-    int EDIT = 350;
-    int ADMIN = 400;
-
-    int NO_PERMISSION = -2;
-    int ALL_USER_PERMISSION = -1;
-    int GROUP_PERMISSION = 5000;
-    int USER_PERMISSION = 10000;
-    
-    public static class AccessTable 
+    enum AccessLevel
     {
-    	final LinkedHashMap<Integer,String> map = new LinkedHashMap<Integer,String>();
-    	{
-    		map.put( READ_TYPE,"read_type");
-    		map.put( CREATE, "create");
-            map.put( DENIED,"denied");
-            map.put( READ_ONLY_INFORMATION,"read_no_allocation");
-    		map.put( READ,"read");
-    		map.put( ALLOCATE, "allocate");
-    		map.put( ALLOCATE_CONFLICTS, "allocate-conflicts");
-    		map.put( EDIT, "edit");
-     		map.put( ADMIN, "admin");
-    	}
-		public String get(int accessLevel) 
-		{
-			return map.get(accessLevel);
-		}
+        DENIED(0),
+        READ_TYPE(20),
+        CREATE(30),
+        READ_NO_ALLOCATION(50),
+        READ(100),
+        ALLOCATE(200),
+        ALLOCATE_CONFLICTS(300),
+        EDIT(350),
+        ADMIN(400);
+        AccessLevel(int level)
+        {
+            this.level = level;
+        }
+        private final int level;
+        public static AccessLevel find(int level)
+        {
+            for(AccessLevel v :values())
+            {
+                if (v.level == level)
+                {
+                    return v;
+                }
+            }
+            return null;
+        }
+        
+        @Deprecated
+        public int getNumericLevel()
+        {
+            return level;
+        }
+        
+        public boolean excludes(AccessLevel level) {
+            return level.level > this.level;
+        }
 
-		public Integer findAccessLevel(String accessLevelName) 
-		{
-			for (Map.Entry<Integer, String> entry: map.entrySet())
-			{
-				if  (entry.getValue().equals( accessLevelName))
-				{
-					return entry.getKey();
-				}
-			}
-			return null;
-		}
+        public boolean includes(AccessLevel level) {
+            return level.level <= this.level;
+        }
 
-		public Set<Integer> keySet() {
-			return map.keySet();
-		}
+        public static AccessLevel find(String accessLevel) {
+            AccessLevel valueOf = valueOf( accessLevel.toUpperCase());
+            if ( valueOf == null && "READ_ONLY_INFORMATION".equalsIgnoreCase(accessLevel))
+            {
+                return READ_NO_ALLOCATION;
+            }
+            return valueOf;
+        }
     }
-    AccessTable ACCESS_LEVEL_NAMEMAP = new AccessTable();
+
+    AccessLevel DENIED = AccessLevel.DENIED;
+    AccessLevel READ_TYPE =AccessLevel.READ_TYPE;
+    AccessLevel CREATE = AccessLevel.CREATE;
+    AccessLevel READ_NO_ALLOCATION = AccessLevel.READ_NO_ALLOCATION;
+    AccessLevel READ = AccessLevel.READ;
+    AccessLevel ALLOCATE = AccessLevel.ALLOCATE;
+    AccessLevel ALLOCATE_CONFLICTS = AccessLevel.ALLOCATE_CONFLICTS;
+    AccessLevel EDIT = AccessLevel.EDIT;
+    AccessLevel ADMIN = AccessLevel.ADMIN;
+
+//    public static class AccessTable 
+//    {
+//    	final LinkedHashMap<Integer,String> map = new LinkedHashMap<Integer,String>();
+//    	{
+//    		map.put( READ_TYPE,"read_type");
+//    		map.put( CREATE, "create");
+//            map.put( DENIED,"denied");
+//            map.put( READ_NO_ALLOCATION,"read_no_allocation");
+//    		map.put( READ,"read");
+//    		map.put( ALLOCATE, "allocate");
+//    		map.put( ALLOCATE_CONFLICTS, "allocate_conflicts");
+//    		map.put( EDIT, "edit");
+//     		map.put( ADMIN, "admin");
+//    	}
+//		public String get(int accessLevel) 
+//		{
+//			return map.get(accessLevel);
+//		}
+//
+//		public Integer findAccessLevel(String accessLevelName) 
+//		{
+//		    AccessLevel.valueOf(arg0)
+//			for (Map.Entry<Integer, String> entry: map.entrySet())
+//			{
+//				if  (entry.getValue().equals( accessLevelName))
+//				{
+//					return entry.getKey();
+//				}
+//			}
+//			return null;
+//		}
+//
+//		public Set<Integer> keySet() {
+//			return map.keySet();
+//		}
+//    }
+    
+    //AccessTable ACCESS_LEVEL_NAMEMAP = new AccessTable();
     /*
      * 
     static     
@@ -148,15 +194,6 @@ public interface Permission
      */
     boolean affectsUser( User user);
     
-    /**
-     * 
-     * @return NO_PERMISSION if permission does not effect user
-     * @return ALL_USER_PERMISSION if permission affects all users 
-     * @return USER_PERMISSION if permission specifies the current user
-     * @return if the permission affects a users group the depth of the permission group category specified 
-     */
-    int getUserEffect(User user);
-
     /** returns if the permission covers the interval specified by the start and end date.
      * The current date must be passed to calculate the permissable
      * interval from minAdvance and maxAdvance.
@@ -167,9 +204,9 @@ public interface Permission
      *  DENIED, READ_ONLY_INFORMATION, READ, ALLOCATE, ALLOCATE_CONFLICTS, ADMIN  
      * @param access
      */
-    void setAccessLevel(int access);
+    void setAccessLevel(AccessLevel access);
     
-    int getAccessLevel();
+    AccessLevel getAccessLevel();
 
     /** Static empty dummy Array.
      * Mainly for using the toArray() method of the collection interface */

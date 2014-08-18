@@ -201,7 +201,9 @@ public class ReservationReader extends RaplaXMLReader {
         {
             if (isBefore1_2())
             {
-                addNewPermissionWithGroup(reservation, Permission.READ, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+                @SuppressWarnings("deprecation")
+                String groupCanReadEventsFromOthers = Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS;
+                addNewPermissionWithGroup(reservation, Permission.READ, groupCanReadEventsFromOthers);
             }
             add(reservation);
         }
@@ -219,7 +221,7 @@ public class ReservationReader extends RaplaXMLReader {
         }
     }
 	
-	private void addNewPermissionWithGroup(PermissionContainer container, int acceassLevel, String groupKey) {
+	private void addNewPermissionWithGroup(PermissionContainer container, Permission.AccessLevel acceassLevel, String groupKey) {
         Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
         Category group = userGroups.getCategory(groupKey);
         Permission permission = container.newPermission();

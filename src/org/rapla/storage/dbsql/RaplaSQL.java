@@ -53,6 +53,7 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -829,7 +830,9 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
 			setId(stmt,1,container);
 			setId(stmt,2,s.getUser());
 			setId(stmt,3,s.getGroup());
-			setInt(stmt,4, s.getAccessLevel());
+			@SuppressWarnings("deprecation")
+            int numericLevel = s.getAccessLevel().getNumericLevel();
+            setInt(stmt,4, numericLevel);
 			setInt( stmt,5, s.getMinAdvance());
 			setInt( stmt,6, s.getMaxAdvance());
 			setDate(stmt,7, s.getStart());
@@ -853,14 +856,10 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         permission.setUser( resolveFromId(rset, 2, User.class));
         permission.setGroup( resolveFromId(rset, 3, Category.class));
         Integer accessLevel = getInt( rset, 4);
-        // We multiply the access levels to add a more access levels between.
         if  ( accessLevel !=null)
         {
-	        if ( accessLevel < 5)
-	        {
-	        	accessLevel *= 100;
-	        }
-	        permission.setAccessLevel( accessLevel );
+	        AccessLevel enumLevel = AccessLevel.find(accessLevel);
+	        permission.setAccessLevel( enumLevel );
         }
         permission.setMinAdvance( getInt(rset,5));
         permission.setMaxAdvance( getInt(rset,6));

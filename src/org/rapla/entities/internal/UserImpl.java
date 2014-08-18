@@ -68,7 +68,6 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         checkWritable();
     	lastChanged = date;
     }
-
     
     public boolean isAdmin() {return admin;}
     public String getName() 

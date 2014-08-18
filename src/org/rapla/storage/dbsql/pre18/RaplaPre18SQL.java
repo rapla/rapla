@@ -49,6 +49,7 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PeriodImpl;
@@ -679,11 +680,12 @@ class PermissionStorage extends OldEntityStorage<Allocatable>  {
         // We multiply the access levels to add a more access levels between.
         if  ( accessLevel !=null)
         {
-	        if ( accessLevel < 5)
-	        {
-	        	accessLevel *= 100;
-	        }
-	        permission.setAccessLevel( accessLevel );
+            if ( accessLevel < 5)
+            {
+                accessLevel *= 100;
+            }
+            AccessLevel enumLevel = AccessLevel.find(accessLevel);
+	        permission.setAccessLevel( enumLevel );
         }
         permission.setMinAdvance( getInt(rset,5));
         permission.setMaxAdvance( getInt(rset,6));
