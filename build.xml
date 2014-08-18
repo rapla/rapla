@@ -798,6 +798,7 @@ Definition as published by the Open Source Initiative (OSI).
                 <include name="build.xml" />
             	<include name="buildplugin.xml" />
                 <include name="build.properties.template" />
+                <include name="raplaselfsigned.ks" />
                 <include name="build.sh" />
                 <include name="build.bat" />
             	<include name="war/**" />

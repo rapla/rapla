@@ -17,6 +17,6 @@ plugin.includes=rapla.*
 #test.class=org.rapla.entities.PreferencesTest
 
 #Path and password to the keystore used for signing
-#keystore.file=raplaselfsign.ks
-#keystore.password=raplaselfsign
+keystore.file=raplaselfsigned.ks
+keystore.password=raplaselfsigned
 #keystore.keypass=
