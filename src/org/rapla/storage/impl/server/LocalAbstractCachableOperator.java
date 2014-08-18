@@ -356,10 +356,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	@Override
 	public String createId(RaplaType raplaType) throws RaplaException {
 	    String string = UUID.randomUUID().toString();
-	    Character firstLetter = raplaType.getFirstLetter();
-	    String result = firstLetter + string.substring(1);
+	    String result = replaceFirst(raplaType, string);
         return result;
 	}
+
+    private String replaceFirst(RaplaType raplaType, String string) {
+        Character firstLetter = raplaType.getFirstLetter();
+	    String result = firstLetter + string.substring(1);
+        return result;
+    }
 	
 	public String createId(RaplaType raplaType,String seed) throws RaplaException {
 	  
@@ -384,7 +389,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         long leastSigBits = lsb;
         
         UUID uuid = new UUID( mostSigBits, leastSigBits);
-	    return uuid.toString();
+	    String result = replaceFirst(raplaType,uuid.toString());
+        return result;
     }
 	
 	public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
