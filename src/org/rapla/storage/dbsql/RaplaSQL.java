@@ -49,11 +49,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -1045,15 +1045,9 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
 }
 
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
-
-    PermissionStorage<DynamicType> permissionStorage;
-    Map<String, DynamicType> idMap;
     
     public DynamicTypeStorage(RaplaContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
-        idMap = new HashMap<String, DynamicType>();
-        permissionStorage = new PermissionStorage<DynamicType>( context, "TYPE", idMap);
-        addSubStorage(permissionStorage );
     }
 
     @Override
@@ -1087,17 +1081,19 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 	}
 
 	protected void load(ResultSet rset) throws SQLException,RaplaException {
-    	String id = readId(rset, 1, DynamicType.class);
+    	@SuppressWarnings("unused")
+        String id = readId(rset, 1, DynamicType.class);
 	    String xml = getText(rset,3);
-    	RaplaXMLReader reader = processXML( DynamicType.TYPE, xml );
+    	@SuppressWarnings("unused")
+        RaplaXMLReader reader = processXML( DynamicType.TYPE, xml );
 //    	final Date createDate = getDate( rset, 4);
 //    	final Date lastChanged = getDate( rset, 5);
 //     	
 //    	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
 //    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	
-    	DynamicType type = reader.getStore().resolve(id, DynamicType.class);
-    	idMap.put( id, type);
+  //  	DynamicType type = reader.getStore().resolve(id, DynamicType.class);
+//    	idMap.put( id, type);
 	}
 
 }
