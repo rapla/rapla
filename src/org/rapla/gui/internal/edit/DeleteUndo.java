@@ -93,6 +93,10 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		List<Entity<T>> toStore = new ArrayList<Entity<T>>();
 		for ( T entity: entities)
 		{
+		    if ( entity instanceof Category)
+		    {
+		        continue;
+		    }
             Entity<T>  mutableEntity = entity.clone();
             // we change the owner of deleted entities because we can't create new objects with owners others than the current user
             if ( mutableEntity instanceof Ownable)
@@ -128,7 +132,8 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
     	     }
 	 	    if ( parentClone != null)
 	 	    {
-	 	    	parentClone.addCategory( category);
+	 	    	Category clone = category.clone();
+                parentClone.addCategory( clone);
 	 	    }
 		}
 		// Todo generate undo for category store
