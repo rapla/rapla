@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+import java.util.Collection;
 import java.util.Comparator;
 
 import org.rapla.entities.domain.Allocatable;
@@ -45,9 +46,13 @@ public interface User extends Entity<User>, Named, Comparable, Timestamp
     void addGroup(Category group);
     boolean removeGroup(Category group);
 
+    @Deprecated
     Category[] getGroups();
 
+    Collection<Category> getGroupList();
+    
     boolean belongsTo( Category group );
+    
 
     public static User[] USER_ARRAY = new User[0];
     

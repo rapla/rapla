@@ -166,7 +166,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 				if ( sel instanceof User)
 				{
 					User user= (User) sel;
-					for ( Category cat:user.getGroups())
+					for ( Category cat:user.getGroupList())
 					{
 						elementsToAdd.add( cat);
 					}

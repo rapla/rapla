@@ -454,7 +454,7 @@ public class ServerTest extends ServletTestBase {
 
 	public void testChangeGroup() throws Exception {
 		User user = facade1.edit(facade1.getUser("monty"));
-		Category[] groups = user.getGroups();
+		Category[] groups = user.getGroupList().toArray( new Category[] {});
 		assertTrue("No groups found!", groups.length > 0);
 		Category myGroup = facade1.getUserGroupsCategory().getCategory(
 				"my-group");

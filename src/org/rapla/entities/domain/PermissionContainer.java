@@ -14,13 +14,13 @@
 package org.rapla.entities.domain;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -29,6 +29,7 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.internal.UserImpl;
 
 
 public interface PermissionContainer 
@@ -130,7 +131,7 @@ public interface PermissionContainer
                 {
                     if (p.getAccessLevel() == accessLevel)
                     {
-                        int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+                        int effectLevel = getUserEffect(user, p, groups);
                         if ( effectLevel > PermissionImpl.NO_PERMISSION)
                         {
                             return true;
@@ -148,9 +149,9 @@ public interface PermissionContainer
           
             AccessLevel maxAccessLevel = AccessLevel.DENIED;
             int maxEffectLevel = PermissionImpl.NO_PERMISSION;
-            Collection<Category> groups = getGroupsIncludingParents(user);
+            Collection<Category> groups = getGroupsIncludingParents( user);
             for ( Permission p:permissions ) {
-                int effectLevel = ((PermissionImpl)p).getUserEffect(user, groups);
+                int effectLevel = getUserEffect(user,p, groups);
 
                 if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
                 {
@@ -185,15 +186,46 @@ public interface PermissionContainer
             return granted;
         }
         
+        /**
+         * 
+         * @return NO_PERMISSION if permission does not effect user
+         * @return ALL_USER_PERMISSION if permission affects all users 
+         * @return USER_PERMISSION if permission specifies the current user
+         * @return if the permission affects a users group the depth of the permission group category specified 
+         */
+        static public int getUserEffect(User user,Permission p, Collection<Category> groups) 
+        {
+            User pUser = p.getUser();
+            Category pGroup = p.getGroup();
+            if ( pUser == null  && pGroup == null ) 
+            {
+                return PermissionImpl.ALL_USER_PERMISSION;
+            }
+            if ( pUser != null  && user.equals( pUser ) ) 
+            {
+                return PermissionImpl.USER_PERMISSION;
+            } 
+            else if ( pGroup != null ) 
+            {
+                if ( groups.contains(pGroup))
+                {
+                    return PermissionImpl.GROUP_PERMISSION;
+                }
+            }
+            return PermissionImpl.NO_PERMISSION;
+        }
+
+        
         static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,Date today,  Permission.AccessLevel requestedAccessLevel ) {
             if ( user == null || user.isAdmin() )
                 return new TimeInterval( null, null);
           
             TimeInterval interval = null;
             int maxEffectLevel = PermissionImpl.NO_PERMISSION;
+            Collection<Category> groups = getGroupsIncludingParents( user );
             for ( Permission p:permissionList) 
             {
-                int effectLevel = ((PermissionImpl)p).getUserEffect(user);
+                int effectLevel = getUserEffect(user,p,groups);
                 Permission.AccessLevel accessLevel = p.getAccessLevel();
                 if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
                 {
@@ -227,10 +259,10 @@ public interface PermissionContainer
             return interval;
         }
 
-        private static Collection<Category> getGroupsIncludingParents(User user) {
-            Category[] originalGroups = user.getGroups();
-            Collection<Category> groups = new HashSet<Category>( Arrays.asList( originalGroups));
-            for ( Category group: originalGroups)
+        
+        static public Collection<Category> getGroupsIncludingParents(User user) {
+            Collection<Category> groups = new HashSet<Category>( );
+            for ( Category group: ((UserImpl) user).getGroupList())
             {
                 Category parent = group.getParent();
                 while ( parent != null)
@@ -305,6 +337,95 @@ public interface PermissionContainer
                 permissionContainer.addPermission( p );
             }
         }
+
+        public static boolean hasPermissionToAllocate(User user, Allocatable a) {
+            Collection<Category> groups = getGroupsIncludingParents(user);
+            for ( Permission p: a.getPermissionList()) {
+                if (!affectsUser( user, p, groups ))
+                {
+                    continue;
+                }
+                if ( p.getAccessLevel().includes(Permission.ALLOCATE))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static private boolean affectsUser(User user, Permission p, Collection<Category> groups) {
+            int userEffect = getUserEffect( user, p, groups );
+            return userEffect> PermissionImpl.NO_PERMISSION;
+        }
+        
+        public static boolean hasPermissionToAllocate( User user, Appointment appointment,Allocatable allocatable, Reservation original, Date today) {
+            if ( user.isAdmin()) {
+                return true;
+            }
+            Collection<Category> groups = getGroupsIncludingParents(user);
+            
+            Date start = appointment.getStart();
+            Date end = appointment.getMaxEnd();
+            
+            for ( Permission p:allocatable.getPermissionList()) 
+            {
+                Permission.AccessLevel accessLevel = p.getAccessLevel();
+                if ( (!affectsUser( user, p, groups )) ||  accessLevel.excludes(Permission.READ)) {
+                    continue;
+                }
+                
+                if ( accessLevel ==  Permission.ADMIN)
+                {
+                    // user has the right to allocate
+                    return true;
+                }
+               
+                if ( accessLevel.includes(Permission.ALLOCATE) && p.covers( start, end, today ) ) 
+                {
+                    return true;
+                }
+                if ( original == null )
+                {
+                    continue;
+                }
+        
+                // We must check if the changes of the existing appointment
+                // are in a permisable timeframe (That should be allowed)
+        
+                // 1. check if appointment is old,
+                // 2. check if allocatable was already assigned to the appointment
+                Appointment originalAppointment = original.findAppointment( appointment );
+                if ( originalAppointment == null || !original.hasAllocated( allocatable, originalAppointment))
+                {
+                    continue;
+                }
+        
+                // 3. check if the appointment has changed during
+                // that time
+                if ( appointment.matches( originalAppointment ) ) 
+                {
+                    return true;
+                }
+                if ( accessLevel.includes(Permission.ALLOCATE ))
+                {
+                	Date maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
+                    if (maxTime == null)
+                    {
+                        maxTime = DateTools.addYears( today, 4);
+                    }
+        
+                    Date minChange = appointment.getFirstDifference( originalAppointment, maxTime );
+                    Date maxChange = appointment.getLastDifference( originalAppointment, maxTime );
+                    //System.out.println ( "minChange: " + minChange + ", maxChange: " + maxChange );
+        
+                    if ( p.covers( minChange, maxChange, today ) ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
 
         
     }

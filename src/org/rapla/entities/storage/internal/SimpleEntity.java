@@ -24,6 +24,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
@@ -115,6 +116,10 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 	    if ( key.equals( "owner") || key.equals("last_changed_by"))
 	    {
 	        return User.class;
+	    }
+	    if ( key.equals("person"))
+	    {
+	        return Allocatable.class;
 	    }
 	    return null;
 	}

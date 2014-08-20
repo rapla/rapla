@@ -52,9 +52,7 @@ public class UserWriter extends RaplaXMLWriter {
         att("isAdmin",String.valueOf(user.isAdmin()));
         closeTag();
         
-        Category[] groups = user.getGroups();
-        for ( int i = 0; i < groups.length; i++ ) {
-            Category group = groups[i];
+        for (Category group:user.getGroupList()) {
             String groupPath = getGroupPath( group );
             try
             {

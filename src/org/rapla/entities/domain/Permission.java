@@ -184,16 +184,8 @@ public interface Permission
     
     /** returns true if one of start, end or maxAllowed, MinAllowed is set*/
     boolean hasTimeLimits();
-    
+        
 
-    /** returns if the user or a group of the user is affected by the permission.
-     * Groups are hierarchical. If the user belongs
-     * to a subgroup of the permission-group the user is also
-     * affected by the permission.
-     * returns true if the result of getUserEffect is greater than NO_PERMISSION
-     */
-    boolean affectsUser( User user);
-    
     /** returns if the permission covers the interval specified by the start and end date.
      * The current date must be passed to calculate the permissable
      * interval from minAdvance and maxAdvance.

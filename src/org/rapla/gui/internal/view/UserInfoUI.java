@@ -58,13 +58,13 @@ class UserInfoUI extends HTMLInfo<User> {
 			// Should not happen, but null doesnt harm anyway
 			userGroupsCategory = null;
 		}
-        Category[] groups = user.getGroups();
-        if ( groups.length > 0 ) {
+        Collection<Category> groups = user.getGroupList();
+        if ( groups.size() > 0 ) {
             buf.append(getString("groups") + ":");
             buf.append("<ul>");
-            for ( int i = 0; i < groups.length; i++ ) {
+            for ( Category group:groups) {
                 buf.append("<li>");
-                String groupName = groups[i].getPath( userGroupsCategory , getI18n().getLocale());
+                String groupName = group.getPath( userGroupsCategory , getI18n().getLocale());
                 encode ( groupName , buf);
                 buf.append("</li>\n");
             }

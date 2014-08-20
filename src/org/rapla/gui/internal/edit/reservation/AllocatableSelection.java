@@ -90,6 +90,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
+import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
@@ -100,7 +101,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.AppointmentListener;
@@ -1918,7 +1918,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		}
 		else
 		{
-			return FacadeImpl.hasPermissionToAllocate(workingUser,	appointment, allocatable, originalReservation, today);
+			return Util.hasPermissionToAllocate(workingUser,	appointment, allocatable, originalReservation, today);
 		}
 	}
 

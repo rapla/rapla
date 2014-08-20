@@ -14,7 +14,6 @@
 package org.rapla.entities.domain.internal;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -120,53 +119,6 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
             throw new ReadOnlyException( this );
     }
 
-    public boolean affectsUser(User user) {
-        int userEffect = getUserEffect( user );
-		return userEffect> PermissionImpl.NO_PERMISSION;
-    }
-    
-    /**
-     * 
-     * @return NO_PERMISSION if permission does not effect user
-     * @return ALL_USER_PERMISSION if permission affects all users 
-     * @return USER_PERMISSION if permission specifies the current user
-     * @return if the permission affects a users group the depth of the permission group category specified 
-     */
-    public int getUserEffect(User user) {
-        return getUserEffect(user, null);
-    }
-     
-	public int getUserEffect(User user, Collection<Category> groups) {
-	    User pUser = getUser();
-        Category pGroup = getGroup();
-        if ( pUser == null  && pGroup == null ) 
-        {
-            return PermissionImpl.ALL_USER_PERMISSION;
-        }
-        if ( pUser != null  && user.equals( pUser ) ) 
-        {
-            return PermissionImpl.USER_PERMISSION;
-        } 
-        else if ( pGroup != null ) 
-        {
-        	if ( groups == null)
-        	{
-        		if ( user.belongsTo( pGroup))
-        		{
-        			return PermissionImpl.GROUP_PERMISSION;	
-        		}
-        	}
-        	else
-        	{
-        		if ( groups.contains(pGroup))
-        		{
-        			return PermissionImpl.GROUP_PERMISSION;
-        		}
-        	}
-        }
-        return PermissionImpl.NO_PERMISSION;
-	}
-		
     public void setAccessLevel(AccessLevel accessLevel) 
     {
     	this.accessLevel = accessLevel;

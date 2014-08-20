@@ -36,9 +36,6 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     private Date lastChanged;
     private Date createDate;
 
-    // The resolved references
-    transient private Category[] groups;
-
     final public RaplaType<User> getRaplaType() {return TYPE;}
 
     UserImpl() {
@@ -145,7 +142,6 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         {
             return;
         }
-        groups = null;
         add("groups",group);
     }
 
@@ -155,13 +151,32 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     }
 
     public Category[] getGroups()  {
-        updateGroupArray();
+        Collection<Category> groupList = getGroupList();
+        Category[] groups = groupList.toArray(Category.CATEGORY_ARRAY);
         return groups;
     }
-
+    
+    public Collection<Category> getGroupList()
+    {
+        Collection<Category> groupList = getList("groups", Category.class);
+        return groupList;
+    }
+    
+//    /** returns if the user or a group of the user is affected by the permission.
+//     * Groups are hierarchical. If the user belongs
+//     * to a subgroup of the permission-group the user is also
+//     * affected by the permission.
+//     * returns true if the result of getUserEffect is greater than NO_PERMISSION
+//     */
+//    public boolean affectsUser( Permission p)
+//    {
+//        boolean result = getUserEffect(p)>=PermissionImpl.NO_PERMISSION;
+//        return result;
+//    }
+    
     public boolean belongsTo( Category group ) 
     {
-    	for (Category uGroup:getGroups())
+    	for (Category uGroup:getGroupList())
     	{
     		if (group.equals( uGroup) || group.isAncestorOf( uGroup))
     		{
@@ -171,20 +186,9 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         return false;
     }
 
-    private void updateGroupArray() {
-        if (groups != null)
-            return;
-        synchronized ( this )
-        {
-        	Collection<Category> groupList = getList("groups", Category.class);
-        	groups = groupList.toArray(Category.CATEGORY_ARRAY);
-    	}
-    }
-
     public User clone() {
         UserImpl clone = new UserImpl();
         super.deepClone(clone);
-        clone.groups = null;
         clone.username = username;
         clone.name = name;
         clone.email = email;
@@ -234,5 +238,9 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         final Allocatable person = getEntity("person", Allocatable.class);
         return person;
     }
+
+    
+
+    
 
 }

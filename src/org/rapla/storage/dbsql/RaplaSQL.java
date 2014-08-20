@@ -1393,7 +1393,7 @@ class UserGroupStorage extends EntityStorage<User> {
     protected int write(PreparedStatement stmt, User entity) throws SQLException, RaplaException {
         setId( stmt,1, entity);
         int count = 0;
-        for (Category category:entity.getGroups()) {
+        for (Category category:entity.getGroupList()) {
             setId(stmt, 2, category);
             stmt.addBatch();
             count++;

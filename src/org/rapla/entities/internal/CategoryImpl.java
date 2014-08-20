@@ -46,7 +46,6 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     private transient Category parent;
     CategoryImpl()
     {
-    	
     }
     
     public CategoryImpl(Date createDate, Date lastChanged) {
@@ -337,7 +336,6 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     public Category findCategory(Object copy) {
         return (Category) super.findEntity((Entity)copy);
     }
-
 
     public String getAnnotation(String key) {
         return annotations.get(key);

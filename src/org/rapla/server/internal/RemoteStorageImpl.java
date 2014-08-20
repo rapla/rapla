@@ -415,8 +415,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			{
 				User newUser = (User) newObject;
 				User oldUser = (User) operation.getOld();
-				HashSet<Category> newGroups = new HashSet<Category>(Arrays.asList(newUser.getGroups()));
-				HashSet<Category> oldGroups = new HashSet<Category>(Arrays.asList(oldUser.getGroups()));
+				HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
+				HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
 				if ( !newGroups.equals( oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
 				{
 					usersResourceRefresh.add( newUser);
@@ -496,7 +496,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	{
 	        		continue;
 	        	}
-	        	for (Category group:user.getGroups())
+	        	for (Category group:user.getGroupList())
 	        	{
 	        		if ( groupsResourceRefresh.contains( group))
 	        		{

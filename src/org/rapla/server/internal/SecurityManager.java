@@ -30,12 +30,12 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -325,7 +325,7 @@ public class SecurityManager
                 Appointment appointment = appointments[j];
                 Date today = operator.today();
 				if ( r.hasAllocated( allocatable, appointment ) &&
-                     !FacadeImpl.hasPermissionToAllocate( user, appointment, allocatable, original,today ) ) {
+                     !Util.hasPermissionToAllocate( user, appointment, allocatable, original,today ) ) {
                     String all = allocatable.getName( i18n.getLocale() );
                     String app = appointmentFormater.getSummary( appointment );
                     String error = i18n.format("warning.no_reserve_permission"

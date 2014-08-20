@@ -6,7 +6,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -118,7 +117,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     	Set<Category> categories = new LinkedHashSet<Category>();
 		// determination of the common categories/user groups
 		for (User user:users) {
-			categories.addAll(Arrays.asList(user.getGroups()));
+			categories.addAll(user.getGroupList());
 		}
 		
 		Set<Category> notAll = new LinkedHashSet<Category>();
@@ -164,7 +163,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     public void mapTo(List<User> users)  {
 		for (User user:users)
 		{
-	    	for (Category cat : user.getGroups())
+	    	for (Category cat : user.getGroupList())
 	    	{
 	    		if (!model.contains( cat) && !notAllList.contains( cat))
 	    		{

@@ -173,15 +173,9 @@ public class RaplaComponent
         	return false;
         }
         for ( Allocatable a:allocatables) {
-            for ( Permission p: a.getPermissionList()) {
-                if (!p.affectsUser( user ))
-                {
-                    continue;
-                }
-                if ( p.getAccessLevel().includes(Permission.ALLOCATE))
-                {
-                    return true;
-                }
+            if (PermissionContainer.Util.hasPermissionToAllocate(user, a))
+            {
+                return true;
             }
         }
         return false;
