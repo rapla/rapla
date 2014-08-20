@@ -74,10 +74,12 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	public JComponent getComponent() {
 		return jPanel;
 	}
+	
 
 	public EditFieldLayout getLayout()
 	{
 	    EditFieldLayout layout = new EditFieldLayout();
+	    layout.setBlock( true);
 	    return layout;
 	}
 	
