@@ -202,6 +202,11 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			// create fields for attributes
 			List<SetGetField<?>> fields= new ArrayList<SetGetField<?>>();
 			for (Attribute attribute:attributes) {
+			    String view = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
+			    if ( view.equals( AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW))
+			    {
+			        continue;
+			    }
 			    SetGetField<?> field = createField(attribute);
 				//field.setUser(classificationList);
 				fields.add( field);
