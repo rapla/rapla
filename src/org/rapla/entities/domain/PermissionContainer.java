@@ -264,18 +264,23 @@ public interface PermissionContainer
             Collection<Category> groups = new HashSet<Category>( );
             for ( Category group: ((UserImpl) user).getGroupList())
             {
+                groups.add( group);
                 Category parent = group.getParent();
                 while ( parent != null)
                 {
-                    if ( ! groups.contains( parent))
-                    {
-                        groups.add( parent);
-                    }
                     if ( parent == group)
                     {
                         throw new IllegalStateException("Parent added to own child");
                     }
                     parent = parent.getParent();
+                    if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
+                    {
+                        break;
+                    }
+                    if ( ! groups.contains( parent))
+                    {
+                        groups.add( parent);
+                    }                        
                 }
             }
             return groups;

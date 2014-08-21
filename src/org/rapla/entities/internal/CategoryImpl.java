@@ -258,7 +258,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     public String toString() {
         MultiLanguageName name = getName();
         if (name != null) {
-            return name.toString() + " ID='" + getId() + "'";
+            return name.toString() + " ID='" + getId() + "' key='" + getKey()+"'" ;
         }  else {
             return getKey()  + " " + getId();
         }
