@@ -299,20 +299,21 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 	    	if ( deletableObjects.size() > 0)
 	    	{
 	       		addAction(menu,parent,p, afterId).setDeleteSelection(deletableObjects);
-	        	Collection<Entity<?>> editObjects = getObjectsWithSameType( deletableObjects );
-		        if ( deletableObjects.size() == 1 )
-		        {
-		            Entity<?> first = editObjects.iterator().next();
-					addAction(menu, parent, p, afterId).setEdit(first);
-		        }
-		        else if  (isMultiEditSupported(deletableObjects))
-		        {
-		        
-		        	addAction(menu, parent, p, afterId).setEditSelection(editObjects);
-		        }
-			}
-        }
+	    	}
+	   	}
+       
         List<Entity<?>> editableObjects = getEditableObjects(list);
+        Collection<Entity<?>> editObjects = getObjectsWithSameType( editableObjects );
+        if ( editableObjects.size() == 1 )
+        {
+            Entity<?> first = editObjects.iterator().next();
+            addAction(menu, parent, p, afterId).setEdit(first);
+        }
+        else if  (isMultiEditSupported( editableObjects ))
+        {
+        
+            addAction(menu, parent, p, afterId).setEditSelection(editObjects);
+        }
         if ( editableObjects.size() == 1 )
     	{
     		RaplaObject next = editableObjects.iterator().next();
