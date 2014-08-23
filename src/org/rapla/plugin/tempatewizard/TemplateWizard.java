@@ -16,8 +16,10 @@ package org.rapla.plugin.tempatewizard;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -100,9 +102,11 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			item.setEnabled( canAllocate() && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( getIcon("icon.new"));
-			 
-			Set<String> templateSet = new TreeSet<String>(templateNames);
-			SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>();
+			@SuppressWarnings("unchecked")
+            Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(getRaplaLocale().getLocale());
+			Set<String> templateSet = new TreeSet<String>(collator);
+			templateSet.addAll( templateNames );
+			SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
 			if ( templateSet.size() >  10)
 			{
 				for ( String string:templateSet)
@@ -115,13 +119,13 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 					Set<String> group = keyGroup.get( firstChar);
 					if ( group == null)
 					{
-						group = new TreeSet<String>();
+						group = new TreeSet<String>(collator);
 						keyGroup.put( firstChar, group);
 					}
 					group.add(string);
 				}
 				
-				SortedMap<String, Set<String>> merged = merge( keyGroup);
+				SortedMap<String, Set<String>> merged = merge( keyGroup, collator);
 				for ( String subMenuName: merged.keySet())
 				{
 					RaplaMenu subMenu = new RaplaMenu( getId());
@@ -160,9 +164,9 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	}
     
     private SortedMap<String, Set<String>> merge(
-			SortedMap<String, Set<String>> keyGroup) 
+			SortedMap<String, Set<String>> keyGroup, Comparator<String> comparator) 
 	{
-    	SortedMap<String,Set<String>> result = new TreeMap<String, Set<String>>();
+    	SortedMap<String,Set<String>> result = new TreeMap<String, Set<String>>( comparator);
     	String beginnChar = null;
     	String currentChar = null;
     	Set<String> currentSet = null;
@@ -171,7 +175,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
     		Set<String> set = keyGroup.get( key);
     		if ( currentSet == null)
     		{
-    			currentSet = new TreeSet<String>();
+    			currentSet = new TreeSet<String>(comparator);
     			beginnChar = key;
     			currentChar = key;
     		}
@@ -189,7 +193,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
     					storeKey = currentChar;
     				}
     				result.put( storeKey, currentSet);
-    				currentSet = new TreeSet<String>();
+    				currentSet = new TreeSet<String>(comparator);
         			beginnChar = key;
         			currentChar = key;    				
     			}
