@@ -181,20 +181,17 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     {
         // Do nothing if the user can't allocate anything
         User user = getUser();
-		if (!canUserAllocateSomething( user) )
-		{
-            return menu;
-		}
-       
-		
         Component parent = context.getComponent();
         Object focusedObject = context.getFocusedObject();
-	    Point p = context.getPoint();
-        
-	    if ( addNewReservationMenu)
-        {
-			addReservationWizards(menu, context, afterId);
-        }
+        Point p = context.getPoint();
+     
+		if (canUserAllocateSomething( user) )
+		{
+     	    if ( addNewReservationMenu)
+            {
+    			addReservationWizards(menu, context, afterId);
+            }
+		}
         boolean allocatableType = false;
         boolean reservationType = false;
         DynamicType type = null;
