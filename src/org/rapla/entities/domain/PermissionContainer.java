@@ -46,6 +46,31 @@ public interface PermissionContainer
 
     class Util
     {
+        static public void addDifferences(Set<Permission> invalidatePermissions, PermissionContainer oldContainer, PermissionContainer newContainer) {
+            Collection<Permission> oldPermissions = oldContainer.getPermissionList();
+            Collection<Permission> newPermissions = newContainer.getPermissionList();
+            addDifferences(invalidatePermissions, oldPermissions, newPermissions);
+        }
+
+        
+        public static boolean differs(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            HashSet<Permission> set = new HashSet<Permission>();
+            addDifferences(set, oldPermissions, newPermissions);
+            return set.size() > 0;
+        }
+
+        public static void replace(PermissionContainer permissionContainer, Collection<Permission> permissions) {
+            Collection<Permission> permissionList = new ArrayList<Permission>(permissionContainer.getPermissionList());
+            for (Permission p:permissionList)
+            {
+                permissionContainer.removePermission(p);
+            }                
+            for (Permission p:permissions)
+            {
+                permissionContainer.addPermission( p );
+            }
+        }
+        
         public static void copyPermissions(DynamicType type, PermissionContainer permissionContainer) {
             Collection<Permission> permissionList = type.getPermissionList();
             for ( Permission p:permissionList)
@@ -66,10 +91,18 @@ public interface PermissionContainer
 
         /** returns if the user has the permission to read the information and the allocations of this resource.*/
         static public boolean canModify(PermissionContainer container,User user) {
+            if ( container instanceof DynamicType)
+            {
+                return user.isAdmin();
+            }
             return hasAccess( container,user, Permission.EDIT);
         }
         
         static public boolean canAdmin(PermissionContainer container,User user) {
+            if ( container instanceof DynamicType)
+            {
+                return user.isAdmin();
+            }
             return hasAccess( container,user, Permission.ADMIN);
         }
 
@@ -110,80 +143,14 @@ public interface PermissionContainer
 
         public static boolean canCreate(DynamicType type, User user) {
             Collection<Permission> permissionList = type.getPermissionList();
-            boolean result = matchesAccessLevel( permissionList, user, Permission.CREATE);
+            boolean result = matchesAccessLevel( permissionList, user, Permission.CREATE,Permission.ADMIN);
             return result;
         }
         
         public static boolean canRead(DynamicType type, User user) {
             Collection<Permission> permissionList = type.getPermissionList();
-            boolean result = matchesAccessLevel( permissionList, user, Permission.READ_TYPE, Permission.CREATE);
+            boolean result = matchesAccessLevel( permissionList, user, Permission.READ_TYPE, Permission.CREATE,Permission.ADMIN);
             return result;
-        }
-
-        static public boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, AccessLevel... accessLevels ) {
-            if ( user == null || user.isAdmin() )
-                return true;
-          
-            Collection<Category> groups = getGroupsIncludingParents(user);
-            for ( Permission p:permissions ) 
-            {
-                for ( AccessLevel accessLevel:accessLevels)
-                {
-                    if (p.getAccessLevel() == accessLevel)
-                    {
-                        int effectLevel = getUserEffect(user, p, groups);
-                        if ( effectLevel > PermissionImpl.NO_PERMISSION)
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
-        
-        static public boolean hasAccess(Iterable<? extends Permission> permissions, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
-            if ( user == null || user.isAdmin() )
-                return true;
-          
-            AccessLevel maxAccessLevel = AccessLevel.DENIED;
-            int maxEffectLevel = PermissionImpl.NO_PERMISSION;
-            Collection<Category> groups = getGroupsIncludingParents( user);
-            for ( Permission p:permissions ) {
-                int effectLevel = getUserEffect(user,p, groups);
-
-                if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
-                {
-                    if ( p.hasTimeLimits() && accessLevel.includes( Permission.ALLOCATE) && today!= null)
-                    {
-                        if (p.getAccessLevel() != Permission.ADMIN  )
-                        {
-                            if  ( checkOnlyToday )
-                            {
-                                if (!((PermissionImpl)p).valid(today))
-                                {
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                if (!p.covers( start, end, today ))
-                                {
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    if ( maxAccessLevel.excludes( p.getAccessLevel()) || effectLevel > maxEffectLevel)
-                    {
-                        maxAccessLevel = p.getAccessLevel();
-                    }
-                    maxEffectLevel = effectLevel;
-                }
-            }
-            boolean granted = maxAccessLevel.includes( accessLevel) ;
-            return granted;
         }
         
         /**
@@ -259,90 +226,6 @@ public interface PermissionContainer
             return interval;
         }
 
-        
-        static public Collection<Category> getGroupsIncludingParents(User user) {
-            Collection<Category> groups = new HashSet<Category>( );
-            for ( Category group: ((UserImpl) user).getGroupList())
-            {
-                groups.add( group);
-                Category parent = group.getParent();
-                while ( parent != null)
-                {
-                    if ( parent == group)
-                    {
-                        throw new IllegalStateException("Parent added to own child");
-                    }
-                    parent = parent.getParent();
-                    if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
-                    {
-                        break;
-                    }
-                    if ( ! groups.contains( parent))
-                    {
-                        groups.add( parent);
-                    }                        
-                }
-            }
-            return groups;
-        }
-        
-        static public void addDifferences(Set<Permission> invalidatePermissions, PermissionContainer oldContainer, PermissionContainer newContainer) {
-            Collection<Permission> oldPermissions = oldContainer.getPermissionList();
-            Collection<Permission> newPermissions = newContainer.getPermissionList();
-            addDifferences(invalidatePermissions, oldPermissions, newPermissions);
-        }
-
-        private static void addDifferences(Set<Permission> invalidatePermissions, Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
-            // we leave this condition for a faster equals check
-            int size = oldPermissions.size();
-            if  (size == newPermissions.size())
-            {
-                Iterator<Permission> newPermissionsIt = newPermissions.iterator();
-            	for (Permission oldPermission:oldPermissions)
-            	{
-                    Permission newPermission = newPermissionsIt.next();
-            		if (!oldPermission.equals(newPermission))
-            		{
-            			invalidatePermissions.add( oldPermission);
-            			invalidatePermissions.add( newPermission);
-            		}
-            	}
-            }
-            else
-            {
-            	HashSet<Permission> newSet = new HashSet<Permission>(newPermissions);
-            	HashSet<Permission> oldSet = new HashSet<Permission>(oldPermissions);
-            	{
-            		HashSet<Permission> changed = new HashSet<Permission>( newSet);
-            		changed.removeAll( oldSet);
-            		invalidatePermissions.addAll(changed);
-            	}
-            	{
-            		HashSet<Permission> changed = new HashSet<Permission>(oldSet);
-            		changed.removeAll( newSet);
-            		invalidatePermissions.addAll(changed);
-            	}
-            }
-        }
-
-        public static boolean differs(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
-            HashSet<Permission> set = new HashSet<Permission>();
-            addDifferences(set, oldPermissions, newPermissions);
-            return set.size() > 0;
-        }
-
-        public static void replace(PermissionContainer permissionContainer, Collection<Permission> permissions) {
-            Collection<Permission> permissionList = new ArrayList<Permission>(permissionContainer.getPermissionList());
-            for (Permission p:permissionList)
-            {
-                permissionContainer.removePermission(p);
-            }                
-            for (Permission p:permissions)
-            {
-                permissionContainer.addPermission( p );
-            }
-        }
-
         public static boolean hasPermissionToAllocate(User user, Allocatable a) {
             Collection<Category> groups = getGroupsIncludingParents(user);
             for ( Permission p: a.getPermissionList()) {
@@ -356,11 +239,6 @@ public interface PermissionContainer
                 }
             }
             return false;
-        }
-
-        static private boolean affectsUser(User user, Permission p, Collection<Category> groups) {
-            int userEffect = getUserEffect( user, p, groups );
-            return userEffect> PermissionImpl.NO_PERMISSION;
         }
         
         public static boolean hasPermissionToAllocate( User user, Appointment appointment,Allocatable allocatable, Reservation original, Date today) {
@@ -413,7 +291,7 @@ public interface PermissionContainer
                 }
                 if ( accessLevel.includes(Permission.ALLOCATE ))
                 {
-                	Date maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
+                    Date maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
                     if (maxTime == null)
                     {
                         maxTime = DateTools.addYears( today, 4);
@@ -431,6 +309,193 @@ public interface PermissionContainer
             return false;
         }
 
+        public static boolean canCreateConflicts(Allocatable container, User user) {
+            Collection<Permission> permissions = container.getPermissionList();
+            if ( !canReadType(container, user))
+            {
+                return false;
+            }
+            return hasAccess( permissions,user, Permission.ALLOCATE_CONFLICTS, null, null, null, false);
+        }
+
+        /**
+         *  Checks if the user is allowed to make an allocation in the passed time.
+         * @return
+         */
+        public static boolean canAllocate(Allocatable container, User user, Date start, Date end, Date today) {
+            Collection<Permission> permissions = container.getPermissionList();
+            return hasAccess(permissions,user, Permission.ALLOCATE,start, end, today, false);
+        }
+
+        /**
+         *  Checks if the user is allowed to make an allocation in the future (starting with date today)
+         * @param container
+         * @param user
+         * @param today
+         * @return
+         */
+        public static boolean canAllocate(Allocatable container, User user, Date today) {
+            Collection<Permission> permissions = container.getPermissionList();
+            if ( !canReadType(container, user))
+            {
+                return false;
+            }
+            boolean hasAccess = hasAccess(permissions,user, Permission.ALLOCATE, null, null, today, true);
+            if ( !hasAccess )
+            {
+                return false;
+            }
+            
+            return true;
+        }
+
+        static private boolean matchesAccessLevel(Iterable<? extends Permission> permissions, User user, AccessLevel... accessLevels ) {
+            if ( user == null || user.isAdmin() )
+                return true;
+          
+            Collection<Category> groups = getGroupsIncludingParents(user);
+            for ( Permission p:permissions ) 
+            {
+                for ( AccessLevel accessLevel:accessLevels)
+                {
+                    if (p.getAccessLevel() == accessLevel)
+                    {
+                        int effectLevel = getUserEffect(user, p, groups);
+                        if ( effectLevel > PermissionImpl.NO_PERMISSION)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        
+        static private boolean hasAccess(Iterable<? extends Permission> permissions, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday ) {
+            if ( user == null || user.isAdmin() )
+                return true;
+          
+            AccessLevel maxAccessLevel = AccessLevel.DENIED;
+            int maxEffectLevel = PermissionImpl.NO_PERMISSION;
+            Collection<Category> groups = getGroupsIncludingParents( user);
+            for ( Permission p:permissions ) {
+                int effectLevel = getUserEffect(user,p, groups);
+
+                if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
+                {
+                    if ( p.hasTimeLimits() && accessLevel.includes( Permission.ALLOCATE) && today!= null)
+                    {
+                        if (p.getAccessLevel() != Permission.ADMIN  )
+                        {
+                            if  ( checkOnlyToday )
+                            {
+                                if (!((PermissionImpl)p).validInTheFuture(today))
+                                {
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                if (!p.covers( start, end, today ))
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    if ( maxAccessLevel.excludes( p.getAccessLevel()) || effectLevel > maxEffectLevel)
+                    {
+                        maxAccessLevel = p.getAccessLevel();
+                    }
+                    maxEffectLevel = effectLevel;
+                }
+            }
+            boolean granted = maxAccessLevel.includes( accessLevel) ;
+            return granted;
+        }
+        
+       
+
+        
+        static private Collection<Category> getGroupsIncludingParents(User user) {
+            Collection<Category> groups = new HashSet<Category>( );
+            for ( Category group: ((UserImpl) user).getGroupList())
+            {
+                groups.add( group);
+                Category parent = group.getParent();
+                while ( parent != null)
+                {
+                    if ( parent == group)
+                    {
+                        throw new IllegalStateException("Parent added to own child");
+                    }
+                    parent = parent.getParent();
+                    if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
+                    {
+                        break;
+                    }
+                    if ( ! groups.contains( parent))
+                    {
+                        groups.add( parent);
+                    }                        
+                }
+            }
+            return groups;
+        }
+        
+        
+        private static void addDifferences(Set<Permission> invalidatePermissions, Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            // we leave this condition for a faster equals check
+            int size = oldPermissions.size();
+            if  (size == newPermissions.size())
+            {
+                Iterator<Permission> newPermissionsIt = newPermissions.iterator();
+            	for (Permission oldPermission:oldPermissions)
+            	{
+                    Permission newPermission = newPermissionsIt.next();
+            		if (!oldPermission.equals(newPermission))
+            		{
+            			invalidatePermissions.add( oldPermission);
+            			invalidatePermissions.add( newPermission);
+            		}
+            	}
+            }
+            else
+            {
+            	HashSet<Permission> newSet = new HashSet<Permission>(newPermissions);
+            	HashSet<Permission> oldSet = new HashSet<Permission>(oldPermissions);
+            	{
+            		HashSet<Permission> changed = new HashSet<Permission>( newSet);
+            		changed.removeAll( oldSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            	{
+            		HashSet<Permission> changed = new HashSet<Permission>(oldSet);
+            		changed.removeAll( newSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            }
+        }
+
+
+
+        static private boolean affectsUser(User user, Permission p, Collection<Category> groups) {
+            int userEffect = getUserEffect( user, p, groups );
+            return userEffect> PermissionImpl.NO_PERMISSION;
+        }
+
+
+        static public boolean canReadOnlyInformation(Allocatable classifiable, User user) {
+            if ( !canReadType(classifiable, user))
+            {
+                return false;
+            }
+            return hasAccess( classifiable,user, Permission.READ_NO_ALLOCATION );
+        }
+
+
+        
 
         
     }

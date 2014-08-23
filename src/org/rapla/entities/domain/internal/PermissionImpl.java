@@ -170,7 +170,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     }
     
     /** only checks if the user is allowed to make a reservation in the future */
-    public boolean valid( Date today ) {
+    public boolean validInTheFuture( Date today ) {
         if ( pEnd != null && ( today == null || pEnd.getTime() + DateTools.MILLISECONDS_PER_DAY<=( today.getTime() ) ) ) {
             return false;
         }
