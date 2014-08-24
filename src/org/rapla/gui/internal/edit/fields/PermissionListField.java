@@ -38,6 +38,8 @@ import javax.swing.event.ChangeListener;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.edit.RaplaListEdit;
@@ -132,11 +134,17 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 		model.clear();
 		firstAllocatable = list.size() > 0 ? list.get(0) : null;
 		Set<Permission> permissions = new LinkedHashSet<Permission>();
-		for (PermissionContainer allocatable :list)
+        boolean eventTypeList = false;
+		for (PermissionContainer container :list)
 		{
-			Collection<Permission> permissionList = allocatable.getPermissionList();
+			Collection<Permission> permissionList = container.getPermissionList();
 			permissions.addAll(permissionList);
+			if ( container instanceof DynamicType)
+			{
+			    eventTypeList = ((DynamicType) container).getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE).equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+			}
 		}
+		permissionField.setEventType( eventTypeList);
 
 		Set<Permission> set = new LinkedHashSet<Permission>();
 		for (Permission perm : permissions) {

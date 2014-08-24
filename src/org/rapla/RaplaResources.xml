@@ -3408,8 +3408,8 @@ See French text.
 		<text lang="pt">Negado</text>
     </entry>
     <entry key="permission.read_type">
-        <text lang="en">read type</text>
-        <text lang="de">Typ lesen</text>
+        <text lang="en">show {0}</text>
+        <text lang="de">{0} anzeigen</text>
     </entry>
     <entry key="permission.read_no_allocation">
         <text lang="en">read (no allocations)</text>
@@ -3419,6 +3419,15 @@ See French text.
         <text lang="cs">číst (no rozvržení)</text>
         <text lang="nl">lezen (zonder Toewijzing)</text>
         <text lang="pt">ler (sin atribuições)</text>
+    </entry>
+    <entry key="permission.read_allocation">
+        <text lang="en">read allocations</text>
+        <text lang="de">Belegungen lesen</text>
+        <text lang="fr">lire allocations</text>
+        <text lang="es">leer asignaciones</text>
+        <text lang="cs">číst rozvržení</text>
+        <text lang="nl">lezen Toewijzing</text>
+        <text lang="pt">ler atribuições</text>
     </entry>
     <entry key="permission.read">
 		<text lang="en">read</text>
@@ -3432,14 +3441,14 @@ See French text.
         
     </entry>
      <entry key="permission.create">
-        <text lang="en">create</text>
-        <text lang="de">erstellen</text>
-        <text lang="fr">créer</text>
-        <text lang="es">crear</text>
-        <text lang="cs">vytvořit</text>
-        <text lang="nl">aanmaken</text>
-        <text lang="pl">utwórz</text>
-		<text lang="pt">criar</text>
+        <text lang="en">create {0}</text>
+        <text lang="de">erstelle {0}</text>
+        <text lang="fr">créer {0}</text>
+        <text lang="es">crear {0}</text>
+        <text lang="cs">vytvořit {0}</text>
+        <text lang="nl">aanmaken {0}</text>
+        <text lang="pl">utwórz {0}</text>
+		<text lang="pt">criar {0}</text>
     </entry>
     <entry key="permission.allocate">
         <text lang="en">allocate</text>
@@ -4817,14 +4826,14 @@ See French text.
 		<text lang="pt">O usuário não pode excluir-se.</text>
     </entry>
     <entry key="nameformat_planning">
-        <text lang="en">Name in resource tree</text>
-        <text lang="de">Name im Ressourcenbaum</text>
-        <text lang="fr">Nom dans le dépliant</text>
-        <text lang="es">Nombre en el folleto</text>
-        <text lang="cs">Jméno v příbalové informaci</text>
-        <text lang="nl">Naam in de folder</text>
-        <text lang="pl">Imię w ulotce</text>
-		<text lang="pt">Nome no folheto</text>
+        <text lang="en">Displayed name format in resource tree</text>
+        <text lang="de">Anzeigeformatierung im Ressourcenbaum</text>
+        <text lang="fr">Mettre en forme l'affichage dans le dépliant</text>
+        <text lang="es">Formato de nombre visualizado en el folleto</text>
+        <text lang="cs">Zobrazovaný formát jména v příbalové informaci</text>
+        <text lang="nl">Titel formaat in de folder</text>
+        <text lang="pl">Format wyświetlanej nazwy w ulotce</text>
+		<text lang="pt">Formato de exibição do nome no folheto</text>
     </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>

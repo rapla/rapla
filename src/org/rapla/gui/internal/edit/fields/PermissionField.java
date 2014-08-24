@@ -62,6 +62,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     Collection<Permission.AccessLevel> permissionLevels = Arrays.asList(Permission.AccessLevel.values());
 
+    boolean eventType;
+    
+  
     @SuppressWarnings("unchecked")
 	public PermissionField(RaplaContext context) throws RaplaException {
         super( context);
@@ -146,7 +149,25 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 if (value != null) {
                    intValue = ((Permission.AccessLevel) value);
                    String key = intValue.name().toLowerCase();
-                   value = getI18n().getString("permission." + key );
+                   if ( key.equalsIgnoreCase(Permission.CREATE.name()))
+                   {
+                       String typeName = eventType ? getString("reservation") : getString("resource");
+                       value = getI18n().format("permission." + key, typeName );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.READ_TYPE.name()))
+                   {
+                       String typeName = eventType ? getString("reservation_type") : getString("resource_type");
+                       value = getI18n().format("permission." + key, typeName );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.READ.name()) && permissionLevels.contains(Permission.READ_NO_ALLOCATION))
+                   {
+                       value = getI18n().getString("permission.read_allocation"  );
+                   }
+                        
+                   else
+                   {
+                       value = getI18n().getString("permission." + key );
+                   }
 
                 }
                 Component listCellRendererComponent = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );
@@ -345,6 +366,16 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     {
         return userSelect.getComponent().isVisible();
     }
+    
+    public boolean isEventType() {
+        return eventType;
+    }
+
+    public void setEventType(boolean eventType) {
+        this.eventType = eventType;
+    }
+
 }
+
 
 
