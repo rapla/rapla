@@ -255,10 +255,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
         User currentUser = getUser();
         if (currentUser != null &&  selectedUsers.size() == 1 && selectedUsers.iterator().next().equals( currentUser))
         {
-        	if ( getOption( CalendarModel.ONLY_MY_EVENTS) == null)
+        	if ( getOption( CalendarModel.ONLY_MY_EVENTS) == null && currentUser.isAdmin())
         	{
-        		setOption( CalendarModel.ONLY_MY_EVENTS, "true");
-            	selectedObjects.remove( currentUser);
+        	    boolean selected = m_facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
+                setOption( CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
+                selectedObjects.remove( currentUser);
         	}
         }
         
