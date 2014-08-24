@@ -53,6 +53,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ModificationEvent;
@@ -475,9 +476,11 @@ class ReservationEditImpl extends AbstractAppointmentEditor implements Reservati
         }
 
 
+        @SuppressWarnings("deprecation")
         public void stateChanged(ChangeEvent evt) {
         	if (evt.getSource() == reservationInfo) {
         		getLogger().debug("ReservationInfo changed");
+//        		PermissionContainer.Util.processOldPermissionModify(mutableReservation, original);
         		setSaved(false);
                 setTitle();
         	}

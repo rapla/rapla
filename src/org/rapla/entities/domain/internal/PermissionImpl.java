@@ -250,6 +250,8 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
  				&& equalValues(this.getReferenceHandler().getId("group"), perm.getReferenceHandler().getId("group"))
  				&& equalValues(this.getStart(), perm.getStart())
  				&& equalValues(this.getEnd(), perm.getEnd())
+ 				&& equalValues(this.getMaxAdvance(), perm.getMaxAdvance())
+ 				&& equalValues(this.getMinAdvance(), perm.getMinAdvance())
  				&& equalValues(this.getAccessLevel(), perm.getAccessLevel()))
  			return true;
  		else
@@ -262,7 +264,9 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 		append( buf,getReferenceHandler().getId("group"));
 		append( buf,getStart());
 		append( buf,getEnd());
-		append( buf,getAccessLevel());
+		append( buf,getMaxAdvance());
+		append( buf,getMinAdvance());
+        append( buf,getAccessLevel());
  		return buf.toString().hashCode();
  	}
 

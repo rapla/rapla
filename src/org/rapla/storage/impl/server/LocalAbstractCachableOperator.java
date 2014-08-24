@@ -69,6 +69,7 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -1386,9 +1387,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Entity entity: storeObjects) 
 		{
             evt.putStore(entity);
-            if (DynamicType.TYPE == entity.getRaplaType()) {
+            RaplaType raplaType = entity.getRaplaType();
+            if (DynamicType.TYPE == raplaType) {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
                 addChangedDynamicTypeDependant(evt,store, dynamicType, false);
+            }
+            if ( entity instanceof Classifiable)
+            {
+                processOldPermssionModify(store, entity);
             }
 		}
 		for (Entity entity: storeObjects) {
@@ -1447,6 +1453,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			evt.putRemove(entity);
 		}
 	}
+
+    @SuppressWarnings("deprecation")
+    private void processOldPermssionModify(EntityStore store, Entity entity) {
+        Class<? extends Entity> clazz = (entity instanceof Reservation) ? Reservation.class : Allocatable.class;
+        Classifiable persistant = (Classifiable) tryResolve( ((Entity)entity).getId(), clazz);
+        Util.processOldPermissionModify((Classifiable) entity, persistant);
+    }
 
 
 //	protected void setCache(final LocalCache cache) {

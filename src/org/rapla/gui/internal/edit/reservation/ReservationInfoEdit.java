@@ -465,7 +465,10 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             	Object oldValue = getAttValue(keyName); //this.classification.getValue(keyName);
             	mapTo( editField );
                 Object newValue = getAttValue(keyName);
-                
+                if ( keyName.equals("permission_modify"))
+                {
+                    
+                }
                 UndoClassificationChange classificationChange = new UndoClassificationChange(oldValue, newValue, keyName);
                 if (oldValue != newValue && (oldValue == null || newValue == null || !oldValue.equals(newValue))) {
                     commandHistory.storeAndExecute(classificationChange);	
@@ -680,6 +683,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                     permissionField.mapFrom( Collections.singletonList( permissionContainer));
                 }
                 permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+                
+                
                 //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
                 content.validate();
                 updateHeight();

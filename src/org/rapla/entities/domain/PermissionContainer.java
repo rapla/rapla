@@ -15,9 +15,11 @@ package org.rapla.entities.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.rapla.components.util.DateTools;
@@ -26,6 +28,8 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -492,6 +496,83 @@ public interface PermissionContainer
                 return false;
             }
             return hasAccess( classifiable,user, Permission.READ_NO_ALLOCATION );
+        }
+
+
+        /** old permission_modify should sync with new permission model for a while or until permission_modify attribute is removed
+         * @deprecated 
+         * @param entity
+         * @param persistant
+         */
+        @Deprecated
+        static public void processOldPermissionModify(Classifiable entity, Classifiable persistant) 
+        {
+            Classification classification = entity.getClassification();
+            if ( classification == null)
+            {
+                return;
+            }
+            Attribute attribute = classification.getAttribute("permission_modify"); 
+            if ( attribute == null || attribute.getType() != AttributeType.CATEGORY )
+            {
+                return;
+            }
+            Collection<Object> newValues = classification.getValues(attribute);
+            Collection<Object> oldValues = persistant != null ? persistant.getClassification().getValues(attribute) : Collections.emptyList();
+            boolean permissionModifyChanged = !newValues.equals( oldValues);
+            PermissionContainer permissionContainer = (PermissionContainer) entity;
+            Collection<Permission> newPermissionList = permissionContainer.getPermissionList();
+            boolean permissionChanged = persistant != null && differs(newPermissionList, ((PermissionContainer)persistant).getPermissionList());
+            // changed permissions take precedence over changed permission_modify
+            if ( permissionChanged )
+            {
+                List<Category> newCategories = new ArrayList<Category>();
+                for ( Permission p:newPermissionList)
+                {
+                    Category group = p.getGroup();
+                    Permission.AccessLevel accessLevel = p.getAccessLevel();
+                    if (group != null && accessLevel == Permission.AccessLevel.ADMIN)
+                    {
+                        newCategories.add( group );
+                    }
+                }
+                classification.setValues( attribute, newCategories);
+                
+            }
+            else if ( permissionModifyChanged )
+            {
+                Set<Category> existingAdminGroups = new HashSet<Category>();
+                for ( Permission p:new ArrayList<Permission>(newPermissionList))
+                {
+                    Category group = p.getGroup();
+                    Permission.AccessLevel accessLevel = p.getAccessLevel();
+                    if (group != null && accessLevel == Permission.AccessLevel.ADMIN)
+                    {
+                        // remove permission if not in permission modify group
+                        if ( !newValues.contains(group ))
+                        {
+                            permissionContainer.removePermission( p);
+                            continue;
+                        }
+                        existingAdminGroups.add( group );
+        
+                    }
+                }
+                
+                for (Object obj:newValues)
+                {
+                    Category category = (Category) obj;
+                    if ( !existingAdminGroups.contains( category ))
+                    {
+                        Permission permission = permissionContainer.newPermission();
+                        permission.setGroup(category );
+                        permission.setAccessLevel( Permission.AccessLevel.ADMIN);
+                        permissionContainer.addPermission(permission);
+                    }
+                }	 
+        
+            }
+        
         }
 
 
