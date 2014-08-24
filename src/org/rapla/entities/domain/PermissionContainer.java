@@ -434,7 +434,6 @@ public interface PermissionContainer
                     {
                         throw new IllegalStateException("Parent added to own child");
                     }
-                    parent = parent.getParent();
                     if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
                     {
                         break;
@@ -442,7 +441,9 @@ public interface PermissionContainer
                     if ( ! groups.contains( parent))
                     {
                         groups.add( parent);
-                    }                        
+                    }
+                    parent = parent.getParent();
+                    
                 }
             }
             return groups;

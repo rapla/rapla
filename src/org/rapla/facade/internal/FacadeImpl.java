@@ -1256,7 +1256,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			if (entity instanceof Reservation) {
 				if (user == null)
 					throw new RaplaException("The reservation " + entity + " needs an owner but user specified is null ");
-				((Ownable) entity).setOwner(user);
+			}
+			if ( entity instanceof Reservation || entity instanceof Allocatable)
+			{
+	             ((Ownable) entity).setOwner(user);
 			}
 		}
 	}
