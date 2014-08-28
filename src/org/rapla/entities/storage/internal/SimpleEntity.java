@@ -94,7 +94,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return getEntity("owner", User.class);
     }
     
-    protected String getOwnerId()
+    public String getOwnerId()
     {
         return getId("owner");
     }

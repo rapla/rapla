@@ -958,6 +958,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 addPermissions(entry, conflict.getReservation1());
                 addPermissions(entry, conflict.getReservation2());
             }
+        } 
+        else if ( current instanceof Preferences)
+        {
+            String owner = ((PreferencesImpl) current).getOwnerId();
+            if ( owner != null)
+            {
+                entry.addUserIds( Collections.singletonList( owner));   
+            }
         }
         deleteUpdateSet.put( entry.getId(),entry );
     }
@@ -1053,22 +1061,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 affectAll = true;
             }
-            if ( deleteUpdateEntry.affectedGroupIds != null)
+            Set<String> groupIds = deleteUpdateEntry.affectedGroupIds;
+            if ( groupIds != null)
             {
-                if ( affectedGroupIds == null)
-                {
-                    affectedGroupIds = new HashSet<String>(1);
-                }
-                affectedGroupIds.addAll( deleteUpdateEntry.affectedGroupIds);
+                addGroupIds(groupIds);
             }
-            if ( deleteUpdateEntry.affectedUserIds != null)
+            Set<String> userIds = deleteUpdateEntry.affectedUserIds;
+            if ( userIds != null)
             {
-                if ( affectedUserIds == null)
-                {
-                    affectedUserIds = new HashSet<String>(1);
-                }
-                affectedUserIds.addAll( deleteUpdateEntry.affectedUserIds);
+                addUserIds(userIds);
             }
+        }
+
+        public void addUserIds(Collection<String> userIds) {
+            if ( affectedUserIds == null)
+            {
+                affectedUserIds = new HashSet<String>(1);
+            }
+            affectedUserIds.addAll( userIds);
+        }
+
+        public void addGroupIds(Collection<String> groupIds) {
+            if ( affectedGroupIds == null)
+            {
+                affectedGroupIds = new HashSet<String>(1);
+            }
+            affectedGroupIds.addAll( groupIds);
         }
 
         String getId()
