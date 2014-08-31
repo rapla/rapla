@@ -19,6 +19,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
@@ -33,6 +34,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
@@ -128,10 +130,17 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
         DynamicType[] types = getQuery().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         DynamicType dynamicType = classification.getType();
-
-        RaplaListComboBox jComboBox =  new RaplaListComboBox( getContext() , types );
+        List<DynamicType> creatableTypes = new ArrayList<DynamicType>();
+        User user = getUser();
+        for ( DynamicType type: types)
+        {
+            if (PermissionContainer.Util.canCreate(type, user))
+                creatableTypes.add( type );
+            
+        }
+        RaplaListComboBox jComboBox =  new RaplaListComboBox( getContext() , creatableTypes.toArray());
 		typeSelector =  jComboBox;
-        typeSelector.setEnabled( types.length > 1);
+        typeSelector.setEnabled( creatableTypes.size() > 1);
         typeSelector.setSelectedItem(dynamicType);
         setRenderer();
 
