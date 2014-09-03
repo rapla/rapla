@@ -484,7 +484,7 @@ public class Export2iCalConverter extends RaplaComponent {
      */
     private void addUidToEvent(Appointment appointment, PropertyList properties) {
         // multiple vevents can have the same id
-        String uid = getId(appointment.getReservation());// + getId(appointment);
+        String uid = getId(appointment);// + getId(appointment);
         properties.add(new Uid(uid));
     }
 
