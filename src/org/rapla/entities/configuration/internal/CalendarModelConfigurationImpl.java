@@ -208,7 +208,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         	 newFilter.add( clone);
          }
          dest.setClassificationFilter(newFilter  );
-         dest.selected = (List<String>)((ArrayList<String>)source.selected).clone();
+         dest.selected = new ArrayList<String>(source.selected);
          LinkedHashMap<String, String> optionMap = new LinkedHashMap<String,String>();
          optionMap.putAll(source.optionMap);
          dest.optionMap = Collections.unmodifiableMap(optionMap); 
