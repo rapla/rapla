@@ -433,10 +433,11 @@ public abstract class RaplaBuilder extends RaplaComponent
     /** selects all blocks that should be visible and calculates the max start- and end-time  */
     public void prepareBuild(Date start,Date end) {
     	boolean excludeExceptions = isExceptionsExcluded();
+    	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
         HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
         allReservations.addAll( allReservationsForAllocatables);
         
-        Collection<Appointment> appointments = getAppointments(	selectedReservations, selectedAllocatables);
+        Collection<Appointment> appointments = getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         // Add appointment to the blocks
         final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         for (Appointment app:appointments)
