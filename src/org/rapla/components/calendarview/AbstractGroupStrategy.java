@@ -97,8 +97,8 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
             if (slot == null) {
                 continue;
             }
-            for (int i=0;i<slot.size();i++) {
-                wv.addBlock(slot.get(i),column,slotCount);
+            for (Block bl:slot) {
+                wv.addBlock(bl,column,slotCount);
             }
             slotCount ++;
         }

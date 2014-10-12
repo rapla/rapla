@@ -20,13 +20,16 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SwingBlock;
@@ -289,7 +292,33 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     	
         final List<Allocatable> allocatables = getSortedAllocatables();
         builder.setSmallBlocks( true );
-        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
+        builder.setSplitByAllocatables( true);
+        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy()
+        {
+            @Override
+            protected Map<Block, Integer> getBlockMap(CalendarView wv,
+                    List<Block> blocks) 
+            {
+                if (allocatables != null)
+                {
+                    Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
+                    for (Block block:blocks)
+                    {
+                        int index = getIndex(allocatables, block);
+                        
+                        if ( index >= 0 )
+                        {
+                            map.put( block, index );
+                        }
+                     }
+                     return map;        
+                }
+                else 
+                {
+                    return super.getBlockMap(wv, blocks);
+                }
+            }
+        };
         strategy.setAllocatables(allocatables);
         strategy.setFixedSlotsEnabled( true);
         strategy.setResolveConflictsEnabled( false );
@@ -304,12 +333,20 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 			slotNames[i] = slotName;
         }
         ((SwingCompactWeekView)view).setLeftColumnSize( 30+ maxSlotLength * 6);
-        builder.setSplitByAllocatables( false );
+       // builder.setSplitByAllocatables( false );
     
         ((SwingCompactWeekView)view).setSlots( slotNames );
         return builder;
     }
 
+    private int getIndex(final List<Allocatable> allocatables,
+            Block block) {
+        AbstractRaplaBlock b = (AbstractRaplaBlock)block;
+        Allocatable a = b.getGroupAllocatable();
+        int index = a != null ? allocatables.indexOf( a ) : -1;
+        return index;
+    }
+    
     protected void configureView() throws RaplaException {
         view.setToDate(model.getSelectedDate());
 //        if ( !view.isEditable() ) {
