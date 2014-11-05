@@ -30,6 +30,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
@@ -83,7 +84,8 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println();
         printReservations();
         println();
-        
+        printDisabledConflicts();
+        println();        
         closeElement("rapla:data");
     }
     
@@ -185,6 +187,27 @@ public class RaplaMainWriter extends RaplaXMLWriter
         closeElement("rapla:reservations");
     }
 
+    void printDisabledConflicts() throws IOException {
+        openElement("rapla:conflicts");
+        for (Conflict conflict: cache.getDisabledConflicts()) 
+        {
+            boolean enabledAppointment1 = conflict.isEnabledAppointment1();
+            boolean enabledAppointment2 = conflict.isEnabledAppointment2();
+            if ( enabledAppointment1 && enabledAppointment2)
+            {
+                continue;
+            }
+            openTag("rapla:conflict");
+            att("resource", conflict.getAllocatableId());
+            att("appointment1", conflict.getAppointment1());
+            att("appointment2", conflict.getAppointment2());
+            att("appointment1enabled", ""+enabledAppointment1);
+            att("appointment2enabled", ""+ enabledAppointment2);
+            closeElementTag();
+        }
+        println();
+        closeElement("rapla:conflicts");
+    }
 
     
     private void printHeader(long repositoryVersion, TimeInterval invalidateInterval, boolean resourcesRefresh) throws IOException

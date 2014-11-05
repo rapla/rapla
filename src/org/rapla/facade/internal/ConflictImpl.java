@@ -54,8 +54,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	Date startDate;
 	String reservation1Name;
 	String reservation2Name;
-	boolean enabled = true;
-	
+	boolean enabledAppointment1 = true;
+    boolean enabledAppointment2 = true;
+	   
 	ConflictImpl() {
 	}
 	
@@ -156,14 +157,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	    return Collections.emptyList();
 	}
 	
-	public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
 	private Date getStartDate_(Date today,Appointment app1, Appointment app2) {
 		Date fromDate = today;
 		Date start1 = app1.getStart();
@@ -262,6 +255,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     { 
     	return getEntity("allocatable", Allocatable.class); 
     }
+    
+    public String getAllocatableId() 
+    { 
+        return getId("allocatable"); 
+    }
 //    /** @return the second Reservation, that is involed in the conflict.*/
 //    public Reservation getReservation2() 
 //    { 
@@ -333,16 +331,17 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     }
 
     static public boolean equals( ConflictImpl firstConflict,Conflict secondConflict) {
+        String allocatable = firstConflict.getAllocatableId();
+        if ( allocatable != null && !allocatable.equals( secondConflict.getAllocatableId())) {
+            return false;
+        }
         if  (secondConflict == null  )
             return false;
         if (!firstConflict.contains( secondConflict.getAppointment1()))
             return false;
         if (!firstConflict.contains( secondConflict.getAppointment2()))
             return false;
-        Allocatable allocatable = firstConflict.getAllocatable();
-		if ( allocatable != null && !allocatable.equals( secondConflict.getAllocatable())) {
-            return false;
-        }
+       
         return true;
     }
     
@@ -394,9 +393,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         {
             maxStart = fromDate;
         }
-        // look for  10 years in the future (520 weeks)
+        // look for  10 years in the future (365 days * 10 days +3 for possible leap years)
         if ( minEnd == null)
-            minEnd = new Date(maxStart.getTime() + DateTools.MILLISECONDS_PER_DAY * 365 * 10 );
+            minEnd = new Date(maxStart.getTime() + DateTools.MILLISECONDS_PER_DAY * (365 * 10 +3));
        
         if ( toDate != null && minEnd.after( toDate))
         {
@@ -589,12 +588,29 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	{
 		ConflictImpl clone = new ConflictImpl();
 		super.deepClone( clone);
-		clone.enabled = enabled;
+		clone.enabledAppointment1 = enabledAppointment1;
+		clone.enabledAppointment2 = enabledAppointment2;
 		clone.reservation1Name = reservation1Name;
 		clone.reservation2Name = reservation2Name;
 		clone.startDate = startDate;
 		return clone;
 	}
+	
+	public boolean isEnabledAppointment1() {
+        return enabledAppointment1;
+    }
+
+    public void setEnabledAppointment1(boolean enabledAppointment1) {
+        this.enabledAppointment1 = enabledAppointment1;
+    }
+
+    public boolean isEnabledAppointment2() {
+        return enabledAppointment2;
+    }
+
+    public void setEnabledAppointment2(boolean enabledAppointment2) {
+        this.enabledAppointment2 = enabledAppointment2;
+    }
 
 	static public boolean canModify(Conflict conflict,User user, EntityResolver resolver) {
 		Allocatable allocatable = conflict.getAllocatable();

@@ -119,7 +119,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 if ( selected instanceof Conflict)
                 {
                     Conflict conflict = (Conflict) selected;
-                    if ( conflict.isEnabled())
+                    if ( isEnabled(conflict))
                     {
                         enabledConflicts.add( conflict );
                     }
@@ -144,14 +144,16 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     for (Conflict conflict: enabledConflicts)
                     {
-                        ((ConflictImpl)conflict).setEnabled( false);
+                        setEnabled( ((ConflictImpl)conflict), false);
                     }
                     try {
+                        store( enabledConflicts );
                         updateTree();
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
                 }
+
             });
             
             enable.addActionListener( new ActionListener() {
@@ -160,17 +162,16 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     for (Conflict conflict: disabledConflicts)
                     {
-                        ((ConflictImpl)conflict).setEnabled( true );
+                        setEnabled( ((ConflictImpl)conflict), true);
                     }
                     try {
+                        store( enabledConflicts );
                         updateTree();
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
                 }
             });
-
-         
 
             menu.add(disable);
             menu.add(enable);
@@ -182,6 +183,31 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
     }
     
+    private boolean isEnabled(Conflict conflict) {
+        boolean enabledAppointment1 = conflict.isEnabledAppointment1();
+        boolean enabledAppointment2 = conflict.isEnabledAppointment2();
+        if ( enabledAppointment1 && enabledAppointment2 )
+        {
+            return true;
+        }
+        if ( !enabledAppointment1 && !enabledAppointment2 )
+        {
+            return false;
+        }
+        return false;
+    }
+    
+    private void store(List<Conflict> conflicts) throws RaplaException 
+    {
+        getModification().storeObjects( conflicts.toArray(Conflict.CONFLICT_ARRAY));
+    }
+
+    private void setEnabled(ConflictImpl conflictImpl, boolean enabled)
+    {
+        conflictImpl.setEnabledAppointment1(enabled);
+        conflictImpl.setEnabledAppointment2(enabled); 
+    }
+
     public RaplaTree getTreeSelection() {
         return treeSelection;
     }

@@ -67,6 +67,8 @@ import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -82,7 +84,6 @@ class RaplaSQL {
     RaplaContext context;
     PreferenceStorage preferencesStorage;
     
-    
     RaplaSQL( RaplaContext context) throws RaplaException{
     	this.context = context;
         logger =  context.lookup( Logger.class);
@@ -97,6 +98,7 @@ class RaplaSQL {
 		stores.add(reservationStorage);
 	    AppointmentStorage appointmentStorage = new AppointmentStorage( context);
 		stores.add(appointmentStorage);
+		stores.add(new ConflictStorage( context));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -1380,6 +1382,50 @@ class UserStorage extends RaplaTypeStorage<User> {
             putPassword(userId,password);
         }
         put(user);
+   }
+
+}
+
+class ConflictStorage extends RaplaTypeStorage<Conflict> {
+    
+    public ConflictStorage(RaplaContext context) throws RaplaException {
+        super( context,Conflict.TYPE, "RAPLA_CONFLICT",
+        new String [] {"RESOURCE_ID VARCHAR(255) NOT NULL","APPOINTMENT1 VARCHAR(255) NOT NULL","APPOINTMENT2 VARCHAR(255) NOT NULL","APP1ENABLED INTEGER NOT NULL","APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP"});
+    }
+
+    @Override
+    void insertAll() throws SQLException, RaplaException {
+     //   insert( cache.getDisabledConflicts());
+    }
+    
+    @Override
+    protected int write(PreparedStatement stmt,Conflict conflict) throws SQLException, RaplaException {
+        setId(stmt, 1, conflict.getAllocatableId());
+        setId(stmt, 2, conflict.getAppointment1());
+        setId(stmt, 3, conflict.getAppointment2());
+        setInt(stmt, 4, conflict.isEnabledAppointment1() ? 1:0);
+        setInt(stmt, 5, conflict.isEnabledAppointment2() ? 1:0);
+        setTimestamp(stmt, 6, getCurrentTimestamp() );
+        stmt.addBatch();
+        return 1;
+    }
+    
+    
+    @Override
+    protected void load(ResultSet rset) throws SQLException, RaplaException {
+        String allocatableId = readId(rset,1, Allocatable.class );
+        String appointment1Id = readId(rset,2, Appointment.class );
+        String appointment2Id = readId(rset,3, Appointment.class );
+
+        boolean appointment1Enabled = rset.getInt(4) == 1;
+        boolean appointment2Enabled = rset.getInt(5) == 1;
+        
+        Date today = getCurrentTimestamp();
+        String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id); 
+        ConflictImpl conflict = new ConflictImpl(id, today);
+        conflict.setEnabledAppointment1(appointment1Enabled );
+        conflict.setEnabledAppointment2(appointment2Enabled );
+        put(conflict);
    }
 
 }

@@ -218,7 +218,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-
 	public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
 	{
 		Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();

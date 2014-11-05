@@ -39,12 +39,16 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Provider;
 
 public class LocalCache implements EntityResolver
 {
     Map<String,String> passwords = new HashMap<String,String>();
     Map<String,Entity> entities;
+    
+    Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
 
     Map<String,DynamicTypeImpl> dynamicTypes;
     Map<String,UserImpl> users;
@@ -105,6 +109,10 @@ public class LocalCache implements EntityResolver
         {
             return (Map)resources;
         }
+        if ( type == Conflict.TYPE)
+        {
+            return (Map)disabledConflicts;
+        }
         if ( type == DynamicType.TYPE)
         {
             return (Map)dynamicTypes;
@@ -130,7 +138,12 @@ public class LocalCache implements EntityResolver
         {
             if (raplaType == Reservation.TYPE || raplaType == Appointment.TYPE )
             {
-                throw new IllegalArgumentException("Can't store reservations or appointments in client cache");
+                throw new IllegalArgumentException("Can't store reservations, appointments or conflicts in client cache");
+            }
+            // we ignore client stores for now
+            if ( raplaType == Conflict.TYPE)
+            {
+                return;
             }
             if (raplaType == Preferences.TYPE  )
             {
@@ -206,6 +219,7 @@ public class LocalCache implements EntityResolver
         resources.clear();
         dynamicTypes.clear();
         entities.clear();
+        disabledConflicts.clear();
         initSuperCategory();
     }
     
@@ -345,7 +359,17 @@ public class LocalCache implements EntityResolver
     public Collection<User> getUsers() 	{
 		return (Collection)users.values();
 	}
+	
+	@SuppressWarnings("unchecked")
+    public Collection<Conflict> getDisabledConflicts()  {
+	    return (Collection) disabledConflicts.values();
+	}
 
+	@SuppressWarnings("unchecked")
+	public Collection<Conflict> getDisabledConflictIds()  {
+	        return (Collection) disabledConflicts.keySet();
+	}
+	
 	@SuppressWarnings("unchecked")
     public Collection<Allocatable> getAllocatables() {
 	    return (Collection)resources.values();

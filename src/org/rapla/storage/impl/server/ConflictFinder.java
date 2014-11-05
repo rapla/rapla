@@ -42,6 +42,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 
@@ -50,8 +51,10 @@ class ConflictFinder {
     Map<Allocatable,Set<Conflict>> conflictMap;
     Logger logger;
     EntityResolver resolver;
-    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver)  {
+    LocalCache cache;
+    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver, LocalCache cache)  {
     	this.logger = logger;
+    	this.cache = cache;
     	this.allocationMap = allocationMap;
     	conflictMap = new HashMap<Allocatable, Set<Conflict>>();
     	long startTime = System.currentTimeMillis();
@@ -470,6 +473,7 @@ class ConflictFinder {
 	public Collection<Conflict> getConflicts( User user) 
 	{
 		Collection<Conflict> conflictList = new HashSet<Conflict>();
+		Collection<Conflict> disabledConflicts = cache.getDisabledConflictIds();
 		for ( Allocatable allocatable: conflictMap.keySet())
 		{
 			Set<Conflict> set = conflictMap.get( allocatable);
@@ -479,7 +483,12 @@ class ConflictFinder {
 				{
 					if (ConflictImpl.canModify(conflict,user,resolver))
 					{
-						conflictList.add(conflict);
+                        if (disabledConflicts.contains(conflict.getId()))
+                        {
+                            ((ConflictImpl)conflict).setEnabledAppointment1( false );
+                            ((ConflictImpl)conflict).setEnabledAppointment1( false );
+                        }
+                        conflictList.add(conflict);
 					}
 				}
 			}

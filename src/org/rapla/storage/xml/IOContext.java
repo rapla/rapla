@@ -48,6 +48,7 @@ public class IOContext
  
     protected void addReaders(Map<RaplaType,RaplaXMLReader> readerMap,RaplaContext context) throws RaplaException {
         readerMap.put( Category.TYPE,new CategoryReader( context));
+        readerMap.put( Conflict.TYPE,new ConflictReader( context));
         readerMap.put( Preferences.TYPE, new PreferenceReader(context) );
         readerMap.put( DynamicType.TYPE, new DynamicTypeReader(context) );
         readerMap.put( User.TYPE, new UserReader(context));

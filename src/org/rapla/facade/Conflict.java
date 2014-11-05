@@ -26,12 +26,7 @@ import org.rapla.entities.domain.Appointment;
 /**
  * A conflict is the allocation of the same resource at the same time by different
  * reservations. There's one conflict for each resource and each overlapping of
- * two allocations. So if there are 3 reservations that allocate the same 2 resources
- * on 2 days of the week, then we got ( 3 * 2 ) *  2 * 2 = 24 conflicts. Thats
- * 3 reservations, each conflicting with two other 2 reservations on 2 days with 2 resources.
- *
- * @version 1.0
- * @author Christopher Kohlhaas
+ * two allocating appointments. 
  */
 
 public interface Conflict extends Named, Entity<Conflict>
@@ -51,6 +46,8 @@ public interface Conflict extends Named, Entity<Conflict>
     public String getAppointment2();
     String getReservation1();
     String getReservation2();
+    
+    String getAllocatableId();
     
     String getReservation1Name();
 	
@@ -99,7 +96,9 @@ public interface Conflict extends Named, Entity<Conflict>
     
     Date getStartDate();
    
-    boolean isEnabled();
+    boolean isEnabledAppointment1();
+    
+    boolean isEnabledAppointment2();
 }
 
 
