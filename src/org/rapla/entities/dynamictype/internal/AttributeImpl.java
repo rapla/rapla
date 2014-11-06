@@ -32,6 +32,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
@@ -659,6 +660,8 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
+    //static ThreadLocal<AtomicInteger> stackSafeCounter = new ThreadLocal<AtomicInteger>();
+    
     public String getValueAsString(Locale locale,Object value)
 	{
 		if (value == null)
@@ -668,7 +671,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 	        return ((Category) value).getPath(rootCategory, locale);
 	    }
 	    if (value instanceof Allocatable) {
-	        return ((Allocatable) value).getName( locale);
+            Allocatable allocatable = (Allocatable) value;
+	        Classification classification = allocatable.getClassification();
+            if ( classification == null)
+            {
+                return "";
+            }
+            String name = classification.getName( locale );
+            return name;
 	    }
 	    if (value instanceof Date) {
 	        return DateTools.formatDate((Date) value, locale);

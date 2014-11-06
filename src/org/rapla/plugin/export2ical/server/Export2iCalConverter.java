@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.TimeZone;
 
 import net.fortuna.ical4j.model.Calendar;
@@ -74,11 +73,13 @@ public class Export2iCalConverter extends RaplaComponent {
     private boolean doExportAsMeeting;
     TimeZoneConverter timezoneConverter;
     boolean hasLocationType;
+    RaplaLocale raplaLocale;
     
     public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences) throws RaplaException {
         super(context);
         timezoneConverter = context.lookup( TimeZoneConverter.class);
-        calendar = context.lookup(RaplaLocale.class).createCalendar();
+        raplaLocale = context.lookup(RaplaLocale.class);
+        calendar = raplaLocale.createCalendar();
         doExportAsMeeting = false;
         DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         for ( DynamicType type:dynamicTypes)
@@ -256,7 +257,7 @@ public class Export2iCalConverter extends RaplaComponent {
                 try {
                     Attendee attendee = new Attendee(new URI(email));
                     attendee.getParameters().add(Role.REQ_PARTICIPANT);
-                    attendee.getParameters().add(new Cn(person.getName(Locale.getDefault())));
+                    attendee.getParameters().add(new Cn(person.getName(raplaLocale.getLocale())));
                     attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
                     properties.add(attendee);
                 } catch (URISyntaxException e) {
@@ -397,7 +398,7 @@ public class Export2iCalConverter extends RaplaComponent {
             if (!isReserved(raplaPersons[i], appointment))
                 continue;
 
-            attendeeString += raplaPersons[i].getName(Locale.getDefault());
+            attendeeString += raplaPersons[i].getName(raplaLocale.getLocale());
             attendeeString = attendeeString.trim();
 
             if (i != raplaPersons.length - 1) {
@@ -419,7 +420,7 @@ public class Export2iCalConverter extends RaplaComponent {
     private void addCategories(Appointment appointment, PropertyList properties) {
         Classification cls = appointment.getReservation().getClassification();
         Categories cat = new Categories();
-        cat.getCategories().add(cls.getType().getName(Locale.getDefault()));
+        cat.getCategories().add(cls.getType().getName(raplaLocale.getLocale()));
         properties.add(cat);
     }
 
@@ -469,7 +470,7 @@ public class Export2iCalConverter extends RaplaComponent {
             if (buffer.length() > 0) {
                 buffer.append(", ");
             }
-            buffer.append(alloc.getName(Locale.getDefault()));
+            buffer.append(alloc.getName(raplaLocale.getLocale()));
         }
 
         properties.add(new Location(buffer.toString()));
@@ -508,7 +509,10 @@ public class Export2iCalConverter extends RaplaComponent {
      */
     private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
 
-        String eventDescription = appointment.getReservation().getName(Locale.getDefault());
+        
+        Reservation reservation = appointment.getReservation();
+        String annotationName = reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null ? DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT :DynamicTypeAnnotations.KEY_NAME_FORMAT; 
+        String eventDescription = reservation.format(raplaLocale.getLocale(), annotationName);
         if (attendeeToTitle) {
             eventDescription += getAttendeeString(appointment);
         }

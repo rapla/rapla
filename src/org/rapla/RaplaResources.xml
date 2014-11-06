@@ -4837,6 +4837,12 @@ See French text.
         <text lang="pl">Format wyświetlanej nazwy w ulotce</text>
 		<text lang="pt">Formato de exibição do nome no folheto</text>
     </entry>
+    <entry key="nameformat_export">
+        <text lang="en">Displayed name format in export</text>
+        <text lang="de">Anzeigeformatierung im Export</text>
+        <text lang="fr">Mettre en forme l'affichage dans le exporter</text>
+        <text lang="es">Formato de nombre visualizado si exporta</text>
+    </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>
         <text lang="de">Ist ein Ort</text>

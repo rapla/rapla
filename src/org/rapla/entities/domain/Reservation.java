@@ -14,6 +14,7 @@
 package org.rapla.entities.domain;
 
 import java.util.Date;
+import java.util.Locale;
 
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
@@ -101,6 +102,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 	/** returns the last (in time) maxEnd of all appointments. Returns null when one appointment has no end*/
 	Date getMaxEnd();
 
+	String format(Locale locale, String annotationName);
 	
 }
 

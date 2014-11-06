@@ -1891,7 +1891,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 					Classification classification = allocatable.getClassification();
 					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
 					{
-						value = classification.getNamePlaning(locale);
+						value = classification.format(locale,DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
 					}
 				}
 			}

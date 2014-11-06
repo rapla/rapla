@@ -52,7 +52,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 	private transient boolean readOnly = false;
 
 	private transient TextCache name;
-	private transient TextCache namePlaning;
 	private transient EntityResolver resolver;
     
     /** stores the nonreference values like integers,boolean and string.*/
@@ -77,14 +76,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
                     return nameString;
             }
             lastParsedAnnotation =  parsedAnnotation;
-            EvalContext evalContext = new EvalContext(locale)
-            {
-            	public Classification getClassification()
-            	{
-            		return ClassificationImpl.this;
-            	}
-            };
-    		nameString = parsedAnnotation.formatName(evalContext).trim();
+            nameString = format(locale, keyNameFormat);
             return nameString;
     	}
     }
@@ -188,14 +180,23 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         return name.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT);
     }
-
-    public String getNamePlaning(Locale locale) {
-        if ( namePlaning == null)
-        {
-            namePlaning = new TextCache();
-        }
-        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
+    
+    public String format( Locale locale, String annotationName)
+    {
+        DynamicTypeImpl type = (DynamicTypeImpl)getType();
+        ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
+        EvalContext evalContext = new EvalContext(locale, 0, annotationName, this );
+        String nameString = parsedAnnotation.formatName(evalContext).trim();
+        return nameString;
     }
+
+//    public String getNamePlaning(Locale locale) {
+//        if ( namePlaning == null)
+//        {
+//            namePlaning = new TextCache();
+//        }
+//        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
+//    }
 	
 
     public String getValueAsString(Attribute attribute,Locale locale)
@@ -218,7 +219,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String result = buf.toString();
         return result;
     }
-
+    
     public Attribute getAttribute(String key) {
         return getType().getAttribute(key);
     }
@@ -300,7 +301,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         this.type = type.getKey();
         name = null;
-        namePlaning = null;
     }
 
     /** find the attribute of the given type that matches the id */
@@ -351,7 +351,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
 			data.remove(attributeKey);
 			name = null;
-		    namePlaning = null;
         	return;
         }
 		ArrayList<String> newValues = new ArrayList<String>();
@@ -366,7 +365,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		data.put(attributeKey,newValues);
         //isNameUpToDate = false;
         name = null;
-        namePlaning = null;
     }
 
     public <T> void addValue(Attribute attribute,T value) {
@@ -445,7 +443,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         clone.typeId = getParentId();
         clone.type = type;
         clone.name = null;
-        clone.namePlaning = null;
         clone.readOnly = false;// clones are always writable
         return clone;
     }

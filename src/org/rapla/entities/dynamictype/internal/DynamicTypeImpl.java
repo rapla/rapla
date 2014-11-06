@@ -12,7 +12,9 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -31,7 +33,10 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.UniqueKeyException;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -628,10 +633,22 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	        {
 	        	return new AttributeFunction(attribute);
 	        } 
-	        else if (variableName.equals(type.getKey())) 
+	        else if (variableName.equals(type.getKey()) ) 
 	        {
 	        	return new TypeFunction(type);
 	        }
+	        else if (variableName.equals("type:type" )) 
+            {
+                return new ThisTypeFunction();
+            }
+            else if (variableName.equals("event:allocatables") || variableName.equals("event:resources")) 
+            {
+                return new AllocatableFunction(type);
+            }
+            else if (variableName.equals("event:appointments")) 
+            {
+                return new AppointmentFunction(type);
+            }
 	        return null;
 		}
 		
@@ -689,10 +706,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 				id = type.getId() ;
 			}
 			
-			public String eval(EvalContext context) 
+			public DynamicType eval(EvalContext context) 
 			{
 				DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
-				return type.getName( context.getLocale());
+				return type;
 			}
 			
 			@Override
@@ -704,7 +721,79 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 				return "";
 			}
 		}
+		
+		class ThisTypeFunction extends ParsedText.Function
+        {
+            ThisTypeFunction() 
+            {
+                super("type:type");
+            }
+            
+            public DynamicType eval(EvalContext context) 
+            {
+                DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
+                return type;
+            }
+            
+        }
+		
+		class AllocatableFunction extends ParsedText.Function
+		{
+		    AllocatableFunction(DynamicType type) 
+            {
+                super("event:allocatables");
+            }
+
+            @Override
+            public Collection<Allocatable> eval(EvalContext context) {
+                if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatables());
+                    return asList;
+                }
+                return Collections.emptyList();
+            }
+		    
+		}
+		
+		class AppointmentFunction extends ParsedText.Function
+        {
+            AppointmentFunction(DynamicType type) 
+            {
+                super("event:appointments");
+            }
+
+            @Override
+            public Collection<Appointment> eval(EvalContext context) {
+                if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    List<Appointment> asList = Arrays.asList(reservation.getAppointments());
+                    return asList;
+                }
+                return Collections.emptyList();
+            }
+            
+        }
 	}
+	
+	static public class ReservationEvalContext extends EvalContext
+    {
+        private Reservation reservation;
+
+        public ReservationEvalContext( Locale locale, int callStackDepth, String annotationName, Reservation reservation)
+        {
+            super(locale,callStackDepth, annotationName, reservation.getClassification());
+            this.reservation = reservation;
+        }
+        
+        public Reservation getReservation()
+        {
+            return reservation;
+        }
+        
+    }
 
 	public static boolean isTransferedToClient(Classifiable classifiable) {
 		if ( classifiable == null)

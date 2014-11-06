@@ -20,7 +20,10 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.rest.GwtIncompatible;
 /** 
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
@@ -266,6 +269,10 @@ public class ParsedText implements Serializable {
 		{
 			return new EqualsFunction(args);
 		}
+		if ( functionName.equals("filter"))
+        {
+            return new FilterFunction(args);
+        }
 		else
 		{
 			 throw new IllegalAnnotationException("Unknown function '"+ functionName + "'" );
@@ -392,6 +399,13 @@ public class ParsedText implements Serializable {
 				return key;
 			
 			}
+			else if ( raplaType == DynamicType.TYPE)
+            {
+			    DynamicType type = (DynamicType) raplaObject;
+                String key = type.getKey();
+                return key;
+            
+            }
 			else if ( raplaType == Attribute.TYPE)
 			{
 				Classification classification = context.getClassification();
@@ -696,7 +710,60 @@ public class ParsedText implements Serializable {
 			return evalResult1.equals( evalResult2);
 		}
 	}
-	
+
+	class FilterFunction extends Function
+    {
+        Function arg1;
+        Function arg2;
+        public FilterFunction( List<Function> args) throws IllegalAnnotationException {
+            super( "filter", args);
+            if ( args.size() != 2)
+            {
+                throw new IllegalAnnotationException("filter function expects 2 argument!");
+            }
+            arg1 = args.get(0);
+            arg2 = args.get(1);
+            testMethod();
+        }
+
+        @SuppressWarnings("unused")
+        private void testMethod() throws IllegalAnnotationException {
+            
+        }
+
+        @Override
+        public Collection eval(EvalContext context) 
+        {
+            Object evalResult1 = arg1.eval( context);
+            Iterable collection;
+            if ( evalResult1 instanceof Iterable)
+            {
+                collection = (Iterable) evalResult1; 
+            }
+            else
+            {
+                collection = Collections.singleton( evalResult1);
+            }
+            Collection result = new ArrayList(); 
+            for ( Object obj:collection)
+            {
+                if ( !(obj instanceof Classifiable))
+                {
+                    continue;
+                }
+                Classification classification = ((Classifiable)obj).getClassification();
+                EvalContext subContext = new EvalContext(context.getLocale(), context.getCallStackDepth() + 1,context.getAnnotationName(), classification);
+                Object evalResult = arg2.eval( subContext);
+                if ( !(evalResult instanceof Boolean ) || !((Boolean)evalResult))
+                {
+                    continue;
+                }
+                result.add( obj);
+            }
+            return result;
+        }
+    }
+
 	private Object getValueForIf(Object result, EvalContext context)
 	{
 		if ( result instanceof Attribute)
@@ -751,15 +818,18 @@ public class ParsedText implements Serializable {
 		else if ( result instanceof Date)
 		{
 			Date date = (Date) result;
-			StringBuffer buf = new StringBuffer();
-			buf.append( DateTools.formatDate( date, locale));
-			return buf.toString();			
+			String formatDate = DateTools.formatDate( date, locale);
+			return formatDate;			
+		}
+		else if ( result  instanceof Boolean) 
+		{
+		    String booleanTranslation = AttributeImpl.getBooleanTranslation(locale, (Boolean) result);
+            return booleanTranslation;
 		}
 		else if ( result instanceof Attribute)
 		{
 			Attribute attribute = (Attribute) result;
-			Classification classification = context.getClassification();
-			return classification.getValueAsString(attribute, locale);
+			return getValueAsString(attribute, locale, context);
 		}
 		else if ( result instanceof Named)
 		{
@@ -767,6 +837,51 @@ public class ParsedText implements Serializable {
 		}
 		return result.toString();
 	}
+	
+	private String getValueAsString(Attribute attribute,Locale locale, EvalContext context)
+    {
+	    Classification classification = context.getClassification();
+	    if ( classification == null)
+	    {
+	        return "";
+	    }
+        Collection values =  classification.getValues(attribute);
+        StringBuilder buf = new StringBuilder();
+        boolean first = true;
+        for ( Object value: values)
+        {
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                buf.append(", ");
+            }
+            if ( value instanceof Classifiable)
+            {
+                final Classification classification2 = ((Classifiable)value).getClassification();
+                DynamicTypeImpl type = (DynamicTypeImpl)classification2.getType();
+                String annotationName = context.getAnnotationName();
+                ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
+                int callStackDepth = context.getCallStackDepth();
+                if ( callStackDepth >5)
+                {
+                    return "ErrorSelfReferenceCausesNameOverflow";
+                }
+                EvalContext evalContext = new EvalContext( context.getLocale(), callStackDepth + 1, annotationName, classification2);
+                String formatName = parsedAnnotation.formatName( evalContext);
+                return formatName;
+            }
+            else
+            {
+                String valueAsString = ((AttributeImpl)attribute).getValueAsString( locale, value);
+                buf.append( valueAsString);
+            }
+        }
+        String result = buf.toString();
+        return result;
+    }
 
 	public interface ParseContext
 	{
@@ -776,18 +891,41 @@ public class ParsedText implements Serializable {
 
 	static public class EvalContext
 	{
+	    final private int callStackDepth;
 		private Locale locale;
+		private String annotationName;
+		private Classification classification;
 
 		public EvalContext( Locale locale)
 		{
 			this.locale = locale;
+			callStackDepth = 0;
+			annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
 		}
 		
-		/**  override this method if you can return a classification object in the context. Than the use of attributes is possible*/
+		public EvalContext( Locale locale, int callStackDepth, String annotationName, Classification classification)
+        {
+            this.locale = locale;
+            this.callStackDepth = callStackDepth;
+            this.annotationName = annotationName;
+            this.classification =  classification;
+        }
+		
+		/**  override this method if you can return a classification object in the context. The use of attributes is possible*/
 		public Classification getClassification() 
 		{
-			return null;
+			return classification;
 		}
+		
+		public String getAnnotationName() 
+		{
+            return annotationName;
+        }
+		
+		public int getCallStackDepth() 
+		{
+            return callStackDepth;
+        }
 		
 		public Locale getLocale() 
 		{
