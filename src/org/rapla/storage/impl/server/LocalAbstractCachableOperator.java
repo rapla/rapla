@@ -96,6 +96,7 @@ import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
@@ -911,6 +912,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
+        Set<Entity> removed = result.getRemoved();
+        List<Conflict> conflicts = retainDisabledConflicts(removed);
+        for (Conflict conflict:conflicts)
+        {
+            cache.remove( conflict);
+        }
 	}
 	
 	private void addToDeleteUpdate(Entity current, boolean isDelete) {
@@ -1113,6 +1120,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         
         private void addPermissions( EntityPermissionContainer current, Permission.AccessLevel minimumLevel) {
             DeleteUpdateEntry entry =this;
+            if ( current instanceof Ownable)
+            {
+                User owner = ((Ownable)current).getOwner();
+                if ( owner != null)
+                {
+                    if ( entry.affectedUserIds == null)
+                    {
+                        entry.affectedUserIds = new HashSet<String>(1);
+                    }
+                    entry.affectedUserIds.add( owner.getId() );
+                }
+            }
             Collection<Permission> permissions =  current.getPermissionList();
             for ( Permission p:permissions)
             {
@@ -1340,7 +1359,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return update;
 	}
     
-    public void removeOldConflicts() throws RaplaException
+    private void removeOldConflicts() throws RaplaException
     {
     	Map<Entity,Entity> oldEntities = new LinkedHashMap<Entity,Entity>();
 		Collection<Entity>updatedEntities = new LinkedHashSet<Entity>();
@@ -1350,16 +1369,52 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		UpdateResult result = createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		//Date today = getCurrentTimestamp();
 		Date today = today();
-		Lock readLock = readLock();
-		try
+		List<Conflict> conflicts;
 		{
-			conflictFinder.removeOldConflicts(result, today);
-    	}
-    	finally
-    	{
-    		unlock( readLock);
-    	}
+    		Lock readLock = readLock();
+    		try
+    		{
+    			conflictFinder.removeOldConflicts(result, today);
+                Set<Entity> removed = result.getRemoved();
+    			conflicts = retainDisabledConflicts(removed);
+        	}
+        	finally
+        	{
+        		unlock( readLock);
+        	}
+		}
+		
+		if ( conflicts.size() >0)
+		{
+		    Lock writeLock = writeLock();
+	        try
+	        {
+	            for (Conflict conflict:conflicts)
+	            {
+	                cache.remove( conflict);
+	            }
+	        }
+	        finally
+	        {
+	            unlock( writeLock);
+	        }
+		}
 		fireStorageUpdated( result );
+    }
+
+    public List<Conflict> retainDisabledConflicts(Set<Entity> removed) {
+        List<Conflict> conflicts = new ArrayList<Conflict>();
+        for ( Entity entity:removed)
+        {
+            if ( entity instanceof Conflict)
+            {
+                if (cache.getDisabledConflictIds().contains( entity.getId()))
+                {
+                    conflicts.add( (Conflict) entity);
+                }
+            }
+        }
+        return conflicts;
     }
 	
 	protected void preprocessEventStorage(final UpdateEvent evt) throws RaplaException {
@@ -2385,9 +2440,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	{
     	EntityStore store = new EntityStore( null, cache.getSuperCategory() );
 		
-		@SuppressWarnings("deprecation")
-        String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
 		Date now = getCurrentTimestamp();
+		
+		PreferencesImpl newPref = new PreferencesImpl(now,now);
+        newPref.setId( PreferencesImpl.getPreferenceIdFromUser(null));
+        newPref.setResolver( this);
+        newPref.putEntry(CalendarModel.ONLY_MY_EVENTS_DEFAULT, false);
+        newPref.setReadOnly();
+        store.put( newPref);
+        
+        @SuppressWarnings("deprecation")
+        String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
+        
 		CategoryImpl groupsCategory = new CategoryImpl(now,now);
 		groupsCategory.setKey("user-groups");
 		setName( groupsCategory.getName(), groupsCategory.getKey());
@@ -2545,6 +2609,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			
 		}
+	}
+	
+	public void fillConflictDisableInformation(User user, Conflict conflict)
+	{
+	    cache.fillConflictDisableInformation(user, conflict);
 	}
 	
 }
