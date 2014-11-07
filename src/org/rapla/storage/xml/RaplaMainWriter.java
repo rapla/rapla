@@ -189,7 +189,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
 
     void printDisabledConflicts() throws IOException {
         openElement("rapla:conflicts");
-        for (Conflict conflict: cache.getDisabledConflicts()) 
+        for (Conflict conflict: cache.getConflicts()) 
         {
             boolean enabledAppointment1 = conflict.isEnabledAppointment1();
             boolean enabledAppointment2 = conflict.isEnabledAppointment2();
@@ -205,7 +205,6 @@ public class RaplaMainWriter extends RaplaXMLWriter
             att("appointment2enabled", ""+ enabledAppointment2);
             closeElementTag();
         }
-        println();
         closeElement("rapla:conflicts");
     }
 

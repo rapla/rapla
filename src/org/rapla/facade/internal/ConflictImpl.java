@@ -717,6 +717,19 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		set.add( app2);
 	}
 
+    public boolean isEnabled() {
+        boolean enabledAppointment1 = isEnabledAppointment1();
+        boolean enabledAppointment2 = isEnabledAppointment2();
+        if ( enabledAppointment1 && isAppointment1Editable() )
+        {
+            return true;
+        }
+        if ( enabledAppointment2 && isAppointment2Editable() )
+        {
+            return true;
+        }
+        return false;
+    }
 
 	
 }

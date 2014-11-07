@@ -14,8 +14,11 @@ package org.rapla.gui.internal.edit.reservation;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.JComponent;
@@ -44,16 +47,24 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Reser
 
     public boolean check(Reservation reservation, Component sourceComponent) throws RaplaException {
         Conflict[] conflicts =  getQuery().getConflicts(reservation);
+        List<Conflict> conflictList = new ArrayList<Conflict>();
+        for ( Conflict conflict: conflicts)
+        {
+            if ( conflict.isEnabled())
+            {
+                conflictList.add( conflict);
+            }
+        }
         if (conflicts.length == 0) {
             return true;
         }
         boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
         User user = getUser();
-        if ( !showWarning && canCreateConflicts( conflicts, user))
+        if ( !showWarning && canCreateConflicts( conflictList, user))
         {
             return true;
         }
-        JComponent content = getConflictPanel(conflicts);
+        JComponent content = getConflictPanel(conflictList);
         DialogUI dialog = DialogUI.create(
                 getContext()
                 ,sourceComponent
@@ -81,7 +92,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Reser
         return false;
     }
 
-    private boolean canCreateConflicts(Conflict[] conflicts, User user) 
+    private boolean canCreateConflicts(Collection<Conflict> conflicts, User user) 
     {
         Set<Allocatable> allocatables = new HashSet<Allocatable>();
         for (Conflict conflict:conflicts)
@@ -98,9 +109,9 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Reser
         return true;
     }
 
-    private JComponent getConflictPanel(Conflict[] conflicts) throws RaplaException {
+    private JComponent getConflictPanel(Collection<Conflict> conflicts) throws RaplaException {
     	TreeFactory treeFactory = getService(TreeFactory.class);
-		TreeModel treeModel = treeFactory.createConflictModel( Arrays.asList( conflicts));
+		TreeModel treeModel = treeFactory.createConflictModel( conflicts);
     	RaplaTree treeSelection = new RaplaTree();
     	JTree tree = treeSelection.getTree();
     	tree.setRootVisible(false);

@@ -48,7 +48,7 @@ public class LocalCache implements EntityResolver
     Map<String,String> passwords = new HashMap<String,String>();
     Map<String,Entity> entities;
     
-    Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
+    Map<String,ConflictImpl> conflicts = new HashMap<String,ConflictImpl>();
 
     Map<String,DynamicTypeImpl> dynamicTypes;
     Map<String,UserImpl> users;
@@ -95,6 +95,10 @@ public class LocalCache implements EntityResolver
                 remove( child);
             }
         }
+        if ( entity instanceof Conflict)
+        {
+            conflicts.remove( entity.getId());
+        }
         return bResult;
     }
 
@@ -111,7 +115,7 @@ public class LocalCache implements EntityResolver
         }
         if ( type == Conflict.TYPE)
         {
-            return (Map)disabledConflicts;
+            return (Map)conflicts;
         }
         if ( type == DynamicType.TYPE)
         {
@@ -129,8 +133,8 @@ public class LocalCache implements EntityResolver
        
         RaplaType raplaType = entity.getRaplaType();
        
-        String id = entity.getId();
-        if (id == null)
+        String entityId = entity.getId();
+        if (entityId == null)
             throw new IllegalStateException("ID can't be null");
 
         String clientUserId = getClientUserId();
@@ -166,10 +170,27 @@ public class LocalCache implements EntityResolver
         	}
         }
         
-        entities.put(id,entity);
+        entities.put(entityId,entity);
 		Map<String,Entity> entitySet =  getMap(raplaType);
         if (entitySet != null) {
-            entitySet.put( entity.getId() ,entity);
+            boolean disabled = false;
+            if ( entity instanceof Conflict ) 
+            {
+                Conflict conflict = (Conflict) entity;
+                disabled = !conflict.isEnabledAppointment1() && !conflict.isEnabledAppointment2();
+                if ( disabled)
+                {
+                    conflicts.remove( entityId);
+                }
+                else
+                {
+                    conflicts.put( entityId, (ConflictImpl)conflict);
+                }
+            }
+            if ( !disabled)
+            {
+                entitySet.put( entityId ,entity);
+            }
         } 
         else 
         {
@@ -219,7 +240,7 @@ public class LocalCache implements EntityResolver
         resources.clear();
         dynamicTypes.clear();
         entities.clear();
-        disabledConflicts.clear();
+        conflicts.clear();
         initSuperCategory();
     }
     
@@ -362,7 +383,7 @@ public class LocalCache implements EntityResolver
 	
 	public void fillConflictDisableInformation( User user, Conflict conflict) {
         String id = conflict.getId();
-        Conflict disabledConflict = disabledConflicts.get( id);
+        Conflict disabledConflict = conflicts.get( id);
         if (disabledConflict != null)
         {
             ((ConflictImpl)conflict).setEnabledAppointment1( disabledConflict.isEnabledAppointment1() );
@@ -375,13 +396,13 @@ public class LocalCache implements EntityResolver
 
 	
 	@SuppressWarnings("unchecked")
-    public Collection<Conflict> getDisabledConflicts()  {
-	    return (Collection) disabledConflicts.values();
+    public Collection<Conflict> getConflicts()  {
+	    return (Collection) conflicts.values();
 	}
 
 	@SuppressWarnings("unchecked")
-	public Collection<String> getDisabledConflictIds()  {
-	        return (Collection) disabledConflicts.keySet();
+	public Collection<String> getConflictIds()  {
+	        return (Collection) conflicts.keySet();
 	}
 	
 	@SuppressWarnings("unchecked")

@@ -119,7 +119,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 if ( selected instanceof Conflict)
                 {
                     Conflict conflict = (Conflict) selected;
-                    if ( isEnabled(conflict))
+                    if ( conflict.isEnabled())
                     {
                         enabledConflicts.add( conflict );
                     }
@@ -174,19 +174,6 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
     }
     
-    private boolean isEnabled(Conflict conflict) {
-        boolean enabledAppointment1 = conflict.isEnabledAppointment1();
-        boolean enabledAppointment2 = conflict.isEnabledAppointment2();
-        if ( enabledAppointment1 && conflict.isAppointment1Editable() )
-        {
-            return true;
-        }
-        if ( enabledAppointment2 && conflict.isAppointment2Editable() )
-        {
-            return true;
-        }
-        return false;
-    }
     
     public void store_(Collection<Conflict> conflictOrig, boolean newFlag) throws RaplaException {
         ArrayList<Conflict> conflicts = new ArrayList<Conflict>();

@@ -659,25 +659,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         return new DefaultTreeModel(rootNode);
     }
 
-   
-    private boolean isEnabled(Conflict conflict) {
-        boolean enabledAppointment1 = conflict.isEnabledAppointment1();
-        boolean enabledAppointment2 = conflict.isEnabledAppointment2();
-        if ( enabledAppointment1 && conflict.isAppointment1Editable() )
-        {
-            return true;
-        }
-        if ( enabledAppointment2 && conflict.isAppointment2Editable() )
-        {
-            return true;
-        }
-        return false;
-    }
-    
     private Iterable<Conflict> filter(Iterable<Conflict> conflicts, final boolean enabledState) {
         return new FilterIterable<Conflict>( conflicts) {
             protected boolean isInIterator(Object obj) {
-                boolean inIterator = isEnabled(((Conflict)obj)) == enabledState;
+                boolean inIterator = ((Conflict)obj).isEnabled() == enabledState;
                 return inIterator;
 //                return true;
             }

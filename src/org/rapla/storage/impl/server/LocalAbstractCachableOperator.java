@@ -114,6 +114,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
@@ -912,12 +913,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        Set<Entity> removed = result.getRemoved();
-        List<Conflict> conflicts = retainDisabledConflicts(removed);
-        for (Conflict conflict:conflicts)
-        {
-            cache.remove( conflict);
-        }
+        List<Conflict> conflicts = getConflictsToDeleteFromCache(result);
+        removeConflictsFromDatabase(conflicts);
 	}
 	
 	private void addToDeleteUpdate(Entity current, boolean isDelete) {
@@ -1369,14 +1366,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		UpdateResult result = createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		//Date today = getCurrentTimestamp();
 		Date today = today();
-		List<Conflict> conflicts;
+		List<Conflict> disabledConflicts;
 		{
     		Lock readLock = readLock();
     		try
     		{
     			conflictFinder.removeOldConflicts(result, today);
-                Set<Entity> removed = result.getRemoved();
-    			conflicts = retainDisabledConflicts(removed);
+                disabledConflicts = getConflictsToDeleteFromCache(result);
         	}
         	finally
         	{
@@ -1384,15 +1380,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         	}
 		}
 		
-		if ( conflicts.size() >0)
+		if ( disabledConflicts.size() >0)
 		{
 		    Lock writeLock = writeLock();
 	        try
 	        {
-	            for (Conflict conflict:conflicts)
-	            {
-	                cache.remove( conflict);
-	            }
+	            removeConflictsFromDatabase(disabledConflicts);
 	        }
 	        finally
 	        {
@@ -1402,18 +1395,40 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		fireStorageUpdated( result );
     }
 
-    public List<Conflict> retainDisabledConflicts(Set<Entity> removed) {
+    protected void removeConflictsFromDatabase(List<Conflict> disabledConflicts) {
+        for (Conflict conflict:disabledConflicts)
+        {
+            cache.remove( conflict);
+        }
+    }
+
+    public List<Conflict> getConflictsToDeleteFromCache(UpdateResult result) {
+        Set<Entity> removed = result.getRemoved();
         List<Conflict> conflicts = new ArrayList<Conflict>();
         for ( Entity entity:removed)
         {
             if ( entity instanceof Conflict)
             {
-                if (cache.getDisabledConflictIds().contains( entity.getId()))
+                if (cache.getConflictIds().contains( entity.getId()))
                 {
                     conflicts.add( (Conflict) entity);
                 }
             }
         }
+//        Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
+//        for ( Change change:changes)
+//        {
+//            Entity old = change.getOld();
+//            if (!( old instanceof Conflict))
+//            {
+//                continue;
+//            }
+//            Conflict conflict = (Conflict)change.getNew();
+//            if (conflict.isEnabledAppointment1() && conflict.isEnabledAppointment2())
+//            {
+//                conflicts.add( conflict);
+//            }
+//        }
         return conflicts;
     }
 	
