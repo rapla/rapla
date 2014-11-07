@@ -663,13 +663,13 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private boolean isEnabled(Conflict conflict) {
         boolean enabledAppointment1 = conflict.isEnabledAppointment1();
         boolean enabledAppointment2 = conflict.isEnabledAppointment2();
-        if ( enabledAppointment1 && enabledAppointment2 )
+        if ( enabledAppointment1 && conflict.isAppointment1Editable() )
         {
             return true;
         }
-        if ( !enabledAppointment1 && !enabledAppointment2 )
+        if ( enabledAppointment2 && conflict.isAppointment2Editable() )
         {
-            return false;
+            return true;
         }
         return false;
     }
@@ -1106,8 +1106,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 TypeNode typeNode = (TypeNode) value;
                 setFont(bigFont);
                 value = typeNode.getTitle();
+                setIcon(bigFolderConflicts);
                 setClosedIcon(bigFolderConflicts);
                 setOpenIcon(bigFolderConflicts);
+                leaf = false;
             } else {
                 setClosedIcon(folderClosedIcon);
                 setOpenIcon(folderOpenIcon);

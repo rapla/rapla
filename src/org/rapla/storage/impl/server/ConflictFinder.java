@@ -473,7 +473,6 @@ class ConflictFinder {
 	public Collection<Conflict> getConflicts( User user) 
 	{
 		Collection<Conflict> conflictList = new HashSet<Conflict>();
-		Collection<Conflict> disabledConflicts = cache.getDisabledConflictIds();
 		for ( Allocatable allocatable: conflictMap.keySet())
 		{
 			Set<Conflict> set = conflictMap.get( allocatable);
@@ -483,11 +482,7 @@ class ConflictFinder {
 				{
 					if (ConflictImpl.canModify(conflict,user,resolver))
 					{
-                        if (disabledConflicts.contains(conflict.getId()))
-                        {
-                            ((ConflictImpl)conflict).setEnabledAppointment1( false );
-                            ((ConflictImpl)conflict).setEnabledAppointment1( false );
-                        }
+					    cache.fillConflictDisableInformation(user, conflict);
                         conflictList.add(conflict);
 					}
 				}
@@ -495,7 +490,8 @@ class ConflictFinder {
 		}
 		return conflictList;
 	}
-	
+
+    
 	private boolean endsBefore(Conflict conflict,Date date )
 	{
 		Appointment appointment1 = getAppointment( conflict.getAppointment1());

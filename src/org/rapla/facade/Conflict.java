@@ -99,7 +99,12 @@ public interface Conflict extends Named, Entity<Conflict>
     boolean isEnabledAppointment1();
     
     boolean isEnabledAppointment2();
+    
+    boolean isAppointment1Editable();
+    
+    boolean isAppointment2Editable();
 }
+
 
 
 

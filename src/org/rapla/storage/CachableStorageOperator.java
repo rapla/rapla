@@ -21,6 +21,7 @@ import java.util.TimeZone;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 public interface CachableStorageOperator extends StorageOperator {
@@ -37,6 +38,7 @@ public interface CachableStorageOperator extends StorageOperator {
     TimeZone getTimeZone();
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
+    void fillConflictDisableInformation(User user, Conflict conflict);
 	
 }
 

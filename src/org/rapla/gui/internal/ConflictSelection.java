@@ -142,17 +142,13 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    for (Conflict conflict: enabledConflicts)
-                    {
-                        setEnabled( ((ConflictImpl)conflict), false);
-                    }
                     try {
-                        store( enabledConflicts );
-                        updateTree();
+                        store_(enabledConflicts, false);
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
                 }
+
 
             });
             
@@ -160,13 +156,8 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    for (Conflict conflict: disabledConflicts)
-                    {
-                        setEnabled( ((ConflictImpl)conflict), true);
-                    }
                     try {
-                        store( enabledConflicts );
-                        updateTree();
+                        store_(disabledConflicts, true);
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
@@ -186,26 +177,48 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     private boolean isEnabled(Conflict conflict) {
         boolean enabledAppointment1 = conflict.isEnabledAppointment1();
         boolean enabledAppointment2 = conflict.isEnabledAppointment2();
-        if ( enabledAppointment1 && enabledAppointment2 )
+        if ( enabledAppointment1 && conflict.isAppointment1Editable() )
         {
             return true;
         }
-        if ( !enabledAppointment1 && !enabledAppointment2 )
+        if ( enabledAppointment2 && conflict.isAppointment2Editable() )
         {
-            return false;
+            return true;
         }
         return false;
     }
     
-    private void store(List<Conflict> conflicts) throws RaplaException 
+    public void store_(Collection<Conflict> conflictOrig, boolean newFlag) throws RaplaException {
+        ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
+        for ( Conflict conflict:conflictOrig)
+        {
+            Conflict clone = getModification().edit( conflict);
+            conflicts.add( clone);
+        }
+        for (Conflict conflict: conflicts)
+        {
+            setEnabled( ((ConflictImpl)conflict), newFlag);
+        }
+        store( conflicts );
+        updateTree();
+    }
+
+    
+    private void store(Collection<Conflict> conflicts) throws RaplaException 
     {
         getModification().storeObjects( conflicts.toArray(Conflict.CONFLICT_ARRAY));
     }
 
     private void setEnabled(ConflictImpl conflictImpl, boolean enabled)
     {
-        conflictImpl.setEnabledAppointment1(enabled);
-        conflictImpl.setEnabledAppointment2(enabled); 
+        if ( conflictImpl.isAppointment1Editable())
+        {
+            conflictImpl.setEnabledAppointment1(enabled);
+        }
+        if ( conflictImpl.isAppointment2Editable())
+        {
+            conflictImpl.setEnabledAppointment2(enabled);
+        }
     }
 
     public RaplaTree getTreeSelection() {

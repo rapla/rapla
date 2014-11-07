@@ -36,6 +36,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -137,6 +138,15 @@ public class SecurityManager
             if ( originalReservation != null)
             {
             	permitted = PermissionContainer.Util.canModify(originalReservation, user);
+            }
+        }
+        
+        if (!permitted && entity instanceof Conflict)
+        {
+            Conflict conflict = (Conflict) entity;
+            if (ConflictImpl.canModify(conflict, user, operator))
+            {
+                permitted = true;
             }
         }
 

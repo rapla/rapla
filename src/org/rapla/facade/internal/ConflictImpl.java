@@ -56,6 +56,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	String reservation2Name;
 	boolean enabledAppointment1 = true;
     boolean enabledAppointment2 = true;
+    boolean appointment1Editable = true;
+    boolean appointment2Editable = true;
 	   
 	ConflictImpl() {
 	}
@@ -82,6 +84,32 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         putId("appointment2", app2Id);
        
 	}
+    
+    @Override
+    public void setResolver(EntityResolver resolver) {
+        super.setResolver(resolver);
+        
+        {
+            Appointment appointment = resolver.tryResolve(getAppointment1(), Appointment.class);
+            if ( appointment !=null)
+            {
+                Reservation reservation = appointment.getReservation();
+                putId("reservation1", reservation.getId());
+                reservation1Name = reservation.getName( Locale.getDefault());
+            }
+        }
+        {
+            Appointment appointment = resolver.tryResolve(getAppointment2(), Appointment.class);
+            if ( appointment !=null)
+            {
+                Reservation reservation = appointment.getReservation();
+                putId("reservation2", reservation.getId());
+                reservation2Name = reservation.getName( Locale.getDefault());
+            }
+        }
+        
+    }
+    
     
     static private String[] splitConflictId(String id)
     {
@@ -590,6 +618,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		super.deepClone( clone);
 		clone.enabledAppointment1 = enabledAppointment1;
 		clone.enabledAppointment2 = enabledAppointment2;
+		clone.appointment1Editable = appointment1Editable;
+		clone.appointment2Editable = appointment2Editable;
 		clone.reservation1Name = reservation1Name;
 		clone.reservation2Name = reservation2Name;
 		clone.startDate = startDate;
@@ -611,6 +641,23 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     public void setEnabledAppointment2(boolean enabledAppointment2) {
         this.enabledAppointment2 = enabledAppointment2;
     }
+    
+    public boolean isAppointment1Editable() {
+        return appointment1Editable;
+    }
+
+    public void setAppointment1Editable(boolean appointment1Editable) {
+        this.appointment1Editable = appointment1Editable;
+    }
+
+    public boolean isAppointment2Editable() {
+        return appointment2Editable;
+    }
+
+    public void setAppointment2Editable(boolean appointment2Editable) {
+        this.appointment2Editable = appointment2Editable;
+    }
+
 
 	static public boolean canModify(Conflict conflict,User user, EntityResolver resolver) {
 		Allocatable allocatable = conflict.getAllocatable();
@@ -620,28 +667,24 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		}
 		if (allocatable.canRead( user ))
 		{
-			Reservation reservation = resolver.tryResolve(conflict.getReservation1(), Reservation.class);
-			if ( reservation == null )
-			{
-				// reservation will be deleted, and conflict also so return 
-				return false;
-			}
-			if (RaplaComponent.canModify(reservation, user) )
-			{
-				return true;
-			}
-			Reservation overlappingReservation = resolver.tryResolve(conflict.getReservation2(), Reservation.class);
-			if ( overlappingReservation == null )
-			{
-				return false;
-			}
-			if (RaplaComponent.canModify(overlappingReservation, user))
-			{
-				return true;
-			}
+            if (canModifyEvent(conflict.getReservation1(),user, resolver))
+            {
+                return true;
+            }
+            if (canModifyEvent(conflict.getReservation2(),user, resolver))
+            {
+                return true;
+            }
 		}
 		return false;
 	}
+
+    public static boolean canModifyEvent(String reservationId,User user, EntityResolver resolver) 
+    {
+        Reservation reservation =  resolver.tryResolve(reservationId, Reservation.class);;
+        boolean canModify = reservation != null && RaplaComponent.canModify(reservation, user);
+        return canModify;
+    }
 
 	public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts,List<Reservation> reservations) 
 	{

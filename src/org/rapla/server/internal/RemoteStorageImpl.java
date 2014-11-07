@@ -1179,6 +1179,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				    	{
 				    		clientStore = false;
 				    	}
+				    	else
+				    	{
+				    	    operator.fillConflictDisableInformation( user,  conflict);
+				    	}
+				    	
 				    }
 				}
 				if ( clientStore)

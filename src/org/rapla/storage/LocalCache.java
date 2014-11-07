@@ -360,13 +360,27 @@ public class LocalCache implements EntityResolver
 		return (Collection)users.values();
 	}
 	
+	public void fillConflictDisableInformation( User user, Conflict conflict) {
+        String id = conflict.getId();
+        Conflict disabledConflict = disabledConflicts.get( id);
+        if (disabledConflict != null)
+        {
+            ((ConflictImpl)conflict).setEnabledAppointment1( disabledConflict.isEnabledAppointment1() );
+            ((ConflictImpl)conflict).setEnabledAppointment2( disabledConflict.isEnabledAppointment2() );
+        }
+        EntityResolver cache = this;
+        ((ConflictImpl)conflict).setAppointment1Editable( ConflictImpl.canModifyEvent(conflict.getReservation1(), user, cache));
+        ((ConflictImpl)conflict).setAppointment2Editable( ConflictImpl.canModifyEvent(conflict.getReservation2(), user, cache));
+    }
+
+	
 	@SuppressWarnings("unchecked")
     public Collection<Conflict> getDisabledConflicts()  {
 	    return (Collection) disabledConflicts.values();
 	}
 
 	@SuppressWarnings("unchecked")
-	public Collection<Conflict> getDisabledConflictIds()  {
+	public Collection<String> getDisabledConflictIds()  {
 	        return (Collection) disabledConflicts.keySet();
 	}
 	
