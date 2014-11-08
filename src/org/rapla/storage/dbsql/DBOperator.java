@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.facade.Conflict;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaContext;
@@ -59,6 +61,7 @@ import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
@@ -598,34 +601,10 @@ public class DBOperator extends LocalAbstractCachableOperator
     	try
         {
     	    preprocessEventStorage(evt);
-	        Connection connection = createConnection();
-	        try {
-	             executeEvent(connection,evt);
-	             if (bSupportsTransactions) {
-	                 getLogger().debug("Commiting");
-	                 connection.commit();
-	             }
-	         } catch (Exception ex) {
-	             try {
-	                 if (bSupportsTransactions) {
-	                     connection.rollback();
-	                     getLogger().error("Doing rollback for: " + ex.getMessage()); 
-	                     throw new RaplaDBException(getI18n().getString("error.rollback"),ex);
-	                 } else {
-	                     String message = getI18n().getString("error.no_rollback");
-	                     getLogger().error(message);
-	                     forceDisconnect();
-	                     throw new RaplaDBException(message,ex);
-	                 }
-	             } catch (SQLException sqlEx) {
-	                 String message = "Unrecoverable error while storing";
-	                 getLogger().error(message, sqlEx);
-	                 forceDisconnect();
-	                 throw new RaplaDBException(message,sqlEx);
-	             }
-	        } finally {
-	            close( connection );
-	        }
+    	    Collection<Entity> storeObjects = evt.getStoreObjects();
+            List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+            Collection<String> removeObjects = evt.getRemoveIds();
+	        dbStore(storeObjects, preferencePatches, removeObjects);
 	        result = super.update(evt);
         } 
     	finally
@@ -635,23 +614,68 @@ public class DBOperator extends LocalAbstractCachableOperator
         fireStorageUpdated(result);
     }
 
-    /**
-    * @param evt
-    * @throws RaplaException
-    */
-    protected void executeEvent(Connection connection,UpdateEvent evt) throws RaplaException, SQLException {
-        // execute updates
-        RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-
-        Collection<Entity> storeObjects = evt.getStoreObjects();
-        raplaSQLOutput.store( connection, storeObjects);
-        raplaSQLOutput.storePatches( connection, evt.getPreferencePatches());
-        Collection<String> removeObjects = evt.getRemoveIds();
-        for (String id: removeObjects) {
-             Entity entity = cache.get(id);
-             if (entity != null)
-                 raplaSQLOutput.remove( connection, entity);
+    private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<String> removeObjects) throws RaplaException, RaplaDBException {
+        Connection connection = createConnection();
+        try {
+            RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+            raplaSQLOutput.store( connection, storeObjects);
+            raplaSQLOutput.storePatches( connection, preferencePatches);
+            for (String id: removeObjects) {
+                 Entity entity = cache.get(id);
+                 if (entity != null)
+                     raplaSQLOutput.remove( connection, entity);
+            }
+            if (bSupportsTransactions) {
+                getLogger().debug("Commiting");
+                connection.commit();
+            }
+         } catch (Exception ex) {
+             try {
+                 if (bSupportsTransactions) {
+                     connection.rollback();
+                     getLogger().error("Doing rollback for: " + ex.getMessage()); 
+                     throw new RaplaDBException(getI18n().getString("error.rollback"),ex);
+                 } else {
+                     String message = getI18n().getString("error.no_rollback");
+                     getLogger().error(message);
+                     forceDisconnect();
+                     throw new RaplaDBException(message,ex);
+                 }
+             } catch (SQLException sqlEx) {
+                 String message = "Unrecoverable error while storing";
+                 getLogger().error(message, sqlEx);
+                 forceDisconnect();
+                 throw new RaplaDBException(message,sqlEx);
+             }
+        } finally {
+            close( connection );
         }
+    }
+    
+    @Override
+    protected void removeConflictsFromDatabase(List<Conflict> disabledConflicts) 
+    {
+        super.removeConflictsFromDatabase(disabledConflicts);
+        if ( disabledConflicts.size() <1)
+        {
+            return;
+        }
+        Collection<Entity> storeObjects = Collections.emptyList();
+        List<PreferencePatch> preferencePatches = Collections.emptyList();
+        Collection<String> removeObjects = new ArrayList<String>();
+        for ( Conflict conflict:disabledConflicts)
+        {
+            removeObjects.add( conflict.getId());
+        }
+        try
+        {
+            dbStore(storeObjects, preferencePatches, removeObjects);
+        }
+        catch (RaplaException ex)
+        {
+            getLogger().warn("disabled conflicts could not be removed from database due to ", ex);
+        }
+       
     }
 
 	public void removeAll() throws RaplaException {
