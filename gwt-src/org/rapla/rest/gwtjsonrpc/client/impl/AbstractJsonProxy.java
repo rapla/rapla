@@ -28,7 +28,7 @@ import com.google.gwt.user.client.rpc.ServiceDefTarget;
 public abstract class AbstractJsonProxy implements ServiceDefTarget {
   /** URL of the service implementation. */
   String url;
-private String token;
+  static private String token;
 
 
   @Override
@@ -85,7 +85,7 @@ private String token;
   protected static native JavaScriptObject hostPageCacheGetMany(String name)
   /*-{ return $wnd[name] ? {result : $wnd[name]} : null; }-*/;
 
-  public void setAuthThoken(String token) {
-      this.token = token;
+  public static void setAuthThoken(String token) {
+      AbstractJsonProxy.token = token;
   }
 }

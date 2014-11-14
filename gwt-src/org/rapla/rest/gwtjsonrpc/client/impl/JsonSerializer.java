@@ -83,7 +83,7 @@ public abstract class JsonSerializer<T> {
   }
 
   @Deprecated
-  private static final native String escapeCharImpl(String c) /*-{ return @com.google.gwt.core.client.JsonUtils::escapeChar(Ljava/lang/String;)(c); }-*/;
+  private static final native String escapeCharImpl(String c) /*-{ return @com.google.gwt.core.client.JsonUtils::escapeValue(Ljava/lang/String;)(c); }-*/;
 
   /** Return the first character of a string, or '\0' if the string is empty. */
   public static final char toChar(final String val) {

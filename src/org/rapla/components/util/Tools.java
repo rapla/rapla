@@ -17,6 +17,8 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.rapla.rest.GwtIncompatible;
+
 /** miscellaneous util methods.*/
 public abstract class Tools
 {
@@ -154,10 +156,12 @@ public abstract class Tools
 //    }
 
     /** reads a table from a csv file. You can specify a minimum number of columns */
+    @GwtIncompatible
     public static String[][] csvRead(Reader reader, int expectedColumns) throws IOException {
     	return csvRead(reader, ';', expectedColumns);
     }
     /** reads a table from a csv file. You can specify the seperator and a minimum number of columns */
+    @GwtIncompatible
     public static String[][] csvRead(Reader reader, char seperator,int expectedColumns) throws IOException {
         //System.out.println( "Using Encoding " + reader.getEncoding() );
         StringBuffer buf = new StringBuffer();
