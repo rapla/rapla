@@ -54,6 +54,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
+import org.rapla.entities.Category;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -213,21 +214,24 @@ public class RaplaMenuBar extends RaplaGUIComponent
         	editMenu.add( templateEdit );
         }
 
-        if ( isModifyPreferencesAllowed() ) {
+        boolean modifyPreferencesAllowed = isModifyPreferencesAllowed();
+        if ( modifyPreferencesAllowed ) {
             userOptions.setAction( createOptionAction( getQuery().getPreferences( )));
         } else {
             userOptions.setVisible( false );
         }
-
+        
         {
             SaveableToggleAction action = new SaveableToggleAction( context, "show_tips",RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY);
         	RaplaMenuItem menu = action.createMenuItem();
-            viewMenu.insertBeforeId( menu, "view_save" );
+        	viewMenu.insertBeforeId( menu, "view_save" );
+        	action.setEnabled( modifyPreferencesAllowed);
         }
         {
         	SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY);
         	RaplaMenuItem menu = action.createMenuItem();
             viewMenu.insertBeforeId( menu, "view_save" );
+            action.setEnabled( modifyPreferencesAllowed);
         }
 //        {
 //    		SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
