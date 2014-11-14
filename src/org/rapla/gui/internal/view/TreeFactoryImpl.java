@@ -478,16 +478,17 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         }
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
 		addClassifiables(nodeMap, sorted, true);
-        
-        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
-        {
-            DynamicType key = entry.getKey();
-        	MutableTreeNode value = entry.getValue();
-        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
-        	{
-        		treeNode.remove( value);
-        	}
-        }
+
+// CK we disable the feature that we dont show empty resource nodes. Resource nodes visibility can be regulated by types
+//        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
+//        {
+//            DynamicType key = entry.getKey();
+//        	MutableTreeNode value = entry.getValue();
+//        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
+//        	{
+//        		treeNode.remove( value);
+//        	}
+//        }
         return treeNode;
     }
 
