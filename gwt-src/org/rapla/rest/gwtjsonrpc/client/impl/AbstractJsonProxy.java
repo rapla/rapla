@@ -29,9 +29,17 @@ public abstract class AbstractJsonProxy implements ServiceDefTarget {
   /** URL of the service implementation. */
   String url;
   static private String token;
+  static private EntryPointFactory serviceEntryPointFactory; 
+  
+  public static EntryPointFactory getServiceEntryPointFactory() {
+    return serviceEntryPointFactory;
+  }
 
+  public static void setServiceEntryPointFactory(EntryPointFactory serviceEntryPointFactory) {
+      AbstractJsonProxy.serviceEntryPointFactory = serviceEntryPointFactory;
+  }
 
-  @Override
+@Override
   public String getServiceEntryPoint() {
     return url;
   }
@@ -64,8 +72,14 @@ public abstract class AbstractJsonProxy implements ServiceDefTarget {
   protected <T> void doInvoke(final String methodName, final String reqData,
       final ResultDeserializer<T> ser, final FutureResultImpl<T> cb)
       throws InvocationException {
+    if ( url == null &&serviceEntryPointFactory != null)
+    {
+        url = serviceEntryPointFactory.getEntryPoint( getClass());
+    }
+
     if (url == null) {
-      throw new NoServiceEntryPointSpecifiedException();
+        throw new NoServiceEntryPointSpecifiedException();
+        
     }
     JsonCall<T> newJsonCall = newJsonCall(this, methodName, reqData, ser);
 	cb.setCall( newJsonCall);
