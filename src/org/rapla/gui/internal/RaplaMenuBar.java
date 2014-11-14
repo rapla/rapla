@@ -203,7 +203,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
         editMenu.insertBeforeId( undo,"EDIT_BEGIN");
         editMenu.insertBeforeId( redo,"EDIT_BEGIN" );
         
-        
         RaplaMenuItem userOptions = new RaplaMenuItem("userOptions");
         editMenu.add( userOptions );
         if ( getQuery().canEditTemplats( getUser()))
