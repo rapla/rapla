@@ -54,8 +54,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	Date startDate;
 	String reservation1Name;
 	String reservation2Name;
-	boolean enabledAppointment1 = true;
-    boolean enabledAppointment2 = true;
+	boolean appointment1Enabled = true;
+    boolean appointment2Enabled = true;
     boolean appointment1Editable = true;
     boolean appointment2Editable = true;
 	   
@@ -133,6 +133,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         return splitConflictId(id) != null;
     }
     
+    /** Note that app1 does not necessarily go to appointment1 field.
+     * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
     public ConflictImpl(
             Allocatable allocatable,
             Appointment app1,
@@ -143,6 +145,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         this(allocatable,app1,app2, today,createId(allocatable.getId(), app1.getId(), app2.getId()));
     }
     
+    /** Note that app1 does not necessarily go to appointment1 field.
+     * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
     public ConflictImpl(
             Allocatable allocatable,
             Appointment app1,
@@ -153,6 +157,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     {
 		putEntity("allocatable", allocatable);
 		startDate = getStartDate_(today, app1, app2);
+		if ( app1.getId().compareTo(app2.getId()) >= 0)
+		{
+		    Appointment temp = app1;
+		    app1 = app2;
+		    app2 = temp;
+		}
 		putEntity("appointment1", app1);
 		putEntity("appointment2", app2);
 		Reservation reservation1 = app1.getReservation();
@@ -214,9 +224,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
     	buf.append("CONFLICT;");
     	buf.append(allocId);
     	buf.append(';');
-    	buf.append(id1.compareTo( id2) > 0 ? id1 : id2);
+    	buf.append(id1.compareTo( id2) < 0 ? id1 : id2);
      	buf.append(';');
-        buf.append(id1.compareTo( id2) > 0 ? id2 : id1);
+        buf.append(id1.compareTo( id2) < 0 ? id2 : id1);
      	return buf.toString();
     }
     
@@ -616,8 +626,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	{
 		ConflictImpl clone = new ConflictImpl();
 		super.deepClone( clone);
-		clone.enabledAppointment1 = enabledAppointment1;
-		clone.enabledAppointment2 = enabledAppointment2;
+		clone.appointment1Enabled = appointment1Enabled;
+		clone.appointment2Enabled = appointment2Enabled;
 		clone.appointment1Editable = appointment1Editable;
 		clone.appointment2Editable = appointment2Editable;
 		clone.reservation1Name = reservation1Name;
@@ -626,20 +636,20 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		return clone;
 	}
 	
-	public boolean isEnabledAppointment1() {
-        return enabledAppointment1;
+	public boolean isAppointment1Enabled() {
+        return appointment1Enabled;
     }
 
-    public void setEnabledAppointment1(boolean enabledAppointment1) {
-        this.enabledAppointment1 = enabledAppointment1;
+    public void setAppointment1Enabled(boolean appointment1enabled) {
+        this.appointment1Enabled = appointment1enabled;
     }
 
-    public boolean isEnabledAppointment2() {
-        return enabledAppointment2;
+    public boolean isAppointment2Enabled() {
+        return appointment2Enabled;
     }
 
-    public void setEnabledAppointment2(boolean enabledAppointment2) {
-        this.enabledAppointment2 = enabledAppointment2;
+    public void setAppointment2Enabled(boolean appointment2enabled) {
+        this.appointment2Enabled = appointment2enabled;
     }
     
     public boolean isAppointment1Editable() {
@@ -717,9 +727,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		set.add( app2);
 	}
 
-    public boolean isEnabled() {
-        boolean enabledAppointment1 = isEnabledAppointment1();
-        boolean enabledAppointment2 = isEnabledAppointment2();
+    public boolean checkEnabled() {
+        boolean enabledAppointment1 = isAppointment1Enabled();
+        boolean enabledAppointment2 = isAppointment2Enabled();
         if ( enabledAppointment1 && isAppointment1Editable() )
         {
             return true;

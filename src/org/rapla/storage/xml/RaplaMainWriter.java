@@ -191,8 +191,8 @@ public class RaplaMainWriter extends RaplaXMLWriter
         openElement("rapla:conflicts");
         for (Conflict conflict: cache.getConflicts()) 
         {
-            boolean enabledAppointment1 = conflict.isEnabledAppointment1();
-            boolean enabledAppointment2 = conflict.isEnabledAppointment2();
+            boolean enabledAppointment1 = conflict.isAppointment1Enabled();
+            boolean enabledAppointment2 = conflict.isAppointment2Enabled();
             if ( enabledAppointment1 && enabledAppointment2)
             {
                 continue;

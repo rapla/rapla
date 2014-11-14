@@ -119,7 +119,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 if ( selected instanceof Conflict)
                 {
                     Conflict conflict = (Conflict) selected;
-                    if ( conflict.isEnabled())
+                    if ( conflict.checkEnabled())
                     {
                         enabledConflicts.add( conflict );
                     }
@@ -200,11 +200,11 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     {
         if ( conflictImpl.isAppointment1Editable())
         {
-            conflictImpl.setEnabledAppointment1(enabled);
+            conflictImpl.setAppointment1Enabled(enabled);
         }
         if ( conflictImpl.isAppointment2Editable())
         {
-            conflictImpl.setEnabledAppointment2(enabled);
+            conflictImpl.setAppointment2Enabled(enabled);
         }
     }
 

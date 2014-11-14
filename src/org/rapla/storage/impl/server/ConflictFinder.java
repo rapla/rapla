@@ -97,6 +97,14 @@ class ConflictFinder {
         }
         return null;
     }
+    
+    public void setConflictEnabledState( String conflictId,Date date, boolean appointment1Enabled,boolean appointment2Enabled)
+    {
+        ConflictImpl conflict = (ConflictImpl)findConflict(conflictId, date);
+        conflict.setAppointment1Enabled( appointment1Enabled);
+        conflict.setAppointment2Enabled( appointment2Enabled);
+    }
+    
     private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 
     {
         if ( isConflictIgnored(allocatable))

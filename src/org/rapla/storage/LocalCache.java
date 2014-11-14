@@ -173,12 +173,12 @@ public class LocalCache implements EntityResolver
         entities.put(entityId,entity);
 		Map<String,Entity> entitySet =  getMap(raplaType);
         if (entitySet != null) {
-            boolean disabled = false;
+            boolean enabledForAll = false;
             if ( entity instanceof Conflict ) 
             {
                 Conflict conflict = (Conflict) entity;
-                disabled = !conflict.isEnabledAppointment1() && !conflict.isEnabledAppointment2();
-                if ( disabled)
+                enabledForAll = conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled();
+                if ( enabledForAll)
                 {
                     conflicts.remove( entityId);
                 }
@@ -187,7 +187,7 @@ public class LocalCache implements EntityResolver
                     conflicts.put( entityId, (ConflictImpl)conflict);
                 }
             }
-            if ( !disabled)
+            if ( !enabledForAll)
             {
                 entitySet.put( entityId ,entity);
             }
@@ -386,8 +386,8 @@ public class LocalCache implements EntityResolver
         Conflict disabledConflict = conflicts.get( id);
         if (disabledConflict != null)
         {
-            ((ConflictImpl)conflict).setEnabledAppointment1( disabledConflict.isEnabledAppointment1() );
-            ((ConflictImpl)conflict).setEnabledAppointment2( disabledConflict.isEnabledAppointment2() );
+            ((ConflictImpl)conflict).setAppointment1Enabled( disabledConflict.isAppointment1Enabled() );
+            ((ConflictImpl)conflict).setAppointment2Enabled( disabledConflict.isAppointment2Enabled() );
         }
         EntityResolver cache = this;
         ((ConflictImpl)conflict).setAppointment1Editable( ConflictImpl.canModifyEvent(conflict.getReservation1(), user, cache));

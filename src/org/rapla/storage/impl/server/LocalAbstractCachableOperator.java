@@ -114,6 +114,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
@@ -872,6 +873,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					removedAllocatables.add( old);
 				}
 			}
+			
+			if ( raplaType == Conflict.TYPE)
+			{
+			    Conflict conflict = (Conflict) current;
+			    String conflictId = conflict.getId();
+                Date date = getCurrentTimestamp();
+                boolean appointment1Enabled = conflict.isAppointment1Enabled();
+                boolean appointment2Enabled = conflict.isAppointment2Enabled();
+                conflictFinder.setConflictEnabledState(conflictId, date, appointment1Enabled, appointment2Enabled);   
+			}
 		}
 
 		for ( Allocatable alloc: removedAllocatables)
@@ -912,8 +923,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        List<Conflict> conflicts = getConflictsToDeleteFromCache(result);
-        removeConflictsFromDatabase(conflicts);
+        removeConflictsFromCache(getConflictsToDeleteFromCache(result));
+        removeConflictsFromDatabase(getConflictsToDeleteFromDatabase(result));
 //      Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
 //      for ( Change change:changes)
 //      {
@@ -1418,11 +1429,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
     
-    protected void removeConflictsFromDatabase(List<Conflict> disabledConflicts) {
-        
+    protected void removeConflictsFromDatabase(@SuppressWarnings("unused") List<Conflict> disabledConflicts) {        
     }
 
-    public List<Conflict> getConflictsToDeleteFromCache(UpdateResult result) {
+    private List<Conflict> getConflictsToDeleteFromCache(UpdateResult result) {
         Set<Entity> removed = result.getRemoved();
         List<Conflict> conflicts = new ArrayList<Conflict>();
         for ( Entity entity:removed)
@@ -1433,6 +1443,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     conflicts.add( (Conflict) entity);
                 }
+            }
+        }
+        return conflicts;
+    }
+    
+    private List<Conflict> getConflictsToDeleteFromDatabase(UpdateResult result) 
+    {
+        Set<Entity> removed = result.getRemoved();
+        List<Conflict> conflicts = new ArrayList<Conflict>();
+        for ( Entity entity:removed)
+        {
+            if ( entity instanceof Conflict)
+            {
+                if (cache.getConflictIds().contains( entity.getId()))
+                {
+                    conflicts.add( (Conflict) entity);
+                }
+            }
+        }
+        
+        Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
+        for ( Change change:changes)
+        {
+            Entity old = change.getOld();
+            if (!( old instanceof Conflict))
+            {
+                continue;
+            }
+            Conflict conflict = (Conflict)change.getNew();
+            if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
+            {
+                conflicts.add( conflict);
             }
         }
         return conflicts;

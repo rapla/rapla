@@ -1391,6 +1391,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     public ConflictStorage(RaplaContext context) throws RaplaException {
         super( context,Conflict.TYPE, "RAPLA_CONFLICT",
         new String [] {"RESOURCE_ID VARCHAR(255) NOT NULL","APPOINTMENT1 VARCHAR(255) NOT NULL","APPOINTMENT2 VARCHAR(255) NOT NULL","APP1ENABLED INTEGER NOT NULL","APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP"});
+        this.deleteSql = "delete from " + tableName + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=?";
     }
 
     @Override
@@ -1398,13 +1399,40 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
      //   insert( cache.getDisabledConflicts());
     }
     
+    
+    public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
+        PreparedStatement stmt = null;
+        try {
+            stmt = con.prepareStatement(deleteSql);
+            for ( String id: ids)
+            {
+                Conflict conflict = new ConflictImpl(id, null);
+                String allocatableId = conflict.getAllocatableId();
+                String appointment1Id = conflict.getAppointment1();
+                String appointment2Id = conflict.getAppointment2();
+                stmt.setString(1,allocatableId);
+                stmt.setString(2,appointment1Id);
+                stmt.setString(3,appointment2Id);
+                stmt.addBatch();
+            }
+            if ( ids.size() > 0)
+            {
+                stmt.executeBatch();
+            }
+        } finally {
+            if (stmt!=null)
+                stmt.close();
+        }
+    }
+
+    
     @Override
     protected int write(PreparedStatement stmt,Conflict conflict) throws SQLException, RaplaException {
         setId(stmt, 1, conflict.getAllocatableId());
         setId(stmt, 2, conflict.getAppointment1());
         setId(stmt, 3, conflict.getAppointment2());
-        setInt(stmt, 4, conflict.isEnabledAppointment1() ? 1:0);
-        setInt(stmt, 5, conflict.isEnabledAppointment2() ? 1:0);
+        setInt(stmt, 4, conflict.isAppointment1Enabled() ? 1:0);
+        setInt(stmt, 5, conflict.isAppointment2Enabled() ? 1:0);
         setTimestamp(stmt, 6, getCurrentTimestamp() );
         stmt.addBatch();
         return 1;
@@ -1423,8 +1451,8 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         Date today = getCurrentTimestamp();
         String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id); 
         ConflictImpl conflict = new ConflictImpl(id, today);
-        conflict.setEnabledAppointment1(appointment1Enabled );
-        conflict.setEnabledAppointment2(appointment2Enabled );
+        conflict.setAppointment1Enabled(appointment1Enabled );
+        conflict.setAppointment2Enabled(appointment2Enabled );
         put(conflict);
    }
 

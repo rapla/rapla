@@ -96,15 +96,15 @@ public interface Conflict extends Named, Entity<Conflict>
     
     Date getStartDate();
    
-    boolean isEnabledAppointment1();
+    boolean isAppointment1Enabled();
     
-    boolean isEnabledAppointment2();
+    boolean isAppointment2Enabled();
     
     boolean isAppointment1Editable();
     
     boolean isAppointment2Editable();
     
-    boolean isEnabled();
+    boolean checkEnabled();
 }
 
 

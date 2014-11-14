@@ -662,7 +662,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private Iterable<Conflict> filter(Iterable<Conflict> conflicts, final boolean enabledState) {
         return new FilterIterable<Conflict>( conflicts) {
             protected boolean isInIterator(Object obj) {
-                boolean inIterator = ((Conflict)obj).isEnabled() == enabledState;
+                boolean inIterator = ((Conflict)obj).checkEnabled() == enabledState;
                 return inIterator;
 //                return true;
             }

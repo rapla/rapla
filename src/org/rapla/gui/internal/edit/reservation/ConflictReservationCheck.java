@@ -50,7 +50,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Reser
         List<Conflict> conflictList = new ArrayList<Conflict>();
         for ( Conflict conflict: conflicts)
         {
-            if ( conflict.isEnabled())
+            if ( conflict.checkEnabled())
             {
                 conflictList.add( conflict);
             }
