@@ -478,6 +478,11 @@ public class DBOperator extends LocalAbstractCachableOperator
             });
             return true;
         }
+        else
+        {
+            RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+            raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
+        }
         return false;
     }
     
