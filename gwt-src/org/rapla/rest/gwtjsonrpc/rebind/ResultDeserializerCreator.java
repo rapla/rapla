@@ -115,7 +115,7 @@ class ResultDeserializerCreator {
     w.print(" ");
     w.print("serializer");
     w.print(" = ");
-    serializerCreator.generateSerializerReference(targetType, w);
+    serializerCreator.generateSerializerReference(targetType, w, true);
     w.println(";");
     w.println();
   }
@@ -200,7 +200,7 @@ class ResultDeserializerCreator {
     } else if (targetType.isArray() != null) {
       w.print(deserializerFor(targetType.isArray()));
     } else {
-      serializerCreator.generateSerializerReference(targetType, w);
+      serializerCreator.generateSerializerReference(targetType, w, false);
     }
   }
 }

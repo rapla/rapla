@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -275,7 +274,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	Map<String,PreferencesImpl> emptyPreferencesProxy = new ConcurrentHashMap<String, PreferencesImpl>();
+	protected Map<String,PreferencesImpl> emptyPreferencesProxy = new HashMap<String, PreferencesImpl>();
 
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkConnected();
@@ -288,18 +287,22 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId, Preferences.class);
 		if (pref == null && createIfNotNull )
 		{
-			PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
-			if ( preferencesImpl != null)
-			{
-				return preferencesImpl;
-			}
+	        synchronized ( emptyPreferencesProxy) { 
+    			PreferencesImpl preferencesImpl = emptyPreferencesProxy.get( preferenceId);
+    			if ( preferencesImpl != null)
+    			{
+    				return preferencesImpl;
+    			}
+	        }
 		}
 
 		if (pref == null && createIfNotNull) {
-			PreferencesImpl newPref = newPreferences(userId);
-			newPref.setReadOnly(  );
-			pref = newPref;
-			emptyPreferencesProxy.put(preferenceId , pref);
+		    synchronized ( emptyPreferencesProxy) {
+    			PreferencesImpl newPref = newPreferences(userId);
+    			newPref.setReadOnly(  );
+    			pref = newPref;
+    			emptyPreferencesProxy.put(preferenceId , pref);
+		    }
 		}
 		return pref;
 	}

@@ -319,7 +319,17 @@ class SerializerCreator {
   }
 
   private void generateSingleton(final SourceWriter w) {
-    w.print("public static final ");
+      w.print("public static final ");
+      w.print("javax.inject.Provider<"+getSerializerSimpleName()+">");
+      
+      w.print(" INSTANCE_PROVIDER = new javax.inject.Provider<");
+      w.print(getSerializerSimpleName());
+      w.println(">(){");
+      w.print("public " + getSerializerSimpleName() + " get(){return INSTANCE;} " );
+      w.println("};");
+      w.println();
+      
+      w.print("public static final ");
     w.print(getSerializerSimpleName());
     w.print(" INSTANCE = new ");
     w.print(getSerializerSimpleName());
@@ -337,14 +347,15 @@ class SerializerCreator {
         w.print(" ");
         w.print("ser_" + f.getName());
         w.print(" = ");
-        generateSerializerReference(ft, w);
+        boolean useProviders= true;
+        generateSerializerReference(ft, w, useProviders);
         w.println(";");
       }
     }
     w.println();
   }
 
-  void generateSerializerReference(final JType type, final SourceWriter w) {
+  void generateSerializerReference(final JType type, final SourceWriter w, boolean useProviders) {
     String serializerFor = serializerFor(type);
 	if (type.isArray() != null) {
       final JType componentType = type.isArray().getComponentType();
@@ -354,7 +365,7 @@ class SerializerCreator {
         w.print(".INSTANCE");
       } else {
         w.print("new " + serializerFor + "(");
-        generateSerializerReference(componentType, w);
+        generateSerializerReference(componentType, w, useProviders);
         w.print(")");
       }
 
@@ -372,12 +383,14 @@ class SerializerCreator {
         } else {
           w.print(", ");
         }
-        generateSerializerReference(typeArgs[n], w);
+        generateSerializerReference(typeArgs[n], w, useProviders);
       }
       w.print(")");
 
     } else {
-      w.print(serializerFor + ".INSTANCE");
+//      String sourceName = type.getQualifiedSourceName();
+        
+      w.print(serializerFor + ".INSTANCE" + (useProviders ? "_PROVIDER":""));
     }
   }
 

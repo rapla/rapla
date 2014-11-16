@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.inject.Provider;
+
 import org.rapla.rest.gwtjsonrpc.client.impl.JsonSerializer;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 
@@ -36,11 +38,18 @@ import com.google.gwt.core.client.JavaScriptObject;
 public class ObjectMapSerializer<K, V> extends
     JsonSerializer<java.util.Map<K, V>> implements
     ResultDeserializer<java.util.Map<K, V>> {
-  private final JsonSerializer<K> keySerializer;
-  private final JsonSerializer<V> valueSerializer;
+  private final Provider<JsonSerializer<K>> keySerializer;
+  private final Provider<JsonSerializer<V>> valueSerializer;
 
   public ObjectMapSerializer(final JsonSerializer<K> k,
-      final JsonSerializer<V> v) {
+          final JsonSerializer<V> v) {
+      keySerializer = new SimpleProvider<JsonSerializer<K>>(k);
+      valueSerializer = new SimpleProvider<JsonSerializer<V>>(v);
+  }
+
+  
+  public ObjectMapSerializer(final Provider<JsonSerializer<K>> k,
+      final Provider<JsonSerializer<V>> v) {
     keySerializer = k;
     valueSerializer = v;
   }
@@ -55,9 +64,9 @@ public class ObjectMapSerializer<K, V> extends
       } else {
         sb.append(',');
       }
-      encode(sb, keySerializer, e.getKey());
+      encode(sb, keySerializer.get(), e.getKey());
       sb.append(',');
-      encode(sb, valueSerializer, e.getValue());
+      encode(sb, valueSerializer.get(), e.getValue());
     }
     sb.append(']');
   }
@@ -81,8 +90,8 @@ public class ObjectMapSerializer<K, V> extends
     final int n = size(jso);
     final HashMap<K, V> r = new LinkedHashMap<K, V>();
     for (int i = 0; i < n;) {
-      final K k = keySerializer.fromJson(get(jso, i++));
-      final V v = valueSerializer.fromJson(get(jso, i++));
+      final K k = keySerializer.get().fromJson(get(jso, i++));
+      final V v = valueSerializer.get().fromJson(get(jso, i++));
       r.put(k, v);
     }
     return r;

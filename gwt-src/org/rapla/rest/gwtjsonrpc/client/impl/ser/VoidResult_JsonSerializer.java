@@ -24,7 +24,9 @@ public class VoidResult_JsonSerializer extends JsonSerializer<VoidResult>
     implements ResultDeserializer<VoidResult> {
   public static final VoidResult_JsonSerializer INSTANCE =
       new VoidResult_JsonSerializer();
-
+  public static final javax.inject.Provider<VoidResult_JsonSerializer> INSTANCE_PROVIDER = new javax.inject.Provider<VoidResult_JsonSerializer>(){
+      public VoidResult_JsonSerializer get(){return INSTANCE;} 
+  };
   private VoidResult_JsonSerializer() {
   }
 

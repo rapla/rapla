@@ -58,14 +58,14 @@ import org.rapla.rest.RemoteLogger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
-import org.rapla.rest.gwtjsonrpc.server.SignedToken;
-import org.rapla.rest.gwtjsonrpc.server.ValidToken;
-import org.rapla.rest.gwtjsonrpc.server.XsrfException;
 import org.rapla.rest.server.RaplaAPIPage;
 import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.RaplaDynamicTypesRestPage;
 import org.rapla.rest.server.RaplaEventsRestPage;
 import org.rapla.rest.server.RaplaResourcesRestPage;
+import org.rapla.rest.token.SignedToken;
+import org.rapla.rest.token.ValidToken;
+import org.rapla.rest.token.TokenInvalidException;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaServerExtensionPoints;
@@ -828,7 +828,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			{
 				throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED + " InvalidToken " + tokenString);
 			}
-		} catch (XsrfException e) {
+		} catch (TokenInvalidException e) {
 			throw new RaplaSecurityException(e.getMessage(), e);
 		}
     	String userId = recvText;

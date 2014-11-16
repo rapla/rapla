@@ -26,6 +26,9 @@ public final class JavaLangString_JsonSerializer extends
     ResultDeserializer<java.lang.String> {
   public static final JavaLangString_JsonSerializer INSTANCE =
       new JavaLangString_JsonSerializer();
+  public static final javax.inject.Provider<JsonSerializer<java.lang.String>> INSTANCE_PROVIDER = new javax.inject.Provider<JsonSerializer<java.lang.String>>(){
+      public JsonSerializer<java.lang.String> get(){return INSTANCE;} 
+  };
 
   @Override
   public java.lang.String fromJson(final Object o) {

@@ -22,6 +22,11 @@ import com.google.gwt.core.client.JsonUtils;
 public class PrimitiveArraySerializer {
   public static final PrimitiveArraySerializer INSTANCE =
       new PrimitiveArraySerializer();
+  
+  public static final javax.inject.Provider<PrimitiveArraySerializer> INSTANCE_PROVIDER = new javax.inject.Provider<PrimitiveArraySerializer>(){
+      public PrimitiveArraySerializer get(){return INSTANCE;} 
+  };
+
 
   private void printJsonWithToString(final StringBuilder sb, final Object[] o) {
     sb.append('[');

@@ -428,7 +428,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 }
                 else
                 {
-                    if ( entityClass != null && Allocatable.class.isAssignableFrom(entityClass))
+                    if ( entityClass != null && isAllocatableClass(entityClass))
                     {
                         AllocatableImpl unresolved = new AllocatableImpl(null, null);
                         unresolved.setId( id);
@@ -459,7 +459,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }  
     }
 
-    private User loadData(String username) throws RaplaException {
+    public User loadData(String username) throws RaplaException {
         getLogger().debug("Getting Data..");
         RemoteStorage serv = getRemoteStorage();
         try
@@ -480,6 +480,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 cache.put(entity);
 	        }
             getLogger().debug("Data flushed");
+            bSessionActive = true;
             if ( username != null)
 	        {
 	        	if ( userId == null)
@@ -735,7 +736,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	{
     		return entity;
     	}
-    	if ( entityClass != null && Allocatable.class.isAssignableFrom(entityClass))
+    	if ( entityClass != null && isAllocatableClass(entityClass))
 		{
 			AllocatableImpl unresolved = new AllocatableImpl(null, null);
 			unresolved.setId( id);
@@ -751,6 +752,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             return casted;
 		}
 		return null;
+    }
+
+    private <T extends Entity> boolean isAllocatableClass(Class<T> entityClass) 
+    {
+        return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
     
     public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {

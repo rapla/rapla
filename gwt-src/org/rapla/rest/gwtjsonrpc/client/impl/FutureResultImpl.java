@@ -5,15 +5,18 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 
 public class FutureResultImpl<T> implements FutureResult<T> {
 	
-	JsonCall call;
+	private static final long DEFAULT_TIMEOUT = 15000l;
+    JsonCall<T> call;
 	
 	public T get() throws Exception
 	{
-		throw new UnsupportedOperationException();
+	    final T result = get(DEFAULT_TIMEOUT);
+        return result;
 	}
 	public T get(long wait) throws Exception
 	{
-		throw new UnsupportedOperationException();
+	    final T result = call.sendSynchronized( wait);
+	    return result;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -22,7 +25,7 @@ public class FutureResultImpl<T> implements FutureResult<T> {
 		call.send(callback);
 	}
 	
-	public void setCall( JsonCall call)
+	public void setCall( JsonCall<T> call)
 	{
 		this.call = call;
 	}

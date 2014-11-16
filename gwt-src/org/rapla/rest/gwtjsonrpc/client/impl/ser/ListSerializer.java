@@ -18,6 +18,8 @@ import com.google.gwt.core.client.JavaScriptObject;
 
 import java.util.ArrayList;
 
+import javax.inject.Provider;
+
 import org.rapla.rest.gwtjsonrpc.client.impl.JsonSerializer;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 
@@ -29,9 +31,13 @@ import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
  */
 public class ListSerializer<T> extends JsonSerializer<java.util.List<T>>
     implements ResultDeserializer<java.util.List<T>> {
-  private final JsonSerializer<T> serializer;
+  private final Provider<JsonSerializer<T>> serializer;
 
   public ListSerializer(final JsonSerializer<T> s) {
+      serializer = new SimpleProvider<JsonSerializer<T>>(s);    
+  }
+  
+  public ListSerializer(final Provider<JsonSerializer<T>> s) {
     serializer = s;
   }
 
@@ -46,7 +52,7 @@ public class ListSerializer<T> extends JsonSerializer<java.util.List<T>>
         sb.append(',');
       }
       if (item != null) {
-        serializer.printJson(sb, item);
+        serializer.get().printJson(sb, item);
       } else {
         sb.append(JS_NULL);
       }
@@ -64,7 +70,7 @@ public class ListSerializer<T> extends JsonSerializer<java.util.List<T>>
     final int n = size(jso);
     final ArrayList<T> r = new ArrayList<T>(n);
     for (int i = 0; i < n; i++) {
-      r.add(serializer.fromJson(get(jso, i)));
+      r.add(serializer.get().fromJson(get(jso, i)));
     }
     return r;
   }

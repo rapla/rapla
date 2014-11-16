@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.inject.Provider;
+
 import org.rapla.rest.gwtjsonrpc.client.impl.JsonSerializer;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 
@@ -36,10 +38,14 @@ import com.google.gwt.core.client.JsonUtils;
 public class StringMapSerializer<V> extends
     JsonSerializer<java.util.Map<String, V>> implements
     ResultDeserializer<java.util.Map<String, V>> {
-  private final JsonSerializer<V> valueSerializer;
+  private final Provider<JsonSerializer<V>> valueSerializer;
 
   public StringMapSerializer(final JsonSerializer<V> v) {
-    valueSerializer = v;
+    valueSerializer = new SimpleProvider<JsonSerializer<V>>(v);
+  }
+  
+  public StringMapSerializer(final Provider<JsonSerializer<V>> v) {
+      valueSerializer = v;
   }
 
   @Override
@@ -54,7 +60,7 @@ public class StringMapSerializer<V> extends
       }
       sb.append(JsonUtils.escapeValue(e.getKey()));
       sb.append(':');
-      encode(sb, valueSerializer, e.getValue());
+      encode(sb, valueSerializer.get(), e.getValue());
     }
     sb.append('}');
   }
@@ -94,6 +100,6 @@ public class StringMapSerializer<V> extends
   }-*/;
 
   void copyOne(final Map<String, V> r, final String k, final Object o) {
-    r.put(k, valueSerializer.fromJson(o));
+    r.put(k, valueSerializer.get().fromJson(o));
   }
 }

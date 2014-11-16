@@ -120,7 +120,7 @@ public class EntityStore implements EntityResolver {
             return casted;
         }
 
-        if ( id.equals( superCategory.getId()) && (entityClass == null || Category.class.isAssignableFrom( entityClass)))
+        if ( id.equals( superCategory.getId()) && (entityClass == null || isCategoryClass(entityClass)))
         {
             @SuppressWarnings("unchecked")
             T casted = (T) superCategory;
@@ -133,6 +133,10 @@ public class EntityStore implements EntityResolver {
             
         }
         return null;
+    }
+
+    private <T extends Entity> boolean isCategoryClass(Class<T> entityClass) {
+        return entityClass.equals( Category.class) || entityClass.equals( CategoryImpl.class);
     }
 
     protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {

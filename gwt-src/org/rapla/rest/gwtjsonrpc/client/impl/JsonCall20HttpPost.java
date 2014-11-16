@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.rest.gwtjsonrpc.client.impl.v2_0;
+package org.rapla.rest.gwtjsonrpc.client.impl;
 
-import org.rapla.rest.gwtjsonrpc.client.impl.AbstractJsonProxy;
-import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
 import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
 
 import com.google.gwt.http.client.RequestBuilder;
 
 /** JsonCall implementation for JsonRPC version 2.0 over HTTP POST */
-public class JsonCall20HttpPost<T> extends JsonCall20<T> {
+public class JsonCall20HttpPost<T> extends JsonCall<T> {
   public JsonCall20HttpPost(AbstractJsonProxy abstractJsonProxy,
       String methodName, String requestParams,
       ResultDeserializer<T> resultDeserializer) {

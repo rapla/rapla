@@ -29,6 +29,9 @@ public final class JavaUtilDate_JsonSerializer extends
     ResultDeserializer<java.util.Date> {
   public static final JavaUtilDate_JsonSerializer INSTANCE =
       new JavaUtilDate_JsonSerializer();
+  public static final javax.inject.Provider<JavaUtilDate_JsonSerializer> INSTANCE_PROVIDER = new javax.inject.Provider<JavaUtilDate_JsonSerializer>(){
+      public JavaUtilDate_JsonSerializer get(){return INSTANCE;} 
+  };
 
   @Override
   public java.util.Date fromJson(final Object o) {

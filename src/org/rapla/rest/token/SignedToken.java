@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.rest.gwtjsonrpc.server;
+package org.rapla.rest.token;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -25,6 +25,7 @@ import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
 
 /**
  * Utility function to compute and verify XSRF tokens.
@@ -62,9 +63,9 @@ public class SignedToken {
    * Create a new utility, using a randomly generated key.
    *
    * @param age the number of seconds a token may remain valid.
-   * @throws XsrfException the JVM doesn't support the necessary algorithms.
+   * @throws TokenInvalidException the JVM doesn't support the necessary algorithms.
    */
-  public SignedToken(final int age) throws XsrfException {
+  public SignedToken(final int age) throws TokenInvalidException {
     this(age, generateRandomKey());
   }
 
@@ -73,10 +74,10 @@ public class SignedToken {
    *
    * @param age the number of seconds a token may remain valid.
    * @param keyBase64 base 64 encoded representation of the key.
-   * @throws XsrfException the JVM doesn't support the necessary algorithms.
+   * @throws TokenInvalidException the JVM doesn't support the necessary algorithms.
    */
   public SignedToken(final int age, final String keyBase64)
-      throws XsrfException {
+      throws TokenInvalidException {
     maxAge = age > 5 ? age / 5 : age;
     key = new SecretKeySpec(decodeBase64(keyBase64), MAC_ALG);
     rng = new SecureRandom();
@@ -115,9 +116,9 @@ public class SignedToken {
    *        the text is included on the end of the token.
    * @return the signed token. The text passed in <code>text</code> will appear
    *         after the first ',' in the returned token string.
-   * @throws XsrfException the JVM doesn't support the necessary algorithms.
+   * @throws TokenInvalidException the JVM doesn't support the necessary algorithms.
    */
-  public String newToken(final String text, Date now) throws XsrfException {
+  public String newToken(final String text, Date now) throws TokenInvalidException {
     final int q = rng.nextInt();
     final byte[] buf = new byte[tokenLength];
     encodeInt(buf, 0, q);
@@ -136,11 +137,11 @@ public class SignedToken {
    * @return true if the token is valid; false if the token is null, the empty
    *         string, has expired, does not match the text supplied, or is a
    *         forged token.
-   * @throws XsrfException the JVM doesn't support the necessary algorithms to
+   * @throws TokenInvalidException the JVM doesn't support the necessary algorithms to
    *         generate a token. XSRF services are simply not available.
    */
   public ValidToken checkToken(final String tokenString, final String text,Date now)
-      throws XsrfException {
+      throws TokenInvalidException {
     if (tokenString == null || tokenString.length() == 0) {
       return null;
     }
@@ -180,26 +181,26 @@ public class SignedToken {
   }
 
   private void computeToken(final byte[] buf, final String text)
-      throws XsrfException {
+      throws TokenInvalidException {
     final Mac m = newMac();
     m.update(buf, 0, 2 * INT_SZ);
     m.update(toBytes(text));
     try {
       m.doFinal(buf, 2 * INT_SZ);
     } catch (ShortBufferException e) {
-      throw new XsrfException("Unexpected token overflow", e);
+      throw new TokenInvalidException("Unexpected token overflow", e);
     }
   }
 
-  private Mac newMac() throws XsrfException {
+  private Mac newMac() throws TokenInvalidException {
     try {
       final Mac m = Mac.getInstance(MAC_ALG);
       m.init(key);
       return m;
     } catch (NoSuchAlgorithmException e) {
-      throw new XsrfException(MAC_ALG + " not supported", e);
+      throw new TokenInvalidException(MAC_ALG + " not supported", e);
     } catch (InvalidKeyException e) {
-      throw new XsrfException("Invalid private key", e);
+      throw new TokenInvalidException("Invalid private key", e);
     }
   }
 

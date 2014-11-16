@@ -12,16 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.rest.gwtjsonrpc.server;
+package org.rapla.rest.token;
 
-/** Indicates the requested method is not known. */
-@SuppressWarnings("serial")
-public class XsrfException extends Exception {
-  public XsrfException(final String message) {
-    super(message);
+
+/** A validated token from {@link SignedToken#checkToken(String, String)} */
+public class ValidToken {
+  private final boolean refresh;
+  private final String data;
+
+  public ValidToken(final boolean ref, final String d) {
+    refresh = ref;
+    data = d;
   }
 
-  public XsrfException(final String message, final Throwable why) {
-    super(message, why);
+  /** The text protected by the token's encryption key. */
+  public String getData() {
+    return data;
+  }
+
+  /** True if the token's life span is almost half-over and should be renewed. */
+  public boolean needsRefresh() {
+    return refresh;
   }
 }

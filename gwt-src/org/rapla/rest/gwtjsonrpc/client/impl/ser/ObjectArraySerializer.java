@@ -14,6 +14,8 @@
 
 package org.rapla.rest.gwtjsonrpc.client.impl.ser;
 
+import javax.inject.Provider;
+
 import org.rapla.rest.gwtjsonrpc.client.impl.JsonSerializer;
 
 import com.google.gwt.core.client.JavaScriptObject;
@@ -24,9 +26,13 @@ import com.google.gwt.core.client.JavaScriptObject;
  * Primitive array types (like <code>int[]</code>) are not supported.
  */
 public class ObjectArraySerializer<T> {
-  private final JsonSerializer<T> serializer;
-
+  private final Provider<JsonSerializer<T>> serializer;
+  
   public ObjectArraySerializer(final JsonSerializer<T> s) {
+      serializer = new SimpleProvider<JsonSerializer<T>>(s);    
+  }
+
+  public ObjectArraySerializer(final Provider<JsonSerializer<T>> s) {
     serializer = s;
   }
 
@@ -38,7 +44,7 @@ public class ObjectArraySerializer<T> {
       }
       final T v = o[i];
       if (v != null) {
-        serializer.printJson(sb, v);
+        serializer.get().printJson(sb, v);
       } else {
         sb.append(JsonSerializer.JS_NULL);
       }
@@ -48,7 +54,7 @@ public class ObjectArraySerializer<T> {
 
   public void fromJson(final JavaScriptObject jso, final T[] r) {
     for (int i = 0; i < r.length; i++) {
-      r[i] = serializer.fromJson(get(jso, i));
+      r[i] = serializer.get().fromJson(get(jso, i));
     }
   }
 

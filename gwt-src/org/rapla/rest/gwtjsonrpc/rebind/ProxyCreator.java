@@ -21,10 +21,10 @@ import java.util.Set;
 import org.rapla.rest.gwtjsonrpc.client.CallbackHandle;
 import org.rapla.rest.gwtjsonrpc.client.impl.AbstractJsonProxy;
 import org.rapla.rest.gwtjsonrpc.client.impl.FutureResultImpl;
+import org.rapla.rest.gwtjsonrpc.client.impl.JsonCall20HttpGet;
+import org.rapla.rest.gwtjsonrpc.client.impl.JsonCall20HttpPost;
 import org.rapla.rest.gwtjsonrpc.client.impl.JsonSerializer;
 import org.rapla.rest.gwtjsonrpc.client.impl.ResultDeserializer;
-import org.rapla.rest.gwtjsonrpc.client.impl.v2_0.JsonCall20HttpGet;
-import org.rapla.rest.gwtjsonrpc.client.impl.v2_0.JsonCall20HttpPost;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.RpcImpl;
 import org.rapla.rest.gwtjsonrpc.common.RpcImpl.Transport;
@@ -336,7 +336,7 @@ class ProxyCreator {
         w.print(" ");
         w.print(serializerFields[i]);
         w.print(" = ");
-        serializerCreator.generateSerializerReference(pType, w);
+        serializerCreator.generateSerializerReference(pType, w, false);
         w.println(";");
       }
     }
@@ -349,7 +349,7 @@ class ProxyCreator {
       w.print(resultField);
       w.print(" = ");
       parameterizedResult = resultType.isParameterized().getTypeArgs()[0];
-      serializerCreator.generateSerializerReference(parameterizedResult, w);
+      serializerCreator.generateSerializerReference(parameterizedResult, w, false);
       w.println(";");
     }
 
@@ -456,7 +456,7 @@ class ProxyCreator {
           if (SerializerCreator.needsTypeParameter(pType)) {
             w.print(serializerFields[i]);
           } else {
-            serializerCreator.generateSerializerReference(pType, w);
+            serializerCreator.generateSerializerReference(pType, w, false);
           }
           w.println(".printJson(" + reqData + ", " + pName + ");");
           w.outdent();
