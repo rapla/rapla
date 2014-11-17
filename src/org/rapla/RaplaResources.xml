@@ -593,7 +593,7 @@ See French text.
     <entry key="paste_into_existing_event">
         <text lang="en">Paste into existing event</text>
         <text lang="de">Einfügen in bestehende Veranstaltung</text>
-        <text lang="fr">Collier en événement existant</text>
+        <text lang="fr">Coller en événement existant</text>
         <text lang="es">Pegar en evento existente</text>
         <text lang="cs">Vložit do existující událost</text>
         <text lang="nl">Plak in bestaande reservatie</text>
@@ -793,6 +793,7 @@ See French text.
     <entry key="categorization">
         <text lang="en">Categorization</text>
         <text lang="de">Kategoriesierung</text>
+        <text lang="fr">Regroupement</text>
         <text lang="nl">Categorisering</text>
     </entry>
     <entry key="changes">
@@ -878,7 +879,7 @@ See French text.
     <entry key="default">
         <text lang="en">Default</text>
         <text lang="de">Standard</text>
-        <text lang="fr">Standard</text>
+        <text lang="fr">Défaut</text>
         <text lang="es">Estándar</text>
         <text lang="cs">Výchozí</text>
         <text lang="nl">Standaard</text>
@@ -1052,6 +1053,7 @@ See French text.
     <entry key="disabled">
         <text lang="en">disabled</text>
         <text lang="de">ausgeschaltet</text>
+        <text lang="fr">Désactivé</text>
         <text lang="nl">Uitgeschakeld</text>
         <text lang="pl">zablokowane</text>
 		<text lang="pt">Desabilitado</text>
@@ -1109,7 +1111,7 @@ See French text.
     <entry key="last_changed_by">
         <text lang="en">Last changed by</text>
         <text lang="de">zuletzt geändert von</text>
-        <text lang="fr">Dernière modification</text>
+        <text lang="fr">Dernière modification par</text>
         <text lang="es">Última modificación</text>
         <text lang="cs">Naposledy změnil uživatel: </text>
         <text lang="nl">Laatst gewijzigd door</text>
@@ -1544,6 +1546,7 @@ See French text.
         <entry key="error.admin_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to administer the object ''{1}''.</text>
         <text lang="de">Benutzer ''{0}'' hat keine Adminberechtigung für das Objekt ''{1}''.</text>
+        <text lanf="fr">L'utilisateur ''{0}'' n'est pas administrateur de l'objet ''{1}''.</text>
     </entry>
     <entry key="error.read_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to read the object ''{1}''.</text>
@@ -1813,6 +1816,7 @@ See French text.
     <entry key="error.wrong_rapla_version">
        <text lang="de">Aktuallisieren Sie die Rapla-Version {0} auf {1}. Nutzen Sie den Webstart-Link auf {2}</text>
        <text lang="en">Update your rapla version from {0} to {1}. Use the webstart link on {2}</text>
+       <text lang="fr">Merci de mettre à jour votre version de Rapla de {0} à {1}. Utilisez le bouton webstart à l'adresse {2}</text>
     </entry>
     <entry key="error.passwords_dont_match">
         <text lang="en">The passwords don't match!</text>
@@ -1947,6 +1951,7 @@ See French text.
     <entry key="attribute_color_dialog">
         <text lang="en">You need a color attribute for this setting. Do you want to create it?</text>
         <text lang="de">Sie brauchen ein Farbattribute für diese Einstellung. Wollen Sie es erzeugen?</text>
+        <text lang="fr">Vous devez définir un attribut de couleur pour ce réglage. Voulez vous le créer ?</text>
         <text lang="nl">Een kleur attribuut is nodig voor deze instelling. Wil je deze nu definiëren?</text>
         <text lang="pl">Potrzebujesz koloru atrybutu do tego ustawienia. Chesz go stworzyć?</text>
 		<text lang="pt">Você precisa de uma atributo de cor para esta definição! Você deseja criá-lo?</text>
@@ -2259,6 +2264,7 @@ See French text.
     <entry key="change_email">
     	<text lang="en">change email</text>
     	<text lang="de">Email ändern</text>
+        <text lang="fr">Changer l'adresse mail</text>
     	<text lang="nl">Wijzig email</text>
     	<text lang="pl">Zmień e-mail</text>
 		<text lang="pt">Alterar e-mail</text>
@@ -2266,6 +2272,7 @@ See French text.
     <entry key="send_code">
     	<text lang="en">send code</text>
     	<text lang="de">Code senden</text>
+        <text lang="fr">Envoyer un code</text>
     	<text lang="nl">Verzend beveiligingscode</text>
         <text lang="pl">Wyślij kod</text>
 		<text lang="pt">Enviar código</text>
@@ -2273,6 +2280,7 @@ See French text.
     <entry key="code_validate">
     	<text lang="en">validate</text>
     	<text lang="de">validieren</text>
+        <text lang="fr">valider</text>
     	<text lang="nl">Valideer</text>
     	<text lang="pl">Weryfikuj</text>
 		<text lang="pt">Validar</text>
@@ -2280,6 +2288,7 @@ See French text.
     <entry key="new_mail">
     	<text lang="en">New email: </text>
     	<text lang="de">Neue Email: </text>
+        <text lang="fr">Nouvel Email : </text>
     	<text lang="nl">Nieuw email adres: </text>
     	<text lang="pl">Nowy e-mail: </text>
 		<text lang="pt">Novo e-mail</text>
@@ -2287,6 +2296,7 @@ See French text.
     <entry key="security_code">
     	<text lang="en">Securitycode: </text>
     	<text lang="de">Sicherheitscode: </text>
+        <text lang="fr">Code de sécurité : </text>
     	<text lang="nl">Beveiligingscode: </text>
     	<text lang="pl">Kod zabezpieczający: </text>
 		<text lang="pt">Código de segurança</text>
@@ -2294,18 +2304,21 @@ See French text.
     <entry key="code_message1">
     	<text lang="en">(A security code will be sent</text>
     	<text lang="de">(Zur angegeben Email-Adresse wird ein Code gesendet,</text>
+        <text lang="fr">(Un code de sécurité va être envoyé</text>
    		<text lang="pl">(Kod zabezpieczający zostanie wysłany</text>
 		<text lang="pt">(Um código de segurança será enviado</text>
     </entry>
     <entry key="code_message2">
     	<text lang="en">to the email-adress stated besides.)</text>
     	<text lang="de">der im unteren Feld verifiziert werden muss.)</text>
+        <text lang="fr">à l'adresse indiquée.</text>
    	  	<text lang="pl">na adres e-mail podany obok.)</text>
 		<text lang="pt">para o e-mail indicado ao lado.)</text>
     </entry>
     <entry key="code_message3">
     	<text lang="en">Please enter the received code here:</text>
     	<text lang="de">Bitte geben Sie den erhaltenen Code hier ein:</text>
+        <text lang="fr">Merci d'entrer le code de sécurité ici : </text>
     	<text lang="nl">Ontvangen beveiligingscode:</text>
    		<text lang="pl">Podaj otrzymany kod zabezpieczający:</text>
 		<text lang="pt">Digite o código recebido aqui:</text>
@@ -2313,6 +2326,7 @@ See French text.
     <entry key="send_code_mail_body_1">
     	<text lang="en">Dear user </text>
     	<text lang="de">Sehr geehrte/r User </text>
+        <text lang="fr">Cher utilisateur</text>
     	<text lang="nl">Beste </text>
    		<text lang="pl">Drogi Użytkowniku </text>
 		<text lang="pt">Caro usuário</text>
@@ -2320,6 +2334,7 @@ See French text.
     <entry key="send_code_mail_body_2">
     	<text lang="en">a security code has been requested for your email adress.</text>
     	<text lang="de">ein Sicherheitscode wurde für Ihre Emailadresse angefordert.</text>
+        <text lang="fr">un code de sécurité a été demandé pour votre adresse mail</text>
     	<text lang="nl">Een beveiligingscode is nodig voor je email adres.</text>
     	<text lang="pl">zażądano kodu zabezpieczającego dal tego adresu e-mail.</text>
 		<text lang="pt">um código de segurança foi solicitado pelo seu e-mail</text>
@@ -2327,6 +2342,7 @@ See French text.
     <entry key="send_code_mail_body_3">
     	<text lang="en">If you haven't requested this security code, please contact your system administrator.</text>
     	<text lang="de">Sollten Sie diesen Sicherheitscode nicht angefordert haben, wenden sie sich bitte an Ihren Systemadministrator.</text>
+        <text lang="fr">Si vous n'avez pas demandé ce code de sécurité, contactez votre administrateur.</text>
     	<text lang="nl">Indien je geen beveiligingscode gevraagd hebt, neem dan contact met de systeem beheerder.</text>
 		<text lang="pl">Jeśli to nie Ty zażądałeś/aś tego kodu, skontaktuj się z administratorem systemu.</text>
 		<text lang="pt">Se você não tiver solicitado o código de segurança, entre em contato com o administrador do sistema.</text>
@@ -2334,6 +2350,7 @@ See French text.
     <entry key="send_code_mail_body_4">
     	<text lang="en">This email has been sent by the following system: </text>
     	<text lang="de">Diese Email wurde vom System </text>
+        <text lang="fr">Cet email a été envoyé par : </text>
     	<text lang="nl">Deze mail werd verstuurd door: </text>
      	<text lang="pl">Ten e-mail został wysłany przez następujący system: </text>
 		<text lang="pt">Este e-mail foi enviado pelo seguinte sistema: </text>
@@ -2341,6 +2358,7 @@ See French text.
     <entry key="send_code_mail_body_5">
     	<text lang="en">under the following URL: </text>
     	<text lang="de">unter der URL </text>
+        <text lang="fr">A l'adresse </text>
     	<text lang="nl">met URL </text>
     	<text lang="pl">pod tym adresem URL: </text>
 		<text lang="pt">comm a seguinte URL: </text>
@@ -2348,12 +2366,14 @@ See French text.
     <entry key="person_resource">
     	<text lang="en">person resource: </text>
     	<text lang="de">Personenressource: </text>
+        <text lang="fr">Persone ressource : </text>
     	<text lang="nl">Persoon: </text>
 		<text lang="pt">recursos humanos: </text>
     </entry>
     <entry key="connect">
     	<text lang="en">connect</text>
     	<text lang="de">verbinden</text>
+        <text lang="fr">Connecter</text>
     	<text lang="nl">Aanmelden</text>
     	<text lang="pl">Połącz</text>
 		<text lang="pt">conectar</text>
@@ -2362,6 +2382,7 @@ See French text.
     <entry key="disconnect">
     	<text lang="en">disconnect</text>
     	<text lang="de">lösen</text>
+        <text lang="fr">Déconnecter</text>
     	<text lang="nl">Afmelden</text>
     	<text lang="pl">Rozłącz</text>
 		<text lang="pt">desconectar</text>
@@ -2370,6 +2391,7 @@ See French text.
     <entry key="personal_options">
     	<text lang="en">Personal options</text>
     	<text lang="de">Persönliche Einstellungen</text>
+        <text lang="fr">Préférences personnelles</text>
     	<text lang="nl">Persoonlijke instellingen</text>
    		<text lang="pl">Ustawienia osobiste</text>
 		<text lang="pt">Opções pessoais</text>
@@ -2378,6 +2400,7 @@ See French text.
     <entry key="enter_name">
     	<text lang="en">Please enter your name and firstname:</text>
     	<text lang="de">Bitte geben Sie Vor- und Zuname ein:</text>
+        <text lang="fr">Merci de renseigner votre nom et prénom : </text>
     	<text lang="nl">Wijzig persoonlijk instellingen:</text>
     	<text lang="pl">Proszę wprowadź swoje nazwisko i imię:</text>
 		<text lang="pt">Digite seu nome e sobrenome</text>
@@ -2386,6 +2409,7 @@ See French text.
     <entry key="code_error1">
     	<text lang="en">"The stated code doesn't match the code in the email. "</text>
     	<text lang="de">"Der angegebene Code entspricht nicht dem Code in der Email."</text>
+        <text lang="fr">Le code renseigné ne correspond pas à celui envoyé dans l'email.</text>
     	<text lang="nl">"De beveiligingscode is verschillend van deze in de verstuurde mail."</text>
 		<text lang="pt">"O código indicado não corresponde ao código no e-mail."</text>
 
@@ -2393,6 +2417,7 @@ See French text.
     <entry key="code_error2">
     	<text lang="en">The stated code is not a number.</text>
     	<text lang="de">Der angegegebene Code ist keine Zahl.</text>
+        <text lang="fr">Le code indiqué n'est pas un nombre.</text>
     	<text lang="nl">De beveiligingscode moet een nummer zijn.</text>
    		<text lang="pl">Podany kod nie jest liczbą.</text>
 		<text lang="pt">O código indicado não é um número.</text>
@@ -2400,6 +2425,7 @@ See French text.
     <entry key="password_change_info">
     	<text lang="en">Confirming will actually change your password.</text>
     	<text lang="de">Durch das bestätigen wird ihr Passwort geändert.</text>
+        <text lang="fr">Confirmer va changer votre mot de passe.</text>
     	<text lang="nl">Bevestiging zal het paswoord wijzigen.</text>
    		<text lang="pl">Zatwierdzenie naprawdę zmieni hasło.</text>
 		<text lang="pt">Confirmando vai realmente mudar sua senha.</text>
@@ -2979,7 +3005,7 @@ See French text.
     <entry key="years">
         <text lang="en">Years</text>
         <text lang="de">Jare</text>
-        <text lang="fr">Année</text>
+        <text lang="fr">Années</text>
         <text lang="es">Años</text>
         <text lang="nl">Jaren</text>
         <text lang="pl">Lata</text>
@@ -3097,7 +3123,7 @@ See French text.
     <entry key="format.repeat_until">
         <text lang="en">until {0}</text>
         <text lang="de">bis zum {0}</text>
-        <text lang="fr">jusqu''à {0}</text>
+        <text lang="fr">jusqu''au {0}</text>
         <text lang="es">hasta {0}</text>
         <text lang="cs">Dokud {0}</text>
         <text lang="nl">tot en met {0}</text>
@@ -3167,6 +3193,7 @@ See French text.
     <entry key="appointment.search_free">
 		<text lang="en">free appointment >></text>
 		<text lang="de">Freier Termin >></text>
+        <text lang="fr">Recherche disponibilité</text>
 		<text lang="nl">Zoek vrije afspraak >></text>
 	</entry>
 	<entry key="appointment.convert">
@@ -3212,6 +3239,7 @@ See French text.
     <entry key="exchange_allocatables_appointment.format">
         <text lang="en">For what do you want to change the allocation</text>
         <text lang="de">Für was wollen Sie die Belegung ändern?</text>
+        <text lang="fr">Pour quel partie de l'événement voulez vous modifier l'allocation ?</text>
         <text lang="pl">Dla czego chcesz zmienić przydział?</text>
 		<text lang="pt">Por qual motivo você deseja modificar a atribuição?</text>
     </entry>
@@ -3410,6 +3438,7 @@ See French text.
     <entry key="permission.read_type">
         <text lang="en">Show {0}</text>
         <text lang="de">{0} anzeigen</text>
+        <text lang="fr">Voir {0}</text>
         <text lang="nl">Toon {0}</text>
 
     </entry>
@@ -3587,6 +3616,7 @@ See French text.
     <entry key="disabledConflictUC">
         <text lang="en">disabled Conflicts ({0})</text>
         <text lang="de">ausgeschaltete Konflikte ({0})</text>
+        <text lang="fr">Conflits désactivés ({0})</text>
     </entry>
     
     <!-- Dialogs of Rapla -->
@@ -3686,7 +3716,7 @@ See French text.
     <entry key="exit.ok">
         <text lang="en">Quit Rapla</text>
         <text lang="de">Rapla beenden?</text>
-        <text lang="fr">Quitter Rapla ?</text>
+        <text lang="fr">Quitter Rapla</text>
         <text lang="es">¿Abandonar Rapla?</text>
         <text lang="cs">Ukončit systém Rapla</text>
         <text lang="nl">Planning beëindigen</text>
@@ -4580,6 +4610,7 @@ See French text.
     <entry key="restart_options">
         <text lang="en">You need to restart Rapla/Rapla-server when you change the options!</text>
         <text lang="de">Starten Sie Rapla/den Rapla Server neu, damit die Veränderungen wirksam werden!</text>
+        <text lang="fr">Il est nécessaire de redémarrer Rapla ou le service de Rapla (sur le serveur) après avoir changé les options !</text>
         <text lang="nl">Om de wijzigingen te activeren moet je Rapla herstarten!</text>
         <text lang="pl">Zmiany zostaną wprowadzone po ponownym uruchomieniu Rapla.</text>
 		<text lang="pt">Você precisa reiniciar o Rapla/Servidor do Rapla quando modificar as opções!</text>
@@ -4754,7 +4785,7 @@ See French text.
        <text lang="de">Einstellungen bearbeiten</text>
        <text lang="en">modify preferences</text>
        <text lang="es">modificar las preferencias</text>
-       <text lang="fr">Modifier la préférence</text>
+       <text lang="fr">Modifier les préférences</text>
        <text lang="nl">Opties wijzigen</text>
        <text lang="pl">Modyfikacja Preferencji</text>
 	   <text lang="pt">Modificar as preferências</text>
@@ -4830,7 +4861,7 @@ See French text.
     <entry key="nameformat_planning">
         <text lang="en">Displayed name format in resource tree</text>
         <text lang="de">Anzeigeformatierung im Ressourcenbaum</text>
-        <text lang="fr">Mettre en forme l'affichage dans le dépliant</text>
+        <text lang="fr">Format d'affichage du nom dans l'arborescence</text>
         <text lang="es">Formato de nombre visualizado en el folleto</text>
         <text lang="cs">Zobrazovaný formát jména v příbalové informaci</text>
         <text lang="nl">Weergave naam formaat in de folder</text>
