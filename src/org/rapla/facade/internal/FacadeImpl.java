@@ -863,33 +863,39 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			if (!operator.isConnected()) {
 				user = operator.connect( connectInfo);
 			}
-		} catch (RaplaSecurityException ex) {
+       } catch (RaplaSecurityException ex) {
 			return false;
-		} finally {
+       } finally {
 			// Clear password
 //				for (int i = 0; i < password.length; i++)
 //					password[i] = 0;
-		}
-        if ( user == null)
-        {
-    		String username = connectInfo.getUsername();
-    		if  ( connectInfo.getConnectAs() != null)
-    		{
-    		    username = connectInfo.getConnectAs();
-    		}
-    		user = operator.getUser(username);
-        }
-		
-		if (user != null) {
-			this.workingUserId = user.getId();
-			getLogger().info("Login " + user.getUsername());
-			return true;
-		} else {
-		    return false;
-		}
-	}
+       }
+       String username = connectInfo.getUsername();
+       if  ( connectInfo.getConnectAs() != null)
+       {
+           username = connectInfo.getConnectAs();
+       }
 
-	public boolean canChangePassword() {
+       return setUsernameInternal(user, username);
+   }
+
+   public boolean setUsernameInternal(User user, String username) throws RaplaException {
+       if ( user == null)
+       {
+           user = operator.getUser(username);
+       }
+       if (user != null) {
+           this.workingUserId = user.getId();
+           getLogger().info("Login " + user.getUsername());
+           return true;
+       } else {
+           return false;
+       }
+   }
+   
+
+   
+   public boolean canChangePassword() {
 		try {
 			return operator.canChangePassword();
         } catch (RaplaException e) {

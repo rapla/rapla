@@ -44,6 +44,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -342,43 +343,9 @@ public abstract class RaplaBuilder extends RaplaComponent
     public static List<Appointment> getAppointments(
 			Reservation[] reservations,
 			Allocatable[] allocatables) {
-    	return getAppointments( Arrays.asList( reservations), Arrays.asList( allocatables));
+    	return AppointmentImpl.getAppointments( Arrays.asList( reservations), Arrays.asList( allocatables));
     }
     
-    public static List<Appointment> getAppointments(
-			Collection<Reservation> reservations,
-			Collection<Allocatable> allocatables) {
-		List<Appointment> appointments = new ArrayList<Appointment>();
-        for (Reservation r:reservations)
-        {
-            for ( Appointment app:r.getAppointments())
-            {
-				if (allocatables == null || allocatables.isEmpty())
-            	{
-            		appointments.add( app);
-            	}
-            	else 
-            	{
-	                // this flag is set true if one of the allocatables of a
-	                // reservation matches a selected allocatable.
-	                boolean allocatableMatched = false;
-	            	for (Allocatable alloc:r.getAllocatablesFor(app))
-	            	{
-	            		if (allocatables.contains(alloc)) {
-	            			allocatableMatched = true;
-	            			break;
-	            		}
-	            	}
-	            	if ( allocatableMatched )
-	            	{
-	            		appointments.add( app);
-	            	}
-            	}
-            }
-        }
-		return appointments;
-	}
-
     static public class SplittedBlock extends AppointmentBlock
     {
     	public SplittedBlock(AppointmentBlock original,long start, long end, Appointment appointment,
@@ -437,7 +404,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
         allReservations.addAll( allReservationsForAllocatables);
         
-        Collection<Appointment> appointments = getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
+        Collection<Appointment> appointments = AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         // Add appointment to the blocks
         final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         for (Appointment app:appointments)

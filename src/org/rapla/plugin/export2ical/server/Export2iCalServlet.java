@@ -27,6 +27,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
@@ -38,7 +39,6 @@ import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.servletpages.RaplaPageGenerator;
@@ -142,7 +142,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 
 			final Reservation[] reserv = isAllAppointmentsSet ? getAllReservations(calModel) : calModel.getReservations();
 			Allocatable[] allocatables = calModel.getSelectedAllocatables();
-			Collection<Appointment> appointments = RaplaBuilder.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
+			Collection<Appointment> appointments = AppointmentImpl.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
 			write(response, appointments, filename, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));

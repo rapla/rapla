@@ -28,6 +28,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -910,6 +911,40 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		 }
 		 return null;
 	 }
+
+    public static List<Appointment> getAppointments(
+    		Collection<Reservation> reservations,
+    		Collection<Allocatable> allocatables) {
+    	List<Appointment> appointments = new ArrayList<Appointment>();
+        for (Reservation r:reservations)
+        {
+            for ( Appointment app:r.getAppointments())
+            {
+    			if (allocatables == null || allocatables.isEmpty())
+            	{
+            		appointments.add( app);
+            	}
+            	else 
+            	{
+                    // this flag is set true if one of the allocatables of a
+                    // reservation matches a selected allocatable.
+                    boolean allocatableMatched = false;
+                	for (Allocatable alloc:r.getAllocatablesFor(app))
+                	{
+                		if (allocatables.contains(alloc)) {
+                			allocatableMatched = true;
+                			break;
+                		}
+                	}
+                	if ( allocatableMatched )
+                	{
+                		appointments.add( app);
+                	}
+            	}
+            }
+        }
+    	return appointments;
+    }
 
 }
 

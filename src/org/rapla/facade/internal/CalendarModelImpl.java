@@ -52,6 +52,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentBlockStartComparator;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -71,7 +72,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.UpdateResult;
 
 public class CalendarModelImpl implements CalendarSelectionModel
@@ -1354,7 +1354,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		Date endDate = interval.getEnd();
 		List<Reservation> reservations = getReservationsAsList(startDate, endDate);
 		Collection<Allocatable> allocatables =getSelectedAllocatablesAsList();
-		List<Appointment> result = RaplaBuilder.getAppointments(reservations, allocatables);
+		List<Appointment> result = AppointmentImpl.getAppointments(reservations, allocatables);
 		return result;
 	}
 	
