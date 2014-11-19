@@ -556,16 +556,28 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	private String cacheValidString;
 	private Reservation[] cachedReservations;
+	private boolean cachingEnabled = true;
 	public Reservation[] getReservations(Allocatable[] allocatables,Date start, Date end) throws RaplaException {
 		String cacheKey = createCacheKey( allocatables, start, end);
-    	if ( cacheValidString != null && cacheValidString.equals( cacheKey) && cachedReservations != null)
-    	{
-    		return cachedReservations;
-    	}
+		if ( cachingEnabled)
+		{
+        	if ( cacheValidString != null && cacheValidString.equals( cacheKey) && cachedReservations != null)
+        	{
+        		return cachedReservations;
+        	}
+		}
     	Reservation[] reservationsForAllocatable = getReservationsForAllocatable(allocatables, start, end, null);
-    	cachedReservations = reservationsForAllocatable;
-    	cacheValidString = cacheKey;
+    	if ( cachingEnabled)
+    	{
+    	    cachedReservations = reservationsForAllocatable;
+    	    cacheValidString = cacheKey;
+    	}
 		return reservationsForAllocatable;
+	}
+	
+	public void setCachingEnabled(boolean enable)
+	{
+	     this.cachingEnabled = enable;
 	}
 	
 	private String createCacheKey(Allocatable[] allocatables, Date start,
