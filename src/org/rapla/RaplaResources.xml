@@ -533,7 +533,7 @@ See French text.
     <entry key="login">
         <text lang="en">Login</text>
         <text lang="de">Login</text>
-        <text lang="fr">Login</text>
+        <text lang="fr">Connexion</text>
         <text lang="es">Acceso</text>
         <text lang="cs">Login</text>
         <text lang="nl">Aanmelden</text>
@@ -859,7 +859,7 @@ See French text.
     <entry key="customized">
         <text lang="en">Customized</text>
         <text lang="de">benutzerdefiniert</text>
-        <text lang="fr">Spécifique</text>
+        <text lang="fr">Personnalisé</text>
         <text lang="es">Específico</text>
         <text lang="cs">Přizpůsobený</text>
         <text lang="nl">Aangepast door</text>
@@ -1719,7 +1719,7 @@ See French text.
     <entry key="error.no_entry_for">
         <text lang="en">You need to provide an entry for: {0}</text>
         <text lang="de">Sie müssen einen Eintrag angeben für: {0}</text>
-        <text lang="fr">Vous devez donner : {0}</text>
+        <text lang="fr">Vous devez fournir une donnée pour : {0}</text>
         <text lang="es">Debe dar un : {0}</text>
         <text lang="cs">Nutné poskytnout přístup pro:</text>
         <text lang="nl">Je moet de gegevens opgeven voor: {0}</text>
@@ -2311,7 +2311,7 @@ See French text.
     <entry key="code_message2">
     	<text lang="en">to the email-adress stated besides.)</text>
     	<text lang="de">der im unteren Feld verifiziert werden muss.)</text>
-        <text lang="fr">à l'adresse indiquée.</text>
+        <text lang="fr">à l'adresse indiquée.)</text>
    	  	<text lang="pl">na adres e-mail podany obok.)</text>
 		<text lang="pt">para o e-mail indicado ao lado.)</text>
     </entry>
@@ -2366,7 +2366,7 @@ See French text.
     <entry key="person_resource">
     	<text lang="en">person resource: </text>
     	<text lang="de">Personenressource: </text>
-        <text lang="fr">Persone ressource : </text>
+        <text lang="fr">Personne ressource : </text>
     	<text lang="nl">Persoon: </text>
 		<text lang="pt">recursos humanos: </text>
     </entry>
@@ -2582,7 +2582,7 @@ See French text.
     <entry key="reservation.appointments">
         <text lang="en">Appointments:</text>
         <text lang="de">Termine:</text>
-        <text lang="fr">Événement :</text>
+        <text lang="fr">Réservations :</text>
         <text lang="es">Citas: </text>
         <text lang="cs">Sjednaný:</text>
         <text lang="nl">Reservaties:</text>
@@ -2592,7 +2592,7 @@ See French text.
     <entry key="reservation.allocations">
         <text lang="en">Allocations:</text>
         <text lang="de">Belegungen:</text>
-        <text lang="fr">Allocation :</text>
+        <text lang="fr">Allocations :</text>
         <text lang="es">Asignaciones : </text>
         <text lang="cs">Rozvržení:</text>
         <text lang="nl">Bezetting: </text>
@@ -2831,7 +2831,7 @@ See French text.
     <entry key="calendarweek.abbreviation">
         <text lang="en">cw {0,date,w}</text>
         <text lang="de">KW {0,date,w}</text>
-        <text lang="fr">Sem {0,date,w}</text>
+        <text lang="fr">S{0,date,w}</text>
         <text lang="es">se {0,date,w}</text>
         <text lang="cs">T{0,date,w}</text>
         <text lang="nl">WK{0,date,w}</text>
@@ -4754,7 +4754,7 @@ See French text.
     <entry key="show_password">
     	<text lang="en">Show password</text>
     	<text lang="de">zeige Passwort</text>
-    	<text lang="fr">Montrer le mots de passe</text>
+    	<text lang="fr">Montrer le mot de passe</text>
     	<text lang="es">mostrar contraseña</text>
     	<text lang="cs">zobrazit heslo</text>
     	<text lang="nl">Toon paswoord</text>  
@@ -4938,7 +4938,7 @@ See French text.
     <entry key="sorting.descending">
         <text lang="en">descending</text>
         <text lang="de">absteigend</text>
-        <text lang="fr">Descendant</text>
+        <text lang="fr">Décroissant</text>
         <text lang="es">descendiente</text>
         <text lang="cs">klesající</text>
         <text lang="nl">Dalend</text>
