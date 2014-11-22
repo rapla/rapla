@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -39,6 +40,8 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
 import org.rapla.components.util.TimeInterval;
+import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -143,7 +146,9 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     try {
-                        store_(enabledConflicts, false);
+                        CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
+                        CommandHistory commanHistory = getModification().getCommandHistory();
+                        commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
@@ -157,10 +162,13 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     try {
-                        store_(disabledConflicts, true);
+                        CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
+                        CommandHistory commanHistory = getModification().getCommandHistory();
+                        commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         showException(ex, getComponent());
                     }
+                    
                 }
             });
 
@@ -174,21 +182,65 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
     }
     
-    
-    public void store_(Collection<Conflict> conflictOrig, boolean newFlag) throws RaplaException {
-        ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
-        for ( Conflict conflict:conflictOrig)
-        {
-            Conflict clone = getModification().edit( conflict);
-            conflicts.add( clone);
+    public class ConflictEnable implements CommandUndo<RaplaException> {
+        boolean enable;
+        Collection<String> conflictStrings;
+        
+        public ConflictEnable(List<Conflict> conflicts, boolean enable) {
+            
+            this.enable = enable;
+            conflictStrings = new HashSet<String>();
+            for ( Conflict conflict: conflicts )
+            {
+                conflictStrings.add( conflict.getId());
+            }
         }
-        for (Conflict conflict: conflicts)
-        {
-            setEnabled( ((ConflictImpl)conflict), newFlag);
+
+        @Override
+        public boolean execute() throws RaplaException {
+            store_( enable);
+            return true;
         }
-        store( conflicts );
-        updateTree();
+        
+        @Override
+        public boolean undo() throws RaplaException {
+            store_( !enable);
+            return true;
+        }
+        @Override
+        public String getCommandoName() 
+        {
+            return (enable ? "enable" : "disable") + " conflicts";
+        }
+        
+
+        private void store_( boolean newFlag) throws RaplaException {
+            Collection<Conflict> conflictOrig = new ArrayList<Conflict>();
+            for ( Conflict conflict:ConflictSelection.this.conflicts)
+            {
+                if ( conflictStrings.contains( conflict.getId()))
+                {
+                    conflictOrig.add( conflict);
+                }
+            }
+            ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
+            for ( Conflict conflict:conflictOrig)
+            {
+                Conflict clone = getModification().edit( conflict);
+                conflicts.add( clone);
+            }
+            for (Conflict conflict: conflicts)
+            {
+                setEnabled( ((ConflictImpl)conflict), newFlag);
+            }
+            store( conflicts );
+            updateTree();
+        }
+
     }
+
+    
+    
 
     
     private void store(Collection<Conflict> conflicts) throws RaplaException 
