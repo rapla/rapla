@@ -66,8 +66,8 @@ public class RaplaMapReader extends RaplaXMLReader  {
         RaplaType raplaType = getTypeForLocalName( localName );
         if ( refid != null) {
             childReader = null;
-            // We ignore the old references from 1.7
-            if ( entityMap.isTypeSupportedAsLink(raplaType)) {
+            // We ignore the old references from 1.7 that are not compatible
+            if ( !entityMap.isTypeSupportedAsLink(raplaType)) {
                 return;
             }
             String id = getId( raplaType, refid);
