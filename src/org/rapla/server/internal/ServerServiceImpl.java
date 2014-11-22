@@ -248,9 +248,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         Preferences preferences = operator.getPreferences( null, true );
         //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
         //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
+        String importExportTimeZone = TimeZone.getDefault().getID();
+        // get old entries
         RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-    	String importExportTimeZone = TimeZone.getDefault().getID();
-		if ( entry != null)
+        if ( entry != null)
 		{
 			Configuration find = entry.find("class", Export2iCalPlugin.PLUGIN_CLASS);
 			if  ( find != null)
@@ -268,6 +269,19 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         try {
             TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
             TimeZone timeZone = registry.getTimeZone(timezoneId);
+            if ( timeZone == null)
+            {
+                String fallback = "Etc/GMT";
+                getLogger().error("Timezone " + timezoneId + " not found in ical registry. " + " Using "+ fallback);
+                timeZone = registry.getTimeZone(fallback);
+                if ( timeZone == null)
+                {
+                    if (timeZone == null)
+                    {
+                        throw new RaplaContextException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
+                    }
+                }
+            }
             ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone( timeZone);
             ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone( timeZone);
             if ( operator instanceof LocalAbstractCachableOperator)
