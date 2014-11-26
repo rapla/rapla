@@ -63,6 +63,7 @@ import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
@@ -135,11 +136,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	            public String get() throws Exception {
     	                getLogger().info("Refreshing access token.");
     	                return loginWithoutDisconnect();
-    	            }
-
-    	            @Override
-    	            public String get(long wait) throws Exception {
-    	                return get();
     	            }
 
     	            @Override
@@ -226,27 +222,33 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
 	Cancelable timerTask;
 	int intervalLength;
-	private final void initRefresh() 
+	public final void initRefresh() 
 	{
 		Command refreshTask = new Command() {
 			public void execute() {
-			    try {
-			        // test if the remote operator is writable
-			        // if not we skip until the next update cycle
-		            Lock writeLock = lock.writeLock();
-                    boolean tryLock = writeLock.tryLock();
-		            if ( tryLock)
-		            {
-		                writeLock.unlock();
-		            }
-                    if (isConnected() && tryLock) {
-		                refresh();
-		            }
-			    } catch (RaplaConnectException e) {
-                    getLogger().error("Error connecting " + e.getMessage());
-			    } catch (RaplaException e) {
-			        getLogger().error("Error refreshing.", e);
-			    }
+			    // test if the remote operator is writable
+                // if not we skip until the next update cycle
+                Lock writeLock = lock.writeLock();
+                boolean tryLock = writeLock.tryLock();
+                if ( tryLock)
+                {
+                    writeLock.unlock();
+                }
+                if (isConnected() && tryLock) {
+                    refreshAsync( new AsyncCallback<VoidResult>() {
+
+                        @Override
+                        public void onFailure(Throwable caught) {
+                            getLogger().error("Error refreshing.", caught);
+                            
+                        }
+
+                        @Override
+                        public void onSuccess(VoidResult result) {
+                            
+                        }
+                    });
+                }
 			}
 		};
 		intervalLength = UpdateModule.REFRESH_INTERVAL_DEFAULT;
@@ -325,6 +327,42 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    	throw new RaplaException(ex);
 	    }		
     }
+    
+    synchronized public void refreshAsync( final AsyncCallback<VoidResult> callback)  {
+        String clientRepoVersion = getClientRepoVersion();
+        RemoteStorage serv = getRemoteStorage();
+        serv.refresh( clientRepoVersion).get( new AsyncCallback<UpdateEvent>() {
+
+            @Override
+            public void onFailure(Throwable caught) {
+                callback.onFailure(caught);
+            }
+
+            @Override
+            public void onSuccess(UpdateEvent evt) {
+                try {
+                    refresh( evt);
+                }
+                catch (EntityNotFoundException ex)
+                {
+                    getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+                    try {
+                        refreshAll();
+                    } catch (Exception e) {
+                        onFailure(ex);
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    onFailure(ex);
+                    return;
+                }
+                callback.onSuccess( VoidResult.INSTANCE);
+            }
+        });
+    }
+
 
     private String getClientRepoVersion() {
         return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
@@ -461,10 +499,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     public User loadData(String username) throws RaplaException {
         getLogger().debug("Getting Data..");
-        RemoteStorage serv = getRemoteStorage();
         try
         {
-	        UpdateEvent evt = serv.getResources().get();
+            RemoteStorage serv = getRemoteStorage();
+            FutureResult<UpdateEvent> resources = serv.getResources();
+            UpdateEvent evt = resources.get();
 	        this.userId = evt.getUserId();
 	        if ( userId != null)
 	        {

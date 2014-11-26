@@ -396,6 +396,11 @@ public abstract class DateTools
 	   millis += millisecond;
 	   return millis;
 	}
+   
+   public static int toHour(long millisecond) {
+       long result = (millisecond % MILLISECONDS_PER_DAY - millisecond % MILLISECONDS_PER_HOUR)/MILLISECONDS_PER_HOUR;
+       return (int) result;
+   }
 
    
    public static DateWithoutTimezone toDate(long millis)

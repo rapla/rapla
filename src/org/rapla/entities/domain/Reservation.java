@@ -13,6 +13,7 @@
 
 package org.rapla.entities.domain;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
@@ -36,7 +37,7 @@ import org.rapla.entities.dynamictype.Classifiable;
  *  @see Appointment
  *  @see Allocatable
  */
-public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable
+public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable,Comparable
 {
 	final RaplaType<Reservation> TYPE = new RaplaType<Reservation>(Reservation.class,"reservation",'e');
 
@@ -45,6 +46,9 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     void addAppointment(Appointment appointment);
     void removeAppointment(Appointment appointment);
     /** returns all appointments that are part off the reservation.*/
+    
+    Collection<Appointment> getSortedAppointments();
+    
     Appointment[] getAppointments();
    /** Restrict an allocation to one ore more appointments.
     *  By default all objects of a reservation are allocated
@@ -103,6 +107,8 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 	Date getMaxEnd();
 
 	String format(Locale locale, String annotationName);
+
+	int indexOf(Appointment a1);
 	
 }
 

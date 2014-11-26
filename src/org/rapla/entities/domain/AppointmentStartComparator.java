@@ -23,9 +23,45 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
         if (a1.getStart().after(a2.getStart()))
             return 1;
 
-        @SuppressWarnings("unchecked")
-		int compareTo = ((Comparable)a1).compareTo( (Comparable)a2 );
-		return compareTo;
+        Reservation r1 = a1.getReservation();
+        Reservation r2 = a2.getReservation();
+        if ( r1 == null && r2 == null )
+        {
+            @SuppressWarnings("unchecked")
+            int compareTo = ((Comparable)a1).compareTo( (Comparable)a2 );
+            return compareTo;
+        }
+        if ( r1 == null)
+        {
+            return 1;
+        }
+        if ( r2 == null)
+        {
+            return -1;
+        }
+        if ( r1 == r2)
+        {
+            int i1 = r1.indexOf( a1);
+            int i2 = r1.indexOf( a2);
+            if ( i1 < i2)
+            {
+                return -1;
+            }
+            if ( i1 > i2)
+            {
+                return 1;
+            }
+            if ( i1 == i2)
+            {
+                throw new IllegalStateException(" appointment should have passed equal before ");
+            }
+        }
+        // compare the reservation ids
+        {
+            @SuppressWarnings("unchecked")
+            int compareTo = ((Comparable)r1).compareTo( (Comparable)r2 );
+            return compareTo;
+        }
     }
 
 }

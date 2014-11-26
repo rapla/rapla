@@ -35,6 +35,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
@@ -98,6 +99,18 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
     }
     
+    public Collection<Appointment> getSortedAppointments()
+    {
+        List<Appointment> sortedAppointments = new ArrayList<Appointment>( appointments);
+        Collections.sort(sortedAppointments, new AppointmentStartComparator() );
+        return sortedAppointments;
+    }
+    
+    public int indexOf(Appointment app)
+    {
+        int indexOf = appointments.indexOf( app);
+        return indexOf;
+    }
     
     public void addEntity(Entity entity) {
         checkWritable();
@@ -684,7 +697,24 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     	}
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
-
+    
+    @Override
+    public int compareTo(Object r2) {
+        if ( ! (r2 instanceof Reservation))
+        {
+            super.compareTo( r2);
+        }
+        int result = SimpleEntity.timezoneCompare( this,(Reservation)r2);
+        if ( result != 0)
+        {
+            return result;
+        }
+        else
+        {
+            return super.compareTo( result);
+        }
+    }
+    
     public String toString() {
         StringBuffer buf = new StringBuffer();
         buf.append(getRaplaType().getLocalName());

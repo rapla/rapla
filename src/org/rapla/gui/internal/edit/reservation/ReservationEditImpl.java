@@ -69,7 +69,7 @@ import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaFrame;
 import org.rapla.gui.toolkit.RaplaWidget;
 
-class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
+final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
 {
     ArrayList<ChangeListener> changeListenerList = new ArrayList<ChangeListener>();
     protected Reservation mutableReservation;

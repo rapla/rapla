@@ -459,6 +459,23 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     	return attributes;
     }
 
+    @Override
+    public int compareTo(Object r2) {
+        if ( ! (r2 instanceof DynamicType))
+        {
+            super.compareTo( r2);
+        }
+        int result = SimpleEntity.timezoneCompare( this,(DynamicType)r2);
+        if ( result != 0)
+        {
+            return result;
+        }
+        else
+        {
+            return super.compareTo( result);
+        }
+    }
+    
     public DynamicTypeImpl clone() {
         DynamicTypeImpl clone = new DynamicTypeImpl();
         super.deepClone(clone);

@@ -464,10 +464,17 @@ public class JsonServlet {
     }
 
     private void parsePostRequest(final ActiveCall call) throws UnsupportedEncodingException, IOException {
-        try {
-            HttpServletRequest request = call.httpRequest;
-            String attribute = (String)request.getAttribute(JSON_METHOD);
-            String postBody = readBody(call);
+        HttpServletRequest request = call.httpRequest;
+        String postBody = readBody(call);
+        parseRequest(call, request, postBody);
+        
+    }
+
+    private void parseRequest(final ActiveCall call, HttpServletRequest request, String postBody) {
+    
+        String attribute = (String)request.getAttribute(JSON_METHOD);
+        try
+        {
             final GsonBuilder gb = createGsonBuilder();
             if ( attribute != null)
             {

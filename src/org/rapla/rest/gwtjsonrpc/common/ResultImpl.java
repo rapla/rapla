@@ -43,15 +43,6 @@ public class ResultImpl<T> implements FutureResult<T>
 	}
 
 	@Override
-	public T get(long wait) throws Exception {
-		if ( ex != null)
-		{
-			throw ex;
-		}
-		return result;
-	}
-
-	@Override
 	public void get(AsyncCallback<T> callback) {
 		if ( ex != null)
 		{

@@ -321,21 +321,21 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	/** Implementation of appointment listener */
 	public void appointmentAdded(Collection<Appointment> appointments)
 	{
-		setAppointments(mutableReservation.getAppointments());
+		setAppointments(mutableReservation);
 		selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
 		updateBindings( appointments);
 	}
 	
 	public void appointmentChanged(Collection<Appointment> appointments)
 	{
-		setAppointments(mutableReservation.getAppointments());
+		setAppointments(mutableReservation);
 		updateBindings( appointments );
 	}
 	
 	public void appointmentRemoved(Collection<Appointment> appointments)
 	{
 		removeFromBindings( appointments);
-		setAppointments(mutableReservation.getAppointments());
+		setAppointments(mutableReservation);
 		selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
 		removeFromBindings( appointments);
 		List<Appointment> emptyList = Collections.emptyList();
@@ -439,7 +439,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		this.originalReservation = originalReservation;
 		this.mutableReservation = mutableReservation;
 		this.user = getUser();
-		setAppointments(mutableReservation.getAppointments());
+		setAppointments(mutableReservation);
 		Collection<Allocatable> allocatableList = getAllAllocatables();
 		completeModel.setAllocatables(allocatableList);
 		updateBindings( null);
@@ -475,10 +475,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		});
 	}
 	
-	private void setAppointments(Appointment[] appointmentArray)
+	private void setAppointments(Reservation reservation)
 	{
-		List<Appointment> sortedAppointments = new ArrayList<Appointment>(  Arrays.asList( appointmentArray));
-		Collections.sort(sortedAppointments, new AppointmentStartComparator() );
+	    //Appointment[] appointmentArray = reservation.getAppointments();
+		Collection<Appointment> sortedAppointments = reservation.getSortedAppointments();
+		
 		this.appointments = sortedAppointments.toArray( Appointment.EMPTY_ARRAY);
 		this.appointmentStrings = new String[appointments.length];
 		this.appointmentIndexStrings = new String[appointments.length];

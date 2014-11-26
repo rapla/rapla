@@ -58,8 +58,6 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
@@ -129,6 +127,8 @@ final public class RaplaMainContainer extends ContainerImpl
     
     RemoteConnectionInfo globalConnectInfo;
     CommandScheduler commandQueue;
+    I18nBundle i18n;
+    
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
         super( context, env.getStartupConfiguration(),logger );
         addContainerProvidedComponentInstance( StartupEnvironment.class, env);
@@ -251,7 +251,7 @@ final public class RaplaMainContainer extends ContainerImpl
         addContainerProvidedComponentInstance( PLUGIN_LIST, pluginNames);
         logger.info("Config=" + getStartupEnvironment().getConfigURL());
         
-        I18nBundle i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+        i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
         String version = i18n.getString( "rapla.version" );
         logger.info("Rapla.Version=" + version);
         version = i18n.getString( "rapla.build" );
@@ -326,7 +326,7 @@ final public class RaplaMainContainer extends ContainerImpl
                 FutureResult result;
                 try
                 {
-                    result = call(context,server, a, methodName, args, remoteConnectionInfo);
+                    result = call(server, a, methodName, args, remoteConnectionInfo);
                     if (callLogger.isDebugEnabled())
                     {
                         callLogger.debug("Calling " + server + " " + a.getName() + "."+methodName);
@@ -356,29 +356,15 @@ final public class RaplaMainContainer extends ContainerImpl
     
    
 
-    static private FutureResult call( RaplaContext context,URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
-         RaplaHTTPConnector connector = new RaplaHTTPConnector();
-         try {
-             FutureResult result =connector.call(service, methodName, args, connectionInfo);
-             return result;
-         } catch (RaplaConnectException ex) {
-             return new ResultImpl(getConnectError(context,ex, server.toString()));
-         } catch (Exception ex) {
-             return new ResultImpl(ex);
-         }
+    private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
+         String errorString = i18n.format("error.connect", server) + " ";
+         RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
+         FutureResult result =connector.call(service, methodName, args, connectionInfo);
+         return result;
+        
      }
 
-     static private RaplaConnectException getConnectError(RaplaContext context,RaplaConnectException ex2, String server) {
-         try
-         {
-             String message = context.lookup(RaplaComponent.RAPLA_RESOURCES).format("error.connect", server) + " " + ex2.getMessage();
-             return new RaplaConnectException(message);
-         }
-         catch (Exception ex)
-         {
-             return new RaplaConnectException("Connection error with server " + server + ": " + ex2.getMessage());
-         }
-     }
+    
      
 	     
 	        

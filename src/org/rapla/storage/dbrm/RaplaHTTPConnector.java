@@ -2,6 +2,7 @@ package org.rapla.storage.dbrm;
 
 import java.io.FileNotFoundException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -13,11 +14,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.rapla.components.util.Command;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.rest.client.HTTPJsonConnector;
+import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
@@ -34,9 +38,11 @@ import com.google.gson.JsonObject;
 public class RaplaHTTPConnector extends HTTPJsonConnector 
 {
     //private String clientVersion;
-    
-    public RaplaHTTPConnector() {
-    //    clientVersion = i18n.getString("rapla.version");
+    CommandScheduler scheduler;
+    String connectErrorString;
+    public RaplaHTTPConnector(CommandScheduler scheduler,String connectErrorString) {
+        this.scheduler = scheduler;
+        this.connectErrorString = connectErrorString;
     }
     
     private JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
@@ -155,110 +161,165 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
          }
          catch (SocketException ex)
          {   
-              throw new RaplaConnectException( ex);
+              throw new RaplaConnectException( connectErrorString + " " + ex.getMessage());
          }
          catch (UnknownHostException ex)
          {   
-             throw new RaplaConnectException( ex);
+             throw new RaplaConnectException( connectErrorString + " " + ex.getMessage());
          }
     	  catch (FileNotFoundException ex)
           {   
-              throw new RaplaConnectException(  ex);
+              throw new RaplaConnectException(  connectErrorString + " " + ex.getMessage());
           }
 	}
-    	
-    public FutureResult call(Class<?> service, String methodName, Object[] args,final RemoteConnectionInfo serverInfo) throws Exception
+	
+	 	
+    public FutureResult call(final Class<?> service, final String methodName, final Object[] args,final RemoteConnectionInfo serverInfo) 
 	{
         String serviceUrl =service.getName();
-        Method method = findMethod(service, methodName);
         String serverURL = serverInfo.getServerURL();
+        URL baseUrl;
+        try {
+            baseUrl = new URL(serverURL);
+        } catch (MalformedURLException e1) {
+            return new ResultImpl( e1);
+        }
+        final URL methodURL;
+        try {
+            methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
+        } catch (MalformedURLException e1) {
+            return new ResultImpl( e1);
+        }
+        final Method method;
+        try {
+            method = findMethod(service, methodName);
+        } catch (RaplaException e1) {
+            return new ResultImpl( e1);
+        }
+        
         if ( !serverURL.endsWith("/"))
         {
             serverURL+="/";
         }
         
-        URL baseUrl = new URL(serverURL);
-        URL methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
-        boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
-        JsonObject element = serializeCall(method, args);
-        FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
-        String accessToken = loginCmd ? null: serverInfo.getAccessToken();
-        JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);
-        JsonElement errorElement = resultMessage.get("error");
-        if ( errorElement != null)
-        {
-            RaplaException ex = deserializeExceptionObject(resultMessage);
-            // if authorization expired
-            String message = ex.getMessage();
-            boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !loginCmd;
-            if ( !b || authExpiredCommand == null )
-            {
-                throw ex;
-            }
-            // try to get a new one
-            String newAuthCode;
-            try {
-                newAuthCode = authExpiredCommand.get();
-            } catch (RaplaException e) {
-                throw e;
-            } catch (Exception e)
-            {
-                throw new RaplaException(e.getMessage(), e);
-            }
-            // try the same call again with the new result, this time with no auth code failed fallback
-            resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
-            
-        }
-	    JsonElement resultElement = resultMessage.get("result");
-	    Class resultType;
-	    Object resultObject;
-        ResultType resultTypeAnnotation = method.getAnnotation(ResultType.class);
-        if ( resultTypeAnnotation != null)
-        {
-            resultType = resultTypeAnnotation.value();
-            Class container = resultTypeAnnotation.container();
-            if ( List.class.equals(container) )
-            {
-                if ( !resultElement.isJsonArray())
-                {
-                    throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
-                }
-                resultObject = deserializeReturnList(resultType, resultElement.getAsJsonArray());
-            }
-            else if ( Set.class.equals(container) )
-            {
-                if ( !resultElement.isJsonArray())
-                {
-                   throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
-                }
-                resultObject = deserializeReturnSet(resultType, resultElement.getAsJsonArray());
-            }
-            else if ( Map.class.equals( container) )
-            {
-                if ( !resultElement.isJsonObject())
-                {
-                    throw new RaplaException("JsonObject expected as json result in  " + service + "." + methodName);
-                }
-                resultObject = deserializeReturnMap(resultType, resultElement.getAsJsonObject());
-            }
-            else if ( Object.class.equals( container) )
-            {
-                resultObject = deserializeReturnValue(resultType, resultElement);
-            }
-            else
-            {
-                throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
-            }
-        }
-        else
-        {
-            resultType = method.getReturnType();
-            resultObject = deserializeReturnValue(resultType, resultElement);
-        }
+        
+        final boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
+        final JsonObject element = serializeCall(method, args);
+        final FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
+        final String accessToken = loginCmd ? null: serverInfo.getAccessToken();
+        return new FutureResult() {
 
-		@SuppressWarnings("unchecked")
-		ResultImpl result = new ResultImpl(resultObject);
-		return result;
+            @Override
+            public Object get() throws Exception {
+                return call();
+            }
+
+            @Override
+            public void get(final AsyncCallback callback) {
+                scheduler.schedule( new Command()
+                {
+
+                    @SuppressWarnings("unchecked")
+                    public void execute()  {
+                        Object result;
+                        try {
+                            result = call();
+                        } catch (Exception e) {
+                         
+                            callback.onFailure( e);
+                            return;
+                        }
+                        callback.onSuccess(result);
+                    }
+                    
+                    
+                }, 0);
+                
+            }
+            private Object call() throws Exception
+            {
+                JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);        
+       
+                JsonElement errorElement = resultMessage.get("error");
+                if ( errorElement != null)
+                {
+                    RaplaException ex = deserializeExceptionObject(resultMessage);
+                    // if authorization expired
+                    String message = ex.getMessage();
+                    boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !loginCmd;
+                    if ( !b || authExpiredCommand == null )
+                    {
+                        throw ex;
+                    }
+                    // try to get a new one
+                    String newAuthCode;
+                    try {
+                        newAuthCode = authExpiredCommand.get();
+                    } catch (RaplaException e) {
+                        throw e;
+                    } catch (Exception e)
+                    {
+                        throw new RaplaException(e.getMessage(), e);
+                    }
+                    // try the same call again with the new result, this time with no auth code failed fallback
+                    resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                    
+                }
+                JsonElement resultElement = resultMessage.get("result");
+                Class resultType;
+                Object resultObject;
+                ResultType resultTypeAnnotation = method.getAnnotation(ResultType.class);
+                if ( resultTypeAnnotation != null)
+                {
+                    resultType = resultTypeAnnotation.value();
+                    Class container = resultTypeAnnotation.container();
+                    if ( List.class.equals(container) )
+                    {
+                        if ( !resultElement.isJsonArray())
+                        {
+                            throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                        }
+                        resultObject = deserializeReturnList(resultType, resultElement.getAsJsonArray());
+                    }
+                    else if ( Set.class.equals(container) )
+                    {
+                        if ( !resultElement.isJsonArray())
+                        {
+                           throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                        }
+                        resultObject = deserializeReturnSet(resultType, resultElement.getAsJsonArray());
+                    }
+                    else if ( Map.class.equals( container) )
+                    {
+                        if ( !resultElement.isJsonObject())
+                        {
+                            throw new RaplaException("JsonObject expected as json result in  " + service + "." + methodName);
+                        }
+                        resultObject = deserializeReturnMap(resultType, resultElement.getAsJsonObject());
+                    }
+                    else if ( Object.class.equals( container) )
+                    {
+                        resultObject = deserializeReturnValue(resultType, resultElement);
+                    }
+                    else
+                    {
+                        throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                    }
+                }
+                else
+                {
+                    resultType = method.getReturnType();
+                    resultObject = deserializeReturnValue(resultType, resultElement);
+                }
+                return resultObject;
+            }
+        };
+        
+//       
+//
+//		@SuppressWarnings("unchecked")
+//		ResultImpl result = new ResultImpl(resultObject);
+//		return result;
     }
 
     public Method findMethod(Class<?> service, String methodName) throws RaplaException {

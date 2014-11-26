@@ -174,8 +174,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         if ( id != null) {
             return id.hashCode();
         } else {
-            throw new IllegalStateException("Id not set. You must set an Id before you can use the hashCode method."
-                                            );
+            //super.hashCode();
+            throw new IllegalStateException("Id not set. You must set an Id before you can use the hashCode method." );
         }
     }
 
@@ -284,6 +284,37 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
        	 	return 1;
         }
         return id1.compareTo( id2 );
+    }
+
+    public static int timezoneCompare(Timestamp t1, Timestamp t2) {
+        if ( t1 == t2 || t1.equals( t2) )
+        {
+            return 0;
+        }
+        Date d1 = t1.getCreateTime();
+        Date d2 = t2.getCreateTime();
+        if ( d1 == null && d2 == null)
+        {
+            return 0;
+        }
+        if ( d1 == null)
+        {
+            return 1;
+        }
+        if ( d2 == null)
+        {
+            return -1;
+        }
+        if ( d1.before( d2))
+        {
+            return -1;
+        }
+        if ( d1.after( d2))
+        {
+            return 1;
+        }
+        return 0;
+        
     }
 
 }

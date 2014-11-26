@@ -1246,7 +1246,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	private void setNew(Entity entity,User user) throws RaplaException {
-		setNew(Collections.singleton(entity), entity.getRaplaType(), user);
+	    ArrayList<Entity> arrayList = new ArrayList<Entity>();
+	    arrayList.add( entity );
+	    setNew(arrayList, entity.getRaplaType(), user);
 	}
 
 
