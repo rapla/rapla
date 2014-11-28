@@ -472,7 +472,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
         else
         {
-            return super.compareTo( result);
+            return super.compareTo( r2);
         }
     }
     
