@@ -41,6 +41,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 
 public interface StorageOperator extends EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;
@@ -116,11 +117,11 @@ public interface StorageOperator extends EntityResolver {
     
     boolean supportsActiveMonitoring();
 
-    Map<Allocatable,Collection<Appointment>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException;
+    FutureResult<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
     
-    Map<Allocatable, Map<Appointment,Collection<Appointment>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException;
+    FutureResult<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException;
 
-    Date getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException; 
+    FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour); 
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 

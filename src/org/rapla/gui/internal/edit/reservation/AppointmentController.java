@@ -82,6 +82,7 @@ import org.rapla.gui.toolkit.MonthChooser;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaWidget;
 import org.rapla.gui.toolkit.WeekdayChooser;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent
@@ -1469,7 +1470,8 @@ public class AppointmentController extends RaplaGUIComponent
 		try
 		{
 			CalendarOptions options = getCalendarOptions();
-			Date newStart = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment,options );
+			FutureResult<Date> nextAllocatableDate = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment,options );
+            Date newStart = nextAllocatableDate.get();
 			if ( newStart != null)
 			{
 				Appointment oldState = ((AppointmentImpl) appointment).clone();
@@ -1483,7 +1485,7 @@ public class AppointmentController extends RaplaGUIComponent
 				showWarning("No free appointment found", getMainComponent());
 			}
 		} 
-		catch (RaplaException ex)
+		catch (Exception ex)
 		{
 			showException( ex, getMainComponent());
 		}

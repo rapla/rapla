@@ -103,6 +103,8 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -2229,8 +2231,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
 
 	@Override
-	public Map<Allocatable,Collection<Appointment>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException {
-		Lock readLock = readLock();
+	public FutureResult<Map<Allocatable,Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) {
+		Lock readLock;
+        try {
+            readLock = readLock();
+        } catch (RaplaException e) {
+            return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(e);
+        }
 		Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
 		try
 		{
@@ -2247,20 +2254,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			Collection<Appointment> list = entry.getValue().keySet();
 			map.put( alloc, list);
 		}
-		return map;
+		return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(map);
 	}
 	
 	@Override
-    public Map<Allocatable, Map<Appointment,Collection<Appointment>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException
+    public FutureResult<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException
     {
-		Lock readLock = readLock();
 		try
 		{
-			return getAllocatableBindings( allocatables, appointments, ignoreList, false);
-	   	}
-		finally
+    	    Lock readLock = readLock();
+    		try
+    		{
+    			Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings( allocatables, appointments, ignoreList, false);
+                return new ResultImpl<Map<Allocatable, Map<Appointment, Collection<Appointment>>>>(allocatableBindings);
+    	   	}
+    		finally
+    		{
+    			unlock( readLock );
+    		}
+		}
+		catch (Exception e)
 		{
-			unlock( readLock );
+		    return new ResultImpl<Map<Allocatable, Map<Appointment, Collection<Appointment>>>>( e);
 		}
     }
 	
@@ -2299,45 +2314,52 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 	
 	@Override
-    public Date getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment,Collection<Reservation> ignoreList,Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException {
-    	Lock readLock = readLock();
-		try
-		{
-			Appointment newState = appointment;
-			Date firstStart = appointment.getStart();
-			boolean startDateExcluded = isExcluded(excludedDays, firstStart);
-			boolean wholeDay = appointment.isWholeDaysSet();
-			boolean inWorktime = inWorktime(appointment, worktimeStartMinutes,worktimeEndMinutes);
-			if ( rowsPerHour == null || rowsPerHour <=1)
-			{
-				rowsPerHour = 1;
-			}
-			for ( int i=0;i<366*24 *rowsPerHour ;i++)
-			{
-				newState = ((AppointmentImpl) newState).clone();
-				Date start = newState.getStart();
-				long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHour );
-				Date newStart = new Date(start.getTime() + millisToAdd);
-				if (!startDateExcluded &&  isExcluded(excludedDays, newStart))
-				{
-					continue;
-				}
-				newState.move( newStart );
-				if ( !wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
-				{
-					continue;
-				}
-				if  (!isAllocated(allocatables, newState, ignoreList))
-				{
-					return newStart;
-				}
-			}
-			return null;
-		}
-		finally
-		{
-			unlock( readLock );
-		}
+    public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment,Collection<Reservation> ignoreList,Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour)  {
+    	try
+    	{
+    	    Lock readLock = readLock();
+    		try
+    		{
+    			Appointment newState = appointment;
+    			Date firstStart = appointment.getStart();
+    			boolean startDateExcluded = isExcluded(excludedDays, firstStart);
+    			boolean wholeDay = appointment.isWholeDaysSet();
+    			boolean inWorktime = inWorktime(appointment, worktimeStartMinutes,worktimeEndMinutes);
+    			if ( rowsPerHour == null || rowsPerHour <=1)
+    			{
+    				rowsPerHour = 1;
+    			}
+    			for ( int i=0;i<366*24 *rowsPerHour ;i++)
+    			{
+    				newState = ((AppointmentImpl) newState).clone();
+    				Date start = newState.getStart();
+    				long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHour );
+    				Date newStart = new Date(start.getTime() + millisToAdd);
+    				if (!startDateExcluded &&  isExcluded(excludedDays, newStart))
+    				{
+    					continue;
+    				}
+    				newState.move( newStart );
+    				if ( !wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
+    				{
+    					continue;
+    				}
+    				if  (!isAllocated(allocatables, newState, ignoreList))
+    				{
+    					return new ResultImpl<Date>(newStart);
+    				}
+    			}
+    			return new ResultImpl<Date>( (Date)null);
+    		}
+    		finally
+    		{
+    			unlock( readLock );
+    		}
+    	} catch (Exception ex)
+    	{
+    	   return new ResultImpl<Date>(ex); 
+    	}
+    	
     }
 
 	private boolean inWorktime(Appointment appointment,
@@ -2366,9 +2388,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	private boolean isAllocated(Collection<Allocatable> allocatables,
-			Appointment appointment, Collection<Reservation> ignoreList) throws RaplaException 
+			Appointment appointment, Collection<Reservation> ignoreList) throws Exception 
 	{
-		Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindings(allocatables, Collections.singleton( appointment) , ignoreList);
+		FutureResult<Map<Allocatable, Collection<Appointment>>> firstAllocatableBindingsResult = getFirstAllocatableBindings(allocatables, Collections.singleton( appointment) , ignoreList);
+        Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = firstAllocatableBindingsResult.get();
 		for (Map.Entry<Allocatable, Collection<Appointment>> entry: firstAllocatableBindings.entrySet())
 		{
 			if (entry.getValue().size() > 0)

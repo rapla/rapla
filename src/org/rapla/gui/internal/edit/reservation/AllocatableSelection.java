@@ -89,7 +89,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -367,7 +366,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			{
 				//      System.out.println("getting allocated resources");
 				
-				Map<Allocatable,  Collection<Appointment>> allocatableBindings = getQuery().getAllocatableBindings(allAllocatables,appointments);
+				Map<Allocatable,  Collection<Appointment>> allocatableBindings = getQuery().getAllocatableBindings(allAllocatables,appointments).get();
 				removeFromBindings( appointments);
 				for ( Map.Entry<Allocatable,  Collection<Appointment>> entry: allocatableBindings.entrySet())
 				{
@@ -386,7 +385,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			completeModel.treeDidChange();
 			selectedModel.treeDidChange();
 		}
-		catch (RaplaException ex)
+		catch (Exception ex)
 		{
 			showException(ex, content);
 		}

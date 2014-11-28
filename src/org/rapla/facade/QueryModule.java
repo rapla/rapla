@@ -26,6 +26,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 /** Methods for quering the various entities of the backend
 */
 
@@ -94,7 +95,7 @@ public interface QueryModule
 
     
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
-    public Map<Allocatable, Collection<Appointment>> getAllocatableBindings(Collection<Allocatable> allocatables,Collection<Appointment> forAppointment) throws RaplaException;
+    public FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,Collection<Appointment> forAppointment);
     
     /** returns all allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment 
      * @deprecated use {@link #getAllocatableBindings(Collection,Collection)} instead
@@ -143,7 +144,7 @@ public interface QueryModule
 	
 	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException;
 
-	Date getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
+	FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 
 
 }

@@ -1280,10 +1280,10 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                checkAuthentified();
 	            	List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
 	            	Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-	            	Date result = operator.getNextAllocatableDate(allocatables, appointment, ignoreList,  worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
+	            	Date result = operator.getNextAllocatableDate(allocatables, appointment, ignoreList,  worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour).get();
 	                return new ResultImpl<Date>( result);
 	        	}
-	        	catch (RaplaException ex )
+	        	catch (Exception ex )
 	        	{
 	        		return new ResultImpl<Date>(ex );
 	        	}
@@ -1305,7 +1305,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
 	                Collection<Reservation> ignoreList = resolveReservations(reservationIds);
 	                List<Appointment> asList = cast(appointments);
-					Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
+					Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).get();
 					Map<String,List<String>> result = new LinkedHashMap<String,List<String>>();
 	                for ( Allocatable alloc:bindings.keySet())
 	                {
@@ -1329,7 +1329,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                }
 	                return new ResultImpl<BindingMap>(new BindingMap(result));
 	        	}
-	        	catch (RaplaException ex )
+	        	catch (Exception ex )
 	        	{
 	        		return new ResultImpl<BindingMap>(ex);
 	        	}
@@ -1353,7 +1353,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        		List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
 	                Collection<Reservation> ignoreList = resolveReservations(reservationIds);
 					List<Appointment> asList = cast(appointments);
-					Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList);
+					Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).get();
 					for (Allocatable alloc:bindings.keySet())
 					{
 						Map<Appointment,Collection<Appointment>> appointmentBindings = bindings.get( alloc);
@@ -1375,7 +1375,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 					}
 	                return new ResultImpl<List<ReservationImpl>>(new ArrayList<ReservationImpl>(result));
 				}
-				catch (RaplaException ex)
+				catch (Exception ex)
 				{
 					return new ResultImpl<List<ReservationImpl>>(ex);
 				}

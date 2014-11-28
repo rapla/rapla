@@ -88,6 +88,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
@@ -693,7 +694,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    	Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
             Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
             Collection<Reservation> ignoreList = Collections.singleton( reservation );
-            Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
+            FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
+            Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
+            try {
+                allocatableBindings = allAllocatableBindings.get();
+            } catch (RaplaException e) {
+                throw (RaplaException) e;
+            }catch (Exception e) {
+                throw new RaplaException(e.getMessage(), e);
+            }
             ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
             for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
 			{
@@ -796,7 +805,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		List<Allocatable> allocatableList = Arrays.asList(getAllocatables());
 		List<Allocatable> result = new ArrayList<Allocatable>();
 		
-		Map<Allocatable, Collection<Appointment>> bindings = getAllocatableBindings( allocatableList, Collections.singletonList(forAppointment));
+		FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = getAllocatableBindings( allocatableList, Collections.singletonList(forAppointment));
+        Map<Allocatable, Collection<Appointment>> bindings;
+        try {
+            bindings = allocatableBindings.get();
+        } catch (RaplaException e) {
+            throw (RaplaException) e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage());
+        }
 		for (Map.Entry<Allocatable, Collection<Appointment>> entry: bindings.entrySet())
 		{
 			Collection<Appointment> appointments = entry.getValue();
@@ -810,7 +827,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	}
 	
-	public Map<Allocatable,Collection<Appointment>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments) throws RaplaException {
+	public FutureResult<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
 		Collection<Reservation> ignoreList = new HashSet<Reservation>();
 		if ( appointments != null)
 		{
@@ -825,8 +842,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
 	}
-
-	public Date getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options) throws RaplaException {
+	
+	
+	public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
 		int worktimeStartMinutes = options.getWorktimeStartMinutes();
 		int worktimeEndMinutes = options.getWorktimeEndMinutes();
 		Integer[] excludeDays = options.getExcludeDays().toArray( new Integer[] {});
