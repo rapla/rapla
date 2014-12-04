@@ -1121,20 +1121,52 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	        String userId = patch.getUserId();
             PreparedStatement stmt = null;
 	        try {
-	            String deleteSqlWithRole = deleteSql + " and role=?";
-	            stmt = con.prepareStatement(deleteSqlWithRole);
-	            for ( String role: patch.getRemovedEntries())
+	            
+	            final String deleteSqlWithRole;
+                int count = 0;
+	            if ( userId != null)
 	            {
-	                setId(stmt, 1, userId);
-	                setString(stmt,2,role);
-	                stmt.addBatch();
+	                deleteSqlWithRole = deleteSql + " and role=?";
+	                stmt = con.prepareStatement(deleteSqlWithRole);
+	                for ( String role: patch.getRemovedEntries())
+	                {
+	                    setId(stmt, 1, userId);
+	                    setString(stmt,2,role);
+	                    stmt.addBatch();
+	                    count++;
+	                }
+	                for ( String role: patch.keySet())
+	                {
+	                    setId(stmt, 1, userId);
+	                    setString(stmt,2,role);
+	                    stmt.addBatch();
+	                    count++;
+	                }
 	            }
-	            for ( String role: patch.keySet())
-                {
-                    setId(stmt, 1, userId);
-                    setString(stmt,2,role);
-                    stmt.addBatch();
-                }
+	            else
+	            {
+	                deleteSqlWithRole = "delete from " + tableName + " where user_id IS null and role=?";
+                    stmt = con.prepareStatement(deleteSqlWithRole);
+                    for ( String role: patch.getRemovedEntries())
+                    {
+                        //setId(stmt, 1, userId);
+                        setString(stmt,1,role);
+                        stmt.addBatch();
+                        count++;
+                    }
+                    for ( String role: patch.keySet())
+                    {
+                        //setId(stmt, 1, userId);
+                        setString(stmt,1,role);
+                        stmt.addBatch();
+                        count++;
+                    }
+	            }
+	            
+	            if ( count > 0)
+	            {
+	                stmt.executeBatch();
+	            } 
 	        } finally {
 	            if (stmt!=null)
 	                stmt.close();
