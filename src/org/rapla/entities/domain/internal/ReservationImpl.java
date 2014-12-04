@@ -711,7 +711,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         else
         {
-            return super.compareTo( result);
+            return super.compareTo( r2);
         }
     }
     
