@@ -576,6 +576,7 @@ class ConflictFinder {
 				boolean isRemoved = !conflictListAfter.contains(conflict);
 				if  ( isRemoved )
 				{
+				    cache.fillConflictDisableInformation( evt.getUser(), conflict);
 					evt.addOperation( new UpdateResult.Remove(conflict));
 				}
 			}
@@ -584,6 +585,7 @@ class ConflictFinder {
 				boolean isNew = !conflictListBefore.contains(conflict);
 				if  ( isNew )
 				{
+				    cache.fillConflictDisableInformation( evt.getUser(), conflict);
 					evt.addOperation( new UpdateResult.Add(conflict));
 					added.add( conflict);
 				}
@@ -654,6 +656,7 @@ class ConflictFinder {
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
+    		    cache.fillConflictDisableInformation( evt.getUser(), newConflict);
     			evt.addOperation( new UpdateResult.Change( newConflict, oldConflict));
     		}
     	}

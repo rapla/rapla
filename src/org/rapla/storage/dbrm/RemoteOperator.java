@@ -307,7 +307,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     synchronized public void refresh() throws RaplaException {
-        String clientRepoVersion = getClientRepoVersion();
+        String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
     	try
         {
@@ -330,7 +330,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
     
     synchronized public void refreshAsync( final AsyncCallback<VoidResult> callback)  {
-        String clientRepoVersion = getClientRepoVersion();
+        String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         serv.refresh( clientRepoVersion).get( new AsyncCallback<UpdateEvent>() {
 
@@ -365,7 +365,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
 
-    private String getClientRepoVersion() {
+    private String getLastSyncedTime() {
         return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
     }
  

@@ -1428,7 +1428,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
 
     @Override
     void insertAll() throws SQLException, RaplaException {
-     //   insert( cache.getDisabledConflicts());
+        insert( cache.getDisabledConflicts());
     }
     
     
@@ -1460,11 +1460,14 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     
     @Override
     protected int write(PreparedStatement stmt,Conflict conflict) throws SQLException, RaplaException {
-        setId(stmt, 1, conflict.getAllocatableId());
+        String allocatableId = conflict.getAllocatableId();
+        setId(stmt, 1, allocatableId);
         setId(stmt, 2, conflict.getAppointment1());
         setId(stmt, 3, conflict.getAppointment2());
-        setInt(stmt, 4, conflict.isAppointment1Enabled() ? 1:0);
-        setInt(stmt, 5, conflict.isAppointment2Enabled() ? 1:0);
+        boolean appointment1Enabled = conflict.isAppointment1Enabled();
+        setInt(stmt, 4, appointment1Enabled ? 1:0);
+        boolean appointment2Enabled = conflict.isAppointment2Enabled();
+        setInt(stmt, 5, appointment2Enabled ? 1:0);
         setTimestamp(stmt, 6, getCurrentTimestamp() );
         stmt.addBatch();
         return 1;

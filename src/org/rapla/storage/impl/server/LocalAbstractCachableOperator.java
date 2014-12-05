@@ -1394,13 +1394,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		UpdateResult result = createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		//Date today = getCurrentTimestamp();
 		Date today = today();
-		List<Conflict> disabledConflicts;
+		List<Conflict> conflictsToDelete;
 		{
     		Lock readLock = readLock();
     		try
     		{
     			conflictFinder.removeOldConflicts(result, today);
-                disabledConflicts = getConflictsToDeleteFromCache(result);
+                conflictsToDelete = getConflictsToDeleteFromCache(result);
         	}
         	finally
         	{
@@ -1408,13 +1408,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         	}
 		}
 		
-		if ( disabledConflicts.size() >0)
+		if ( conflictsToDelete.size() >0)
 		{
 		    Lock writeLock = writeLock();
 	        try
 	        {
-	            removeConflictsFromCache(disabledConflicts);
-	            removeConflictsFromDatabase(disabledConflicts);
+	            removeConflictsFromCache(conflictsToDelete);
+	            removeConflictsFromDatabase(conflictsToDelete);
 	        }
 	        finally
 	        {
@@ -1473,6 +1473,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 continue;
             }
+            
             Conflict conflict = (Conflict)change.getNew();
             if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
             {

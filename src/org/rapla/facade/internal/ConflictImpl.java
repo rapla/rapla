@@ -728,13 +728,15 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 	}
 
     public boolean checkEnabled() {
-        boolean enabledAppointment1 = isAppointment1Enabled();
-        boolean enabledAppointment2 = isAppointment2Enabled();
-        if ( enabledAppointment1 && isAppointment1Editable() )
+        boolean appointment1Enabled = isAppointment1Enabled();
+        boolean appointment2Enabled = isAppointment2Enabled();
+        boolean appointment1Editable = isAppointment1Editable();
+        boolean appointment2Editable = isAppointment2Editable();
+        if ( appointment1Enabled && appointment1Editable )
         {
             return true;
         }
-        if ( enabledAppointment2 && isAppointment2Editable() )
+        if ( appointment2Enabled && appointment2Editable )
         {
             return true;
         }

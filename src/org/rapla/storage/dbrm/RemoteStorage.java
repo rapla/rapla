@@ -59,7 +59,7 @@ public interface RemoteStorage extends RemoteJsonService {
     FutureResult<UpdateEvent> getEntityRecursive(String... id);
 
     @ResultType(UpdateEvent.class)
-    FutureResult<UpdateEvent> refresh(String clientRepoVersion);
+    FutureResult<UpdateEvent> refresh(String lastSyncedTime);
     
 	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> restartServer();

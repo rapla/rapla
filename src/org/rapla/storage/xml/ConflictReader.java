@@ -48,10 +48,10 @@ public class ConflictReader extends RaplaXMLReader
         } catch (RaplaException e) {
             throw new RaplaSAXParseException(e.getMessage(), e);
         }
-        boolean enabledAppointment1 = parseBoolean("enabledAppointment1");
+        boolean enabledAppointment1 = getString(atts,"appointment1enabled", "true").equalsIgnoreCase("true");
         conflict.setAppointment1Enabled(enabledAppointment1);
-        boolean enabledAppointment2 = parseBoolean("enabledAppointment2");
-        conflict.setAppointment1Enabled(enabledAppointment2);
+        boolean enabledAppointment2 = getString(atts,"appointment2enabled", "true").equalsIgnoreCase("true");
+        conflict.setAppointment2Enabled(enabledAppointment2);
         add( conflict );
 
     }

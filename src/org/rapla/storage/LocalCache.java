@@ -390,8 +390,11 @@ public class LocalCache implements EntityResolver
             ((ConflictImpl)conflict).setAppointment2Enabled( disabledConflict.isAppointment2Enabled() );
         }
         EntityResolver cache = this;
-        ((ConflictImpl)conflict).setAppointment1Editable( ConflictImpl.canModifyEvent(conflict.getReservation1(), user, cache));
-        ((ConflictImpl)conflict).setAppointment2Editable( ConflictImpl.canModifyEvent(conflict.getReservation2(), user, cache));
+        if ( user != null)
+        {
+            ((ConflictImpl)conflict).setAppointment1Editable( ConflictImpl.canModifyEvent(conflict.getReservation1(), user, cache));
+            ((ConflictImpl)conflict).setAppointment2Editable( ConflictImpl.canModifyEvent(conflict.getReservation2(), user, cache));
+        }
     }
 
 	
@@ -419,5 +422,18 @@ public class LocalCache implements EntityResolver
     public Collection<DynamicType> getDynamicTypes() {
 		return (Collection)dynamicTypes.values();
 	}
+
+    public Iterable<Conflict> getDisabledConflicts() {
+        List<Conflict> disabled = new ArrayList<Conflict>();
+        for ( Conflict conflict:getConflicts())
+        {
+            if ( conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
+            {
+                continue;
+            }
+            disabled.add( conflict);
+        }
+        return disabled;
+    }
 
 }
