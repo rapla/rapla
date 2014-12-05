@@ -44,9 +44,33 @@ implements
     protected List<T> objectList;
     protected List<EditField> fields = Collections.emptyList();
 
+    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    
     public AbstractEditUI(RaplaContext context) 
     {
         super(context);
+    }
+    
+    public void addChangeListener(ChangeListener listener) {
+        listenerList.add(listener);
+    }
+
+    public void removeChangeListener(ChangeListener listener) {
+        listenerList.remove(listener);
+    }
+
+    public ChangeListener[] getChangeListeners() {
+        return listenerList.toArray(new ChangeListener[]{});
+    }
+
+    protected void fireContentChanged( ) {
+        if (listenerList.size() == 0)
+            return;
+        ChangeEvent evt = new ChangeEvent(this);
+        ChangeListener[] listeners = getChangeListeners();
+        for (int i = 0;i<listeners.length; i++) {
+            listeners[i].stateChanged(evt);
+        }
     }
 
     final protected void setFields(Collection<? extends EditField> fields) {
@@ -149,6 +173,7 @@ implements
    
 
     public void stateChanged(ChangeEvent evt) {
+        fireContentChanged();
     }
 
 }

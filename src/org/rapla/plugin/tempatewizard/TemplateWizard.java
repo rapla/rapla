@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -51,8 +52,8 @@ import org.rapla.gui.toolkit.RaplaMenuItem;
 */
 public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener, ModificationListener
 {
-	Map<Component,String> componentMap = new HashMap<Component, String>();
-	Collection<String> templateNames;
+	Map<Component,Allocatable> componentMap = new HashMap<Component, Allocatable>();
+	Collection<Allocatable> templateNames;
     public TemplateWizard(RaplaContext context) throws RaplaException{
         super(context);
         getUpdateModule().addModificationListener( this);
@@ -72,8 +73,8 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
         }
     }
 
-    private Collection<String> updateTemplateNames() throws RaplaException {
-        return templateNames = getQuery().getTemplateNames();
+    private Collection<Allocatable> updateTemplateNames() throws RaplaException {
+        return templateNames = getQuery().getTemplates();
     }
 
     public MenuElement getMenuElement() {
@@ -92,7 +93,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( getIcon("icon.new"));
 			item.addActionListener( this);
-			String template = templateNames.iterator().next();
+			Allocatable template = templateNames.iterator().next();
 			componentMap.put( item, template);
 			element = item;
 		}
@@ -104,8 +105,23 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			item.setIcon( getIcon("icon.new"));
 			@SuppressWarnings("unchecked")
             Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(getRaplaLocale().getLocale());
+			Map<String,Collection<Allocatable>> templateMap = new HashMap<String,Collection<Allocatable>>();
+			
 			Set<String> templateSet = new TreeSet<String>(collator);
-			templateSet.addAll( templateNames );
+			Locale locale = getLocale();
+			for ( Allocatable template:templateNames)
+			{
+			    String name = template.getName( locale);
+                templateSet.add( name );
+			    Collection<Allocatable> collection = templateMap.get( name);
+			    if ( collection == null)
+			    {
+			        collection = new ArrayList<Allocatable>();
+			        templateMap.put( name, collection);
+			    }
+			    collection.add( template);
+			}
+			
 			SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
 			if ( templateSet.size() >  10)
 			{
@@ -138,13 +154,13 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 						int millisToScroll = 40;
 						MenuScroller.setScrollerFor( subMenu, maxItems , millisToScroll);
 					}
-					addTemplates(subMenu, set);
+					addTemplates(subMenu, set, templateMap);
 					item.add( subMenu);
 				}
 			}
 			else
 			{
-				addTemplates( item, templateSet);
+				addTemplates( item, templateSet, templateMap);
 			}
 			element = item;
 		}
@@ -152,14 +168,21 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	}
 
 	public void addTemplates(RaplaMenu item,
-			Set<String> templateSet) {
+			Set<String> templateSet, Map<String,Collection<Allocatable>> templateMap) {
+	    Locale locale = getLocale();
+        
 		for ( String templateName:templateSet)
 		{
-			RaplaMenuItem newItem = new RaplaMenuItem(templateName);
-			componentMap.put( newItem, templateName);
-			newItem.setText( templateName );
-			item.add( newItem);
-			newItem.addActionListener( this);
+		    Collection<Allocatable> collection = templateMap.get( templateName);
+		    // there could be multiple templates with the same name
+		    for ( Allocatable template:collection)
+		    {
+    			RaplaMenuItem newItem = new RaplaMenuItem(template.getName( locale));
+    			componentMap.put( newItem, template);
+    			newItem.setText( templateName );
+    			item.add( newItem);
+    			newItem.addActionListener( this);
+		    }
 		}
 	}
     
@@ -227,7 +250,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 			CalendarModel model = getService(CalendarModel.class);
 	    	Date beginn = getStartDate( model);
 	    	Object source = e.getSource();
-	    	String templateName = componentMap.get( source);
+	    	Allocatable templateName = componentMap.get( source);
 	    	List<Reservation> newReservations;
        		Collection<Reservation> reservations = getQuery().getTemplateReservations(templateName);
        		if (reservations.size() > 0)

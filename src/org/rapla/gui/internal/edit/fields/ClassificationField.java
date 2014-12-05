@@ -25,6 +25,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -58,6 +60,13 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	public ClassificationField(RaplaContext context)  {
 		super(context);
 		editUI = new ClassificationEditUI(context);
+		editUI.addChangeListener( new ChangeListener() {
+            
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                fireContentChanged();
+            }
+        });
 		setFieldName("type");
 		content.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
 	}
@@ -186,6 +195,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.add(scrollPane, BorderLayout.CENTER);
 	}
 
+	
 
 	// The DynamicType has changed
 	public void actionPerformed(ActionEvent event) {

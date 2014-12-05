@@ -76,7 +76,6 @@ public class AttributeEdit extends RaplaGUIComponent
 
     Listener listener = new Listener();
     DefaultListModel model = new DefaultListModel();
-    boolean editKeys;
     
     public AttributeEdit(RaplaContext context) throws RaplaException {
         super( context);
@@ -88,7 +87,6 @@ public class AttributeEdit extends RaplaGUIComponent
 
         listEdit.getComponent().setBorder( BorderFactory.createTitledBorder( new EmptyLineBorder(),getString("attributes")) );
         setRender();
-        constraintPanel.setEditKeys( false );
     }
 
 	@SuppressWarnings("unchecked")
@@ -103,9 +101,7 @@ public class AttributeEdit extends RaplaGUIComponent
                                                               boolean cellHasFocus) {
                     Attribute a = (Attribute) value;
                     value = a.getName(getRaplaLocale().getLocale());
-                    if (editKeys) {
-                        value = "{" + a.getKey() + "} " + value;
-                    }
+                    value = "{" + a.getKey() + "} " + value;
                     value = (index + 1) +") " + value;
                     return super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus);
                }
@@ -195,11 +191,6 @@ public class AttributeEdit extends RaplaGUIComponent
         Attribute attribute =  listEdit.getSelectedValue();
         constraintPanel.mapTo (attribute );
         model.set( model.indexOf( attribute ), attribute );
-    }
-
-    public void setEditKeys(boolean editKeys) {
-        constraintPanel.setEditKeys(editKeys);
-        this.editKeys = editKeys;
     }
 
     private String createNewKey() {
@@ -454,11 +445,6 @@ class DefaultConstraints extends AbstractEditField
         }
         tabSelect.setModel( model );
 	}
-
-    public void setEditKeys(boolean editKeys) {
-        keyLabel.setVisible( editKeys );
-        key.getComponent().setVisible( editKeys );
-    }
 
     public JComponent getComponent() {
         return panel;

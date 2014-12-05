@@ -67,8 +67,8 @@ public interface RemoteStorage extends RemoteJsonService {
 	@ResultType(UpdateEvent.class)
 	FutureResult<UpdateEvent> dispatch(UpdateEvent event);
     
-	@ResultType(value=String.class,container=List.class)
-	FutureResult<List<String>> getTemplateNames();
+//	@ResultType(value=String.class,container=List.class)
+//	FutureResult<List<String>> getTemplateNames();
     
 	@ResultType(value=String.class,container=List.class)
 	FutureResult<List<String>> createIdentifier(String raplaType, int count);

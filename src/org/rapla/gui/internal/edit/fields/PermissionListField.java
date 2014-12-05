@@ -138,7 +138,11 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 		for (PermissionContainer container :list)
 		{
 			Collection<Permission> permissionList = container.getPermissionList();
-			permissions.addAll(permissionList);
+			for ( Permission p:permissionList)
+			{
+			    permissions.add(p);    
+			}
+			
 			if ( container instanceof DynamicType)
 			{
 			    eventTypeList = ((DynamicType) container).getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE).equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
@@ -174,7 +178,8 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 			public Component getListCellRendererComponent(JList list,
 					Object value, int index, boolean isSelected,
 					boolean cellHasFocus) {
-				Permission p = (Permission) value;
+			    
+			    Permission p = (Permission) value;
 				if (p.getUser() != null) {
 					value = getString("user") + " " + p.getUser().getUsername();
 				} else if (p.getGroup() != null) {
@@ -219,11 +224,20 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 		return false;
 	}
 	private void removePermission() {
-		for (Permission permission:listEdit.getSelectedValues())
-		{
-			model.removeElement(permission);
-		}
-		listEdit.getList().requestFocus();
+	    try
+        {
+            listenersEnabled = false;
+    		for (Permission permission:listEdit.getSelectedValues())
+    		{
+    			model.removeElement(permission);
+    		}
+    		selectedPermission= null;
+            listEdit.getList().requestFocus();
+        }
+	    finally
+	    {
+	        listenersEnabled = true;
+	    }
 	}
 
 	@SuppressWarnings("unchecked")
@@ -243,18 +257,35 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	    {
 	        permission.setAccessLevel( permissionLevels.iterator().next());
 	    }
-		model.addElement(permission);
-		JList list = listEdit.getList();
-		list.setSelectedIndex( model.size() -1);
-		
+        try
+        {
+            listenersEnabled = false;
+            permissionField.setValue( permission);
+            model.addElement(permission);
+            JList list = listEdit.getList();
+            list.setSelectedIndex( model.size() -1);
+            selectedPermission= permission;
+        }
+        finally
+        {
+            listenersEnabled = true;
+        }
 	}
 
+	boolean listenersEnabled = true;
+	
 	class Listener implements ActionListener, ChangeListener {
 		public void actionPerformed(ActionEvent evt) {
-			if (evt.getActionCommand().equals("remove")) {
+		    if ( !listenersEnabled)
+		    {
+		        return;
+		    }
+		    if (evt.getActionCommand().equals("remove")) {
 				removePermission();
+				fireContentChanged();
 			} else if (evt.getActionCommand().equals("new")) {
 				createPermission();
+	            fireContentChanged();
 			} else if (evt.getActionCommand().equals("edit")) {
 				// buffer selected Permission
 				selectedPermission = (Permission) listEdit.getList().getSelectedValue();
@@ -263,12 +294,19 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 				// processing
 				permissionField.setValue(selectedPermission);
 			}
-			fireContentChanged();
 		}
 
 		@SuppressWarnings("unchecked")
 		public void stateChanged(ChangeEvent evt) {
+		    if ( !listenersEnabled)
+            {
+                return;
+            }
 			// set processed selected Permission in the list
+		    if ( selectedPermission == null)
+		    {
+		        return;
+		    }
 			model.set(selectedIndex, selectedPermission);
 			// remove permission from notAllList we need to check references as the equals method could also match another permission 
 			Iterator<Permission> it = notAllList.iterator();

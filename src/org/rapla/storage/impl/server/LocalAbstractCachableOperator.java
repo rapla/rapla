@@ -220,6 +220,30 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             cache.put( type);
         }
 		{
+            DynamicTypeImpl type = new DynamicTypeImpl();
+            String key = RAPLA_TEMPLATE;
+            type.setKey(key);
+            type.setId( key);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+            addAttributeWithInternalId(type,"name", AttributeType.STRING);
+            //addAttributeWithInternalId(type,"start", AttributeType.DATE);
+            //addAttributeWithInternalId(type,"end", AttributeType.DATE);
+            type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+            type.setResolver( this);
+            {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ);
+                type.addPermission(newPermission);
+            }
+            {
+                Permission newPermission =type.newPermission();
+                newPermission.setAccessLevel( Permission.READ_TYPE);
+                type.addPermission(newPermission);
+            }
+            type.setReadOnly();
+            cache.put( type);
+        }
+		{
 			DynamicTypeImpl type = new DynamicTypeImpl();
 			String key = SYNCHRONIZATIONTASK_TYPE;
             type.setKey(key);

@@ -13,50 +13,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
 
-import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
 import javax.swing.Icon;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
-import org.rapla.entities.Category;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -72,13 +56,11 @@ import org.rapla.gui.internal.action.RestartServerAction;
 import org.rapla.gui.internal.action.SaveableToggleAction;
 import org.rapla.gui.internal.action.user.UserAction;
 import org.rapla.gui.internal.common.InternMenus;
-import org.rapla.gui.internal.edit.DeleteUndo;
-import org.rapla.gui.internal.edit.reservation.SortedListModel;
+import org.rapla.gui.internal.edit.TemplateEdit;
 import org.rapla.gui.internal.print.PrintAction;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
-import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaFrame;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
@@ -273,7 +255,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 	}
 
 	protected boolean isTemplateEdit() {
-		return getModification().getTemplateName() != null;
+		return getModification().getTemplate() != null;
 	}
 	
 
@@ -300,11 +282,17 @@ public class RaplaMenuBar extends RaplaGUIComponent
 			{
 				if ( isTemplateEdit())
 				{
-					getModification().setTemplateName( null );
+					getModification().setTemplate( null );
 				}
 				else
 				{
-					templateEdit();
+				    try {
+				        TemplateEdit edit = new TemplateEdit( getContext());
+				        edit.startTemplateEdit();
+				        updateTemplateText();
+	                } catch (Exception ex) {
+	                    showException(ex, getMainComponent());
+	                }
 				}
 			}
 			else
@@ -510,170 +498,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
 		return action;
 	}
 	 
-    private void templateEdit() {
-        
-        final Component parentComponent = getMainComponent();
-        try {
-	        JPanel panel = new JPanel();
-	        final JTextField textField = new JTextField(20);
-	        addCopyPaste( textField);
-	        panel.setPreferredSize( new Dimension(600,300));
-	        panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.FILL, 5,TableLayout.PREFERRED},{TableLayout.PREFERRED,5,TableLayout.FILL, TableLayout.PREFERRED}}));
-	        panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-	        panel.add(new JLabel("Templatename:"), "0,0");
-	        panel.add(textField, "2,0");
-	        addCopyPaste( textField);
-			final DefaultListModel model = new DefaultListModel();
-	        @SuppressWarnings("unchecked")
-			final JList list = new JList(new SortedListModel(model));
-	        Collection<String> templateNames= getQuery().getTemplateNames();
-	        fillModel( model, templateNames);
-	        final RaplaButton deleteButton = new RaplaButton(RaplaButton.SMALL);
-	        deleteButton.setIcon(getIcon("icon.delete"));
-	        panel.add( new JScrollPane(list), "0,2,2,1");
-	        panel.add( deleteButton, "4,2,l,t");
-	        //int selectedIndex = selectionBox.getSelectedIndex();
-	        Object selectedItem = null;
-	    	list.setSelectedValue( selectedItem,true);
-	    	String templateName = getModification().getTemplateName();
-	    	if ( templateName != null)
-	    	{
-	    		textField.setText( templateName);
-	    	}
-	        list.addListSelectionListener( new ListSelectionListener() {
-	
-	            public void valueChanged( ListSelectionEvent e )
-	            {
-	            	String template =  (String) list.getSelectedValue();
-	                if ( template != null) 
-	                {
-	                	textField.setText( template );
-	                }
-	                deleteButton.setEnabled( template != null);
-	            }
-	
-	        });
-	
-	        ActionListener actionListener = new ActionListener() {
-				
-				public void actionPerformed(ActionEvent e) {
-					Object source = e.getSource();
-					if ( source == deleteButton)
-					{
-						String template =  (String) list.getSelectedValue();
-						if ( template != null)
-						{
-							try {
-								Collection<Reservation> reservations = getQuery().getTemplateReservations(template);
-								DeleteUndo<Reservation> cmd = new DeleteUndo<Reservation>(getContext(), reservations);
-								getModification().getCommandHistory().storeAndExecute( cmd);
-								Collection<String> templateNames= getQuery().getTemplateNames();
-								fillModel( model, templateNames);
-							} catch (Exception ex) {
-								showException( ex, getMainComponent());
-							}
-						}
-					}
-				}
-			};
-			deleteButton.addActionListener( actionListener);
-			Collection<String> options = new ArrayList<String>();
-	        options.add( getString("apply") );
-			options.add(getString("cancel"));
-			final DialogUI dlg = DialogUI.create(
-					getContext(),
-					parentComponent,true,panel,
-					options.toArray(new String[] {}));
-	        dlg.setTitle(getString("edit-templates"));
-	        dlg.getButton(options.size() - 1).setIcon(getIcon("icon.cancel"));
-	        final AbstractAction action = new AbstractAction() {
-	            private static final long serialVersionUID = 1L;
-	
-	            public void actionPerformed(ActionEvent e) {
-	            	String template = textField.getText();
-	            	if ( template == null)
-	            	{
-	            		template = "";
-	            	}
-	            	template = template.trim();
-	            	if ( template.length() > 0)
-	            	{
-	            		String selectedTemplate = null;
-	            		Enumeration elements = model.elements();
-	            		while ( elements.hasMoreElements())
-	            		{
-	            			String test  = (String)elements.nextElement();
-	            			if ( test.equals( template))
-	            			{
-	            				selectedTemplate = test;
-	            				break;
-	            			}
-	            		}
-	            		if (selectedTemplate == null)
-	            		{
-	            			selectedTemplate = template;
-	            		}
-	            		Date start = null;
-	            		
-	            		if ( selectedTemplate != null)
-	            		{
-		            		try
-		            		{
-								Collection<Reservation> reservations = getQuery().getTemplateReservations(selectedTemplate);
-								for ( Reservation r:reservations)
-								{
-									Date firstDate = r.getFirstDate();
-									if ( start == null || firstDate.before(start ))
-									{
-										start = firstDate;
-									}
-								}
-								if ( start != null)
-								{
-									getService(CalendarSelectionModel.class).setSelectedDate( start);
-								}
-		            		}
-		            		catch (RaplaException ex)
-		            		{
-		            			showException( ex, getMainComponent());
-		            		}
-	            		}
-	            		getModification().setTemplateName( selectedTemplate);
-	            	}
-	            	else
-	            	{
-	            		getModification().setTemplateName( null);
-	            	}
-	            	dlg.close();
-	            }
-	
-	        };
-	        list.addMouseListener( new MouseAdapter() {
-	        	public void mouseClicked(MouseEvent e) {
-	        		if ( e.getClickCount() >=2)
-	        		{
-	        			action.actionPerformed( new ActionEvent( list, ActionEvent.ACTION_PERFORMED, "save"));
-	        		}
-	        	}
-			});
-			dlg.getButton(0).setAction( action);
-	        dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-	        dlg.start();
-	        updateTemplateText();
-        } catch (RaplaException ex) {
-            showException( ex, parentComponent);
-        }
-    }
-
-	@SuppressWarnings("unchecked")
-	private void fillModel(DefaultListModel model,Collection<String> templateNames)  {
-		model.removeAllElements();
-		
-		for ( String template:templateNames)
-		{
-			model.addElement( template);
-		}
-	}
 	
 }
 

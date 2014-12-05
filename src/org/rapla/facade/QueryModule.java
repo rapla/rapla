@@ -140,9 +140,9 @@ public interface QueryModule
     
 	boolean canEditTemplats(User user);
 
-	public Collection<String> getTemplateNames() throws RaplaException;
+	public Collection<Allocatable> getTemplates() throws RaplaException;
 	
-	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException;
+	public Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
 
 	FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 

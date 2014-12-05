@@ -1457,7 +1457,6 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	 * @author Jens Fritz
 	 *
 	 */
-    
     //Erstellt von Dominik Krickl-Vorreiter
     class ReservationSave extends SaveUndo<Reservation> {
     	

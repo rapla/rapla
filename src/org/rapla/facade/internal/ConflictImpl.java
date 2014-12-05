@@ -732,6 +732,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         boolean appointment2Enabled = isAppointment2Enabled();
         boolean appointment1Editable = isAppointment1Editable();
         boolean appointment2Editable = isAppointment2Editable();
+        // only one editable and enabled appointment is enough to show the conflict as enabled
+        // if the user has both editableflags and disabled the conflict by itself, both should be disabled
         if ( appointment1Enabled && appointment1Editable )
         {
             return true;

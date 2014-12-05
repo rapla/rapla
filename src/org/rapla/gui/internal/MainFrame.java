@@ -19,6 +19,7 @@ import java.awt.Window;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
+import java.util.Locale;
 
 import javax.swing.Box;
 import javax.swing.JComponent;
@@ -29,6 +30,7 @@ import javax.swing.JPanel;
 import org.rapla.RaplaMainContainer;
 import org.rapla.client.ClientService;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -182,10 +184,11 @@ public class MainFrame extends RaplaGUIComponent
             User  user = getUser();
             final boolean admin = user.isAdmin();
             String message =   getString("user") + " "+ user.toString(); 
-            String templateName = getModification().getTemplateName();
-            if ( templateName != null)
+            Allocatable template = getModification().getTemplate();
+            if ( template != null)
             {
-            	message = getString("edit-templates") + " [" +  templateName + "] " + message; 
+            	Locale locale = getLocale();
+                message = getString("edit-templates") + " [" +  template.getName(locale) + "] " + message; 
             }
 
             statusBar.setText( message);

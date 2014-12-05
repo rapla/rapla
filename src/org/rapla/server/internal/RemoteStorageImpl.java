@@ -644,19 +644,19 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 //                }
 //            }
 
-			public FutureResult<List<String>> getTemplateNames()
-            {
-            	try
-            	{
-	                checkAuthentified();
-	                Collection<String> templateNames = operator.getTemplateNames();
-	                return new ResultImpl<List<String>>(new ArrayList<String>(templateNames));
-            	}
-            	catch (RaplaException ex )
-            	{
-            		return new ResultImpl<List<String>>(ex);
-            	}
-            }
+//			public FutureResult<List<String>> getTemplateNames()
+//            {
+//            	try
+//            	{
+//	                checkAuthentified();
+//	                Collection<String> templateNames = operator.getTemplates();
+//	                return new ResultImpl<List<String>>(new ArrayList<String>(templateNames));
+//            	}
+//            	catch (RaplaException ex )
+//            	{
+//            		return new ResultImpl<List<String>>(ex);
+//            	}
+//            }
 
             public FutureResult<UpdateEvent> getEntityRecursive(String... ids) 
             {

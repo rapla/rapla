@@ -305,7 +305,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     	boolean switchTemplate =  ((UpdateResult)evt).isSwitchTemplateMode();
     	if  (switchTemplate)
     	{
-    	    boolean changeToTemplate= m_facade.getTemplateName() != null;
+    	    boolean changeToTemplate= m_facade.getTemplate() != null;
     	    if (changeToTemplate)
     	    {
     	        beforeTemplateConf = createConfiguration();
@@ -800,7 +800,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     protected boolean isTemplateModus() {
-        return m_facade.getTemplateName() != null;
+        return m_facade.getTemplate() != null;
     }
 
     @Override

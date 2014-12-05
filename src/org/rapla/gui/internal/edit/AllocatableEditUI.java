@@ -42,6 +42,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         classificationField = new ClassificationField<Allocatable>(context);
         fields.add(classificationField );
         permissionField = new PermissionListField(context,getString("permissions"));
+        //permissionField.addChangeListener( listener );
         fields.add( permissionField );
         if ( !internal)
         {

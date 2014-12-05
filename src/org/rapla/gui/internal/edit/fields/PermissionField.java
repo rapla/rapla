@@ -311,15 +311,30 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     public void stateChanged(ChangeEvent evt) {
         if ( listenersDisabled )
             return;
-
         Permission perm = permission;
         if (evt.getSource() == groupSelect) {
             perm.setGroup(groupSelect.getValue() );
-            userSelect.setValue(perm.getUser()) ;
+            try
+            {
+                listenersDisabled = true;
+                userSelect.setValue(perm.getUser()) ;
+            }
+            finally
+            {
+                listenersDisabled = false;
+            }
         } else if (evt.getSource() == userSelect) {
             perm.setUser( userSelect.getValue());
-            if ( groupSelect != null )
-                groupSelect.setValue(perm.getGroup());
+            try
+            {
+                listenersDisabled = true;
+                if ( groupSelect != null )
+                    groupSelect.setValue(perm.getGroup());
+            }
+            finally
+            {
+                listenersDisabled = false;
+            }
         } else if (evt.getSource() == startDate) {
             perm.setStart(startDate.getValue() );
         } else if (evt.getSource() == minAdvance) {

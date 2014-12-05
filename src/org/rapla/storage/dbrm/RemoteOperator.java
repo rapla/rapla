@@ -843,23 +843,23 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    }		
     }
     
-    public List<String> getTemplateNames() throws RaplaException {
-    	checkConnected();
-    	RemoteStorage serv = getRemoteStorage();
-    	try
-    	{
-    		List<String> result = serv.getTemplateNames().get();
-    		return result;
-    	}
-	    catch (RaplaException ex)
-	    {
-	    	throw ex;
-	    }
-	    catch (Exception ex)
-	    {
-	    	throw new RaplaException(ex);
-	    }		
-    }
+//    public List<String> getTemplateNames() throws RaplaException {
+//    	checkConnected();
+//    	RemoteStorage serv = getRemoteStorage();
+//    	try
+//    	{
+//    		List<String> result = serv.getTemplateNames().get();
+//    		return result;
+//    	}
+//	    catch (RaplaException ex)
+//	    {
+//	    	throw ex;
+//	    }
+//	    catch (Exception ex)
+//	    {
+//	    	throw new RaplaException(ex);
+//	    }		
+//    }
 
 	protected String[] getIdList(Collection<? extends Entity> entities) {
 		List<String> idList = new ArrayList<String>();

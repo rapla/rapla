@@ -48,6 +48,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.RepeatingType;
@@ -131,7 +132,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	Logger logger;
 	
-	String templateName;
+	String templateId;
 	
 	public FacadeImpl(RaplaContext context, Configuration config, Logger logger) throws RaplaException {
 		this( context, getOperator(context, config, logger), logger);
@@ -452,9 +453,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	int queryCounter = 0;
 	private Collection<Reservation> getVisibleReservations(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters)
 			throws RaplaException {
-		if ( templateName != null)
+		if ( templateId != null)
 		{
-			Collection<Reservation> reservations = getTemplateReservations( templateName);
+		    
+			Allocatable template = getTemplate();
+			if ( template == null)
+			{
+			    throw new RaplaException("Template for id " + templateId + " not found!");
+			}
+            Collection<Reservation> reservations = getTemplateReservations( template);
 			return reservations;
 		}
 		List<Allocatable> allocList;
@@ -534,19 +541,22 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return userGroups;
 	}
 	
-	public Collection<String> getTemplateNames() throws RaplaException
+	public Collection<Allocatable> getTemplates() throws RaplaException
 	{
-		return operator.getTemplateNames();
+	    DynamicType dynamicType = getDynamicType(StorageOperator.RAPLA_TEMPLATE);
+	    ClassificationFilter[] array = dynamicType.newClassificationFilter().toArray();
+	    Collection<Allocatable> allocatables = operator.getAllocatables( array);
+		return allocatables;
 	}
 	
-	public Collection<Reservation> getTemplateReservations(String name) throws RaplaException
+	public Collection<Reservation> getTemplateReservations(Allocatable template) throws RaplaException
 	{
 		User user = null;
 		Collection<Allocatable> allocList = null;
 		Date start = null;
 		Date end = null;
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
-		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, name);
+		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
 		Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery);
 		return result;
 	}
@@ -972,18 +982,19 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	/******************************
 	 * Modification-module *
 	 ******************************/
-	public String getTemplateName() 
+	public Allocatable getTemplate() 
 	{
-		if ( templateName != null)
+		if ( templateId != null)
 		{
-			return templateName;
+		    Allocatable template = operator.tryResolve( templateId, Allocatable.class);
+		    return template;
 		}
 		return null;
 	}
 
-	public void setTemplateName(String templateName) 
+	public void setTemplate(Allocatable template) 
 	{
-		this.templateName = templateName;
+		this.templateId = template != null ? template.getId() : null;
 		cachedReservations = null;
 		cacheValidString = null;
 		User workingUser;
@@ -1035,14 +1046,55 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         }
     	Date now = operator.getCurrentTimestamp();
         ReservationImpl reservation = new ReservationImpl(now ,now );
-        if ( templateName != null )
-        {
-        	reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
-        }
+        
         reservation.setClassification(classification);
         PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
         setNew(reservation, user);
+        if ( templateId != null )
+        {
+            setTemplateParams(reservation );
+        }
         return reservation;
+    }
+
+    private void setTemplateParams(Reservation reservation) throws RaplaException {
+        Allocatable template = getTemplate();
+        if ( template == null)
+        {
+            throw new RaplaException("Template not found " + templateId);
+        }
+        reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
+        for ( Permission p :template.getPermissionList())
+        {
+            if (p.getAccessLevel().includes(Permission.EDIT))
+            {
+                Permission clone = p.clone();
+                clone.setAccessLevel( AccessLevel.ADMIN);
+                Collection<Permission> permissionList = reservation.getPermissionList();
+                if ( !permissionList.contains( clone))
+                {
+                    reservation.addPermission( clone);
+                }
+            }
+        }
+        User templateOwner = template.getOwner();
+        User reservationOwner = reservation.getOwner();
+        // add template owner as admin
+        if ( templateOwner != null  && reservationOwner != null)
+        {
+            if ( !templateOwner.equals( reservationOwner) )
+            {
+                 Permission p = reservation.newPermission();
+                 p.setAccessLevel( AccessLevel.ADMIN);
+                 p.setUser(  templateOwner);
+                 Collection<Permission> permissionList = reservation.getPermissionList();
+                 if ( !permissionList.contains( p))
+                 {
+                     reservation.addPermission( p);
+                 }
+            }
+        }
+         
     }
 
     public Allocatable newAllocatable( Classification classification) throws RaplaException 
@@ -1390,9 +1442,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			{
 				r.setOwner( workingUser );
 			}
-			if ( templateName != null )
+			if ( templateId != null )
 			{
-				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateName);
+				setTemplateParams(r );
 			}
 			else
 			{

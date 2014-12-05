@@ -117,9 +117,9 @@ public interface ModificationModule {
      * @throws RaplaException */
     void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects) throws RaplaException;
     
-    void setTemplateName(String templateName);
+    void setTemplate(Allocatable template);
     
-    String getTemplateName();
+    Allocatable getTemplate();
 
     CommandHistory getCommandHistory();
 

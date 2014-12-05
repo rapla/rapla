@@ -106,7 +106,6 @@ class DynamicTypeEditUI extends RaplaGUIComponent
         attributeEdit = new AttributeEdit(context);
         nameLabel.setText(getString("dynamictype.name") + ":");
         elementKeyLabel.setText(getString("elementkey") + ":");
-        attributeEdit.setEditKeys( true );
         annotationPanel.setVisible( true);
         double PRE = TableLayout.PREFERRED;
         double[][] sizes = new double[][] {

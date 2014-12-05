@@ -51,6 +51,7 @@ public interface StorageOperator extends EntityResolver {
 	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
 	public final static String DEFAUTL_USER_TYPE = "rapla:defaultUser";
 	public final static String PERIOD_TYPE = "rapla:period";
+	public final static String RAPLA_TEMPLATE = "rapla:template";
 	
     User connect() throws RaplaException;
     User connect(ConnectInfo connectInfo) throws RaplaException;
@@ -125,7 +126,7 @@ public interface StorageOperator extends EntityResolver {
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 
-	Collection<String> getTemplateNames() throws RaplaException;
+	//Collection<String> getTemplateNames() throws RaplaException;
 
 	
 
