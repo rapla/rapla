@@ -488,7 +488,7 @@ class ConflictFinder {
 			{
 				for ( Conflict conflict: set)
 				{
-					if (ConflictImpl.canModify(conflict,user,resolver))
+					if (RaplaComponent.canModify(conflict,user,resolver))
 					{
 					    cache.fillConflictDisableInformation(user, conflict);
                         conflictList.add(conflict);

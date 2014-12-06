@@ -473,8 +473,6 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         public void appointmentSelected(Collection<Appointment> appointment) {
             ReservationEditImpl.this.fireAppointmentSelected(appointment);
         }
-
-        @SuppressWarnings("deprecation")
         public void stateChanged(ChangeEvent evt) {
         	if (evt.getSource() == reservationInfo) {
         		getLogger().debug("ReservationInfo changed");

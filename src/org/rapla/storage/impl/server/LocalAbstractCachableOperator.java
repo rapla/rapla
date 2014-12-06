@@ -1618,7 +1618,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
     @SuppressWarnings("deprecation")
-    private void processOldPermssionModify(EntityStore store, Entity entity) {
+    private void processOldPermssionModify(@SuppressWarnings("unused") EntityStore store, Entity entity) {
         Class<? extends Entity> clazz = (entity instanceof Reservation) ? Reservation.class : Allocatable.class;
         Classifiable persistant = (Classifiable) tryResolve( ((Entity)entity).getId(), clazz);
         Util.processOldPermissionModify((Classifiable) entity, persistant);

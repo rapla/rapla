@@ -152,7 +152,7 @@ public class AppointmentAction extends RaplaAction {
         try 
         {
         	User user = getUser();
-            boolean canRead = canRead(appointment, user);
+            boolean canRead = canRead(appointment, user, getEntityResolver());
             setEnabled( canRead);
         } 
         catch (RaplaException ex)

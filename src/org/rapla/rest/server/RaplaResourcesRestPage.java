@@ -16,7 +16,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.servletpages.RaplaPageGenerator;
@@ -39,7 +38,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
         List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
         for ( Allocatable r:resources)
         {
-            if ( RaplaComponent.canRead(r, user))
+            if ( canRead(r, user, getEntityResolver()))
             {
                 result.add((AllocatableImpl) r);
             }
@@ -51,7 +50,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
     public AllocatableImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
         AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
-        if (!RaplaComponent.canRead(resource, user))
+        if (!canRead(resource, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't read  " + resource);
         }
@@ -60,7 +59,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
     
     public AllocatableImpl update(@WebParam(name="user") User user, AllocatableImpl resource) throws RaplaException
     {
-        if (!RaplaComponent.canModify(resource, user))
+        if (!canModify(resource, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
         }

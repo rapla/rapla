@@ -668,34 +668,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         this.appointment2Editable = appointment2Editable;
     }
 
-
-	static public boolean canModify(Conflict conflict,User user, EntityResolver resolver) {
-		Allocatable allocatable = conflict.getAllocatable();
-		if (user == null || user.isAdmin())
-		{
-			return true;
-		}
-		if (allocatable.canRead( user ))
-		{
-            if (canModifyEvent(conflict.getReservation1(),user, resolver))
-            {
-                return true;
-            }
-            if (canModifyEvent(conflict.getReservation2(),user, resolver))
-            {
-                return true;
-            }
-		}
-		return false;
-	}
-
-    public static boolean canModifyEvent(String reservationId,User user, EntityResolver resolver) 
-    {
-        Reservation reservation =  resolver.tryResolve(reservationId, Reservation.class);;
-        boolean canModify = reservation != null && RaplaComponent.canModify(reservation, user);
-        return canModify;
-    }
-
 	public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts,List<Reservation> reservations) 
 	{
 		Map<Appointment, Set<Appointment>> result = new HashMap<Appointment,Set<Appointment>>();

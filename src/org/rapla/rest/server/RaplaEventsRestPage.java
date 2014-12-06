@@ -18,7 +18,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.RaplaComponent;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.servletpages.RaplaPageGenerator;
@@ -52,7 +52,8 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         for ( Reservation r:reservations)
         {
-            if ( RaplaComponent.canRead(r, user ))
+            EntityResolver entityResolver = getEntityResolver();
+            if ( canRead(r, user, entityResolver ))
             {
                 result.add((ReservationImpl) r);
             }
@@ -63,7 +64,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        if (!RaplaComponent.canRead(event, user ))
+        if (!canRead(event, user, getEntityResolver() ))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -72,7 +73,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     
     public ReservationImpl update(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
     {
-        if (!RaplaComponent.canModify(event, user))
+        if (!canModify(event, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

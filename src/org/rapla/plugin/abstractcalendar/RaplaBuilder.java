@@ -52,6 +52,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.Conflict;
@@ -505,11 +506,13 @@ public abstract class RaplaBuilder extends RaplaComponent
     }
 
 	protected boolean isAnonymous(User user,Appointment appointment) {
-		return !canRead(appointment, user);
+		EntityResolver entityResolver = getEntityResolver();
+        return !canRead(appointment, user, entityResolver);
 	}
 
     private boolean isMovable(Reservation reservation) {
-        return selectedReservations.contains( reservation ) && canModify(reservation, editingUser);
+        EntityResolver entityResolver = getEntityResolver();
+        return selectedReservations.contains( reservation ) && canModify(reservation, editingUser, entityResolver);
     }
 
     public boolean isConflictsSelected() {

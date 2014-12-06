@@ -760,7 +760,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             
 			private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {
 				ReservationImpl reservation =(ReservationImpl) entity;
-				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser);
+				boolean reservationVisible = RaplaComponent.canRead( reservation, sessionUser, operator);
 				// check if the user is allowed to read the reservation info 
 				if ( !reservationVisible )
 				{
@@ -1175,7 +1175,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				    else if ( obj instanceof Conflict)
 				    {
 				    	Conflict conflict = (Conflict) obj;
-				    	if ( !ConflictImpl.canModify( conflict, user, operator) )
+				    	if ( !RaplaComponent.canModify( conflict, user, operator) )
 				    	{
 				    		clientStore = false;
 				    	}

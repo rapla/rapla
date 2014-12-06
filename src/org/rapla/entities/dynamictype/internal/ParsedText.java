@@ -744,21 +744,22 @@ public class ParsedText implements Serializable {
             {
                 collection = Collections.singleton( evalResult1);
             }
-            Collection result = new ArrayList(); 
+            Collection<Classifiable> result = new ArrayList<Classifiable>(); 
             for ( Object obj:collection)
             {
                 if ( !(obj instanceof Classifiable))
                 {
                     continue;
                 }
-                Classification classification = ((Classifiable)obj).getClassification();
+                Classifiable classifiable = (Classifiable)obj;
+                Classification classification = classifiable.getClassification();
                 EvalContext subContext = new EvalContext(context.getLocale(), context.getCallStackDepth() + 1,context.getAnnotationName(), classification);
                 Object evalResult = arg2.eval( subContext);
                 if ( !(evalResult instanceof Boolean ) || !((Boolean)evalResult))
                 {
                     continue;
                 }
-                result.add( obj);
+                result.add( classifiable);
             }
             return result;
         }

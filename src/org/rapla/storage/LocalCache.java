@@ -40,6 +40,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Provider;
 
@@ -392,8 +393,8 @@ public class LocalCache implements EntityResolver
         EntityResolver cache = this;
         if ( user != null)
         {
-            ((ConflictImpl)conflict).setAppointment1Editable( ConflictImpl.canModifyEvent(conflict.getReservation1(), user, cache));
-            ((ConflictImpl)conflict).setAppointment2Editable( ConflictImpl.canModifyEvent(conflict.getReservation2(), user, cache));
+            ((ConflictImpl)conflict).setAppointment1Editable( RaplaComponent.canModifyEvent(conflict.getReservation1(), user, cache));
+            ((ConflictImpl)conflict).setAppointment2Editable( RaplaComponent.canModifyEvent(conflict.getReservation2(), user, cache));
         }
     }
 

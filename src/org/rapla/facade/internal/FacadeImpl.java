@@ -48,7 +48,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.RepeatingType;
@@ -1064,37 +1063,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             throw new RaplaException("Template not found " + templateId);
         }
         reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-        for ( Permission p :template.getPermissionList())
-        {
-            if (p.getAccessLevel().includes(Permission.EDIT))
-            {
-                Permission clone = p.clone();
-                clone.setAccessLevel( AccessLevel.ADMIN);
-                Collection<Permission> permissionList = reservation.getPermissionList();
-                if ( !permissionList.contains( clone))
-                {
-                    reservation.addPermission( clone);
-                }
-            }
-        }
-        User templateOwner = template.getOwner();
-        User reservationOwner = reservation.getOwner();
-        // add template owner as admin
-        if ( templateOwner != null  && reservationOwner != null)
-        {
-            if ( !templateOwner.equals( reservationOwner) )
-            {
-                 Permission p = reservation.newPermission();
-                 p.setAccessLevel( AccessLevel.ADMIN);
-                 p.setUser(  templateOwner);
-                 Collection<Permission> permissionList = reservation.getPermissionList();
-                 if ( !permissionList.contains( p))
-                 {
-                     reservation.addPermission( p);
-                 }
-            }
-        }
-         
     }
 
     public Allocatable newAllocatable( Classification classification) throws RaplaException 
@@ -1105,18 +1073,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
-// Not necessary anymore as owner has admin rights
-        //        DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
-//        if ( !type.isInternal())
-//        {
-//            // add personal 
-//            if (user != null && !user.isAdmin()) {
-//                Permission permission = allocatable.newPermission();
-//                permission.setUser(user);
-//                permission.setAccessLevel(Permission.ADMIN);
-//                allocatable.addPermission(permission);
-//            }
-//        }
         allocatable.setClassification(classification);
         PermissionContainer.Util.copyPermissions(classification.getType(), allocatable);
         setNew(allocatable, user);

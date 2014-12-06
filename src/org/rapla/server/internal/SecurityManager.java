@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
@@ -36,7 +37,6 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -144,12 +144,17 @@ public class SecurityManager
         if (!permitted && entity instanceof Conflict)
         {
             Conflict conflict = (Conflict) entity;
-            if (ConflictImpl.canModify(conflict, user, operator))
+            if (RaplaComponent.canModify(conflict, user, operator))
             {
                 permitted = true;
             }
         }
 
+        if (!permitted && entity instanceof Annotatable)
+        {
+            permitted = RaplaComponent.canWriteTemplate(( Annotatable)entity, user, operator );
+        }
+        
         if (!permitted)
         {
             String text = admin ? "error.admin_not_allowed" : "error.modify_not_allowed";
@@ -179,6 +184,9 @@ public class SecurityManager
             }
             checkPermissions( user, reservation, originalReservation , all);
         }
+        
+        // FIXME check if permissions are changed and user has admin priviliges 
+
     }
 
     private Logger getLogger() 

@@ -57,6 +57,8 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
 	
+	JScrollPane scrollPane;
+	
 	public ClassificationField(RaplaContext context)  {
 		super(context);
 		editUI = new ClassificationEditUI(context);
@@ -185,7 +187,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 
 		JComponent editComponent = editUI.getComponent();
 
-		JScrollPane scrollPane = new JScrollPane(editComponent,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		scrollPane = new JScrollPane(editComponent,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 		scrollPane.setViewportView(editComponent);
 
 		scrollPane.setBorder(BorderFactory.createEtchedBorder());
@@ -195,7 +197,11 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.add(scrollPane, BorderLayout.CENTER);
 	}
 
-	
+	public void setScrollingAlwaysEnabled( boolean enabled)
+	{
+	    scrollPane.setVerticalScrollBarPolicy( enabled ? JScrollPane.VERTICAL_SCROLLBAR_ALWAYS : JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED );
+	    scrollPane.setHorizontalScrollBarPolicy( enabled ? JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS : JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED );
+	}
 
 	// The DynamicType has changed
 	public void actionPerformed(ActionEvent event) {
