@@ -44,8 +44,6 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.Configuration;
@@ -486,23 +484,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         return false;
     }
     
-    protected void resolveInitial(Collection<? extends Entity> entities,EntityResolver resolver) throws RaplaException {
-        testResolve(entities);
-        
-        for (Entity entity: entities) {
-            if ( entity instanceof EntityReferencer)
-            {
-                ((EntityReferencer)entity).setResolver(resolver);
-            }
-        }
-        processUserPersonLink(entities);
-        // It is important to do the read only later because some resolve might involve write to referenced objects
-        for (Entity entity: entities) {
-             ((RefEntity)entity).setReadOnly();
-        }
-    }
-    
-	private Map<String, TableDef> loadDBSchema(Connection c)
+    private Map<String, TableDef> loadDBSchema(Connection c)
 			throws SQLException {
 		Map<String,TableDef> tableMap = new LinkedHashMap<String,TableDef>();
 		List<String> catalogList = new ArrayList<String>();
@@ -770,6 +752,17 @@ public class DBOperator extends LocalAbstractCachableOperator
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
         resolveInitial( list, this);
+        Collection<Entity> migratedTemplates = migrateTemplates();
+        List<PreferencePatch> preferencePatches = Collections.emptyList();
+        Collection<String> removeObjects = Collections.emptyList();
+        dbStore(migratedTemplates, preferencePatches, removeObjects);
+        // It is important to do the read only later because some resolve might involve write to referenced objects
+        for (Entity entity: list) {
+             ((RefEntity)entity).setReadOnly();
+        }
+        for (Entity entity: migratedTemplates) {
+            ((RefEntity)entity).setReadOnly();
+       }
         cache.getSuperCategory().setReadOnly();
         for (User user:cache.getUsers())
         {
@@ -779,6 +772,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
 	}
     
+    
+
     @SuppressWarnings("deprecation")
     protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
@@ -802,6 +797,10 @@ public class DBOperator extends LocalAbstractCachableOperator
         Collection<Entity> list = entityStore.getList();
         cache.putAll( list);
         resolveInitial( list, cache);
+        // It is important to do the read only later because some resolve might involve write to referenced objects
+        for (Entity entity: list) {
+             ((RefEntity)entity).setReadOnly();
+        }
         cache.getSuperCategory().setReadOnly();
         for (User user:cache.getUsers())
         {

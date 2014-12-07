@@ -68,6 +68,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.EntityPermissionContainer;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
@@ -113,6 +114,7 @@ import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -569,6 +571,72 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         processUserPersonLink(entities);
     }
+	
+    protected Collection<Entity> migrateTemplates() throws RaplaException 
+    {
+        for (Allocatable r: cache.getAllocatables())
+        {
+            if (r.getClassification().getType().getKey().equals( StorageOperator.RAPLA_TEMPLATE))
+            {
+                return Collections.emptyList();
+            }
+        }
+        Map<String,Collection<Reservation>> templateMap = new HashMap<String, Collection<Reservation>>();
+        for (Reservation r: cache.getReservations())
+        {
+            String annotation = r.getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE, null);
+            if ( annotation == null)
+            {
+                continue;
+            }
+            
+            Collection<Reservation> collection = templateMap.get( annotation);
+            if ( collection == null)
+            {
+                collection = new ArrayList<Reservation>();
+                templateMap.put( annotation, collection);
+            }
+            collection.add( r);
+        }
+        if ( templateMap.size() == 0)
+        {
+            return Collections.emptyList();
+        }
+        getLogger().warn("Found old templates. Migrating.");
+                
+        
+        Collection<Entity> toStore = new HashSet<Entity>();
+        for ( String templateKey:templateMap.keySet())
+        {
+            Collection<Reservation> templateEvents = templateMap.get( templateKey);
+            Date date = getCurrentTimestamp();
+            AllocatableImpl template = new AllocatableImpl(date, date);
+            template.setResolver( this);
+            String templateId = createId(Allocatable.TYPE);
+            Classification newClassification = getDynamicType( RAPLA_TEMPLATE).newClassification();
+            newClassification.setValue("name", templateKey);
+            template.setClassification( newClassification);
+            template.setId( templateId);
+            Permission permission = template.newPermission();
+            permission.setAccessLevel( AccessLevel.READ);
+            template.addPermission( permission );
+            User owner = null;
+            for ( Reservation r:templateEvents)
+            {
+                r.setAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
+                toStore.add( r );
+                if ( owner == null)
+                {
+                    owner = r.getOwner();
+                }
+            }
+            
+            template.setOwner( owner);
+            toStore.add( template);
+        }
+        return toStore;
+    }
+
 	
     protected void processUserPersonLink(Collection<? extends Entity> entities) throws RaplaException {
         // resolve emails
@@ -2720,6 +2788,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		{
 			
 		}
+	}
+	
+	protected void convertTemplates()
+	{
+	    for (Reservation reservations: cache.getReservations());
+	    
+	    
 	}
 	
 	public void fillConflictDisableInformation(User user, Conflict conflict)

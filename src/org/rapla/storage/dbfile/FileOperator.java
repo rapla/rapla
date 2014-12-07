@@ -262,8 +262,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        {
 	            migrateSpecialAttributes( list);
 	        }
-            for (Entity entity: list) {
-                ((RefEntity)entity).setReadOnly();
+	        Collection<Entity> migratedTemplates = migrateTemplates();
+	        cache.putAll( migratedTemplates);
+	        for (Entity entity: migratedTemplates) {
+	            ((RefEntity)entity).setReadOnly();
+	       }
+	        for (Entity entity: list) 
+	        {
+	            ((RefEntity)entity).setReadOnly();
            }
 	        cache.getSuperCategory().setReadOnly();
             for (User user:cache.getUsers())

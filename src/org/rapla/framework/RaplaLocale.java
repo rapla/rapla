@@ -124,7 +124,7 @@ public interface RaplaLocale
     returns the timezone configured via main options, this is per default the system timezon. This timezone is used for ical/exchange import/export
     If Rapla will support timezones in the future, than this will be the default timezone for all times. Now its only used on import and export. It works as with system time above. 10:00am GMT+0 is converted to 10:00am of the configured timezone on export and on import all times are converted to GMT+0.
     @see RaplaLocale#toRaplaTime(TimeZone, long)
-    @deprecated moved to ImportExportLocale 
+    @deprecated moved to TimeZoneConverter 
     */
     @Deprecated
     TimeZone getImportExportTimeZone();
