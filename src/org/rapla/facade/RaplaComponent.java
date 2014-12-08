@@ -839,7 +839,7 @@ public class RaplaComponent
 		        	Date oldEnd = repeating.getEnd();
 		        	if ( oldEnd != null)
 		        	{
-		        		// If we don't have and endig destination, just make the repeating to the original length
+		        		// If we don't have and ending destination, just make the repeating to the original length
 		        		long days = DateTools.countDays(oldStart, oldEnd);
 		        		Date end = DateTools.addDays(newStart, days);
 		        		repeating.setEnd( end);

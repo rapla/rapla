@@ -287,7 +287,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
        		}
 	    	else
 	    	{
-	    		showException(new EntityNotFoundException("Template " + templateName + " not found"), getMainComponent());
+	    		showException(new EntityNotFoundException("Template " + templateName + " is empty. Please create events in template first."), getMainComponent());
 	    		return;
 	    	}
 			

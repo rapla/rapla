@@ -190,7 +190,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         return defaultResourceTypes;
     }
     
-    @SuppressWarnings("unchecked")
 	static private void copy(CalendarModelConfigurationImpl source,CalendarModelConfigurationImpl dest) {
     	 dest.view = source.view;
          dest.defaultEventTypes = source.defaultEventTypes;
