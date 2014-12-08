@@ -25,6 +25,7 @@ import java.util.Set;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
+import org.rapla.entities.Ownable;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -36,7 +37,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 
 
-public interface PermissionContainer 
+public interface PermissionContainer extends Ownable 
 {
     // adds a permission. Permissions are stored in a hashset so the same permission can't be added twice
     void addPermission( Permission permission );
@@ -90,6 +91,10 @@ public interface PermissionContainer
 
         static public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel ) {
             Iterable<? extends Permission> permissions = container.getPermissionList();
+            if (isOwner(container, user))
+            {
+                return true;
+            }
             return hasAccess(permissions,user, accessLevel, null, null, null, false);
         }
 
@@ -113,6 +118,10 @@ public interface PermissionContainer
         /** returns if the user has the permission to modify the allocatable (and also its permission-table).*/
         static public boolean canRead(PermissionContainer container,User user) 
         {
+            if ( isOwner(container, user))
+            {
+                return true;
+            }
             if ( container instanceof Classifiable)
             {
                 if (!canReadType((Classifiable)container, user))
@@ -130,7 +139,7 @@ public interface PermissionContainer
             }
         }
 
-        public static boolean canReadType(Classifiable classifiable, User user) {
+        private static boolean canReadType(Classifiable classifiable, User user) {
             Classification classification = classifiable.getClassification();
             if ( classification != null)
             {
@@ -496,7 +505,21 @@ public interface PermissionContainer
             {
                 return false;
             }
+            if (isOwner(classifiable, user))
+            {
+                return true;
+            }
             return hasAccess( classifiable,user, Permission.READ_NO_ALLOCATION );
+        }
+
+
+        private static boolean isOwner(Ownable classifiable, User user) {
+            User owner = classifiable.getOwner();
+            if ( owner != null && owner.equals( user))
+            {
+                return true;
+            }
+            return false;
         }
 
 

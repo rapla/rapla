@@ -1239,14 +1239,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             DeleteUpdateEntry entry =this;
             if ( current instanceof Ownable)
             {
-                User owner = ((Ownable)current).getOwner();
-                if ( owner != null)
+                String ownerId = ((Ownable)current).getOwnerId();
+                if ( ownerId != null)
                 {
                     if ( entry.affectedUserIds == null)
                     {
                         entry.affectedUserIds = new HashSet<String>(1);
                     }
-                    entry.affectedUserIds.add( owner.getId() );
+                    entry.affectedUserIds.add( ownerId );
                 }
             }
             Collection<Permission> permissions =  current.getPermissionList();
@@ -1758,21 +1758,27 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 		List<Entity>referencingEntities = getReferencingEntities( user, store);
 		Iterator<Entity>it = referencingEntities.iterator();
+		List<Allocatable> templates = new ArrayList<Allocatable>(); 
 		while (it.hasNext()) {
 			Entity entity = it.next();
 			// Remove internal resources automatically if the owner is deleted
 			if ( entity instanceof Classifiable  && entity instanceof Ownable)
 			{
-				DynamicType type = ((Classifiable) entity).getClassification().getType();
+				Classification classification = ((Classifiable) entity).getClassification();
+                DynamicType type = classification.getType();
 				if (((DynamicTypeImpl)type).isInternal())
 				{
 					User owner = ((Ownable)entity).getOwner();
 					if ( owner != null && owner.equals( user))
 					{
-						evt.putRemove( entity);
+					    evt.putRemove( entity);
+					    if ( type.getKey().equals(StorageOperator.RAPLA_TEMPLATE))
+					    {
+					        templates.add( (Allocatable) entity );
+					    }
 						continue;
 					}
-				}
+				} 
 			}
 			if (entity instanceof Timestamp) {
 				Timestamp timestamp = (Timestamp) entity;
@@ -1805,7 +1811,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				}
 			}
 		}
-		
+		for ( Allocatable template:templates)
+		{
+		    String templateId = template.getId();
+            Collection<Reservation> reservations = cache.getReservations();
+            for (Reservation reservation:reservations)
+            {
+                if (reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, "").equals( templateId))
+                {
+                    evt.putRemove(reservation);
+                }
+            }
+		}
 	}
 
 	/**

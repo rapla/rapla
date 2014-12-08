@@ -17,6 +17,7 @@ package org.rapla.entities;
 public interface Ownable {
     void setOwner(User owner);
     User getOwner();
+    String getOwnerId();
 }
 
 

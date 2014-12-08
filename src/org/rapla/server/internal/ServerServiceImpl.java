@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -36,7 +37,9 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
@@ -304,7 +307,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             {
                 getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
             }
-        }
+        }       
 //        Provider<EntityStore> storeProvider = new Provider<EntityStore>()
 //        {
 //			public EntityStore get()  {

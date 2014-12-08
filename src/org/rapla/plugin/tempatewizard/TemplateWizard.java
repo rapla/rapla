@@ -57,7 +57,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
     public TemplateWizard(RaplaContext context) throws RaplaException{
         super(context);
         getUpdateModule().addModificationListener( this);
-        updateTemplateNames();
+        templateNames = updateTemplateNames();
     }
     
     public String getId() {
@@ -69,12 +69,23 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
     public void dataChanged(ModificationEvent evt) throws RaplaException {
         if ( evt.getInvalidateInterval() != null)
         {
-            updateTemplateNames();
+            templateNames = updateTemplateNames();
         }
     }
 
     private Collection<Allocatable> updateTemplateNames() throws RaplaException {
-        return templateNames = getQuery().getTemplates();
+        List<Allocatable> templates = new ArrayList<Allocatable>();
+        User user = getUser();
+        for (Allocatable template:getQuery().getTemplates())
+        {
+            if ( user.isAdmin())
+            {
+                template.getPermissionList();
+            }
+            templates.add( template);
+        }
+        
+        return templates;
     }
 
     public MenuElement getMenuElement() {
