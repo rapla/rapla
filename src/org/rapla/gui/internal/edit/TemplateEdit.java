@@ -144,6 +144,11 @@ public class TemplateEdit extends RaplaGUIComponent
         {
             templateNames.add( template.getName(locale));
         }
+        for ( int i= 0;i<model.size();i++)
+        {
+            Allocatable template = (Allocatable) model.get( i);
+            templateNames.add( template.getName(locale));
+        }
         int index = 0;
         String username = getUser().getUsername();
         while ( true)
@@ -168,6 +173,7 @@ public class TemplateEdit extends RaplaGUIComponent
         }        
     }
     
+    @SuppressWarnings("unchecked")
     private void createTemplate() throws RaplaException {
         String name = getNewTemplateName();
         DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.RAPLA_TEMPLATE);
@@ -181,6 +187,9 @@ public class TemplateEdit extends RaplaGUIComponent
         }
         toStore.add( template);
         model.addElement( template);
+        boolean shouldScroll = true;
+        templateList.getList().clearSelection();
+        templateList.getList().setSelectedValue(  template ,shouldScroll );
     }
 
     class DetailPanel 
