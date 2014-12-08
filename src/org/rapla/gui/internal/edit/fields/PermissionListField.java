@@ -231,6 +231,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     		{
     			model.removeElement(permission);
     		}
+            selectedIndex = -1;
     		selectedPermission= null;
             listEdit.getList().requestFocus();
         }
@@ -263,8 +264,9 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
             permissionField.setValue( permission);
             model.addElement(permission);
             JList list = listEdit.getList();
-            list.setSelectedIndex( model.size() -1);
+            selectedIndex = model.size() -1;
             selectedPermission= permission;
+            list.setSelectedIndex( selectedIndex);
         }
         finally
         {
