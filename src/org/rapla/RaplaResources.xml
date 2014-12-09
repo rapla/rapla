@@ -3614,9 +3614,17 @@ See French text.
 		<text lang="pt">Conflitos ({0})</text>
     </entry>
     <entry key="disabledConflictUC">
-        <text lang="en">disabled Conflicts ({0})</text>
+        <text lang="en">disabled conflicts ({0})</text>
         <text lang="de">ausgeschaltete Konflikte ({0})</text>
         <text lang="fr">Conflits désactivés ({0})</text>
+    </entry>
+    <entry key="disable_conflicts">
+        <text lang="en">disable conflicts</text>
+        <text lang="de">Konflikte ausschalten</text>
+    </entry>
+    <entry key="enable_conflicts">
+        <text lang="en">enable conflicts</text>
+        <text lang="de">Konflikte einschalten</text>
     </entry>
     
     <!-- Dialogs of Rapla -->

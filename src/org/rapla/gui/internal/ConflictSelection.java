@@ -135,10 +135,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
             
             RaplaPopupMenu menu = new RaplaPopupMenu();
             RaplaMenuItem disable = new RaplaMenuItem("disable");
-            disable.setText("disable conflicts");
+            disable.setText(getString("disable_conflicts"));
             disable.setEnabled( enabledConflicts.size() > 0);
             RaplaMenuItem enable = new RaplaMenuItem("enable");
-            enable.setText("enable conflicts");
+            enable.setText(getString("enable_conflicts"));
             enable.setEnabled( disabledConflicts.size() > 0);
             
             disable.addActionListener( new ActionListener() {
