@@ -162,11 +162,14 @@ public class JsonServlet {
             }
         }
         final String out = formatResult(call);
-        String childLoggerName = class1.getName() + "." + call.method.getName() + ".result";
-        Logger childLogger = logger.getChildLogger(childLoggerName);
-        if ( childLogger.isDebugEnabled() )
+        if (class1 != null  && call.method != null)
         {
-            childLogger.debug(  out);
+            String childLoggerName = class1.getName() + "." + call.method.getName() + ".result";
+            Logger childLogger = logger.getChildLogger(childLoggerName);
+            if ( childLogger.isDebugEnabled() )
+            {
+                childLogger.debug(  out);
+            }
         }
         RPCServletUtils.writeResponse(servletContext, call.httpResponse, out, out.length() > 256 && RPCServletUtils.acceptsGzipEncoding(call.httpRequest));
     }
@@ -244,7 +247,7 @@ public class JsonServlet {
             }
         } catch (NoSuchRemoteMethodException err) {
             call.httpResponse.setStatus(SC_NOT_FOUND);
-            call.onFailure(new Exception("No such service method"));
+            call.onFailure(new Exception("No such service method: " + err.getMessage())  );
             return;
         }
 
@@ -312,7 +315,7 @@ public class JsonServlet {
         }
         call.method = lookupMethod(methodName);
         if (call.method == null) {
-            throw new NoSuchRemoteMethodException();
+            throw new NoSuchRemoteMethodException(getInterfaceClass() + "."  + methodName);
         }
         final Type[] paramTypes = call.method.getParamTypes();
         String[] paramNames = call.method.getParamNames();
@@ -659,6 +662,18 @@ public class JsonServlet {
             c = c.getSuperclass();
         }
         return null;
+    }
+    
+    public String toString()
+    {
+        if ( class1 != null)
+        {
+            return "JsonServlet for " + class1.getName();
+        }
+        else
+        {
+            return super.toString();
+        }
     }
 
 }

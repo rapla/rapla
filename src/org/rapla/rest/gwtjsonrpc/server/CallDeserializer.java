@@ -80,9 +80,10 @@ final class CallDeserializer implements
       throw new JsonParseException("Expected method name as string");
     }
 
-    req.method = server.lookupMethod(method.getAsString());
+    String asString = method.getAsString();
+    req.method = server.lookupMethod(asString);
     if (req.method == null) {
-      throw new NoSuchRemoteMethodException();
+      throw new NoSuchRemoteMethodException(server.getInterfaceClass() + "." + asString);
     }
 
     final Type[] paramTypes = req.method.getParamTypes();

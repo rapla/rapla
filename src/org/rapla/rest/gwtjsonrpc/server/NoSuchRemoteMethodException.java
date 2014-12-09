@@ -17,4 +17,7 @@ package org.rapla.rest.gwtjsonrpc.server;
 /** Indicates the requested method is not known. */
 @SuppressWarnings("serial")
 class NoSuchRemoteMethodException extends RuntimeException {
+    public NoSuchRemoteMethodException(String message) {
+        super(message);
+    }
 }
