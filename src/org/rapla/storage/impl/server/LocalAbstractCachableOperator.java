@@ -234,7 +234,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setResolver( this);
             {
                 Permission newPermission =type.newPermission();
-                newPermission.setAccessLevel( Permission.READ);
+                newPermission.setAccessLevel( Permission.CREATE );
                 type.addPermission(newPermission);
             }
             {
@@ -261,6 +261,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			cache.put( type);
 		}
 		
+    }
+	
+	protected void processPermissionGroups() throws RaplaException {
+	    Category userCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
+	    if ( userCategory != null)
+	    {
+	        User user = null;
+	        DynamicType t = getDynamicType( RAPLA_TEMPLATE);
+	        DynamicType templateType = (DynamicType)editObject(t, user);
+	    }
+        
     }
 	
 	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
@@ -1474,6 +1485,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected UpdateResult update(UpdateEvent evt) throws RaplaException {
         UpdateResult update = super.update(evt);
 	   	updateIndizes(update);
+	   	processPermissionGroups();
 		return update;
 	}
     
@@ -2647,7 +2659,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         store.put( newPref);
         
         @SuppressWarnings("deprecation")
-        String[] userGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_CAN_EDIT_TEMPLATES};
+        String[] userGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS};
         
 		CategoryImpl groupsCategory = new CategoryImpl(now,now);
 		groupsCategory.setKey("user-groups");

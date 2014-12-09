@@ -154,16 +154,46 @@ public class RaplaComponent
     }
 
     final public boolean isModifyPreferencesAllowed() {
-        if (isAdmin())
+        try {
+            User user = getUser();
+            return isModifyPreferencesAllowed( user);
+        } catch (RaplaException ex) {
+        }
+        return false;
+    }
+    
+    final public boolean isModifyPreferencesAllowed(User user) 
+    {
+        return isAllowed(user, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_CAN_CREATE_EVENTS);
+    }
+    
+    final public boolean isTemplateEditAllowed(User user) 
+    {
+        return isAllowed(user, Permission.GROUP_CAN_EDIT_TEMPLATES, Permission.GROUP_CAN_CREATE_EVENTS);
+    }
+
+    private boolean isAllowed(User user, String group, String alternativeGroup) {
+        if (user.isAdmin())
         {
             return true;
         }
         try {
-            Category modifyPreferences = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_MODIFY_PREFERENCES_KEY);
-            if ( modifyPreferences == null ) {
-                return true;
+            Category userGroupsCategory = getQuery().getUserGroupsCategory();
+            if ( userGroupsCategory == null)
+            {
+                return false;
             }
-            return getUser().belongsTo(modifyPreferences);
+            
+            Category firstGroup = userGroupsCategory.getCategory(group);
+            if ( firstGroup == null ) {
+                Category secondGroup = userGroupsCategory.getCategory(alternativeGroup);
+                if ( secondGroup == null)
+                {
+                    return true;
+                }
+                return user.belongsTo(secondGroup); 
+            }
+            return user.belongsTo(firstGroup);
         } catch (RaplaException ex) {
         }
         return false;

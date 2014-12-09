@@ -118,9 +118,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 
 	public Collection<Entity> editObjects(Collection<Entity>list, User user)throws RaplaException {
-		checkConnected();
 		Collection<Entity> toEdit = new LinkedHashSet<Entity>();
-		// read lock
 		Map<Entity,Entity> persistantMap = getPersistant(list);
 	    // read unlock 
 		for (Entity o:list) 

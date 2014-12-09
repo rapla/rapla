@@ -771,10 +771,10 @@ public class DBOperator extends LocalAbstractCachableOperator
 			String password = entityStore.getPassword( id);
             cache.putPassword(id, password);
         }
+        processPermissionGroups();
 	}
     
     
-
     @SuppressWarnings("deprecation")
     protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());

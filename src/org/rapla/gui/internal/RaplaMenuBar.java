@@ -187,7 +187,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         
         RaplaMenuItem userOptions = new RaplaMenuItem("userOptions");
         editMenu.add( userOptions );
-        if ( getQuery().canEditTemplats( getUser()))
+        if ( isTemplateEditAllowed( getUser()))
         {
         	templateEdit = new RaplaMenuItem("template");
         	updateTemplateText();

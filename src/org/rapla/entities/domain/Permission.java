@@ -26,7 +26,10 @@ import org.rapla.entities.User;
 public interface Permission
 {
     String GROUP_CATEGORY_KEY = "user-groups";
+    
+    @Deprecated
     String GROUP_MODIFY_PREFERENCES_KEY = "modify-preferences";
+    @Deprecated
     String GROUP_CAN_EDIT_TEMPLATES = "edit-templates";
     @Deprecated
     String GROUP_CAN_READ_EVENTS_FROM_OTHERS = "read-events-from-others";

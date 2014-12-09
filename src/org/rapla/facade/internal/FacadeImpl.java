@@ -769,39 +769,35 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return conflicts.toArray(new Conflict[] {});
 	}
 	
-	public boolean canEditTemplats(User user) {
-		return hasGroupRights(user, Permission.GROUP_CAN_EDIT_TEMPLATES);
-	}
-	
 //	public boolean canReadReservationsFromOthers(User user) {
 //		return hasGroupRights(user, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
 //	}
 
-	protected boolean hasGroupRights(User user, String groupKey) {
-		if (user == null) {
-		    User workingUser;
-            try {
-                workingUser = getWorkingUser();
-            } catch (EntityNotFoundException e) {
-                return false;
-            }
-			return workingUser == null || workingUser.isAdmin();
-		}
-		if (user.isAdmin()) {
-			return true;
-		}
-		try {
-			Category group = getUserGroupsCategory().getCategory(	groupKey);
-			if ( group == null)
-			{
-				return true;
-			}
-			return user.belongsTo(group);
-		} catch (Exception ex) {
-			getLogger().error("Can't get permissions!", ex);
-		}
-		return false;
-	}
+//	protected boolean hasGroupRights(User user, String groupKey) {
+//		if (user == null) {
+//		    User workingUser;
+//            try {
+//                workingUser = getWorkingUser();
+//            } catch (EntityNotFoundException e) {
+//                return false;
+//            }
+//			return workingUser == null || workingUser.isAdmin();
+//		}
+//		if (user.isAdmin()) {
+//			return true;
+//		}
+//		try {
+//			Category group = getUserGroupsCategory().getCategory(	groupKey);
+//			if ( group == null)
+//			{
+//				return true;
+//			}
+//			return user.belongsTo(group);
+//		} catch (Exception ex) {
+//			getLogger().error("Can't get permissions!", ex);
+//		}
+//		return false;
+//	}
 	
 	public boolean canCreateReservations(DynamicType type, User user) {
 	    boolean result = PermissionContainer.Util.canCreate(type, user);
@@ -1227,7 +1223,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		UserImpl user = new UserImpl( now, now);
 		setNew(user);
 		@SuppressWarnings("deprecation")
-        String[] defaultGroups = new String[] {Permission.GROUP_MODIFY_PREFERENCES_KEY,Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS};
+        String[] defaultGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY};
 		for ( String groupKey: defaultGroups)
 		{
 			Category group = getUserGroupsCategory().getCategory( groupKey);

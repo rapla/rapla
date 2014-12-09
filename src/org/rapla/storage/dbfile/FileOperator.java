@@ -266,11 +266,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        cache.putAll( migratedTemplates);
 	        for (Entity entity: migratedTemplates) {
 	            ((RefEntity)entity).setReadOnly();
-	       }
+	        }
 	        for (Entity entity: list) 
 	        {
 	            ((RefEntity)entity).setReadOnly();
-           }
+            }
 	        cache.getSuperCategory().setReadOnly();
             for (User user:cache.getUsers())
             {
@@ -282,7 +282,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             // contextualize all Entities
             if ( getLogger().isDebugEnabled() )
                 getLogger().debug( "Entities contextualized" );
-
+            processPermissionGroups();
         }
         catch ( FileNotFoundException ex )
         {

@@ -21,7 +21,7 @@ import org.rapla.framework.TypedComponentRole;
 
 public class SetOwnerPlugin implements PluginDescriptor<ClientServiceContainer>
 {
-	public final static boolean ENABLE_BY_DEFAULT = false;
+	public final static boolean ENABLE_BY_DEFAULT = true;
 	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(SetOwnerPlugin.class.getPackage().getName() + ".SetOwnerResources");
     
     public String toString() {

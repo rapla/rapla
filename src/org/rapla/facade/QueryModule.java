@@ -138,8 +138,6 @@ public interface QueryModule
     
     boolean canCreateReservations(DynamicType type, User user);
     
-	boolean canEditTemplats(User user);
-
 	public Collection<Allocatable> getTemplates() throws RaplaException;
 	
 	public Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
