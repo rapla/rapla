@@ -902,71 +902,6 @@ public class MainServlet extends HttpServlet {
 		return message;
 	}
 
-
-//  private  void handleRPCCall( HttpServletRequest request, HttpServletResponse response, String requestURI ) 
-//  {
-//  	boolean dispatcherExceptionThrown = false;
-//      try
-//      {
-//			handleLogin(request, response, requestURI);
-//			final Map<String,String[]> originalMap = request.getParameterMap();
-//			final Map<String,String> parameterMap = makeSinglesAndRemoveVersion(originalMap);
-//			final ServerServiceContainer serverContainer = getServer();
-//      	RemoteServiceDispatcher serviceDispater=serverContainer.getContext().lookup( RemoteServiceDispatcher.class);
-//          byte[] out;
-//          try
-//          {
-//          	out =null;	
-//          	//out = serviceDispater.dispatch(remoteSession, methodName, parameterMap);
-//          }
-//          catch (Exception ex)
-//          {
-//          	dispatcherExceptionThrown = true;
-//          	throw ex;
-//          }
-//          //String test = new String( out);
-//          response.setContentType( "text/html; charset=utf-8");
-//          try
-//      	{
-//          	response.getOutputStream().write( out);
-//          	response.flushBuffer();
-//          	response.getOutputStream().close();
-//          }
-//      	catch (Exception ex)
-//          {
-//          	getLogger().error( " Error writing exception back to client " + ex.getMessage());
-//          }	
-//      }
-//      catch (Exception e)
-//      {
-//      	if ( !dispatcherExceptionThrown)
-//      	{
-//      		getLogger().error(e.getMessage(), e);
-//      	}
-//      	try
-//      	{
-//      		String message = e.getMessage();
-//	            String name = e.getClass().getName();
-//	            if ( message == null )
-//	            {
-//					message = name;
-//	            }
-//	            response.addHeader("X-Error-Stacktrace", message );
-//	            response.addHeader("X-Error-Classname",  name);
-////	            String param = RemoteMethodSerialization.serializeExceptionParam( e);
-////	            if ( param != null)
-////	            {
-////	            	response.addHeader("X-Error-Param",  param);
-////	            }
-//	            response.setStatus( 500);
-//	        }
-//	        catch (Exception ex)
-//	        {
-//	        	getLogger().error( " Error writing exception back to client " + e.getMessage(), ex);
-//	        }
-//      }
-//  }
-
   
 //  private boolean isClientVersionSupported(String clientVersion) {
 //		// add/remove supported client versions here 
@@ -974,30 +909,6 @@ public class MainServlet extends HttpServlet {
 //	}
 //
 
-//    private Map<String,String> makeSinglesAndRemoveVersion( Map<String, String[]> parameterMap )
-//    {
-//        TreeMap<String,String> singlesMap = new TreeMap<String,String>();
-//        for (Iterator<String> it = parameterMap.keySet().iterator();it.hasNext();)
-//        {
-//            String key = it.next();
-//            if ( key.toLowerCase().equals("v"))
-//            {
-//            	continue;
-//            }
-//            String[] values =  parameterMap.get( key);
-//            if ( values != null && values.length > 0 )
-//            {
-//                singlesMap.put( key,values[0]);
-//            }
-//            else
-//            {
-//                singlesMap.put( key,null);
-//            }
-//        }
-//
-//        return singlesMap;
-//
-//    }
 
 	
 }

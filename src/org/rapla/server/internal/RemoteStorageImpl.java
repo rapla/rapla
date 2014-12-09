@@ -111,7 +111,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     ClientFacade facade;
     RaplaLocale raplaLocale;
     
-    //private Map<String,Long> removeMap = new HashMap<String,Long>();
     
     public RemoteStorageImpl(RaplaContext context) throws RaplaException {
         this.context = context;
@@ -274,54 +273,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	{
 	        		continue;
 	        	}
-//	        	if ( obj instanceof Allocatable)
-//	        	{
-//	        		Collection<Permission> oldPermissions = ((Allocatable)obj).getPermissionList();
-//					invalidatePermissions.addAll( oldPermissions);	
-//	        	}
 	        	if (  obj instanceof DynamicType)
 	        	{
 	        		addAllUsersToResourceRefresh = true;
 	        		addAllUsersToConflictRefresh = true;
 	        	}
-//	        	if (  obj instanceof Reservation)
-//	        	{
-//	        	    Reservation event = (Reservation)obj;
-//	        	    Collection<Permission> permissions = event.getPermissionList();
-//	        	    invalidateEventPermissions.addAll( permissions);
-//	        	}
-//	        	if (  obj instanceof Appointment)
-//                {
-//                    Reservation event = (Reservation)((Appointment)obj).getReservation();
-//                    if ( event != null)
-//                    {
-//                        Collection<Permission> permissions = event.getPermissionList();
-//                        invalidateEventPermissions.addAll( permissions);
-//                    }
-//                }
-	        	// If the conflict is removed, check if the events are still in place and add their permissions.
-	        	// if the events are also removed the notify will work because the event removal triggers the permission invalidate above
-//	        	if ( obj instanceof Conflict)
-//	        	{
-//	        	    {
-//	        	        String id= ((Conflict)obj).getReservation1();
-//	        	        Reservation event = operator.tryResolve( id, Reservation.class);
-//	        	        if ( event != null)
-//	        	        {
-//	        	            Collection<Permission> permissions = event.getPermissionList();
-//	        	            invalidateEventPermissions.addAll( permissions);
-//	        	        }
-//	        	    }
-//	        	    {
-//	        	        String id= ((Conflict)obj).getReservation2();
-//	        	        Reservation event = operator.tryResolve( id, Reservation.class);
-//	        	        if ( event != null)
-//	        	        {
-//	        	            Collection<Permission> permissions = event.getPermissionList();
-//	        	            invalidateEventPermissions.addAll( permissions);
-//	        	        }
-//	        	    }
-//	        	}
 	        }
         }
         if (addAllUsersToResourceRefresh || addAllUsersToConflictRefresh)
@@ -380,26 +336,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
         	return;
 		}
 		Set<User> usersResourceRefresh = new HashSet<User>();
-        //Category superCategory = operator.getSuperCategory();
-		//Set<Category> groupsConflictRefresh = new HashSet<Category>();
 		Set<User> usersConflictRefresh = new HashSet<User>();
-//		for (Remove operation:evt.getOperations(UpdateResult.Remove.class))
-//        {
-//		    Entity obj = operation.getCurrent();
-//            if ( obj instanceof Ownable)
-//            {
-//                Ownable ownable = (Ownable) obj;
-//                User owner = ownable.getOwner();
-//                if ( owner != null)
-//                {
-//                    if ( !obj.getRaplaType().is( Reservation.TYPE))
-//                    {
-//                        usersResourceRefresh.add( owner);
-//                    }
-//                    usersConflictRefresh.add( owner);
-//                }
-//            }
-//        }
+
 		for (Change operation:evt.getOperations(UpdateResult.Change.class))
 		{
 			Entity newObject = operation.getNew();
@@ -618,49 +556,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 return clone;
 			}
 
-//            private void removeOldPluginConfigs(Preferences preferences, Preferences clone) {
-//                List<String> adminOnlyPreferences = new ArrayList<String>();
-//                adminOnlyPreferences.add(MailPlugin.class.getCanonicalName());
-//                adminOnlyPreferences.add(JNDIPlugin.class.getCanonicalName());
-//                
-//                RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-//                if ( entry != null)
-//                {
-//                    RaplaConfiguration newConfig = entry.clone();
-//                	for ( String className: adminOnlyPreferences)
-//                	{
-//                	    DefaultConfiguration pluginConfig = (DefaultConfiguration)newConfig.find("class", className);
-//                        if ( pluginConfig != null)
-//                        {
-//                            newConfig.removeChild( pluginConfig);
-//                            boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
-//                            RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
-//                            newPluginConfig.setAttribute("enabled", enabled);
-//                            newPluginConfig.setAttribute("class", className);
-//                            newConfig.addChild( newPluginConfig);
-//                        }
-//                	}
-//                    clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
-//                }
-//            }
-
-//			public FutureResult<List<String>> getTemplateNames()
-//            {
-//            	try
-//            	{
-//	                checkAuthentified();
-//	                Collection<String> templateNames = operator.getTemplates();
-//	                return new ResultImpl<List<String>>(new ArrayList<String>(templateNames));
-//            	}
-//            	catch (RaplaException ex )
-//            	{
-//            		return new ResultImpl<List<String>>(ex);
-//            	}
-//            }
-
             public FutureResult<UpdateEvent> getEntityRecursive(String... ids) 
             {
-                //synchronized (operator.getLock()) 
                 try
                 {
                     checkAuthentified();
@@ -742,13 +639,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
                 		}
                     	
                     }
-//                    for (Reservation r:reservations)
-//                    {
-//                    	Iterable<Entity>subEntities = ((ParentEntity)r).getSubEntities();
-//                        for (Entity appointments:subEntities)
-//                        {
-//                            completeList.add( appointments);
-//                        }
                     getLogger().debug("Get reservations " + start + " " + end + ": "  + reservations.size() + "," + list.size());
                     return new ResultImpl<List<ReservationImpl>>(list);
             	}
@@ -1199,38 +1089,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 				}
 			}
 			
-//			protected List<Entity>getDependentObjects(
-//					Appointment appointment) {
-//				List<Entity> toAdd = new ArrayList<Entity>();
-//				toAdd.add( (Entity)appointment);
-//				@SuppressWarnings("unchecked")
-//				ReservationImpl reservation = (ReservationImpl)appointment.getReservation();
-//				{
-//					toAdd.add(reservation);
-//					String id = reservation.getId();
-//					Entity inCache;
-//					try {
-//						inCache = operator.resolve( id);
-//					} catch (EntityNotFoundException e) {
-//						inCache = null;
-//					}
-//					if ( inCache != null && ((RefEntity)inCache).getVersion() > reservation.getVersion())
-//					{
-//						getLogger().error("Try to send an older version of the reservation to the client " + reservation.getName( raplaLocale.getLocale()));
-//					}
-//					for (Entity ref:reservation.getSubEntities())
-//					{
-//						toAdd.add( ref );
-//					}
-//				}
-//				if (!toAdd.contains(appointment))
-//				{
-//					getLogger().error(appointment.toString() + " at " + raplaLocale.formatDate(appointment.getStart()) + " does refer to reservation " + reservation.getName( raplaLocale.getLocale()) + " but the reservation does not refer back.");
-//				}
-//				return toAdd;
-//			}
-//			
-
 			private TimeInterval getInvalidateInterval( long clientRepositoryVersion) 
 			{
 				TimeInterval interval = null;
@@ -1261,10 +1119,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 						result.add( (ConflictImpl) conflict);
 						Entity conflictRef = (Entity)conflict;
 						completeList.add(conflictRef);
-	 					//completeList.addAll( getDependentObjects(conflict.getAppointment1()));
-	 					//completeList.addAll( getDependentObjects(conflict.getAppointment2()));
 					}
-					//EntityList list = createList( completeList, repositoryVersion );
 				    return new ResultImpl<List<ConflictImpl>>( result);
 	        	}
 	        	catch (RaplaException ex )
@@ -1448,26 +1303,15 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 
     static public void convertToNewPluginConfig(RaplaContext context, String className, TypedComponentRole<RaplaConfiguration> newConfKey) throws RaplaContextException {
             ClientFacade facade = context.lookup( ClientFacade.class);
-    //        {
-    //            RaplaConfiguration entry = facade.getPreferences().getEntry(RaplaComponent.PLUGIN_CONFIG,null);
-    //            if ( entry == null )
-    //            {
-    //                return;
-    //            }
-    //            DefaultConfiguration pluginConfig = (DefaultConfiguration)entry.find("class", className);
-    //            if ( pluginConfig == null)
-    //            {
-    //                return;
-    //            }
-    //            // only class and getEnabled
-    //       
-    //        }
             try
             {
                 PreferencesImpl clone = (PreferencesImpl) facade.edit( facade.getSystemPreferences());  
                 RaplaConfiguration entry = clone.getEntry(RaplaComponent.PLUGIN_CONFIG,null);
+                if ( entry == null)
+                {
+                    return;
+                }
                 RaplaConfiguration newPluginConfigEntry = entry.clone();
-                
                 DefaultConfiguration pluginConfig = (DefaultConfiguration)newPluginConfigEntry.find("class", className);
                 // we split the config entry in the plugin config and the new config entry;
                 if ( pluginConfig != null)

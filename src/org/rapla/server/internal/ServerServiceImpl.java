@@ -305,14 +305,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
             }
         }
-        
-//        Provider<EntityStore> storeProvider = new Provider<EntityStore>()
-//        {
-//			public EntityStore get()  {
-//				return new EntityStore(operator, operator.getSuperCategory());
-//			}
-//        	
-//        };
     }
 
     @Override
