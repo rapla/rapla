@@ -753,6 +753,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 		cache.putAll( list);
         resolveInitial( list, this);
         Collection<Entity> migratedTemplates = migrateTemplates();
+        cache.putAll( migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
         Collection<String> removeObjects = Collections.emptyList();
         dbStore(migratedTemplates, preferencePatches, removeObjects);
