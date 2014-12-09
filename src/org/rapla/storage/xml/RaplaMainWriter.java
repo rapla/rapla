@@ -84,8 +84,12 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println();
         printReservations();
         println();
-        printDisabledConflicts();
-        println();        
+        Collection<Conflict> conflicts = cache.getConflicts();
+        if ( conflicts.size() > 0)
+        {
+            printDisabledConflicts(conflicts);
+            println();
+        }
         closeElement("rapla:data");
     }
     
@@ -187,9 +191,9 @@ public class RaplaMainWriter extends RaplaXMLWriter
         closeElement("rapla:reservations");
     }
 
-    void printDisabledConflicts() throws IOException {
+    void printDisabledConflicts(Collection<Conflict> conflicts) throws IOException {
         openElement("rapla:conflicts");
-        for (Conflict conflict: cache.getConflicts()) 
+        for (Conflict conflict: conflicts) 
         {
             boolean enabledAppointment1 = conflict.isAppointment1Enabled();
             boolean enabledAppointment2 = conflict.isAppointment2Enabled();
