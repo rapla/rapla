@@ -294,6 +294,11 @@ public class RaplaComponent
         }
     }
     
+    final public boolean canRead(User user, Reservation reservation) {
+        EntityResolver entityResolver = getEntityResolver();
+        return canRead(reservation, user, entityResolver);
+    }
+    
     static public boolean canModify(Conflict conflict,User user, EntityResolver resolver) {
         Allocatable allocatable = conflict.getAllocatable();
         if (user == null || user.isAdmin())
@@ -439,7 +444,7 @@ public class RaplaComponent
         return false;
     }
     
-    public boolean canRead(Appointment appointment,User user, EntityResolver resolver)
+    static public boolean canRead(Appointment appointment,User user, EntityResolver resolver)
     {
     	Reservation  reservation = appointment.getReservation();
     	boolean result = canRead(reservation, user,resolver);
