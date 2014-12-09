@@ -34,7 +34,7 @@ public class ICalImportTest extends RaplaTestCase{
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         RaplaICalImport importer = new RaplaICalImport(context, timezone);
         boolean isUrl = true;
-        String content = "https://www.google.com/calendar/ical/1s28a6qtt9q4faf7l9op7ank4c%40group.calendar.google.com/public/basic.ics";
+        String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
         Allocatable newResource = getFacade().newResource();
         newResource.getClassification().setValue("name", "icaltest");
         getFacade().store( newResource);
