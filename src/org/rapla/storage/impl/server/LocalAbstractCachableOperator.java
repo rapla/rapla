@@ -574,9 +574,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
     protected Collection<Entity> migrateTemplates() throws RaplaException 
     {
-        for (Allocatable r: cache.getAllocatables())
+        Collection<Allocatable> allocatables = cache.getAllocatables();
+        for (Allocatable r: allocatables)
         {
-            if (r.getClassification().getType().getKey().equals( StorageOperator.RAPLA_TEMPLATE))
+            String key = r.getClassification().getType().getKey();
+            if (key.equals( StorageOperator.RAPLA_TEMPLATE))
             {
                 return Collections.emptyList();
             }
@@ -604,7 +606,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         getLogger().warn("Found old templates. Migrating.");
                 
-        
         Collection<Entity> toStore = new HashSet<Entity>();
         for ( String templateKey:templateMap.keySet())
         {
@@ -630,7 +631,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     owner = r.getOwner();
                 }
             }
-            
+            getLogger().info("Migrating " + templateKey);
             template.setOwner( owner);
             toStore.add( template);
         }
