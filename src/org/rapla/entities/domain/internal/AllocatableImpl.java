@@ -334,7 +334,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         }
         else
         {
-            return super.compareTo( result);
+            return super.compareTo( r2);
         }
     }
     
