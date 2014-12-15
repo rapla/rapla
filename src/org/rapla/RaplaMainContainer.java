@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.IOUtil;
@@ -256,6 +257,7 @@ final public class RaplaMainContainer extends ContainerImpl
         logger.info("Rapla.Version=" + version);
         version = i18n.getString( "rapla.build" );
         logger.info("Rapla.Build=" + version);
+        logger.info("Timezone " + TimeZone.getDefault().getID());
         AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
         AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
         try {
