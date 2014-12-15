@@ -233,7 +233,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
 	public int compareTo(Object o) 
     {
-    	return compare_(this, (SimpleEntity)o);
+    	return compare_(this, (RefEntity)o);
     }
 	
 	static public <T extends Entity> void checkResolveResult(String id, Class<T> entityClass, T entity) throws EntityNotFoundException {
@@ -244,7 +244,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         }
     }
 
-    static private int compare_(SimpleEntity o1,SimpleEntity o2) {
+    static protected int compare_(RefEntity o1,RefEntity o2) {
         if ( o1 == o2)
         {
             return 0;

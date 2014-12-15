@@ -400,7 +400,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         {
         	c1 = c1.getParent();
         }
-        while ( c2.getRootPathLength() > c2.getRootPathLength())
+        while ( c2.getRootPathLength() > c1.getRootPathLength())
         {
         	c2 = c2.getParent();
         }
@@ -412,26 +412,31 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         //now the two categories have the same parent
         if ( c1.getParent() == null || c2.getParent() == null)
         {
-            return super.compareTo( o);
+            // they are not under the same super category, so compare by id
+            //return super.compareTo(o);
+            return compare_((CategoryImpl)c1, (CategoryImpl)c2);
         }
-        Category parent = c1.getParent();
-        // We look who is first in the list
+        CategoryImpl parent = (CategoryImpl) c1.getParent();
+        CategoryImpl parent2 = (CategoryImpl) c2.getParent();
+        Assert.isTrue(parent.equals( parent2 ));
+
         Collection<CategoryImpl> categories = ((CategoryImpl)parent).getSubEntities();
         for ( Category category: categories)
         {
-        	if ( category.equals( c1))
-        	{
-        		return -1;
-        	}
-        	if ( category.equals( c2))
-        	{
-        		return 1;
-        	}
+            if ( category.equals( c1))
+            {
+                return -1;
+            }
+            if ( category.equals( c2))
+            {
+                return 1;
+            }
         }
         return super.compareTo( o);
    }
 
-	public void replace(Category category) {
+
+    public void replace(Category category) {
 		String id = category.getId();
 		CategoryImpl existingEntity = (CategoryImpl) findEntityForId(id);
 		if (  existingEntity != null)
