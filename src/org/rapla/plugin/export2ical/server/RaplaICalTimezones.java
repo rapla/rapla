@@ -33,15 +33,13 @@ public class RaplaICalTimezones extends RaplaComponent implements ICalTimezones,
 		return this;
 	}
 
-	public FutureResult<String> getICalTimezones()  {
-		StringBuffer buf = new StringBuffer();
+	public FutureResult<List<String>> getICalTimezones()  {
+		List<String> result = new ArrayList<String>();
 		for (String id:availableIDs)
 		{
-			buf.append(id);
-			buf.append(";");
+		    result.add( id );
 		}
-		String result = buf.toString();
-		return new ResultImpl<String>( result);
+		return new ResultImpl<List<String>>( result);
 	}
 
 	//public static final String TIMEZONE = "timezone";

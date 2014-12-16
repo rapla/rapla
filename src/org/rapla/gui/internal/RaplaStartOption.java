@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
 
+import java.util.List;
 import java.util.Locale;
 
 import javax.swing.JCheckBox;
@@ -142,8 +143,8 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 	{
 		try
 		{
-			String zoneString = timezoneService.getICalTimezones().get();
-			return zoneString.split(";");
+			List<String> zoneString = timezoneService.getICalTimezones().get();
+			return zoneString.toArray(new String[] {});
 		}
 		catch (RaplaException ex)
 		{
