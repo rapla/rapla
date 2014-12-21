@@ -702,9 +702,9 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public int compareTo(Object r2) {
         if ( ! (r2 instanceof Reservation))
         {
-            super.compareTo( r2);
+            return super.compareTo( r2);
         }
-        int result = SimpleEntity.timezoneCompare( this,(Reservation)r2);
+        int result = SimpleEntity.timestampCompare( this,(Reservation)r2);
         if ( result != 0)
         {
             return result;

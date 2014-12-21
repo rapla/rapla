@@ -325,9 +325,9 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     public int compareTo(Object r2) {
         if ( ! (r2 instanceof Allocatable))
         {
-            super.compareTo( r2);
+            return super.compareTo( r2);
         }
-        int result = SimpleEntity.timezoneCompare( this,(Allocatable)r2);
+        int result = SimpleEntity.timestampCompare( this,(Allocatable)r2);
         if ( result != 0)
         {
             return result;

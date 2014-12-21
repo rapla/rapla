@@ -286,7 +286,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return id1.compareTo( id2 );
     }
 
-    public static int timezoneCompare(Timestamp t1, Timestamp t2) {
+    public static int timestampCompare(Timestamp t1, Timestamp t2) {
         if ( t1 == t2 || t1.equals( t2) )
         {
             return 0;

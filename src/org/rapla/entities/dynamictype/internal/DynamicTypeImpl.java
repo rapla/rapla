@@ -463,9 +463,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public int compareTo(Object r2) {
         if ( ! (r2 instanceof DynamicType))
         {
-            super.compareTo( r2);
+            return super.compareTo( r2);
         }
-        int result = SimpleEntity.timezoneCompare( this,(DynamicType)r2);
+        int result = SimpleEntity.timestampCompare( this,(DynamicType)r2);
         if ( result != 0)
         {
             return result;
