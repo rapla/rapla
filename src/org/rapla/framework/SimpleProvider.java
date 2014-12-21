@@ -1,5 +1,7 @@
 package org.rapla.framework;
 
+import javax.inject.Provider;
+
 
 public class SimpleProvider<T> implements Provider<T>
 {

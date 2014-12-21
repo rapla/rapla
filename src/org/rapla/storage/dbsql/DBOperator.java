@@ -12,15 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.Driver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,22 +30,27 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContextTools;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -65,76 +63,50 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
-import org.rapla.storage.xml.RaplaMainWriter;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
+@Singleton
 public class DBOperator extends LocalAbstractCachableOperator
 {
-    private String driverClassname;
-    protected String datasourceName;
-    protected String user;
-    protected String password;
-    protected String dbURL;
-    protected Driver dbDriver;
+    //protected String datasourceName;
     protected boolean isConnected;
     Properties dbProperties = new Properties();
     boolean bSupportsTransactions = false;
     boolean hsqldb = false;
 
-    private String backupEncoding;
-    private String backupFileName;
+    //private String backupEncoding;
+    //private String backupFileName;
     
-    Object lookup;
-    String connectionName;
-	
-    public DBOperator(RaplaContext context, Logger logger,Configuration config) throws RaplaException {
-        super( context, logger);
-
-        String backupFile = config.getChild("backup").getValue("");
-        if (backupFile != null)
-        	backupFileName = ContextTools.resolveContext( backupFile, context);
-       
-        backupEncoding = config.getChild( "encoding" ).getValue( "utf-8" );
+    DataSource lookup;
+    
+    private String connectionName;
+    
+    Provider<ImportExportManager> importExportManager;
+    @Inject
+    public DBOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale locale, CommandScheduler scheduler, Provider<ImportExportManager> importExportManager, DataSource dataSource) {
+        super(  logger, i18n, locale, scheduler);
+        lookup = dataSource;
+        this.importExportManager = importExportManager;
+//        String backupFile = config.getChild("backup").getValue("");
+//        if (backupFile != null)
+//        	backupFileName = ContextTools.resolveContext( backupFile, context);
+//       
+//        backupEncoding = config.getChild( "encoding" ).getValue( "utf-8" );
  
-        datasourceName = config.getChild("datasource").getValue(null);
-        // dont use datasource (we have to configure a driver )
-        if ( datasourceName == null)
-        {
-	        try 
-	        {
-	            driverClassname = config.getChild("driver").getValue();
-	            dbURL = ContextTools.resolveContext( config.getChild("url").getValue(), context);
-                getLogger().info("Data:" + dbURL);
-	        } 
-	        catch (ConfigurationException e) 
-	        {
-	            throw new RaplaException( e );
-	        }
-	        dbProperties.setProperty("user", config.getChild("user").getValue("") );
-	        dbProperties.setProperty("password", config.getChild("password").getValue("") );
-	        hsqldb = config.getChild("hsqldb-shutdown").getValueAsBoolean( false );
-	        try 
-	        {
-	            dbDriver = (Driver) getClass().getClassLoader().loadClass(driverClassname).newInstance();
-	        } 
-	        catch (ClassNotFoundException e) 
-	        {
-	            throw new RaplaException("DB-Driver not found: " + driverClassname +
-	                                          "\nCheck classpath!");
-	        } 
-	        catch (Exception e) 
-	        {
-	            throw new RaplaException("Could not instantiate DB-Driver: " + driverClassname, e);
-	        }
-        }
-        else
-        {
-	        try {
-	        	lookup  = ContextTools.resolveContextObject(datasourceName, context );
-	        } catch (RaplaContextException ex) {
-	        	throw new RaplaDBException("Datasource " + datasourceName + " not found"); 
-	        }
-        }
+//        datasourceName = config.getChild("datasource").getValue(null);
+//        // dont use datasource (we have to configure a driver )
+//        if ( datasourceName == null)
+//        {
+//            throw new RaplaException("Could not instantiate DB. Datasource not configured ");
+//        }
+//        else
+//        {
+//	        try {
+//	        	lookup  = ContextTools.resolveContextObject(datasourceName, context );
+//	        } catch (RaplaContextException ex) {
+//	        	throw new RaplaDBException("Datasource " + datasourceName + " not found"); 
+//	        }
+//        }
         
     }
 
@@ -146,19 +118,20 @@ public class DBOperator extends LocalAbstractCachableOperator
     {
     	if ( connectionName != null)
     	{
-    		return connectionName;
+    	    return connectionName;
     	}
-    	if ( datasourceName != null)
-    	{
-    		return datasourceName;
-    	}
-    	return dbURL;
+//    	if ( datasourceName != null)
+//    	{
+//    	    return datasourceName;
+//    	}
+       return "not configured";
     }
 
     public Connection createConnection() throws RaplaException {
         boolean withTransactionSupport = true;
         return createConnection(withTransactionSupport);
     }
+    
     public Connection createConnection(boolean withTransactionSupport) throws RaplaException {
     	Connection connection = null;
         try {
@@ -174,51 +147,38 @@ public class DBOperator extends LocalAbstractCachableOperator
 //        		source = lookup;
 //        	}
         	
-        	if ( source != null)
-        	{
-        		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        		try
+    		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+    		try
+    		{
+    			try
+    			{
+    				Thread.currentThread().setContextClassLoader(source.getClass().getClassLoader());
+    			}
+    			catch (Exception ex)
+    			{
+    			}
+    			try
         		{
-        			try
-        			{
-        				Thread.currentThread().setContextClassLoader(source.getClass().getClassLoader());
-        			}
-        			catch (Exception ex)
-        			{
-        			}
-	    			try
-	        		{
-	        			DataSource ds = (DataSource) source;
-	        			connection = ds.getConnection();	 
-	        		}
-	        		catch (ClassCastException ex)
-	        		{
-	        			String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
-	        			getLogger().error( text);
-						throw new RaplaDBException(text);
-	        		}
+        			DataSource ds = (DataSource) source;
+        			connection = ds.getConnection();	 
         		}
-        		finally
+        		catch (ClassCastException ex)
         		{
-        			try
-        			{
-        				Thread.currentThread().setContextClassLoader(contextClassLoader);
-        			}
-        			catch (Exception ex)
-        			{
-        			}
+        			String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
+        			getLogger().error( text);
+					throw new RaplaDBException(text);
         		}
-        	 }
-        	 // or driver initialization
-        	 else
-        	 {
-        		 connection = dbDriver.connect(dbURL, dbProperties);
-        		 connectionName = dbURL;
-                 if (connection == null)
-                 {
-                     throw new RaplaDBException("No driver found for: " + dbURL + "\nCheck url!");
-                 }
-        	 }
+    		}
+    		finally
+    		{
+    			try
+    			{
+    				Thread.currentThread().setContextClassLoader(contextClassLoader);
+    			}
+    			catch (Exception ex)
+    			{
+    			}
+    		}
              if ( withTransactionSupport)
              {
                  bSupportsTransactions = connection.getMetaData().supportsTransactions();
@@ -276,7 +236,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     {
     	if (!isConnected())
     		return;
-        backupData();
+//        backupData();
     	getLogger().info("Disconnecting: " + getConnectionName());
 
         cache.clearAll();
@@ -410,7 +370,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
 
-            CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
+            CachableStorageOperator sourceOperator = importExportManager.get().getSource();
             if ( sourceOperator == this)
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
@@ -430,7 +390,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         
         if ( empty  || unpatchedTables > 0  ) 
         {
-            CachableStorageOperator sourceOperator = context.lookup(ImportExportManager.class).getSource();
+            CachableStorageOperator sourceOperator = importExportManager.get().getSource();
             if ( sourceOperator == this)
             {
                 throw new RaplaException("Can't import, because db is configured as source.");
@@ -812,49 +772,49 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
 	private RaplaDefaultContext createInputContext(  EntityStore store, IdCreator idCreator) throws RaplaException {
-        RaplaDefaultContext inputContext =  new IOContext().createInputContext(context, store, idCreator);
-        RaplaNonValidatedInput xmlAdapter = context.lookup(RaplaNonValidatedInput.class);
+        RaplaDefaultContext inputContext =  new IOContext().createInputContext(logger,raplaLocale,i18n, store, idCreator);
+        RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
         return inputContext;
     }
     
     private RaplaDefaultContext createOutputContext(LocalCache cache) throws RaplaException {
-        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(context, cache.getSuperCategoryProvider(),true);
+        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(logger,raplaLocale,i18n, cache.getSuperCategoryProvider(),true);
         outputContext.put( LocalCache.class, cache);
         return outputContext;
         
     }
 
 //implement backup at disconnect 
-    final public void backupData() throws RaplaException { 
-        try {
-
-            if (backupFileName.length()==0)
-            	return;
-
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            writeData(buffer);
-            byte[] data = buffer.toByteArray();
-            buffer.close();
-            OutputStream out = new FileOutputStream(backupFileName);
-            out.write(data);
-            out.close();
-            getLogger().info("Backup data to: " + backupFileName);
-        } catch (IOException e) {
-            getLogger().error("Backup error: " + e.getMessage());
-            throw new RaplaException(e.getMessage());
-        }
-    }
-   
-
-    private void writeData( OutputStream out ) throws IOException, RaplaException
-    {
-    	RaplaContext outputContext = new IOContext().createOutputContext( context,cache.getSuperCategoryProvider(), true );
-        RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
-        writer.setEncoding(backupEncoding);
-        BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,backupEncoding));
-        writer.setWriter(w);
-        writer.printContent();
-    }
+//    final public void backupData() throws RaplaException { 
+//        try {
+//
+//            if (backupFileName.length()==0)
+//            	return;
+//
+//            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+//            writeData(buffer);
+//            byte[] data = buffer.toByteArray();
+//            buffer.close();
+//            OutputStream out = new FileOutputStream(backupFileName);
+//            out.write(data);
+//            out.close();
+//            getLogger().info("Backup data to: " + backupFileName);
+//        } catch (IOException e) {
+//            getLogger().error("Backup error: " + e.getMessage());
+//            throw new RaplaException(e.getMessage());
+//        }
+//    }
+//   
+//
+//    private void writeData( OutputStream out ) throws IOException, RaplaException
+//    {
+//    	RaplaContext outputContext = new IOContext().createOutputContext( raplaLocale,i18n,cache.getSuperCategoryProvider(), true );
+//        RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
+//        writer.setEncoding(backupEncoding);
+//        BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,backupEncoding));
+//        writer.setWriter(w);
+//        writer.printContent();
+//    }
     
 }

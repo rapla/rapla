@@ -35,6 +35,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaMainContainer;
@@ -42,6 +43,7 @@ import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
+import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
@@ -60,10 +62,15 @@ import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ShutdownService;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.RemoteMethodStub;
+import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.WrongRaplaVersionException;
+import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.impl.server.ImportExportManagerImpl;
 public class MainServlet extends HttpServlet {
     
     private static final String RAPLA_RPC_PATH = "/rapla/rpc/";
@@ -81,7 +88,7 @@ public class MainServlet extends HttpServlet {
    	private String contextPath;
    	private String env_rapladatasource;
    	private String env_raplafile;
-   	private Object env_rapladb;
+   	private DataSource env_rapladb;
    	private Object env_raplamail;
    	private Boolean env_development;
    	private String downloadUrl;
@@ -96,35 +103,35 @@ public class MainServlet extends HttpServlet {
    	// the following variables are only for non server startup
    	private Semaphore guiMutex = new Semaphore(1);
 	private ConnectInfo reconnect;
-
-    private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
-        String configName = getServletConfig().getInitParameter(entryName);
-        if (configName == null)
-            configName = defaultName;
-        if (configName == null)
-            throw new ServletException("Must specify " + entryName + " entry in web.xml !");
-
-        String realPath = getServletConfig().getServletContext().getRealPath("/WEB-INF/" + configName);
-        if (realPath != null)
-        {
-        	File configFile = new File(realPath);
-        	if (configFile.exists()) {
-        		URL configURL = configFile.toURI().toURL();
-            	return configURL;
-        	}
-        }		
-        
-        URL configURL = getClass().getResource("/raplaserver.xconf");
-        if ( configURL == null)
-        {
-			String message = "ERROR: Config file not found " + configName;
-    		throw new ServletException(message);
-    	}
-        else
-        {
-        	return configURL;
-        }
-    }
+//
+//    private URL getConfigFile(String entryName, String defaultName) throws ServletException,IOException {
+//        String configName = getServletConfig().getInitParameter(entryName);
+//        if (configName == null)
+//            configName = defaultName;
+//        if (configName == null)
+//            throw new ServletException("Must specify " + entryName + " entry in web.xml !");
+//
+//        String realPath = getServletConfig().getServletContext().getRealPath("/WEB-INF/" + configName);
+//        if (realPath != null)
+//        {
+//        	File configFile = new File(realPath);
+//        	if (configFile.exists()) {
+//        		URL configURL = configFile.toURI().toURL();
+//            	return configURL;
+//        	}
+//        }		
+//        
+//        URL configURL = getClass().getResource("/raplaserver.xconf");
+//        if ( configURL == null)
+//        {
+//			String message = "ERROR: Config file not found " + configName;
+//    		throw new ServletException(message);
+//    	}
+//        else
+//        {
+//        	return configURL;
+//        }
+//    }
 
     /**
      * Initializes Servlet and creates a <code>RaplaMainContainer</code> instance
@@ -152,7 +159,18 @@ public class MainServlet extends HttpServlet {
     	{
     		env_rapladatasource = lookupEnvString(env,  "rapladatasource", true);
     		env_raplafile = lookupEnvString(env,"raplafile", true);
-    		env_rapladb =   lookupResource(env, "jdbc/rapladb", true);
+    		Object lookupResource = lookupResource(env, "jdbc/rapladb", true);
+    		if ( lookupResource != null)
+    		{
+        		if ( lookupResource instanceof DataSource)
+        		{
+        		    env_rapladb =  (DataSource) lookupResource;
+        		}
+        		else
+        		{
+        		    getLogger().error("Passed Object does not implement Datasource " + env_rapladb  );
+        		}
+    		}
     		getLogger().info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb="+env_rapladb + " env_raplafile="+ env_raplafile);
    		
     		if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
@@ -366,6 +384,8 @@ public class MainServlet extends HttpServlet {
             	try
             	{
             		Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
+            		raplaContainer.addContainerProvidedComponent(RemoteOperator.class, RemoteOperator.class);
+            		raplaContainer.addContainerProvidedComponent(ClientServiceContainer.class, RaplaClientServiceImpl.class);
             		ClientServiceContainer clientContainer = raplaContainer.getContext().lookup(ClientServiceContainer.class );
             		ClientService client =  clientContainer.getContext().lookup( ClientService.class);
 	            	client.addRaplaClientListener(new RaplaClientListenerAdapter() {
@@ -414,27 +434,52 @@ public class MainServlet extends HttpServlet {
         try
         {
         	initContainer(startupMode);
-			if ( startupMode.equals("import"))
+        	//final RaplaContext context = raplaContainer.getContext();
+        	final Logger logger = raplaContainer.getLogger(); 
+        	if ( env_rapladb != null)
+        	{
+        	    raplaContainer.addContainerProvidedComponentInstance(DataSource.class, env_rapladb);
+        	}
+        	raplaContainer.addContainerProvidedComponent( FileOperator.class, FileOperator.class);
+            raplaContainer.addContainerProvidedComponent( DBOperator.class, DBOperator.class);
+            raplaContainer.addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
+            
+            if ( startupMode.equals("import"))
 			{
-				ImportExportManager manager = raplaContainer.getContext().lookup(ImportExportManager.class);
+				ImportExportManager manager = raplaContainer.getContext().lookup( ImportExportManager.class);
 				manager.doImport();
 				exit();
 			}
 			else if (startupMode.equals("export"))
 			{
-				ImportExportManager manager = raplaContainer.getContext().lookup(ImportExportManager.class);
-				manager.doExport();
+			    ImportExportManager manager = raplaContainer.getContext().lookup( ImportExportManager.class);
+			    manager.doExport();
 				exit();
 			}
 			else if ( startupMode.equals("server") || startupMode.equals("standalone") )
     		{
 			    String hint = serverContainerHint != null ? serverContainerHint :"*";
+                CachableStorageOperator operator;
+               
+                if (env_rapladatasource.equals("raplafile"))
+                {
+                    operator = raplaContainer.getContext().lookup( FileOperator.class);
+                }
+                else if (env_rapladatasource.equals("rapladb"))
+                {
+                    operator = raplaContainer.getContext().lookup( DBOperator.class);
+                }
+                else
+                {
+                    throw new RaplaException("Unknown datasource " + env_rapladatasource);
+                }
                 // Start the server via lookup
 			    // We start the standalone server before the client to prevent jndi lookup failures 
-			    server = (ServerServiceImpl) raplaContainer.lookup( ServerServiceContainer.class, hint);
+			    raplaContainer.addContainerProvidedComponent( ServerServiceContainer.class, ServerServiceImpl.class);
+                raplaContainer.addContainerProvidedComponentInstance( CachableStorageOperator.class, operator);
+                server = (ServerServiceImpl) raplaContainer.lookup( ServerServiceContainer.class, hint);
 			    processors = server.lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
-			    final Logger logger = getLogger();
-		        logger.info("Rapla server started");
+			    logger.info("Rapla server started");
 				if ( startupMode.equals("server"))
     		    {
 				    // if 
@@ -509,12 +554,14 @@ public class MainServlet extends HttpServlet {
 
 	protected void initContainer(String startupMode) throws ServletException, IOException,
 			MalformedURLException, Exception, RaplaContextException {
-		URL configURL = getConfigFile("config-file",DEFAULT_CONFIG_NAME);
+		String realPath = getServletConfig().getServletContext().getRealPath("/WEB-INF");
+        URL configURL = new File(realPath).toURI().toURL();
+//		        getConfigFile("config-file",DEFAULT_CONFIG_NAME);
 		//URL logConfigURL = getConfigFile("log-config-file","raplaserver.xlog").toURI().toURL();
 
 		RaplaStartupEnvironment env = new RaplaStartupEnvironment();
 		env.setStartupMode( StartupEnvironment.CONSOLE);
-		env.setConfigURL( configURL );
+		env.setContextRootURL( configURL );
 		if ( startupMode.equals( "client"))
 		{
 			if ( port != null)
@@ -546,6 +593,7 @@ public class MainServlet extends HttpServlet {
 		if ( env_rapladb != null)
 		{
 			context.put(RaplaMainContainer.ENV_RAPLADB, env_rapladb);
+			context.put(DataSource.class, env_rapladb);
 		}
 		if ( env_raplamail != null)
 		{

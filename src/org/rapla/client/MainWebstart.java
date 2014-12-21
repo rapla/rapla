@@ -20,7 +20,7 @@ final public class MainWebstart
     public static void main(String[] args) {
     	MainWebclient main = new MainWebclient();
         try {
-        	main.init( ConfigTools.webstartConfigToURL( MainWebclient.CLIENT_CONFIG_SERVLET_URL),StartupEnvironment.WEBSTART);
+        	main.init( ConfigTools.webstartConfigToURL( ""),StartupEnvironment.WEBSTART);
             String startupUser = System.getProperty("jnlp.org.rapla.startupUser");
             main.setStartupUser( startupUser);
         	main.startRapla("client");

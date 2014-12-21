@@ -18,10 +18,8 @@ import java.net.URL;
 
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.JNLPUtil;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
@@ -30,26 +28,8 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
     private int startupMode = CONSOLE;
     //private LoadingProgress progressbar;
     private Logger bootstrapLogger = new ConsoleLogger( ConsoleLogger.LEVEL_WARN );
-    private URL configURL;
     private URL contextRootURL;
     private URL downloadURL;
-
-    public Configuration getStartupConfiguration() throws RaplaException
-    {
-        return ConfigTools.createConfig( getConfigURL().toExternalForm() );
-    }
-
-    public URL getConfigURL() throws RaplaException
-    {
-        if ( configURL != null )
-        {
-            return configURL;
-        }
-        else
-        {
-            return ConfigTools.configFileToURL( null, "rapla.xconf" );
-        }
-    }
 
     public Logger getBootstrapLogger()
     {
@@ -74,16 +54,13 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
         bootstrapLogger = logger;
     }
 
-    public void setConfigURL( URL configURL )
-    {
-        this.configURL = configURL;
-    }
-
     public URL getContextRootURL() throws RaplaException
     {
-        if ( contextRootURL != null )
-            return contextRootURL;
-        return IOUtil.getBase( getConfigURL() );
+        if ( contextRootURL == null)
+        {
+            throw new RaplaException("Context root not set");
+        }
+        return contextRootURL;
     }
 
     public void setContextRootURL(URL contextRootURL) 
@@ -110,7 +87,7 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
         }
         else
         {
-        	URL base = IOUtil.getBase( getConfigURL() );
+        	URL base = IOUtil.getBase( getContextRootURL() );
             if ( base != null)
             {
             	return base;

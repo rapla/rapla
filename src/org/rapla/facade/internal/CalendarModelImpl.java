@@ -34,7 +34,6 @@ import java.util.TreeMap;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -68,10 +67,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.UpdateResult;
 
 public class CalendarModelImpl implements CalendarSelectionModel
@@ -86,9 +82,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     String title;
     ClientFacade m_facade;
     String selectedView;
-    I18nBundle i18n;
-    RaplaContext context;
-    RaplaLocale raplaLocale;
+    //RaplaContext context;
+    //RaplaLocale raplaLocale;
     User user;
     Map<String,String> optionMap = new HashMap<String,String>();
     //Map<String,String> viewOptionMap = new HashMap<String,String>();
@@ -97,15 +92,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
     boolean defaultResourceTypes = true;
     Collection<TimeInterval> timeIntervals = Collections.emptyList();
     Collection<Allocatable> markedAllocatables = Collections.emptyList();
-    
+    Locale locale;
     Map<DynamicType,ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
-    public CalendarModelImpl(RaplaContext context, User user, ClientFacade facade) throws RaplaException {
-        this.context = context;
-        this.raplaLocale =context.lookup(RaplaLocale.class);
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+    public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
+        this.locale = locale;
         m_facade = facade;
         if ( user == null && m_facade.isSessionActive()) {
             user = m_facade.getUser();
@@ -632,8 +625,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			} catch (IllegalAnnotationException e) {
 				return e.getMessage();
 			}
-        	Locale locale = raplaLocale.getLocale();
-			EvalContext evalContext = new EvalContext( locale);
+        	EvalContext evalContext = new EvalContext( locale);
 			String result = parsedTitle.formatName( evalContext);
         	return result;
         }
@@ -672,7 +664,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if (object == null)
             return "";
         if (object instanceof Named) {
-            String name = ((Named) object).getName(getI18n().getLocale());
+            String name = ((Named) object).getName(locale);
             return (name != null) ? name : "";
         }
         return object.toString();
@@ -830,7 +822,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(context, user, m_facade);
+            clone = new CalendarModelImpl(locale, user, m_facade);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
 			clone.setConfiguration( config, alternativOptions);
@@ -1002,14 +994,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return result;
    }
 
-    protected I18nBundle getI18n() {
-        return i18n;
-    }
-
-    protected RaplaLocale getRaplaLocale() {
-        return raplaLocale;
-    }
-
     @Override
     public boolean isOnlyCurrentUserSelected() {
     	String option = getOption(CalendarModel.ONLY_MY_EVENTS );
@@ -1101,16 +1085,20 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private boolean isOldDefaultNameBehavoir(final String filename) 
 	{
 		List<String> translations = new ArrayList<String>();
-		translations.add( getI18n().getString("default") );
 		translations.add( "default" );
 		translations.add( "Default" );
-		translations.add( "Standard" );
+	    translations.add( "Standard" );
 		translations.add( "Standaard");
 		// special for polnish
 		if (filename.startsWith( "Domy") && filename.endsWith("lne"))
 		{
 			return true;
 		}
+		if (filename.startsWith( "D") && filename.endsWith("faut"))
+		{
+		    return true;
+		}
+		
 		if (filename.startsWith( "Est") && filename.endsWith("ndar"))
 		{
 			return true;

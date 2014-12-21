@@ -16,7 +16,7 @@ package org.rapla.framework.internal;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.rapla.framework.Provider;
+import javax.inject.Provider;
 
 
 public class RaplaJDKLoggingAdapter implements Provider<org.rapla.framework.logger.Logger> {

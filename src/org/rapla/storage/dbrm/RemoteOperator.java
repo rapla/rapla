@@ -27,6 +27,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
@@ -35,6 +38,7 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
@@ -53,13 +57,12 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContextTools;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
@@ -93,24 +96,24 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     Date lastSyncedTime;
     int timezoneOffset;
     ConnectInfo connectInfo;
-    Configuration config;
     RemoteConnectionInfo connectionInfo;
 	
-    public RemoteOperator(RaplaContext context, Logger logger, Configuration config, RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaException {
-        super( context, logger );
-        this.config = config;
+    @Inject
+    public RemoteOperator( Logger logger, @Named(RaplaComponent.RaplaResourcesId)  I18nBundle i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
+        super(  logger, i18n,locale );
         this.remoteServer = remoteServer;
         this.remoteStorage = remoteStorage;
-    	commandQueue = context.lookup( CommandScheduler.class);
-    	this.connectionInfo = new RemoteConnectionInfo();
-    	remoteStorage.setConnectInfo( connectionInfo );
-    	remoteServer.setConnectInfo( connectionInfo );
-    	if ( config != null)
-    	{
-    	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");
-    	    final String serverURL= ContextTools.resolveContext(serverConfig, context );
-    	    connectionInfo.setServerURL(serverURL);
-    	}
+    	commandQueue = scheduler;
+    	this.connectionInfo = connectionInfo;
+//    	this.connectionInfo = new RemoteConnectionInfo();
+//    	remoteStorage.setConnectInfo( connectionInfo );
+//    	remoteServer.setConnectInfo( connectionInfo );
+//    	if ( config != null)
+//    	{
+//    	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");
+//    	    final String serverURL= ContextTools.resolveContext(serverConfig, context );
+//    	    connectionInfo.setServerURL(serverURL);
+//    	}
     }
     
     public RemoteConnectionInfo getRemoteConnectionInfo()
@@ -434,17 +437,22 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     @Override
     protected void setResolver(Collection<? extends Entity> entities) throws RaplaException {
     	// don't resolve entities in standalone mode
-    	if (context.has(RemoteMethodStub.class))
+    	if (isStandalone())
     	{
     		return;
     	}
     	super.setResolver(entities);
     }
+
+    private boolean isStandalone() {
+        String serverURL = connectionInfo.getServerURL();
+        return serverURL == null || serverURL.trim().length() == 0;
+    }
     
     @Override
     protected void testResolve(Collection<? extends Entity> entities) throws EntityNotFoundException {
         //  don't resolve entities in standalone mode
-        if (context.has(RemoteMethodStub.class))
+        if (isStandalone())
         {
             return;
         }
@@ -453,7 +461,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     
     // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
     protected void testResolveInitial(Collection<? extends Entity> entities) throws EntityNotFoundException {
-        if (context.has(RemoteMethodStub.class))
+        if (isStandalone())
         {
             return;
         }

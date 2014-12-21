@@ -10,10 +10,7 @@ public interface StartupEnvironment
     int WEBSTART = 2;
     int APPLET = 3;
 
-    Configuration getStartupConfiguration() throws RaplaException;
-
     URL getDownloadURL() throws RaplaException;
-    URL getConfigURL() throws RaplaException; 
     
     /** either EMBEDDED, CONSOLE, WEBSTART, APPLET,SERVLET or CLIENT */
     int getStartupMode();

@@ -93,7 +93,7 @@ public abstract class RaplaTestCase extends TestCase {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = true;
         
         URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
-        env.setConfigURL( configURL);
+        //env.setConfigURL( configURL);
         copyDataFile("test-src/" + testFile);
         raplaContainer = new RaplaMainContainer( env );
         assertNotNull("Container not initialized.",raplaContainer);

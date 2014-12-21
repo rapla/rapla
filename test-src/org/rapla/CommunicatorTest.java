@@ -2,6 +2,8 @@ package org.rapla;
 
 import java.util.Date;
 
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -9,10 +11,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.DefaultConfiguration;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.ConsoleLogger;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -118,17 +121,17 @@ public class CommunicatorTest extends ServletTestBase
         RaplaContext context = getContext();
         int clientNum = 50;
         RemoteOperator [] opts = new RemoteOperator[ clientNum];
-        DefaultConfiguration remoteConfig = new DefaultConfiguration("element");
-        DefaultConfiguration serverParam = new DefaultConfiguration("server");
-        serverParam.setValue("http://localhost:8052/");
-        remoteConfig.addChild( serverParam );
-     
+        RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
+        connectionInfo.setServerURL("http://localhost:8052/");
         for ( int i=0;i<clientNum;i++)
         {
 			RaplaMainContainer container = (RaplaMainContainer) getContainer();
             RemoteServer remoteServer = container.getRemoteMethod( context, RemoteServer.class);
 			RemoteStorage remoteStorage = container.getRemoteMethod(context, RemoteStorage.class);
-			RemoteOperator opt = new RemoteOperator(context,new ConsoleLogger(),remoteConfig, remoteServer, remoteStorage );
+			ConsoleLogger logger = new ConsoleLogger();
+            I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+            CommandScheduler secheduler = context.lookup(CommandScheduler.class);
+            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteServer, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

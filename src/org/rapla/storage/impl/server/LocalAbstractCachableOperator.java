@@ -48,6 +48,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -101,8 +102,8 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
@@ -139,7 +140,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
-    MessageDigest md;
     
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -275,14 +275,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         
     }
 	
-	public LocalAbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
-		super( context, logger);
-		scheduler = context.lookup( CommandScheduler.class);
-		try {
-            md = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RaplaException( e.getMessage() ,e);
-        }
+	public LocalAbstractCachableOperator(Logger logger,  I18nBundle i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
+		super( logger, i18n,raplaLocale);
+		this.scheduler = scheduler; 
+		        //context.lookup( CommandScheduler.class);
+		
 
 	}
 
@@ -412,6 +409,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	public String createId(RaplaType raplaType,String seed) throws RaplaException {
 	  
 	    byte[] data = new byte[16];
+	    MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RaplaException( e.getMessage() ,e);
+        }
 	    data = md.digest( seed.getBytes());
 	    if ( data.length != 16 )
 	    {
@@ -2270,7 +2273,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			buf.append(getString("dynamictype"));
 		}
 		if (obj instanceof Named) {
-			Locale locale = i18n.getLocale();
+			Locale locale = raplaLocale.getLocale();
 			final String string = ((Named) obj).getName(locale);
 			buf.append(": " + string);
 		} else {

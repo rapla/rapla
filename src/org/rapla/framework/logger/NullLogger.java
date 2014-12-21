@@ -1,5 +1,8 @@
 package org.rapla.framework.logger;
 
+import javax.inject.Singleton;
+
+@Singleton
 public class NullLogger extends AbstractLogger  {
     public NullLogger() {
         super(LEVEL_FATAL);

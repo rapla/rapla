@@ -57,7 +57,6 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -85,15 +84,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
 	protected LocalCache cache;
 	protected I18nBundle i18n;
-	protected RaplaContext context;
-	Logger logger;
+	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	
-	public AbstractCachableOperator(RaplaContext context, Logger logger) throws RaplaException {
+	public AbstractCachableOperator( Logger logger, I18nBundle i18n, RaplaLocale raplaLocale)  {
 		this.logger = logger;
-		this.context = context;
-		raplaLocale = context.lookup(RaplaLocale.class);
-		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+		this.raplaLocale = raplaLocale;
+		this.i18n = i18n;
+//		raplaLocale = context.lookup(RaplaLocale.class);
+//		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
 		cache = new LocalCache();

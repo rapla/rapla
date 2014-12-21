@@ -46,11 +46,28 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     {
 		String selectedCountry = config.getChild( COUNTRY).getValue(Locale.getDefault().getCountry() );
         Configuration languageConfig = config.getChild( LANGUAGES );
-        Configuration[] languages = languageConfig.getChildren( LANGUAGE );
         charsetForHtml = config.getChild(CHARSET).getValue("iso-8859-15");
-        availableLanguages = new String[languages.length];
-        for ( int i=0;i<languages.length;i++ ) {
-            availableLanguages[i] = languages[i].getValue("en");
+        Configuration[] languages = languageConfig.getChildren( LANGUAGE );
+        if ( languages.length == 0)
+        {
+            availableLanguages = new String[]{
+                    "de",
+                    "en",
+                    "fr",
+                    "es",
+                    "zh",
+                    "cs",
+                    "nl",
+                    "pl",
+                    "pt"
+            };
+        }
+        else
+        {
+            availableLanguages = new String[languages.length];
+            for ( int i=0;i<languages.length;i++ ) {
+                availableLanguages[i] = languages[i].getValue("en");
+            }
         }
         String selectedLanguage = languageConfig.getAttribute( "default", Locale.getDefault().getLanguage() );
         if (selectedLanguage.trim().length() == 0)

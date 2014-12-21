@@ -27,8 +27,6 @@ import org.rapla.framework.logger.Logger;
 public class MainWebclient  
 {
     /** The default config filename for client-mode raplaclient.xconf*/
-    public final static String CLIENT_CONFIG_SERVLET_URL = "rapla/raplaclient.xconf";
-
     private Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN).getChildLogger("init");
     RaplaStartupEnvironment env = new RaplaStartupEnvironment();
     Container raplaContainer;
@@ -37,9 +35,9 @@ public class MainWebclient
     
     
 
-    void init(URL configURL,int mode) throws Exception {
+    void init(URL contextURL,int mode) throws Exception {
         env.setStartupMode( mode );
-        env.setConfigURL( configURL );
+        env.setContextRootURL( contextURL );
         env.setBootstrapLogger( getLogger() );
     }
 
@@ -105,7 +103,7 @@ public class MainWebclient
     	MainWebclient main = new MainWebclient();
         try {
         	
-        	main.init( new URL("http://localhost:8051/rapla/raplaclient.xconf"),StartupEnvironment.CONSOLE);
+        	main.init( new URL("http://localhost:8051/rapla"),StartupEnvironment.CONSOLE);
             main.startRapla("client");
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);

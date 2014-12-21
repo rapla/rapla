@@ -76,7 +76,7 @@ detected.
     <Arg></Arg>
 	<Arg>rapladatasource</Arg>
 	<!--  change to rapladb if you want to use a database as datasource -->
-	<Arg type="java.lang.String">raplafile</Arg>
+	<Arg type="java.lang.String">rapladb</Arg>
 	<Arg type="boolean">true</Arg>
  </New>
 

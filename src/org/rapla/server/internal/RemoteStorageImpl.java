@@ -90,7 +90,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
@@ -1145,12 +1144,6 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 			}
 
             @Override
-            public FutureResult<VoidResult> setConnectInfo(RemoteConnectionInfo info) {
-                return ResultImpl.VOID;
-            }
-
-			
-			@Override
 			public FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds)
 			{
 				try

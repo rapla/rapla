@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
@@ -72,9 +71,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.internal.ComponentInfo;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.EditController;
@@ -131,23 +128,17 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     I18nBundle i18n;
     boolean started;
     boolean restartingGUI;
-    String facadeName;
     boolean defaultLanguageChoosen;
     FrameControllerList frameControllerList;
-    Configuration config;
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
 	static boolean lookAndFeelSet;
 	CommandScheduler commandQueueWrapper;
+    private ClientFacade facade;
+    StorageOperator operator;
 
-	public RaplaClientServiceImpl(RaplaContext parentContext,Configuration config,Logger logger) throws RaplaException {
-        super(parentContext,config, logger);
-        this.config = config;
-    }
-
-    @Override
-    protected Map<String,ComponentInfo> getComponentInfos() {
-        return new RaplaMetaConfigInfo();
+	public RaplaClientServiceImpl(RaplaContext parentContext,Logger logger) throws RaplaException {
+        super(parentContext, logger);
     }
 
     public static void setLookandFeel() {
@@ -205,16 +196,19 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     	getLogger().info("Starting gui ");
 		
         super.init( );
-
-        facadeName = m_config.getChild("facade").getValue("*");
-
+        this.operator = getContext().lookup( RemoteOperator.class);
+        
         addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
         
         // overwrite commandqueue because we need to synchronize with swing
         commandQueueWrapper = new AWTWrapper((DefaultScheduler)getContext().lookup(CommandScheduler.class));
 		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueueWrapper);
-        
+        i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
+        addContainerProvidedComponentInstance( StorageOperator.class, operator );
+        facade = new FacadeImpl(operator,i18n,commandQueueWrapper, logger);
+
+		
         addContainerProvidedComponent( RaplaClipboard.class, RaplaClipboard.class );
         addContainerProvidedComponent( TreeFactory.class, TreeFactoryImpl.class );
         addContainerProvidedComponent( MenuFactory.class, MenuFactoryImpl.class );
@@ -333,7 +327,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 	}
 	
     public ClientFacade getFacade() throws RaplaContextException {
-        return  lookup(ClientFacade.class, facadeName);
+        return  facade;
     }
 
     public void start(ConnectInfo connectInfo) throws Exception {
@@ -341,7 +335,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
             return;
         try {
         	getLogger().debug("RaplaClient started");
-            i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
             ClientFacade facade = getFacade();
             facade.addUpdateErrorListener(this);
             StorageOperator operator = facade.getOperator();

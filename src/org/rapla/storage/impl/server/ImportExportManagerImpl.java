@@ -11,10 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl.server;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.Container;
-import org.rapla.framework.RaplaContext;
+import javax.inject.Provider;
+
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
@@ -32,22 +30,16 @@ import org.rapla.storage.LocalCache;
 </pre>
 */
 public class ImportExportManagerImpl implements ImportExportManager {
-
-    Container container;
-    String sourceString;
-    String destString;
+    Provider<CachableStorageOperator> source;
+    Provider<CachableStorageOperator> dest;
     Logger logger;
     
-    public ImportExportManagerImpl(RaplaContext context,Configuration configuration) throws RaplaException
+    public ImportExportManagerImpl(Logger logger,Provider<CachableStorageOperator> source,Provider<CachableStorageOperator> dest) 
     {
-        this.logger =  context.lookup( Logger.class);
-        this.container = context.lookup( Container.class);
-        try {
-            sourceString = configuration.getChild("source").getValue();
-            destString = configuration.getChild("dest").getValue();
-        } catch (ConfigurationException e) {
-            throw new RaplaException( e);
-        }
+        this.logger =  logger;
+        this.source = source;
+        this.dest = dest;
+        
     }
     
     protected Logger getLogger() {
@@ -57,10 +49,10 @@ public class ImportExportManagerImpl implements ImportExportManager {
     /* Import the source into dest.   */
     public void doImport() throws RaplaException {
         Logger logger = getLogger();
-		logger.info("Import from " + sourceString + " into " + destString);
-        CachableStorageOperator source = getSource();
+		CachableStorageOperator source = getSource();
+        CachableStorageOperator destination = getDestination();
+        logger.info("Import from " + source.toString() + " into " + dest.toString());
         source.connect();
-		CachableStorageOperator destination = getDestination();
 		doConvert(source,destination);
         logger.info("Import completed");
     }
@@ -68,10 +60,10 @@ public class ImportExportManagerImpl implements ImportExportManager {
     /* Export the dest into source.   */
     public void doExport() throws RaplaException {
         Logger logger = getLogger();
-		logger.info("Export from " +  destString + " into " + sourceString);
+        CachableStorageOperator source = getSource();
         CachableStorageOperator destination = getDestination();
+        logger.info("Export from " +  dest.toString() + " into " + source.toString());
         destination.connect();
-		CachableStorageOperator source = getSource();
 		doConvert(destination,source);
         logger.info("Export completed");
     }
@@ -89,14 +81,12 @@ public class ImportExportManagerImpl implements ImportExportManager {
 	@Override
 	public CachableStorageOperator getSource() throws RaplaException 
 	{
-		CachableStorageOperator lookup = container.lookup(CachableStorageOperator.class, sourceString);
-		return lookup;
+		return source.get();
 	}
 
 	@Override
 	public CachableStorageOperator getDestination() throws RaplaException 
 	{
-		CachableStorageOperator lookup = container.lookup(CachableStorageOperator.class, destString);
-		return lookup;
+		return dest.get();
 	}
 }

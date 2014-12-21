@@ -18,6 +18,7 @@ import java.util.Set;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
@@ -70,6 +71,10 @@ public class CalendarOptionsImpl implements CalendarOptions {
 	int firstDayOfWeek;
 	private int minBlockWidth;
 
+	public CalendarOptionsImpl() throws RaplaException {
+	    this(new DefaultConfiguration());
+	}
+	
     public CalendarOptionsImpl(Configuration config ) throws RaplaException {
         this.config = config;
         Configuration worktime = config.getChild( WORKTIME );

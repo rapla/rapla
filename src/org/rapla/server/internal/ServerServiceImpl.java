@@ -19,17 +19,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
-import org.rapla.ConnectInfo;
 import org.rapla.RaplaMainContainer;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -48,10 +48,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ComponentInfo;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.rest.RemoteLogger;
@@ -88,7 +86,6 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -127,26 +124,17 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     ShutdownService shutdownService;
     // 5 Hours until the token expires
     int accessTokenValiditySeconds =  300 * 60;
-    public ServerServiceImpl( RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException
+    @Inject
+    public ServerServiceImpl( RaplaContext parentContext,CachableStorageOperator operator, Logger logger) throws RaplaException
     {
-        super( parentContext, config, logger );
-    	
-        addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
+        super( parentContext, logger );
+        this.operator = operator;
+    	addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
         i18n =  parentContext.lookup( RaplaComponent.RAPLA_RESOURCES );
-        Configuration login = config.getChild( "login" );
-        String username = login.getChild( "username" ).getValue( null );
-        String password = login.getChild( "password" ).getValue( "" );
+        CommandScheduler scheduler = parentContext.lookup(CommandScheduler.class );
+        this.facade = new FacadeImpl(operator,i18n, scheduler, logger);
         RaplaContext context = getContext();
 
-        if ( config.getChildren("facade").length >0 )
-        {
-        	facade = m_context.lookup(ClientFacade.class);
-        }
-        else
-        {
-        	// for old raplaserver.xconf
-        	facade = new FacadeImpl( context, config, getLogger().getChildLogger("serverfacade") );
-        }
         operator = (CachableStorageOperator) facade.getOperator();
         addContainerProvidedComponentInstance( ServerService.class, this);
         addContainerProvidedComponentInstance( ShutdownService.class, this);
@@ -170,8 +158,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addWebpage( "raplaclient",RaplaJNLPPageGenerator.class );
         addWebpage( "raplaapplet",RaplaAppletPageGenerator.class );
         addWebpage( "store",RaplaStorePage.class);
-        addWebpage( "raplaclient.xconf",RaplaConfPageGenerator.class );
-        addWebpage( "raplaclient.xconf",RaplaConfPageGenerator.class);
         
         I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 
@@ -183,10 +169,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         standaloneSession = new RemoteSessionImpl(getContext(), "session");
         
         operator.addStorageUpdateListener( this );
-        if ( username != null  )
-            operator.connect( new ConnectInfo(username, password.toCharArray()));
-        else
-            operator.connect();
+//        if ( username != null  )
+//            operator.connect( new ConnectInfo(username, password.toCharArray()));
+//        else
+        operator.connect();
 
         Set<String> pluginNames;
         //List<PluginDescriptor<ClientServiceContainer>> pluginList;
@@ -305,11 +291,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
             }
         }
-    }
-
-    @Override
-    protected Map<String,ComponentInfo> getComponentInfos() {
-        return new RaplaMetaConfigInfo();
     }
 
     public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory) {
@@ -475,11 +456,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 {
                     return ServerServiceImpl.this.getLogger();
                 }
-            }
-            
-            @Override
-            public FutureResult<VoidResult> setConnectInfo(RemoteConnectionInfo info) {
-                return ResultImpl.VOID;
             }
             
             @Override

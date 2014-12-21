@@ -15,6 +15,10 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
@@ -22,11 +26,10 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
 /** default implementation of appointment formater */
+@Singleton
 public class AppointmentFormaterImpl
     implements
     AppointmentFormater
@@ -34,10 +37,11 @@ public class AppointmentFormaterImpl
     I18nBundle i18n;
     RaplaLocale loc;
 
-    public AppointmentFormaterImpl(RaplaContext context) throws RaplaException
+    @Inject
+    public AppointmentFormaterImpl(@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,RaplaLocale loc)
     {
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-        loc =  context.lookup(RaplaLocale.class);
+        this.i18n = i18n;
+        this.loc = loc;
     }
 
     protected RaplaLocale getRaplaLocale() {

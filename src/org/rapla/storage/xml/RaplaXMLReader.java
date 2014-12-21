@@ -90,9 +90,9 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         this.context = context;
         logger = context.lookup( Logger.class );
         this.i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         this.store = context.lookup( EntityStore.class); 
         this.idTable = context.lookup( IdCreator.class );
-        RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );

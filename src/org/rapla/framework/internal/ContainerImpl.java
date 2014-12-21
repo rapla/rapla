@@ -12,7 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,13 +34,15 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
 import javax.jws.WebService;
 
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.Container;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
@@ -55,14 +61,12 @@ public class ContainerImpl implements Container
 {
     protected Container m_parent;
     protected RaplaDefaultContext m_context;
-    protected Configuration m_config;
 
     protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
     protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String,RoleEntry>()); 
     Logger logger;
 
-    public ContainerImpl(RaplaContext parentContext, Configuration config, Logger logger) throws RaplaException  {
-    	m_config = config;
+    public ContainerImpl(RaplaContext parentContext, Logger logger) throws RaplaException  {
 //    	if ( parentContext.has(Logger.class ) )
 //    	{
 //    		logger =  parentContext.lookup( Logger.class);
@@ -118,9 +122,11 @@ public class ContainerImpl implements Container
         return logger;
     }
 
+	/**
+     * @throws RaplaException  
+     */
 	protected void init() throws RaplaException {
-        configure( m_config );
-        addContainerProvidedComponentInstance( Container.class, this );
+	    addContainerProvidedComponentInstance( Container.class, this );
         addContainerProvidedComponentInstance( Logger.class, getLogger());
 	}
 
@@ -133,70 +139,6 @@ public class ContainerImpl implements Container
         {
             throw new IllegalStateException(" Container not initialized with a startup environment");
         }
-    }
-
-    protected void configure( final Configuration config )
-        throws RaplaException
-    {
-        Map<String,ComponentInfo> m_componentInfos = getComponentInfos();
-        final Configuration[] elements = config.getChildren();
-        for ( int i = 0; i < elements.length; i++ )
-        {
-            final Configuration element = elements[i];
-            final String id = element.getAttribute( "id", null );
-            if ( null == id )
-            {
-                // Only components with an id attribute are treated as components.
-                getLogger().debug( "Ignoring configuration for component, " + element.getName()
-                    + ", because the id attribute is missing." );
-            }
-            else
-            {
-                final String className;
-                final String[] roles;
-                if ( "component".equals( element.getName() ) )
-                {
-                    try {
-                        className = element.getAttribute( "class" );
-                        Configuration[] roleConfigs = element.getChildren("roles");
-                        roles = new String[ roleConfigs.length ];
-                        for ( int j=0;j< roles.length;j++) {
-                            roles[j] = roleConfigs[j].getValue();
-                        }
-                    } catch ( ConfigurationException ex) {
-                        throw new RaplaException( ex);
-                    }
-                }
-                else
-                {
-                    String configName = element.getName();
-                    final ComponentInfo roleEntry = m_componentInfos.get( configName );
-                    if ( null == roleEntry )
-                    {
-                        final String message = "No class found matching configuration name " + "[name: " + element.getName()  + "]";
-                        getLogger().error( message );
-
-                        continue;
-                    }
-                    roles = roleEntry.getRoles();
-                    className = roleEntry.getClassname();
-                }
-                if ( getLogger().isDebugEnabled() )
-                {
-                    getLogger().debug( "Configuration processed for: " + className );
-                }
-                Logger logger = this.logger.getChildLogger( id );
-                ComponentHandler handler =new ComponentHandler( element, className, logger);
-                for ( int j=0;j< roles.length;j++) {
-                    String roleName = (roles[j]);
-                    addHandler( roleName, id, handler );
-                }
-            }
-        }
-    }
-
-    protected Map<String,ComponentInfo> getComponentInfos() {
-        return Collections.emptyMap();
     }
 
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass) {
@@ -571,6 +513,10 @@ public class ContainerImpl implements Container
         for (Constructor constructor:constructors) {
             Class[] types = constructor.getParameterTypes();
             boolean compatibleParameters = true;
+            if (constructor.getAnnotation( Inject.class) != null)
+            {
+                return constructor;
+            }
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
                 if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class) || getContext().has( type))) 
@@ -597,7 +543,7 @@ public class ContainerImpl implements Container
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Object instanciate( String componentClassName, Configuration config, Logger logger ) throws RaplaContextException
     {
-    	RaplaContext context = m_context;
+        final RaplaContext context = m_context;
 		Class componentClass;
         try {
             componentClass = Class.forName( componentClassName );
@@ -608,10 +554,54 @@ public class ContainerImpl implements Container
         Object[] params = null;
         if ( c != null) {
             Class[] types = c.getParameterTypes();
+            Annotation[][] parameterAnnotations = c.getParameterAnnotations();
+            Type[] genericParameterTypes = c.getGenericParameterTypes();
             params = new Object[ types.length ];
             for (int i=0; i< types.length; i++ ) {
-                Class type = types[i];
-                Object p;
+                final Class type = types[i];
+                Object p = null;
+                Annotation[] annotations = parameterAnnotations[i];
+                for ( Annotation annotation: annotations)
+                {
+                    if ( annotation.annotationType().equals( Named.class))
+                    {
+                        String value = ((Named)annotation).value();
+                        Object lookup = getContext().lookup( new TypedComponentRole( value));
+                        p = lookup;
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                String typeName = type.getName();
+                final Type type2 = genericParameterTypes[i];
+                if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
+                {
+                    Type[] actualTypeArguments = ((ParameterizedType)type2).getActualTypeArguments();
+                    if ( actualTypeArguments.length > 0)
+                    {
+                        final Type param = actualTypeArguments[0];
+                        p = new Provider()
+                        {
+                            @Override
+                            public Object get() {
+                                try {
+                                    return context.lookup(param.getClass());
+                                } catch (RaplaContextException e) {
+                                    throw new IllegalStateException( e.getMessage(),e);
+                                }
+                            }
+                            
+                        };
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
                 if ( type.isAssignableFrom( RaplaContext.class)) {
                     p = context;
                 } else  if ( type.isAssignableFrom( Configuration.class)) {

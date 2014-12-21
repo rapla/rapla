@@ -12,28 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.rapla.components.util.Assert;
 import org.rapla.components.util.JNLPUtil;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.NullLogger;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -100,43 +94,43 @@ public abstract class ConfigTools
     }
 
     /** Creates a configuration from a URL.*/
-    public static Configuration createConfig( String configURL ) throws RaplaException
-    {
-        try
-        {
-            URLConnection conn = new URL( configURL).openConnection();
-            InputStreamReader stream = new InputStreamReader(conn.getInputStream());
-            StringBuilder builder = new StringBuilder();
-            //System.out.println( "File Content:");
-            int s= -1; 
-            do {
-                s = stream.read();
-              //  System.out.print( (char)s );
-                if ( s != -1)
-                {
-                    builder.append( (char) s );
-                }
-            } while ( s != -1);
-            stream.close();
-            Assert.notNull( stream );
-            Logger logger = new NullLogger();
-			RaplaNonValidatedInput parser = new RaplaReaderImpl();
-			final SAXConfigurationHandler handler = new SAXConfigurationHandler();
-			String xml = builder.toString();
-			parser.read(xml, handler, logger);
-            Configuration config = handler.getConfiguration();
-            Assert.notNull( config );
-            return config;
-        }
-        catch ( EOFException ex )
-        {
-            throw new RaplaException( "Can't load configuration-file at " + configURL );
-        }
-        catch ( Exception ex )
-        {
-            throw new RaplaException( ex );
-        }
-    }
+//    public static Configuration createConfig( String configURL ) throws RaplaException
+//    {
+//        try
+//        {
+//            URLConnection conn = new URL( configURL).openConnection();
+//            InputStreamReader stream = new InputStreamReader(conn.getInputStream());
+//            StringBuilder builder = new StringBuilder();
+//            //System.out.println( "File Content:");
+//            int s= -1; 
+//            do {
+//                s = stream.read();
+//              //  System.out.print( (char)s );
+//                if ( s != -1)
+//                {
+//                    builder.append( (char) s );
+//                }
+//            } while ( s != -1);
+//            stream.close();
+//            Assert.notNull( stream );
+//            Logger logger = new NullLogger();
+//			RaplaNonValidatedInput parser = new RaplaReaderImpl();
+//			final SAXConfigurationHandler handler = new SAXConfigurationHandler();
+//			String xml = builder.toString();
+//			parser.read(xml, handler, logger);
+//            Configuration config = handler.getConfiguration();
+//            Assert.notNull( config );
+//            return config;
+//        }
+//        catch ( EOFException ex )
+//        {
+//            throw new RaplaException( "Can't load configuration-file at " + configURL );
+//        }
+//        catch ( Exception ex )
+//        {
+//            throw new RaplaException( ex );
+//        }
+//    }
     
     static public class RaplaReaderImpl implements RaplaNonValidatedInput
     {

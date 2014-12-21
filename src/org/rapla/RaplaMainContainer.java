@@ -26,14 +26,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.inject.Provider;
+import javax.sql.DataSource;
+
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.IOUtil;
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
@@ -43,7 +43,7 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.Provider;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
@@ -51,12 +51,10 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.ServiceListCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.internal.ComponentInfo;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaJDKLoggingAdapter;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.internal.RaplaMetaConfigInfo;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.RaplaHTTPConnector;
@@ -97,12 +95,13 @@ The Main Container provides the following Services to all RaplaComponents
  */
 final public class RaplaMainContainer extends ContainerImpl
 {
-    public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
+    public static final String ENV_RAPLAFILE_ID = "env.raplafile";
+    //public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
     public static final TypedComponentRole<String> DOWNLOAD_SERVER = new TypedComponentRole<String>("download-server");
     public static final TypedComponentRole<URL> DOWNLOAD_URL = new TypedComponentRole<URL>("download-url");
     public static final TypedComponentRole<String> ENV_RAPLADATASOURCE = new TypedComponentRole<String>("env.rapladatasource");
-    public static final TypedComponentRole<String> ENV_RAPLAFILE = new TypedComponentRole<String>("env.raplafile");
-    public static final TypedComponentRole<Object> ENV_RAPLADB= new TypedComponentRole<Object>("env.rapladb");
+    public static final TypedComponentRole<String> ENV_RAPLAFILE = new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
+    public static final TypedComponentRole<DataSource> ENV_RAPLADB= new TypedComponentRole<DataSource>("env.rapladb");
     public static final TypedComponentRole<Object> ENV_RAPLAMAIL= new TypedComponentRole<Object>("env.raplamail");
     public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
     
@@ -126,17 +125,19 @@ final public class RaplaMainContainer extends ContainerImpl
     	this(  env,context,createRaplaLogger());
     }
     
-    RemoteConnectionInfo globalConnectInfo;
+    RemoteConnectionInfo remoteConnectionInfo = new RemoteConnectionInfo();
+    //RemoteConnectionInfo globalConnectInfo;
     CommandScheduler commandQueue;
     I18nBundle i18n;
     
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
-        super( context, env.getStartupConfiguration(),logger );
+        super( context,logger );
         addContainerProvidedComponentInstance( StartupEnvironment.class, env);
         addContainerProvidedComponentInstance( DOWNLOAD_SERVER, env.getDownloadURL().getHost());
         addContainerProvidedComponentInstance( DOWNLOAD_URL,  env.getDownloadURL());
         commandQueue = createCommandQueue();
 		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
+		addContainerProvidedComponentInstance( RemoteConnectionInfo.class, remoteConnectionInfo);
 		addContainerProvidedComponentInstance( RemoteServiceCaller.class, new RemoteServiceCaller() {
             
             @Override
@@ -179,53 +180,49 @@ final public class RaplaMainContainer extends ContainerImpl
         return logger;
     }
 
-    protected Map<String,ComponentInfo> getComponentInfos() {
-        return new RaplaMetaConfigInfo();
-    }
-
     private void initialize() throws Exception {
         
         Logger logger = getLogger();
         int startupMode = getStartupEnvironment().getStartupMode();
 		logger.debug("----------- Rapla startup mode = " +  startupMode);
-		RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(m_config.getChild("locale"), logger);
+		//Configuration child = m_config.getChild("locale");
+        RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(new DefaultConfiguration(), logger);
 
-        Configuration localeConfig = m_config.getChild("locale");
-        CalendarOptions calendarOptions = new CalendarOptionsImpl(localeConfig);
+        //Configuration localeConfig = m_config.getChild("locale");
+        CalendarOptions calendarOptions = new CalendarOptionsImpl(new DefaultConfiguration());
         addContainerProvidedComponentInstance( CalendarOptions.class, calendarOptions );
-        addContainerProvidedComponentInstance( RAPLA_MAIN_CONFIGURATION, m_config );
-        addContainerProvidedComponent( RaplaNonValidatedInput.class,  ConfigTools.RaplaReaderImpl.class);
+        //addContainerProvidedComponentInstance( RAPLA_MAIN_CONFIGURATION, m_config );
+        //addContainerProvidedComponent( RaplaNonValidatedInput.class,  ConfigTools.RaplaReaderImpl.class);
         
         // Startup mode= EMBEDDED = 0, CONSOLE = 1, WEBSTART = 2, APPLET = 3, SERVLET = 4
         addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
         addContainerProvidedComponentInstance( LocaleSelector.class,raplaLocale.getLocaleSelector());
         
-        m_config.getChildren("rapla-client");
+        //m_config.getChildren("rapla-client");
         
-        String defaultBundleName = m_config.getChild("default-bundle").getValue( null);
         // Override the intern Resource Bundle with user provided
         Configuration parentConfig = I18nBundleImpl.createConfig( RaplaComponent.RAPLA_RESOURCES.getId() );
-        if ( defaultBundleName!=null) {
-        	I18nBundleImpl i18n = new I18nBundleImpl( getContext(), I18nBundleImpl.createConfig( defaultBundleName ), logger);
-            String parentId = i18n.getParentId();
-            if ( parentId != null && parentId.equals(RaplaComponent.RAPLA_RESOURCES.getId())) 
-            {
-    			I18nBundleImpl parent = new I18nBundleImpl( getContext(), parentConfig, logger);
-            	I18nBundle compound = new CompoundI18n( i18n, parent);
-            	addContainerProvidedComponentInstance(RaplaComponent.RAPLA_RESOURCES, compound);
-            }
-            else
-            {
-            	addContainerProvidedComponent(RaplaComponent.RAPLA_RESOURCES,I18nBundleImpl.class, parentConfig);            	
-            }
-        }
-        else
+//        String defaultBundleName = m_config.getChild("default-bundle").getValue( null);
+//        // bundle logic will be replaced
+//        if ( defaultBundleName!=null) {
+//        	I18nBundleImpl i18n = new I18nBundleImpl( getContext(), I18nBundleImpl.createConfig( defaultBundleName ), logger);
+//            String parentId = i18n.getParentId();
+//            if ( parentId != null && parentId.equals(RaplaComponent.RAPLA_RESOURCES.getId())) 
+//            {
+//    			I18nBundleImpl parent = new I18nBundleImpl( getContext(), parentConfig, logger);
+//            	I18nBundle compound = new CompoundI18n( i18n, parent);
+//            	addContainerProvidedComponentInstance(RaplaComponent.RAPLA_RESOURCES, compound);
+//            }
+//            else
+//            {
+//            	addContainerProvidedComponent(RaplaComponent.RAPLA_RESOURCES,I18nBundleImpl.class, parentConfig);            	
+//            }
+//        }
+//        else
         {
         	addContainerProvidedComponent(RaplaComponent.RAPLA_RESOURCES,I18nBundleImpl.class, parentConfig);
         }
-
-        addContainerProvidedComponentInstance( AppointmentFormater.class, new AppointmentFormaterImpl( getContext()));
-
+        addContainerProvidedComponent(AppointmentFormater.class, AppointmentFormaterImpl.class);
       
         // Discover and register the plugins for Rapla
 
@@ -250,7 +247,7 @@ final public class RaplaMainContainer extends ContainerImpl
         }
         
         addContainerProvidedComponentInstance( PLUGIN_LIST, pluginNames);
-        logger.info("Config=" + getStartupEnvironment().getConfigURL());
+        //logger.info("Config=" + getStartupEnvironment().getConfigURL());
         
         i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
         String version = i18n.getString( "rapla.version" );
@@ -279,6 +276,7 @@ final public class RaplaMainContainer extends ContainerImpl
         super.dispose();
     }
 	
+    
 
     public <T> T getRemoteMethod(final RaplaContext context,final Class<T> a) throws RaplaContextException  
     {
@@ -290,21 +288,21 @@ final public class RaplaMainContainer extends ContainerImpl
       
         InvocationHandler proxy = new InvocationHandler() 
         {
-            RemoteConnectionInfo localConnectInfo;
+//            RemoteConnectionInfo localConnectInfo;
             
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
             {
-                if ( method.getName().equals("setConnectInfo") && method.getParameterTypes()[0].equals(RemoteConnectionInfo.class))
-                {
-                    localConnectInfo = (RemoteConnectionInfo) args[0];
-                    if ( globalConnectInfo == null)
-                    {
-                        globalConnectInfo =localConnectInfo;
-                    }
-                    return null;
-                }
+//                if ( method.getName().equals("setConnectInfo") && method.getParameterTypes()[0].equals(RemoteConnectionInfo.class))
+//                {
+//                    localConnectInfo = (RemoteConnectionInfo) args[0];
+//                    if ( globalConnectInfo == null)
+//                    {
+//                        globalConnectInfo =localConnectInfo;
+//                    }
+//                    return null;
+//                }
 
-                RemoteConnectionInfo remoteConnectionInfo = localConnectInfo != null ? localConnectInfo : globalConnectInfo;
+  //              RemoteConnectionInfo remoteConnectionInfo = localConnectInfo != null ? localConnectInfo : globalConnectInfo;
                 if ( remoteConnectionInfo == null)
                 {
                     throw new IllegalStateException("you need to call setConnectInfo first");

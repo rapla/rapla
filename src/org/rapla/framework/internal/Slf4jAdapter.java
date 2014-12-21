@@ -13,7 +13,8 @@
 package org.rapla.framework.internal;
 
 
-import org.rapla.framework.Provider;
+import javax.inject.Provider;
+
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;

@@ -102,8 +102,4 @@ public interface RemoteStorage extends RemoteJsonService {
 		}
     }
     
-    
-    @ResultType(VoidResult.class)
-    FutureResult<VoidResult> setConnectInfo(@WebParam(name="info")RemoteConnectionInfo info);
-
 }

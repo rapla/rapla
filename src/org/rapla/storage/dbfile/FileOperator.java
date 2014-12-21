@@ -20,17 +20,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.rapla.ConnectInfo;
-import org.rapla.components.util.IOUtil;
+import org.rapla.RaplaMainContainer;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -44,15 +49,12 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateEvent;
@@ -97,6 +99,7 @@ import org.xml.sax.XMLReader;
  @see AbstractCachableOperator
  @see org.rapla.storage.StorageOperator
  */
+@Singleton
 final public class FileOperator extends LocalAbstractCachableOperator
 {
  	private File storageFile;
@@ -104,27 +107,27 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private final String encoding;
     protected boolean isConnected = false;
-    final boolean includeIds ;
-
-    public FileOperator( RaplaContext context,Logger logger, Configuration config ) throws RaplaException
+    final boolean includeIds= false;
+    @Inject
+    public FileOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(RaplaMainContainer.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
     {
-        super( context, logger );
-        StartupEnvironment env =  context.lookup( StartupEnvironment.class );
+        super(  logger, i18n, raplaLocale, scheduler );
+        //StartupEnvironment env =  context.lookup( StartupEnvironment.class );
 
-        URL contextRootURL = env.getContextRootURL();
-
-        String datasourceName = config.getChild("datasource").getValue(null);
-        if ( datasourceName != null)
-        {
-        	String filePath;
-	        try {
-	        	 filePath = ContextTools.resolveContext(datasourceName, context );
-	        } catch (RaplaContextException ex) {
-	        	filePath = "${context-root}/data.xml";
-	        	String message = "JNDI config raplafile is not found using '" + filePath + "' :"+ ex.getMessage() ;
-	        	getLogger().warn(message);
-	        }
-	        String 	resolvedPath = ContextTools.resolveContext(filePath, context);
+//        URL contextRootURL = env.getContextRootURL();
+//
+//        String datasourceName = config.getChild("datasource").getValue(null);
+//        if ( datasourceName != null)
+//        {
+//        	String filePath;
+//	        try {
+//	        	 filePath = ContextTools.resolveContext(datasourceName, context );
+//	        } catch (RaplaContextException ex) {
+//	        	filePath = "${context-root}/data.xml";
+//	        	String message = "JNDI config raplafile is not found using '" + filePath + "' :"+ ex.getMessage() ;
+//	        	getLogger().warn(message);
+//	        }
+//	        String 	resolvedPath = ContextTools.resolveContext(filePath, context);
 	        try
 	        {
 				 storageFile = new File( resolvedPath);
@@ -132,50 +135,50 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        } catch (Exception e) {
 	        	throw new RaplaException("Error parsing file '" + resolvedPath + "' " + e.getMessage());
 	        }
-        }
-        else
-        {
-	        String fileName = config.getChild( "file" ).getValue( "data.xml" );
-	        try
-	        {
-	            File file = new File( fileName );
-	            if ( file.isAbsolute() )
-	            {
-	                storageFile = file;
-	                loadingURL = storageFile.getCanonicalFile().toURI().toURL();
-	            }
-	            else
-	            {
-	                int startupEnv = env.getStartupMode();
-	                if ( startupEnv == StartupEnvironment.WEBSTART || startupEnv == StartupEnvironment.APPLET )
-	                {
-	                    loadingURL = new URL( contextRootURL, fileName );
-	                }
-	                else
-	                {
-	                    File contextRootFile = IOUtil.getFileFrom( contextRootURL );
-	                    storageFile = new File( contextRootFile, fileName );
-	                    loadingURL = storageFile.getCanonicalFile().toURI().toURL();
-	                }
-	            }
-	            getLogger().info("Data:" + loadingURL);
-	        }
-	        catch ( MalformedURLException ex )
-	        {
-	            throw new RaplaException( fileName + " is not an valid path " );
-	        }
-	        catch ( IOException ex )
-	        {
-	            throw new RaplaException( "Can't read " + storageFile + " " + ex.getMessage() );
-	        }
-        }
-        encoding = config.getChild( "encoding" ).getValue( "utf-8" );
-        boolean validate = config.getChild( "validate" ).getValueAsBoolean( false );
-        if ( validate )
-        {
-            getLogger().error("Validation currently not supported");
-        }
-        includeIds = config.getChild( "includeIds" ).getValueAsBoolean( false );
+        
+//        else
+//        {
+//	        String fileName = config.getChild( "file" ).getValue( "data.xml" );
+//	        try
+//	        {
+//	            File file = new File( fileName );
+//	            if ( file.isAbsolute() )
+//	            {
+//	                storageFile = file;
+//	                loadingURL = storageFile.getCanonicalFile().toURI().toURL();
+//	            }
+//	            else
+//	            {
+//	                int startupEnv = env.getStartupMode();
+//	                if ( startupEnv == StartupEnvironment.WEBSTART || startupEnv == StartupEnvironment.APPLET )
+//	                {
+//	                    loadingURL = new URL( contextRootURL, fileName );
+//	                }
+//	                else
+//	                {
+//	                    File contextRootFile = IOUtil.getFileFrom( contextRootURL );
+//	                    storageFile = new File( contextRootFile, fileName );
+//	                    loadingURL = storageFile.getCanonicalFile().toURI().toURL();
+//	                }
+//	            }
+//	            getLogger().info("Data:" + loadingURL);
+//	        }
+//	        catch ( MalformedURLException ex )
+//	        {
+//	            throw new RaplaException( fileName + " is not an valid path " );
+//	        }
+//	        catch ( IOException ex )
+//	        {
+//	            throw new RaplaException( "Can't read " + storageFile + " " + ex.getMessage() );
+//	        }
+//        }
+	     encoding = "utf-8";//config.getChild( "encoding" ).getValue( "utf-8" );
+//        boolean validate = config.getChild( "validate" ).getValueAsBoolean( false );
+//        if ( validate )
+//        {
+//            getLogger().error("Validation currently not supported");
+//        }
+//        includeIds = config.getChild( "includeIds" ).getValueAsBoolean( false );
         
     } 
 
@@ -235,7 +238,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
             EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
-            RaplaDefaultContext inputContext = new IOContext().createInputContext( context, entityStore, this );
+            RaplaDefaultContext inputContext = new IOContext().createInputContext( logger, raplaLocale,i18n, entityStore, this );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();
@@ -448,7 +451,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out, LocalCache cache,String version, boolean includeIds ) throws IOException, RaplaException
     {
-        RaplaContext outputContext = new IOContext().createOutputContext( context, cache.getSuperCategoryProvider(), includeIds );
+        RaplaContext outputContext = new IOContext().createOutputContext( logger, raplaLocale, i18n , cache.getSuperCategoryProvider(), includeIds );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
         if ( version != null)

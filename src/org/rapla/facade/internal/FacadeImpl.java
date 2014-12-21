@@ -27,6 +27,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.rapla.ConnectInfo;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -80,13 +84,8 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateErrorListener;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContextTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.RaplaSecurityException;
@@ -112,7 +111,7 @@ import org.rapla.storage.UpdateResult;
  * are all components that implement the {@link StorageOperator} interface.
  * </p>
  */
-
+@Singleton
 public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;
@@ -127,48 +126,27 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public CommandHistory commandHistory = new CommandHistory();
 
 	Locale locale;
-	RaplaContext context;
+	//RaplaContext context;
 
 	Logger logger;
 	
 	String templateId;
 	
-	public FacadeImpl(RaplaContext context, Configuration config, Logger logger) throws RaplaException {
-		this( context, getOperator(context, config, logger), logger);
-	}
-
-	private static StorageOperator getOperator(RaplaContext context, Configuration config, Logger logger)
-			throws RaplaContextException {
-		String configEntry = config.getChild("store").getValue("*");
-		String storeSelector = ContextTools.resolveContext(configEntry, context ).toString();
-		logger.info("Using rapladatasource " +storeSelector);
-		try {
-			Container container = context.lookup(Container.class);
-            StorageOperator operator =  container.lookup(StorageOperator.class, storeSelector);
-			return operator;
-		} 
-		catch (RaplaContextException ex) {
-			throw new RaplaContextException("Store "
-					+ storeSelector 
-					+ " is not found (or could not be initialized)", ex);
-		}
-	}
-	
 	public static FacadeImpl create(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException
 	{
-	    return new FacadeImpl(context, operator, logger);
+	    I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+	    CommandScheduler notifyQueue = context.lookup( CommandScheduler.class );
+	    return new FacadeImpl( operator, i18n, notifyQueue,logger);
 	}
 	
-	private FacadeImpl(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException {
+	@Inject
+	public FacadeImpl(StorageOperator operator, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, CommandScheduler notifyQueue, Logger logger) {
 		this.operator = operator;
 		this.logger = logger;
-	    i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-		locale = context.lookup(RaplaLocale.class).getLocale();
-		this.context = context;
-	
+	    this.i18n = i18n;
+        this.notifyQueue = notifyQueue;
+		locale = i18n.getLocale();
 		operator.addStorageUpdateListener(this);
-		notifyQueue = context.lookup( CommandScheduler.class );
-				//org.rapla.components.util.CommandQueue.createCommandQueue();
 	}
 	
 	public Logger getLogger() 
@@ -1241,7 +1219,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( context, user, this);
+	    return new CalendarModelImpl( locale, user, this);
     }
 
 	private String createDynamicTypeKey(String classificationType)
