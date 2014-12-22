@@ -37,7 +37,7 @@
 	   
    <!-- A Postgres database-->
    <!--   
-	   <New class="org.postgresql.ds.PGConnectionPoolDataSource">
+	   <New class="org.postgresql.ds.PGPoolingDataSource">
            <Set name="User">db_user</Set>
            <Set name="Password">your_pwd</Set>
            <Set name="DatabaseName">your_db_name</Set>
