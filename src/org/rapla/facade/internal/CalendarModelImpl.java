@@ -67,7 +67,9 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.UpdateResult;
 
 public class CalendarModelImpl implements CalendarSelectionModel
@@ -97,6 +99,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
+    public CalendarModelImpl(RaplaContext context, User user, ClientFacade facade) throws RaplaException 
+    {
+        this( context.lookup(RaplaLocale.class).getLocale(), user, facade);
+    }
+    
     public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
         this.locale = locale;
         m_facade = facade;

@@ -60,7 +60,10 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -98,6 +101,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     ConnectInfo connectInfo;
     RemoteConnectionInfo connectionInfo;
 	
+    public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaContextException 
+    {
+        this( logger, context.lookup( RaplaComponent.RAPLA_RESOURCES),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
+    }
+    
     @Inject
     public RemoteOperator( Logger logger, @Named(RaplaComponent.RaplaResourcesId)  I18nBundle i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
         super(  logger, i18n,locale );

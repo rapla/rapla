@@ -26,6 +26,8 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
 /** default implementation of appointment formater */
@@ -37,6 +39,12 @@ public class AppointmentFormaterImpl
     I18nBundle i18n;
     RaplaLocale loc;
 
+    public AppointmentFormaterImpl(RaplaContext context) throws RaplaException 
+    {
+        this.i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
+        this.loc = context.lookup( RaplaLocale.class);
+    }
+    
     @Inject
     public AppointmentFormaterImpl(@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,RaplaLocale loc)
     {
