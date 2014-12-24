@@ -20,10 +20,13 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import javax.inject.Inject;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
 import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.logger.Logger;
 
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
@@ -42,6 +45,12 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     String CHARSET = "charset";
     String charsetForHtml;
 
+    @Inject
+    public RaplaLocaleImpl(Logger logger )
+    {
+        this(new DefaultConfiguration(), logger);
+    }
+    
 	public RaplaLocaleImpl(Configuration config,Logger logger )  
     {
 		String selectedCountry = config.getChild( COUNTRY).getValue(Locale.getDefault().getCountry() );
