@@ -418,10 +418,18 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public void setRestriction(Allocatable allocatable,Appointment[] appointments) {
     	checkWritable();
-    	List<String> appointmentIds = new ArrayList<String>();
-    	for ( Appointment app:appointments)
+    	List<String> appointmentIds;
+    	if ( appointments != null)
     	{
-    		appointmentIds.add( app.getId());
+        	appointmentIds = new ArrayList<String>();
+        	for ( Appointment app:appointments)
+        	{
+        		appointmentIds.add( app.getId());
+        	}
+    	}
+    	else
+    	{
+    	    appointmentIds = null;
     	}
     	setRestrictionPrivate(allocatable, appointmentIds);
     }
