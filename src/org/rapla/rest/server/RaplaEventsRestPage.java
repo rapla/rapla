@@ -36,7 +36,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
 
     
-    public List<ReservationImpl> list(@WebParam(name="user") User user, @WebParam(name="start")Date start, @WebParam(name="end")Date end, @WebParam(name="resources") List<String> resources, @WebParam(name="eventTypes") List<String> eventTypes,@WebParam(name="attributeFilter") Map<String,String> simpleFilter ) throws RaplaException
+    public List<ReservationImpl> list(@WebParam(name="user") User user, @WebParam(name="start")Date start, @WebParam(name="end")Date end, @WebParam(name="resources") List<String> resources, @WebParam(name="eventTypes") List<String> eventTypes,@WebParam(name="attributeFilter") Map<String,String> simpleFilter ) throws Exception
     {
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id :resources)
@@ -48,7 +48,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         Map<String, String> annotationQuery = null;
         User owner = null;
-        Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery);
+        Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery).get();
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         for ( Reservation r:reservations)
         {

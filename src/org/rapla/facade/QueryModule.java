@@ -77,6 +77,8 @@ public interface QueryModule
     
     Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
     
+    FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
+    
 	List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException;
 
     /** returns all available periods */

@@ -69,6 +69,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -130,18 +131,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
     
     synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
-        if ( connectInfo == null)
-        {
-            throw new RaplaException("RemoteOperator doesn't support anonymous connect");
-        }
        
         if (isConnected())
-            return null;
+            throw new RaplaException("Already connected");
         getLogger().info("Connecting to server and starting login..");
-    	Lock writeLock = writeLock();
-    	try
-    	{
-    		User user = loginAndLoadData(connectInfo);
+	    User user;
+	    if ( connectInfo != null)
+	    {
+    		user = loginAndLoadData(connectInfo);
     		connectionInfo.setReAuthenticateCommand(new FutureResult<String>() {
 
     	            @Override
@@ -160,23 +157,64 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	               } 
     	            }
     	        });
-    		initRefresh();
-    		return user;
-    	}
-    	finally
-    	{
-    		unlock(writeLock);
-    	}
+	    }
+	    else
+	    {
+	        user = loadData();
+	    }
+		initRefresh();
+		return user;
     }
+    
+    @Override
+    public FutureResult<User> connectAsync() 
+    {
+        return new FutureResult<User>() {
 
+            @Override
+            public User get() throws Exception {
+                return connect(null);
+            }
+
+            @Override
+            public void get(final AsyncCallback<User> callback) {
+                RemoteStorage serv = getRemoteStorage();
+                FutureResult<UpdateEvent> resources;
+                try {
+                    resources = serv.getResources();
+                } catch (RaplaException e) {
+                    callback.onFailure( e);
+                    return;
+                }
+                resources.get( new AsyncCallback<UpdateEvent>() {
+
+                    @Override
+                    public void onFailure(Throwable caught) {
+                        callback.onFailure( caught);
+                        return;                        
+                    }
+
+                    @Override
+                    public void onSuccess(UpdateEvent evt) {
+                        
+                        try {
+                            User user = loadFromEvent( evt);
+                            callback.onSuccess( user );
+                        } catch (RaplaException e) {
+                            callback.onFailure( e);
+                        }
+                        
+                    }
+                });
+            }
+        };
+    }
 	
 	private User loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
 		this.connectInfo = connectInfo;
-		String username = this.connectInfo.getUsername();
 		login();
         getLogger().info("login successfull");
-		User user = loadData(username);
-        bSessionActive = true;
+		User user = loadData();
         return user;
 	}
 
@@ -454,7 +492,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     private boolean isStandalone() {
         String serverURL = connectionInfo.getServerURL();
-        return serverURL == null || serverURL.trim().length() == 0;
+        return serverURL != null && serverURL.contains("file:");
     }
     
     @Override
@@ -514,42 +552,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }  
     }
 
-    public User loadData(String username) throws RaplaException {
-        getLogger().debug("Getting Data..");
+    public User loadData() throws RaplaException {
+        RemoteStorage serv = getRemoteStorage();
+        FutureResult<UpdateEvent> resources = serv.getResources();
         try
         {
-            RemoteStorage serv = getRemoteStorage();
-            FutureResult<UpdateEvent> resources = serv.getResources();
+            getLogger().debug("Getting Data..");
             UpdateEvent evt = resources.get();
-	        this.userId = evt.getUserId();
-	        if ( userId != null)
-	        {
-	            cache.setClientUserId( userId);
-	        }
-			updateTimestamps(evt);
-	        Collection<Entity> storeObjects = evt.getStoreObjects();
-        	cache.clearAll();
-        	testResolveInitial( storeObjects);
-        	setResolver( storeObjects );
-            for( Entity entity:storeObjects)
-            {
-                cache.put(entity);
-	        }
-            getLogger().debug("Data flushed");
-            bSessionActive = true;
-            if ( username != null)
-	        {
-	        	if ( userId == null)
-	        	{
-	        	    throw new EntityNotFoundException("User with username "+ username + " not found in result");
-	        	}
-	        	User user = cache.resolve( userId, User.class);
-	        	return user;
-	        }
-	        else 
-	        {
-	            return null;
-	        }
+	        return loadFromEvent(evt);
         }
 	    catch (RaplaException ex)
 	    {
@@ -559,6 +569,40 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    {
 	    	throw new RaplaException(ex);
 	    }		
+    }
+
+    private User loadFromEvent(UpdateEvent evt) throws EntityNotFoundException, RaplaException {
+        Lock writeLock = writeLock();
+        try
+        {
+            this.userId = evt.getUserId();
+            if ( userId != null)
+            {
+                cache.setClientUserId( userId);
+            }
+            if ( userId == null)
+            {
+                throw new EntityNotFoundException("Userid not passed in result");
+            }
+            updateTimestamps(evt);
+            Collection<Entity> storeObjects = evt.getStoreObjects();
+            cache.clearAll();
+            testResolveInitial( storeObjects);
+            setResolver( storeObjects );
+            for( Entity entity:storeObjects)
+            {
+                cache.put(entity);
+            }
+            getLogger().debug("Data flushed");
+            bSessionActive = true;
+            User user = cache.resolve( userId, User.class);
+            return user;        }
+        finally
+        {
+            unlock(writeLock);
+        }
+
+
     }
 
 	public void updateTimestamps(UpdateEvent evt) throws RaplaException {
@@ -815,20 +859,64 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
     
-    public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
+    public FutureResult<Collection<Reservation>> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,final ClassificationFilter[] filters, Map<String,String> annotationQuery) {
     	RemoteStorage serv = getRemoteStorage();
-    	// if a refresh is due, we assume the system went to sleep so we refresh before we continue
-    	if ( intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
-    	{
-    	    getLogger().info("cache not uptodate. Refreshing first.");
-    	    refresh();
-    	}
     	
-    	String[] allocatableId = getIdList(allocatables);
+        // if a refresh is due, we assume the system went to sleep so we refresh before we continue
+    	// TODO we should make a refresh async as well
+        if ( intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
+        {
+            getLogger().info("cache not uptodate. Refreshing first.");
+            try {
+                refresh();
+            } catch (RaplaException e) {
+                return new ResultImpl<Collection<Reservation>>(e);
+            }
+        }
+
+        String[] allocatableId = getIdList(allocatables);
+        final FutureResult<List<ReservationImpl>> serverQuery = serv.getReservations(allocatableId,start, end, annotationQuery);
+    	return new FutureResult<Collection<Reservation>>() {
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public Collection<Reservation> get() throws Exception {
+                List<ReservationImpl> list = serverQuery.get();
+                processReservationResult(list, filters);
+                return (Collection) list;
+            }
+
+            @Override
+            public void get(final AsyncCallback<Collection<Reservation>> callback) {
+                serverQuery.get(new AsyncCallback<List<ReservationImpl>>() {
+
+                    @Override
+                    public void onFailure(Throwable caught) {
+                        callback.onFailure( caught);
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public void onSuccess(List<ReservationImpl> list) {
+                        try {
+                            processReservationResult(list, filters);
+                        } catch (RaplaException e) {
+                            callback.onFailure( e);
+                            return;
+                        }
+                        callback.onSuccess((Collection) list);
+                    }
+                });
+                
+            }
+        };
+    }
+
+    private Collection<Reservation> processReservationResult(List<ReservationImpl> list,ClassificationFilter[] filters) throws RaplaException {
+        
     	try
     	{
-			List<ReservationImpl> list =serv.getReservations(allocatableId,start, end, annotationQuery).get();
-	        Lock lock = readLock();
+		    Lock lock = readLock();
 			try 
 	        {
 	        	testResolve( list);
@@ -853,10 +941,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    {
 	    	throw ex;
 	    }
-	    catch (Exception ex)
-	    {
-	    	throw new RaplaException(ex);
-	    }		
     }
     
 //    public List<String> getTemplateNames() throws RaplaException {
@@ -938,15 +1022,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             unlock(readLock);
         }
-        Lock writeLock = writeLock();
-		try
-		{
-		    loadData(null);
-		}
-		finally
-		{
-		    unlock(writeLock);
-		}
+        loadData();
+		
+        
 		Collection<Entity> newEntities; 
 		readLock = readLock();
 		try

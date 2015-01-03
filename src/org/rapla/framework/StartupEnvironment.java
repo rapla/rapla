@@ -15,7 +15,5 @@ public interface StartupEnvironment
     /** either EMBEDDED, CONSOLE, WEBSTART, APPLET,SERVLET or CLIENT */
     int getStartupMode();
 
-    URL getContextRootURL() throws RaplaException;
-
     Logger getBootstrapLogger();
 }

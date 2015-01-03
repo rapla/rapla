@@ -561,7 +561,7 @@ public class MainServlet extends HttpServlet {
 
 		RaplaStartupEnvironment env = new RaplaStartupEnvironment();
 		env.setStartupMode( StartupEnvironment.CONSOLE);
-		env.setContextRootURL( configURL );
+		env.setDownloadURL( configURL );
 		if ( startupMode.equals( "client"))
 		{
 			if ( port != null)
@@ -582,10 +582,6 @@ public class MainServlet extends HttpServlet {
 		//env.setLogConfigURL( logConfigURL );
     	
 		RaplaDefaultContext context = new RaplaDefaultContext();
-		if ( env_rapladatasource != null)
-		{
-			context.put(RaplaMainContainer.ENV_RAPLADATASOURCE, env_rapladatasource);
-		}
 		if ( env_raplafile != null)
 		{
 			context.put(RaplaMainContainer.ENV_RAPLAFILE, env_raplafile);

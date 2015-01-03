@@ -23,13 +23,14 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-public class AbstractRestPage extends RaplaComponent implements RaplaPageGenerator {
+public class AbstractRestPage extends RaplaComponent implements RaplaPageGenerator, RemoteJsonService {
 
     protected StorageOperator operator;
     protected JsonServlet servlet;

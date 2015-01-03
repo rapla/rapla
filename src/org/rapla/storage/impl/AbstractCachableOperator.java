@@ -101,11 +101,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	public Logger getLogger() {
 		return logger;
 	}
-
-	public User connect() throws RaplaException {
-		return connect(null);
+	
+	public User connect() throws RaplaException
+	{
+	    try {
+            User user = connectAsync().get();
+            return user;
+        } catch (RaplaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
+        }
 	}
-
+	
 	// Implementation of StorageOperator
 	public <T extends Entity> T editObject(T o, User user)throws RaplaException {
 		Set<Entity>singleton = Collections.singleton( (Entity)o);

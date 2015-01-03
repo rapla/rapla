@@ -4,9 +4,10 @@ import javax.jws.WebService;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 
 @WebService
-public interface MailConfigService
+public interface MailConfigService extends RemoteJsonService
 {
 	boolean isExternalConfigEnabled() throws RaplaException;
 	void testMail( DefaultConfiguration config,String defaultSender) throws RaplaException;

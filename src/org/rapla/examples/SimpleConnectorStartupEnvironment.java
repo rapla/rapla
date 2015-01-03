@@ -60,11 +60,6 @@ public class SimpleConnectorStartupEnvironment implements StartupEnvironment
         return CONSOLE;
     }
 
-    public URL getContextRootURL() throws RaplaException
-    {
-        return null;
-    }
-
     public Logger getBootstrapLogger()
     {
         return logger;

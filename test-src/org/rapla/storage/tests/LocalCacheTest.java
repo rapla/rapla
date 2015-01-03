@@ -113,31 +113,36 @@ public class LocalCacheTest extends RaplaTestCase {
 			
 			@Override
 			public void execute(LocalCache cache) throws RaplaException {
+			    try
 				{
 		            ClassificationFilter[] filters = null;
 		            Map<String, String> annotationQuery = null;
 		            {
 		                final Period period = periods[2];
-		                Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery);
+		                Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery).get();
 		                assertEquals(0,reservations.size());
 		            }
 		            {
 		                final Period period = periods[1];
-	                    Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery);
+	                    Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery).get();
 		                assertEquals(2, reservations.size());
 		            }
 		            {
     		            User user = cache.getUser("homer");
-    		            Collection<Reservation> reservations = storage.getReservations(user,null,null,null, filters,annotationQuery);
+    		            Collection<Reservation> reservations = storage.getReservations(user,null,null,null, filters,annotationQuery).get();
     		            assertEquals(3, reservations.size());
 		            }
 		            {
 		                User user = cache.getUser("homer");
 		                final Period period = periods[1];
-                        Collection<Reservation> reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery);
+                        Collection<Reservation> reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery).get();
     		            assertEquals(2, reservations.size());
 		            }
 		        }
+			    catch (Exception ex)
+			    {
+			        throw new RaplaException(ex.getMessage(),ex);
+			    }
 		        {
 		            for (Allocatable next:cache.getAllocatables())
 		            {
@@ -181,7 +186,7 @@ public class LocalCacheTest extends RaplaTestCase {
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;
 		ClassificationFilter[] filters = null;
-		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, filters,annotationQuery);
+		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, filters,annotationQuery).get();
         assertEquals( 1, reservations.size());
     }
 }

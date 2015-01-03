@@ -16,7 +16,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
-import javax.jws.WebService;
 
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -52,6 +50,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 /** Base class for the ComponentContainers in Rapla.
@@ -65,6 +64,7 @@ public class ContainerImpl implements Container
     protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
     protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String,RoleEntry>()); 
     Logger logger;
+    Class webserviceAnnotation;
 
     public ContainerImpl(RaplaContext parentContext, Logger logger) throws RaplaException  {
 //    	if ( parentContext.has(Logger.class ) )
@@ -78,6 +78,13 @@ public class ContainerImpl implements Container
     	this.logger = logger;
         if ( parentContext.has(Container.class )) {
             m_parent =  parentContext.lookup( Container.class);
+        }
+        try
+        {
+            webserviceAnnotation = Class.forName("javax.jws.WebService");
+        } catch (Exception ex)
+        {
+            logger.warn("javax.jws.WebService class not found. Assuming Android env");
         }
         m_context = new RaplaDefaultContext(parentContext) {
 
@@ -519,7 +526,7 @@ public class ContainerImpl implements Container
             }
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
-                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class) || getContext().has( type))) 
+                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || isWebservice(type) || getContext().has( type))) 
                 {
                     compatibleParameters = false;
                 }
@@ -536,6 +543,21 @@ public class ContainerImpl implements Container
         	return constructorMap.lastEntry().getValue();
         }
         return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected boolean isWebservice(Class type) {
+        if ( webserviceAnnotation != null)
+        {
+            if ( type.isAnnotationPresent(webserviceAnnotation))
+            {
+                return true;
+            }
+        }
+        //boolean assignableFrom = type.isAssignableFrom( RemoteJsonService.class );
+        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom( type );
+        return assignableFrom;
+        //return type.isAnnotationPresent(WebService.class);
     }
     
     /** Instantiates a class and passes the config, logger and the parent context to the object if needed by the constructor.
@@ -602,13 +624,14 @@ public class ContainerImpl implements Container
                     params[i] = p;
                     continue;
                 }
-                if ( type.isAssignableFrom( RaplaContext.class)) {
+                if ( RaplaContext.class.isAssignableFrom( type)) {
                     p = context;
-                } else  if ( type.isAssignableFrom( Configuration.class)) {
+                } else  if ( Configuration.class.isAssignableFrom( type)) {
                     p = config;
-                } else if ( type.isAssignableFrom( Logger.class)) {
+                } else if ( Logger.class.isAssignableFrom( type)) {
                     p = logger;
-                } else if ( type.isAnnotationPresent(WebService.class)) {
+                } else if ( isWebservice(type)) {
+                //} else if ( type.isAnnotationPresent(WebService.class)) {
 					RemoteServiceCaller lookup = context.lookup(RemoteServiceCaller.class);
                     p = lookup.getRemoteMethod( type); 
                 } else {

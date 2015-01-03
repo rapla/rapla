@@ -87,7 +87,10 @@ import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
+import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
@@ -428,40 +431,40 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	int queryCounter = 0;
-	private Collection<Reservation> getVisibleReservations(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters)
-			throws RaplaException {
+	public FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
+        final List<Allocatable> allocList;
+        Map<String,String> annotationQuery;
 		if ( templateId != null)
 		{
-		    
+		    user = null;
+		    allocList = null;
 			Allocatable template = getTemplate();
 			if ( template == null)
 			{
-			    throw new RaplaException("Template for id " + templateId + " not found!");
+			    return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
 			}
-            Collection<Reservation> reservations = getTemplateReservations( template);
-			return reservations;
-		}
-		List<Allocatable> allocList;
-		if (allocatables != null)
-		{
-			if ( allocatables.length == 0 )
-			{
-				return Collections.emptyList();
-			}
-			allocList = Arrays.asList( allocatables);
+			annotationQuery = new LinkedHashMap<String,String>();
+			annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
 		}
 		else
 		{
-			allocList = Collections.emptyList();
+		    annotationQuery = null;
+    		if (allocatables != null)
+    		{
+    			if ( allocatables.length == 0 )
+    			{
+    				List<Reservation> emptyList = Collections.emptyList();
+                    return new ResultImpl<Collection<Reservation>>(emptyList);
+    			}
+    			allocList = Arrays.asList( allocatables);
+    		}
+    		else
+    		{
+    			allocList = Collections.emptyList();
+    		}
 		}
-		Collection<Reservation> reservations =operator.getReservations(user,allocList, start, end, reservationFilters,null);
-		// Category can_see = getUserGroupsCategory().getCategory(
-		// Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-		if (getLogger().isDebugEnabled())
-		{
-			getLogger().debug((++queryCounter)+". Query reservation called user=" + user + " start=" +start  + " end=" + end);
-		}
-		return reservations;
+		FutureResult<Collection<Reservation>> query = operator.getReservations(user,allocList, start, end, reservationFilters,annotationQuery);
+		return query;
 	}
 
 	public Allocatable[] getAllocatables() throws RaplaException {
@@ -534,13 +537,37 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		Date end = null;
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-		Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery);
-		return result;
+        try {
+            Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery).get();
+            return result;
+        } catch (RaplaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
+        }
 	}
 	
 	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {
-		return getVisibleReservations(user, null,start, end, filters).toArray(Reservation.RESERVATION_ARRAY);
+        try {
+            Collection<Reservation> collection = getReservationsAsync(user, null,start, end, filters).get();
+            return collection.toArray(Reservation.RESERVATION_ARRAY);
+        } catch (RaplaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
+        }
 	}
+	
+	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
+        try {
+            Collection<Reservation> collection = getReservationsAsync(null, allocatables,start, end, reservationFilters).get();
+            return collection.toArray(Reservation.RESERVATION_ARRAY);
+        } catch (RaplaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
+        }
+    }
 	
 	private String cacheValidString;
 	private Reservation[] cachedReservations;
@@ -608,11 +635,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return converted;
 	}
 
-	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
-		//System.gc();
-		Collection<Reservation> reservations = getVisibleReservations(null,	allocatables,start, end, reservationFilters);
-		return reservations.toArray(Reservation.RESERVATION_ARRAY);
-	}
 
 	public Period[] getPeriods() throws RaplaException {
 		Period[] result = getPeriodModel().getAllPeriods();
@@ -873,9 +895,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throws RaplaException {
        User user = null;
        try {
-			if (!operator.isConnected()) {
-				user = operator.connect( connectInfo);
-			}
+           user = operator.connect( connectInfo);
        } catch (RaplaSecurityException ex) {
 			return false;
        } finally {
@@ -883,31 +903,51 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //				for (int i = 0; i < password.length; i++)
 //					password[i] = 0;
        }
-       String username = connectInfo.getUsername();
-       if  ( connectInfo.getConnectAs() != null)
-       {
-           username = connectInfo.getConnectAs();
-       }
+//       String username = connectInfo.getUsername();
+//       if  ( connectInfo.getConnectAs() != null)
+//       {
+//           username = connectInfo.getConnectAs();
+//       }
 
-       return setUsernameInternal(user, username);
-   }
-
-   public boolean setUsernameInternal(User user, String username) throws RaplaException {
-       if ( user == null)
-       {
-           user = operator.getUser(username);
-       }
-       if (user != null) {
-           this.workingUserId = user.getId();
-           getLogger().info("Login " + user.getUsername());
-           return true;
-       } else {
-           return false;
-       }
+       getLogger().info("Login " + user.getUsername());
+       this.workingUserId = user.getId();
+       return true;
    }
    
+   public FutureResult<VoidResult> load()
+   {
+       final FutureResult<User> connect = operator.connectAsync();
+       return new FutureResult<VoidResult>() {
 
-   
+        @Override
+        public VoidResult get() throws Exception {
+            User user = connect.get();
+            workingUserId = user.getId();
+            return VoidResult.INSTANCE;
+        }
+
+        @Override
+        public void get(final AsyncCallback<VoidResult> callback) {
+            connect.get( new AsyncCallback<User>() {
+
+                @Override
+                public void onFailure(Throwable caught) {
+                    callback.onFailure(caught);
+                }
+
+                @Override
+                public void onSuccess(User user) 
+                {
+                    workingUserId = user.getId();
+                    callback.onSuccess( VoidResult.INSTANCE);
+                }
+            });
+            
+        }
+       };
+       
+   }
+
    public boolean canChangePassword() {
 		try {
 			return operator.canChangePassword();

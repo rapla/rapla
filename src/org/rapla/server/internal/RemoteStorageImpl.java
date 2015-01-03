@@ -628,7 +628,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                    }
                     }
 					ClassificationFilter[] classificationFilters = null;
-					Collection<Reservation> reservations = operator.getReservations(user,allocatables, start, end, classificationFilters,annotationQuery );
+					FutureResult<Collection<Reservation>> reservationsQuery = operator.getReservations(user,allocatables, start, end, classificationFilters,annotationQuery );
+                    Collection<Reservation> reservations = reservationsQuery.get();
                     for (Reservation res:reservations)
                     {
                     	if (isAllocatablesVisible(sessionUser, res))
@@ -645,6 +646,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
             	{
             		return new ResultImpl<List<ReservationImpl>>(ex );
             	}
+                catch (Exception ex )
+                {
+                    getLogger().error(ex.getMessage(), ex);
+                    return new ResultImpl<List<ReservationImpl>>(ex );
+                }
             }
             
 			private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser,Entity entity) {

@@ -173,7 +173,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 //            operator.connect( new ConnectInfo(username, password.toCharArray()));
 //        else
         operator.connect();
-
+        
         Set<String> pluginNames;
         //List<PluginDescriptor<ClientServiceContainer>> pluginList;
         try {

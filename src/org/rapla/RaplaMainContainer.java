@@ -97,9 +97,6 @@ final public class RaplaMainContainer extends ContainerImpl
 {
     public static final String ENV_RAPLAFILE_ID = "env.raplafile";
     //public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
-    public static final TypedComponentRole<String> DOWNLOAD_SERVER = new TypedComponentRole<String>("download-server");
-    public static final TypedComponentRole<URL> DOWNLOAD_URL = new TypedComponentRole<URL>("download-url");
-    public static final TypedComponentRole<String> ENV_RAPLADATASOURCE = new TypedComponentRole<String>("env.rapladatasource");
     public static final TypedComponentRole<String> ENV_RAPLAFILE = new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
     public static final TypedComponentRole<DataSource> ENV_RAPLADB= new TypedComponentRole<DataSource>("env.rapladb");
     public static final TypedComponentRole<Object> ENV_RAPLAMAIL= new TypedComponentRole<Object>("env.raplamail");
@@ -125,7 +122,7 @@ final public class RaplaMainContainer extends ContainerImpl
     	this(  env,context,createRaplaLogger());
     }
     
-    RemoteConnectionInfo remoteConnectionInfo = new RemoteConnectionInfo();
+    final RemoteConnectionInfo remoteConnectionInfo = new RemoteConnectionInfo();
     //RemoteConnectionInfo globalConnectInfo;
     CommandScheduler commandQueue;
     I18nBundle i18n;
@@ -133,8 +130,8 @@ final public class RaplaMainContainer extends ContainerImpl
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
         super( context,logger );
         addContainerProvidedComponentInstance( StartupEnvironment.class, env);
-        addContainerProvidedComponentInstance( DOWNLOAD_SERVER, env.getDownloadURL().getHost());
-        addContainerProvidedComponentInstance( DOWNLOAD_URL,  env.getDownloadURL());
+        URL downloadURL = env.getDownloadURL();
+        remoteConnectionInfo.setServerURL( downloadURL.toURI().toString());
         commandQueue = createCommandQueue();
 		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
 		addContainerProvidedComponentInstance( RemoteConnectionInfo.class, remoteConnectionInfo);
@@ -146,9 +143,9 @@ final public class RaplaMainContainer extends ContainerImpl
             }
         } );
 
-        if (env.getContextRootURL() != null)
+        if (downloadURL != null)
         {
-            File file = IOUtil.getFileFrom( env.getContextRootURL());
+            File file = IOUtil.getFileFrom( downloadURL);
             addContainerProvidedComponentInstance( CONTEXT_ROOT, file.getPath());
         }
         addContainerProvidedComponentInstance( TIMESTAMP, new Object() {
@@ -283,6 +280,7 @@ final public class RaplaMainContainer extends ContainerImpl
         if (context.has( RemoteMethodStub.class))
         {
             RemoteMethodStub server =  context.lookup(RemoteMethodStub.class);
+            remoteConnectionInfo.setServerURL( null );
             return server.getWebserviceLocalStub(a);
         }  
       
@@ -292,27 +290,13 @@ final public class RaplaMainContainer extends ContainerImpl
             
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
             {
-//                if ( method.getName().equals("setConnectInfo") && method.getParameterTypes()[0].equals(RemoteConnectionInfo.class))
-//                {
-//                    localConnectInfo = (RemoteConnectionInfo) args[0];
-//                    if ( globalConnectInfo == null)
-//                    {
-//                        globalConnectInfo =localConnectInfo;
-//                    }
-//                    return null;
-//                }
-
-  //              RemoteConnectionInfo remoteConnectionInfo = localConnectInfo != null ? localConnectInfo : globalConnectInfo;
-                if ( remoteConnectionInfo == null)
-                {
-                    throw new IllegalStateException("you need to call setConnectInfo first");
-                }
                 Class<?> returnType = method.getReturnType();
                 String methodName = method.getName();
                 final URL server;
                 try 
                 {
-                    server = new URL( remoteConnectionInfo.getServerURL());
+                    String serverURL = remoteConnectionInfo.getServerURL();
+                    server = new URL( serverURL);
                 } 
                 catch (MalformedURLException e) 
                 {

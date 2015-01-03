@@ -53,8 +53,10 @@ public interface StorageOperator extends EntityResolver {
 	public final static String PERIOD_TYPE = "rapla:period";
 	public final static String RAPLA_TEMPLATE = "rapla:template";
 	
-    User connect() throws RaplaException;
     User connect(ConnectInfo connectInfo) throws RaplaException;
+    User connect() throws RaplaException;
+    FutureResult<User> connectAsync();
+    
     boolean isConnected();
     /** Refreshes the data. This could be helpful if the storage
      * operator uses a cache and does not support "Active Monitoring"
@@ -88,7 +90,7 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Collection<Reservation> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery) throws RaplaException;
+    FutureResult<Collection<Reservation>> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 

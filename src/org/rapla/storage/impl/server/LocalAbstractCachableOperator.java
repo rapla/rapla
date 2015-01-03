@@ -105,6 +105,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
@@ -282,6 +283,39 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		
 
 	}
+	
+	@Override
+	public FutureResult<User> connectAsync() 
+    {
+        return new FutureResult<User>() {
+
+            @Override
+            public User get() throws Exception {
+                return connect( null);
+            }
+
+            @Override
+            public void get(final AsyncCallback<User> callback) {
+                scheduler.schedule(new Command()
+                {
+
+                    @Override
+                    public void execute()  {
+                        User connect;
+                        try {
+                            connect = connect(null);
+                        } catch (RaplaException e) {
+                            callback.onFailure( e);
+                            return;
+                        }
+                        callback.onSuccess( connect);
+                    }
+                    
+                }
+                , 0);
+            }
+        };
+    }
 
 	public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
 	{
@@ -299,47 +333,54 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	/**
 	 * @param user the owner of the reservation or null for reservations from all users
 	 */
-	public List<Reservation> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] filters,Map<String,String> annotationQuery) throws RaplaException {
+	public FutureResult<Collection<Reservation>> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] filters,Map<String,String> annotationQuery)  {
 		boolean excludeExceptions = false;
 		HashSet<Reservation> reservationSet = new HashSet<Reservation>();
 		if (allocatables == null || allocatables.size() ==0) 
 		{
 			allocatables = Collections.singleton( null);
 		}
-		for ( Allocatable allocatable: allocatables)
-        {
-        	Lock readLock = readLock();
-			SortedSet<Appointment> appointments;
-			try
-			{
-				appointments = getAppointments( allocatable);
-			}
-			finally
-			{
-				unlock( readLock);
-			}
-			SortedSet<Appointment> appointmentSet = AppointmentImpl.getAppointments(appointments,user,start,end, excludeExceptions);
-			for (Appointment appointment:appointmentSet)
-			{
-	            Reservation reservation = appointment.getReservation();
-                if ( !match(reservation, annotationQuery) )
-                {
-                    continue;
-                } // Ignore Templates if not explicitly requested
-                // FIXME this special case should be refactored, so one can get all reservations in one method
-                else if ( RaplaComponent.isTemplate( reservation) &&  (annotationQuery == null || !annotationQuery.containsKey(RaplaObjectAnnotations.KEY_TEMPLATE) ))
-                {
-                    continue;
-                }
-	            if ( !reservationSet.contains( reservation))
-	            {
-	            	reservationSet.add( reservation );
-	            }
-			}
-        }
-        ArrayList<Reservation> result = new ArrayList<Reservation>(reservationSet);
-        removeFilteredClassifications(result, filters);
-		return result;
+		try
+		{
+    		for ( Allocatable allocatable: allocatables)
+            {
+            	Lock readLock = readLock();
+    			SortedSet<Appointment> appointments;
+    			try
+    			{
+    				appointments = getAppointments( allocatable);
+    			}
+    			finally
+    			{
+    				unlock( readLock);
+    			}
+    			SortedSet<Appointment> appointmentSet = AppointmentImpl.getAppointments(appointments,user,start,end, excludeExceptions);
+    			for (Appointment appointment:appointmentSet)
+    			{
+    	            Reservation reservation = appointment.getReservation();
+                    if ( !match(reservation, annotationQuery) )
+                    {
+                        continue;
+                    } // Ignore Templates if not explicitly requested
+                    // FIXME this special case should be refactored, so one can get all reservations in one method
+                    else if ( RaplaComponent.isTemplate( reservation) &&  (annotationQuery == null || !annotationQuery.containsKey(RaplaObjectAnnotations.KEY_TEMPLATE) ))
+                    {
+                        continue;
+                    }
+    	            if ( !reservationSet.contains( reservation))
+    	            {
+    	            	reservationSet.add( reservation );
+    	            }
+    			}
+            }
+            ArrayList<Reservation> result = new ArrayList<Reservation>(reservationSet);
+            removeFilteredClassifications(result, filters);
+            return new ResultImpl<Collection<Reservation>>(result);
+		}
+		catch (RaplaException ex)
+		{
+		    return new ResultImpl<Collection<Reservation>>(ex);
+		}
 	}
 
     public boolean match(Reservation reservation, Map<String, String> annotationQuery) {
