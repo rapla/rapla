@@ -2255,6 +2255,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	}
 
 	protected String getDependentName(Entity obj) {
+        Locale locale = raplaLocale.getLocale();
 		StringBuffer buf = new StringBuffer();
 		if (obj instanceof Reservation) {
 			buf.append(getString("reservation"));
@@ -2270,7 +2271,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			buf.append(getString("dynamictype"));
 		}
 		if (obj instanceof Named) {
-			Locale locale = i18n.getLocale();
 			final String string = ((Named) obj).getName(locale);
 			buf.append(": " + string);
 		} else {
@@ -2290,7 +2290,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			String template = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
 			if ( template != null)
 			{
-				buf.append(" in template " + template);
+			    Allocatable templateObj = tryResolve( template, Allocatable.class);
+			    if ( templateObj != null)
+			    {
+			        String name = templateObj.getName(locale);
+                    buf.append(" in template " + name);
+                    User owner = templateObj.getOwner();
+                    if ( owner != null)
+                    {
+                        buf.append(" of user " + owner.getUsername());
+                    }
+			    }
+			    else
+			    {
+			        buf.append(" in template " + template);
+			    }
 			}
 		}
 		final Object idFull = obj.getId();
