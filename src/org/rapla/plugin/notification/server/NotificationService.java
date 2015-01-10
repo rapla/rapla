@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -39,6 +38,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.ServerExtension;
@@ -154,7 +154,7 @@ public class NotificationService extends RaplaComponent
             buf.append("\n\n");
         }
         I18nBundle i18n = getI18n();
-		String raplaTitle = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+		String raplaTitle = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
 		buf.append(i18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {

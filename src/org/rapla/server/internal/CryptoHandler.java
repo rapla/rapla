@@ -12,12 +12,10 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
-public class CryptoHandler extends RaplaComponent {
+public class CryptoHandler {
 	
     String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
     private Cipher encryptionCipher;
@@ -25,9 +23,8 @@ public class CryptoHandler extends RaplaComponent {
     private Base64 base64;
 	private static final String ENCODING = "UTF-8";
 
-	public CryptoHandler( RaplaContext context,String pepper) throws RaplaException
+	public CryptoHandler( String pepper) throws RaplaException
 	{
-		super( context);
 		try {
 	        byte[] linebreake = {};
 			this.base64 = new Base64(64, linebreake, true);

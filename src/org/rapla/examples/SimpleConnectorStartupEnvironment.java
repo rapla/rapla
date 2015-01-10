@@ -3,7 +3,6 @@ package org.rapla.examples;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
@@ -14,10 +13,9 @@ import org.rapla.framework.logger.Logger;
  */
 public class SimpleConnectorStartupEnvironment implements StartupEnvironment
 {
-    DefaultConfiguration config;
     URL server;
     Logger logger;
-
+    
     public SimpleConnectorStartupEnvironment(final String host, final Logger logger) throws MalformedURLException
     {
         this(host, 8051, "/", false, logger);
@@ -25,20 +23,6 @@ public class SimpleConnectorStartupEnvironment implements StartupEnvironment
 
     public SimpleConnectorStartupEnvironment(final String host, final int hostPort, String contextPath, boolean isSecure, final Logger logger) throws MalformedURLException {
         this.logger = logger;
-
-        config = new DefaultConfiguration("rapla-config");
-        final DefaultConfiguration facadeConfig = new DefaultConfiguration("facade");
-        facadeConfig.setAttribute("id", "facade");
-        final DefaultConfiguration remoteConfig = new DefaultConfiguration("remote-storage");
-        remoteConfig.setAttribute("id", "remote");
-
-        DefaultConfiguration serverHost = new DefaultConfiguration("server");
-        serverHost.setValue("${download-url}");
-        remoteConfig.addChild(serverHost);
-
-        config.addChild(facadeConfig);
-        config.addChild(remoteConfig);
-
         String protocoll = "http";
         if (isSecure)
         {

@@ -22,7 +22,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
@@ -30,6 +29,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.plugin.export2ical.ICalTimezones;
@@ -87,11 +87,11 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     }
 
     public void show() throws RaplaException {
-        String name = preferences.getEntryAsString( RaplaMainContainer.TITLE,"");
+        String name = preferences.getEntryAsString( ContainerImpl.TITLE,"");
         calendarName.setText(name);
         
     	try {
-    		String timezoneId = preferences.getEntryAsString( RaplaMainContainer.TIMEZONE,timezoneService.getDefaultTimezone().get());
+    		String timezoneId = preferences.getEntryAsString( ContainerImpl.TIMEZONE,timezoneService.getDefaultTimezone().get());
 			cboTimezone.setSelectedItem(timezoneId);
 		}
 		catch (RaplaException ex)
@@ -115,15 +115,15 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
         String title = calendarName.getText();
         if ( title.trim().length() > 0)
         {
-            preferences.putEntry( RaplaMainContainer.TITLE,title );
+            preferences.putEntry( ContainerImpl.TITLE,title );
         }
         else
         {
-            preferences.putEntry( RaplaMainContainer.TITLE, (String)null);
+            preferences.putEntry( ContainerImpl.TITLE, (String)null);
         }
         
     	String timeZoneId = String.valueOf(cboTimezone.getSelectedItem());
-    	preferences.putEntry( RaplaMainContainer.TIMEZONE, timeZoneId);
+    	preferences.putEntry( ContainerImpl.TIMEZONE, timeZoneId);
    
     	boolean selected= ownReservations.isSelected(); 
     	preferences.putEntry( CalendarModel.ONLY_MY_EVENTS_DEFAULT, selected); 

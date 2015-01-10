@@ -13,11 +13,8 @@
 
 package org.rapla;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.rapla.components.util.IOUtil;
-import org.rapla.components.util.JNLPUtil;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;
@@ -28,7 +25,6 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
     private int startupMode = CONSOLE;
     //private LoadingProgress progressbar;
     private Logger bootstrapLogger = new ConsoleLogger( ConsoleLogger.LEVEL_WARN );
-    private URL contextRootURL;
     private URL downloadURL;
 
     public Logger getBootstrapLogger()
@@ -54,53 +50,9 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
         bootstrapLogger = logger;
     }
 
-    public URL getContextRootURL() throws RaplaException
-    {
-        if ( contextRootURL == null)
-        {
-            throw new RaplaException("Context root not set");
-        }
-        return contextRootURL;
-    }
-
-    public void setContextRootURL(URL contextRootURL) 
-    {
-		this.contextRootURL = contextRootURL;
-	}
-
 	public URL getDownloadURL() throws RaplaException
     {
-        if ( downloadURL != null )
-        {
-            return downloadURL;
-        }
-        if ( startupMode == WEBSTART )
-        {
-            try
-            {
-                return JNLPUtil.getCodeBase();
-            }
-            catch ( Exception e )
-            {
-                throw new RaplaException( e );
-            }
-        }
-        else
-        {
-        	URL base = IOUtil.getBase( getContextRootURL() );
-            if ( base != null)
-            {
-            	return base;
-            }
-        	try
-            {
-                return new URL( "http://localhost:8051" );
-            }
-            catch ( MalformedURLException e )
-            {
-                throw new RaplaException( "Invalid URL" );
-            }
-        }
+	    return downloadURL;
     }
 
     public void setDownloadURL( URL downloadURL )

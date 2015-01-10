@@ -33,6 +33,7 @@ public interface RaplaClientExtensionPoints
     /** A client extension is started automaticaly when a user has successfully login into the Rapla system. A class added as service doesn't need to implement a specific interface and is instanciated automaticaly after client login. You can add a RaplaContext parameter to your constructor to get access to the services of rapla. 
      */
     Class<ClientExtension> CLIENT_EXTENSION = ClientExtension.class;
+    
     /** You can add a specific configuration panel for your plugin.
      * Note if you add a pluginOptionPanel you need to provide the PluginClass as hint.
      * Example 

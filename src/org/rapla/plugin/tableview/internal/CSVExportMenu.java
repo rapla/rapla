@@ -27,11 +27,11 @@ import java.util.List;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
@@ -125,7 +125,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
         byte[] bytes = buf.toString().getBytes();
         
 		DateFormat sdfyyyyMMdd = new SimpleDateFormat("yyyyMMdd");
-		final String calendarName = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+		final String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
 		String filename = calendarName + "-" + sdfyyyyMMdd.format( model.getStartDate() )  + "-" + sdfyyyyMMdd.format( model.getEndDate() ) + ".csv";
 		if (saveFile( bytes, filename,"csv"))
 		{

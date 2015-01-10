@@ -22,6 +22,8 @@ import java.awt.Window;
 import java.util.ArrayList;
 import java.util.Stack;
 
+import javax.inject.Inject;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.framework.logger.Logger;
@@ -37,6 +39,7 @@ final public class FrameControllerList {
     Logger logger = null;
     ArrayList<FrameControllerListener> listenerList = new ArrayList<FrameControllerListener>();
 
+    @Inject
     public FrameControllerList(Logger logger) 
     {
         this.logger = logger;

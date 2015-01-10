@@ -29,7 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -37,6 +36,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.servletpages.RaplaPageGenerator;
 
@@ -64,7 +64,7 @@ public class CalendarListPageGenerator extends RaplaComponent implements RaplaPa
             {
                 users = new User[] { getQuery().getUser( username )}; 
             }
-			String calendarName = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+			String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
             out.println( "<html>" );
             out.println( "<head>" );
             out.println( "<title>" + calendarName + "</title>" );

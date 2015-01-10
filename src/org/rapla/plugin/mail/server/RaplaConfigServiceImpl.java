@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -26,6 +25,7 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
 public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMethodFactory<MailConfigService>
@@ -41,7 +41,7 @@ public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMeth
 		{
 			public boolean isExternalConfigEnabled() throws RaplaException 
 			{
-				return getContext().has(RaplaMainContainer.ENV_RAPLAMAIL);
+				return getContext().has(ServerService.ENV_RAPLAMAIL);
 			}
 			
 			@SuppressWarnings("deprecation")

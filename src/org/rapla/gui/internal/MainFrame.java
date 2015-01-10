@@ -27,7 +27,6 @@ import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.client.ClientService;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -36,6 +35,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.toolkit.DialogUI;
@@ -56,7 +56,7 @@ public class MainFrame extends RaplaGUIComponent
         super(sm);
         menuBar = new RaplaMenuBar(getContext());
         frame =  getService( ClientService.MAIN_COMPONENT );
-        String title = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title"));
+        String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
         	

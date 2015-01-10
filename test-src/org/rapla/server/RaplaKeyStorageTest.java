@@ -3,6 +3,7 @@ package org.rapla.server;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
@@ -16,10 +17,11 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 	
 	public void testKeyStore() throws RaplaException
 	{
-		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(getContext());
-		User user = getFacade().newUser();
+        ClientFacade facade = getFacade();
+		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(facade,getLogger());
+        User user = facade.newUser();
 		user.setUsername("testuser");
-		getFacade().store( user);
+		facade.store( user);
 		
 		TypedComponentRole<String> tagName = new TypedComponentRole<String>("org.rapla.server.secret.test");
 		String login ="username";
@@ -31,7 +33,7 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 			assertEquals( secret,secrets.secret);
 		}
 		
-		getFacade().remove( user);
+		facade.remove( user);
 		try
 		{
 		    storage.getSecrets(user, tagName);

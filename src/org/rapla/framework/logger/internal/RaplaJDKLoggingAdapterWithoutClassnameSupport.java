@@ -10,7 +10,7 @@
 | program with every library, which license fulfills the Open Source       |
 | Definition as published by the Open Source Initiative (OSI).             |
 *--------------------------------------------------------------------------*/
-package org.rapla.framework.internal;
+package org.rapla.framework.logger.internal;
 
 
 import java.util.logging.Level;

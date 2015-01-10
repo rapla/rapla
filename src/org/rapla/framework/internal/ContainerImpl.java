@@ -12,13 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -37,16 +42,30 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.rapla.AppointmentFormaterImpl;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
+import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
+import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
+import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.ServiceListCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -58,27 +77,23 @@ import org.rapla.storage.dbrm.RemoteServiceCaller;
  */
 public class ContainerImpl implements Container
 {
-    protected Container m_parent;
     protected RaplaDefaultContext m_context;
-
+    public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
+    public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
+    public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
+    
     protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
     protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String,RoleEntry>()); 
     Logger logger;
     Class webserviceAnnotation;
+    protected CommandScheduler commandQueue;
+    protected I18nBundle i18n;
+    protected final Provider<RemoteServiceCaller> remoteServiceCaller;
+    public static boolean DEVELOPMENT_RESSOLVING = false;
 
-    public ContainerImpl(RaplaContext parentContext, Logger logger) throws RaplaException  {
-//    	if ( parentContext.has(Logger.class ) )
-//    	{
-//    		logger =  parentContext.lookup( Logger.class);
-//        }
-//    	else
-//    	{
-//    		logger = new ConsoleLogger(ConsoleLogger.LEVEL_INFO);
-//    	}
+    public ContainerImpl( Logger logger, final Provider<RemoteServiceCaller> remoteServiceCaller)  {
     	this.logger = logger;
-        if ( parentContext.has(Container.class )) {
-            m_parent =  parentContext.lookup( Container.class);
-        }
+    	this.remoteServiceCaller = remoteServiceCaller;
         try
         {
             webserviceAnnotation = Class.forName("javax.jws.WebService");
@@ -86,8 +101,29 @@ public class ContainerImpl implements Container
         {
             logger.warn("javax.jws.WebService class not found. Assuming Android env");
         }
-        m_context = new RaplaDefaultContext(parentContext) {
+        m_context = new RaplaDefaultContext() {
 
+            @Override
+            public boolean has(Class<?> componentRole) {
+                boolean has = super.has(componentRole);
+                if (!has && isWebservice(componentRole))
+                {
+                    return true;
+                }
+                return has;
+            }
+            
+            @Override
+            public <T> T lookup(Class<T> componentRole) throws RaplaContextException 
+            {   
+                if ( isWebservice( componentRole ) )
+                {
+                    T proxy = (T) remoteServiceCaller.get().getRemoteMethod( componentRole);
+                    return proxy;
+                }
+                return super.lookup(componentRole);
+            }
+            
             @Override
             protected Object lookup(String role) throws RaplaContextException {
                 ComponentHandler handler = getHandler( role );
@@ -104,11 +140,21 @@ public class ContainerImpl implements Container
                 return false;
             }
         };
+        addContainerProvidedComponentInstance(Container.class, this);
         addContainerProvidedComponentInstance(Logger.class,logger);
-        init( );
+        commandQueue = createCommandQueue();
+        addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
+        RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(new DefaultConfiguration(), logger);
+        addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
+        Configuration parentConfig = I18nBundleImpl.createConfig( RaplaComponent.RAPLA_RESOURCES.getId() );
+        {
+            addContainerProvidedComponent(RaplaComponent.RAPLA_RESOURCES,I18nBundleImpl.class, parentConfig);
+        }
+
     }
     
     @SuppressWarnings("unchecked")
+    @Deprecated
     public <T> T lookup(Class<T> componentRole, String hint) throws RaplaContextException {
         
     	String key = componentRole.getName()+ "/" + hint;
@@ -116,27 +162,21 @@ public class ContainerImpl implements Container
         if ( handler != null ) {
             return (T) handler.get();
         }
-        if ( m_parent != null)
-        {
-        	return m_parent.lookup(componentRole, hint);
-        }
         throw new RaplaContextException(  key );     
     }
 
-
+    protected boolean has(Class componentRole, String hint) {
+        
+        String key = componentRole.getName()+ "/" + hint;
+        ComponentHandler handler = getHandler( key );
+        return handler != null;     
+    }
     public Logger getLogger() 
     {
         return logger;
     }
 
-	/**
-     * @throws RaplaException  
-     */
-	protected void init() throws RaplaException {
-	    addContainerProvidedComponentInstance( Container.class, this );
-        addContainerProvidedComponentInstance( Logger.class, getLogger());
-	}
-
+	
     public StartupEnvironment getStartupEnvironment() {
         try
         {
@@ -172,37 +212,14 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(roleInterface, implementingInstance, implementingInstance.toString());
     }
 
-   
     public <T> Collection< T> lookupServicesFor(TypedComponentRole<T> role) throws RaplaContextException {
-        Collection<T> list = new LinkedHashSet<T>();
-        for (T service: getAllServicesForThisContainer(role)) {
-			list.add(service);
-        }
-        if ( m_parent != null)
-        {
-        	for (T service:m_parent.lookupServicesFor(role))
-        	{
-        		list.add( service);
-        	}
-        	
-        }
-        return list;
+        String id = role.getId();
+        return lookupServicesFor( id);
     }
 
     public <T> Collection<T> lookupServicesFor(Class<T> role) throws RaplaContextException {
-        Collection<T> list = new LinkedHashSet<T>();
-        for (T service:getAllServicesForThisContainer(role)) {
-			list.add( service);
-        }
-        if ( m_parent != null)
-        {
-        	for (T service:m_parent.lookupServicesFor(role))
-        	{
-        		list.add( service);
-        	}
-        	
-        }
-        return list;
+        String id = role.getName();
+        return lookupServicesFor( id );
     }
 
     protected <T, I extends T> void addContainerProvidedComponentInstance(Class<T> roleInterface, I implementingInstance, String hint) {
@@ -233,23 +250,14 @@ public class ContainerImpl implements Container
         }
     }
     
-    protected <T> Collection<T> getAllServicesForThisContainer(TypedComponentRole<T> role)  {
-        RoleEntry entry = m_roleMap.get( role.getId() );
-        return getAllServicesForThisContainer( entry);
-    }
-
-
-    protected <T> Collection<T> getAllServicesForThisContainer(Class<T> role)  {
-        RoleEntry entry = m_roleMap.get( role.getName() );
-        return getAllServicesForThisContainer( entry);
-    }
-    
-    private <T> Collection<T> getAllServicesForThisContainer(RoleEntry entry)  {
+   
+    private <T> Collection<T> lookupServicesFor(String name) {
+        RoleEntry entry = m_roleMap.get( name );
         if ( entry == null)
         {
             return Collections.emptyList();
         }
-        List<T> result = new ArrayList<T>();
+        Collection<T> result = new LinkedHashSet<T>();
         Set<String> hintSet = entry.getHintSet();
 		for (String hint: hintSet)
         {
@@ -276,7 +284,6 @@ public class ContainerImpl implements Container
         return result;
     }
     
-
     /**
      * @param roleName
      * @param hint
@@ -302,7 +309,7 @@ public class ContainerImpl implements Container
         return getHandler( roleName, hint );
     }
 
-    ComponentHandler getHandler( String role,Object hint) {
+    ComponentHandler getHandler( String role,String hint) {
         RoleEntry entry = m_roleMap.get( role );
         if ( entry == null)
         {
@@ -319,6 +326,7 @@ public class ContainerImpl implements Container
         // Try the first accessible handler
         return null;
     }
+    
 
     protected final class DefaultScheduler implements CommandScheduler {
 		private final ScheduledExecutorService executor;
@@ -463,7 +471,7 @@ public class ContainerImpl implements Container
         	}
         }
 
-        ComponentHandler getHandler(Object hint) {
+        ComponentHandler getHandler(String hint) {
             return  componentMap.get( hint );
         }
 
@@ -483,6 +491,7 @@ public class ContainerImpl implements Container
 
     boolean disposing;
     public void dispose() {
+        getLogger().info("Shutting down rapla-container");
     	// prevent reentrence in dispose
     	synchronized ( this)
     	{
@@ -495,7 +504,11 @@ public class ContainerImpl implements Container
     	}
     	try
     	{
-    		removeAllComponents();
+            if ( commandQueue != null)
+            {
+                ((DefaultScheduler)commandQueue).cancel();
+            }
+    	    removeAllComponents();
     	}
     	finally
     	{
@@ -526,7 +539,7 @@ public class ContainerImpl implements Container
             }
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
-                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || isWebservice(type) || getContext().has( type))) 
+                if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) ||  /*isWebservice(type) ||*/ getContext().has( type))) 
                 {
                     compatibleParameters = false;
                 }
@@ -605,18 +618,22 @@ public class ContainerImpl implements Container
                     if ( actualTypeArguments.length > 0)
                     {
                         final Type param = actualTypeArguments[0];
-                        p = new Provider()
+                        if ( param instanceof Class)
                         {
-                            @Override
-                            public Object get() {
-                                try {
-                                    return context.lookup(param.getClass());
-                                } catch (RaplaContextException e) {
-                                    throw new IllegalStateException( e.getMessage(),e);
+                            final Class<? extends Type> class1 = (Class<? extends Type>) param;
+                            p = new Provider()
+                            {
+                                @Override
+                                public Object get() {
+                                    try {
+                                        return context.lookup(class1);
+                                    } catch (RaplaContextException e) {
+                                        throw new IllegalStateException( e.getMessage(),e);
+                                    }
                                 }
-                            }
-                            
-                        };
+                                
+                            };
+                        }
                     }
                 }
                 if ( p!= null)
@@ -630,10 +647,9 @@ public class ContainerImpl implements Container
                     p = config;
                 } else if ( Logger.class.isAssignableFrom( type)) {
                     p = logger;
-                } else if ( isWebservice(type)) {
-                //} else if ( type.isAnnotationPresent(WebService.class)) {
-					RemoteServiceCaller lookup = context.lookup(RemoteServiceCaller.class);
-                    p = lookup.getRemoteMethod( type); 
+//                } else if ( isWebservice(type)) {
+//					RemoteServiceCaller lookup = context.lookup(RemoteServiceCaller.class);
+//                    p = lookup.getRemoteMethod( type); 
                 } else {
                     Class guessedRole = type;
                     if ( context.has( guessedRole )) {
@@ -660,8 +676,6 @@ public class ContainerImpl implements Container
         }
     }
    
-
-	   
     protected class ComponentHandler implements Disposable {
         protected Configuration config;
         protected Logger logger;
@@ -782,5 +796,153 @@ public class ContainerImpl implements Container
     	CommandScheduler commandQueue = new DefaultScheduler();
 		return commandQueue;
 	}
+
+    protected void initialize() throws Exception {
+        //Logger logger = getLogger();
+        CalendarOptions calendarOptions = new CalendarOptionsImpl(new DefaultConfiguration());
+        addContainerProvidedComponentInstance( CalendarOptions.class, calendarOptions );
+        addContainerProvidedComponent(AppointmentFormater.class, AppointmentFormaterImpl.class);
+      
+        // Discover and register the plugins for Rapla
+        i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES);
+        String version = i18n.getString( "rapla.version" );
+        logger.info("Rapla.Version=" + version);
+        version = i18n.getString( "rapla.build" );
+        logger.info("Rapla.Build=" + version);
+        AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
+        try {
+            version = System.getProperty("java.version");
+            logger.info("Java.Version=" + version);
+        } catch (SecurityException ex) {
+            version = "-";
+            logger.warn("Permission to system property java.version is denied!");
+        }        
+    }
+
+    protected Set<String> discoverPluginClassnames() throws RaplaException 
+    {
+        try
+        {
+            Set<String> pluginNames = new LinkedHashSet<String>();
+    
+            boolean isDevelopment = getContext().has(ContainerImpl.ENV_DEVELOPMENT) ? getContext().lookup( ContainerImpl.ENV_DEVELOPMENT) : DEVELOPMENT_RESSOLVING;
+            Enumeration<URL> pluginEnum =  ConfigTools.class.getClassLoader().getResources("META-INF/rapla-plugin.list");
+            if (!pluginEnum.hasMoreElements() || isDevelopment)
+            { 
+                Collection<String> result = ServiceListCreator.findPluginClasses(logger);
+                pluginNames.addAll(result);
+            }
+                
+            while ( pluginEnum.hasMoreElements() ) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader((pluginEnum.nextElement()).openStream()));
+                while ( true ) {
+                    String plugin = reader.readLine();
+                    if ( plugin == null)
+                        break;
+                    pluginNames.add(plugin);
+                }
+            }
+            return pluginNames;
+        } 
+        catch (Exception ex)
+        {
+            throw new RaplaException( ex.getMessage(), ex);
+        }        
+    }
+    
+    private <T extends Container> List<PluginDescriptor<T>> getPluginList(Class<T> containerType) throws RaplaException {
+        Logger logger = getLogger().getChildLogger("plugin");
+        @SuppressWarnings("unchecked")
+        List<PluginDescriptor<T>> pluginList = new ArrayList( );
+        Set<String> pluginNames = discoverPluginClassnames();
+        for ( String plugin: pluginNames)
+        {
+            try {
+                boolean found = false;
+                try {
+                    Class<?> componentClass = ContainerImpl.class.getClassLoader().loadClass( plugin );
+                    Method[] methods = componentClass.getMethods();
+                    for ( Method method:methods)
+                    {
+                        if ( method.getName().equals("provideServices"))
+                        {
+                            Class<?> type = method.getParameterTypes()[0];
+                            if (containerType.isAssignableFrom(type))
+                            {
+                                found = true;
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException ex) {
+                    continue;
+                } catch (NoClassDefFoundError ex) {
+                    getLogger().error("Error loading plugin " + plugin + " " +ex.getMessage());
+                    continue;
+                } catch (Exception e1) {
+                    getLogger().error("Error loading plugin " + plugin + " " +e1.getMessage());
+                    continue;
+                }
+                if ( found )
+                {
+                    @SuppressWarnings("unchecked")
+                    PluginDescriptor<T> descriptor = (PluginDescriptor<T>) instanciate(plugin, null, logger);
+                    pluginList.add(descriptor);
+                    logger.info("Installed plugin "+plugin);
+                }
+            } catch (RaplaContextException e) {
+                if (e.getCause() instanceof ClassNotFoundException) {
+                    logger.error("Could not instanciate plugin "+ plugin, e);
+                }
+            }
+        }
+        return pluginList;
+    }
+    
+    private Configuration findPluginConfig(RaplaConfiguration raplaConfig, String pluginClassname) {
+        Configuration pluginConfig;
+        // TODO should be replaced with a more descriptive approach instead of looking for the config by guessing from the package name
+        pluginConfig = raplaConfig.find( "class", pluginClassname );
+        // If no plugin config for server is found look for plugin config for client plugin
+        if ( pluginConfig == null )
+        {
+            String pluginClassname2 = pluginClassname.replaceAll("ServerPlugin", "Plugin");
+            pluginClassname2 = pluginClassname2.replaceAll(".server.", ".client.");
+            pluginConfig = raplaConfig.find( "class", pluginClassname2 );
+            if ( pluginConfig == null)
+            {
+                pluginClassname2 = pluginClassname2.replaceAll(".client.", ".");
+                pluginConfig = raplaConfig.find( "class", pluginClassname );
+            }
+        }
+        return pluginConfig;
+    }
+    
+    protected <T extends Container> List<PluginDescriptor<T>> initializePlugins(Preferences preferences, Class<T> pluginContainerClass) throws RaplaException {
+        List<PluginDescriptor<T>> pluginList = getPluginList(pluginContainerClass);
+        RaplaConfiguration raplaConfig = preferences.getEntry( RaplaComponent.PLUGIN_CONFIG);
+        // Add plugin configs
+        for ( Iterator<PluginDescriptor<T>> it = pluginList.iterator(); it.hasNext(); )
+        {
+            PluginDescriptor<T> pluginDescriptor = it.next();
+            String pluginClassname = pluginDescriptor.getClass().getName();
+            Configuration pluginConfig = null;
+            if ( raplaConfig != null )
+            {
+                pluginConfig = findPluginConfig(raplaConfig, pluginClassname);
+            }
+            if ( pluginConfig == null )
+            {
+                pluginConfig = new DefaultConfiguration( "plugin" );
+            }
+            @SuppressWarnings("unchecked")
+            T container = (T)this;
+            pluginDescriptor.provideServices( container, pluginConfig );
+        }
+        return pluginList;
+    }
+
+
+
  }
 

@@ -81,41 +81,36 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
     {
         String id = request.getParameter("id");
         String serviceAndMethodName = getServiceAndMethodName(request);
+        JsonServlet servlet;
         try
         {
-            JsonServlet servlet;
-            try
-            {
-                servlet = getJsonServlet( request, serviceAndMethodName );
-            }
-            catch (RaplaException ex)
-            {
-                getLogger().error(ex.getMessage(), ex);
-                String out = serializeException(id, ex);
-                RPCServletUtils.writeResponse(servletContext, response,  out, false);
-                return;
-            }
-            Class<?> role = servlet.getInterfaceClass();
-            Object impl;
-            try
-            {
-                impl = serverContainer.createWebservice(role, request);
-            }
-            catch (RaplaSecurityException ex)
-            {
-                servlet.serviceError(request, response, servletContext, ex);
-                return;
-            }
-            servlet.service(request, response, servletContext, impl);
+            servlet = getJsonServlet( request, serviceAndMethodName );
         }
-        catch ( RaplaSecurityException ex)
-        {
-            getLogger().error(ex.getMessage());
-        }
-        catch ( RaplaException ex)
+        catch (RaplaException ex)
         {
             getLogger().error(ex.getMessage(), ex);
+            String out = serializeException(id, ex);
+            RPCServletUtils.writeResponse(servletContext, response,  out, false);
+            return;
         }
+        Class<?> role = servlet.getInterfaceClass();
+        Object impl;
+        try
+        {
+            impl = serverContainer.createWebservice(role, request);
+        }
+        catch (RaplaSecurityException ex)
+        {
+            servlet.serviceError(request, response, servletContext, ex);
+            return;
+        }
+        catch (RaplaException ex)
+        {
+            getLogger().error(ex.getMessage(), ex);
+            servlet.serviceError(request, response, servletContext, ex);
+            return;
+        }
+        servlet.service(request, response, servletContext, impl);
     }
 
     protected String getServiceAndMethodName(HttpServletRequest request) {

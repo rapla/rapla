@@ -320,10 +320,6 @@ public abstract class DateTools
     static public long countMinutes(long start, long end){
     	return (end-start)/ MILLISECONDS_PER_MINUTE;
     }
-//    static public Calendar createGMTCalendar()
-//    {
-//        return Calendar.getInstance( GMT);
-//    }
 
     static int date_1970_1_1 = calculateJulianDayNumberAtNoon(1970, 1, 1); 
     /**

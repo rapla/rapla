@@ -125,9 +125,8 @@ public class CommunicatorTest extends ServletTestBase
         connectionInfo.setServerURL("http://localhost:8052/");
         for ( int i=0;i<clientNum;i++)
         {
-			RaplaMainContainer container = (RaplaMainContainer) getContainer();
-            RemoteServer remoteServer = container.getRemoteMethod( context, RemoteServer.class);
-			RemoteStorage remoteStorage = container.getRemoteMethod(context, RemoteStorage.class);
+			RemoteServer remoteServer = context.lookup( RemoteServer.class);
+			RemoteStorage remoteStorage = context.lookup( RemoteStorage.class);
 			ConsoleLogger logger = new ConsoleLogger();
             I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);

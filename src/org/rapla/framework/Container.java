@@ -16,9 +16,9 @@ import java.util.Collection;
 
 public interface Container extends Disposable
 {
-     StartupEnvironment getStartupEnvironment();
      RaplaContext getContext();
-     /** lookup an named component from the raplaserver.xconf */
+     /** lookup an named component from the raplaserver.xconf 
+      * @deprecated*/
      <T> T lookup(Class<T> componentRole, String hint) throws RaplaContextException;
 
      <T,I extends T> void addContainerProvidedComponent(Class<T> roleInterface,Class<I> implementingClass);

@@ -39,6 +39,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
@@ -224,7 +225,13 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     {
         enableLogging( logger );
         Locale locale;
-        m_localeSelector =  (LocaleSelectorImpl) context.lookup( LocaleSelector.class ) ;
+        try
+        {
+            m_localeSelector =  (LocaleSelectorImpl) context.lookup( LocaleSelector.class ) ;
+        }
+        catch (RaplaContextException ex)
+        {
+        }
         if ( m_localeSelector != null )
         {
             m_localeSelector.addLocaleChangeListenerFirst( this );

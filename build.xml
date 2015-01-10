@@ -175,7 +175,8 @@ Definition as published by the Open Source Initiative (OSI).
        	
         <property name="application.name" value="Rapla" />
         <property name="main.lib" value="rapla-${doc.version}.jar" />
-    	<property name="main.client.lib" value="raplaclient.jar" /> 	       
+    	<property name="main.client.lib" value="raplaclient.jar" />
+    	<property name="main.client.libandroid" value="raplaandroid.jar" /> 	       
         <property name="target" value="dist-bin" />
         <available file="${keystore.file}" property="keystore.present" />
         
@@ -439,7 +440,7 @@ Definition as published by the Open Source Initiative (OSI).
         <jar jarfile="${build.dir}/${main.client.lib}">
         	 <fileset dir="${build.dest.client}">
 	          </fileset>
-              <manifest>
+	         <manifest>
                     <attribute name="Created-By" value="${user.name}" />
                     <section name="common">
                         <attribute name="Implementation-Title" value="common" />
@@ -453,6 +454,25 @@ Definition as published by the Open Source Initiative (OSI).
     	      </manifest>
         </jar>
     
+        <jar jarfile="${build.dir}/${main.client.libandroid}">
+        	 <fileset dir="${build.dest.client}">
+	          </fileset>
+             <fileset dir="${src.dir}">
+			    <include name="**/*.java" />
+	         </fileset>
+        	 <manifest>
+                    <attribute name="Created-By" value="${user.name}" />
+                    <section name="common">
+                        <attribute name="Implementation-Title" value="common" />
+                        <attribute name="Implementation-Version" value="${doc.version} ${TODAY}" />
+                    	<attribute name="url" value="${doc.homepage}"/>
+                    	<attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
+                    </section>
+                  	<attribute name="Application-Name" value ="${application.name}"/>
+                   	<attribute name="Codebase" value="*"/>
+    	           	<attribute name="Permissions" value="${permissions.client}"/>
+    	      </manifest>
+        </jar>
     	<jar jarfile="${build.dir}/raplabootstrap.jar">
              <fileset dir="${build.dest.bootstrap}">
              </fileset>

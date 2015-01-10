@@ -13,12 +13,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.server.RaplaServerExtensionPoints;
 
 public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPageGenerator
@@ -52,7 +52,7 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		 String title;
 		 final String defaultTitle = getI18n().getString("rapla.title");
 		 try {
-            title= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            title= getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
         } catch (RaplaException e) {
             title = defaultTitle; 
         }

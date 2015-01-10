@@ -11,7 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl.server;
-import javax.inject.Provider;
+import javax.inject.Inject;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -19,6 +19,8 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.dbfile.FileOperator;
+import org.rapla.storage.dbsql.DBOperator;
 /**  Imports the content of on store into another.
  Export does an import with source and destination exchanged.
 <p>Configuration:</p>
@@ -30,11 +32,12 @@ import org.rapla.storage.LocalCache;
 </pre>
 */
 public class ImportExportManagerImpl implements ImportExportManager {
-    Provider<CachableStorageOperator> source;
-    Provider<CachableStorageOperator> dest;
+    CachableStorageOperator source;
+    CachableStorageOperator dest;
     Logger logger;
     
-    public ImportExportManagerImpl(Logger logger,Provider<CachableStorageOperator> source,Provider<CachableStorageOperator> dest) 
+    @Inject
+    public ImportExportManagerImpl(Logger logger,FileOperator source,DBOperator dest) 
     {
         this.logger =  logger;
         this.source = source;
@@ -81,12 +84,12 @@ public class ImportExportManagerImpl implements ImportExportManager {
 	@Override
 	public CachableStorageOperator getSource() throws RaplaException 
 	{
-		return source.get();
+		return source;
 	}
 
 	@Override
 	public CachableStorageOperator getDestination() throws RaplaException 
 	{
-		return dest.get();
+		return dest;
 	}
 }

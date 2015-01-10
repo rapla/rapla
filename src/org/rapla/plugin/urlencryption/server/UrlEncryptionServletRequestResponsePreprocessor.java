@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -13,10 +14,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.servletpages.ServletRequestPreprocessor;
@@ -26,15 +26,19 @@ import org.rapla.servletpages.ServletRequestPreprocessor;
  * Date: 15.08.12
  * Time: 19:39
  */
-public class UrlEncryptionServletRequestResponsePreprocessor extends RaplaComponent implements ServletRequestPreprocessor {
+public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
     private UrlEncryptionService urlEncryptionService;
-    public UrlEncryptionServletRequestResponsePreprocessor(RaplaContext context) throws RaplaContextException
+    private ClientFacade facade;
+    private Logger logger;
+    @Inject
+    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryption service, ClientFacade facade, Logger logger) 
     {
-    	super(context);
-    	urlEncryptionService =  (UrlEncryptionService) context.lookup(UrlEncryption.class);
+    	this.urlEncryptionService =  (UrlEncryptionService) service;
+    	this.facade = facade;
+    	this.logger = logger;
     }
     
-    public HttpServletRequest handleRequest(RaplaContext context, ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws RaplaException {
+    public HttpServletRequest handleRequest( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws RaplaException {
         try {
             // check if the page was called via encrypted parameters
             if (request.getParameter(UrlEncryption.ENCRYPTED_PARAMETER_NAME) != null && request.getParameter("page") == null )
@@ -90,7 +94,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor extends RaplaCompon
 	                parameterMap.put(key, new String[]{});
 	            }
 			} catch (UnsupportedEncodingException e1) {
-				getLogger().error(e1.getMessage(), e1);
+				logger.error(e1.getMessage(), e1);
 			}
         }
 
@@ -115,8 +119,8 @@ public class UrlEncryptionServletRequestResponsePreprocessor extends RaplaCompon
              return false;
          }
 
-         final User user = getQuery().getUser(username);
-         final CalendarSelectionModel model = getModification().newCalendarModel( user);
+         final User user = facade.getUser(username);
+         final CalendarSelectionModel model = facade.newCalendarModel( user);
          try
          {
          	model.load(filename);

@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
@@ -15,6 +14,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
+import org.rapla.server.ServerService;
 
 public class MailapiClient implements MailInterface
 {
@@ -27,9 +27,9 @@ public class MailapiClient implements MailInterface
     Object lookup;
     public MailapiClient( RaplaContext context) throws  RaplaException {
     	this.context = context;
-    	if (  context.has(RaplaMainContainer.ENV_RAPLAMAIL))
+    	if (  context.has(ServerService.ENV_RAPLAMAIL))
     	{
-    		lookup =  context.lookup(RaplaMainContainer.ENV_RAPLAMAIL);
+    		lookup =  context.lookup(ServerService.ENV_RAPLAMAIL);
     	}
     }
     

@@ -15,29 +15,27 @@ import java.net.URL;
 import java.net.URLDecoder;
 
 import org.rapla.ConnectInfo;
-import org.rapla.RaplaMainContainer;
 import org.rapla.RaplaStartupEnvironment;
+import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
 
 public class MainWebclient  
 {
     /** The default config filename for client-mode raplaclient.xconf*/
-    private Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN).getChildLogger("init");
+    private Logger logger = RaplaBootstrapLogger.createRaplaLogger();
     RaplaStartupEnvironment env = new RaplaStartupEnvironment();
     Container raplaContainer;
 
     String startupUser;
     
-    
-
-    void init(URL contextURL,int mode) throws Exception {
+    void init(URL downloadURL,int mode) throws Exception {
         env.setStartupMode( mode );
-        env.setContextRootURL( contextURL );
+        env.setDownloadURL(downloadURL );
         env.setBootstrapLogger( getLogger() );
     }
 
@@ -51,7 +49,7 @@ public class MainWebclient
         this.startupUser = startupUser;
     }
     
-    void startRapla(final String id) throws Exception {
+    void startRapla() throws Exception {
         ConnectInfo connectInfo = null;
 
         try
@@ -70,19 +68,19 @@ public class MainWebclient
         {
             getLogger().error("Error reading system property " , ex);
         }
-        startRapla(id, connectInfo);
+        startRapla( connectInfo);
     }
 
-    protected void startRapla(final String id, ConnectInfo connectInfo) throws Exception, RaplaContextException {
-        raplaContainer = new RaplaMainContainer( env);
-        ClientServiceContainer clientContainer = raplaContainer.lookup(ClientServiceContainer.class, id );
+    protected void startRapla( ConnectInfo connectInfo) throws Exception, RaplaContextException {
+        final RaplaClientServiceImpl clientContainer = new RaplaClientServiceImpl( env );
+        this.raplaContainer = clientContainer;
         ClientService client =  clientContainer.getContext().lookup( ClientService.class);
         client.addRaplaClientListener(new RaplaClientListenerAdapter() {
                 public void clientClosed(ConnectInfo reconnect) {
                     if ( reconnect != null) {
-                        raplaContainer.dispose();
+                        clientContainer.dispose();
                         try {
-                            startRapla(id, reconnect);
+                            startRapla( reconnect);
                         } catch (Exception ex) {
                             getLogger().error("Error restarting client",ex);
                             exit();
@@ -104,7 +102,7 @@ public class MainWebclient
         try {
         	
         	main.init( new URL("http://localhost:8051/rapla"),StartupEnvironment.CONSOLE);
-            main.startRapla("client");
+            main.startRapla();
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);
             main.raplaContainer.dispose();

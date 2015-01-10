@@ -1,8 +1,6 @@
 package org.rapla.server.internal;
 
 import org.rapla.entities.User;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.RemoteSession;
@@ -10,7 +8,7 @@ import org.rapla.server.RemoteSession;
 /** Implementation of RemoteStorage as a RemoteService
  * @see org.rapla.storage.dbrm.RemoteStorage
  */
-public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
+public class RemoteSessionImpl implements RemoteSession {
     /**
      *
      */
@@ -18,9 +16,8 @@ public class RemoteSessionImpl extends RaplaComponent implements RemoteSession {
     Logger logger;
    // private String accessToken;
     
-    public RemoteSessionImpl(RaplaContext context, String clientName) {
-        super( context );
-        logger = super.getLogger().getChildLogger(clientName);
+    public RemoteSessionImpl(Logger logger) {
+        this.logger = logger;
     }
 
     public Logger getLogger() {

@@ -15,11 +15,11 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
 
 public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageGenerator{
     
@@ -119,7 +119,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
         String menuName;
         try
         {
-            menuName= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            menuName= getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
         }
         catch (RaplaException e) {
             menuName = defaultTitle;

@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+/** we add this filter to enable patch*/
 public class HTTPMethodOverrideFilter implements Filter
 {
     Collection<String> VALID_METHODS = Arrays.asList(new String[] {"GET","POST","DELETE","PUT","PATCH"});

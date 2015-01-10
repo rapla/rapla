@@ -29,7 +29,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
@@ -56,6 +55,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -109,7 +109,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     protected boolean isConnected = false;
     final boolean includeIds= false;
     @Inject
-    public FileOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(RaplaMainContainer.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
+    public FileOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
     {
         super(  logger, i18n, raplaLocale, scheduler );
         //StartupEnvironment env =  context.lookup( StartupEnvironment.class );

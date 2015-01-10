@@ -19,15 +19,14 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
+import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JPopupMenu;
@@ -45,14 +44,12 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
-import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -63,15 +60,13 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.EditController;
@@ -117,12 +112,13 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
+import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.RestartServer;
 import org.rapla.storage.dbrm.StatusUpdater;
 
 /** Implementation of the ClientService.
 */
-public class RaplaClientServiceImpl extends ContainerImpl implements ClientServiceContainer,ClientService,UpdateErrorListener
+public class RaplaClientServiceImpl extends RaplaMainContainer implements ClientServiceContainer,ClientService,UpdateErrorListener
 {
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     I18nBundle i18n;
@@ -133,12 +129,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
 	static boolean lookAndFeelSet;
-	CommandScheduler commandQueueWrapper;
-    private ClientFacade facade;
-    StorageOperator operator;
-
-	public RaplaClientServiceImpl(RaplaContext parentContext,Logger logger) throws RaplaException {
-        super(parentContext, logger);
+    
+	public RaplaClientServiceImpl(StartupEnvironment env) throws Exception {
+        super( env);
+    }
+	
+	public RaplaClientServiceImpl(StartupEnvironment env, Provider<RemoteServiceCaller> caller) throws Exception {
+        super(  env, caller);
     }
 
     public static void setLookandFeel() {
@@ -169,8 +166,10 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN,(float)10.));
         lookAndFeelSet = true;
     }
-    
-    protected void init() throws RaplaException {
+
+    @Override
+    protected void initialize() throws Exception {
+        super.initialize();
     	advanceLoading(false);
     	StartupEnvironment env = getContext().lookup(StartupEnvironment.class);
         int startupMode = env.getStartupMode();
@@ -195,20 +194,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     	defaultLanguageChoosen = true;
     	getLogger().info("Starting gui ");
 		
-        super.init( );
-        this.operator = getContext().lookup( RemoteOperator.class);
-        
+    	addContainerProvidedComponentInstance(ClientServiceContainer.class, this);
+    	
+    	RaplaLocaleImpl raplaLocale = (RaplaLocaleImpl) getContext().lookup( RaplaLocale.class);
+        addContainerProvidedComponentInstance( LocaleSelector.class,raplaLocale.getLocaleSelector());        
         addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
-        
-        // overwrite commandqueue because we need to synchronize with swing
-        commandQueueWrapper = new AWTWrapper((DefaultScheduler)getContext().lookup(CommandScheduler.class));
-		addContainerProvidedComponentInstance( CommandScheduler.class, commandQueueWrapper);
-        i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
-        addContainerProvidedComponentInstance( StorageOperator.class, operator );
-        facade = new FacadeImpl(operator,i18n,commandQueueWrapper, logger);
-
-		
+            	
         addContainerProvidedComponent( RaplaClipboard.class, RaplaClipboard.class );
         addContainerProvidedComponent( TreeFactory.class, TreeFactoryImpl.class );
         addContainerProvidedComponent( MenuFactory.class, MenuFactoryImpl.class );
@@ -233,13 +225,15 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
         
-        frameControllerList = new FrameControllerList(getLogger().getChildLogger("framelist"));
-        addContainerProvidedComponentInstance(FrameControllerList.class,frameControllerList);
+        addContainerProvidedComponent(FrameControllerList.class,FrameControllerList.class);
+
 
         RaplaMenubar menuBar = new RaplaMenubar();
 
         RaplaMenu systemMenu =  new RaplaMenu( InternMenus.FILE_MENU_ROLE.getId() );
         RaplaMenu editMenu = new RaplaMenu( InternMenus.EDIT_MENU_ROLE.getId() );
+        editMenu.add( new RaplaSeparator("EDIT_BEGIN"));
+        editMenu.add( new RaplaSeparator("EDIT_END"));
         RaplaMenu viewMenu = new RaplaMenu( InternMenus.VIEW_MENU_ROLE.getId() );
         RaplaMenu helpMenu = new RaplaMenu( InternMenus.EXTRA_MENU_ROLE.getId() );
 
@@ -266,9 +260,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponentInstance( InternMenus.NEW_MENU_ROLE, newMenu );
         addContainerProvidedComponentInstance( InternMenus.CALENDAR_SETTINGS, settingsMenu );
         addContainerProvidedComponentInstance( InternMenus.EXTRA_MENU_ROLE, helpMenu );
-
-        editMenu.add( new RaplaSeparator("EDIT_BEGIN"));
-        editMenu.add( new RaplaSeparator("EDIT_END"));
         
         addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, DefaultReservationCheck.class);
         addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, ConflictReservationCheck.class);
@@ -282,9 +273,11 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         }
         //Add this service to the container
         addContainerProvidedComponentInstance(ClientService.class, this);
-        
+        this.i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
+        frameControllerList = getContext().lookup( FrameControllerList.class);
     }
 
+    @Override
 	protected Runnable createTask(final Command command) {
 		Runnable timerTask = new Runnable() {
 			public void run() {
@@ -299,35 +292,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 		return timerTask;
 	}
 
-	/** override to synchronize tasks with the swing event queue*/
-	class AWTWrapper implements CommandScheduler
-	{
-		DefaultScheduler parent;
-		
-		public AWTWrapper(DefaultScheduler parent) {
-			this.parent = parent;
-		}
-
-		@Override
-		public Cancelable schedule(Command command, long delay) {
-			Runnable task = createTask(command);
-			return parent.schedule(task, delay);		
-		}
-
-		@Override
-		public Cancelable schedule(Command command, long delay, long period) {
-			Runnable task = createTask(command);
-			return parent.schedule(task, delay, period);
-		}
-		
-		public String toString()
-		{
-			return parent.toString();
-		}
-	}
-	
-    public ClientFacade getFacade() throws RaplaContextException {
-        return  facade;
+	public ClientFacade getFacade() throws RaplaContextException {
+        return  getContext().lookup( ClientFacade.class);
     }
 
     public void start(ConnectInfo connectInfo) throws Exception {
@@ -402,7 +368,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
      * @throws RaplaException
      *
      */
-    private void beginRaplaSession() throws RaplaException {
+    private void beginRaplaSession() throws Exception {
         initLanguage();
         ClientFacade facade = getFacade();
         addContainerProvidedComponentInstance( ClientFacade.class, facade);
@@ -426,63 +392,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 //            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
 //        } 
         
-        Set<String> pluginNames;
-        //List<PluginDescriptor<ClientServiceContainer>> pluginList;
-        try {
-            pluginNames = getContext().lookup( RaplaMainContainer.PLUGIN_LIST);
-        } catch (RaplaContextException ex) {
-            throw new RaplaException (ex );
-        }
-        
-        List<PluginDescriptor<ClientServiceContainer>> pluginList = new ArrayList<PluginDescriptor<ClientServiceContainer>>( );
-        Logger logger = getLogger().getChildLogger("plugin");
-        for ( String plugin:pluginNames)
-        {
-        	try {
-        	    boolean found = false;
-        	    try {
-        	    	if ( plugin.toLowerCase().endsWith("serverplugin") || plugin.contains(".server."))
-        	    	{
-        	    		continue;
-        	    	}
-        	    	Class<?> componentClass = RaplaClientServiceImpl.class.getClassLoader().loadClass( plugin );
-                    Method[] methods = componentClass.getMethods();
-                    for ( Method method:methods)
-                    {
-                    	if ( method.getName().equals("provideServices"))
-                    	{
-                    		Class<?> type = method.getParameterTypes()[0];
-							if (ClientServiceContainer.class.isAssignableFrom(type))
-                    		{
-                    			found = true;
-                    		}
-                    	}
-                    }
-                } catch (ClassNotFoundException ex) {
-                	continue;
-                } catch (NoClassDefFoundError ex) {
-                	getLogger().error("Error loading plugin " + plugin + " " +ex.getMessage());
-                	continue;
-                } catch (Exception e1) {
-                	getLogger().error("Error loading plugin " + plugin + " " +e1.getMessage());
-                	continue;
-                }
-                if ( found )
-                {
-                	@SuppressWarnings("unchecked")
-					PluginDescriptor<ClientServiceContainer> descriptor = (PluginDescriptor<ClientServiceContainer>) instanciate(plugin, null, logger);
-                	pluginList.add(descriptor);
-                	logger.info("Installed plugin "+plugin);
-                }
-            } catch (RaplaContextException e) {
-                if (e.getCause() instanceof ClassNotFoundException) {
-                    logger.error("Could not instanciate plugin "+ plugin, e);
-                }
-            }
-        }
+        Preferences systemPreferences = facade.getSystemPreferences();
+        List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
         addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
-        initializePlugins( pluginList, facade.getSystemPreferences() );
-        
+
+        // start client extensions
+        lookupServicesFor(RaplaClientExtensionPoints.CLIENT_EXTENSION);
+
         // Add daterender if not provided by the plugins
         if ( !getContext().has( DateRenderer.class))
         {
@@ -516,9 +432,23 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         MainFrame mainFrame = new MainFrame( getContext());
         fireClientStarted();
         mainFrame.show();
- 
     }
-
+    
+    @Override
+    protected Set<String> discoverPluginClassnames() throws RaplaException {
+        Set<String> pluginNames = super.discoverPluginClassnames();
+        LinkedHashSet<String> result = new LinkedHashSet<String>();
+        for ( String plugin:pluginNames)
+        {
+            if ( plugin.toLowerCase().endsWith("serverplugin") || plugin.contains(".server."))
+            {
+                continue;
+            }
+            result.add( plugin);
+        }
+        return pluginNames;
+    }
+    
     private void initLanguage() throws RaplaException, RaplaContextException
     {
         ClientFacade facade = getFacade();
@@ -548,36 +478,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         }
 		AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
         AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
-    }
-
-    protected void initializePlugins(List<PluginDescriptor<ClientServiceContainer>> pluginList, Preferences preferences) throws RaplaException {
-        RaplaConfiguration raplaConfig =preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        // Add plugin configs
-        for ( Iterator<PluginDescriptor<ClientServiceContainer>> it = pluginList.iterator(); it.hasNext();  ) {
-            PluginDescriptor<ClientServiceContainer> pluginDescriptor = it.next();
-            String pluginClassname = pluginDescriptor.getClass().getName();
-            Configuration pluginConfig = null;
-            if ( raplaConfig != null) {
-                pluginConfig = raplaConfig.find("class", pluginClassname);
-            }
-            if ( pluginConfig == null) {
-                pluginConfig = new DefaultConfiguration("plugin");
-            }
-            pluginDescriptor.provideServices( this, pluginConfig );
-        }
-
-        //Collection<?> clientPlugins = getAllServicesForThisContainer(RaplaExtensionPoints.CLIENT_EXTENSION);
-        // start plugins
-        getAllServicesForThisContainer(RaplaClientExtensionPoints.CLIENT_EXTENSION);
-        //        for (Iterator<?> it = clientPlugins.iterator();it.hasNext();) {
-//            String hint = (String) it.next();
-//            try {
-//                getContext().lookup( RaplaExtensionPoints.CLIENT_EXTENSION , hint);
-//                getLogger().info( "Initialize " + hint );
-//            } catch (RaplaContextException ex ) {
-//                getLogger().error( "Can't initialize " + hint, ex );
-//            }
-//        }
     }
 
     public boolean isRestartingGUI() 
@@ -691,13 +591,13 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 
 
     private void startLogin()  throws Exception {
-    	Command object = new Command()
+    	Command comnmand = new Command()
     	{
 			public void execute() throws Exception {
                 startLoginInThread();
 			}
     	};
-		commandQueueWrapper.schedule( object, 0);
+		getContext().lookup(CommandScheduler.class).schedule( comnmand, 0);
     }
 
     private void startLoginInThread()  {

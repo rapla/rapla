@@ -12,24 +12,23 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
-import org.rapla.RaplaMainContainer;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -42,12 +41,11 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -80,15 +78,19 @@ import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RemoteMethodStub;
 import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.RemoteStorage;
+import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 /** Default implementation of StorageService.
@@ -106,42 +108,113 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
  @see ServerService
  */
 
-public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService, RemoteMethodFactory<RemoteServer>,RemoteMethodStub
+public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService, RemoteMethodFactory<RemoteServer>
 {
+    
     @SuppressWarnings("rawtypes")
     public static Class<RemoteMethodFactory> REMOTE_METHOD_FACTORY = RemoteMethodFactory.class;
     static Class<RaplaPageGenerator> SERVLET_PAGE_EXTENSION = RaplaPageGenerator.class;
 
     protected CachableStorageOperator operator;
     protected I18nBundle i18n;
-    List<PluginDescriptor<ServerServiceContainer>> pluginList;
 
     ClientFacade facade;
     private AuthenticationStore authenticationStore;
 	SignedToken accessTokenSigner;
 	SignedToken refreshTokenSigner;
-    RemoteSessionImpl standaloneSession;
     ShutdownService shutdownService;
+    
     // 5 Hours until the token expires
     int accessTokenValiditySeconds =  300 * 60;
-    @Inject
-    public ServerServiceImpl( RaplaContext parentContext,CachableStorageOperator operator, Logger logger) throws RaplaException
-    {
-        super( parentContext, logger );
-        this.operator = operator;
-    	addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
-        i18n =  parentContext.lookup( RaplaComponent.RAPLA_RESOURCES );
-        CommandScheduler scheduler = parentContext.lookup(CommandScheduler.class );
-        this.facade = new FacadeImpl(operator,i18n, scheduler, logger);
-        RaplaContext context = getContext();
+    
+    private boolean passwordCheckDisabled ;
+    
+    RemoteSessionImpl adminSession;
 
-        operator = (CachableStorageOperator) facade.getOperator();
+    public static class ServerBackendContext
+    {
+        DataSource dbDatasource;
+        String fileDatasource;
+        Object mailSession;
+    }
+    
+    @Inject
+    public ServerServiceImpl( Logger logger, ServerBackendContext backendContext, String selectedStorage) throws Exception
+    {
+        super(  logger, new SimpleProvider<RemoteServiceCaller>() );
+        ((SimpleProvider<RemoteServiceCaller>) remoteServiceCaller).setValue( new RemoteServiceCaller() {
+            
+            @Override
+            public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException {
+                @SuppressWarnings({ "unchecked", "deprecation" })
+                RemoteMethodFactory<T> factory =lookup( REMOTE_METHOD_FACTORY ,a.getName());
+                T service = factory.createService( adminSession);
+                return service;
+            }
+        });
+        
+        adminSession = new RemoteSessionImpl(getLogger().getChildLogger( "session"));
+        
+//        URL downloadURL = env.getDownloadURL();
+//        if (downloadURL != null)
+//        {
+//            File file = IOUtil.getFileFrom( downloadURL);
+//            addContainerProvidedComponentInstance( ServerService.CONTEXT_ROOT, file.getPath());
+//        }
+        addContainerProvidedComponentInstance( ServerService.TIMESTAMP, new Object() {
+            
+            public String toString() {
+                DateFormat formatter = new SimpleDateFormat("yyyyMMdd-HHmmss");
+                String formatNow = formatter.format(new Date());
+                return formatNow;
+            }
+
+        });
+        if ( backendContext.fileDatasource != null)
+        {
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, backendContext.fileDatasource );
+            addContainerProvidedComponent( FileOperator.class, FileOperator.class);
+        }
+        if ( backendContext.dbDatasource != null)
+        {
+            addContainerProvidedComponentInstance( DataSource.class, backendContext.dbDatasource );
+            addContainerProvidedComponent( DBOperator.class, DBOperator.class);
+        }
+        if ( backendContext.fileDatasource != null && backendContext.dbDatasource != null)
+        {
+            addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
+        }
+        if ( backendContext.mailSession != null)
+        {
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAMAIL, backendContext.mailSession);
+        }
+        
+        initialize();
+        addContainerProvidedComponent( TimeZoneConverter.class, TimeZoneConverterImpl.class);
+        if ( selectedStorage.equals("rapladb"))
+        {
+            operator = getContext().lookup( DBOperator.class);
+        }
+        else if ( selectedStorage.equals("raplafile"))
+        {
+            operator = getContext().lookup( FileOperator.class);
+        }
+        else
+        {
+            throw new RaplaException("Unknown datasource " + selectedStorage);
+        }
+        addContainerProvidedComponentInstance( StorageOperator.class, operator );
+        addContainerProvidedComponent( ClientFacade.class, FacadeImpl.class);
+        RaplaContext context = getContext();
+        
         addContainerProvidedComponentInstance( ServerService.class, this);
+        addContainerProvidedComponentInstance( ServerServiceContainer.class, this);
+        
         addContainerProvidedComponentInstance( ShutdownService.class, this);
         addContainerProvidedComponentInstance( ServerServiceContainer.class, this);
         addContainerProvidedComponentInstance( CachableStorageOperator.class, operator );
-        addContainerProvidedComponentInstance( StorageOperator.class, operator );
-        addContainerProvidedComponentInstance( ClientFacade.class, facade );
+        
+        
         addContainerProvidedComponent( SecurityManager.class, SecurityManager.class );
         addRemoteMethodFactory(RemoteStorage.class,RemoteStorageImpl.class, null);
         addRemoteMethodFactory(RemoteLogger.class,RemoteLoggerImpl.class, null);
@@ -165,8 +238,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context,i18n.getString( "start_rapla_with_webstart" ),"rapla/raplaclient.jnlp") );
         addContainerProvidedComponentInstance( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context,i18n.getString( "start_rapla_with_applet" ),"rapla?page=raplaapplet") );
         addContainerProvidedComponentInstance( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context,i18n.getString( "server_status" ),"rapla?page=server") );
-
-        standaloneSession = new RemoteSessionImpl(getContext(), "session");
         
         operator.addStorageUpdateListener( this );
 //        if ( username != null  )
@@ -174,52 +245,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 //        else
         operator.connect();
         
-        Set<String> pluginNames;
-        //List<PluginDescriptor<ClientServiceContainer>> pluginList;
-        try {
-            pluginNames = context.lookup( RaplaMainContainer.PLUGIN_LIST);
-        } catch (RaplaContextException ex) {
-            throw new RaplaException (ex );
-        }
-        
-        pluginList = new ArrayList<PluginDescriptor<ServerServiceContainer>>( );
-        Logger pluginLogger = getLogger().getChildLogger("plugin");
-        for ( String plugin:pluginNames)
-        {
-        	try {
-        		boolean found = false;
-                try {
-                	Class<?> componentClass = ServerServiceImpl.class.getClassLoader().loadClass( plugin );
-                    Method[] methods = componentClass.getMethods();
-                    for ( Method method:methods)
-                    {
-                    	if ( method.getName().equals("provideServices"))
-                    	{
-                    		Class<?> type = method.getParameterTypes()[0];
-							if (ServerServiceContainer.class.isAssignableFrom(type))
-                    		{
-                    			found = true;
-                    		}
-                    	}
-                    }
-                } catch (ClassNotFoundException e1) {
-                } catch (Exception e1) {
-                	getLogger().warn(e1.getMessage());
-                	continue;
-                }
-                if ( found )
-                {
-                	@SuppressWarnings("unchecked")
-					PluginDescriptor<ServerServiceContainer> descriptor = (PluginDescriptor<ServerServiceContainer>) instanciate(plugin, null, logger);
-                	pluginList.add(descriptor);
-                	pluginLogger.info("Installed plugin "+plugin);
-                }
-            } catch (RaplaContextException e) {
-                if (e.getCause() instanceof ClassNotFoundException) {
-                	pluginLogger.error("Could not instanciate plugin "+ plugin, e);
-                }
-            }
-        }
         addContainerProvidedComponent(RaplaKeyStorage.class, RaplaKeyStorageImpl.class);
         
         try {
@@ -249,7 +274,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 				}
 			}
 		}
-        String timezoneId = preferences.getEntryAsString(RaplaMainContainer.TIMEZONE, importExportTimeZone);
+        String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
         RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
         TimeZoneConverter importExportLocale = context.lookup(TimeZoneConverter.class);
         try {
@@ -277,8 +302,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         } catch (Exception rc) {
 			getLogger().error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
-		initializePlugins( pluginList, preferences );
-
+        
+        User user = getFirstAdmin(operator);
+        adminSession.setUser(user);
+		initializePlugins(  preferences, ServerServiceContainer.class );
+		// start server extensions
+        lookupServicesFor(RaplaServerExtensionPoints.SERVER_EXTENSION );
         if ( context.has( AuthenticationStore.class ) )
         {
             try 
@@ -292,6 +321,44 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         }
     }
+    
+    public void setPasswordCheckDisabled(boolean passwordCheckDisabled) 
+    {
+        this.passwordCheckDisabled = passwordCheckDisabled;
+    }
+    
+    public <T> T getRemoteMethod(Class<T> a, RemoteSessionImpl standaloneSession) throws RaplaContextException {
+        @SuppressWarnings({ "unchecked", "deprecation" })
+        RemoteMethodFactory<T> factory =lookup( REMOTE_METHOD_FACTORY ,a.getName());
+        T service = factory.createService( standaloneSession);
+        return service;
+    }
+    
+    public String getFirstAdmin() throws RaplaException
+    {
+        User user = getFirstAdmin( operator);
+        if ( user == null)
+        {
+            return null;
+        }
+        else
+        {
+            return user.getUsername();
+        }
+    }
+    
+    public User getFirstAdmin(StorageOperator operator) throws RaplaException {
+        //String username = null;
+        for (User u:operator.getUsers())
+        {
+            if ( u.isAdmin())
+            {
+                return u;
+            }
+        }
+        return null;
+    }
+
 
     public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory) {
         addRemoteMethodFactory(role, factory, null);
@@ -301,10 +368,23 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponent(REMOTE_METHOD_FACTORY,factory, role.getName(), configuration);
     }
     
-    protected RemoteMethodFactory<?> getRemoteMethod(String interfaceName) throws RaplaContextException {
-		RemoteMethodFactory<?> factory = lookup( REMOTE_METHOD_FACTORY ,interfaceName);
-		return factory;
-	}
+    @Override
+    public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
+    {
+        String interfaceName = role.getName();
+        @SuppressWarnings({ "deprecation", "unchecked" })
+        RemoteMethodFactory<T> factory = lookup( REMOTE_METHOD_FACTORY ,interfaceName);
+        RemoteSession remoteSession = getRemoteSession(request);
+        return  factory.createService(remoteSession);
+    }
+    
+    @Override
+    public boolean hasWebservice(String interfaceName) 
+    {
+        boolean found = has(REMOTE_METHOD_FACTORY, interfaceName);
+        return found;
+    }
+
     
     public <T extends RaplaPageGenerator> void addWebpage(String pagename,
 			Class<T> pageClass) {
@@ -321,7 +401,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		try
 		{
 			String lowerCase = page.toLowerCase();
-			RaplaPageGenerator factory = lookup( SERVLET_PAGE_EXTENSION ,lowerCase);
+			@SuppressWarnings("deprecation")
+            RaplaPageGenerator factory = lookup( SERVLET_PAGE_EXTENSION ,lowerCase);
 			return factory;
 		} catch (RaplaContextException ex)
 		{
@@ -360,42 +441,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     {
         return facade;
     }
-
-    protected void initializePlugins( List<PluginDescriptor<ServerServiceContainer>> pluginList, Preferences preferences ) throws RaplaException
-    {
-        RaplaConfiguration raplaConfig = preferences.getEntry( RaplaComponent.PLUGIN_CONFIG);
-        // Add plugin configs
-        for ( Iterator<PluginDescriptor<ServerServiceContainer>> it = pluginList.iterator(); it.hasNext(); )
-        {
-            PluginDescriptor<ServerServiceContainer> pluginDescriptor = it.next();
-            String pluginClassname = pluginDescriptor.getClass().getName();
-            Configuration pluginConfig = null;
-            if ( raplaConfig != null )
-            {
-            	// TODO should be replaced with a more descriptive approach instead of looking for the config by guessing from the package name
-            	pluginConfig = raplaConfig.find( "class", pluginClassname );
-	            // If no plugin config for server is found look for plugin config for client plugin
-	            if ( pluginConfig == null )
-	            {
-            		pluginClassname = pluginClassname.replaceAll("ServerPlugin", "Plugin");
-	            	pluginClassname = pluginClassname.replaceAll(".server.", ".client.");
-	            	pluginConfig = raplaConfig.find( "class", pluginClassname );
-	            	if ( pluginConfig == null)
-	            	{
-	            		pluginClassname = pluginClassname.replaceAll(".client.", ".");
-	            	   	pluginConfig = raplaConfig.find( "class", pluginClassname );
-	            	}
-	            }
-            }
-            if ( pluginConfig == null )
-            {
-                pluginConfig = new DefaultConfiguration( "plugin" );
-            }
-            pluginDescriptor.provideServices( this, pluginConfig );
-        }
-
-        lookupServicesFor(RaplaServerExtensionPoints.SERVER_EXTENSION );
-    }
+    
+    
 
     private void stop() 
     {
@@ -446,6 +493,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     public RemoteServer createService(final RemoteSession session) {
         return new RemoteServer() {
             
+
             public Logger getLogger()
             {
                 if ( session != null)
@@ -499,8 +547,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                     String username = credentials.getUsername();
                     String password = credentials.getPassword();
                     String connectAs = credentials.getConnectAs();
-                    boolean isStandalone = getContext().has( RemoteMethodStub.class);
-                    if ( isStandalone)
+
+                    if ( passwordCheckDisabled )
                     {
                         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
                         // don't check passwords in standalone version
@@ -509,7 +557,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                         {
                             throw new RaplaSecurityException(i18n.getString("error.login"));
                         }
-                        standaloneSession.setUser( user);
                     }
                     else
                     {
@@ -708,13 +755,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
   		this.shutdownService = shutdownService;
   	}
   	
-  	public <T> T getWebserviceLocalStub(final Class<T> a) throws RaplaContextException {
-  		@SuppressWarnings("unchecked")
-		RemoteMethodFactory<T> factory =lookup( REMOTE_METHOD_FACTORY ,a.getName());
-  		T service = factory.createService( standaloneSession);
-  		return service;
-  	}
-
 	public void shutdown(boolean restart) {
 		if ( shutdownService != null)
 		{
@@ -728,7 +768,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
 	public RemoteSession getRemoteSession(HttpServletRequest request) throws RaplaException {
 	    User user = getUser(request);
-	    RemoteSessionImpl remoteSession = new RemoteSessionImpl(getContext(), user != null ? user.getUsername() : "anonymous");
+	    RemoteSessionImpl remoteSession = new RemoteSessionImpl(getLogger().getChildLogger( user != null ? user.getUsername() : "anonymous"));
 	    remoteSession.setUser( (User) user);
 	   // remoteSession.setAccessToken( token );
 	    return remoteSession;
@@ -765,26 +805,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         return user;
     }
 	
-	@SuppressWarnings("unchecked")
-	@Override
-    public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
-    {
-        RemoteMethodFactory<T> remoteMethod = (RemoteMethodFactory<T>) getRemoteMethod( role.getName());
-        RemoteSession remoteSession = getRemoteSession(request);
-        return  remoteMethod.createService(remoteSession);
-    }
-	
-	@Override
-	public boolean hasWebservice(String interfaceName) {
-	    try {
-            lookup( REMOTE_METHOD_FACTORY ,interfaceName);
-        } catch (RaplaContextException e) {
-            return false;
-        }
-	    return true;
-	   
-	}
-	 
+		 
 	private User getUserWithoutPassword(String username) throws RaplaException
 	{
 		String connectAs = null;

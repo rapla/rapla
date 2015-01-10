@@ -370,7 +370,8 @@ public class DBOperator extends LocalAbstractCachableOperator
             org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
 
-            CachableStorageOperator sourceOperator = importExportManager.get().getSource();
+            ImportExportManager manager = importExportManager.get();
+            CachableStorageOperator sourceOperator = manager.getSource();
             if ( sourceOperator == this)
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
@@ -390,7 +391,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         
         if ( empty  || unpatchedTables > 0  ) 
         {
-            CachableStorageOperator sourceOperator = importExportManager.get().getSource();
+            ImportExportManager manager = importExportManager.get();
+            CachableStorageOperator sourceOperator = manager.getSource();
             if ( sourceOperator == this)
             {
                 throw new RaplaException("Can't import, because db is configured as source.");

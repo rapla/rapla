@@ -51,7 +51,7 @@ public class HTTPJsonConnector extends HTTPConnector {
         JsonElement  parsed = jsonParser.parse(resultString);
         if ( !(parsed instanceof JsonObject))
         {
-        	throw new JsonParseException("Invalid json result. JsonObject expected.");
+        	throw new JsonParseException("Invalid json result. JsonObject expected." + resultString);
         }
         JsonObject resultMessage = (JsonObject) parsed;
         return resultMessage;

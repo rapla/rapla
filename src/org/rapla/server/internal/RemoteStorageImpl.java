@@ -29,7 +29,10 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.rapla.RaplaMainContainer;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -71,6 +74,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
@@ -101,37 +105,29 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     
     protected SecurityManager security;
     
-    RaplaContext context;
-    
     int cleanupPointVersion = 0;
         
-    protected AuthenticationStore authenticationStore;
     Logger logger;
     ClientFacade facade;
     RaplaLocale raplaLocale;
+    ShutdownService shutdownService;
+    I18nBundle i18n;
+    Provider<MailInterface> mailInterface;
+    Provider<AuthenticationStore> authenticationStore;
     
-    
-    public RemoteStorageImpl(RaplaContext context) throws RaplaException {
-        this.context = context;
-        this.logger = context.lookup( Logger.class);
-        facade = context.lookup( ClientFacade.class);
-        raplaLocale = context.lookup( RaplaLocale.class);
-        operator = (CachableStorageOperator)facade.getOperator();
-        operator.addStorageUpdateListener( this);
-        security = context.lookup( SecurityManager.class);
-        if ( context.has( AuthenticationStore.class ) )
-        {
-            try 
-            {
-                authenticationStore = context.lookup( AuthenticationStore.class );
-                getLogger().info( "Using AuthenticationStore " + authenticationStore.getName() );
-            } 
-            catch ( RaplaException ex)
-            {
-                getLogger().error( "Can't initialize configured authentication store. Using default authentication." , ex);
-            }
-        }
-        
+    @Inject
+    public RemoteStorageImpl(Logger logger,ClientFacade facade,RaplaLocale raplaLocale, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,CachableStorageOperator operator,SecurityManager securityManager,Provider<MailInterface> mailInterface,    Provider<AuthenticationStore> authenticationStore, ShutdownService shutdown) throws RaplaException {
+        this.authenticationStore = authenticationStore;
+        this.logger = logger;
+        this.facade = facade;
+        this.raplaLocale = raplaLocale;
+        this.operator = operator;
+        this.operator.addStorageUpdateListener( this);
+        this.security = securityManager;
+        this.shutdownService = shutdown;
+        this.i18n = i18n;
+        this.mailInterface = mailInterface;
+
         Long repositoryVersion = operator.getCurrentTimestamp().getTime();
 		// Invalidate all clients
         for ( User user:operator.getUsers())
@@ -152,8 +148,8 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
     }
 
     
-    public I18nBundle getI18n() throws RaplaException {
-    	return context.lookup(RaplaComponent.RAPLA_RESOURCES);
+    public I18nBundle getI18n()  {
+    	return i18n;
     }
 
     static UpdateEvent createTransactionSafeUpdateEvent( UpdateResult updateResult )
@@ -694,7 +690,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                if (!getSessionUser().isAdmin())
 	                    throw new RaplaSecurityException("Only admins can restart the server");
 	
-	                context.lookup(ShutdownService.class).shutdown( true);
+	                shutdownService.shutdown( true);
 	                return ResultImpl.VOID;
             	}
             	catch (RaplaException ex )
@@ -763,7 +759,17 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	                User sessionUser = getSessionUser();
 	                
 	                if (!sessionUser.isAdmin()) {
-	                    if ( authenticationStore != null ) {
+	                    AuthenticationStore authenticationStore2;
+	                    try
+	                    {
+	                        authenticationStore2 = authenticationStore.get();
+	                    }
+	                    catch (Exception ex)
+	                    {
+	                        authenticationStore2 = null;
+	                    }
+	                    if ( authenticationStore2 != null )
+	                    {
 	                        throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin." );
 	                    }
 	                    operator.authenticate(username,new String(oldPassword));
@@ -840,11 +846,11 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	    				String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" 
 	    	        		+ getString("send_code_mail_body_2") + "\n\n" + getString("security_code") + Math.abs(user.getEmail().hashCode()) 
 	    	        		+ "\n\n" + getString("send_code_mail_body_3") + "\n\n" + "-----------------------------------------------------------------------------------"
-	    	        		+ "\n\n" + getString("send_code_mail_body_4") + prefs.getEntryAsString(RaplaMainContainer.TITLE, getString("rapla.title")) + " "
+	    	        		+ "\n\n" + getString("send_code_mail_body_4") + prefs.getEntryAsString(ContainerImpl.TITLE, getString("rapla.title")) + " "
 	    	        		+ getString("send_code_mail_body_5");
 	    	
 	    			
-	    	    		final MailInterface mail = context.lookup(MailInterface.class);
+	    	    		final MailInterface mail = mailInterface.get();
 	    	            final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
 	    	            
 	    	            mail.sendMail( defaultSender, newEmail,subject, "" + mailbody);
@@ -861,7 +867,7 @@ public class RemoteStorageImpl implements RemoteMethodFactory<RemoteStorage>, St
 	        	}
             }
             
-            private String getString(String key) throws RaplaException {
+            private String getString(String key)  {
 				return getI18n().getString( key);
 			}
             

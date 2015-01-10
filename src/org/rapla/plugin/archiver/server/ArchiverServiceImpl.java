@@ -66,7 +66,7 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
         for ( int i=0;i< events.length;i++)
         {
             Reservation event = events[i];
-            if ( isOlderThan( event, endDate))
+            if ( !RaplaComponent.isTemplate(event) && isOlderThan( event, endDate))
             {
                 toRemove.add(event);
             }

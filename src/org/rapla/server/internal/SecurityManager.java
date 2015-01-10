@@ -18,6 +18,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -37,31 +40,31 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 
 /** checks if the client can store or delete an entity */
 public class SecurityManager 
 {
-    I18nBundle i18n;
-    AppointmentFormater appointmentFormater;
-    CachableStorageOperator operator;
-    RaplaContext context;
-    Logger logger;
+    final I18nBundle i18n;
+    final AppointmentFormater appointmentFormater;
+    final StorageOperator operator;
+    final Logger logger;
+    final ClientFacade facade;
 
-    public SecurityManager(RaplaContext context) throws RaplaException {
-        logger = context.lookup( Logger.class);
-        operator = context.lookup( CachableStorageOperator.class);
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-        appointmentFormater = context.lookup(AppointmentFormater.class);
-        this.context = context;
+    @Inject
+    public SecurityManager(Logger logger, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
+    {
+        this.logger = logger;
+        this.i18n = i18n;
+        this.appointmentFormater = appointmentFormater;
+        this.facade = facade;
+        operator = facade.getOperator();
     }
-
+    
     void checkWritePermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException {
         if (user.isAdmin())
             return;
@@ -317,13 +320,7 @@ public class SecurityManager
     }
 
     private void checkPermissions( User user, Reservation r, Reservation original, Allocatable[] allocatables ) throws RaplaSecurityException {
-    	ClientFacade facade;
-		try {
-			facade = context.lookup(ClientFacade.class);
-		} catch (RaplaContextException e) {
-			throw new RaplaSecurityException(e.getMessage(), e);
-		}
-		Conflict[] conflictsBefore = null;
+    	Conflict[] conflictsBefore = null;
         Conflict[] conflictsAfter = null;
         try {
             conflictsAfter = facade.getConflicts(  r );

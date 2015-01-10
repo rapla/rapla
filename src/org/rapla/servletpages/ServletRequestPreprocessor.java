@@ -4,7 +4,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 /**
@@ -22,7 +21,7 @@ public interface ServletRequestPreprocessor {
      * @param request
      * @return  null values will be ignored, otherwise return object will be used for further processing
      */
-    HttpServletRequest handleRequest(RaplaContext context, ServletContext servletContext, HttpServletRequest request,HttpServletResponse response) throws RaplaException;
+    HttpServletRequest handleRequest(ServletContext servletContext, HttpServletRequest request,HttpServletResponse response) throws RaplaException;
 
     
 }

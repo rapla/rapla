@@ -14,6 +14,7 @@ package org.rapla.server;
 
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.TypedComponentRole;
 
 /** Encapsulates a StorageOperator. This service is responsible for
 <ul>
@@ -27,6 +28,12 @@ import org.rapla.framework.RaplaContext;
 </ul>
 */
 public interface ServerService {
+    public static final String ENV_RAPLAFILE_ID = "env.raplafile";
+    //public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
+    public static final TypedComponentRole<String> ENV_RAPLAFILE= new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
+    public static final TypedComponentRole<Object> ENV_RAPLAMAIL= new TypedComponentRole<Object>("env.raplamail");
+    public static final TypedComponentRole<Object> TIMESTAMP = new TypedComponentRole<Object>("timestamp");
+    public static final TypedComponentRole<String> CONTEXT_ROOT  = new TypedComponentRole<String>("context-root");
     ClientFacade getFacade();
     RaplaContext getContext();
 }

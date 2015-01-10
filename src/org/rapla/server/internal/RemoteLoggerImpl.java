@@ -1,6 +1,7 @@
 package org.rapla.server.internal;
 
-import org.rapla.framework.RaplaContext;
+import javax.inject.Inject;
+
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -13,9 +14,11 @@ import org.rapla.server.RemoteSession;
 
 public class RemoteLoggerImpl implements RemoteMethodFactory<RemoteLogger> {
     Logger logger;
-    public RemoteLoggerImpl(RaplaContext context) throws RaplaContextException
+    
+    @Inject
+    public RemoteLoggerImpl(Logger logger) 
     {
-        this.logger = context.lookup(Logger.class);
+        this.logger = logger;
     }
     
     public RemoteLogger createService(RemoteSession remoteSession) throws RaplaContextException {

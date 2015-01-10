@@ -33,7 +33,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -48,7 +47,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -794,21 +792,6 @@ public class RaplaComponent
 		return  modification.edit(preferences);
     }
     
-    /** @deprecated demand webservice in constructor instead*/
-    @Deprecated 
-    final public <T> T getWebservice(Class<T> a) throws RaplaException
-    {
-    	org.rapla.storage.dbrm.RemoteServiceCaller remote = getService( org.rapla.storage.dbrm.RemoteServiceCaller.class);
-    	return remote.getRemoteMethod(a);
-    }
-    
-    @Deprecated
-    public Configuration getPluginConfig(String pluginClassName) throws RaplaException 
-    {
-		Preferences systemPreferences = getQuery().getSystemPreferences();
-        return ((PreferencesImpl)systemPreferences).getOldPluginConfig(pluginClassName);
-    }
-
 	public static boolean isTemplate(RaplaObject<?> obj) 
 	{
 		if ( obj instanceof Appointment)

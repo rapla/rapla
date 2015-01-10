@@ -95,25 +95,4 @@ public class RaplaDefaultContext implements RaplaContext
         return lookup;
     }
 
-//    @SuppressWarnings("unchecked")
-//    public <T> T lookup(TypedComponentRole<T> componentRole, String hint) throws RaplaContextException {
-//        String key = componentRole.getId()+ "/" + hint;
-//        T lookup = (T) lookup(key);
-//        if ( lookup == null)
-//        {
-//            if ( parent != null)
-//            {
-//                return parent.lookup( componentRole, hint);
-//            }
-//            else
-//            {
-//                throw new RaplaContextException(  key );     
-//            }
-//        }
-//        return lookup;
-//    }
-
-
-
-
 }

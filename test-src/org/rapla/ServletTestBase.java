@@ -55,7 +55,7 @@ public abstract class ServletTestBase extends TestCase
         WebAppContext context = new WebAppContext( jettyServer,"rapla","/" );
         context.setResourceBase(  webappFolder.getAbsolutePath() );
         context.setMaxFormContentSize(64000000);
-        MainServlet.serverContainerHint=getStorageName();
+        //MainServlet.serverContainerHint=getStorageName();
         
       //  context.addServlet( new ServletHolder(mainServlet), "/*" );
         jettyServer.start();
@@ -80,12 +80,14 @@ public abstract class ServletTestBase extends TestCase
     
     protected RaplaContext getContext()
     {
-        return mainServlet.getContext();
+        throw new IllegalStateException();
+        //return mainServlet.getContext();
     }
     
     protected Container getContainer()
     {
-        return mainServlet.getContainer();
+        throw new IllegalStateException();
+        //return mainServlet.getContainer();
     }
 
 

@@ -47,6 +47,13 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 
     public static final TypedComponentRole<String> EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE = new TypedComponentRole<String>("export_attendees_participation_status");
 
+    //FIXME maybe this is no longer needed with signed applets
+    boolean isApplet;
+    public Export2iCalPlugin(StartupEnvironment env)
+    {
+        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
+    }
+    
 	public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
 		container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, Export2iCalAdminOption.class);
 		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
@@ -54,9 +61,7 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 
 		container.addContainerProvidedComponent(RESOURCE_FILE, I18nBundleImpl.class, I18nBundleImpl.createConfig(RESOURCE_FILE.getId()));
 	    container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, IcalPublicExtensionFactory.class);
-	    
-	    final int startupMode = container.getStartupEnvironment().getStartupMode();
-        if ( startupMode != StartupEnvironment.APPLET)
+	    if ( !isApplet)
         {
         	container.addContainerProvidedComponent(RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, Export2iCalMenu.class);
         }

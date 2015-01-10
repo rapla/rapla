@@ -1,0 +1,227 @@
+-----------------------------------------------------------------------------------
+Rapla Installation an der DHBW
+-----------------------------------------------------------------------------------
+
+Die Rapla Installation bestehen aus folgenden Komponenten
+
+Apache, Java, Jetty und der Rapla Webapplikation
+
+(Der am Montag installierte JBoss wird vorerst nicht verwendet, da er nicht die erwünschten Stabilitätsgewinne brachte und das System komlexer macht.)
+
+
+Apache
+-------------
+
+Aufgabe des Apache ist die effiziente Bearbeitung der SSL Verschlüsselung und die Weiterleitung der entschlüsselten Http-Requests an den servlet container jetty. Die Kommunikation funktioniert über das Http Protokoll (ajp gilt als veraltet). Damit dient Apache auch als Proxy, falls Rapla Anfragen auf einen anderen Server geleitet werden sollen, z.B. einen Backup Server.
+
+Es handelt sich um die Standar-Apache Konfiguration mit folgenden zusätzlichen Dateien
+
+/etc/apache2/sites-availables/rapla.dhbw-karlsruhe.de         (Proxy Konfiguration)
+/etc/ssl/certs/rapla_dhbw-karlsruhe_de.pem                         (Zertifikat)
+/etc/ssl/private/rapla_dhbw-karlsruhe_de.key                       (Schluessel)
+/etc/ssl/certs/rapla_dhbw-karlsruhe_de-chain.pem                   (Zertifikatskette)
+
+In der Datei /etc/apache2/mods-available wurde
+
+Deny from all
+in
+Deny from none
+
+um die Proxyweiterleitung zu aktivieren
+
+Die Seitenaktivierung erfolgt über
+
+a2ensite rapla.dhbw-karlsruhe.de
+
+Die Proxymodule werden aktiviert über
+
+a2enmod proxy proxy_http headers 
+
+Start/Stop erfolgt automatisch über die ubuntu Konfiguration
+
+
+Java
+-------
+
+Eine aktuelle Java installation wurde von oracle heruntergeladen und in das Verzeichnis /opt/jre1.7.0_45 entpackt und nach /opt/jre verlinkt.
+Die Konfigurat der java verwendung in jetty erfolgt über /etc/default/jetty (siehe unten)
+
+
+
+Jetty
+--------
+
+Der Jetty ist der zum Zeitpunkt aktuellste 9.0.5 (Ein Upgrade auf 9 ermöglichte die einfache Konfiguration von https proxy weiterleitung durch den Apache). Er läuft auf Port 8080 und empfängt dort die apache aufrufe.
+
+Die Installation befindet sich im Verzeichnis /opt/jetty-9.0.6 mit den symbolischen Links /opt/rapla und /opt/jetty
+Folgende Dateien wurden angepasst
+
+/opt/jetty/start.ini 
+
+hier wurde logging und monitor in folgender Zeile hinzugefügt:
+OPTIONS=Server,websocket,logging,resources,ext,monitor
+
+/opt/jetty/etc/jetty.xml
+
+Folgende Zeile wurde für die transparente Weiterleitung durch den apache einkommentiert
+
+      <Call name="addCustomizer">
+        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+      </Call>
+
+Außerdem wurde das logging konfiguriert in
+
+  <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+.....
+
+ <!-- add a RequestLogHandler -->
+           <Item>
+              <New id="RequestLogHandler"
+                 class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
+           </Item>
+
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+   <Ref id="RequestLogHandler">
+     <Set name="requestLog">
+       <New id="requestLogImpl" class="ch.qos.logback.access.jetty.RequestLogImpl">
+          <Set name="fileName"><SystemProperty name="jetty.home"/>/resources/logback-access.xml</Set>
+       </New>
+     </Set>
+   </Ref>
+
+
+/etc/default/jetty         
+Hier werden das zu verwendende java und der maximale speicher sowie die variable rapla.home und die sprache des rapla servers konfiguriert:
+NO_START=0
+JAVA_OPTIONS="-Xmx1024m -Djava.awt.headless=true -Duser.language=de -Duser.country=DE -Drapla.home=/opt/rapla"
+JAVA=/opt/jre/bin/java
+
+
+/opt/jetty/lib/logging/
+enthält alle Logging Bibliotheken und entspricht den Bibliotheken in lib/logging/ in der aktuellen Rapla Distribution.
+
+Die Konfiguration des Logging erfolgt in
+
+/opt/jetty/resource/logback-access.xml    (logging der http requests)
+/opt/jetty/resource/logback.xml                (restliches logging)
+
+Logging erfolgt zur Zeit noch nach
+
+/opt/rapla/logs
+
+evtl. sollte das umkonfiguriert werden nach /var/log/rapla    (Unix Standard)
+
+/opt/jetty/lib/ext
+In dieses Verzeichnis werden die Datenbanktreiber kopiert. Zur Zeit liegt dort hsql.
+
+Zur Anlage der Start/Stop Skripte wurde ein symbolischen Link von /opt/rapla/bin/jetty.sh nach /etc/init.d/jetty gelegt
+und die Skripte erstellt über
+
+update-rc.d default
+
+Falls ein jetty upgrade erfolgen soll, dann gibt es im aktuellen jetty Ordner ein Skript, was die oben aufgefuehrten geaenderten Dateien in das neue Verzeichnis kopiert.
+Funktionsweise
+1. neuen Jetty herunterladen
+2. in Verzeichnis /opt/jetty-9.x.x entpachen
+3. config script in das Verzeichnis kopieren und ausfuehren
+4. jetty stoppen mit /etc/init.d/jetty stop
+5. symbolischen link /opt/jetty auf den neuen jetty umsetzen 
+   rm /opt/jetty
+   ln -s VERZEICHNIS_DES_NEUEN_JETTY /opt/jetty 
+6. neuen jetty starten mit /etc/init.d/jetty start
+
+Rapla
+--------
+
+Das Rapla System liegt unter /opt/rapla
+Für das Rapla System sind foglende zwei Dateien verantwortlich
+
+/opt/rapla/webapps/rapla.xml      (Konfiguration der Datenbank und / als root context)
+/opt/rapla/webapps/rapla.war     (Die eigentliche Rapla Bibliothek)
+
+Diese beiden Dateien werden mit symbolischen links nach /opt/jetty/webapps verlinkt (Das erledigt auch das jetty update script bei einem jetty upgrade)
+
+Bei einer Aktuallisierung des Rapla Systems muss nur die rapla.war ausgetauscht werden. Ein Neustart von jetty lässt sich umgehen, in dem man nur die datei rapla.xml kurz speichert, z.B. durch den touch Befehl.
+
+Aber nach 8-10 Aktuallisierungen sollte man den jetty trotzdem neustarten, da sont der Hauptspeicher bedarf wächst.
+
+Ein Blick in die rapla.xml zeigt die zusätzlichen Einstellungen
+
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <!-- hier wird / als Kontext definiert das ermoeglicht den direkten Zugfriff auf rapla.dhbw-karlsruhe.de anstatt rapla.dhbw-karlsruhe.de/rapla/ -->
+  <Set name="contextPath">/</Set>
+
+   <!-- Hier wird der Speicherort der data.xml konfiguriert. Diese wird bei Verwendung einer Datenbank als backup Datei genuzt. -->
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+       <Arg></Arg>
+        <Arg>raplafile</Arg>
+        <Arg type="java.lang.String"><SystemProperty name="jetty.home" default="." />/data/data.xml</Arg>
+        <Arg type="boolean">true</Arg>
+  </New>
+   <!-- als naechstes wird die Datenbank konfiguriert im Moment ist das hsqld welche in das jetty/data/ Verzeichnis in die Dateien rapa_db* schreibt.  -->
+  <New id="rapladb" class="org.eclipse.jetty.plus.jndi.Resource">
+        <Arg>jdbc/rapladb</Arg>
+        <Arg>
+       <!--
+        -->
+       <New class="org.hsqldb.jdbc.JDBCDataSource">
+         <Set name="Url">jdbc:hsqldb:<SystemProperty name="jetty.home" default="." />/data/rapla_db</Set>
+         <Set name="User">db_user</Set>
+         <Set name="Password">your_pwd</Set>
+       </New>
+ 
+    <!-- Fuer eine Umstellung auf mysql muss der obere Eintrag auskommentiert und mysql einkommentiert und mit den entsprechenden Parametern konfiguriert werden. Wichtig ist auch, dass der aktuelle mysqltreiber in das Verzeichnis jetty/lib/ext plaziert wird.-->
+
+        <!--
+        <New class="com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource">
+         <Set name="Url">jdbc:mysql://localhost/your_db_name</Set>
+         <Set name="User">db_user</Set>
+         <Set name="Password">your_pwd</Set>
+        </New>
+        -->
+    </Arg>
+  </New>
+
+  <!-- Dieser Eintrag legte mit rapladb die Datenbank als Datenquelle fest. Mit raplafile kann man wieder auf die data.xml als primaere Datenquelle wechseln -->
+  <New id="rapladatasource" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg></Arg>
+        <Arg>rapladatasource</Arg>
+        <Arg type="java.lang.String">rapladb</Arg>
+        <Arg type="boolean">true</Arg>
+  </New>
+</Configure>
+
+
+Im Moment ist hsqld als Datenbank konfiguriert. Diese speichert die Daten in
+
+/opt/rapla/data
+
+Zusätzlich werden jede Stunde und beim Rapla Neustart die Daten in die data.xml im gleichen Verzechnis exportiert. Diese Einstellung ist in Rapla im ArchiverPlugin festgelegt.
+
+Hier ist eine unix konforme Anpassung des Speicherorts nach /var/lib/rapla möglich.
+
+Auch die Umstellung auf mysql als Datenbank wird für die Zukunft empfohlen, um einfacher von externen Systemen auf die Rapla Daten zuzugreifen.
+
+
+Neustarten des Systems
+-----------------------
+
+Ein manueller Neustart erfolgt über
+
+/etc/init.d/jetty restart
+/etc/init.d/apache2 restart
+
+
+
+Viel Spaß beim Planen mit Rapla
+
+Christopher Kohlhaas
