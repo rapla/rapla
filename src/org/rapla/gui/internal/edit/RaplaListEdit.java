@@ -3,12 +3,15 @@ package org.rapla.gui.internal.edit;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,11 +20,14 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
 import javax.swing.ListModel;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -61,7 +67,14 @@ final public class RaplaListEdit<T> implements
 
     Color selectionBackground = UIManager.getColor("List.selectionBackground");
     Color background = UIManager.getColor("List.background");
-
+    
+    interface NameProvider<T>
+    {
+        public String getName(T object);
+    }
+    
+    NameProvider<T> nameProvider;
+    
     JPanel jointPanel = new JPanel() {
         private static final long serialVersionUID = 1L;
 
@@ -124,6 +137,7 @@ final public class RaplaListEdit<T> implements
 
     JPanel toolbar = new JPanel();
     
+    
     public RaplaListEdit(I18nBundle i18n, JComponent detailContent,ActionListener callback) 
     {
         this.callback = callback;
@@ -176,9 +190,8 @@ final public class RaplaListEdit<T> implements
 
         //      list.setDragEnabled(true);
         list.addMouseListener(listener);
-
+        
         list.addListSelectionListener(listener);
-
         modelUpdate();
 
         createNewButton.setText(i18n.getString("new"));
@@ -187,6 +200,98 @@ final public class RaplaListEdit<T> implements
         removeButton.setText(i18n.getString("delete"));
         nothingSelectedLabel.setHorizontalAlignment(JLabel.CENTER);
         nothingSelectedLabel.setText(i18n.getString("nothing_selected"));
+
+        list.addKeyListener( new KeyAdapter() {
+            
+            @Override
+            public void keyPressed(KeyEvent e) {
+                keyPressHandler(e);
+            }
+            
+            private int MILLISECONDS_UNTIL_RESET = 1000;
+            private String m_key;
+            private long m_time;
+             
+            private void keyPressHandler(KeyEvent evt) {
+                if ( nameProvider == null)
+                {
+                    return;
+                }
+
+                char ch = evt.getKeyChar();
+             
+                //ignore searches for non alpha-numeric characters
+                if (!Character.isLetterOrDigit(ch)) {
+                    return;
+                }
+             
+                // reset string if too much time has elapsed
+                if (m_time+MILLISECONDS_UNTIL_RESET < System.currentTimeMillis()) {
+                    m_key = "";
+                }
+             
+                m_time = System.currentTimeMillis();
+                m_key += Character.toLowerCase(ch);
+             
+                // Iterate through items in the list until a matching prefix is found.
+                // This technique is fine for small lists, however, doing a linear
+                // search over a very large list with additional string manipulation
+                // (eg: toLowerCase) within the tight loop would be quite slow.
+                // In that case, pre-processing the case-conversions, and storing the
+                // strings in a more search-efficient data structure such as a Trie
+                // or a Ternary Search Tree would lead to much faster find.
+                ListModel model = list.getModel();
+                for (int i=0; i < model.getSize(); i++) {
+                    Object elementAt = model.getElementAt(i);
+                    if ( elementAt != null)
+                    {
+                        @SuppressWarnings("unchecked")
+                        String string = nameProvider.getName((T) elementAt);
+                        String str = string.toLowerCase();
+                        if (str.startsWith(m_key)) {
+                            list.setSelectedIndex(i);     //change selected item in list
+                            list.ensureIndexIsVisible(i); //change listbox scroll-position
+                            break;
+                        }
+                    }
+             
+                }
+            }
+
+
+        });
+    }
+    
+    @SuppressWarnings("unchecked")
+    public void setNameProvider(final NameProvider<T> nameProvider) 
+    {
+        this.nameProvider = nameProvider;
+        if ( nameProvider != null)
+        {
+            ListCellRenderer cellRenderer = new DefaultListCellRenderer() {
+    
+                private static final long serialVersionUID = 1L;
+
+                public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    if ( value != null)
+                    {
+                        value = nameProvider.getName((T)value);
+                    }
+                    return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                }
+            };
+            list.setCellRenderer(cellRenderer);
+        } 
+        else
+        {
+            list.setCellRenderer(new DefaultListCellRenderer());
+        }
+        
+    }
+    
+    public NameProvider<T> getNameProvider() 
+    {
+        return nameProvider;
     }
 
     public JPanel getToolbar()
@@ -376,6 +481,12 @@ final public class RaplaListEdit<T> implements
 	public T getSelectedValue() {
 		return (T) list.getSelectedValue();
 	}
+
+    public int indexOf(T a) 
+    {
+        return ((DefaultListModel)list.getModel()).indexOf( a);    
+    }
+    
 
 	
 }
