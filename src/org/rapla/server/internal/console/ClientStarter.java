@@ -1,4 +1,4 @@
-package org.rapla.server.internal;
+package org.rapla.server.internal.console;
 
 import java.net.URL;
 import java.util.Collection;
@@ -9,6 +9,7 @@ import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.internal.RaplaJNDIContext;
 
 public class ClientStarter extends GUIStarter
 {

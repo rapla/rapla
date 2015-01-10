@@ -136,6 +136,15 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         DataSource dbDatasource;
         String fileDatasource;
         Object mailSession;
+        public String getFileDatasource() {
+            return fileDatasource;
+        }
+        public Object getMailSession() {
+            return mailSession;
+        }
+        public DataSource getDbDatasource() {
+            return dbDatasource;
+        }
     }
     
     @Inject
@@ -348,7 +357,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     }
     
     public User getFirstAdmin(StorageOperator operator) throws RaplaException {
-        //String username = null;
         for (User u:operator.getUsers())
         {
             if ( u.isAdmin())

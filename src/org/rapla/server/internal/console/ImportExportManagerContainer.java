@@ -1,4 +1,4 @@
-package org.rapla.server.internal;
+package org.rapla.server.internal.console;
 
 import javax.sql.DataSource;
 
@@ -7,7 +7,9 @@ import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
+import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.ServerServiceImpl.ServerBackendContext;
+import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
@@ -18,24 +20,30 @@ public class ImportExportManagerContainer extends ContainerImpl{
 
     private Runnable shutdownCommand;
 
-    public ImportExportManagerContainer(Logger logger, RaplaJNDIContext jndi) 
+    public ImportExportManagerContainer(Logger logger, RaplaJNDIContext jndi) throws RaplaException 
     {
         super(logger, new SimpleProvider<RemoteServiceCaller>());
         shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
         ServerBackendContext backendContext = ServerStarter.createBackendContext(logger, jndi);
-        if ( backendContext.fileDatasource != null)
+        String fileDatasource = backendContext.getFileDatasource();
+        if ( fileDatasource != null)
         {
-            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, backendContext.fileDatasource );
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, fileDatasource );
             addContainerProvidedComponent( FileOperator.class, FileOperator.class);
         }
-        if ( backendContext.dbDatasource != null)
+        else
         {
-            addContainerProvidedComponentInstance( DataSource.class, backendContext.dbDatasource );
+            throw new RaplaException("No file configured for import/export");
+        }
+        DataSource dbDatasource = backendContext.getDbDatasource();
+        if ( dbDatasource != null)
+        {
+            addContainerProvidedComponentInstance( DataSource.class, dbDatasource );
             addContainerProvidedComponent( DBOperator.class, DBOperator.class);
         }
-        if ( backendContext.fileDatasource != null && backendContext.dbDatasource != null)
+        else
         {
-            addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
+            throw new RaplaException("No database configured for import/export");
         }
         addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
     }

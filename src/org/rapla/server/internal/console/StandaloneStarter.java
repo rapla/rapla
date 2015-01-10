@@ -1,4 +1,4 @@
-package org.rapla.server.internal;
+package org.rapla.server.internal.console;
 
 import java.net.URL;
 
@@ -12,6 +12,10 @@ import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.internal.RaplaJNDIContext;
+import org.rapla.server.internal.RemoteSessionImpl;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 public class StandaloneStarter extends GUIStarter

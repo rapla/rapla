@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2013 Christopher Kohlhaas                                  |
+ | Copyright (C) 2015 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -34,25 +34,24 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.server.internal.ClientStarter;
-import org.rapla.server.internal.ImportExportManagerContainer;
 import org.rapla.server.internal.JettyDevelopment;
 import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.ServerStarter;
-import org.rapla.server.internal.StandaloneStarter;
+import org.rapla.server.internal.console.ClientStarter;
+import org.rapla.server.internal.console.ImportExportManagerContainer;
+import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 public class MainServlet extends HttpServlet {
     
     private static final long serialVersionUID = 1L;
     private Logger logger = null;
-   	
     ServerStarter serverStarter;
 	
     synchronized public void init() throws ServletException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-    	getLogger().info("Init RaplaServlet");
+    	logger.info("Init RaplaServlet");
     	String startupMode;
         Boolean env_development;
         RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters());
@@ -140,6 +139,7 @@ public class MainServlet extends HttpServlet {
     	{
     	    try
     	    {
+    	        // we need to get the restart look to avoid serving pages in a restart
     	        ReadWriteLock restartLock = serverStarter.getRestartLock();
     	        readLock = RaplaComponent.lock( restartLock.readLock(), 25);
             	for (ServletRequestPreprocessor preprocessor: serverStarter.getServletRequestPreprocessors())
@@ -162,7 +162,7 @@ public class MainServlet extends HttpServlet {
 	            }
 	            catch (Exception ex)
                 {
-                    getLogger().error("Error writing exception back to client " + e.getMessage());
+                    logger.error("Error writing exception back to client " + e.getMessage());
                 }
 	            finally
 	            {
@@ -201,16 +201,10 @@ public class MainServlet extends HttpServlet {
 	                }
 	            }
 	        }
-//	        if ( requestURI.indexOf(RAPLA_JSON_PATH)>= 0)  {
-//	            handleJSONCall( request, response, requestURI );
-//	            return;
-//	        }
 	        if ( page == null || page.trim().length() == 0) {
 	            page = "index";
 	        }
-	
             servletPage = serverStarter.getServer().getWebpage( page);
-
             if ( servletPage == null)
             {
             	response.setStatus( 404 );
@@ -220,7 +214,7 @@ public class MainServlet extends HttpServlet {
                 	out =	response.getWriter();
                 	String message = "404: Page " + page + " not found in Rapla context";
         			out.print(message);
-        			getLogger().getChildLogger("server.html.404").warn( message);
+        			logger.getChildLogger("server.html.404").warn( message);
                 } finally 
                 {
                     if ( out != null)
@@ -269,21 +263,12 @@ public class MainServlet extends HttpServlet {
         }
     }
 
-    public Logger getLogger() 
-    {
-    	return logger;
-	}
-    
-    
-    
-
     //serverVersion = raplaContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");
 //  private boolean isClientVersionSupported(String clientVersion) {
 //		// add/remove supported client versions here 
 //		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
 //	}
 //
-
     private Map<String, String> getInitParameters() {
         ServletContext context = getServletContext();
         Map<String,String> initParameters = new HashMap<String, String>();
@@ -296,7 +281,5 @@ public class MainServlet extends HttpServlet {
         }
         return initParameters;
     }
-
-	
 }
 
