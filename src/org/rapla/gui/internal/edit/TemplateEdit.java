@@ -17,21 +17,18 @@ import java.util.Locale;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
-import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
@@ -43,6 +40,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.gui.internal.edit.reservation.SortedListModel;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.storage.StorageOperator;
@@ -111,31 +109,20 @@ public class TemplateEdit extends RaplaGUIComponent
             }
         };
         templateList = new RaplaListEdit<Allocatable>(i18n, allocatableEdit.getComponent(), callback);
-        initCellRenderer();
+        templateList.setNameProvider( new NameProvider<Allocatable>()
+                {
+
+                    @Override
+                    public String getName(Allocatable object) {
+                        return object.getName(getLocale());
+                    }
+                }
+                );
         templateList.getList().setSelectionMode( ListSelectionModel.SINGLE_SELECTION);
         templateList.setMoveButtonVisible( false );
         templateList.getComponent().setPreferredSize( new Dimension(1000, 500));
     }
 
-
-    @SuppressWarnings("unchecked")
-    private void initCellRenderer() {
-        final Locale locale = getLocale();
-        @SuppressWarnings("serial")
-        ListCellRenderer cellRenderer = new DefaultListCellRenderer() {
-
-            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                if (value instanceof Named)
-                {
-                    value = ((Named)value).getName( locale);
-                }
-                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            }
-        };
-        templateList.getList().setCellRenderer(cellRenderer);
-    }
-
-    
     public String getNewTemplateName() throws RaplaException {
         Collection<Allocatable> templates = new LinkedHashSet<Allocatable>(getQuery().getTemplates());
         Collection<String> templateNames= new LinkedHashSet<String>();
