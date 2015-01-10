@@ -214,11 +214,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
             viewMenu.insertBeforeId( menu, "view_save" );
             action.setEnabled( modifyPreferencesAllowed);
         }
-//        {
-//    		SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
-//        	RaplaMenuItem menu = action.createMenuItem();
-//            viewMenu.insertBeforeId( menu, "view_save" );
-//        }
+        {
+    		SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
+        	RaplaMenuItem menu = action.createMenuItem();
+            viewMenu.insertBeforeId( menu, "view_save" );
+        }
 
         if ( isAdmin() ) {
         	RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
