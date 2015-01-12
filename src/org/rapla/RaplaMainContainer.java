@@ -62,6 +62,7 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.RaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteMethodStub;
+import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.StatusUpdater;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
@@ -356,15 +357,19 @@ final public class RaplaMainContainer extends ContainerImpl
         return proxyInstance;
     }
     
-   
 
-    private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
-         String errorString = i18n.format("error.connect", server) + " ";
-         RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
-         FutureResult result =connector.call(service, methodName, args, connectionInfo);
-         return result;
-        
-     }
+    private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
+        String errorString = i18n.format("error.connect", server) + " ";
+        RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
+        ConnectInfo connectInfo = connectionInfo.getConnectInfo();
+        if ( connectInfo !=null)
+        {
+            Method method = RemoteServer.class.getMethod("login", String.class, String.class,String.class);
+            connector.setReAuthentication(RemoteServer.class, method, new Object[] {connectInfo.getUsername(), new String(connectInfo.getPassword()), connectInfo.getConnectAs()});
+        }
+        FutureResult result =connector.call(service, methodName, args, connectionInfo);
+        return result;
+    }
 
     
      

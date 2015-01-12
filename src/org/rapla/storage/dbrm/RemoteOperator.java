@@ -131,24 +131,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	try
     	{
     		User user = loginAndLoadData(connectInfo);
-    		connectionInfo.setReAuthenticateCommand(new FutureResult<String>() {
-
-    	            @Override
-    	            public String get() throws Exception {
-    	                getLogger().info("Refreshing access token.");
-    	                return loginWithoutDisconnect();
-    	            }
-
-    	            @Override
-    	            public void get(AsyncCallback<String> callback) {
-    	               try {
-    	                   String string = get();
-    	                   callback.onSuccess(string);
-    	               } catch (Exception e) {
-    	                   callback.onFailure(e);
-    	               } 
-    	            }
-    	        });
+    		connectionInfo.setReconnectInfo(connectInfo);
     		initRefresh();
     		return user;
     	}
@@ -393,8 +376,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     synchronized public void disconnect() throws RaplaException { 
     	connectionInfo.setAccessToken( null);
     	this.connectInfo = null;
-    	connectionInfo.setReAuthenticateCommand(null);
-        disconnect("Disconnection from Server initiated");
+    	connectionInfo.setReconnectInfo( null );
+    	disconnect("Disconnection from Server initiated");
     }
     
     /** disconnect from the server */
