@@ -186,9 +186,8 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
             return new ResultImpl( e1);
         }
         
-        final boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
         final JsonObject element = serializeCall(method, args);
-        final String accessToken = loginCmd ? null: serverInfo.getAccessToken();
+
         return new FutureResult() {
 
             @Override
@@ -218,8 +217,11 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 }, 0);
                 
             }
+            
             private Object call() throws Exception
             {
+                final boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
+                final String accessToken = loginCmd ? null: serverInfo.getAccessToken();
                 JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);
                 try
                 {
@@ -227,9 +229,17 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 } 
                 catch (AuthenticationException ex)
                 {
-                    String newAuthCode = reAuth();
-                    // try the same call again with the new result, this time with no auth code failed fallback
-                    resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                    if ( !loginCmd)
+                    {
+                        String newAuthCode = reAuth();
+                        // try the same call again with the new result, this time with no auth code failed fallback
+                        resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                        checkError(resultMessage);
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
                 }
                 try
                 {
@@ -246,11 +256,12 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 
             private String reAuth() throws Exception {
                 URL loginURL = getMethodUrl( reconnectInfo.service, serverInfo);
-                JsonElement jsonObject = serializeCall(reconnectInfo.method, args);
+                JsonElement jsonObject = serializeCall(reconnectInfo.method, reconnectInfo.args);
                 JsonObject resultMessage = sendCall_("POST", loginURL, jsonObject, null);
                 checkError( resultMessage);
-                String result = (String) getResult(reconnectInfo.method, resultMessage);
-                String newAuthCode = result;
+                Object result2 = getResult(reconnectInfo.method, resultMessage);
+                LoginTokens token = (LoginTokens)result2;
+                String newAuthCode = token.getAccessToken();
                 serverInfo.setAccessToken( newAuthCode );
                 return newAuthCode;
             }
@@ -261,7 +272,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 {
                     RaplaException ex = deserializeExceptionObject(resultMessage);
                     String message = ex.getMessage();
-                    if ( loginCmd  || message == null)
+                    if (  message == null)
                     {
                         throw ex;
                     }
