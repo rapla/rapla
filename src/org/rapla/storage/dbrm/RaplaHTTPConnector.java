@@ -153,7 +153,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 		return new RaplaException( message.toString());
 	}
 	
-	private JsonObject sendCall_(String requestMethod, URL methodURL, JsonElement jsonObject, String authenticationToken) throws Exception  
+	synchronized private JsonObject sendCall_(String requestMethod, URL methodURL, JsonElement jsonObject, String authenticationToken) throws Exception  
 	{
     	 try
          {
@@ -174,38 +174,20 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 	}
 	
 	 	
-    public FutureResult call(final Class<?> service, final String methodName, final Object[] args,final RemoteConnectionInfo serverInfo) 
+    synchronized public FutureResult call(final Class<?> service, final String methodName, final Object[] args,final RemoteConnectionInfo serverInfo) 
 	{
-        String serviceUrl =service.getName();
-        String serverURL = serverInfo.getServerURL();
-        URL baseUrl;
-        try {
-            baseUrl = new URL(serverURL);
-        } catch (MalformedURLException e1) {
-            return new ResultImpl( e1);
-        }
+
         final URL methodURL;
-        try {
-            methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
-        } catch (MalformedURLException e1) {
-            return new ResultImpl( e1);
-        }
         final Method method;
         try {
+            methodURL = getMethodUrl(service, serverInfo);
             method = findMethod(service, methodName);
-        } catch (RaplaException e1) {
+        } catch (Exception e1) {
             return new ResultImpl( e1);
         }
-        
-        if ( !serverURL.endsWith("/"))
-        {
-            serverURL+="/";
-        }
-        
         
         final boolean loginCmd = methodURL.getPath().endsWith("login") || methodName.contains("login");
         final JsonObject element = serializeCall(method, args);
-        final FutureResult<String> authExpiredCommand = serverInfo.getReAuthenticateCommand();
         final String accessToken = loginCmd ? null: serverInfo.getAccessToken();
         return new FutureResult() {
 
@@ -238,33 +220,76 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
             }
             private Object call() throws Exception
             {
-                JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);        
-       
+                JsonObject resultMessage = sendCall_("POST",methodURL, element, accessToken);
+                try
+                {
+                    checkError(resultMessage);
+                } 
+                catch (AuthenticationException ex)
+                {
+                    String newAuthCode = reAuth();
+                    // try the same call again with the new result, this time with no auth code failed fallback
+                    resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                }
+                try
+                {
+                    Object result = getResult(method, resultMessage);
+                    return result;
+                }
+                catch (RaplaException ex)
+                {
+                    String serviceLoc = service + "." + methodName;
+                    throw new RaplaException(ex.getMessage() +  " in " + serviceLoc, ex.getCause());
+                }
+                
+            }
+
+            private String reAuth() throws Exception {
+                URL loginURL = getMethodUrl( reconnectInfo.service, serverInfo);
+                JsonElement jsonObject = serializeCall(reconnectInfo.method, args);
+                JsonObject resultMessage = sendCall_("POST", loginURL, jsonObject, null);
+                checkError( resultMessage);
+                String result = (String) getResult(reconnectInfo.method, resultMessage);
+                String newAuthCode = result;
+                serverInfo.setAccessToken( newAuthCode );
+                return newAuthCode;
+            }
+
+            protected void checkError(JsonObject resultMessage) throws RaplaException {
                 JsonElement errorElement = resultMessage.get("error");
                 if ( errorElement != null)
                 {
                     RaplaException ex = deserializeExceptionObject(resultMessage);
-                    // if authorization expired
                     String message = ex.getMessage();
-                    boolean b = message != null && message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && !loginCmd;
-                    if ( !b || authExpiredCommand == null )
+                    if ( loginCmd  || message == null)
                     {
                         throw ex;
                     }
-                    // try to get a new one
-                    String newAuthCode;
-                    try {
-                        newAuthCode = authExpiredCommand.get();
-                    } catch (RaplaException e) {
-                        throw e;
-                    } catch (Exception e)
+                    // test if error cause is an expired authorization
+                    if ( message.indexOf( RemoteStorage.USER_WAS_NOT_AUTHENTIFIED)>=0 && reconnectInfo != null) 
                     {
-                        throw new RaplaException(e.getMessage(), e);
+                         throw new AuthenticationException(message);
                     }
-                    // try the same call again with the new result, this time with no auth code failed fallback
-                    resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
-                    
+                    throw ex;
+
                 }
+            }
+            
+            class AuthenticationException extends RaplaException
+            {
+
+                public AuthenticationException(String text) {
+                    super(text);
+                }
+
+                /**
+                 * 
+                 */
+                private static final long serialVersionUID = 1L;
+                
+            }
+
+            protected Object getResult(final Method method, JsonObject resultMessage) throws RaplaException {
                 JsonElement resultElement = resultMessage.get("result");
                 Class resultType;
                 Object resultObject;
@@ -277,7 +302,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                     {
                         if ( !resultElement.isJsonArray())
                         {
-                            throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                            throw new RaplaException("Array expected as json result");
                         }
                         resultObject = deserializeReturnList(resultType, resultElement.getAsJsonArray());
                     }
@@ -285,7 +310,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                     {
                         if ( !resultElement.isJsonArray())
                         {
-                           throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                           throw new RaplaException("Array expected as json result");
                         }
                         resultObject = deserializeReturnSet(resultType, resultElement.getAsJsonArray());
                     }
@@ -293,7 +318,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                     {
                         if ( !resultElement.isJsonObject())
                         {
-                            throw new RaplaException("JsonObject expected as json result in  " + service + "." + methodName);
+                            throw new RaplaException("JsonObject expected as json result");
                         }
                         resultObject = deserializeReturnMap(resultType, resultElement.getAsJsonObject());
                     }
@@ -303,7 +328,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                     }
                     else
                     {
-                        throw new RaplaException("Array expected as json result in  " + service + "." + methodName);
+                        throw new RaplaException("Array expected as json result");
                     }
                 }
                 else
@@ -320,6 +345,18 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 //		@SuppressWarnings("unchecked")
 //		ResultImpl result = new ResultImpl(resultObject);
 //		return result;
+    }
+
+    protected URL getMethodUrl(final Class<?> service, final RemoteConnectionInfo serverInfo) throws MalformedURLException {
+        String serviceUrl =service.getName();
+        String serverURL = serverInfo.getServerURL();
+        if ( !serverURL.endsWith("/"))
+        {
+            serverURL+="/";
+        }
+        URL baseUrl = new URL(serverURL);
+        final URL methodURL = new URL(baseUrl,"rapla/json/" + serviceUrl );
+        return methodURL;
     }
 
     public Method findMethod(Class<?> service, String methodName) throws RaplaException {
@@ -402,6 +439,23 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
             }
 	    }
 	    return new RaplaException( error);
+    }
+
+    
+    class ReconnectInfo
+    {
+        Class service;
+        Method method;
+        Object[] args;
+    }
+
+    ReconnectInfo reconnectInfo;
+    
+    public void setReAuthentication(Class<RemoteServer> service, Method method, Object[] args) {
+        reconnectInfo = new ReconnectInfo();
+        reconnectInfo.service = service;
+        reconnectInfo.method = method;
+        reconnectInfo.args = args;
     }
 
 
