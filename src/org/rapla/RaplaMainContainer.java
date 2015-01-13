@@ -358,7 +358,7 @@ final public class RaplaMainContainer extends ContainerImpl
     }
     
 
-    private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
+    synchronized private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
         String errorString = i18n.format("error.connect", server) + " ";
         RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
         ConnectInfo connectInfo = connectionInfo.getConnectInfo();
