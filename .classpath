@@ -99,7 +99,7 @@
 			<accessrule kind="nonaccessible" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/jetty-continuation-8.1.16.v20140903.jar">
 		<accessrules>
 			<accessrule kind="nonaccessible" pattern="**"/>
