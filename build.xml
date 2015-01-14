@@ -572,7 +572,8 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    
+	   <!-- 
+	     -->
 	    	    
         <copy file="${src.dir}/org/rapla/gui/images/tafel.png" tofile="${webapp.dir}/webclient/logo.png" />
       	
@@ -614,9 +615,8 @@ Definition as published by the Open Source Initiative (OSI).
         >
       <path>
         <fileset dir="${webapp.dir}/webclient" includes="**/*.jar" />
-        <!-- 
+        <!-- server jars need to be signed as well-->  
         <fileset dir="${webapp.dir}/WEB-INF/lib" includes="**/*.jar" />
-         -->
       </path>
      </signjar>
 	</target>
