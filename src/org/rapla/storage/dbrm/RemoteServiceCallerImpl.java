@@ -9,6 +9,7 @@ import java.net.URL;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.rapla.ConnectInfo;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.facade.RaplaComponent;
@@ -34,7 +35,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         this.i18n = i18n;
         String server = remoteConnectionInfo.getServerURL();
         String errorString = i18n.format("error.connect", server) + " ";
-        connector = new RaplaHTTPConnector( commandQueue, errorString);
+        connector = new RaplaHTTPConnector( commandQueue,errorString, callLogger);
     }
 
     public <T> T getRemoteMethod(final Class<T> a) throws RaplaContextException  
@@ -93,7 +94,14 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         return proxyInstance;
     }
     
-    private FutureResult call(Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
+
+    private FutureResult call( Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
+        ConnectInfo connectInfo = connectionInfo.getConnectInfo();
+        if ( connectInfo !=null)
+        {
+            Method method = RemoteServer.class.getMethod("login", String.class, String.class,String.class);
+            connector.setReAuthentication(RemoteServer.class, method, new Object[] {connectInfo.getUsername(), new String(connectInfo.getPassword()), connectInfo.getConnectAs()});
+        }
         FutureResult result =connector.call(service, methodName, args, connectionInfo);
         return result;
     }

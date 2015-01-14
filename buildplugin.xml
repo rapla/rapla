@@ -16,7 +16,7 @@
       <basename property="project.name" file="${basedir}"/>
       <property name="doc.version" value="0.1"/>
       <property name="main.lib" value="rapla_${project.name}-${doc.version}.jar"/>
-      <property name="mainclient.lib" value="raplaclient_${project.name}.jar"/>
+      <property name="mainclient.lib" value="raplaclient_${project.name}-${doc.version}.jar"/>
       <property name="lib.dir" value="${basedir}/lib"/>
       <property name="war.dir" value="${basedir}/war"/>
       <available file="${war.dir}" type="dir"  property="war.present" />

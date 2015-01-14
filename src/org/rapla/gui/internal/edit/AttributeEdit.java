@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,12 +24,10 @@ import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -53,6 +50,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.gui.internal.edit.fields.AbstractEditField;
 import org.rapla.gui.internal.edit.fields.BooleanField;
@@ -84,29 +82,24 @@ public class AttributeEdit extends RaplaGUIComponent
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );
-
+        listEdit.setNameProvider( new NameProvider<Attribute>()
+                {
+                    @Override
+                    public String getName(Attribute a) {
+                        String value = a.getName(getRaplaLocale().getLocale());
+                        value = "{" + a.getKey() + "} " + value;
+                        int index = listEdit.indexOf( a);
+                        if ( index >= 0)
+                        {
+                            value = (index + 1) +") " + value;
+                        }
+                        return value;
+                    }
+                }
+                );
         listEdit.getComponent().setBorder( BorderFactory.createTitledBorder( new EmptyLineBorder(),getString("attributes")) );
-        setRender();
     }
 
-	@SuppressWarnings("unchecked")
-	private void setRender() {
-		listEdit.getList().setCellRenderer(new DefaultListCellRenderer() {
-            private static final long serialVersionUID = 1L;
-
-                public Component getListCellRendererComponent(JList list,
-                                                              Object value,
-                                                              int index,
-                                                              boolean isSelected,
-                                                              boolean cellHasFocus) {
-                    Attribute a = (Attribute) value;
-                    value = a.getName(getRaplaLocale().getLocale());
-                    value = "{" + a.getKey() + "} " + value;
-                    value = (index + 1) +") " + value;
-                    return super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus);
-               }
-            });
-	}
 
     public RaplaWidget getConstraintPanel() {
         return constraintPanel;

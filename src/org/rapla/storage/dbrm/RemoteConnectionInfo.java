@@ -1,13 +1,14 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.ConnectInfo;
+
 
 public class RemoteConnectionInfo 
 {
     String accessToken;
-    transient FutureResult<String> reAuthenticateCommand;
     String serverURL;
     transient StatusUpdater statusUpdater;
+    ConnectInfo connectInfo;
     public void setStatusUpdater(StatusUpdater statusUpdater) {
         this.statusUpdater = statusUpdater;
     }
@@ -29,19 +30,6 @@ public class RemoteConnectionInfo
         return serverURL;
     }
 
-    public void setReAuthenticateCommand(FutureResult<String> reAuthenticateCommand) {
-        this.reAuthenticateCommand = reAuthenticateCommand;
-    }
-
-    public String getRefreshToken() throws Exception {
-        return reAuthenticateCommand.get();
-    }
-    
-    public FutureResult<String> getReAuthenticateCommand()
-    {
-        return reAuthenticateCommand;
-    }
-
     public String getAccessToken() {
         return accessToken;
     }
@@ -49,6 +37,16 @@ public class RemoteConnectionInfo
 
     public String getServerURL() {
         return serverURL;
+    }
+
+    public void setReconnectInfo(ConnectInfo connectInfo) 
+    {
+        this.connectInfo = connectInfo;
+    }
+    
+    public ConnectInfo getConnectInfo() 
+    {
+        return connectInfo;
     }
     
 }

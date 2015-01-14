@@ -52,7 +52,8 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 	          buf.append("\n<jar href=\""+webstartRoot + "/");
 	          buf.append(file);
 	          buf.append("\"");
-	          if (file.indexOf("raplaclient")>=0) {
+	          /** the main client starts with version. the plugins have */
+	          if (file.indexOf("raplaclient-")>=0) {
 	             buf.append(" main=\"true\"");
 	          }
 	          buf.append("/>");
