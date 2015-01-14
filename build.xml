@@ -604,15 +604,6 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    <!-- 
-	    <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
-	        <manifest>
-	            <attribute name="Permissions" value="${permissions.client}"/>
-	            <attribute name="Application-Name" value ="${application.name}"/>
-	            <attribute name="Codebase" value="*"/>
-	        </manifest>
-	    </jar>
-	     -->
 	    <jar jarfile="${webapp.dir}/webclient/gson.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
@@ -620,15 +611,14 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    <jar jarfile="${webapp.dir}/webclient/javax.injext.jar" update="true">
+	    <jar jarfile="${webapp.dir}/webclient/javax.inject.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
 	            <attribute name="Application-Name" value ="${application.name}"/>
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    	    
-	    	    
+
         <copy file="${src.dir}/org/rapla/gui/images/tafel.png" tofile="${webapp.dir}/webclient/logo.png" />
       	
         <copy todir="${webapp.dir}/WEB-INF/lib">
