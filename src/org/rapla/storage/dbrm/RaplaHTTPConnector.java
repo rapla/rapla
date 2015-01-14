@@ -20,6 +20,7 @@ import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
+import org.rapla.framework.logger.Logger;
 import org.rapla.rest.client.HTTPJsonConnector;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
@@ -40,9 +41,12 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
     //private String clientVersion;
     CommandScheduler scheduler;
     String connectErrorString;
-    public RaplaHTTPConnector(CommandScheduler scheduler,String connectErrorString) {
+    Logger logger;
+    
+    public RaplaHTTPConnector(CommandScheduler scheduler,String connectErrorString, Logger logger) {
         this.scheduler = scheduler;
         this.connectErrorString = connectErrorString;
+        this.logger = logger;
     }
     
     private JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
@@ -246,12 +250,13 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 
             private String reAuth() throws Exception {
                 URL loginURL = getMethodUrl( reconnectInfo.service, serverInfo);
-                JsonElement jsonObject = serializeCall(reconnectInfo.method, args);
+                JsonElement jsonObject = serializeCall(reconnectInfo.method, reconnectInfo.args);
                 JsonObject resultMessage = sendCall_("POST", loginURL, jsonObject, null);
                 checkError( resultMessage);
-                String result = (String) getResult(reconnectInfo.method, resultMessage);
-                String newAuthCode = result;
+                LoginTokens result = (LoginTokens) getResult(reconnectInfo.method, resultMessage);
+                String newAuthCode = result.getAccessToken();
                 serverInfo.setAccessToken( newAuthCode );
+                //logger.warn("TEST", new RaplaException("TEST Ex"));
                 return newAuthCode;
             }
 

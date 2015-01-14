@@ -18,6 +18,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 
+import sun.security.action.GetLongAction;
+
 public class RemoteServiceCallerImpl implements RemoteServiceCaller
 {
     final CommandScheduler commandQueue;
@@ -92,7 +94,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
     
     synchronized private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
         String errorString = i18n.format("error.connect", server) + " ";
-        RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
+        RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString,callLogger);
         ConnectInfo connectInfo = connectionInfo.getConnectInfo();
         if ( connectInfo !=null)
         {
