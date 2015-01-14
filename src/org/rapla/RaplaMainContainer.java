@@ -130,6 +130,8 @@ final public class RaplaMainContainer extends ContainerImpl
     RemoteConnectionInfo globalConnectInfo;
     CommandScheduler commandQueue;
     I18nBundle i18n;
+    RaplaHTTPConnector connector;
+
     
     public RaplaMainContainer(  StartupEnvironment env, RaplaContext context,Logger logger) throws Exception{
         super( context, env.getStartupConfiguration(),logger );
@@ -269,6 +271,8 @@ final public class RaplaMainContainer extends ContainerImpl
             logger.warn("Permission to system property java.version is denied!");
         }
         callLogger =logger.getChildLogger("call");
+        String errorString = i18n.format("error.connect", getStartupEnvironment().getDownloadURL()) + " ";
+        connector = new RaplaHTTPConnector( commandQueue, errorString);
     }
 
 	public void dispose() {
@@ -329,7 +333,7 @@ final public class RaplaMainContainer extends ContainerImpl
                 FutureResult result;
                 try
                 {
-                    result = call(server, a, methodName, args, remoteConnectionInfo);
+                    result = call( a, methodName, args, remoteConnectionInfo);
                     if (callLogger.isDebugEnabled())
                     {
                         callLogger.debug("Calling " + server + " " + a.getName() + "."+methodName);
@@ -358,9 +362,7 @@ final public class RaplaMainContainer extends ContainerImpl
     }
     
 
-    synchronized private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
-        String errorString = i18n.format("error.connect", server) + " ";
-        RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
+    private FutureResult call(Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo) throws NoSuchMethodException, SecurityException  {
         ConnectInfo connectInfo = connectionInfo.getConnectInfo();
         if ( connectInfo !=null)
         {
