@@ -471,7 +471,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			throws RaplaException {
 		Lock readLock = readLock();
 		try {
-			getLogger().info("Check password for User " + username);
+			getLogger().debug("Check password for User " + username);
 			User user = cache.getUser(username);
 			if (user != null)
 			{
