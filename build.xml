@@ -544,6 +544,13 @@ Definition as published by the Open Source Initiative (OSI).
    	    	    <include name="${main.client.lib}" />
    	    	</fileset>
         </copy>
+        <jar jarfile="${webapp.dir}/webclient/javax.inject.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
    	    <jar jarfile="${webapp.dir}/webclient/iText-4.2.0-com.itextpdf.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
@@ -551,7 +558,14 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    <jar jarfile="${webapp.dir}/webclient/gson-2.3.1.jar" update="true">
+	    <jar jarfile="${webapp.dir}/webclient/gson-2.3.jar" update="true">
+	        <manifest>
+	            <attribute name="Permissions" value="${permissions.client}"/>
+	            <attribute name="Application-Name" value ="${application.name}"/>
+	            <attribute name="Codebase" value="*"/>
+	        </manifest>
+	    </jar>
+	     <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
 	            <attribute name="Application-Name" value ="${application.name}"/>
@@ -600,7 +614,9 @@ Definition as published by the Open Source Initiative (OSI).
         >
       <path>
         <fileset dir="${webapp.dir}/webclient" includes="**/*.jar" />
+        <!-- 
         <fileset dir="${webapp.dir}/WEB-INF/lib" includes="**/*.jar" />
+         -->
       </path>
      </signjar>
 	</target>
