@@ -23,6 +23,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
     final Logger callLogger;
     final RemoteConnectionInfo remoteConnectionInfo;
     final I18nBundle i18n;
+    RaplaHTTPConnector connector;
     
     @Inject
     public RemoteServiceCallerImpl(CommandScheduler commandQueue, Logger callLogger, RemoteConnectionInfo remoteConnectionInfo, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n) {
@@ -31,6 +32,9 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         this.callLogger = callLogger;
         this.remoteConnectionInfo = remoteConnectionInfo;
         this.i18n = i18n;
+        String server = remoteConnectionInfo.getServerURL();
+        String errorString = i18n.format("error.connect", server) + " ";
+        connector = new RaplaHTTPConnector( commandQueue, errorString);
     }
 
     public <T> T getRemoteMethod(final Class<T> a) throws RaplaContextException  
@@ -61,7 +65,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
                 FutureResult result;
                 try
                 {
-                    result = call(server, a, methodName, args, remoteConnectionInfo);
+                    result = call( a, methodName, args, remoteConnectionInfo);
                     if (callLogger.isDebugEnabled())
                     {
                         callLogger.debug("Calling " + server + " " + a.getName() + "."+methodName);
@@ -89,9 +93,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         return proxyInstance;
     }
     
-    private FutureResult call( URL server,Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
-        String errorString = i18n.format("error.connect", server) + " ";
-        RaplaHTTPConnector connector = new RaplaHTTPConnector( commandQueue, errorString);
+    private FutureResult call(Class<?> service, String methodName,Object[] args,RemoteConnectionInfo connectionInfo)  {
         FutureResult result =connector.call(service, methodName, args, connectionInfo);
         return result;
     }
