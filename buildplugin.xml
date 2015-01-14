@@ -73,7 +73,7 @@
     <!-- Compile the java code from ${src} into ${build.dir} -->
   	<!-- first the client only code -->
   	<javac srcdir="${src.dir}"
-           destdir="${build.dest}"
+           destdir="${rapla.build.dest.client}"
            debug="${debug}"
     	   sourcepath=""
  	 	   source="${target_vm}"
@@ -96,6 +96,7 @@
          </classpath>
          <exclude name="**/server/**"/>
     </javac>
+     	
   	<!-- then the rest -->
   	<javac srcdir="${src.dir}"
            destdir="${build.dest}"
@@ -186,8 +187,7 @@
             <pathelement path="${rapla.build.dest.main}" />
         </classpath>
     </java>
-
-
+    
     <!--    <delete dir="${temp.dir}/languages" /> -->
   </target>
 
@@ -207,22 +207,42 @@
            <attribute name="Permissions" value="all-permissions"/>
        </manifest>
     </jar>
+    <copy todir="${rapla.build.dest.client}">
+	   <fileset dir="${build.dest}">
+	       	<exclude name="**/server" />
+	      	<exclude name="**/server/**" />
+	       	<exclude name="**/*.class" />
+	       	<exclude name="**/META-INF/rapla-plugin.list"/>
+	    </fileset>
+	</copy>
   </target>
 
-  
-  <target name="copytowebapp" depends="build">
+  <target name="copytobuild" depends="build">
   	<copy todir="${webapp.dir}/webclient">
     	<fileset dir="${lib.dir}/common" erroronmissingdir="false">
             <include name="*.jar" />
         </fileset>
     </copy>
-  	
+  </target>
+  
+  <target name="copytowebapp" depends="build">
+  	<!-- 
+  	<copy todir="${webapp.dir}/webclient">
+    	<fileset dir="${lib.dir}/common" erroronmissingdir="false">
+            <include name="*.jar" />
+        </fileset>
+    </copy>
+  	 -->
+  	 <!-- Now the jar is created in the main programm  -->
+  	 <!--  
   	<copy file="${build.dir}/${main.lib}" tofile="${webapp.dir}/webclient/${mainclient.lib}"/>
+
   	<jar jarfile="${webapp.dir}/webclient/${mainclient.lib}" update="true">
   	  <manifest>
            <attribute name="Permissions" value="${permissions.client}"/>
   	  </manifest>
     </jar>
+     -->
     <copy todir="${webapp.dir}/WEB-INF/lib" >
         <fileset dir="${lib.dir}/common" erroronmissingdir="false">
             <include name="*.jar"/>
