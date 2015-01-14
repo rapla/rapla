@@ -380,40 +380,55 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    	throw new RaplaException(ex);
 	    }		
     }
-    
-    synchronized public void refreshAsync( final AsyncCallback<VoidResult> callback)  {
+
+    boolean refreshInProgress;
+
+    synchronized private void refreshAsync( final AsyncCallback<VoidResult> callback)  {
+        if ( refreshInProgress )
+        {
+            return;
+        }
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
-        serv.refresh( clientRepoVersion).get( new AsyncCallback<UpdateEvent>() {
-
-            @Override
-            public void onFailure(Throwable caught) {
-                callback.onFailure(caught);
-            }
-
-            @Override
-            public void onSuccess(UpdateEvent evt) {
-                try {
-                    refresh( evt);
+        refreshInProgress = true;
+        try
+        {
+            serv.refresh( clientRepoVersion).get( new AsyncCallback<UpdateEvent>() {
+                
+                @Override
+                public void onFailure(Throwable caught) {
+                    refreshInProgress = false;
+                    callback.onFailure(caught);
                 }
-                catch (EntityNotFoundException ex)
-                {
-                    getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+    
+                @Override
+                public void onSuccess(UpdateEvent evt) {
+                    refreshInProgress = false;
                     try {
-                        refreshAll();
-                    } catch (Exception e) {
+                        refresh( evt);
+                    }
+                    catch (EntityNotFoundException ex)
+                    {
+                        getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+                        try {
+                            refreshAll();
+                        } catch (Exception e) {
+                            onFailure(ex);
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
                         onFailure(ex);
                         return;
                     }
+                    callback.onSuccess( VoidResult.INSTANCE);
                 }
-                catch (Exception ex)
-                {
-                    onFailure(ex);
-                    return;
-                }
-                callback.onSuccess( VoidResult.INSTANCE);
-            }
-        });
+            });
+        } catch (Exception ex)
+        {
+            refreshInProgress = false;
+        }
     }
 
 

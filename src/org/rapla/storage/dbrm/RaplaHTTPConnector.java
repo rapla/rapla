@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -177,8 +179,9 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
           }
 	}
 	
-	 	
-    synchronized public FutureResult call(final Class<?> service, final String methodName, final Object[] args,final RemoteConnectionInfo serverInfo) 
+	Semaphore reAuthNode = new Semaphore(1);
+    
+    public FutureResult call(final Class<?> service, final String methodName, final Object[] args,final RemoteConnectionInfo serverInfo) 
 	{
 
         final URL methodURL;
@@ -231,9 +234,45 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 } 
                 catch (AuthenticationException ex)
                 {
-                    String newAuthCode = reAuth();
-                    // try the same call again with the new result, this time with no auth code failed fallback
-                    resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                    if ( !loginCmd)
+                    {
+                        String newAuthCode;
+                        // we only start one reauth call at a time. So check if reauth is in progress
+                        
+                        if ( !reAuthNode.tryAcquire())
+                        {
+                            // if yes
+                            if (reAuthNode.tryAcquire(10000, TimeUnit.MILLISECONDS))
+                            {
+                                reAuthNode.release();
+                                // try the recently acquired access token
+                                newAuthCode = serverInfo.getAccessToken();
+                            }
+                            else
+                            {
+                                throw new RaplaException("Login in progress. Taking longer than expected ");       
+                            }                                
+                        } 
+                        else
+                        {
+                            // no reauth in progress so we start a new one
+                            try
+                            {
+                                newAuthCode = reAuth();
+                            }
+                            finally
+                            {
+                                reAuthNode.release();
+                            }
+                        }
+                        // try the same call again with the new result, this time with no auth code failed fallback
+                        resultMessage = sendCall_( "POST", methodURL, element, newAuthCode);
+                        checkError(resultMessage);
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
                 }
                 try
                 {
