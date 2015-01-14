@@ -316,9 +316,38 @@ Definition as published by the Open Source Initiative (OSI).
 				</linecontainsregexp>
             </filterchain>
         </copy>
-            
     </target>
 
+     <target name="pluginmeta-check-client" depends="prepare">
+        <condition property="pluginmeta.notrequired">
+            <and>
+                <uptodate>
+                    <srcfiles dir="${build.dest.client}" includes="**/*Plugin.class" />
+                    <mapper type="merge" to="${build.dest.client}/META-INF/rapla-plugin.list" />
+                </uptodate>
+            </and>
+        </condition>
+    </target>
+
+    <target name="generate-plugin-meta-client" unless="pluginmeta.notrequired" description="Generate the rapla-plugin.list" depends="pluginmeta-check-client">
+        <echo message="generating Plugin Metainfo" />
+        <mkdir dir="${temp.dir}/META-INF" />
+        <java classname="org.rapla.framework.ServiceListCreator" failonerror="true" fork="yes">
+            <arg value="${build.dest.client}" />
+            <arg value="${temp.dir}/META-INF/rapla-plugin.list" />
+            <classpath>
+                <pathelement path="${build.dest.client}" />
+            </classpath>
+        </java>
+        <copy file="${temp.dir}/META-INF/rapla-plugin.list" tofile="${build.dest.client}/META-INF/rapla-plugin.list">
+            <filterchain>
+       			<linecontainsregexp negate="true">
+				  	<regexp pattern="org\.rapla\.plugin\.(${plugin.main.excludes})\..*"/>
+				</linecontainsregexp>
+            </filterchain>
+        </copy>
+    </target>
+    
     <!-- Set a variable if resources are already up-to-date.                  -->
     <target name="resources-check" depends="init">
         <condition property="resources.notrequired">
@@ -417,6 +446,7 @@ Definition as published by the Open Source Initiative (OSI).
                 </section>
             </manifest>
         </jar>
+        
     	<copy todir="${build.dest.client}">
 	         <fileset dir="${build.dest.main}">
 	         	<exclude name="**/*.class" />
@@ -436,7 +466,9 @@ Definition as published by the Open Source Initiative (OSI).
 	         </fileset>
 	    </copy>
     	
-        <jar jarfile="${build.dir}/${main.client.lib}">
+    	<!--  Now moved to webapp  -->
+    	<!-- 
+    	<jar jarfile="${build.dir}/${main.client.lib}">
         	 <fileset dir="${build.dest.client}">
 	          </fileset>
               <manifest>
@@ -452,7 +484,8 @@ Definition as published by the Open Source Initiative (OSI).
     	           	<attribute name="Permissions" value="${permissions.client}"/>
     	      </manifest>
         </jar>
-    
+     -->
+        
     	<jar jarfile="${build.dir}/raplabootstrap.jar">
              <fileset dir="${build.dest.bootstrap}">
              </fileset>
@@ -526,6 +559,8 @@ Definition as published by the Open Source Initiative (OSI).
 	 	    <property name="permissions.client" value="${permissions.client}"/>
 	 	    <property name="application.name" value="${application.name}"/>
         </subant>
+        <antcall target="generate-plugin-meta-client">
+        </antcall>
         
         <copy todir="${webapp.dir}">
             <fileset dir="${webappsrc.dir}">
@@ -540,18 +575,36 @@ Definition as published by the Open Source Initiative (OSI).
    	    	<fileset dir="${lib.dir}/common">
                 <include name="*.jar" />
             </fileset>
+            <!-- 
    	    	<fileset dir="${build.dir}">
    	    	    <include name="${main.client.lib}" />
    	    	</fileset>
+   	    	 -->
         </copy>
-        
-   	    <jar jarfile="${webapp.dir}/webclient/iText-4.2.0-com.itextpdf.jar" update="true">
+        <jar jarfile="${webapp.dir}/webclient/${main.client.lib}">
+        	 <fileset dir="${build.dest.client}">
+	          </fileset>
+              <manifest>
+                    <attribute name="Created-By" value="${user.name}" />
+                    <section name="common">
+                        <attribute name="Implementation-Title" value="common" />
+                        <attribute name="Implementation-Version" value="${doc.version} ${TODAY}" />
+                    	<attribute name="url" value="${doc.homepage}"/>
+                    	<attribute name="Bundle-License" value="http://www.gnu.org/licenses/gpl.html"/>
+                    </section>
+                  	<attribute name="Application-Name" value ="${application.name}"/>
+                   	<attribute name="Codebase" value="*"/>
+    	           	<attribute name="Permissions" value="${permissions.client}"/>
+    	      </manifest>
+        </jar>
+   	    <jar jarfile="${webapp.dir}/webclient/itext.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
 	            <attribute name="Application-Name" value ="${application.name}"/>
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
+	    <!-- 
 	    <jar jarfile="${webapp.dir}/webclient/super-csv-2.0.1.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
@@ -559,7 +612,8 @@ Definition as published by the Open Source Initiative (OSI).
 	            <attribute name="Codebase" value="*"/>
 	        </manifest>
 	    </jar>
-	    <jar jarfile="${webapp.dir}/webclient/gson-2.3.jar" update="true">
+	     -->
+	    <jar jarfile="${webapp.dir}/webclient/gson.jar" update="true">
 	        <manifest>
 	            <attribute name="Permissions" value="${permissions.client}"/>
 	            <attribute name="Application-Name" value ="${application.name}"/>
