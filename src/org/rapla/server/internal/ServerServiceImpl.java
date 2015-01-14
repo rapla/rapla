@@ -687,12 +687,11 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 			 }
 			 if (authenticateExternal)
 			 {
-				 logger.info("Successfull for " + username);
-		    	 //@SuppressWarnings("unchecked")
+				 //@SuppressWarnings("unchecked")
 		         user = operator.getUser( username );
 		         if ( user == null )
 		         {
-		    		 logger.info("User not found in localstore. Creating new Rapla user " + username);
+		    		 logger.info("Successfull for User " + username +".Creating new Rapla user.");
 		             Date now = operator.getCurrentTimestamp();
 		             UserImpl newUser = new UserImpl(now,now);
 		             newUser.setId( operator.createIdentifier( User.TYPE,1 )[0] );
@@ -709,7 +708,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		         try
 		         {
 		             Category groupCategory = operator.getSuperCategory().getCategory( Permission.GROUP_CATEGORY_KEY );
-		    		 logger.info("Looking for update for rapla user '" + username + "' from external source.");
+		    		 logger.debug("Looking for update for rapla user '" + username + "' from external source.");
 		             initUser = authenticationStore.initUser( (User) user, username, password, groupCategory );
 		         } catch (RaplaSecurityException ex){
 		             throw new RaplaSecurityException(i18n.getString("error.login"));
