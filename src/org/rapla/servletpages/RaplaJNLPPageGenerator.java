@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -52,7 +53,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 	          buf.append("\n<jar href=\""+webstartRoot + "/");
 	          buf.append(file);
 	          buf.append("\"");
-	          if (file.indexOf("raplaclient")>=0) {
+	          if (file.indexOf("raplaclient.jar")>=0) {
 	             buf.append(" main=\"true\"");
 	          }
 	          buf.append("/>");
@@ -112,7 +113,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 		String webstartRoot = ".";
 		long currentTimeMillis = System.currentTimeMillis();
 		response.setDateHeader("Last-Modified",currentTimeMillis);
-		response.addDateHeader("Expires", 0);
+		response.addDateHeader("Expires", currentTimeMillis + DateTools.MILLISECONDS_PER_MINUTE);
 		response.addDateHeader("Date", currentTimeMillis);
 		response.setHeader("Cache-Control", "no-cache");
 		final String defaultTitle = getI18n().getString("rapla.title");
@@ -126,7 +127,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
         }
 		response.setContentType("application/x-java-jnlp-file;charset=utf-8");
 		out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-		out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\">");
+		out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
 		out.println("<information>");
 		out.println(" <title>"+menuName+"</title>");
 		out.println(" <vendor>Rapla team</vendor>");

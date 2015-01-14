@@ -902,8 +902,8 @@ public class MainServlet extends HttpServlet {
 		return message;
 	}
 
-  
-//  private boolean isClientVersionSupported(String clientVersion) {
+
+	//  private boolean isClientVersionSupported(String clientVersion) {
 //		// add/remove supported client versions here 
 //		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 
 //	}
