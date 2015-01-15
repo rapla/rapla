@@ -86,7 +86,7 @@ public class JsonServlet {
 
     public JsonServlet(final Logger logger, final Class class1) throws RaplaException {
         this.class1 = class1;
-        this.logger = logger;
+        this.logger = logger.getChildLogger("server");
         myMethods = methods(class1);
         if (myMethods.isEmpty()) {
             throw new RaplaException("No public service methods declared in " + class1 + " Did you forget the javax.jws.WebService annotation?");
