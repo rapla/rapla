@@ -800,11 +800,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     public List<Reservation> getReservations(User user,Collection<Allocatable> allocatables,Date start,Date end,ClassificationFilter[] filters, Map<String,String> annotationQuery) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
     	// if a refresh is due, we assume the system went to sleep so we refresh before we continue
-    	if ( intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
-    	{
-    	    getLogger().info("cache not uptodate. Refreshing first.");
-    	    refresh();
-    	}
+    	refreshIfNecessary();
     	
     	String[] allocatableId = getIdList(allocatables);
     	try
@@ -839,6 +835,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    {
 	    	throw new RaplaException(ex);
 	    }		
+    }
+
+    private void refreshIfNecessary() throws RaplaException {
+        if ( intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
+    	{
+    	    getLogger().info("cache not uptodate. Refreshing first.");
+    	    refresh();
+    	}
     }
     
 //    public List<String> getTemplateNames() throws RaplaException {
