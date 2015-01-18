@@ -640,7 +640,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     public User authenticate(String username, String password,String connectAs, Logger logger) throws RaplaException,RaplaSecurityException {
 		User user;
 		String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-		 logger.info( "User '" + username + "' is requesting login."  );
 		 if ( authenticationStore != null )
 		 {
 			 logger.info("Checking external authentifiction for user " + username);
@@ -693,7 +692,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		         }
 		         else
 		         {
-		    		 logger.info("User '" + username  + "' already up to date");
+		    		 logger.debug("User '" + username  + "' already up to date");
 		         }
 		     }
 			 else
@@ -705,7 +704,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 		 } // if the authenticationStore can't authenticate the user is checked against the local database
 		 else
 		 {
-			 logger.info("Check password for " + username);
 			 operator.authenticate( username, password );
 		 }
 		 
