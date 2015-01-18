@@ -257,6 +257,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			addAttributeWithInternalId(type,"status",AttributeType.STRING);
 			addAttributeWithInternalId(type,"retries", AttributeType.STRING);
 			addAttributeWithInternalId(type,"lastRetry", AttributeType.DATE);
+			addAttributeWithInternalId(type,"lastError", AttributeType.STRING);
 			type.setResolver( this);
 			type.setReadOnly();
 			cache.put( type);
@@ -2326,7 +2327,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		storeAndRemove(storeObjects, removeObjects, null);
 	}
 	
-	protected String encrypt(String encryption, String password) throws RaplaException {
+	public static String encrypt(String encryption, String password) throws RaplaException {
 		MessageDigest md;
 		try {
 			md = MessageDigest.getInstance(encryption);
