@@ -256,6 +256,7 @@ See French text.
         <text lang="nl">Toepassen</text>
         <text lang="pl">Zastosuj</text>
 		<text lang="pt">Aplicar</text>
+		<text lang="fi">Aseta</text>
 	</entry>
     <entry key="back">
         <text lang="en">Go back</text>
@@ -266,6 +267,7 @@ See French text.
         <text lang="nl">Sluit</text>
         <text lang="pl">Wstecz</text>
 		<text lang="pt">Voltar</text>		
+		<text lang="fi">Takaisin</text>		
     </entry>
 	<entry key="cancel">
         <text lang="en">Cancel</text>
@@ -276,6 +278,7 @@ See French text.
         <text lang="nl">Annuleren</text>
         <text lang="pl">Anuluj</text>
 		<text lang="pt">Cancelar</text>
+		<text lang="fi">Peru</text>
     </entry>
     <entry key="continue">
         <text lang="en">Continue</text>
@@ -286,6 +289,7 @@ See French text.
         <text lang="nl">Verder</text>
         <text lang="pl">Kontynuuj</text>
 		<text lang="pt">Continuar</text>
+		<text lang="fi">Jatka</text>
     </entry>
     <entry key="error">
         <text lang="en">Error</text>
@@ -296,6 +300,7 @@ See French text.
         <text lang="nl">Fout</text>
         <text lang="pl">Błąd</text>
 		<text lang="pt">Erro</text>
+		<text lang="fi">Virhe</text>
     </entry>
     <entry key="exception">
         <text lang="en">Exception</text>
@@ -306,6 +311,7 @@ See French text.
         <text lang="nl">Uitzondering</text>
         <text lang="pl">Wyjątek</text>
 		<text lang="pt">Exceção</text>
+		<text lang="fi">Poikkeus</text>
     </entry>
     <entry key="ok">
         <text lang="en">OK</text>
@@ -316,6 +322,7 @@ See French text.
         <text lang="nl">OK</text>
         <text lang="pl">OK</text>
 		<text lang="pt">Ok</text>
+		<text lang="fi">OK</text>
     </entry>
     <entry key="warning">
         <text lang="en">Warning</text>
@@ -326,6 +333,7 @@ See French text.
         <text lang="nl">Waarschuwing</text>
         <text lang="pl">Uwaga</text>
 		<text lang="pt">Atenção!</text>
+		<text lang="fi">Varoitus</text>
     </entry>
     
     
@@ -339,6 +347,7 @@ See French text.
         <text lang="nl">Annuleren</text>
         <text lang="pl">Porzuć</text>
 		<text lang="pt">Abortar</text>
+		<text lang="fi">Keskeytä</text>
     </entry>
     <entry key="add">
         <text lang="en">Add</text>
@@ -349,6 +358,7 @@ See French text.
         <text lang="nl">Toevoegen</text>
         <text lang="pl">Dodaj</text>
 		<text lang="pt">Adicionar</text>
+		<text lang="fi">Lisää</text>
     </entry>
     <entry key="add_to">
         <text lang="en">Add to</text>
@@ -359,6 +369,7 @@ See French text.
         <text lang="nl">Toevoegen aan</text>
         <text lang="pl">Dodaj do</text>
 		<text lang="pt">Adicionar a</text>
+		<text lang="fi">Lisää</text>
     </entry>
     <entry key="change">
         <text lang="en">Change</text>
@@ -369,6 +380,7 @@ See French text.
         <text lang="nl">Wijzig</text>
         <text lang="pl">Zmień</text>
 		<text lang="pt">Modificar</text>
+		<text lang="fi">Muuta</text>
     </entry>
     <entry key="confirm">
         <text lang="en">Confirm</text>
@@ -379,6 +391,7 @@ See French text.
         <text lang="nl">Bevestig</text>
         <text lang="pl">Akceptuj</text>
 		<text lang="pt">Confirmar</text>
+		<text lang="fi">Vahvista</text>
     </entry>
     <entry key="color">
         <text lang="en">Color</text>
@@ -389,6 +402,7 @@ See French text.
         <text lang="nl">Kleur</text>
         <text lang="pl">Kolor</text>
 		<text lang="pt">Cor</text>
+		<text lang="fi">Väri</text>
     </entry>
     <entry key="copy">
         <text lang="en">Copy</text>
@@ -399,6 +413,7 @@ See French text.
         <text lang="nl">Kopieer</text>
         <text lang="pl">Kopiuj</text>
 		<text lang="pt">Copiar</text>
+		<text lang="fi">Kopioi</text>
     </entry>
     <entry key="copy_to_clipboard">
         <text lang="en">Copy to Clipboard</text>
@@ -409,6 +424,7 @@ See French text.
         <text lang="nl">Kopieër naar plakbord</text>
         <text lang="pl">Kopiuj do schowka</text>
 		<text lang="pt">Copiar para Área de Transferência</text>
+		<text lang="fi">Kopioi leikepöydälle</text>
     </entry>
     <entry key="close">
         <text lang="en">Close</text>
@@ -419,6 +435,7 @@ See French text.
         <text lang="nl">Sluit</text>
         <text lang="pl">Zamknij</text>
 		<text lang="pt">Fechar</text>
+		<text lang="fi">Sulje</text>
     </entry>
     <entry key="create">
         <text lang="en">Create</text>
@@ -429,6 +446,7 @@ See French text.
         <text lang="nl">Aanmaken</text>
         <text lang="pl">Utwórz</text>
 		<text lang="pt">Criar</text>
+		<text lang="fi">Luo</text>
     </entry>
     <entry key="delete">
         <text lang="en">Delete</text>
@@ -439,6 +457,7 @@ See French text.
         <text lang="nl">Verwijderen</text>
         <text lang="pl">Usuń</text>
 		<text lang="pt">Deletar</text>
+		<text lang="fi">Poista</text>
     </entry>
     <entry key="delete_selection">
         <text lang="en">Delete Selection</text>
@@ -449,6 +468,7 @@ See French text.
         <text lang="nl">Verwijder selectie</text>
         <text lang="pl">Usuń Wybór</text>
 		<text lang="pt">Deletar Seleção</text>
+		<text lang="fi">Poista valinta</text>
     </entry>
     <entry key="edit">
         <text lang="en">Edit</text>
@@ -459,6 +479,7 @@ See French text.
         <text lang="nl">Bewerk</text>
         <text lang="pl">Edytuj</text>
 		<text lang="pt">Editar</text>
+		<text lang="fi">Muokkaa</text>
     </entry>
     <entry key="exit">
         <text lang="en">Exit</text>
@@ -469,6 +490,7 @@ See French text.
         <text lang="nl">Sluiten</text>
         <text lang="pl">Wyjście</text>
 		<text lang="pt">Sair</text>
+		<text lang="fi">Poistu</text>
     </entry>
     <entry key="publish">
         <text lang="en">Publish</text>
@@ -479,6 +501,7 @@ See French text.
         <text lang="cs">publikovat</text>
         <text lang="nl">Publiceer</text>
 		<text lang="pt">Publicar</text>
+		<text lang="fi">Julkaise</text>
     </entry>
     <entry key="export">
         <text lang="en">Export</text>
@@ -489,6 +512,7 @@ See French text.
         <text lang="nl">Exporteer</text>
         <text lang="pl">Eksportuj</text>
 		<text lang="pt">Exportar</text>
+		<text lang="fi">Vie</text>
     </entry>
     <entry key="insert">
         <text lang="en">Insert</text>
@@ -499,6 +523,7 @@ See French text.
         <text lang="nl">Toevoegen</text>
         <text lang="pl">Wstaw</text>
 		<text lang="pt">Inserir</text>
+		<text lang="fi">Aseta</text>
     </entry>
     <entry key="import">
         <text lang="en">Import</text>
@@ -509,6 +534,7 @@ See French text.
         <text lang="nl">Importeer</text>
         <text lang="pl">Importuj</text>
 		<text lang="pt">Importar</text>
+		<text lang="fi">Tuo</text>
     </entry>
     <entry key="keep">
         <text lang="en">Keep</text>
@@ -519,6 +545,7 @@ See French text.
         <text lang="nl">Bewaar</text>
         <text lang="pl">Zachowaj</text>
 		<text lang="pt">Manter</text>
+		<text lang="fi">Säilytä</text>
     </entry>
     <entry key="load">
         <text lang="en">Load</text>
@@ -529,6 +556,7 @@ See French text.
         <text lang="nl">Laad</text>
         <text lang="pl">Wczytaj</text>
 		<text lang="pt">Carregar</text>
+		<text lang="fi">Lataa</text>
     </entry>
     <entry key="login">
         <text lang="en">Login</text>
@@ -539,6 +567,7 @@ See French text.
         <text lang="nl">Aanmelden</text>
         <text lang="pl">Zaloguj</text>
 		<text lang="pt">Entrar</text>
+		<text lang="fi">Kirjaudu sisään</text>
     </entry>
     <entry key="logout">
         <text lang="en">Logout</text>
@@ -549,6 +578,7 @@ See French text.
         <text lang="nl">Afmelden</text>
         <text lang="pl">Wyloguj</text>
 		<text lang="pt">Sair</text>
+		<text lang="fi">Kirjaudu ulos</text>
     </entry>
     <entry key="move">
         <text lang="en">Move</text>
@@ -559,6 +589,7 @@ See French text.
         <text lang="nl">Verplaats</text>
         <text lang="pl">Przenieś</text>
 		<text lang="pt">Mover</text>
+		<text lang="fi">Siirrä</text>
     </entry>
     <entry key="new">
         <text lang="en">New</text>
@@ -569,6 +600,7 @@ See French text.
         <text lang="nl">Nieuw</text>
         <text lang="pl">Nowy</text>
 		<text lang="pt">Novo</text>
+		<text lang="fi">Uusi</text>
     </entry>
     <entry key="paste">
         <text lang="en">Paste</text>
@@ -579,6 +611,7 @@ See French text.
         <text lang="nl">Plakken</text>
         <text lang="pl">Wklej</text>
 		<text lang="pt">Colar</text>
+		<text lang="fi">Liitä</text>
     </entry>
     <entry key="paste_as">
         <text lang="en">Paste As</text>
@@ -589,6 +622,7 @@ See French text.
         <text lang="nl">Plakken als</text>
         <text lang="pl">Wklej jako</text>
 		<text lang="pt">Colar Como</text>
+		<text lang="fi">Liitä määräten</text>
     </entry>
     <entry key="paste_into_existing_event">
         <text lang="en">Paste into existing event</text>
@@ -599,6 +633,7 @@ See French text.
         <text lang="nl">Plak in bestaande reservatie</text>
         <text lang="pl">Wklej do istniejącego wydarzenie</text>
 		<text lang="pt">Colar em evento existente</text>
+		<text lang="fi">Liitä olemassaolevaan tapahtumaan</text>
     </entry>
     <entry key="print">
         <text lang="en">Print</text>
@@ -609,6 +644,7 @@ See French text.
         <text lang="nl">Afdrukken</text>
         <text lang="pl">Drukuj</text>
 		<text lang="pt">Imprimir</text>
+		<text lang="fi">Tulosta</text>
     </entry>
     <entry key="print_to_file">
         <text lang="en">Print to File</text>
@@ -619,6 +655,7 @@ See French text.
         <text lang="nl">Afdrukken naar bestand</text>
         <text lang="pl">Drukuj do pliku</text>
 		<text lang="pt">Imprimir em Arquivo</text>
+		<text lang="fi">Tulosta tiedostoon</text>
     </entry>
     <entry key="refresh">
         <text lang="en">Refresh</text>
@@ -629,6 +666,7 @@ See French text.
         <text lang="nl">Actualiseren</text>
         <text lang="pl">Odśwież</text>
 		<text lang="pt">Atualizar</text>
+		<text lang="fi">Päivitä</text>
     </entry>
     <entry key="remove">
         <text lang="en">Remove</text>
@@ -639,6 +677,7 @@ See French text.
         <text lang="nl">Verwijderen</text>
         <text lang="pl">Usuń</text>
 		<text lang="pt">Remover</text>
+		<text lang="fi">Poista</text>
     </entry>
     <entry key="root">
         <text lang="en">Root</text>
@@ -648,6 +687,7 @@ See French text.
         <text lang="cs">root</text>
         <text lang="nl">Oorsprong</text>
 		<text lang="pt">Korzeń</text>
+		<text lang="fi">Juuri</text>
     </entry>
     <entry key="save">
         <text lang="en">Save</text>
@@ -658,6 +698,7 @@ See French text.
         <text lang="nl">Opslaan</text>
         <text lang="pl">Zapisz</text>
 		<text lang="pt">Salvar</text>
+		<text lang="fi">Tallenna</text>
     </entry>
     <entry key="saved">
         <text lang="en">saved</text>
@@ -668,6 +709,7 @@ See French text.
         <text lang="nl">Opgeslagen</text>
         <text lang="pl">zapisano.</text>
 		<text lang="pt">Salvo</text>
+		<text lang="fi">tallennettu</text>
     </entry>
    	<entry key="file_saved">
         <text lang="en">File saved</text>
@@ -678,6 +720,7 @@ See French text.
         <text lang="nl">Bestand opgeslagen</text>
         <text lang="pl">Zapisano Plik</text>
 		<text lang="pt">Arquivo salvo</text>
+		<text lang="fi">Tiedosto tallennettu</text>
     </entry>
     <entry key="show_as">
         <text lang="en">Show As</text>
@@ -688,6 +731,7 @@ See French text.
         <text lang="nl">Type</text>
         <text lang="pl">Wyświetl jako</text>
 		<text lang="pt">Mostrar Como</text>
+		<text lang="fi">Näkymä</text>
     </entry>
     <entry key="view">
         <text lang="en">View</text>
@@ -698,6 +742,7 @@ See French text.
         <text lang="nl">Toon</text>
         <text lang="pl">Widok</text>
 		<text lang="pt">Vizualizar</text>
+		<text lang="fi">Näytä</text>
     </entry>
     <entry key="file.enter_name">
 	    <text lang="en">Name for the view</text>
@@ -707,6 +752,7 @@ See French text.
 	    <text lang="nl">Naam kalender</text>
 	    <text lang="pl">Nazwa widoku</text>
 		<text lang="pt">Nome da Vizualização</text>
+		<text lang="fi">Näkymän nimi</text>
 	 </entry>
     
     <!-- common words and phrases -->
@@ -719,6 +765,7 @@ See French text.
         <text lang="nl">Alle gebruikers</text>
         <text lang="pl">Wszyscy użytkownicy</text>
 		<text lang="pt">Todos Usuários</text>
+		<text lang="fi">Kaikki käyttäjät</text>
     </entry>
     <entry key="alteration">
         <text lang="en">Alteration</text>
@@ -729,6 +776,7 @@ See French text.
         <text lang="nl">Wijziging</text>
         <text lang="pl">Zmiana</text>
 		<text lang="pt">Alteração</text>
+		<text lang="fi">Vaihtelu</text>
     </entry>
     <entry key="and">
         <text lang="en">and</text>
@@ -739,6 +787,7 @@ See French text.
         <text lang="nl">en</text>
         <text lang="pl">i</text>
 		<text lang="pt">e</text>
+		<text lang="fi">ja</text>
     </entry>
     <entry key="attribute">
         <text lang="en">Attribute</text>
@@ -749,6 +798,7 @@ See French text.
         <text lang="nl">Attribuut</text>
         <text lang="pl">Atrybut</text>
 		<text lang="pt">Atributo</text>
+		<text lang="fi">Attribuutti</text>
     </entry>
     <entry key="attributes">
         <text lang="en">Attributes</text>
@@ -759,6 +809,7 @@ See French text.
         <text lang="nl">Attributen</text>
         <text lang="pl">Atrybuty</text>
 		<text lang="pt">Atributos</text>
+		<text lang="fi">Attribuutit</text>
     </entry>
     <entry key="calendar">
         <text lang="en">Calendar</text>
@@ -769,6 +820,7 @@ See French text.
         <text lang="nl">Kalender</text>
         <text lang="pl">Kalendarz</text>
 		<text lang="pt">Calendário</text>
+		<text lang="fi">Kalenteri</text>
     </entry>
     <entry key="categories">
         <text lang="en">Categories</text>
@@ -779,6 +831,7 @@ See French text.
         <text lang="nl">Klassement</text>
         <text lang="pl">Kategorie</text>
 		<text lang="pt">Categorias</text>
+		<text lang="fi">Kategoriat</text>
     </entry>
     <entry key="category">
         <text lang="en">Category</text>
@@ -789,12 +842,14 @@ See French text.
         <text lang="nl">Klassement</text>
         <text lang="pl">Kategoria</text>
 		<text lang="pt">Categoria</text>
+		<text lang="fi">Kategoria</text>
     </entry>
     <entry key="categorization">
         <text lang="en">Categorization</text>
         <text lang="de">Kategoriesierung</text>
         <text lang="fr">Regroupement</text>
         <text lang="nl">Categorisering</text>
+		<text lang="fi">Kategoriointi</text>
     </entry>
     <entry key="changes">
         <text lang="en">Changes</text>
@@ -805,6 +860,7 @@ See French text.
         <text lang="nl">Wijzigingen</text>
         <text lang="pl">Zmiany</text>
 		<text lang="pt">Modificações</text>
+		<text lang="fi">Muutokset</text>
     </entry>
     <entry key="class">
         <text lang="en">Class</text>
@@ -815,6 +871,7 @@ See French text.
         <text lang="nl">Klasse</text>
         <text lang="pl">Klasa</text>
 		<text lang="pt">Classe</text>
+		<text lang="fi">Luokka</text>
     </entry>
     <entry key="classification">
         <text lang="en">Classification</text>
@@ -825,6 +882,7 @@ See French text.
         <text lang="nl">Klassificatie</text>
         <text lang="pl">Klasyfikacja</text>
 		<text lang="pt">Classificação</text>
+		<text lang="fi">Luokitus</text>
     </entry>
     <entry key="connection">
         <text lang="en">Connection with server</text>
@@ -834,6 +892,7 @@ See French text.
 	    <text lang="nl">Verbinding met de Server</text>
 	    <text lang="pl">Połączenie z serwerem</text>
 		<text lang="pt">Conexão com o Servidor</text>
+		<text lang="fi">Yhteys palvelimeen</text>
     </entry>
     <entry key="constraints">
         <text lang="en">Constraints</text>
@@ -844,6 +903,7 @@ See French text.
         <text lang="nl">Beperkingen</text>
         <text lang="pl">Ograniczenia</text>
 		<text lang="pt">Restrições</text>
+		<text lang="fi">Rajoitukset</text>
 		
     </entry>
     <entry key="created_at">
@@ -855,6 +915,7 @@ See French text.
         <text lang="nl">Geregisteerd op</text>
         <text lang="pl">Stworzono w</text>
 		<text lang="pt">Criado em</text>
+		<text lang="fi">Luotu</text>
     </entry>
     <entry key="customized">
         <text lang="en">Customized</text>
@@ -865,6 +926,7 @@ See French text.
         <text lang="nl">Aangepast door</text>
         <text lang="pl">Dostosowany</text>
 		<text lang="pt">Customizado</text>
+		<text lang="fi">Kustomoitu</text>
     </entry>
     <entry key="date">
         <text lang="en">Date</text>
@@ -875,6 +937,7 @@ See French text.
         <text lang="nl">Datum</text>
         <text lang="pl">Data</text>
 		<text lang="pt">Data</text>
+		<text lang="fi">Päiväys</text>
     </entry>
     <entry key="default">
         <text lang="en">Default</text>
@@ -885,6 +948,7 @@ See French text.
         <text lang="nl">Standaard</text>
         <text lang="pl">Domyślne</text>
 		<text lang="pt">Padrão</text>
+		<text lang="fi">Oletus</text>
     </entry>
     <entry key="destination">
         <text lang="en">Destination</text>
@@ -895,6 +959,7 @@ See French text.
         <text lang="nl">Naar</text>
         <text lang="pl">Miejsce docelowe</text>
 		<text lang="pt">Destino</text>
+		<text lang="fi">Kohde</text>
     </entry>
     <entry key="elementkey">
         <text lang="en">Element key</text>
@@ -905,6 +970,7 @@ See French text.
         <text lang="nl">Elementsleutel</text>
         <text lang="pl">Klucz</text>
 		<text lang="pt">Elemento Chave</text>
+		<text lang="fi">Elementin avain</text>
     </entry>
     <entry key="email">
         <text lang="en">Email</text>
@@ -915,6 +981,7 @@ See French text.
         <text lang="nl">Email</text>
         <text lang="pl">e-mail</text>
 		<text lang="pt">E-mail</text>
+		<text lang="fi">Sähköposti</text>
     </entry>
     <entry key="end_time">
         <text lang="en">End time</text>
@@ -925,6 +992,7 @@ See French text.
         <text lang="nl">tot</text>
         <text lang="pl">Czas zakończenia</text>
 		<text lang="pt">Hora do término</text>
+		<text lang="fi">Lopetusaika</text>
     </entry>
     <entry key="end_date">
         <text lang="en">End</text>
@@ -935,6 +1003,7 @@ See French text.
         <text lang="nl">Einde</text>
         <text lang="pl">Koniec</text>
 		<text lang="pt">Fim</text>
+		<text lang="fi">Loppu</text>
     </entry>
     <entry key="filter">
         <text lang="en">Filter</text>
@@ -944,6 +1013,7 @@ See French text.
 		<text lang="nl">Filter</text>
 		<text lang="pl">Filtr</text>
 		<text lang="pt">Filtro</text>
+		<text lang="fi">Suodatin</text>
     </entry>
      <entry key="test_resource">
         <text lang="en">test</text>
@@ -979,6 +1049,7 @@ See French text.
         <text lang="nl">Ga naar datum</text>
         <text lang="pl">Idź do daty</text>
 		<text lang="pt">Vá para Data</text>
+		<text lang="fi">Mene päivämäärään</text>
     </entry>
     <entry key="group">
         <text lang="en">Group</text>
@@ -989,6 +1060,7 @@ See French text.
         <text lang="nl">Groep</text>
         <text lang="pl">Grupa</text>
 		<text lang="pt">Grupo</text>
+		<text lang="fi">Ryhmä</text>
     </entry>
     <entry key="groups">
         <text lang="en">Groups</text>
@@ -999,6 +1071,7 @@ See French text.
         <text lang="nl">Groepen</text>
         <text lang="pl">Grupy</text>
 		<text lang="pt">Grupos</text>
+		<text lang="fi">Ryhmät</text>
     </entry>
     <entry key="help">
         <text lang="en">Help</text>
@@ -1009,6 +1082,7 @@ See French text.
         <text lang="nl">Help</text>
         <text lang="pl">Pomoc</text>
 		<text lang="pt">Ajuda</text>
+		<text lang="fi">Apua</text>
     </entry>
     <entry key="hierarchy">
         <text lang="en">Hierarchy</text>
@@ -1019,6 +1093,7 @@ See French text.
         <text lang="nl">Hierarchie</text>
         <text lang="pl">Hierarchia</text>
 		<text lang="pt">Hierarquia</text>
+		<text lang="fi">Hierarkia</text>
     </entry>
     <entry key="info">
         <text lang="en">About Rapla...</text>
@@ -1029,6 +1104,7 @@ See French text.
         <text lang="nl">Informatie</text>
         <text lang="pl">O Rapla</text>
 		<text lang="pt">Sobre o Rapla</text>
+		<text lang="fi">Tietoja Raplasta</text>
     </entry>
     <entry key="not_visible">
         <text lang="en">Not visible</text>
@@ -1039,6 +1115,7 @@ See French text.
         <text lang="nl">Onzichtbaar</text>
         <text lang="pl">Ukryty</text>
 		<text lang="pt">Invisível</text>
+		<text lang="fi">Ei näkyvä</text>
     </entry>
      <entry key="transparent">
         <text lang="en">transparent</text>
@@ -1049,6 +1126,7 @@ See French text.
         <text lang="nl">Transparant zichtbaar</text>
         <text lang="pl">przezroczysty</text>
 		<text lang="pt">Transparente</text>
+		<text lang="fi">läpinäkyvä</text>
     </entry>
     <entry key="disabled">
         <text lang="en">disabled</text>
@@ -1057,6 +1135,7 @@ See French text.
         <text lang="nl">Uitgeschakeld</text>
         <text lang="pl">zablokowane</text>
 		<text lang="pt">Desabilitado</text>
+		<text lang="fi">pois päältä</text>
     </entry>
     <entry key="not_visible.help">
 	    <text lang="en">Not visible. <br/>Access to the reservation info is restricted.</text>
@@ -1067,6 +1146,7 @@ See French text.
         <text lang="nl">Gewijgerd. <br/>Toegang tot de boekings informatie is beperkt.</text>
         <text lang="pl">Ukryty. <br/>Dostęp do informacji o rezerwacji jest zastrzeżony.</text>
 		<text lang="pt">Não visível. <br/>O acesso a informação reservada é restrito. </text>
+		<text lang="fi">Ei näkyvissä. <br/>Pääsy varaustietoihin on rajoitettu</text>
     </entry>
     <entry key="not_selected.help">
 	    <text lang="en">Not currently selected. <br/>Unselect "Only Own Reservations" or change your filter settings. </text>
@@ -1077,6 +1157,7 @@ See French text.
         <text lang="nl">"Enkel eigen reservaties" afvinken in "Weergave" of wijzig de "Filter" instellingen.</text>
         <text lang="pl">Nie wybrano. <br/>Odznacz opcję "Pokaż tylko moje rezerwacje" lub zmień ustawienia filtru.</text>
 		<text lang="pt">Atualmente não selecionado. <br/> Desmarque a opção "Apenas Reservas Próprias" ou modifique a configuração do filtro.</text>
+		<text lang="fi">Ei valittuna. <br/>Poista valinta "Vain omat varaukset" tai muuta suodatusasetuksia</text>
     </entry>
     <entry key="key">
         <text lang="en">Key</text>
@@ -1087,6 +1168,7 @@ See French text.
         <text lang="nl">Sleutel</text>
         <text lang="pl">Klucz</text>
 		<text lang="pt">Chave</text>
+		<text lang="fi">Avain</text>
     </entry>
     <entry key="language">
         <text lang="en">Language</text>
@@ -1097,6 +1179,7 @@ See French text.
         <text lang="nl">Taal</text>
         <text lang="pl">Język</text>
 		<text lang="pt">Idioma</text>
+		<text lang="fi">Kieli</text>
     </entry>
     <entry key="last_changed">
         <text lang="en">Last changed</text>
@@ -1107,6 +1190,7 @@ See French text.
         <text lang="nl">Aangepast op</text>
         <text lang="pl">Ostatnia zmiana</text>
 		<text lang="pt">Modificado pela última vez</text>
+		<text lang="fi">Viimeksi muutettu</text>
     </entry>
     <entry key="last_changed_by">
         <text lang="en">Last changed by</text>
@@ -1117,6 +1201,7 @@ See French text.
         <text lang="nl">Laatst gewijzigd door</text>
         <text lang="pl">Ostatnio zmienione przez</text>
 		<text lang="pt">Modificado pela última vez por</text>
+		<text lang="fi">Muuttanut viimeksi:</text>
     </entry>
     <entry key="legend">
         <text lang="en">Legend</text>
@@ -1127,6 +1212,7 @@ See French text.
         <text lang="nl">Legende</text>
         <text lang="pl">Legenda</text>
 		<text lang="pt">Legenda</text>
+		<text lang="fi">Seloste</text>
     </entry>
     <entry key="level">
         <text lang="en">Level</text>
@@ -1137,6 +1223,7 @@ See French text.
         <text lang="nl">Niveau</text>
         <text lang="pl">Poziom</text>
 		<text lang="pt">Nível</text>
+		<text lang="fi">Taso</text>
     </entry>
     <entry key="nothing_selected">
         <text lang="en">Nothing selected</text>
@@ -1147,6 +1234,7 @@ See French text.
         <text lang="nl">Niets geselecteerd</text>
         <text lang="pl">Nic nie wybrano</text>
 		<text lang="pt">Nenhum item selecionado</text>
+		<text lang="fi">Ei mitään valittuna</text>
     </entry>
     <entry key="select_nothing">
         <text lang="en">select nothing</text>
@@ -1157,6 +1245,7 @@ See French text.
         <text lang="nl">Selecteer niets</text>
         <text lang="pl">wybierz nic</text>
 		<text lang="pt">Limpar seleção</text>
+		<text lang="fi">älä valitse mitään</text>
     </entry>
     <entry key="select_everything">
         <text lang="en">select everything</text>
@@ -1167,6 +1256,7 @@ See French text.
         <text lang="nl">Selecteer alles</text>
         <text lang="pl">wybierz wszystko</text>
 		<text lang="pt">Selecionar tudo</text>
+		<text lang="fi">valitse kaikki</text>
     </entry>
     <entry key="name">
         <text lang="en">Name</text>
@@ -1177,6 +1267,7 @@ See French text.
         <text lang="nl">Naam</text>
         <text lang="pl">Nazwa</text>
 		<text lang="pt">Nome</text>
+		<text lang="fi">Nimi</text>
     </entry>
     <entry key="never">
         <text lang="en">Never</text>
@@ -1187,6 +1278,7 @@ See French text.
         <text lang="nl">nooit</text>
         <text lang="pl">Nigdy</text>
 		<text lang="pt">Nunca</text>
+		<text lang="fi">Ei koskaan</text>
     </entry>
     <entry key="everytime">
         <text lang="en">Every time</text>
@@ -1197,6 +1289,7 @@ See French text.
         <text lang="nl">onbeperkt</text>
         <text lang="pl">Zawsze</text>
 		<text lang="pt">Toda hora</text>
+		<text lang="fi">Joka kerta</text>
     </entry>
     <entry key="no">
         <text lang="en">No</text>
@@ -1207,6 +1300,7 @@ See French text.
         <text lang="nl">Nee</text>
         <text lang="pl">Nie</text>
 		<text lang="pt">Não</text>
+		<text lang="fi">Ei</text>
     </entry>
     <entry key="no_classification">
         <text lang="en">No classification</text>
@@ -1217,6 +1311,7 @@ See French text.
         <text lang="nl">Geen Classificatie</text>
         <text lang="pl">Brak klasyfikacji</text>
 		<text lang="pt">Sem classificação</text>
+		<text lang="fi">Ei luokitusta</text>
     </entry>
     <entry key="options">
         <text lang="en">Options</text>
@@ -1227,6 +1322,7 @@ See French text.
         <text lang="nl">Opties</text>
         <text lang="pl">Opcje</text>
 		<text lang="pt">Opções</text>
+		<text lang="fi">Asetukset</text>
     </entry>
     <entry key="or">
         <text lang="en">or</text>
@@ -1237,6 +1333,7 @@ See French text.
         <text lang="nl">of</text>
         <text lang="pl">lub</text>
 		<text lang="pt">Ou</text>
+		<text lang="fi">tai</text>
     </entry>
     <entry key="open">
         <text lang="en">Open</text>
@@ -1247,6 +1344,7 @@ See French text.
         <text lang="nl">Onbepaald</text>
         <text lang="pl">Otwórz</text>
 		<text lang="pt">Abrir</text>
+		<text lang="fi">Avaa</text>
     </entry>
     <entry key="permissions">
         <text lang="en">Permissions</text>
@@ -1257,6 +1355,7 @@ See French text.
         <text lang="nl">Toestemmingen</text>
         <text lang="pl">Uprawnienia</text>
 		<text lang="pt">Permissões</text>
+		<text lang="fi">käyttöoikeudet</text>
     </entry>
     <entry key="preferences">
         <text lang="en">Preferences</text>
@@ -1267,6 +1366,7 @@ See French text.
         <text lang="nl">Voorkeuren</text>
         <text lang="pl">Preferencje</text>
 		<text lang="pt">Preferências</text>
+		<text lang="fi">Asetukset</text>
     </entry>
     <entry key="question">
         <text lang="en">Question</text>
@@ -1277,6 +1377,7 @@ See French text.
         <text lang="nl">Vraag</text>
         <text lang="pl">Pytanie</text>
 		<text lang="pt">Pergunta</text>
+		<text lang="fi">Kysymys</text>
     </entry>
     <entry key="report">
         <text lang="en">Report</text>
@@ -1287,6 +1388,7 @@ See French text.
         <text lang="nl">Rapport</text>
         <text lang="pl">Raport</text>
 		<text lang="pt">Relatório</text>
+		<text lang="fi">Raportti</text>
     </entry>
     <entry key="calendar_settings">
         <text lang="en">Calendar settings</text>
@@ -1297,6 +1399,7 @@ See French text.
         <text lang="nl">Kalender instellingen</text>
         <text lang="pl">Ustawienia Kalendarza</text>
 		<text lang="pt">Configurações do Calendário</text>
+		<text lang="fi">Kalenterin asetukset</text>
     </entry>
     <entry key="search">
         <text lang="en">Search</text>
@@ -1307,6 +1410,7 @@ See French text.
         <text lang="nl">Opzoeken</text>
         <text lang="pl">Szukaj</text>
 		<text lang="pt">Buscar</text>
+		<text lang="fi">Etsi</text>
     </entry>
     <entry key="select">
         <text lang="en">Select</text>
@@ -1317,6 +1421,7 @@ See French text.
         <text lang="nl">Selecteer</text>
         <text lang="pl">Wybierz</text>
 		<text lang="pt">Selecionar</text>
+		<text lang="fi">Valitse</text>
     </entry>
     <entry key="selected">
         <text lang="en">Selected</text>
@@ -1327,6 +1432,7 @@ See French text.
         <text lang="nl">Geselecteerd</text>
         <text lang="pl">Wybrane</text>
 		<text lang="pt">Selecionado</text>
+		<text lang="fi">Valittu</text>
     </entry>
     <entry key="selection">
         <text lang="en">Selection</text>
@@ -1337,6 +1443,7 @@ See French text.
         <text lang="nl">Selecteer voorkeur</text>
         <text lang="pl">Wybór</text>
 		<text lang="pt">Seleção</text>
+		<text lang="fi">Valinta</text>
     </entry>
     <entry key="source">
         <text lang="en">Source</text>
@@ -1347,6 +1454,7 @@ See French text.
         <text lang="nl">Van</text>
         <text lang="pl">Źródło</text>
 		<text lang="pt">Fonte</text>
+		<text lang="fi">Lähde</text>
     </entry>
     <entry key="start_time">
         <text lang="en">Start time</text>
@@ -1357,6 +1465,7 @@ See French text.
         <text lang="nl">van</text>        
         <text lang="pl">Czas rozpoczęcia</text>
 		<text lang="pt">Hora de início</text>		
+		<text lang="fi">Aloitusaika</text>
 		
     </entry>
     <entry key="start_date">
@@ -1368,6 +1477,7 @@ See French text.
         <text lang="nl">Start</text>        
         <text lang="pl">Początek</text>
 		<text lang="pt">Início</text>        
+        <text lang="fi">Aloitus</text>
     </entry>
     <entry key="table">
         <text lang="en">Table</text>
@@ -1378,6 +1488,7 @@ See French text.
         <text lang="nl">Lijst</text>
         <text lang="pl">Tabela</text>
 		<text lang="pt">Tabela</text>
+		<text lang="fi">Taulukko</text>
     </entry>
     <entry key="today">
         <text lang="en">Today</text>
@@ -1388,6 +1499,7 @@ See French text.
         <text lang="nl">Vandaag</text>
         <text lang="pl">Dziś</text>
 		<text lang="pt">Hoje</text>
+		<text lang="fi">Tänään</text>
     </entry>
     <entry key="time_at">
         <text lang="en">at</text>
@@ -1408,6 +1520,7 @@ See French text.
         <text lang="nl">tot</text>
         <text lang="pl">do</text>
         <text lang="pt">Até</text>        
+		<text lang="fi">kunnes</text>
     </entry>
     <entry key="total_occurances">
         <text lang="en">Total occurances</text>
@@ -1418,6 +1531,7 @@ See French text.
         <text lang="nl">Totaal aantal</text>
         <text lang="pl">Suma wystąpień</text>
 		<text lang="pt">Total de ocorrências</text>
+		<text lang="fi">Esiintymiä yhteensä</text>
     </entry>
     <entry key="translation">
         <text lang="en">Translation</text>
@@ -1428,6 +1542,7 @@ See French text.
         <text lang="nl">Vertaling</text>
         <text lang="pl">Tłumaczenie</text>
 		<text lang="pt">Tradução</text>
+		<text lang="fi">Käännös</text>
     </entry>
     <entry key="width">
         <text lang="en">Width</text>
@@ -1438,6 +1553,7 @@ See French text.
         <text lang="nl">Breedte</text>
         <text lang="pl">Szerokość</text>
 		<text lang="pt">Largura</text>
+		<text lang="fi">Leveys</text>
     </entry>
     <entry key="yes">
         <text lang="en">Yes</text>
@@ -1448,6 +1564,7 @@ See French text.
         <text lang="nl">Ja</text>
         <text lang="pl">Tak</text>
 		<text lang="pt">Sim</text>
+		<text lang="fi">Kyllä</text>
     </entry>
     <entry key="x_days_advance">
         <text lang="en">x Days in advance</text>
@@ -1458,6 +1575,7 @@ See French text.
         <text lang="nl">x dagen op voorhand</text>
         <text lang="pl">x dni wcześniej</text>
 		<text lang="pt">x Dias antes</text>
+		<text lang="fi">x Päivää etukäteen</text>
     </entry>
     <entry key="server">
         <text lang="en">Server</text>
@@ -1468,6 +1586,7 @@ See French text.
         <text lang="nl">Server</text>
         <text lang="pl">Serwer</text>
 		<text lang="pt">Servidores</text>
+		<text lang="fi">Palvelin</text>
     </entry>
     <entry key="file">
         <text lang="en">File</text>
@@ -1478,6 +1597,7 @@ See French text.
         <text lang="nl">Bestand</text>
         <text lang="pl">Plik</text>
 		<text lang="pt">Arquivo</text>
+		<text lang="fi">Tiedosto</text>
     </entry>
     <entry key="with">
         <text lang="en">with</text>
@@ -1499,6 +1619,7 @@ See French text.
         <text lang="nl">Waarschuwingen</text>
         <text lang="pl">poszlaka</text>
 		<text lang="pt">advertencias</text>
+		<text lang="fi">varoitukset</text>
     </entry>
 
     <!-- Warnings -->
@@ -1511,6 +1632,7 @@ See French text.
         <text lang="nl">WAARSCHUWING: Conflict gevonden!</text>
         <text lang="pl">UWAGA: Wykryto konflikt!</text>
 		<text lang="pt">Atenção: Conflitos encontrados!</text>
+		<text lang="fi">VAROITUS: Ristiriitoja löydetty!</text>
     </entry>
     <entry key="warning.duplicated_appointments">
         <text lang="en">WARNING: The same appointment exists multiple times [{0}]!</text>
@@ -1521,6 +1643,7 @@ See French text.
         <text lang="nl">WAARSCHUWING: Dezelfde afspraak bestaat meerdere keren: [{0}]!</text>
         <text lang="pl">UWAGA: Ten sam termin występuje kilkukrotnie [{0}]!</text>
 		<text lang="pt">Atenção: Compromisso duplicado [{0}]!</text>
+		<text lang="fi">VAROITUS: Sama ajanvaraus esiintyy useita kertoja [{0}]!</text>
 
     </entry>
     <entry key="warning.no_reserve_permission">
@@ -1532,6 +1655,7 @@ See French text.
         <text lang="nl">Plannen of wijzigen van [{0}] in reservatie [{1}] is niet toegestaan!</text>
         <text lang="pl">Nie masz uprawnień do zmiany/ustalenia [{0}] terminu [{1}]! </text>
 		<text lang="pt">Você não tem permissão para reservar/modificar [{0}] um compromisso [{1}]!</text>
+		<text lang="fi">Sinulla ei ole oikeuksia varata/muuttaa [{0}] ajanvarausta [{1}]!</text>
     </entry>
     <entry key="error.modify_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to modify the object ''{1}''.</text>
@@ -1542,11 +1666,13 @@ See French text.
         <text lang="nl">Gebruiker ''{0}'' is niet gemachtigd om object ''{1}'' te wijzigen.</text>
         <text lang="pl">Użytkownikowi ''{0}'' nie wolno modyfikować obiektu ''{1}''.</text>
 		<text lang="pt">Usuário ''{0}'' sem permissão para modificar o objeto ''{1}''.</text>
+		<text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa muuttaa kohdetta ''{1}''.</text>
     </entry>
         <entry key="error.admin_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to administer the object ''{1}''.</text>
         <text lang="de">Benutzer ''{0}'' hat keine Adminberechtigung für das Objekt ''{1}''.</text>
         <text lanf="fr">L'utilisateur ''{0}'' n'est pas administrateur de l'objet ''{1}''.</text>
+        <text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa hallinnoida kohdetta ''{1}''.</text>
     </entry>
     <entry key="error.read_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to read the object ''{1}''.</text>
@@ -1557,6 +1683,7 @@ See French text.
         <text lang="nl">Gebruiker ''{0}'' is niet gemachtigd om object ''{1}'' te lezen.</text>
         <text lang="pl">Użytkownikowi ''{0}'' nie wolno odczytać obiektu ''{1}''.</text>
 		<text lang="pt">Usuário ''{0}'' sem permissão para ler o objeto ''{1}''.</text>
+		<text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa lukea kohdetta ''{1}''.</text>
     </entry>
     <entry key="error.create_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to create the object ''{1}''.</text>
@@ -1567,6 +1694,7 @@ See French text.
         <text lang="nl">Gebruiker ''{0}'' is niet gemachtigd om object ''{1}'' aan te maken.</text>
         <text lang="pl">Użytkownikowi ''{0}'' nie wolno utworzyć obiektu ''{1}''.</text>
 		<text lang="pt">Usuário ''{0}'' sem permissão para criar o objeto ''{1}''.</text>
+		<text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa luoda kohdetta ''{1}''.</text>
     </entry>
     <entry key="warning.no_conflict_permission">
         <text lang="en">You have no permissions to create conflicts for [{0}]!</text>
@@ -1577,6 +1705,7 @@ See French text.
         <text lang="nl">Aanmaken van conflicten voor [{0}], is niet toegestaan!</text>
         <text lang="pl">Nie masz uprawnień do tworzenia konfliktów w [{0}]!</text>
 		<text lang="pt">Você não tem permissão para criar conflitos para [{0}]!</text>
+		<text lang="fi">Sinulla ei ole lupaa luoda ristiriitoja [{0}]:lle!</text>
     </entry>
     <entry key="warning.period_shorter_than_week">
         <text lang="en">Period is shorter than 1 week!</text>
@@ -1587,6 +1716,7 @@ See French text.
         <text lang="nl">Periode minder dan 1 week!</text>
         <text lang="pl">Okres jest krótszy niż 1 tydzień!</text>
         <text lang="pt">Período é menor que 1 semana!</text>
+		<text lang="fi">Ajanjakso on lyhyempi kuin 1 viikko!</text>
     </entry>
     <entry key="warning.reservation.update">
         <text lang="en">The event you are editing has been changed.
@@ -1604,6 +1734,8 @@ See French text.
     Dane w tym oknie zostaną zaktualizowane.</text>
 		<text lang="pt">O evento que você está editando foi alterado.
 	Os dados exibidos nesta janela serão atualizados.</text>	
+	    <text lang="fi">Tapahtumaa jota muokkaat, on muutettu.
+    Tässä ikkunassa näkyvät tiedot päivitetään.</text>
         
     </entry>
     <entry key="warning.reservation.delete">
@@ -1616,6 +1748,7 @@ See French text.
         <text lang="nl">De reservatie die je bewerkt, werd verwijderd.</text>
         <text lang="pl">Edytowane wydarzenie zostało usunięte.</text>
         <text lang="pt">O evento que você está editando foi excluído.</text>	
+        <text lang="fi">Tapahtuma jota muokkaat on poistettu.</text>		
     </entry>
     <entry key="warning.no_allocatables_selected">
         <text lang="en">You have not selected any resources/persons!</text>
@@ -1626,6 +1759,7 @@ See French text.
         <text lang="nl">Er zijn geen personen / middelen geselecteerd!</text>
         <text lang="pl">Nie wybrano żadnych zasobów/osób!</text>
 		<text lang="pt">Você não selecionou quaisquer recursos/pessoas!</text>	
+        <text lang="fi">Et ole valinnut yhtään resurssia/henkilöä!</text>		
         
     </entry>
     <entry key="warning.update">
@@ -1644,6 +1778,8 @@ See French text.
     Obecne zmiany zostaną porzucone.</text>
 		<text lang="pt">O objeto &quot;{0}&quot; que você está editando foi alterado em outra janela.
     A edição atual será cancelada.</text>	
+	    <text lang="fi">Kohdetta &quot;{0}&quot; jota muokkaat, on muutettu tämän ikkunan ulkopuolella.
+    Nykyinen muokkaus keskeytetään.</text>
     </entry>
     <!-- Errors -->
     <entry key="error.login">
@@ -1655,6 +1791,7 @@ See French text.
         <text lang="nl">Aanmelding geweigerd!</text>
         <text lang="pl">Błąd logowania!</text> 
 		<text lang="pt">Falha no login</text>		
+        <text lang="fi">Kirjautuminen epäonnistui!</text>		
     </entry>
         <entry key="error.connect">
         <text lang="en">Connection to [{0}] failed! Maybe the host is down and you could try later!</text>
@@ -1665,6 +1802,7 @@ See French text.
         <text lang="nl">Verbinding met [{0}] is verbroken, de server is niet beschikbaar, contacteer de Rapla beheerder of probeer later!</text>
         <text lang="pl">Nie udało się połączyć z {0}! Być może host jest wyłączony. Spróbuj ponownie później.</text>
 		<text lang="pt">Conexão para [{0}] falhou! O servidor pode não estar disponível. Tente mais tarde!</text>
+		<text lang="fi">Yhteys [{0}] epäonnistui! Isäntäpalvelin on ehkä kaatunut. Yritä uudestaan myöhemmin!</text>
     </entry>
     <entry key="error.connection_closed">
         <text lang="en">No or closed connection to [{0}]. Rapla is restarting.</text>
@@ -1675,6 +1813,7 @@ See French text.
         <text lang="nl">Geen of een gesloten connectie naar [{0}]. Rapla opnieuw opstart.</text>
         <text lang="pl">Brak lub utracone połączenie z {0}. Rapla zostanie uruchomiona ponownie.</text>
 		<text lang="pt">Sem conexão para [{0}]. Rapla está reiniciando.</text>
+		<text lang="fi">Ei yhteyttä tai yhteys katkaistu [{0}]. Rapla käynnistyy uudelleen.</text>
     </entry>
     <entry key="error.one_type_requiered">
         <text lang="en">At least one type is required.</text>
@@ -1685,6 +1824,7 @@ See French text.
         <text lang="nl">Minimaal 1 persoon/middel map is vereist.</text>
         <text lang="pl">Przynajmniej jeden typ jest wymagany.</text>
         <text lang="pt">Pelo menos um tipo é obrigatório.</text>
+		<text lang="fi">Vähintään yksi tyyppi vaaditaan.</text>
     </entry>
     <entry key="error.no_reservation_name">
         <text lang="en">You have to enter a title for your event!</text>
@@ -1695,6 +1835,7 @@ See French text.
         <text lang="nl">Een titel opgeven voor de reservatie!</text>
         <text lang="pl">Podaj nazwę dla wydarzenia!</text>
         <text lang="pt">Você deve fornecer um título para o evento!</text>
+		<text lang="fi">Tapahtumalle täytyy antaa otsikko!</text>
     </entry>
     <entry key="error.no_name">
         <text lang="en">You need to provide a name!</text>
@@ -1705,6 +1846,7 @@ See French text.
         <text lang="nl">Je moet een naam opgeven!</text>
         <text lang="pl">Wpisz nazwę!</text>
 		<text lang="pt">Você deve fornecer um nome!</text>        
+        <text lang="fi">Sinun täytyy tarjota nimi!</text>        
     </entry>
     <entry key="error.no_admin">
         <text lang="en">You need to provide at least 1 administrator name!</text>
@@ -1715,6 +1857,7 @@ See French text.
         <text lang="nl">Rapla vereist minstens 1 administrator!</text>              
         <text lang="pl">Rapla wymaga co najmniej 1 nazwy administratora!</text>       
 		<text lang="pt">Você deve fornecer pelo menos 1 administrador!</text>		
+        <text lang="fi">Sinun täytyy tarjota ainakin 1 ylläpitäjän nimi!</text>		
     </entry>
     <entry key="error.no_entry_for">
         <text lang="en">You need to provide an entry for: {0}</text>
@@ -1725,6 +1868,7 @@ See French text.
         <text lang="nl">Je moet de gegevens opgeven voor: {0}</text>
         <text lang="pl">Musisz podać pozycję w: {0}</text>
         <text lang="pt">Você deve fornecer uma entrada para: {0}</text>
+		<text lang="fi">Sinun täytyy tarjota merkintä: {0}</text>
     </entry>
     <entry key="error.no_key">
         <text lang="en">You need to provide a key: {0}</text>
@@ -1735,6 +1879,7 @@ See French text.
         <text lang="nl">Een sleutel is verplicht: {0}</text>
         <text lang="pl">Musisz podać klucz: {0}</text>
 		<text lang="pt">Você deve fornecer uma chave para: {0}</text>
+		<text lang="fi">Sinun täytyy tarjota avain: {0}</text>
     </entry>
     <entry key="error.invalid_key">
         <text lang="en">&quot;{0}&quot; is not a valid key!
@@ -1765,6 +1910,10 @@ See French text.
 		<text lang="pt">&quot;{0}&quot; não é uma chave válida!
 		Nota: Você pode usar apenas uma combinação de, no máximo, 50 letras, números ou 
 		um dos seguintes caracteres {1}. A chave deve começar com {2} ou uma letra!</text>
+		<text lang="fi">&quot;{0}&quot; ei ole pätevä avain!
+            Huom: Voit käyttää ainoastaan 50:n kirjaimen, numeron tai seuraavien merkkien yhdistelmää 
+            {1}. Avaimen täytyy alkaa {2} tai kirjaimella! Esim: huone_koko
+        </text>
     </entry>
     <entry key="error.no_appointment">
         <text lang="en">An event has to consist of at least one appointment!</text>
@@ -1775,6 +1924,7 @@ See French text.
         <text lang="nl">Een event moet ten minste 1 reservatie hebben!</text>
         <text lang="pl">Wydarzenie musi mieć choć jeden termin.</text>
 		<text lang="pt">Um evento consiste de, no mínimo, um compromisso!</text>
+		<text lang="fi">Tapahtuman täytyy muodostua vähintään yhdestä ajanvarauksesta!</text>
     </entry>
     <entry key="error.dependencies">
         <text lang="en">Dependencies exist for these objects</text>
@@ -1785,6 +1935,7 @@ See French text.
         <text lang="nl">Afhankelijkheden bestaan voor deze referentie</text>
         <text lang="pl">Istnieją zależności dla tych obiektów</text>
 		<text lang="pt">Existem dependências para este objetos</text>
+		<text lang="fi">Näillä kohteilla on riippuvuuksia</text>
     </entry>
     <entry key="error.not_unique">
         <text lang="en">The name &quot;{0}&quot; is already
@@ -1797,6 +1948,8 @@ See French text.
         <text lang="nl">De naam &quot;{0}&quot; is reeds in gebruik. Kies een andere naam!</text>
         <text lang="pl">Nazwa &quot;{0}&quot; jest już zajęta. Wybierz inną.</text>
 		<text lang="pt">O nome &quot;{0}&quot; já está sendo usado. Favor escolha um nome diferente!</text>
+		<text lang="fi">Nimi &quot;{0}&quot; on jo
+     varattu. Valitse toinen nimi!</text>
     </entry>
     <entry key="error.new_version">
         <text lang="en">The object {0} couldn''t be modified. It was recently modified by someone else.
@@ -1812,6 +1965,8 @@ See French text.
         <text lang="pl">Nie można zmodyfikować {0}. Obiekt został niedawno zmieniony przez inną osobę. Istnieje nowsza wersja obiektu w pamięci.</text>
 		<text lang="pt">O objeto {0} não pode ser modificado. Recentemente foi modificado por alguém.
 		Existe uma versão mais recente armazenada.</text>
+		<text lang="fi">Kohdetta {0} ei voitu muokata. Joku toinen on hiljattain muokannut sitä
+    ja siitä löytyi uudempi versio.</text>
     </entry>
     <entry key="error.wrong_rapla_version">
        <text lang="de">Aktuallisieren Sie die Rapla-Version {0} auf {1}. Nutzen Sie den Webstart-Link auf {2}</text>
@@ -1827,6 +1982,7 @@ See French text.
         <text lang="nl">De paswoorden verschillen!</text>
         <text lang="pl">Hasła nie zgadzają się!</text>
 		<text lang="pt">As senhas são diferentes!</text>
+		<text lang="fi">Salasanat eivät vastaa toisiaan!</text>
     </entry>
     <entry key="error.wrong_password">
         <text lang="en">Wrong password!</text>
@@ -1837,6 +1993,7 @@ See French text.
         <text lang="nl">Verkeerd paswoord!</text>
         <text lang="pl">Błędne hasło!</text>
 		<text lang="pt">Senha incorreta!</text>
+		<text lang="fi">Väärä salasana!</text>
     </entry>
     <entry key="error.cant_delete_your_account">
         <text lang="en">You can''t delete [{0}], because you are currently using this account!</text>
@@ -1847,6 +2004,7 @@ See French text.
         <text lang="nl">Je kan [{0}] niet verwijderen,omdat je deze momenteel in gebruik hebt!</text>
         <text lang="pl">Nie możesz usunąć [{0}], ponieważ obecnie używasz tego konta!</text>
 		<text lang="pt">Você não pode excluir [{0}], porque você está usando esta conta!</text>
+		<text lang="fi">Et voi poistaa [{0}], koska käytät tiliä parhaillaan!</text>
     </entry>
     <entry key="error.rollback">
         <text lang="en">Database update failed. All changes were canceled.</text>
@@ -1861,6 +2019,7 @@ See French text.
         <text lang="nl">Wijzigen niet mogelijk. Probeer later nogmaals.</text>
         <text lang="pl">Błąd aktualizacji bazy. Wszystkie zmiany zostały utracone.</text>
 		<text lang="pt">Falha ao atualizar banco de dados. Todas as modificações foram cancelas.</text>
+		<text lang="fi">Tietokannan päivitys epäonnistui. Kaikki muutokset ovat peruuntuneet.</text>
     </entry>
     <entry key="error.no_rollback">
         <text lang="en">Error! Database update failed. Because
@@ -1886,6 +2045,10 @@ See French text.
 	 ze swoim administratorem!</text>
 	   <text lang="pt">Erro! Atualização no banco de dados falhou, porque seu banco de dados não suporta transações que poderiam levar a falhas graves.
 		Por favor, contate imediatamente o administrador.</text>
+		<text lang="fi">Virhe! Tietokannan päivitys epäonnistui. Koska
+     tietokantasi ei tue transaktioita, se voi johtaa
+     vakaviin vikoihin. Ota heti yhteyttä ylläpitäjään!
+     immediately!</text>
     </entry>
     <entry key="error.reference_not_stored">
         <text lang="en">Error! Referenced object [{0}] not found in store. It was probably recently removed.</text>
@@ -1896,6 +2059,7 @@ See French text.
         <text lang="nl">Fout! Gevraagd object [{0}] niet gevonden. Waarschijnlijk recentelijk verwijderd.</text>
         <text lang="pl">Nie można znaleźć obiektu [{0}]. Prawdopodobnie został niedawno usunięty.</text>
 		<text lang="pt">Erro! Objeto referenciado [{0}] não foi encontrado na base. Provavelmente foi removido recentemente.</text>
+		<text lang="fi">Virhe! Viitattua kohdetta [{0}] ei löytynyt tallennettuna. Se on varmaankin poistettu lähiaikoina.</text>
     </entry>
     <!-- Dynamic types -->
     <entry key="choose_root_category">
@@ -1906,6 +2070,7 @@ See French text.
         <text lang="cs">Vyber hlavní kategorii:</text>
         <text lang="pl">Wybierz kategorię główną (korzeń):</text>
 		<text lang="pt">Escolha a categoria principal:</text>
+		<text lang="fi">Valitse juurikategoria:</text>
     </entry>
     <entry key="dynamictype">
         <text lang="en">Type</text>
@@ -1916,6 +2081,7 @@ See French text.
         <text lang="nl">Folder</text>
         <text lang="pl">Typ</text>
 		<text lang="pt">Tipo</text>
+		<text lang="fi">Tyyppi</text>
     </entry>
     <entry key="dynamictype.name">
         <text lang="en">Type name</text>
@@ -1926,6 +2092,7 @@ See French text.
         <text lang="nl">Naam folder</text>
         <text lang="pl">Nazwa typu</text>
 		<text lang="pt">Nome do tipo</text>
+		<text lang="fi">Tyypin nimi</text>
     </entry>
     <entry key="dynamictype.annotation.nameformat.description">
         <text lang="en">Enclose the key names in {} to insert attributes, e.g. {myKey}</text>
@@ -1936,6 +2103,7 @@ See French text.
         <text lang="nl">Sleutelnamen tussen {} plaatsen; {[function(]name[,arg0,arg1)]} function = substring, key, parent</text>
         <text lang="pl">Nazwy klucza powinny znajdować się w {} np. {mójKlucz}.</text>
 		<text lang="pt">Coloque as chaves entre {} para inserir atributos, por exemplo {chave}</text>
+		<text lang="fi">Laita avainten nimien ympärille {} asettaaksesi attribuutteja, esim: {minunAvain}</text>
     </entry>
     <entry key="dynamictype.annotation.nameformat">
         <text lang="en">Displayed name format</text>
@@ -1946,6 +2114,7 @@ See French text.
         <text lang="nl">Titel formaat</text>
         <text lang="pl">Format wyświetlanej nazwy</text>
 		<text lang="pt">Formato de exibição do nome</text>
+		<text lang="fi">Nimen muotoilu</text>
     </entry>
     
     <entry key="attribute_color_dialog">
@@ -1955,6 +2124,7 @@ See French text.
         <text lang="nl">Een kleur attribuut is nodig voor deze instelling. Wil je deze nu definiëren?</text>
         <text lang="pl">Potrzebujesz koloru atrybutu do tego ustawienia. Chesz go stworzyć?</text>
 		<text lang="pt">Você precisa de uma atributo de cor para esta definição! Você deseja criá-lo?</text>
+		<text lang="fi">Tarvitset väriattribuutin tälle asetukselle. Haluatko luoda sen?</text>
     </entry>
     <entry key="color.no">
         <text lang="en">No color selection</text>
@@ -1965,6 +2135,7 @@ See French text.
         <text lang="nl">Geen kleur selectie</text>
         <text lang="pl">Brak wyboru koloru</text>
 		<text lang="pt">Nenhuma cor selecionada</text>
+		<text lang="fi">Ei värivalintaa</text>
 
     </entry>
     <entry key="color.automated">
@@ -1976,6 +2147,7 @@ See French text.
         <text lang="nl">Automatische kleur selectie</text>
         <text lang="pl">Automatyczny wybór koloru</text>
 		<text lang="pt">Seleção de cor automática</text>
+		<text lang="fi">Automaattinen värin valinta</text>
     </entry>
     <entry key="color.manual">
         <text lang="en">attribute preference "color"</text>
@@ -1986,6 +2158,7 @@ See French text.
         <text lang="nl">Attribuut Voorkeuren "color"</text>
         <text lang="pl">Atrybut Preferencje "color"</text>
 		<text lang="pt">Atributo Preferências "color"</text>
+		<text lang="fi">Attribuutti-valinta "color"</text>
     </entry>
     <entry key="type">
         <text lang="en">Type</text>
@@ -1996,6 +2169,7 @@ See French text.
         <text lang="nl">Type</text>
         <text lang="pl">Typ</text>
 		<text lang="pt">Tipo</text>
+		<text lang="fi">Tyyppi</text>
     </entry>
     <entry key="types">
         <text lang="en">Types</text>
@@ -2006,6 +2180,7 @@ See French text.
         <text lang="nl">Types</text>
         <text lang="pl">Typy</text>
 		<text lang="pt">Tipos</text>
+		<text lang="fi">Tyypit</text>
     </entry>
     <!-- Basic types -->
     <entry key="type.boolean">
@@ -2017,6 +2192,7 @@ See French text.
         <text lang="nl">Ja|Neen</text>
         <text lang="pl">Tak|Nie</text>
 		<text lang="pt">Sim|Não</text>
+		<text lang="fi">Kyllä|Ei</text>
     </entry>
     <entry key="type.rapla:category">
         <text lang="en">Category</text>
@@ -2027,6 +2203,7 @@ See French text.
         <text lang="nl">Klassement</text>
         <text lang="pl">Kategoria</text>
 		<text lang="pt">Categoria</text>
+		<text lang="fi">Kategoria</text>
     </entry>
     <entry key="type.rapla:allocatable">
         <text lang="en">Resource</text>
@@ -2037,6 +2214,7 @@ See French text.
         <text lang="nl">Middel</text>        
         <text lang="pl">Zasób</text>
 		<text lang="pt">Recurso</text>
+		<text lang="fi">Resurssi</text>
     </entry>
     <entry key="type.date">
         <text lang="en">Date</text>
@@ -2047,6 +2225,7 @@ See French text.
         <text lang="nl">Datum</text>
         <text lang="pl">Data</text>
 		<text lang="pt">Data</text>
+		<text lang="fi">Päivämäärä</text>
     </entry>
     <entry key="type.int">
         <text lang="en">Integer</text>
@@ -2057,6 +2236,7 @@ See French text.
         <text lang="nl">Getal</text>
         <text lang="pl">Liczba całkowita</text>
 		<text lang="pt">Inteiro</text>
+		<text lang="fi">Kokonaisluku</text>
     </entry>
     <entry key="type.string">
         <text lang="en">Text</text>
@@ -2067,6 +2247,7 @@ See French text.
         <text lang="nl">Tekst</text>
         <text lang="pl">Tekst</text>
 		<text lang="pt">Texto</text>
+		<text lang="fi">Teksti</text>
     </entry>
     <entry key="edit-view">
         <text lang="en">Edit View</text>
@@ -2077,6 +2258,7 @@ See French text.
         <text lang="nl">Toon als</text>
         <text lang="pl">Widok edycji</text>
 		<text lang="pt">Tela de edição</text>
+		<text lang="fi">Muokkaa näkymää</text>
     </entry>
     <entry key="main-view">
         <text lang="en">Main View</text>
@@ -2087,6 +2269,7 @@ See French text.
         <text lang="nl">Hoofd informatie</text>        
         <text lang="pl">Widok główny</text>
 		<text lang="pt">Tela principal</text>
+		<text lang="fi">Päänäkymä</text>
     </entry>
     <entry key="additional-view">
         <text lang="en">Additional Information</text>
@@ -2097,6 +2280,7 @@ See French text.
         <text lang="nl">Extra informatie</text>       
         <text lang="pl">Dodatkowe informacje</text>
 		<text lang="pt">Informação adicional</text>
+		<text lang="fi">Lisätiedot</text>
     </entry>
     <entry key="no-view">
         <text lang="en">invisible</text>
@@ -2107,6 +2291,7 @@ See French text.
         <text lang="nl">Onzichtbare info</text>
         <text lang="pl">niewidoczny</text>
         <text lang="pt">invisível</text>
+		<text lang="fi">näkymätön</text>
     </entry>
     <entry key="expected-rows">
         <text lang="en">Expected rows</text>
@@ -2117,6 +2302,7 @@ See French text.
         <text lang="nl">Aantal rijen</text>
         <text lang="pl">Liczba oczekiwanych wierszy</text>
 		<text lang="pt">Número de linhas</text>
+		<text lang="fi">Rivien lukumäärä</text>
     </entry>
 
     <entry key="expected-columns">
@@ -2127,6 +2313,7 @@ See French text.
         <text lang="nl">Aantal kolommen</text>
         <text lang="pl">Liczba oczekiwanych kolumn</text>
 		<text lang="pt">Número de colunas</text>
+		<text lang="fi">Sarakkeiden lukumäärä</text>
     </entry>
 
     <!-- User -->
@@ -2139,6 +2326,7 @@ See French text.
         <text lang="nl">Gebruiker</text>
         <text lang="pl">Użytkownik</text>
 		<text lang="pt">Usuário</text>
+		<text lang="fi">Käyttäjä</text>
     </entry>
     <entry key="users">
         <text lang="en">Users</text>
@@ -2149,6 +2337,7 @@ See French text.
         <text lang="nl">Gebruikers</text>
         <text lang="pl">Użytkownicy</text>
 		<text lang="pt">Usuários</text>
+		<text lang="fi">Käyttäjät</text>
     </entry>
     <entry key="switch_to">
         <text lang="en">Switch to</text>
@@ -2159,6 +2348,7 @@ See French text.
         <text lang="nl">Aanmelden als</text>
         <text lang="pl">Przełącz na</text>
 		<text lang="pt">Mudar para</text>
+		<text lang="fi">Vaihda</text>
     </entry>
     <entry key="switch_back">
         <text lang="en">switch back</text>
@@ -2169,6 +2359,7 @@ See French text.
         <text lang="nl">Naar vorige gebruiker</text>
         <text lang="pl">Przełącz z powrotem</text>
 		<text lang="pt">Voltar</text>
+		<text lang="fi">vaihda takaisin</text>
     </entry>
     <entry key="username">
         <text lang="en">Username</text>
@@ -2179,6 +2370,7 @@ See French text.
         <text lang="nl">Gebruiker</text>
         <text lang="pl">Nazwa użytkownika</text>
 		<text lang="pt">Nome de usuário</text>
+		<text lang="fi">Käyttäjänimi</text>
     </entry>
      <entry key="bind_with_person">
         <text lang="en">bind with person</text>
@@ -2188,6 +2380,7 @@ See French text.
         <text lang="nl">Verbinden met persoon</text>
         <text lang="pl">Sklej z osobą</text>
  		<text lang="pt">ligar com pessoa</text>
+		<text lang="fi">kytkeydy henkilöön</text>
     </entry>
     <entry key="admin">
         <text lang="en">Administrator</text>
@@ -2198,6 +2391,7 @@ See French text.
         <text lang="nl">Beheerder</text>
         <text lang="pl">Administrator</text>
 		<text lang="pt">Administrador</text>
+		<text lang="fi">Ylläpitäjä</text>
     </entry>
     <entry key="admin.login">
         <text lang="en">You have adminstrator privileges!</text>
@@ -2208,6 +2402,7 @@ See French text.
         <text lang="nl">Beheerder</text>
         <text lang="pl">Masz uprawnienia administratora!</text>
 		<text lang="pt">Você tem privilégios de administrador</text>
+		<text lang="fi">Sinulla on ylläpitäjän oikeudet!</text>
     </entry>
     <entry key="administration">
         <text lang="en">Administration</text>
@@ -2218,6 +2413,7 @@ See French text.
         <text lang="nl">Systeem beheer</text>
         <text lang="pl">Administracja</text>
 		<text lang="pt">Administração</text>
+		<text lang="fi">Ylläpito</text>
     </entry>
     <entry key="password">
         <text lang="en">Password</text>
@@ -2228,6 +2424,7 @@ See French text.
         <text lang="nl">Paswoord</text>
         <text lang="pl">Hasło</text>
 		<text lang="pt">Senha</text>
+		<text lang="fi">Salasana</text>
     </entry>
     <entry key="old_password">
         <text lang="en">Old password</text>
@@ -2238,6 +2435,7 @@ See French text.
         <text lang="nl">Oud paswoord</text>
         <text lang="pl">Stare hasło</text>
 		<text lang="pt">Senha antiga</text>
+		<text lang="fi">Vanha salasana</text>
     </entry>
     <entry key="new_password">
         <text lang="en">New password</text>
@@ -2248,6 +2446,7 @@ See French text.
         <text lang="nl">Nieuw paswoord</text>
         <text lang="pl">Nowe hasło</text>
 		<text lang="pt">Senha nova</text>
+		<text lang="fi">Uusi salasana</text>
     </entry>
     <entry key="password_verification">
         <text lang="en">Password verification</text>
@@ -2258,6 +2457,7 @@ See French text.
         <text lang="nl">Paswoord controle</text>
         <text lang="pl">Weryfikacja hasła</text>
 		<text lang="pt">Verificação de senha</text>
+		<text lang="fi">Salasanan vahvistus</text>
     </entry>
     
       <!-- UserOptions Personal Options -->
@@ -2268,6 +2468,7 @@ See French text.
     	<text lang="nl">Wijzig email</text>
     	<text lang="pl">Zmień e-mail</text>
 		<text lang="pt">Alterar e-mail</text>
+		<text lang="fi">Vaihda sähköpostiosoitetta</text>
     </entry>
     <entry key="send_code">
     	<text lang="en">send code</text>
@@ -2276,6 +2477,7 @@ See French text.
     	<text lang="nl">Verzend beveiligingscode</text>
         <text lang="pl">Wyślij kod</text>
 		<text lang="pt">Enviar código</text>
+		<text lang="fi">lähetä koodi</text>
     </entry>
     <entry key="code_validate">
     	<text lang="en">validate</text>
@@ -2284,6 +2486,7 @@ See French text.
     	<text lang="nl">Valideer</text>
     	<text lang="pl">Weryfikuj</text>
 		<text lang="pt">Validar</text>
+		<text lang="fi">validoi</text>
     </entry>
     <entry key="new_mail">
     	<text lang="en">New email: </text>
@@ -2292,6 +2495,7 @@ See French text.
     	<text lang="nl">Nieuw email adres: </text>
     	<text lang="pl">Nowy e-mail: </text>
 		<text lang="pt">Novo e-mail</text>
+		<text lang="fi">Uusi sähköpostiosoite:</text>
     </entry>
     <entry key="security_code">
     	<text lang="en">Securitycode: </text>
@@ -2300,6 +2504,7 @@ See French text.
     	<text lang="nl">Beveiligingscode: </text>
     	<text lang="pl">Kod zabezpieczający: </text>
 		<text lang="pt">Código de segurança</text>
+		<text lang="fi">Turvakoodi:</text>
     </entry>
     <entry key="code_message1">
     	<text lang="en">(A security code will be sent</text>
@@ -2307,6 +2512,7 @@ See French text.
         <text lang="fr">(Un code de sécurité va être envoyé</text>
    		<text lang="pl">(Kod zabezpieczający zostanie wysłany</text>
 		<text lang="pt">(Um código de segurança será enviado</text>
+		<text lang="fi">(Turvakoodi lähetetään</text>
     </entry>
     <entry key="code_message2">
     	<text lang="en">to the email-adress stated besides.)</text>
@@ -2314,6 +2520,7 @@ See French text.
         <text lang="fr">à l'adresse indiquée.)</text>
    	  	<text lang="pl">na adres e-mail podany obok.)</text>
 		<text lang="pt">para o e-mail indicado ao lado.)</text>
+		<text lang="fi">ilmoitettuun sähköpostiosoitteeseen.)</text>
     </entry>
     <entry key="code_message3">
     	<text lang="en">Please enter the received code here:</text>
@@ -2322,6 +2529,7 @@ See French text.
     	<text lang="nl">Ontvangen beveiligingscode:</text>
    		<text lang="pl">Podaj otrzymany kod zabezpieczający:</text>
 		<text lang="pt">Digite o código recebido aqui:</text>
+		<text lang="fi">Kirjoita saatu koodi tähän:</text>
     </entry>
     <entry key="send_code_mail_body_1">
     	<text lang="en">Dear user </text>
@@ -2330,6 +2538,7 @@ See French text.
     	<text lang="nl">Beste </text>
    		<text lang="pl">Drogi Użytkowniku </text>
 		<text lang="pt">Caro usuário</text>
+		<text lang="fi">Hyvä käyttäjä</text>
     </entry>
     <entry key="send_code_mail_body_2">
     	<text lang="en">a security code has been requested for your email adress.</text>
@@ -2338,6 +2547,7 @@ See French text.
     	<text lang="nl">Een beveiligingscode is nodig voor je email adres.</text>
     	<text lang="pl">zażądano kodu zabezpieczającego dal tego adresu e-mail.</text>
 		<text lang="pt">um código de segurança foi solicitado pelo seu e-mail</text>
+		<text lang="fi">turvakoodi on pyydetty sähköpostiosoitteeseesi.</text>
     </entry>
     <entry key="send_code_mail_body_3">
     	<text lang="en">If you haven't requested this security code, please contact your system administrator.</text>
@@ -2346,6 +2556,7 @@ See French text.
     	<text lang="nl">Indien je geen beveiligingscode gevraagd hebt, neem dan contact met de systeem beheerder.</text>
 		<text lang="pl">Jeśli to nie Ty zażądałeś/aś tego kodu, skontaktuj się z administratorem systemu.</text>
 		<text lang="pt">Se você não tiver solicitado o código de segurança, entre em contato com o administrador do sistema.</text>
+		<text lang="fi">Jos et ole pyytänyt tätä turvakoodia, ota yhteyttä järjestelmän ylläpitäjään.</text>
     </entry>
     <entry key="send_code_mail_body_4">
     	<text lang="en">This email has been sent by the following system: </text>
@@ -2354,6 +2565,7 @@ See French text.
     	<text lang="nl">Deze mail werd verstuurd door: </text>
      	<text lang="pl">Ten e-mail został wysłany przez następujący system: </text>
 		<text lang="pt">Este e-mail foi enviado pelo seguinte sistema: </text>
+		<text lang="fi">Tämä sähköposti on lähetetty seuraavalla järjestelmällä:</text>
     </entry>
     <entry key="send_code_mail_body_5">
     	<text lang="en">under the following URL: </text>
@@ -2362,6 +2574,7 @@ See French text.
     	<text lang="nl">met URL </text>
     	<text lang="pl">pod tym adresem URL: </text>
 		<text lang="pt">comm a seguinte URL: </text>
+		<text lang="fi">URL-osoitteesta:</text>
     </entry>
     <entry key="person_resource">
     	<text lang="en">person resource: </text>
@@ -2369,6 +2582,7 @@ See French text.
         <text lang="fr">Personne ressource : </text>
     	<text lang="nl">Persoon: </text>
 		<text lang="pt">recursos humanos: </text>
+		<text lang="fi">Henkilöresurssi:</text>
     </entry>
     <entry key="connect">
     	<text lang="en">connect</text>
@@ -2377,6 +2591,7 @@ See French text.
     	<text lang="nl">Aanmelden</text>
     	<text lang="pl">Połącz</text>
 		<text lang="pt">conectar</text>
+		<text lang="fi">yhdistä</text>
 
     </entry>
     <entry key="disconnect">
@@ -2386,6 +2601,7 @@ See French text.
     	<text lang="nl">Afmelden</text>
     	<text lang="pl">Rozłącz</text>
 		<text lang="pt">desconectar</text>
+		<text lang="fi">katkaise yhteys</text>
 
     </entry>
     <entry key="personal_options">
@@ -2395,6 +2611,7 @@ See French text.
     	<text lang="nl">Persoonlijke instellingen</text>
    		<text lang="pl">Ustawienia osobiste</text>
 		<text lang="pt">Opções pessoais</text>
+		<text lang="fi">Henkilökohtaiset asetukset</text>
 
     </entry>
     <entry key="enter_name">
@@ -2404,6 +2621,7 @@ See French text.
     	<text lang="nl">Wijzig persoonlijk instellingen:</text>
     	<text lang="pl">Proszę wprowadź swoje nazwisko i imię:</text>
 		<text lang="pt">Digite seu nome e sobrenome</text>
+		<text lang="fi">Ole hyvä ja anna etu- ja sukunimesi:</text>
 
     </entry>
     <entry key="code_error1">
@@ -2412,6 +2630,7 @@ See French text.
         <text lang="fr">Le code renseigné ne correspond pas à celui envoyé dans l'email.</text>
     	<text lang="nl">"De beveiligingscode is verschillend van deze in de verstuurde mail."</text>
 		<text lang="pt">"O código indicado não corresponde ao código no e-mail."</text>
+		<text lang="fi">Ilmoitettu koodi ei vastaa koodia sähköpostissa.</text>
 
     </entry>
     <entry key="code_error2">
@@ -2421,6 +2640,7 @@ See French text.
     	<text lang="nl">De beveiligingscode moet een nummer zijn.</text>
    		<text lang="pl">Podany kod nie jest liczbą.</text>
 		<text lang="pt">O código indicado não é um número.</text>
+		<text lang="fi">Ilmoitettu koodi ei ole numero.</text>
     </entry>
     <entry key="password_change_info">
     	<text lang="en">Confirming will actually change your password.</text>
@@ -2429,6 +2649,7 @@ See French text.
     	<text lang="nl">Bevestiging zal het paswoord wijzigen.</text>
    		<text lang="pl">Zatwierdzenie naprawdę zmieni hasło.</text>
 		<text lang="pt">Confirmando vai realmente mudar sua senha.</text>
+		<text lang="fi">Vahvistaminen muuttaa salasanasi.</text>
     </entry>
     
     <!-- Persons -->
@@ -2441,6 +2662,7 @@ See French text.
         <text lang="nl">Persoon</text>
         <text lang="pl">Osoba</text>
 		<text lang="pt">Pessoa</text>
+		<text lang="fi">Henkilö</text>
 		
     </entry>
     <entry key="persons">
@@ -2452,6 +2674,7 @@ See French text.
         <text lang="nl">Personen</text>
         <text lang="pl">Osoby</text>
 		<text lang="pt">Pessoas</text>
+		<text lang="fi">Henkilöt</text>
     </entry>
     <entry key="person_type">
         <text lang="en">Person type</text>
@@ -2462,6 +2685,7 @@ See French text.
         <text lang="nl">Type: Persoon</text>
         <text lang="pl">Typ osoby</text>
 		<text lang="pt">Tipo de pessoa</text>
+		<text lang="fi">Henkilötyyppi</text>
     </entry>
     <entry key="person_types">
         <text lang="en">Person Types</text>
@@ -2472,6 +2696,7 @@ See French text.
         <text lang="nl">Type: Personen</text>
         <text lang="pl">Typy osób</text>
 		<text lang="pt">Tipos de pessoa</text>
+		<text lang="fi">Henkilötyypit</text>
     </entry>
     <entry key="surname">
         <text lang="en">surname</text>
@@ -2482,6 +2707,7 @@ See French text.
         <text lang="nl">Naam</text>
         <text lang="pl">Nazwisko</text>
 		<text lang="pt">Sobrenome</text>
+		<text lang="fi">sukunimi</text>
         
     </entry>
     <entry key="firstname">
@@ -2493,6 +2719,7 @@ See French text.
         <text lang="nl">Voornaam</text>
         <text lang="pl">Imię</text>
 		<text lang="pt">Nome</text>
+		<text lang="fi">Etunimi</text>
         
     </entry>
     <!-- Reservations -->
@@ -2505,6 +2732,7 @@ See French text.
         <text lang="nl">Reservatie</text>
         <text lang="pl">Wydarzenie</text>
 		<text lang="pt">Evento</text>
+		<text lang="fi">Tapahtuma</text>
     </entry>
     <entry key="event">
         <text lang="en">Event</text>
@@ -2515,6 +2743,7 @@ See French text.
         <text lang="nl">Reservatie</text>
         <text lang="pl">Wydarzenie</text>
 		<text lang="pt">Evento</text>
+		<text lang="fi">Tapahtuma</text>
     </entry>
     <entry key="new_reservation">
         <text lang="en">New Event...</text>
@@ -2525,6 +2754,7 @@ See French text.
         <text lang="nl">Nieuwe reservatie ...</text>
         <text lang="pl">Nowe wydarzenie</text>
 		<text lang="pt">Novo evento</text>
+		<text lang="fi">Uusi tapahtuma...</text>
     </entry>
 
     <entry key="eventname">
@@ -2536,6 +2766,7 @@ See French text.
         <text lang="nl">Reservatie naam</text>
         <text lang="pl">Nazwa wydarzenia</text>
 		<text lang="pt">Nome do evento</text>
+		<text lang="fi">tapahtuman nimi</text>
     </entry>
     
     <entry key="reservations">
@@ -2547,6 +2778,7 @@ See French text.
         <text lang="nl">Reservaties</text>        
         <text lang="pl">Wydarzenia</text>
 		<text lang="pt">Eventos</text>
+		<text lang="fi">Tapahtumat</text>
     </entry>
      <entry key="reservations_and_resources">
         <text lang="en">Events and resources</text>
@@ -2557,6 +2789,7 @@ See French text.
         <text lang="nl">Reservaties en Middelen</text>        
         <text lang="pl">Rezerwacje/Zasoby</text>
 		<text lang="pt">Eventos e recursos</text>
+		<text lang="fi">Tapahtumat ja resurssit</text>
     </entry>
 
     <entry key="reservation_type">
@@ -2568,6 +2801,7 @@ See French text.
         <text lang="nl">Event type</text>        
         <text lang="pl">Typ Rezerwacji</text>
 		<text lang="pt">Tipo de evento</text>
+		<text lang="fi">Tapahtumatyyppi</text>
     </entry>
     <entry key="edit_reservations">
         <text lang="en">Edit own</text>
@@ -2578,6 +2812,7 @@ See French text.
         <text lang="nl">bewerk eigen</text>
         <text lang="pl">Edytuj swoje</text>
 		<text lang="pt">Editar próprio</text>
+		<text lang="fi">Muokkaa omaa</text>
     </entry>
     <entry key="reservation.appointments">
         <text lang="en">Appointments:</text>
@@ -2588,6 +2823,7 @@ See French text.
         <text lang="nl">Reservaties:</text>
         <text lang="pl">Terminy:</text>
 		<text lang="pt">Compromissos</text>
+		<text lang="fi">Ajanvaraukset:</text>
     </entry>
     <entry key="reservation.allocations">
         <text lang="en">Allocations:</text>
@@ -2598,6 +2834,7 @@ See French text.
         <text lang="nl">Bezetting: </text>
         <text lang="pl">Przydział zasobów:</text>
 		<text lang="pt">Alocações:</text>
+		<text lang="fi">Varaukset:</text>
     </entry>
     <entry key="allocation">
         <text lang="en">allocation</text>
@@ -2608,6 +2845,7 @@ See French text.
         <text lang="nl">bezetting</text>
         <text lang="pl">przydział zasobów</text>
 		<text lang="pt">alocações</text>
+		<text lang="fi">varaus</text>
     </entry>
     <entry key="reservation.owner">
         <text lang="en">Reserved by</text>
@@ -2618,6 +2856,7 @@ See French text.
         <text lang="nl">Gereserveerd door</text>
         <text lang="pl">Zarezerwowane przez</text>
 		<text lang="pt">Reservado por</text>
+		<text lang="fi">Varannut</text>
     </entry>
     <entry key="resource.owner">
         <text lang="en">Registered by</text>
@@ -2628,6 +2867,7 @@ See French text.
         <text lang="nl">Geregistreerd door</text>
         <text lang="pl">Zarejestrowany przez</text>
 		<text lang="pt">Registrado por</text>
+		<text lang="fi">Rekisteröinyt</text>
     </entry>
     <!-- Appointment -->
     <entry key="weekday">
@@ -2639,6 +2879,7 @@ See French text.
         <text lang="nl">Weekdag</text>
         <text lang="pl">Dzień tygodnia</text>
 		<text lang="pt">Dia da semana</text>
+		<text lang="fi">Viikonpäivä</text>
     </entry>
     <entry key="duration">
         <text lang="en">Duration</text>
@@ -2649,6 +2890,7 @@ See French text.
         <text lang="nl">Tijdsduur</text>
         <text lang="pl">Czas trwania</text>
 		<text lang="pt">Duração</text>
+		<text lang="fi">Kesto</text>
     </entry>
     <entry key="interval">
         <text lang="en">Interval</text>
@@ -2659,6 +2901,7 @@ See French text.
         <text lang="nl">Interval</text>
         <text lang="pl">Interwał</text>
 		<text lang="pt">Intervalo</text>
+		<text lang="fi">Aikaväli</text>
     </entry>
     <entry key="appointment.same_day">
         <text lang="en">Same day</text>
@@ -2669,6 +2912,7 @@ See French text.
         <text lang="nl">zelfde dag</text>
         <text lang="pl">Ten sam dzień</text>
 		<text lang="pt">Mesmo dia</text>
+		<text lang="fi">Sama päivä</text>
     </entry>
     <entry key="appointment.next_day">
         <text lang="en">Next day</text>
@@ -2679,6 +2923,7 @@ See French text.
         <text lang="nl">volgende dag</text>
         <text lang="pl">Następny dzień</text>
 		<text lang="pt">Dia seguinte</text>
+		<text lang="fi">Seuraava päivä</text>
     </entry>
     <entry key="appointment.day_x">
         <text lang="en">on day x</text>
@@ -2689,6 +2934,7 @@ See French text.
         <text lang="nl">op dag x</text>
         <text lang="pl">dnia x</text>
 		<text lang="pt">no dia x</text>
+		<text lang="fi">päivänä x</text>
     </entry>
     <entry key="appointment.days">
         <text lang="en">Day(s)</text>
@@ -2699,6 +2945,7 @@ See French text.
         <text lang="nl">dag(en)</text>
         <text lang="pl">Dzień(dni)</text>
 		<text lang="pt">Dia(s)</text>
+		<text lang="fi">Päivä(t)</text>
     </entry>
     <entry key="new_appointment">
         <text lang="en">New appointment</text>
@@ -2709,6 +2956,7 @@ See French text.
         <text lang="nl">Nieuwe afspraak</text>
         <text lang="pl">Nowy termin</text>
 		<text lang="pt">Novo compromisso</text>
+		<text lang="fi">Uusi ajanvaraus</text>
     </entry>
     <entry key="appointment">
         <text lang="en">Appointment</text>
@@ -2719,6 +2967,7 @@ See French text.
         <text lang="nl">Afspraak</text>
         <text lang="pl">Termin</text>
 		<text lang="pt">Compromisso</text>
+		<text lang="fi">Ajanvaraus</text>
     </entry>
     <entry key="appointment_list">
         <text lang="en">Appointment List</text>
@@ -2729,6 +2978,7 @@ See French text.
         <text lang="nl">Lijst afspraken</text>
         <text lang="pl">Lista terminów</text>
 		<text lang="pt">Lista de compromissos</text>
+		<text lang="fi">Ajanvarausluettelo</text>
     </entry>
     <entry key="appointments">
         <text lang="en">Appointments</text>
@@ -2739,6 +2989,7 @@ See French text.
         <text lang="nl">Afspraken</text>
         <text lang="pl">Terminy</text>
 		<text lang="pt">Compromissos</text>
+		<text lang="fi">Ajanvaraukset</text>
     </entry>
     <entry key="change_appointment">
         <text lang="en">Change appointment</text>
@@ -2749,6 +3000,7 @@ See French text.
         <text lang="nl">Wijzig afspraak</text>
         <text lang="pl">Edytuj termin</text>
 		<text lang="pt">Alterar compromisso</text>
+		<text lang="fi">Vaihda ajanvarausta</text>
     </entry>
     <entry key="no_repeating">
         <text lang="en">No repeating</text>
@@ -2759,6 +3011,7 @@ See French text.
         <text lang="nl">Eénmalig</text>
         <text lang="pl">Bez powtarzania</text>
 		<text lang="pt">Sem repetir</text>
+		<text lang="fi">Ei toistuva</text>
     </entry>
     <entry key="repeating">
         <text lang="en">Repeating</text>
@@ -2769,6 +3022,7 @@ See French text.
         <text lang="nl">Herhaling</text>
         <text lang="pl">Powtarzające się</text>
 		<text lang="pt">Repetir</text>
+		<text lang="fi">Toistuva</text>
     </entry>
     <entry key="weekly">
         <text lang="en">Weekly</text>
@@ -2779,6 +3033,7 @@ See French text.
         <text lang="nl">Wekelijks</text>
         <text lang="pl">Co tydzień</text>
 		<text lang="pt">Semanal</text>
+		<text lang="fi">Viikottain</text>
     </entry>
     <entry key="daily">
         <text lang="en">Daily</text>
@@ -2789,6 +3044,7 @@ See French text.
         <text lang="nl">Dagelijks</text>
         <text lang="pl">Codziennie</text>
 		<text lang="pt">Diário</text>
+		<text lang="fi">Päivittäin</text>
     </entry>
     <entry key="monthly">
         <text lang="en">Monthly</text>
@@ -2798,6 +3054,7 @@ See French text.
         <text lang="nl">Maandelijks</text>
         <text lang="pl">Co miesiąc</text>
 		<text lang="pt">Mensal</text>
+		<text lang="fi">Kuukausittain</text>
     </entry>
     <entry key="yearly">
         <text lang="en">Yearly</text>
@@ -2807,6 +3064,7 @@ See French text.
         <text lang="nl">Jaarlijks</text>
         <text lang="pl">Co rok</text>
 		<text lang="pt">Anual</text>
+		<text lang="fi">Vuosittain</text>
     </entry>
     <entry key="interval.format">
         <text lang="en">Every {0} {1}</text>
@@ -2817,6 +3075,7 @@ See French text.
         <text lang="nl">Elke {0} {1}</text>
         <text lang="pl">W każdy {0} {1}</text>
 		<text lang="pt">Cada {0} {1}</text>
+		<text lang="fi">Joka {0} {1}</text>
     </entry>
     <entry key="week">
         <text lang="en">Week</text>
@@ -2827,6 +3086,7 @@ See French text.
         <text lang="nl">Week</text>
         <text lang="pl">Tydzień</text>
 		<text lang="pt">Semana</text>
+		<text lang="fi">Viikko</text>
     </entry>
     <entry key="calendarweek.abbreviation">
         <text lang="en">cw {0,date,w}</text>
@@ -2837,6 +3097,7 @@ See French text.
         <text lang="nl">WK{0,date,w}</text>
         <text lang="pl">T{0,date,w}</text>
 		<text lang="pt">CS {0,date,w}</text>
+		<text lang="fi">kv {0,date,w}</text>
     </entry>
     <entry key="day_resource">
         <text lang="en">Day/Resource</text>
@@ -2847,6 +3108,7 @@ See French text.
         <text lang="nl">Dag/Middel</text>
         <text lang="pl">Dzień/Zasób</text>
 		<text lang="pt">Dia/Recurso</text>
+		<text lang="fi">Päivä/Resurssi</text>
     </entry>
     <entry key="week_compact">
         <text lang="en">Week/Resource</text>
@@ -2857,6 +3119,7 @@ See French text.
         <text lang="nl">Week/Middel</text>
         <text lang="pl">Tydzień/Zasób</text>
 		<text lang="pt">Semana/Recursos</text>
+		<text lang="fi">Viikko/Resurssi</text>
     </entry>
     <entry key="day_timeslot">
         <text lang="en">Day program</text>
@@ -2867,6 +3130,7 @@ See French text.
         <text lang="nl">Dag programma</text>
         <text lang="pl">Program dnia</text>
 		<text lang="pt">Programa do dia</text>
+		<text lang="fi">Päiväohjelma</text>
     </entry>
     <entry key="week_timeslot">
         <text lang="en">Week program</text>
@@ -2877,6 +3141,7 @@ See French text.
         <text lang="nl">Week programma</text>
         <text lang="pl">Program tygodnia</text>
 		<text lang="pt">Programa da semana</text>
+		<text lang="fi">Viikko-ohjelma</text>
     </entry>
   
     <entry key="hour">
@@ -2887,6 +3152,7 @@ See French text.
         <text lang="nl">Uur</text>
         <text lang="pl">Godzina</text>
 		<text lang="pt">Hora</text>
+		<text lang="fi">Tunti</text>
     </entry>
     <entry key="hour.abbreviation">
         <text lang="en">hr</text>
@@ -2896,6 +3162,7 @@ See French text.
         <text lang="nl">Uur</text>
         <text lang="pl">Godz.</text>
 		<text lang="pt">Hora</text>
+		<text lang="fi">h</text>
     </entry>
     <entry key="hours.abbreviation">
         <text lang="en">hrs</text>
@@ -2905,6 +3172,7 @@ See French text.
         <text lang="nl">Uren</text>
         <text lang="pl">Godz.</text>
 		<text lang="pt">Horas</text>
+		<text lang="fi">h</text>
     </entry>
    <entry key="hours">
         <text lang="en">Hours</text>
@@ -2914,6 +3182,7 @@ See French text.
         <text lang="nl">Uren</text>
         <text lang="pl">Godziny</text>
 		<text lang="pt">Horas</text>
+		<text lang="fi">Tuntia</text>
     </entry>
     
     <entry key="minutes">
@@ -2924,6 +3193,7 @@ See French text.
         <text lang="nl">Minuten</text>
         <text lang="pl">Minuty</text>
 		<text lang="pt">Minutos</text>
+		<text lang="fi">Minuuttia</text>
     </entry>
     
     <entry key="minute">
@@ -2934,6 +3204,7 @@ See French text.
         <text lang="nl">Minuut</text>
         <text lang="pl">Minuta</text>
 		<text lang="pt">Minuto</text>
+		<text lang="fi">Minuutti</text>
     </entry>
     <entry key="minutes.abbreviation">
         <text lang="en">mins</text>
@@ -2943,6 +3214,7 @@ See French text.
         <text lang="nl">Min.</text>
         <text lang="pl">Min.</text>
 		<text lang="pt">Min.</text>
+		<text lang="fi">min.</text>
     </entry>
     <entry key="second">
         <text lang="en">Second</text>
@@ -2952,6 +3224,7 @@ See French text.
         <text lang="nl">Seconde</text>
         <text lang="pl">Sekunda</text>
 		<text lang="pt">Segundo</text>
+		<text lang="fi">Sekunti</text>
     </entry>
     <entry key="seconds">
         <text lang="en">Seconds</text>
@@ -2961,6 +3234,7 @@ See French text.
         <text lang="nl">Seconden</text>
         <text lang="pl">Sekundy</text>
 		<text lang="pt">Segundos</text>
+		<text lang="fi">Sekuntia</text>
     </entry>
     <entry key="day">
         <text lang="en">Day</text>
@@ -2971,6 +3245,7 @@ See French text.
         <text lang="nl">Dag</text>
         <text lang="pl">Dzień</text>
 		<text lang="pt">Dia</text>
+		<text lang="fi">Päivä</text>
     </entry>
     <entry key="days">
         <text lang="en">Days</text>
@@ -2981,6 +3256,7 @@ See French text.
         <text lang="nl">Dagen</text>
         <text lang="pl">Dni</text>
 		<text lang="pt">Dias</text>
+		<text lang="fi">Päivää</text>
     </entry>
     <entry key="weeks">
         <text lang="en">Weeks</text>
@@ -2991,6 +3267,7 @@ See French text.
         <text lang="nl">Weken</text>
         <text lang="pl">Tygodnie</text>
 		<text lang="pt">Semanas</text>
+		<text lang="fi">Viikkoa</text>
     </entry>
     <entry key="month">
         <text lang="en">Month</text>
@@ -3001,6 +3278,7 @@ See French text.
         <text lang="nl">Maand</text>
         <text lang="pl">Miesiąc</text>
 		<text lang="pt">Mês</text>
+		<text lang="fi">Kuukausi</text>
     </entry>   
     <entry key="years">
         <text lang="en">Years</text>
@@ -3010,6 +3288,7 @@ See French text.
         <text lang="nl">Jaren</text>
         <text lang="pl">Lata</text>
 		<text lang="pt">Anos</text>
+		<text lang="fi">Vuotta</text>
     </entry>
     <entry key="year">
         <text lang="en">Year</text>
@@ -3019,6 +3298,7 @@ See French text.
         <text lang="nl">Jaar</text>
         <text lang="pl">Rok</text>
 		<text lang="pt">Ano</text>
+		<text lang="fi">Vuosi</text>
     </entry>
     <entry key="months">
         <text lang="en">Months</text>
@@ -3029,6 +3309,7 @@ See French text.
         <text lang="nl">Maanden</text>
         <text lang="pl">Miesiące</text>
 		<text lang="pt">Meses</text>
+		<text lang="fi">Kuukautta</text>
     </entry>
     <entry key="repeating.forever">
         <text lang="en">Repeats forever</text>
@@ -3039,6 +3320,7 @@ See French text.
         <text lang="nl">tot ?</text>
         <text lang="pl">Powtarzaj bez końca</text>
 		<text lang="pt">Repetir sempre</text>
+		<text lang="fi">Toistuu jatkuvasti</text>
     </entry>
     <entry key="repeating.start_date">
         <text lang="en">from the</text>
@@ -3049,6 +3331,7 @@ See French text.
         <text lang="nl">van</text>
         <text lang="pl">od</text>
 		<text lang="pt">a partir de</text>
+		<text lang="fi">alkaen</text>
     </entry>
     <entry key="repeating.end_date">
         <text lang="en">until</text>
@@ -3059,6 +3342,7 @@ See French text.
         <text lang="nl">tot en met</text>
         <text lang="pl">do</text>     
 		<text lang="pt">até</text>
+		<text lang="fi">kunnes</text>
     </entry>
     <entry key="repeating.n_times">
         <text lang="en">x times</text>
@@ -3069,6 +3353,7 @@ See French text.
         <text lang="nl">x-Maal</text>
         <text lang="pl">x razy</text>
 		<text lang="pt">x vezes</text>
+		<text lang="fi">x kertaa</text>
     </entry>
     <entry key="repeat">
         <text lang="en">Repeat</text>
@@ -3079,6 +3364,7 @@ See French text.
         <text lang="nl">herhaal</text>
         <text lang="pl">Powtórz</text> 
 		<text lang="pt">Repetir</text>
+		<text lang="fi">Toista</text>
     </entry>
     <entry key="repeating.interval.pre">
         <text lang="en">every</text>
@@ -3089,6 +3375,7 @@ See French text.
         <text lang="nl">Elke</text>
         <text lang="pl">Każdy</text>
 		<text lang="pt">Cada</text>
+		<text lang="fi">joka</text>
     </entry>
     <entry key="repeating.interval.post">
         <text lang="en">.</text>
@@ -3099,6 +3386,7 @@ See French text.
         <text lang="nl">-(ste/de)</text>
         <text lang="pl">.</text>
 		<text lang="pt">.</text>
+		<text lang="fi">.</text>
     </entry>
     <entry key="format.repeat_n_times">
         <text lang="en">Repeat {0} times</text>
@@ -3109,6 +3397,7 @@ See French text.
         <text lang="nl">{0}X</text>
         <text lang="pl">Powtórz {0} razy</text>   
 		<text lang="pt">Repetir {0} vezes</text>		
+        <text lang="fi">Toista {0} kertaa</text>		
     </entry>
     <entry key="format.repeat_from">
         <text lang="en">from {0}</text>
@@ -3119,6 +3408,7 @@ See French text.
         <text lang="nl">van {0}</text>
         <text lang="pl">od {0}</text>
 		<text lang="pt">a partir de {0}</text>
+		<text lang="fi">alkaen {0} </text>
     </entry>
     <entry key="format.repeat_until">
         <text lang="en">until {0}</text>
@@ -3129,6 +3419,7 @@ See French text.
         <text lang="nl">tot en met {0}</text>
         <text lang="pl">do {0}</text>
 		<text lang="pt">até {0}</text>
+		<text lang="fi">kunnes {0}</text>
     </entry>
     <entry key="appointment.format.exceptions">
         <text lang="en">{0} Exceptions:</text>
@@ -3139,6 +3430,7 @@ See French text.
         <text lang="nl">{0} Uitzonderingen</text>
         <text lang="pl">{0} Wyjątki:</text>
 		<text lang="pt">{0} Exceções:</text>
+		<text lang="fi">{0} Poikkeukset:</text>
     </entry>
     <entry key="appointment.rule">
         <text lang="en">Rule:</text>
@@ -3149,6 +3441,7 @@ See French text.
         <text lang="nl">Regel: </text>
         <text lang="pl">Reguła:</text>
 		<text lang="pt">Regra:</text>
+		<text lang="fi">Sääntö:</text>
     </entry>
     <entry key="appointment.exceptions">
         <text lang="en">Exceptions</text>
@@ -3159,6 +3452,7 @@ See French text.
         <text lang="nl">Uitzonderingen</text>
         <text lang="pl">Wyjątki</text>
 		<text lang="pt">Exceções</text>		
+        <text lang="fi">Poikkeukset</text>		
     </entry>
     <entry key="appointment.no_exceptions">
         <text lang="en">No exceptions:</text>
@@ -3169,6 +3463,7 @@ See French text.
         <text lang="nl">Geen uitzonderingen:</text>
         <text lang="pl">Bez wyjątków:</text>
 		<text lang="pt">Sem exceções</text>
+		<text lang="fi">Ei poikkeuksia:</text>
     </entry>
     <entry key="appointment.exception.general">
         <text lang="en">Exceptions:</text>
@@ -3179,6 +3474,7 @@ See French text.
         <text lang="nl">Uitgezonderd:</text>
         <text lang="pl">Wyjątki:</text>
 		<text lang="pt">Exceções</text>
+		<text lang="fi">Poikkeukset:</text>
     </entry>
     <entry key="appointment.exception.days">
         <text lang="en">Exception days:</text>
@@ -3189,12 +3485,14 @@ See French text.
         <text lang="nl">Uitzonderings dagen:</text>
         <text lang="pl">Wyłączone dni:</text>
 		<text lang="pt">Exceto dias:</text>
+		<text lang="fi">Poikkeuspäivät:</text>
     </entry>
     <entry key="appointment.search_free">
 		<text lang="en">free appointment >></text>
 		<text lang="de">Freier Termin >></text>
         <text lang="fr">Recherche disponibilité</text>
 		<text lang="nl">Zoek vrije afspraak >></text>
+		<text lang="fi">vapaa aika</text>
 	</entry>
 	<entry key="appointment.convert">
 		<text lang="en">Convert to single events</text>
@@ -3205,6 +3503,7 @@ See French text.
 		<text lang="nl">Converteren naar éénmalige events</text>
 		<text lang="pl">Przekształć w wydarzenia jednorazowe</text>
 		<text lang="pt">Converter para eventos individuais</text>
+		<text lang="fi">Muuta yksittäisiksi tapahtumiksi</text>
 	</entry>
     <entry key="delete_appointment.format">
         <text lang="en">What do you want to delete?</text>
@@ -3215,6 +3514,7 @@ See French text.
         <text lang="nl">Wat wil je verwijderen?</text>
         <text lang="pl">Co chcesz usunąć?</text>
 		<text lang="pt">O que você deseja excluir?</text>
+		<text lang="fi">Mitä haluat poistaa?</text>
     </entry>
     <entry key="copy_appointment.format">
         <text lang="en">What do you want to copy?</text>
@@ -3225,6 +3525,7 @@ See French text.
         <text lang="nl">Wat wil kopiëren?</text>
         <text lang="pl">Co chcesz skopiować?</text>
 		<text lang="pt">O que você deseja copiar?</text>
+		<text lang="fi">Mitä haluat kopioida?</text>
     </entry>
     <entry key="move_appointment.format">
         <text lang="en">What do you want to move?</text>
@@ -3235,6 +3536,7 @@ See French text.
         <text lang="nl">Wat wil verplaatsen?</text>
         <text lang="pl">Co chcesz przenieść?</text>
 		<text lang="pt">O que você deseja mover?</text>
+		<text lang="fi">Mitä haluat siirtää?</text>
     </entry>
     <entry key="exchange_allocatables_appointment.format">
         <text lang="en">For what do you want to change the allocation</text>
@@ -3242,6 +3544,7 @@ See French text.
         <text lang="fr">Pour quel partie de l'événement voulez vous modifier l'allocation ?</text>
         <text lang="pl">Dla czego chcesz zmienić przydział?</text>
 		<text lang="pt">Por qual motivo você deseja modificar a atribuição?</text>
+		<text lang="fi">Mille haluat vaihtaa varausta?</text>
     </entry>
     <entry key="single_appointment.format">
         <text lang="en">appointment on {0}</text>
@@ -3252,6 +3555,7 @@ See French text.
         <text lang="nl">Afspraak op {0}</text>
         <text lang="pl">termin {0}</text>
 		<text lang="pt">Compromisso em</text>
+		<text lang="fi">ajanvaraus {0}</text>
     </entry>
     <entry key="serie">
         <text lang="en">Series</text>
@@ -3262,6 +3566,7 @@ See French text.
         <text lang="nl">Serie</text>
         <text lang="pl">Serie</text>
 		<text lang="pt">Série</text>
+		<text lang="fi">Sarja</text>
     </entry>
     <entry key="resource">
         <text lang="en">Resource</text>
@@ -3272,6 +3577,7 @@ See French text.
         <text lang="nl">Middel</text>        
         <text lang="pl">Zasób</text>
 		<text lang="pt">Recurso</text>
+		<text lang="fi">Resurssi</text>
 		        
     </entry>
     <entry key="resources">
@@ -3283,6 +3589,7 @@ See French text.
         <text lang="nl">Middelen</text>
         <text lang="pl">Zasoby</text>
 		<text lang="pt">Recursos</text>
+		<text lang="fi">Resurssit</text>
     </entry>
     <entry key="resource_type">
         <text lang="en">Resource type</text>
@@ -3293,6 +3600,7 @@ See French text.
         <text lang="nl">Type: Middel</text>
         <text lang="pl">Rodzaj zasobu</text>
 		<text lang="pt">Tipo de Recurso</text>
+		<text lang="fi">Resurssityyppi</text>
     </entry>
     <entry key="resource_types">
         <text lang="en">Resource types</text>
@@ -3303,6 +3611,7 @@ See French text.
         <text lang="nl">Middel type</text>
         <text lang="pl">Rodzaje zasobów</text>
 		<text lang="pt">Tipos de Recursos</text>
+		<text lang="fi">Resurssityypit</text>
     </entry>
     <entry key="selection_resource">
         <text lang="en">Resource selection</text>
@@ -3313,6 +3622,7 @@ See French text.
         <text lang="nl">Keuze middel</text>
         <text lang="pl">Zaznaczenie zasobu</text>
 		<text lang="pt">Seleção de Recurso</text>
+		<text lang="fi">Resurssivalinta</text>
     </entry>
     <!-- Allocatables -->
     <entry key="exchange_allocatables">
@@ -3324,6 +3634,7 @@ See French text.
         <text lang="nl">Wijzig toewijzing</text>
         <text lang="pl">Zmień przydział</text>
 		<text lang="pt">Modificar atribuição</text>
+		<text lang="fi">Vaihda varausta</text>
     </entry>
     <entry key="resources_persons">
         <text lang="en">Resources and persons</text>
@@ -3334,6 +3645,7 @@ See French text.
         <text lang="nl">Middelen&amp;Personen</text>
         <text lang="pl">Zasoby i Osoby</text>
 		<text lang="pt">Recursos e Pessoas</text>
+		<text lang="fi">Resurssit ja henkilöt</text>
     </entry>
     <entry key="holdbackconflicts">
         <text lang="en">Hold back conflicts</text>
@@ -3344,6 +3656,7 @@ See French text.
         <text lang="nl">Conflicten onderdrukken</text>
         <text lang="pl">Ignoruj konflikty</text>
 		<text lang="pt">Ingnorar conflitos</text>
+		<text lang="fi">Salli ristiriidat</text>
     </entry>
     <entry key="selectable_on">
         <text lang="en">Selectable on</text>
@@ -3354,6 +3667,7 @@ See French text.
         <text lang="nl">Beschikbaar voor</text>
         <text lang="pl">Dostępne w</text>
 		<text lang="pt">Selecionável em</text>
+		<text lang="fi">Mahdollista valita</text>
     </entry>
     <entry key="selectable">
         <text lang="en">Selectable</text>
@@ -3364,6 +3678,7 @@ See French text.
         <text lang="nl">Beschikbaarbaar</text>
         <text lang="pl">Dostępne</text>
 		<text lang="pt">Selecionável</text>
+		<text lang="fi">Valitse</text>
     </entry>
     <entry key="selected_on">
         <text lang="en">Selected on</text>
@@ -3374,6 +3689,7 @@ See French text.
         <text lang="nl">Geselecteerd voor</text>
         <text lang="pl">Wybrane na</text>
 		<text lang="pt">Selecionado em</text>
+		<text lang="fi">Valittu</text>
     </entry>
     <entry key="every_appointment">
         <text lang="en">Every appointment</text>
@@ -3384,6 +3700,7 @@ See French text.
         <text lang="nl">Alle afspraken</text>
         <text lang="pl">Każdy termin</text>
 		<text lang="pt">Todos os compromissos</text>
+		<text lang="fi">Valittuina aikoina</text>
     </entry>
     <entry key="zero_appointment">
         <text lang="en">No appointment</text>
@@ -3394,6 +3711,7 @@ See French text.
         <text lang="nl">Geen afspraak</text>
         <text lang="pl">Brak rezerwacji</text>
 		<text lang="pt">Nenhum compromisso</text>
+		<text lang="fi">Ei ajanvarausta</text>
     </entry>
     <entry key="allocatable_in_timeframe">
         <text lang="en">Allocatable in the given timeframe</text>
@@ -3404,6 +3722,7 @@ See French text.
         <text lang="nl">Beschikbaarheid</text>
         <text lang="pl">Dostępne w okresie</text>
 		<text lang="pt">Pode ser atribuido no período</text>
+		<text lang="fi">Varattavissa valitun ajan puitteissa</text>
     </entry>
     <entry key="permission.access">
         <text lang="en">Access</text>
@@ -3414,6 +3733,7 @@ See French text.
         <text lang="nl">Toegang</text>
         <text lang="pl">Dostęp</text>
 		<text lang="pt">Acesso</text>
+		<text lang="fi">Pääsy</text>
     </entry>
     <entry key="permission.edit">
     	<text lang="en">Edit</text>
@@ -3424,6 +3744,7 @@ See French text.
         <text lang="nl">Bewerk</text>
         <text lang="pl">edytuj</text>
 		<text lang="pt">editar</text>
+		<text lang="fi">Muokkaa</text>
     </entry>
     <entry key="permission.denied">
         <text lang="en">Denied</text>
@@ -3434,12 +3755,14 @@ See French text.
         <text lang="nl">Verboden</text>
         <text lang="pl">Odrzucono</text>
 		<text lang="pt">Negado</text>
+		<text lang="fi">Evätty</text>
     </entry>
     <entry key="permission.read_type">
         <text lang="en">Show {0}</text>
         <text lang="de">{0} anzeigen</text>
         <text lang="fr">Voir {0}</text>
         <text lang="nl">Toon {0}</text>
+		<text lang="fi">Näytä {0}</text>
 
     </entry>
     <entry key="permission.read_no_allocation">
@@ -3450,6 +3773,7 @@ See French text.
         <text lang="cs">číst (no rozvržení)</text>
         <text lang="nl">Lezen (zonder Toewijzing)</text>
         <text lang="pt">ler (sin atribuições)</text>
+		<text lang="fi">lue (ei varauksia)</text>
     </entry>
     <entry key="permission.read_allocation">
         <text lang="en">read allocations</text>
@@ -3459,6 +3783,7 @@ See French text.
         <text lang="cs">číst rozvržení</text>
         <text lang="nl">Lezen toewijzing</text>
         <text lang="pt">ler atribuições</text>
+		<text lang="fi">lue varauksia</text>
     </entry>
     <entry key="permission.read">
 		<text lang="en">read</text>
@@ -3469,6 +3794,7 @@ See French text.
         <text lang="nl">Lezen</text>
         <text lang="pl">odczytać bez przydziałów</text>
 		<text lang="pt">ler</text>
+		<text lang="fi">lue</text>
         
     </entry>
      <entry key="permission.create">
@@ -3480,6 +3806,7 @@ See French text.
         <text lang="nl">Aanmaken {0}</text>
         <text lang="pl">utwórz {0}</text>
 		<text lang="pt">criar {0}</text>
+		<text lang="fi">luo {0}</text>
     </entry>
     <entry key="permission.allocate">
         <text lang="en">allocate</text>
@@ -3490,6 +3817,7 @@ See French text.
         <text lang="nl">Toewijzen</text>
         <text lang="pl">przydzielać zasoby</text>
 		<text lang="pt">atribuir</text>
+		<text lang="fi">varaa</text>
     </entry>
     <entry key="permission.allocate_conflicts">
         <text lang="en">allocate &amp; create conflicts</text>
@@ -3500,6 +3828,7 @@ See French text.
         <text lang="nl">Toewijzen &amp; conflicten aanmaken</text>
         <text lang="pl">przydzielać zasoby i tworzyć konflikty</text>
 		<text lang="pt">atribuir e criar conflitos</text>
+		<text lang="fi">varaa &amp; luo ristiriitoja</text>
     </entry>
     <entry key="permission.admin">
         <text lang="en">administrator</text>
@@ -3510,6 +3839,7 @@ See French text.
         <text lang="nl">Beheren</text>
         <text lang="pl">administratora</text>
 		<text lang="pt">administrador</text>
+		<text lang="fi">ylläpitäjä</text>
     </entry>
     <!-- Period -->
     <entry key="period.format.start">
@@ -3521,6 +3851,7 @@ See French text.
         <text lang="nl">Start van {0}</text>
         <text lang="pl">Początek {0}</text>
 		<text lang="pt">Início de {0}</text>
+		<text lang="fi">Alkaa</text>
     </entry>
     <entry key="period.format.end">
         <text lang="en">End of {0}</text>
@@ -3531,6 +3862,7 @@ See French text.
         <text lang="nl">Einde van {0}</text>
         <text lang="pl">Koniec {0}</text>
 		<text lang="pt">Fim de {0}</text>
+		<text lang="fi">Loppuu</text>
     </entry>
     <entry key="period.format.week">
         <text lang="en">{0}.week {1}</text>
@@ -3541,6 +3873,7 @@ See French text.
         <text lang="nl">Week {0} van {1}</text>
         <text lang="pl">{0} tyg. {1}</text>
 		<text lang="pt">{0}.semana {1}</text>
+		<text lang="fi">{0}.viikko {1}</text>
     </entry>
     <entry key="period.not_set">
         <text lang="en">Select period</text>
@@ -3551,6 +3884,7 @@ See French text.
         <text lang="nl">Kies periode</text>
         <text lang="pl">Wybierz okres</text>
 		<text lang="pt">Selecionar período</text>
+		<text lang="fi">Valitse ajanjakso</text>
     </entry>
     <entry key="period">
         <text lang="en">Period</text>
@@ -3561,6 +3895,7 @@ See French text.
         <text lang="nl">Periode</text>
         <text lang="pl">Okres</text>
 		<text lang="pt">Período</text>
+		<text lang="fi">Ajanjakso</text>
     </entry>
     <entry key="period_view">
         <text lang="en">Period</text>
@@ -3571,6 +3906,7 @@ See French text.
         <text lang="nl">Periode</text>
         <text lang="pl">Okres</text>
 		<text lang="pt">Período</text>
+		<text lang="fi">Ajanjakso</text>
     </entry>
     <entry key="in_period.format">
         <text lang="en">in period {0}</text>
@@ -3581,6 +3917,7 @@ See French text.
         <text lang="nl">in periode {0}</text>
         <text lang="pl">w okresie {0}</text>
 		<text lang="pt">No período</text>
+		<text lang="fi">ajanjaksossa {0}</text>
     </entry>
     <entry key="periods">
         <text lang="en">Periods</text>
@@ -3591,6 +3928,7 @@ See French text.
         <text lang="nl">Periode</text>
         <text lang="pl">Okresy</text>
 		<text lang="pt">Períodos</text>
+		<text lang="fi">Ajanjaksot</text>
     </entry>
     <!-- Conflicts -->
     <entry key="conflicts">
@@ -3602,6 +3940,7 @@ See French text.
         <text lang="nl">Conflict</text>
         <text lang="pl">Konflikty</text>
 		<text lang="pt">Conflitos</text>
+		<text lang="fi">Ristiriidat</text>
     </entry>
     <entry key="conflictUC">
         <text lang="en">Conflicts ({0})</text>
@@ -3612,19 +3951,23 @@ See French text.
         <text lang="nl">Conflict ({0})</text>
         <text lang="pl">Konflikty ({0})</text>
 		<text lang="pt">Conflitos ({0})</text>
+		<text lang="fi">Ristiriidat ({0})</text>
     </entry>
     <entry key="disabledConflictUC">
         <text lang="en">disabled conflicts ({0})</text>
         <text lang="de">ausgeschaltete Konflikte ({0})</text>
         <text lang="fr">Conflits désactivés ({0})</text>
+		<text lang="fi">ristiriitoja pois päältä ({0})</text>
     </entry>
     <entry key="disable_conflicts">
         <text lang="en">disable conflicts</text>
         <text lang="de">Konflikte ausschalten</text>
+		<text lang="fi">ristiriidat pois päältä</text>
     </entry>
     <entry key="enable_conflicts">
         <text lang="en">enable conflicts</text>
         <text lang="de">Konflikte einschalten</text>
+		<text lang="fi">ristiriidat päälle</text>
     </entry>
     
     <!-- Dialogs of Rapla -->
@@ -3638,6 +3981,7 @@ See French text.
         <text lang="nl">GNU Licentie</text>
         <text lang="pl">Licencja GNU</text>
 		<text lang="pt">Licensa GNU</text>
+		<text lang="fi">GNU-lisenssi</text>
     </entry>
     <!-- Create-Category-Dialog -->
     <entry key="new_category">
@@ -3649,6 +3993,7 @@ See French text.
         <text lang="nl">Nieuw klassement</text>
         <text lang="pl">Nowa kategoria</text>
 		<text lang="pt">Nova Categoria</text>
+		<text lang="fi">Uusi kategoria</text>
     </entry>
     <entry key="new_sub-category">
         <text lang="en">New sub-category</text>
@@ -3659,6 +4004,7 @@ See French text.
         <text lang="nl">Nieuw onderklassement</text>
         <text lang="pl">Nowa podkategoria</text>
 		<text lang="pt">Nova subcategoria</text>
+		<text lang="fi">Uusi alakategoria</text>
     </entry>
     <!-- Delete-Dialog -->
     <entry key="delete.title">
@@ -3670,6 +4016,7 @@ See French text.
         <text lang="nl">Verwijderen?</text>
         <text lang="pl">Usunąć?</text>
 		<text lang="pt">Excluir?</text>
+		<text lang="fi">Poista?</text>
     </entry>
     <entry key="delete.question">
         <text lang="en">You will delete the following objects: </text>
@@ -3679,6 +4026,7 @@ See French text.
         <text lang="nl">Volgende onderdelen worden verwijderd: </text>
         <text lang="pl">Następujące elementy zostaną usunięte:</text>
 		<text lang="pt">Os seguintes objetos serão deletados:</text>
+		<text lang="fi">Poistat seuraavat kohteet:</text>
     </entry>
     <entry key="delete.ok">
         <text lang="en">Yes, delete it!</text>
@@ -3689,6 +4037,7 @@ See French text.
         <text lang="nl">OK</text>
         <text lang="pl">Tak, usuń!</text>
 		<text lang="pt">Ok, pode excluir!</text>
+		<text lang="fi">Kyllä, poista!</text>
     </entry>
     <entry key="delete.abort">
         <text lang="en">Don't delete it!</text>
@@ -3699,6 +4048,7 @@ See French text.
         <text lang="nl">Annuleren</text>        
         <text lang="pl">Nie usuwaj!</text>
 		<text lang="pt">Não excluir</text>
+		<text lang="fi">Ei, älä poista!</text>
     </entry>
     <!-- Exit-Dialog -->
     <entry key="exit.title">
@@ -3710,6 +4060,7 @@ See French text.
         <text lang="nl">Rapla beëindigen</text>
         <text lang="pl">Zakończyć Rapla?</text>
 		<text lang="pt">Sair do Rapla?</text>
+		<text lang="fi">Sulje Rapla?</text>
     </entry>
     <entry key="exit.question">
         <text lang="en">Do you really want to quit Rapla?</text>
@@ -3720,6 +4071,7 @@ See French text.
         <text lang="nl">Planning beëindigen?</text>
         <text lang="pl">Czy na pewno chcesz zakończyć Rapla?</text>
 		<text lang="pt">Você tem certeza que deseja sair?</text>
+		<text lang="fi">Haluatko varmasti sulkea Raplan?</text>
     </entry>
     <entry key="exit.ok">
         <text lang="en">Quit Rapla</text>
@@ -3730,6 +4082,7 @@ See French text.
         <text lang="nl">Planning beëindigen</text>
         <text lang="pl">Wyjdź</text>
 		<text lang="pt">Sim, pode sair.</text>
+		<text lang="fi">Sulje</text>
     </entry>
     <entry key="exit.abort">
         <text lang="en">Continue Rapla >></text>
@@ -3740,6 +4093,7 @@ See French text.
         <text lang="nl">Terugkeren</text>
         <text lang="pl">Wróć do Rapla >></text>
 		<text lang="pt">Não sair</text>
+		<text lang="fi">Älä sulje</text>
     </entry>
     <!-- Close-Without-Saving Dialog -->
     <entry key="confirm-close.title">
@@ -3751,6 +4105,7 @@ See French text.
         <text lang="nl">Wijzigingen</text>
         <text lang="pl">Nie zapisano zmian!</text>
 		<text lang="pt">As modificações não foram salvas!</text>
+		<text lang="fi">Muutoksia ei ole tallennettu!</text>
     </entry>
     <entry key="confirm-close.question">
         <text lang="en">You have not saved your changes.</text>
@@ -3762,6 +4117,7 @@ See French text.
         <text lang="nl">De wijzigingen worden niet geregistreerd!</text>
         <text lang="pl">Nie zapisano zmian.</text>
 		<text lang="pt">Suas modificações não foram salvas</text>
+		<text lang="fi">Et ole tallentanut muutoksiasi!</text>
     </entry>
     <entry key="confirm-close.ok">
         <text lang="en">Discard changes</text>
@@ -3772,6 +4128,7 @@ See French text.
         <text lang="nl">Wijzigingen negeren</text>
         <text lang="pl">Odrzuć zmiany</text>
 		<text lang="pt">Descatar modificações</text>
+		<text lang="fi">Hylkää muutokset</text>
     </entry>
     <!-- Info-Dialog -->
     <entry key="info.title">
@@ -3794,6 +4151,7 @@ See French text.
       Rapla wersja @doc.version@
     </text>
 	<text lang="pt">Versão: @doc.version@</text>
+	<text lang="fi">Rapla versio @doc.version@</text>
 
     </entry>
     <entry key="info.text">	  
@@ -3890,6 +4248,20 @@ See French text.
             <p>Assinatura: {0}</p>
             <p>Versão do Java: {1}</p>
 	  </text>
+	  <text lang="fi">
+            <strong>Rapla versio @doc.version@</strong>
+            <br/>
+      (C) Copyright @doc.year@ @doc.copyright@
+      <p>Rapla kotisivu: <strong>@doc.homepage@</strong>
+            </p>
+            <p>Lähetä ominaisuuspyynnöt, kysymykset tai virheilmoitukset
+         kehittäjiemme sähköpostilistalle:<br/>
+                <strong>@doc.developer-list@</strong>
+            </p>
+            <p>Kehityaika: @doc.buildtime@ R@doc.revision@</p>
+            <p>Allekirjoitus: {0}</p>
+            <p>Java versio {1}</p>
+        </text>
     </entry>
     
     <!-- Website Dialog -->
@@ -3965,6 +4337,17 @@ See French text.
         Confira <a href="http://code.google.com/p/rapla">Rapla @ Google Project</a> para mais informação (em inglês).
        </p>
       </text>
+	  <text lang="fi">
+       <h3>Lisätietoja:</h3>
+       <p>
+       Java-Webstart on sisällytetty kaikkiin Java-versioihin 1.4.0 alkaen.
+       Käyttääksesi Raplaa, tarvitset vähintään Java-version 1.6, jonka voit ladata:
+        <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">www.oracle.com/technetwork/java</a>
+       </p>
+       <p>
+        Käy vilkaisemassa <a href="http://code.google.com/p/rapla">Rapla @ Google Project</a> niin saat tietää lisää.
+       </p>
+      </text>
     </entry>
 
     <entry key="start_rapla_with_webstart">
@@ -3988,6 +4371,9 @@ See French text.
      </text>
 	 <text lang="pt">
        Iniciar Rapla (com o java webstart)
+     </text>
+	 <text lang="fi">
+        Käynnistä Rapla (java webstartilla)
      </text>
     </entry>
     
@@ -4013,6 +4399,9 @@ See French text.
      <text lang="pt">
         Inicar Rapla (com o Plugin do Java)
      </text>     
+	 <text lang="fi">
+        Käynnistä Rapla (Java-lisäosalla)
+     </text>
     </entry>
 
     <entry key="server_status">
@@ -4031,6 +4420,9 @@ See French text.
 	 <text lang="pt">
 	   Status do Servidor
      </text>
+	 <text lang="fi">
+	   Palvelimen tila
+     </text>
     </entry>
 
     <!-- Login-Dialog -->
@@ -4043,6 +4435,7 @@ See French text.
 		<text lang="nl">Rapla Aanmelden</text>
 		<text lang="pl">Logowanie do Rapla</text>
 		<text lang="pt">Login Rapla</text>
+		<text lang="fi">Rapla Sisäänkirjautuminen</text>
     </entry>
     <entry key="choose_language">
         <text lang="en">Choose your language:</text>
@@ -4053,6 +4446,7 @@ See French text.
         <text lang="nl">Taalkeuze:</text>
         <text lang="pl">Wybierz swój język:</text>
 		<text lang="pt">Escolha o idioma:</text>
+		<text lang="fi">Valitse kielesi:</text>
     </entry>
     <entry key="license.text">
         <text lang="en">
@@ -4104,6 +4498,13 @@ See French text.
       O software é livre e você pode distribuir sob certas
       <a href="license">condições</a>.</p>
         </text>		
+        <text lang="fi">
+            <strong>Rapla</strong> versio @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
+      <p>
+                <strong>Rapla</strong>ssa ei ole <a href="warranty">TAKUUTA</a>!!
+      Tämä on ilmaisohjelma, saat jakaa sitä tietyin
+      <a href="license">ehdoin</a>.</p>
+        </text>	
     </entry>
     <!-- filter -->
     <entry key="filter_reservation.all">
@@ -4115,6 +4516,7 @@ See French text.
 		<text lang="nl">Voor alle gebruikers</text>
 		<text lang="pl">Wszystkie rezerwacje</text>
 		<text lang="pt">De todos os usuários</text>
+		<text lang="fi">Kaikilta käyttäjiltä</text>
     </entry>
     <entry key="filter_reservation.own">
         <text lang="en">Own events</text>
@@ -4125,6 +4527,7 @@ See French text.
         <text lang="nl">Eigen reservaties</text>
         <text lang="pl">Moje rezerwacje</text>
 		<text lang="pt">Eventos próprios</text>
+		<text lang="fi">Omat tapahtumat</text>
     </entry>
     <entry key="filtername">
         <text lang="en">Filter name</text>
@@ -4135,6 +4538,7 @@ See French text.
         <text lang="nl">Filter naam</text>
         <text lang="pl">Nazwa filtra</text>
 		<text lang="pt">Nome do filtro</text>
+		<text lang="fi">Suodattimen nimi</text>
     </entry>
     <entry key="filter.is_smaller_than">
         <text lang="en">is smaller than</text>
@@ -4145,6 +4549,7 @@ See French text.
         <text lang="nl">kleiner dan</text>
         <text lang="pl">mniejsze niż</text>
 		<text lang="pt">É menor que</text>
+		<text lang="fi">on pienempi kuin</text>
     </entry>
     <entry key="filter.is_greater_than">
         <text lang="en">is greater than</text>
@@ -4155,6 +4560,7 @@ See French text.
         <text lang="nl">groter dan</text>
         <text lang="pl">większe niż</text>
 		<text lang="pt">É maior que</text>
+		<text lang="fi">on suurempi kuin</text>
     </entry>
     <entry key="filter.smaller_or_equals">
         <text lang="en">smaller than or equal</text>
@@ -4165,6 +4571,7 @@ See French text.
         <text lang="nl">kleiner dan of gelijk</text>
         <text lang="pl">mniejsze niż lub równe</text>
 		<text lang="pt">Menor ou igual</text>
+		<text lang="fi">pienempi tai yhtä suuri kuin</text>
     </entry>
     
     <entry key="filter.greater_or_equals">
@@ -4176,6 +4583,7 @@ See French text.
         <text lang="nl">groter dan of gelijk</text>
         <text lang="pl">większe niż lub równe</text>
 		<text lang="pt">Maior ou igual</text>
+		<text lang="fi">suurempi tai yhtä suuri kuin</text>
     </entry>
   
     <entry key="filter.earlier_than">
@@ -4197,6 +4605,7 @@ See French text.
         <text lang="nl">later dan</text>
         <text lang="pl">po</text>
 		<text lang="pt">Depois de</text>
+		<text lang="fi">on myöhemmin kuin</text>
     </entry>
     <entry key="filter.equals">
         <text lang="en">equals</text>
@@ -4207,6 +4616,7 @@ See French text.
         <text lang="nl">gelijk aan</text>
         <text lang="pl">dokładnie</text>
 		<text lang="pt">Igual</text>
+		<text lang="fi">vastaa</text>
     </entry>
       <entry key="filter.not_equals">
         <text lang="en">is not equal to</text>
@@ -4217,6 +4627,7 @@ See French text.
         <text lang="nl">ongelijk</text>
         <text lang="pl">jest inny niż</text>
 		<text lang="pt">diferente de</text>
+		<text lang="fi">ei vastaa</text>
     </entry>   
     <entry key="filter.contains">
         <text lang="en">contains</text>
@@ -4227,6 +4638,7 @@ See French text.
         <text lang="nl">bevat</text>
         <text lang="pl">zawiera</text>
 		<text lang="pt">Contém</text>
+		<text lang="fi">sisältää</text>
     </entry>
     <entry key="filter.starts">
         <text lang="en">starts with</text>
@@ -4238,6 +4650,7 @@ See French text.
         <text lang="pl">zaczyna się od</text>
         <text lang="da">begynder med</text>
 		<text lang="pt">Começa com</text>
+		<text lang="fi">alkaa</text>
     </entry>
     <entry key="filter_restrictions">
         <text lang="en">Restrict view of {0}</text>
@@ -4248,6 +4661,7 @@ See French text.
         <text lang="nl">beperk beeld van {0}</text>
         <text lang="pl">Ogranicz widok {0}</text>
 		<text lang="pt">Restringir visualização de {0}</text>
+		<text lang="fi">Rajoita näkymää {0}</text>
     </entry>
     <entry key="filter_allocatable">
         <text lang="en">Resources and persons</text>
@@ -4258,6 +4672,7 @@ See French text.
         <text lang="nl">Personen &amp; Materialen</text>
         <text lang="pl">Zasoby i Osoby</text>
 		<text lang="pt">Recursos e Pessoas</text>
+		<text lang="fi">Resurssit ja henkilöt</text>
     </entry>
     <entry key="only_own_reservations">
         <text lang="en">Only Own Reservations</text>
@@ -4268,6 +4683,7 @@ See French text.
         <text lang="nl">Enkel eigen reservaties</text>
         <text lang="pl">Tylko moje rezerwacje</text>
 		<text lang="pt">Apenas reservas próprias</text>
+		<text lang="fi">Vain omat varaukset</text>
     </entry>
     <entry key="reservations_from_all_users">
         <text lang="en">Events from all users</text>
@@ -4278,6 +4694,7 @@ See French text.
         <text lang="nl">Reservaties van alle gebruikers</text>
         <text lang="pl">Rezerwacje wszystkich</text>
 		<text lang="pt">Reservas de todos os usuários</text>
+		<text lang="fi">Tapahtumat kaikilta käyttäjiltä</text>
     </entry>
     <entry key="complete_time">
         <text lang="en">Complete time</text>
@@ -4288,6 +4705,7 @@ See French text.
         <text lang="nl">volledige duur</text>
         <text lang="pl">Całkowity czas</text>
 		<text lang="pt">Tempo total</text>
+		<text lang="fi">Kokonaisaika</text>
     </entry>
     <entry key="all_filtered">
         <text lang="en">All filtered objects.</text>
@@ -4298,6 +4716,7 @@ See French text.
         <text lang="nl">alle gefilterde objecten.</text>
         <text lang="pl">Wszystkie filtrowane obiekty.</text>
 		<text lang="pt">Todos os objetos filtrados</text>
+		<text lang="fi">Kaikki suodatetut kohteet</text>
     </entry>
     <entry key="new_rule">
         <text lang="en">New rule for</text>
@@ -4308,6 +4727,7 @@ See French text.
         <text lang="nl">Nieuwe regel</text>
         <text lang="pl">Nowa reguła dla</text>
 		<text lang="pt">Nova regra para</text>
+		<text lang="fi">Uusi sääntö</text>
     </entry>
 
     <!-- Weekview  -->
@@ -4320,6 +4740,7 @@ See French text.
         <text lang="nl">Toewijzing van {0}</text>
         <text lang="pl">Przydzielenie {0}</text>
 		<text lang="pt">Alocação de {0}</text>
+		<text lang="fi">{0}:n varaus</text>
     </entry>
 
     <!-- Print-Preview -->
@@ -4332,6 +4753,7 @@ See French text.
         <text lang="nl">Afdrukvoorbeeld</text>
         <text lang="pl">Podgląd wydruku</text>
 		<text lang="pt">Visualizar impressão</text>
+		<text lang="fi">Tulostuksen esikatselu</text>
     </entry>
     <entry key="weekview.print.postscript">
         <text lang="en">Postscript</text>
@@ -4342,6 +4764,7 @@ See French text.
         <text lang="nl">Postscript</text>
         <text lang="pl">Postscript</text>
 		<text lang="pt">Postscript</text>
+		<text lang="fi">Jälkikirjoitus</text>
     </entry>
     <entry key="weekview.print.choose_export">
         <text lang="en">Choose your save method!</text>
@@ -4352,6 +4775,7 @@ See French text.
         <text lang="nl">Kies opslag methode!</text>
         <text lang="pl">Wybierz metodę zapisu!</text>
 		<text lang="pt">Selecione o método de salvamento!</text>
+		<text lang="fi">Valitse tallennusmenetelmä!</text>
     </entry>
     <entry key="weekview.print.format_button">
         <text lang="en">Printer Preferences</text>
@@ -4362,6 +4786,7 @@ See French text.
         <text lang="nl">Printer voorkeur</text>
         <text lang="pl">Ustawienia drukarki</text>
 		<text lang="pt">Preferências de impressão</text>
+		<text lang="fi">Tulostimen asetukset</text>
     </entry>
     <entry key="weekview.print.title_textfield">
         <text lang="en">Title</text>
@@ -4372,6 +4797,7 @@ See French text.
         <text lang="nl">Titel</text>
         <text lang="pl">Tytuł</text>
 		<text lang="pt">Título</text>
+		<text lang="fi">Otsikko</text>
     </entry>
     <!-- Mainframe -->
     <entry key="rapla.title">
@@ -4383,6 +4809,7 @@ See French text.
         <text lang="nl">Rapla, Smart Planning</text>
         <text lang="pl">Rapla, i przydzielanie zasobów</text>
 		<text lang="pt">Rapla, planejamento inteligente</text>
+		<text lang="fi">Rapla, fiksu resurssien- ja tapahtumien hallinta</text>
     </entry>
     <entry key="rapla.name">
         <text lang="en">Rapla</text>
@@ -4392,6 +4819,8 @@ See French text.
         <text lang="cs">Rapla</text>
         <text lang="pl">Rapla</text>
 		<text lang="pt">Rapla</text>
+		<text lang="fi">Rapla</text>
+		
     </entry>
     <entry key="rapla.welcome">
         <text lang="en">Hello {0}, enjoy planning!</text>
@@ -4402,6 +4831,7 @@ See French text.
         <text lang="nl">Online: {0}</text>
         <text lang="pl">Witaj, {0}! Przyjemnego planowania!</text>
 		<text lang="pt">Olá {0}, planeje com prazer!</text>
+		<text lang="fi">Hei {0}, antoisaa järjestelyä!</text>
     </entry>
     <!-- Options -->
     <entry key="database">
@@ -4413,6 +4843,7 @@ See French text.
         <text lang="nl">Databank</text>
         <text lang="pl">Baza danych</text>
 		<text lang="pt">Banco de dados</text>
+		<text lang="fi">Tietokanta</text>
     </entry>
     <entry key="display_exceptions">
         <text lang="en">Display exceptions in calendar</text>
@@ -4423,6 +4854,7 @@ See French text.
         <text lang="nl">Uitzonderingen</text>
         <text lang="pl">Pokaż wyjątki w kalendarzu</text>
 		<text lang="pt">Exibir exceções no calendário</text>
+		<text lang="fi">Näytä poikkeukset kalenterissa</text>
    </entry>
    <entry key="show_conflicts">
         <text lang="en">Display conflicts</text>
@@ -4433,6 +4865,7 @@ See French text.
         <text lang="nl">Conflicten</text>
         <text lang="pl">Pokaż konflikty</text>
 		<text lang="pt">Mostrar conflitos</text>
+		<text lang="fi">Näytä ristiriidat</text>
    </entry>
    <entry key="show_resource_selection">
         <text lang="en">Display resource selection</text>
@@ -4443,6 +4876,7 @@ See French text.
         <text lang="nl">Middelen</text>
         <text lang="pl">Pokaż wybór zasobów</text>
 		<text lang="pt">Mostrar seleção de recursos</text>
+		<text lang="fi">Näytä resurssivalinta</text>
    </entry>
    <entry key="show_tips">
         <text lang="en">Display mouse-over tips</text>
@@ -4453,6 +4887,7 @@ See French text.
         <text lang="nl">Tips</text>
         <text lang="pl">Pokazuj podpowiedzi po najechaniu myszką</text>
 		<text lang="pt">Mostrar dicas</text>
+		<text lang="fi">Näytä mouseover-vinkit</text>
    </entry>
    <entry key="exclude_days">
         <text lang="en">Exclude days</text>
@@ -4462,6 +4897,7 @@ See French text.
         <text lang="nl">Uitgesloten dagen:</text>
         <text lang="pl">Wyłącz dni</text>
 		<text lang="pt">Excluir dias</text>
+		<text lang="fi">Älä sisällytä päiviä</text>
    </entry>
    <entry key="events_not_matched_by_filter">
         <text lang="en">Events not matched by filter</text>
@@ -4471,6 +4907,7 @@ See French text.
         <text lang="nl">Uitgefilterde reservaties</text>
         <text lang="pl">Zdarzenia odfiltrowane</text>
 		<text lang="pt">Eventos que não coincidam com o filtro</text>
+		<text lang="fi">Tapahtumat eivät vastaa suodatinta</text>
    </entry>
     <entry key="rows_per_hour">
         <text lang="en">Rows per hour</text>
@@ -4481,6 +4918,7 @@ See French text.
         <text lang="nl">Tijdsdelen per uur:</text>
         <text lang="pl">Podziałka godzin</text>
 		<text lang="pt">Linhas por hora</text>
+		<text lang="fi">Riviä per tunti</text>
     </entry>
     <entry key="restart_client">
         <text lang="en">Restart Rapla client</text>
@@ -4491,6 +4929,7 @@ See French text.
         <text lang="nl">Herstart gebruiker</text>
         <text lang="pl">Uruchom Rapla ponownie</text>
 		<text lang="pt">Reiniciar Rapla</text>
+		<text lang="fi">Käynnistä Rapla uudelleen</text>
     </entry>
     <entry key="restart_server">
         <text lang="en">Restart Server</text>
@@ -4501,6 +4940,7 @@ See French text.
         <text lang="nl">Herstart Rapla server</text>
         <text lang="pl">Uruchom serwer ponownie</text>
 		<text lang="pt">Reiniciar Servidor</text>
+		<text lang="fi">Käynnistä palvelin uudelleen</text>
     </entry>
     <entry key="reload_data">
         <text lang="en">Load data</text>
@@ -4511,6 +4951,7 @@ See French text.
         <text lang="nl">herladen gegevens</text>
         <text lang="pl">Odśwież dane</text>
 		<text lang="pt">Carregar dados</text>
+		<text lang="fi">Lataa tiedot</text>
         
     </entry>
     <!-- misc format - strings  -->
@@ -4523,6 +4964,7 @@ See French text.
         <text lang="nl">Nieuw reservatie {0}</text>
         <text lang="pl">Nowe rezerwacja: {0}</text>
 		<text lang="pt">Novo evento: {0}</text>
+		<text lang="fi">Uusi tapahtuma: {0}</text>
     </entry>
     <entry key="edit_reservation.format">
         <text lang="en">Edit event: {0}</text>
@@ -4533,6 +4975,7 @@ See French text.
         <text lang="nl">Bewerk reservatie {0}</text>
         <text lang="pl">Edytuj rezerwacja: {0}</text>
 		<text lang="pt">Editar evento: {0}</text>
+		<text lang="fi">Muokkaa tapahtumaa: {0}</text>
     </entry>
     <entry key="edit.format">
         <text lang="en">Edit {0}</text>
@@ -4543,6 +4986,7 @@ See French text.
         <text lang="nl">Bewerk {0}</text>
         <text lang="pl">Edytuj {0}</text>
 		<text lang="pt">Editar {0}</text>
+		<text lang="fi">Muokkaa {0}</text>
     </entry>
     <entry key="delete.format">
         <text lang="en">Delete {0}</text>
@@ -4553,6 +4997,7 @@ See French text.
         <text lang="nl">Verwijder: {0}</text>
         <text lang="pl">Usuń {0}</text>
 		<text lang="pt">Excluir: {0}</text>
+		<text lang="fi">Poista {0}</text>
     </entry>
     <entry key="translation.format">
         <text lang="en">Translations for &quot;{0}&quot;:</text>
@@ -4563,6 +5008,7 @@ See French text.
         <text lang="nl">Vertaling voor &quot;{0}&quot;:</text>
         <text lang="pl">Tłumaczenia na &quot;(0)&quot;:</text>
 		<text lang="pt">Traduções para &quot;{0}&quot;:</text>
+		<text lang="fi">Käännökset &quot;{0}&quot;:</text>
     </entry>
     <entry key="change.format">
         <text lang="en">Change {0}</text>
@@ -4573,6 +5019,7 @@ See French text.
         <text lang="nl">Wijzig {0}</text>
         <text lang="pl">Zmień {0}</text>
 		<text lang="pt">Modificar {0}</text>
+		<text lang="fi">Muuta {0}</text>
     </entry>
     <entry key="exclamation.format">
         <text lang="en">{0} !</text>
@@ -4583,6 +5030,7 @@ See French text.
         <text lang="nl">{0} !</text>
         <text lang="pl">{0} !</text> 
 		<text lang="pt">{0} !</text>
+		<text lang="fi">{0} !</text>
     </entry>
     <entry key="list.format">
         <text lang="en">{0}: {1}</text>
@@ -4593,6 +5041,7 @@ See French text.
         <text lang="nl">{0}: {1}</text>
         <text lang="pl">{0}: {1}</text>
 		<text lang="pt">{0}: {1}</text>
+		<text lang="fi">{0}: {1}</text>
     </entry>
     <entry key="all-day">
         <text lang="en">all-day</text>
@@ -4603,6 +5052,7 @@ See French text.
 		<text lang="nl">24u</text>
 		<text lang="pl">cały dzień</text>
 		<text lang="pt">O dia todo</text>
+		<text lang="fi">koko päivä</text>
     </entry>
     <entry key="error.remove_object">
         <text lang="en">You cannot remove object {0} directly. Please remove it from the parent.</text>
@@ -4613,6 +5063,7 @@ See French text.
         <text lang="nl">Ja kan het voorwerp {0} niet rechtstreeks verwijderen. Verwijder deze van een hoger niveau.</text>
 		<text lang="pl">Nie można bezpośrednio usunąć obiektu {0}. Proszę usunąć go z wyższego poziomu.</text>
 		<text lang="pt">Você não pode remover o objeto {0} diretamente. Por favor remova-o a partir do objeto pai.</text>
+		<text lang="fi">Et voi poistaa kohdetta {0} suoraan. Poista se emosta.</text>
 
     </entry>
     <entry key="restart_options">
@@ -4622,6 +5073,7 @@ See French text.
         <text lang="nl">Om de wijzigingen te activeren moet je Rapla herstarten!</text>
         <text lang="pl">Zmiany zostaną wprowadzone po ponownym uruchomieniu Rapla.</text>
 		<text lang="pt">Você precisa reiniciar o Rapla/Servidor do Rapla quando modificar as opções!</text>
+		<text lang="fi">Sinun täytyy käynnistää Rapla/Rapla-palvelin uudelleen kun muutat asetuksia!</text>
     </entry>
 
     <entry key="custom_applicationame">
@@ -4633,6 +5085,7 @@ See French text.
     	<text lang="nl">Naam van de toepassing</text>
       	<text lang="pl">Nazwa aplikacji</text>
 		<text lang="pt">Nome da aplicação</text>		
+        <text lang="fi">sovelluksen nimi</text>		
     </entry>
     <entry key="timezone">
     	<text lang="en">timezone</text>
@@ -4643,6 +5096,7 @@ See French text.
     	<text lang="nl">tijdzone</text>
       	<text lang="pl">Strefa czasowa</text>
 		<text lang="pt">Fuso horário</text>		
+        <text lang="fi">aikavyöhyke</text>		
     </entry>
     
     
@@ -4655,6 +5109,7 @@ See French text.
         <text lang="nl">Terugzetten</text>
         <text lang="pl">Resetuj</text>
 		<text lang="pt">Reconfigurar</text>
+		<text lang="fi">Oletusarvojen palautus</text>
     </entry>
     <entry key="clear">
         <text lang="en">clear</text>
@@ -4665,6 +5120,7 @@ See French text.
         <text lang="nl">Opschonen</text>
         <text lang="pl">Wyczyść</text>
 		<text lang="pt">Limpar</text>
+		<text lang="fi">tyhjennä</text>
     </entry>
   	<entry key="defaultselection">
         <text lang="en">Default Selection</text>
@@ -4675,6 +5131,7 @@ See French text.
         <text lang="nl">Standaard Selectie</text>
         <text lang="pl">Wybór domyślny</text>
 		<text lang="pt">Seleção Padrão</text>
+		<text lang="fi">Oletusvalinta</text>
     </entry>
         <entry key="warning.max-one-eventtype">
         <text lang="en">Only <strong>1</strong> event type is allowed. Adjust the filter!</text>
@@ -4686,6 +5143,7 @@ See French text.
         <text lang="pl">Tylko 1 zdarzenie typu jest dozwolone. Ustaw filtr!</text>
         <text lang="pl">Tylko <strong>1</strong> typ Zdarzenia jest dozwolony. Ustaw filtr!</text>
         <text lang="pt"> Apenas 1 tipo de evento é permitido. Ajuste  filtro.</text>
+		<text lang="fi">Vain 1 tapahtumatyyppi on sallittu. Säädä suodatinta!</text>
     </entry>
         <entry key="including_date">
     	<text lang="en">Include date: {0}</text>
@@ -4696,6 +5154,7 @@ See French text.
     	<text lang="nl">met datum / interval = {0}</text>
     	<text lang="pl">w tym dniu: {0}</text>
 		<text lang="pt">Incluir data: {0}</text>
+		<text lang="fi">Sisällytä päivämäärä {0}</text>
   	</entry>
   	<entry key="occupation">
     	<text lang="en">Occupation</text>
@@ -4706,6 +5165,7 @@ See French text.
     	<text lang="nl">Bezetting</text>
     	<text lang="pl">Zawód</text>
 		<text lang="pt">Ocupação</text>
+		<text lang="fi">Ammatti</text>
     </entry>
     <entry key="day1week">
         <text lang="en">Day 1 of the week</text>
@@ -4716,6 +5176,7 @@ See French text.
         <text lang="nl">Eerste dag van een week</text>
         <text lang="pl">Pierwszy dzień tygodnia</text>
 		<text lang="pt">1º dia da semana</text>
+		<text lang="fi">Viikon ensimmäinen päivä</text>
     </entry>    
     <entry key="daysInWeekview">
         <text lang="en">Days in Weekview</text>
@@ -4726,6 +5187,7 @@ See French text.
         <text lang="nl">Aantal dagen in een week</text>
         <text lang="pl">Dzień w widoku Tygodnia</text>
 		<text lang="pt">Dias na visualização da semana</text>
+		<text lang="fi">Päiviä viikkonäkymässä</text>
     </entry>
     <entry key="minimumBlockWidth">
         <text lang="en">Minimum block width</text>
@@ -4736,6 +5198,7 @@ See French text.
         <text lang="nl">Minimum blok breedte</text>
         <text lang="pl">Minimalna szerokość bloku</text>
 		<text lang="pt">Largura mínima do bloco</text>
+		<text lang="fi">Lohkon minimileveys</text>
     </entry>
     <entry key="redo">
         <text lang="en">Redo</text>
@@ -4747,6 +5210,7 @@ See French text.
         <text lang="pl">Ponów</text>
         <text lang="da">reconstituir</text>
 		<text lang="pt">Refazer</text>
+		<text lang="fi">Tee uudelleen</text>
     </entry>
     <entry key="undo">
         <text lang="en">Undo</text>
@@ -4758,6 +5222,7 @@ See French text.
         <text lang="pl">Cofnij</text>
         <text lang="da">reconstituir</text>
 		<text lang="pt">Desfazer</text>
+		<text lang="fi">Kumoa</text>
     </entry>
     <entry key="show_password">
     	<text lang="en">Show password</text>
@@ -4768,6 +5233,7 @@ See French text.
     	<text lang="nl">Toon paswoord</text>  
 		<text lang="pl">Pokaż hasło</text>
 		<text lang="pt">Mostrar senha</text>		
+        <text lang="fi">Näytä salasana</text>		
     </entry> 
     
     <!--  the user groups translations -->
@@ -4779,6 +5245,7 @@ See French text.
        <text lang="nl">Gebruikersgroepen</text>
        <text lang="pl">Grupy użytkowników</text>
 	   <text lang="pt">Grupos de usuários</text>
+	   <text lang="fi">käyttäjäryhmät</text>
     </entry> 
     <entry key="registerer">
        <text lang="de">Ressourcen eintragen</text>
@@ -4788,6 +5255,7 @@ See French text.
        <text lang="nl">Middelen-Personen opslaan</text>
        <text lang="pl">Rejestracja Zasobów</text>
 	   <text lang="pt">Registrar recursos</text>
+	   <text lang="fi">Rekisteröi resurssit</text>
     </entry>
     <entry key="modify-preferences">
        <text lang="de">Einstellungen bearbeiten</text>
@@ -4797,6 +5265,7 @@ See French text.
        <text lang="nl">Opties wijzigen</text>
        <text lang="pl">Modyfikacja Preferencji</text>
 	   <text lang="pt">Modificar as preferências</text>
+	   <text lang="fi">muokkaa valintoja</text>
     </entry>
     <entry key="read-events-from-others">
        <text lang="de">Die Veranstaltungen anderer sehen</text>
@@ -4806,6 +5275,7 @@ See French text.
        <text lang="nl">Events bekijken van andere gebruikers</text>
        <text lang="pl">Widok wydarzeń innych użytkowników</text>
 	   <text lang="pt">Visualizar eventos de outros usuários</text>
+	   <text lang="fi">Näe muiden käyttäjien tapahtumat</text>
     </entry>
     <entry key="create-events">
        <text lang="de">Veranstaltungen anlegen</text>
@@ -4815,6 +5285,7 @@ See French text.
        <text lang="nl">Reservaties opslaan</text>
        <text lang="pl">Tworzenie wydarzeń</text>       
 	   <text lang="pt">Criar eventos</text>
+	   <text lang="fi">luo tapahtumia</text>
     </entry>
     <entry key="edit-templates">
        <text lang="en">edit templates</text>
@@ -4825,6 +5296,7 @@ See French text.
        <text lang="nl">Sjablonen bewerken</text> 
 	   <text lang="pl">Edycja szablonów</text>
 	   <text lang="pt">Editar modelos</text>	   
+	   <text lang="fi">muokkaa mallia</text>
     </entry>
     <entry key="close-template">
        <text lang="en">close template</text>
@@ -4835,6 +5307,7 @@ See French text.
        <text lang="nl">Sluit bewerken</text> 
 	   <text lang="pl">Zamykanie szablonów</text>
        <text lang="pt">Fechar modelo</text>	   
+       <text lang="fi">sulje malli</text>	   
     </entry>
     <entry key="new_reservations_from_template">
        <text lang="en">New event with template</text>
@@ -4845,6 +5318,7 @@ See French text.
        <text lang="nl">Nieuwe reservatie met sjabloon</text>
 	   <text lang="pl">Nowe zdarzenia z szablonu</text>
 	   <text lang="pt">Novo evento a partir de um modelo</text>
+	   <text lang="fi">Uusi tapahtuma mallilla</text>
     </entry>
     <entry key="csv.export">
         <text lang="en">Export to CSV</text>
@@ -4855,6 +5329,7 @@ See French text.
         <text lang="nl">Export to CSV</text>
         <text lang="pl">Export do CSV</text>
 		<text lang="pt">Exportar para CSV</text>
+		<text lang="fi">Vie CSV:hen</text>
     </entry>
         <entry key="error.deletehimself">
         <text lang="en">"User can't delete himself."</text>
@@ -4865,6 +5340,7 @@ See French text.
         <text lang="nl">Gebruiker kan zichzelf niet verwijderen.</text>
         <text lang="pl">Użytkownik nie może usunąć sam.</text>
 		<text lang="pt">O usuário não pode excluir-se.</text>
+		<text lang="fi">"Käyttäjä ei voi poistaa itseään."</text>
     </entry>
     <entry key="nameformat_planning">
         <text lang="en">Displayed name format in resource tree</text>
@@ -4875,12 +5351,14 @@ See French text.
         <text lang="nl">Weergave naam formaat in de folder</text>
         <text lang="pl">Format wyświetlanej nazwy w ulotce</text>
 		<text lang="pt">Formato de exibição do nome no folheto</text>
+		<text lang="fi">Resurssipuussa näytettävä nimen muoto</text>
     </entry>
     <entry key="nameformat_export">
         <text lang="en">Displayed name format in export</text>
         <text lang="de">Anzeigeformatierung im Export</text>
         <text lang="fr">Mettre en forme l'affichage dans le exporter</text>
         <text lang="es">Formato de nombre visualizado si exporta</text>
+		<text lang="fi">Viennissä näytettävä nimen muoto</text>
     </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>
@@ -4891,6 +5369,7 @@ See French text.
         <text lang="nl">Is een plaats</text>
         <text lang="pl">Jest to miejsce,</text>
 		<text lang="pt">É um lugar</text>
+		<text lang="fi">On sijainti</text>
     </entry>
     <entry key="conflicts.never">
         <text lang="en">never</text>
@@ -4901,6 +5380,7 @@ See French text.
         <text lang="nl">nooit</text>
         <text lang="pl">nigdy</text>
 		<text lang="pt">nunca</text>
+		<text lang="fi">ei koskaan</text>
     </entry>
     <entry key="conflicts.always">
         <text lang="en">always</text>
@@ -4911,6 +5391,7 @@ See French text.
         <text lang="nl">altijd</text>
         <text lang="pl">zawsze</text>
 		<text lang="pt">sempre</text>
+		<text lang="fi">aina</text>
     </entry>
     <entry key="conflicts.withOtherTypes">
         <text lang="en">not with same event type</text>
@@ -4921,6 +5402,7 @@ See French text.
         <text lang="nl">niet met zelfde soort event</text>
         <text lang="pl">nie z samego typu zdarzenia</text>
 		<text lang="pt">não com o mesmo tipo de evento</text>
+		<text lang="fi">ei saman tapahtumatyypin kanssa</text>
     </entry>
     
    <entry key="sorting">
@@ -4932,6 +5414,7 @@ See French text.
         <text lang="nl">Sorteervolgorde</text>
         <text lang="pl">Sortuj Zamówienie</text>
 		<text lang="pt">Ordem de classificação</text>        
+        <text lang="fi">Järjestys</text>		
     </entry>
     <entry key="sorting.ascending">
         <text lang="en">ascending</text>
@@ -4942,6 +5425,7 @@ See French text.
         <text lang="nl">Stijgend</text>
         <text lang="pl">rosnąco</text>
 		<text lang="pt">ascendente</text>   
+        <text lang="fi">nouseva</text>		
     </entry>
     <entry key="sorting.descending">
         <text lang="en">descending</text>
@@ -4952,6 +5436,7 @@ See French text.
         <text lang="nl">Dalend</text>
         <text lang="pl">malejąco</text>
 		<text lang="pt">descendente</text>   
+		<text lang="fi">laskeva</text>
     </entry>
     <entry key="sorting.nothing_selected">
         <text lang="en">no sorting</text>
@@ -4962,5 +5447,6 @@ See French text.
         <text lang="nl">Geen volgorde</text>
         <text lang="pl">bez sortowania</text>
 		<text lang="pt">sem classificação</text>   
+        <text lang="fi">ei järjestelyä</text>		
     </entry>
 </resources>
