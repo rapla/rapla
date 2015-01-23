@@ -1019,6 +1019,7 @@ See French text.
         <text lang="en">test</text>
         <text lang="de">Test</text>
 		<text lang="pt">Teste</text>
+		<text lang="fi">testi</text>
     </entry>
     <entry key="fixed_date">
         <text lang="en">Fixed Date</text>
@@ -1029,6 +1030,7 @@ See French text.
         <text lang="nl">Vaste datum</text>
         <text lang="pl">Ustalona data</text>
 		<text lang="pt">Data Fixa</text>
+		<text lang="fi">Kiinteä päivämäärä</text>
     </entry>
     <entry key="for">
         <text lang="en">for</text>
@@ -1039,6 +1041,7 @@ See French text.
         <text lang="nl">voor</text>
         <text lang="pl">dla / na</text>
 		<text lang="pt">para</text>
+		<text lang="fi">mille:</text>
     </entry>
     <entry key="goto_date">
         <text lang="en">Go to Date</text>
@@ -1510,6 +1513,7 @@ See French text.
         <text lang="nl">van</text>
         <text lang="pl">o</text>
 		<text lang="pt">Em</text>
+		<text lang="fi">milloin:</text>
     </entry>
     <entry key="time_until">
         <text lang="en">until</text>
@@ -1608,6 +1612,7 @@ See French text.
         <text lang="nl">met</text>
         <text lang="pl">z</text>
 		<text lang="pt">com</text>
+		<text lang="fi">minkä kanssa:</text>
     </entry>
     
     <entry key="warnings">
@@ -4595,6 +4600,7 @@ See French text.
         <text lang="nl">vroeger dan</text>
         <text lang="pl">przed</text>
 		<text lang="pt">Antes de</text>
+		<text lang="fi">on aikaisemmin kuin</text>
     </entry>
     <entry key="filter.later_than">
         <text lang="en">is later than</text>
