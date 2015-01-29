@@ -16,11 +16,13 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.RaplaGUIComponent;
 
@@ -43,13 +45,15 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 	private JCheckBox chkExportAttendees;
 	private JTextArea txtEMailRessourceAttribute;
     private JComboBox cbDefaultParticipationsStatusRessourceAttribute;
+    private ICalConfigService configService;
 
-    public Export2iCalAdminOption(RaplaContext sm){
+    public Export2iCalAdminOption(RaplaContext sm, ICalConfigService configService){
 		super(sm);
+		this.configService = configService;
 	}
 
 	protected JPanel createPanel() throws RaplaException {
-		spiLastModifiedInterval = new JSpinner(new SpinnerNumberModel(5, 0, 365, 1));
+		spiLastModifiedInterval = new JSpinner(new SpinnerNumberModel(5, 0, null, 1));
 		chkUseLastModifiedIntervall = new JCheckBox("do not deliver new calendar");
 		chkExportAttendees = new JCheckBox("export attendees of vevent");
         txtEMailRessourceAttribute = new JTextArea(Export2iCalPlugin.DEFAULT_attendee_resource_attribute);
@@ -65,8 +69,8 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
         cbDefaultParticipationsStatusRessourceAttribute.setToolTipText("Define the default value for participation status");
 
 
-		spiDaysBefore = new JSpinner(new SpinnerNumberModel(Export2iCalPlugin.DEFAULT_daysBefore, 0, 365, 1));
-		spiDaysAfter = new JSpinner(new SpinnerNumberModel(Export2iCalPlugin.DEFAULT_daysAfter, 0, 365, 1));
+		spiDaysBefore = new JSpinner(new SpinnerNumberModel(Export2iCalPlugin.DEFAULT_daysBefore, 0, null, 1));
+		spiDaysAfter = new JSpinner(new SpinnerNumberModel(Export2iCalPlugin.DEFAULT_daysAfter, 0, null, 1));
 		optGlobalInterval = new JRadioButton("global interval setting");
 		optUserInterval = new JRadioButton("user interval settings");
 		lblLastModifiedInterval = new JLabel("interval for delivery in days");
@@ -120,6 +124,16 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 		return panel;
 	}
 
+	
+    @Override
+    public void commit() throws RaplaException {
+        writePluginConfig(false);
+        TypedComponentRole<RaplaConfiguration> configEntry = Export2iCalPlugin.ICAL_CONFIG;
+        RaplaConfiguration newConfig = new RaplaConfiguration("config" );
+        addChildren( newConfig );
+        preferences.putEntry( configEntry,newConfig);
+    }
+    
 	protected void addChildren(DefaultConfiguration newConfig) {
 		newConfig.getMutableChild(Export2iCalPlugin.DAYS_BEFORE, true).setValue(Integer.parseInt(spiDaysBefore.getValue().toString()));
 		newConfig.getMutableChild(Export2iCalPlugin.DAYS_AFTER, true).setValue(Integer.parseInt(spiDaysAfter.getValue().toString()));
@@ -135,7 +149,16 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 	}
 
 	protected void readConfig(Configuration config) {
-	
+        try
+        {
+            config = configService.getConfig();
+        } 
+        catch (RaplaException ex)
+        {
+            showException(ex, getComponent());
+            return;
+        }
+	    
 		int daysBefore = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
 		int daysAfter = config.getChild(Export2iCalPlugin.DAYS_AFTER).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysAfter);
 		int lastModifiedIntervall = config.getChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL).getValueAsInteger(Export2iCalPlugin.DEFAULT_lastModifiedIntervall);

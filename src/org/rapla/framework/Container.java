@@ -14,16 +14,21 @@ package org.rapla.framework;
 
 import java.util.Collection;
 
+import org.rapla.components.xmlbundle.I18nBundle;
+
 public interface Container extends Disposable
 {
      RaplaContext getContext();
-     /** lookup an named component from the raplaserver.xconf 
-      * @deprecated*/
+     /** lookup an named component from the raplaserver.xconf
+      * @deprecated will be removed in 2.0 use TypedComponenteRole instead */
      <T> T lookup(Class<T> componentRole, String hint) throws RaplaContextException;
 
      <T,I extends T> void addContainerProvidedComponent(Class<T> roleInterface,Class<I> implementingClass);
+     /** @deprecated use system preferences to store config instead */ 
      <T,I extends T> void addContainerProvidedComponent(Class<T> roleInterface,Class<I> implementingClass, Configuration config);
      <T,I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass);
+     void addResourceFile(TypedComponentRole<I18nBundle> resourceFile);
+     /** @deprecated use system preferences to store config instead. Use addResourceFile for language resources */
      <T,I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass, Configuration config);
   
      /** lookup all services for this role*/

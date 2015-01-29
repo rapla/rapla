@@ -15,7 +15,6 @@ package org.rapla.plugin.notification;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.Configuration;
@@ -35,7 +34,7 @@ public class NotificationPlugin implements PluginDescriptor<ClientServiceContain
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addContainerProvidedComponent( RESOURCE_FILE, I18nBundleImpl.class, I18nBundleImpl.createConfig( RESOURCE_FILE.getId() ) );
+        container.addResourceFile(RESOURCE_FILE);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, NotificationOption.class);
     }
 

@@ -3,7 +3,6 @@ package org.rapla.plugin.eventtimecalculator;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
@@ -44,7 +43,7 @@ public class EventTimeCalculatorPlugin implements PluginDescriptor<ClientService
      * uses the extension points to provide the different services of the plugin.
      */
     public void provideServices(ClientServiceContainer container, Configuration config) {
-        container.addContainerProvidedComponent(RESOURCE_FILE, I18nBundleImpl.class,  I18nBundleImpl.createConfig(RESOURCE_FILE.getId()));
+        container.addResourceFile(RESOURCE_FILE);
         container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, EventTimeCalculatorAdminOption.class);
         if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
             return;

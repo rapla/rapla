@@ -257,6 +257,7 @@ public class MailOption extends DefaultPluginOption {
     	catch (RaplaException ex)
     	{
     	    showException(ex, getComponent());
+    	    return;
     	}
     	listenersEnabled = false;
         try

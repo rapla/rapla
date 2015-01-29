@@ -188,6 +188,12 @@ public class ContainerImpl implements Container
         }
     }
 
+    public void addResourceFile(TypedComponentRole<I18nBundle> file)
+    {
+        Configuration config = I18nBundleImpl.createConfig( file.getId() );
+        addContainerProvidedComponent(file, I18nBundleImpl.class, config);
+    }
+    
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass) {
         addContainerProvidedComponent(roleInterface, implementingClass, null, (Configuration)null);
     }
