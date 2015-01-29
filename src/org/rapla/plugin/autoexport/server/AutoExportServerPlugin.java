@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.autoexport.server;
 
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
@@ -23,7 +22,7 @@ import org.rapla.server.ServerServiceContainer;
 public class AutoExportServerPlugin implements PluginDescriptor<ServerServiceContainer>
 {
     public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException {
-        container.addContainerProvidedComponent( AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE, I18nBundleImpl.class, I18nBundleImpl.createConfig( AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE.getId() ) );
+        container.addResourceFile(AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE );
     	if ( !config.getAttributeAsBoolean("enabled", AutoExportPlugin.ENABLE_BY_DEFAULT) )
         	return;
 

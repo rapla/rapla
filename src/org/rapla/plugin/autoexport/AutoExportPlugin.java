@@ -15,7 +15,6 @@ package org.rapla.plugin.autoexport;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.framework.Configuration;
@@ -33,7 +32,7 @@ public class AutoExportPlugin implements PluginDescriptor<ClientServiceContainer
     public static final boolean ENABLE_BY_DEFAULT = true;
 
     public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
-        container.addContainerProvidedComponent( AUTOEXPORT_PLUGIN_RESOURCE, I18nBundleImpl.class, I18nBundleImpl.createConfig( AUTOEXPORT_PLUGIN_RESOURCE.getId() ) );
+        container.addResourceFile( AUTOEXPORT_PLUGIN_RESOURCE );
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, AutoExportPluginOption.class);
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;

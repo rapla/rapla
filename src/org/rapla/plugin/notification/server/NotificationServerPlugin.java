@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.plugin.notification.NotificationPlugin;
@@ -27,7 +26,7 @@ public class NotificationServerPlugin implements PluginDescriptor<ServerServiceC
         if ( !config.getAttributeAsBoolean("enabled", NotificationPlugin.ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addContainerProvidedComponent( NotificationPlugin.RESOURCE_FILE, I18nBundleImpl.class, I18nBundleImpl.createConfig( NotificationPlugin.RESOURCE_FILE.getId() ) );
+        container.addResourceFile( NotificationPlugin.RESOURCE_FILE);
         container.addContainerProvidedComponent( RaplaServerExtensionPoints.SERVER_EXTENSION, NotificationService.class);
     }
   

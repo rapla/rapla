@@ -14,7 +14,6 @@ package org.rapla.plugin.periodcopy;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.TypedComponentRole;
@@ -29,7 +28,7 @@ public class PeriodCopyPlugin implements PluginDescriptor<ClientServiceContainer
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addContainerProvidedComponent( RESOURCE_FILE, I18nBundleImpl.class,I18nBundleImpl.createConfig( RESOURCE_FILE.getId() ) );
+        container.addResourceFile( RESOURCE_FILE );
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.EDIT_MENU_EXTENSION_POINT, CopyPluginMenu.class);
     }
 

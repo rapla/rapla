@@ -35,6 +35,8 @@ import javax.jws.WebService;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.Container;
@@ -199,6 +201,12 @@ public class ContainerImpl implements Container
         return Collections.emptyMap();
     }
 
+    public void addResourceFile(TypedComponentRole<I18nBundle> file)
+    {
+        Configuration config = I18nBundleImpl.createConfig( file.getId() );
+        addContainerProvidedComponent(file, I18nBundleImpl.class, config);
+    }
+    
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass) {
         addContainerProvidedComponent(roleInterface, implementingClass, null, (Configuration)null);
     }

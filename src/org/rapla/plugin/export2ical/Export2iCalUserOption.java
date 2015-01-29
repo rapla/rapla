@@ -50,10 +50,9 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
     private boolean user_export_attendees;
     private String user_export_attendees_participants_status;
 
-    public Export2iCalUserOption(RaplaContext sm, Configuration config) {
+    public Export2iCalUserOption(RaplaContext sm) {
 		super(sm);
 		setChildBundleName(Export2iCalPlugin.RESOURCE_FILE);
-		this.config = config;
 	}
 
 	public JComponent getComponent() {

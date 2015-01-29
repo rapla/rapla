@@ -29,7 +29,7 @@ public class AppointmentCounterPlugin implements PluginDescriptor<ClientServiceC
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addContainerProvidedComponent( RaplaClientExtensionPoints.APPOINTMENT_STATUS, AppointmentCounterFactory.class,  config);
+        container.addContainerProvidedComponent( RaplaClientExtensionPoints.APPOINTMENT_STATUS, AppointmentCounterFactory.class);
     }
 
    

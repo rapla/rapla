@@ -3,7 +3,6 @@ package org.rapla.plugin.urlencryption;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
@@ -36,7 +35,7 @@ public class UrlEncryptionPlugin implements PluginDescriptor<ClientServiceContai
 
 		// Adding option panel for the administrators
 	    container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, URLEncyrptionPublicExtensionFactory.class, configuration);
-        container.addContainerProvidedComponent( RESOURCE_FILE,I18nBundleImpl.class,I18nBundleImpl.createConfig( RESOURCE_FILE.getId() ) );
+        container.addResourceFile( RESOURCE_FILE );
 
 	}
 	
