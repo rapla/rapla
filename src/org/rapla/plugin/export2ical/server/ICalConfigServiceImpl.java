@@ -40,6 +40,17 @@ public class ICalConfigServiceImpl implements RemoteMethodFactory<ICalConfigServ
                 }
                 return config;
             }
+
+            public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
+                Preferences preferences = facade.getSystemPreferences();
+                DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
+                if ( config == null)
+                {
+                    config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(Export2iCalPlugin.class.getName());
+                }
+                return config;
+            }
+
         };
     }
 
