@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
@@ -42,7 +43,7 @@ import org.rapla.plugin.mail.MailPlugin;
 
 public class MailOption extends DefaultPluginOption {
    
-    JTextField mailServer;
+    TextField mailServer;
     RaplaNumber smtpPortField ;
     JTextField defaultSender;
     JTextField username;
@@ -64,7 +65,7 @@ public class MailOption extends DefaultPluginOption {
     protected JPanel createPanel() throws RaplaException {
     	JPanel panel = super.createPanel();
     	externalConfigEnabled = configService.isExternalConfigEnabled();
-        mailServer = new JTextField();
+        mailServer = new TextField(getContext());
     	smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
     	defaultSender = new JTextField();
     	username = new JTextField();
@@ -74,7 +75,7 @@ public class MailOption extends DefaultPluginOption {
         
     	
     	JPanel content = new JPanel();
-    	addCopyPaste( mailServer);
+    	//addCopyPaste( mailServer);
         addCopyPaste( defaultSender);
         addCopyPaste(username);
         addCopyPaste(password);
@@ -92,7 +93,7 @@ public class MailOption extends DefaultPluginOption {
         else
         {
 	        content.add(new JLabel("Mail Server"), "1,0");
-	        content.add( mailServer, "3,0");
+	        content.add( mailServer.getComponent(), "3,0");
 	        content.add(new JLabel("Use SSL*"), "1,2");
 	        content.add(useSsl,"3,2");
 	        content.add(new JLabel("Mail Port"), "1,4");
@@ -226,7 +227,7 @@ public class MailOption extends DefaultPluginOption {
 	        DefaultConfiguration ssl = new DefaultConfiguration("ssl");
 	         
 	        smtpPort.setValue(smtpPortField.getNumber().intValue() );
-	        smtpServer.setValue( mailServer.getText());
+	        smtpServer.setValue( mailServer.getValue());
 	        ssl.setValue( useSsl.isSelected() );
 	        newConfig.addChild( smtpPort );
 	        newConfig.addChild( smtpServer );
@@ -249,21 +250,22 @@ public class MailOption extends DefaultPluginOption {
     }
 
     @Override
+    protected Configuration getConfig() throws RaplaException {
+        Configuration config = preferences.getEntry( MailPlugin.MAILSERVER_CONFIG, null);
+        if ( config == null )
+        {
+            config =  configService.getConfig();
+        } 
+        return config;
+    }
+    
+    @Override
     protected void readConfig( Configuration config)  {
-    	try
-    	{
-    	    config = configService.getConfig();
-    	} 
-    	catch (RaplaException ex)
-    	{
-    	    showException(ex, getComponent());
-    	    return;
-    	}
     	listenersEnabled = false;
         try
     	{
 	        useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false));
-	        mailServer.setText( config.getChild("smtp-host").getValue("localhost"));
+	        mailServer.setValue( config.getChild("smtp-host").getValue("localhost"));
 	        smtpPortField.setNumber( new Integer(config.getChild("smtp-port").getValueAsInteger(25)));
 	        username.setText( config.getChild("username").getValue(""));
             password.setText( config.getChild("password").getValue(""));
