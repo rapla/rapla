@@ -16,6 +16,7 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
@@ -124,6 +125,11 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 		return panel;
 	}
 
+	@Override
+	public void setPreferences(Preferences preferences) 
+	{
+	    super.setPreferences(preferences);
+	}
 	
     @Override
     public void commit() throws RaplaException {
@@ -147,17 +153,18 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
         newConfig.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS, true).setValue(cbDefaultParticipationsStatusRessourceAttribute.getSelectedItem().toString());
 
 	}
+	
+	@Override
+	protected Configuration getConfig() throws RaplaException {
+	    Configuration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG, null);
+	    if ( config == null )
+	    {
+	        config =  configService.getConfig();
+        } 
+	    return config;
+	}
 
 	protected void readConfig(Configuration config) {
-        try
-        {
-            config = configService.getConfig();
-        } 
-        catch (RaplaException ex)
-        {
-            showException(ex, getComponent());
-            return;
-        }
 	    
 		int daysBefore = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
 		int daysAfter = config.getChild(Export2iCalPlugin.DAYS_AFTER).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysAfter);

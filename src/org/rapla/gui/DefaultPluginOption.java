@@ -116,9 +116,13 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
 			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
 		} catch (Throwable e) {
 		}
-        config = ((PreferencesImpl)preferences).getOldPluginConfig(pluginClass.getName());
+        config = getConfig();
         activate.setSelected( config.getAttributeAsBoolean("enabled", defaultSelection));
         readConfig( config );
+    }
+
+    protected Configuration getConfig()  throws RaplaException {
+        return ((PreferencesImpl)preferences).getOldPluginConfig(getPluginClass().getName());
     }
    
     /**
