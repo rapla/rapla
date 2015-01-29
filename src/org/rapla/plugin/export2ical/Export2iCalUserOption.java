@@ -28,7 +28,6 @@ import org.rapla.gui.RaplaGUIComponent;
 public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPanel, ActionListener {
 	
 	private Preferences preferences;
-	private Configuration config;
 	private JPanel panel = new JPanel();
 	
 	private JSpinner spiDaysBefore;
@@ -50,8 +49,11 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
     private boolean user_export_attendees;
     private String user_export_attendees_participants_status;
 
-    public Export2iCalUserOption(RaplaContext sm) {
+    ICalConfigService configService;
+    
+    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService) {
 		super(sm);
+		this.configService = configService;
 		setChildBundleName(Export2iCalPlugin.RESOURCE_FILE);
 	}
 
@@ -131,7 +133,8 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 	}
 
 	public void show() throws RaplaException {
-
+	    Configuration config = configService.getUserDefaultConfig();
+	    
 		global_days_before = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
 		global_days_after = config.getChild(Export2iCalPlugin.DAYS_AFTER).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysAfter);
 		

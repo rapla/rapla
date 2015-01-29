@@ -9,4 +9,5 @@ import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 @WebService
 public interface ICalConfigService extends RemoteJsonService  {
     DefaultConfiguration getConfig() throws RaplaException;
+    DefaultConfiguration getUserDefaultConfig() throws RaplaException;
 }
