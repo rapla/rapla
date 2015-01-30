@@ -149,7 +149,12 @@ public final class ReservationEditTest extends GUITestCase{
     }
 
 	private int getAllocatableSize(AllocatableSelection allocatableEdit) {
-		return allocatableEdit.mutableReservation.getAllocatables().length;
+	    int count = 0;
+	    for (Reservation r:allocatableEdit.mutableReservations)
+        {
+	        count += r.getAllocatables().length;
+        }
+	    return count;
 	}
     
     public String getSelectedRadioButton(AppointmentController editor){

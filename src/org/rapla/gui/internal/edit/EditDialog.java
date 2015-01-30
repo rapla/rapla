@@ -30,6 +30,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -183,14 +184,35 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 				Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);
                 boolean canUndo = true;
+                Boolean isReservation = null;
                 for ( T obj: saveObjects)
                 {
                    if ( obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
                    {
                        canUndo = false;
                    }
+                   if ( obj instanceof Reservation )
+                   {
+                       if ( isReservation == null)
+                       {
+                           isReservation = true;
+                       }
+                   }
+                   else
+                   {
+                       isReservation = false;
+                   }
                 }
-                if ( canUndo)
+                if ( isReservation != null && isReservation)
+                {
+                    @SuppressWarnings("unchecked")
+                    Collection<Reservation> castToReservation = (Collection<Reservation>) saveObjects;
+                    if (!getReservationController().save( castToReservation, getMainComponent()))
+                    {
+                        return;
+                    }
+                }
+                else if ( canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" })
                     SaveUndo<T> saveCommand = new SaveUndo(getContext(), entities,  originals);

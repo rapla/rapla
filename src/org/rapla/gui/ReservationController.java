@@ -32,6 +32,7 @@ public interface ReservationController
     ReservationEdit edit( Reservation reservation ) throws RaplaException;
     ReservationEdit edit( AppointmentBlock appointmentBlock) throws RaplaException;
     boolean save(Reservation reservation,Component sourceComponent) throws RaplaException;
+    boolean save(Collection<Reservation> reservation,Component sourceComponent) throws RaplaException;
 
     public ReservationEdit[] getEditWindows();
 
