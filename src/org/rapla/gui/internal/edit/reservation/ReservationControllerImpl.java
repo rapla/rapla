@@ -787,9 +787,12 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     }  
     
     public boolean save(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
-        SaveCommand saveCommand = new SaveCommand(reservations);
-        save(reservations, sourceComponent, saveCommand);
-        return saveCommand.hasSaved();
+        ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
+        if (getClientFacade().getCommandHistory().storeAndExecute(saveCommand))
+        {
+            return true;
+        }
+        return false;
     }  
     
     boolean save(Collection<Reservation> reservations,Component sourceComponent,Command saveCommand) throws RaplaException {
