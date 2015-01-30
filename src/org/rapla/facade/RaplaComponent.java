@@ -856,6 +856,7 @@ public class RaplaComponent
 		    long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
 		    Date newStart ;
 		    Date destWithOffset = new Date(destStart.getTime() + offset );
+		    //newStart = destWithOffset
 		    newStart = getRaplaLocale().toDate(  destWithOffset  , oldStart );
 		    app.move( newStart) ;
 		    if (repeating != null)

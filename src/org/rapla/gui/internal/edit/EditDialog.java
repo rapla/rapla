@@ -40,6 +40,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditController;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.ReservationController;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.DisposingTool;
 
@@ -207,7 +208,9 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                 {
                     @SuppressWarnings("unchecked")
                     Collection<Reservation> castToReservation = (Collection<Reservation>) saveObjects;
-                    if (!getReservationController().save( castToReservation, getMainComponent()))
+                    Component mainComponent = getMainComponent();
+                    ReservationController reservationController = getReservationController();
+                    if (!reservationController.save( castToReservation, mainComponent))
                     {
                         return;
                     }
