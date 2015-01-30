@@ -715,7 +715,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			
 	    	
 	    	Collection<Allocatable> currentlyMarked = getService(CalendarSelectionModel.class).getMarkedAllocatables();
-	    	Collection<Allocatable> previouslyMarked = clipboard.getConextAllocatables();
+	    	Collection<Allocatable> previouslyMarked = clipboard.getContextAllocatables();
 	    	// exchange allocatables if pasted in a different allocatable slot
 	    	if ( copyWholeReservation && currentlyMarked != null && previouslyMarked != null && currentlyMarked.size() == 1 && previouslyMarked.size() == 1)
 	    	{

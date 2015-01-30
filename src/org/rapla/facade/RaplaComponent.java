@@ -831,6 +831,7 @@ public class RaplaComponent
 	}
 	
 	private Reservation copy(Reservation reservation, Date destStart,Date firstStart) throws RaplaException {
+	    boolean keepTime = true;
 		Reservation r =  getModification().clone( reservation);
 		Appointment[] appointments = r.getAppointments();
 	
@@ -838,12 +839,19 @@ public class RaplaComponent
 			Repeating repeating = app.getRepeating();
 		    
 		    Date oldStart = app.getStart();
-		    // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
-		    long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
 		    Date newStart ;
-		    Date destWithOffset = new Date(destStart.getTime() + offset );
-		    //newStart = destWithOffset
-		    newStart = getRaplaLocale().toDate(  destWithOffset  , oldStart );
+		    // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
+		    if ( keepTime)
+		    {
+                long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
+                Date destWithOffset = new Date(destStart.getTime() + offset );
+                newStart = getRaplaLocale().toDate(  destWithOffset  , oldStart );
+		    }
+		    else
+		    {
+                long offset = destStart.getTime() - firstStart.getTime();
+                newStart = new Date(oldStart.getTime() + offset );
+		    }
 		    app.move( newStart) ;
 		    if (repeating != null)
 		    {

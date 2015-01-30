@@ -13,7 +13,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard;
 
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.Collator;
@@ -42,7 +41,6 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.internal.edit.SaveUndo;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
@@ -52,7 +50,6 @@ import org.rapla.gui.toolkit.RaplaMenuItem;
 */
 public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener, ModificationListener
 {
-	Map<Component,Allocatable> componentMap = new HashMap<Component, Allocatable>();
 	Collection<Allocatable> templateNames;
     public TemplateWizard(RaplaContext context) throws RaplaException{
         super(context);
@@ -64,7 +61,6 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 		return "020_templateWizard";
 	}
 
-
     @Override
     public void dataChanged(ModificationEvent evt) throws RaplaException {
         if ( evt.getInvalidateInterval() != null)
@@ -74,6 +70,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
     }
 
     private Collection<Allocatable> updateTemplateNames() throws RaplaException {
+       
         List<Allocatable> templates = new ArrayList<Allocatable>();
         User user = getUser();
         for (Allocatable template:getQuery().getTemplates())
@@ -84,13 +81,23 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
             }
             templates.add( template);
         }
-        
         return templates;
     }
 
-    public MenuElement getMenuElement() {
-    	componentMap.clear();
+    class TemplateMenuItem extends RaplaMenuItem
+    {
+        Allocatable template;
 
+        public TemplateMenuItem(String id, Allocatable template) {
+            super(id);
+            this.template = template;
+        }
+
+        public Allocatable getTemplate() {
+            return template;
+        }
+    }
+    public MenuElement getMenuElement() {
 		boolean canCreateReservation = canCreateReservation();
 		MenuElement element;
 		if (templateNames.size() == 0)
@@ -99,13 +106,12 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 		}
 		if ( templateNames.size() == 1)
 		{
-			RaplaMenuItem item = new RaplaMenuItem( getId());
-			item.setEnabled( canAllocate() && canCreateReservation);
-			item.setText(getString("new_reservations_from_template"));
-			item.setIcon( getIcon("icon.new"));
-			item.addActionListener( this);
 			Allocatable template = templateNames.iterator().next();
-			componentMap.put( item, template);
+			RaplaMenuItem item = new TemplateMenuItem( getId(), template);
+            item.setEnabled( canAllocate() && canCreateReservation);
+            item.setText(getString("new_reservations_from_template"));
+            item.setIcon( getIcon("icon.new"));
+            item.addActionListener( this);
 			element = item;
 		}
 		else
@@ -188,8 +194,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 		    // there could be multiple templates with the same name
 		    for ( Allocatable template:collection)
 		    {
-    			RaplaMenuItem newItem = new RaplaMenuItem(template.getName( locale));
-    			componentMap.put( newItem, template);
+    			RaplaMenuItem newItem = new TemplateMenuItem(template.getName( locale), template);
     			newItem.setText( templateName );
     			item.add( newItem);
     			newItem.addActionListener( this);
@@ -260,8 +265,8 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 		{
 			CalendarModel model = getService(CalendarModel.class);
 	    	Date beginn = getStartDate( model);
-	    	Object source = e.getSource();
-	    	Allocatable templateName = componentMap.get( source);
+	    	TemplateMenuItem source = (TemplateMenuItem) e.getSource();
+	    	Allocatable templateName = source.getTemplate();
 	    	List<Reservation> newReservations;
        		Collection<Reservation> reservations = getQuery().getTemplateReservations(templateName);
        		if (reservations.size() > 0)

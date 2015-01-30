@@ -117,7 +117,7 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
 	}
 	
 
-    public Collection<Allocatable> getConextAllocatables() {
+    public Collection<Allocatable> getContextAllocatables() {
 		return contextAllocatables;
 	}
 
