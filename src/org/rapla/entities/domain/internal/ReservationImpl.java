@@ -524,6 +524,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 	}
 
     public Appointment[] getAppointmentsFor(Allocatable allocatable) {
+        if ( !hasAllocated(allocatable))
+        {
+            return Appointment.EMPTY_ARRAY;
+        }
         Appointment[] restrictedAppointments = getRestriction( allocatable);
         if ( restrictedAppointments.length == 0)
             return getAppointments();

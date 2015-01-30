@@ -783,19 +783,26 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	}
 
     public boolean save(Reservation reservation, Component sourceComponent) throws RaplaException {
-    	SaveCommand saveCommand = new SaveCommand(reservation);
-        save(reservation, sourceComponent, saveCommand);
+        return save(Collections.singleton(reservation), sourceComponent);
+    }  
+    
+    public boolean save(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
+        SaveCommand saveCommand = new SaveCommand(reservations);
+        save(reservations, sourceComponent, saveCommand);
         return saveCommand.hasSaved();
     }  
     
-    boolean save(Reservation reservation,Component sourceComponent,Command saveCommand) throws RaplaException {
+    boolean save(Collection<Reservation> reservations,Component sourceComponent,Command saveCommand) throws RaplaException {
         Collection<ReservationCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK);
         for (ReservationCheck check:checkers)
         {
-            boolean successful= check.check(reservation, sourceComponent);
-            if ( !successful)
+            for (Reservation reservation:reservations)
             {
-                return false;
+                boolean successful= check.check(reservation, sourceComponent);
+                if ( !successful)
+                {
+                    return false;
+                }
             }
         }
         try {
@@ -808,14 +815,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     }
    
     class SaveCommand implements Command {
-        private final Reservation reservation;
+        private final Collection<Reservation> reservations;
         boolean saved;
-        public SaveCommand(Reservation reservation) {
-            this.reservation = reservation;
+        public SaveCommand(Collection<Reservation> reservation) {
+            this.reservations = reservation;
         }
 
         public void execute() throws RaplaException {
-            getModification().store( reservation );
+            getModification().storeObjects( reservations.toArray( Reservation.RESERVATION_ARRAY) );
             saved = true;
         }
 
@@ -1461,13 +1468,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     class ReservationSave extends SaveUndo<Reservation> {
     	
     	private final Component sourceComponent;
-    	Reservation newReservation;
+    	Collection<Reservation> newReservations;
 
-    	public ReservationSave(Reservation newReservation, Reservation original, Component sourceComponent)
+    	public ReservationSave(Collection<Reservation> newReservations, Collection<Reservation> original, Component sourceComponent)
     	{
-    		super(ReservationControllerImpl.this.getContext(),Collections.singletonList(newReservation), original != null ? Collections.singletonList(original): null);
+    		super(ReservationControllerImpl.this.getContext(),newReservations, original);
     		this.sourceComponent  = sourceComponent;
-    		this.newReservation = newReservation;
+    		this.newReservations = newReservations;
     	}
     	
 		public boolean execute() throws RaplaException
@@ -1475,7 +1482,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			if ( firstTimeCall)
 			{
 				firstTimeCall = false;
-				return save(newReservation, sourceComponent, new SaveCommand(newReservation));
+				return save(newReservations, sourceComponent, new SaveCommand(newReservations));
 			}
 			else
 			{

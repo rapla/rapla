@@ -413,7 +413,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     	commandHistory.clear();
     	this.mutableReservation = newReservation;
         appointmentEdit.setReservation(mutableReservation, mutableAppointment);
-        allocatableEdit.setReservation(mutableReservation, original);
+        Collection<Reservation> emptySet = Collections.emptySet();
+        Collection<Reservation> originalCollection = original != null ? Collections.singleton( original ) : emptySet;
+        allocatableEdit.setReservation(Collections.singleton(mutableReservation), originalCollection);
         reservationInfo.setReservation(mutableReservation);
 
         List<AppointmentStatusFactory> statusFactories = new ArrayList<AppointmentStatusFactory>();
@@ -566,7 +568,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         	
             bSaving = true;
             
-            ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(mutableReservation, original, frame);
+            ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(Collections.singleton(mutableReservation), original != null ? Collections.singleton( original) : null, frame);
             if (getClientFacade().getCommandHistory().storeAndExecute(saveCommand))
             {
                 setSaved(true);

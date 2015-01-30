@@ -291,12 +291,12 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	    		return;
 	    	}
 			
-			if ( newReservations.size() == 1)
-			{
-				Reservation next = newReservations.iterator().next();
-				getReservationController().edit( next);
-			}
-			else
+//			if ( newReservations.size() == 1)
+//			{
+//				Reservation next = newReservations.iterator().next();
+//				getReservationController().edit( next);
+//			}
+//			else
 			{
 				Collection<Reservation> list = new ArrayList<Reservation>();
 				for ( Reservation reservation:newReservations)
@@ -309,9 +309,10 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 					}
 					list.add( cast);
 				}
-				
-				SaveUndo<Reservation> saveUndo = new SaveUndo<Reservation>(getContext(), list, null);
-				getModification().getCommandHistory().storeAndExecute( saveUndo);
+				Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
+                getEditController().edit(array, getMainComponent());
+				//SaveUndo<Reservation> saveUndo = new SaveUndo<Reservation>(getContext(), list, null);
+				//getModification().getCommandHistory().storeAndExecute( saveUndo);
 			}
 			
 		}
