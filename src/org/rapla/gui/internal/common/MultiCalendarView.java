@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -244,9 +245,7 @@ public class MultiCalendarView extends RaplaGUIComponent
              {  
                  viewItem.setIcon( getIcon("icon.empty"));
              }
-             
         	 group.add( viewItem );
-             
              SwingViewFactory factory = findFactory( id );
              viewItem.setText( factory.getName() );
              viewMenu.add( viewItem );
@@ -359,6 +358,8 @@ public class MultiCalendarView extends RaplaGUIComponent
             }
             
             if ( currentViewId == null || !currentViewId.equals( viewId) ) {
+                Collection<TimeInterval> emptySet = Collections.emptySet();
+                model.setMarkedIntervals(emptySet, false);
             	if ( factory != null)
             	{
             		currentView = factory.createSwingView( getContext(), model, editable);

@@ -59,7 +59,7 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         group.add( field1 );
         group.add( field2 );
 
-        field2.setSelected( true );
+        //field2.setSelected( true );
         field1.addActionListener(this);
         field2.addActionListener(this);
 
@@ -70,13 +70,29 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
     }
 
     public Boolean getValue() {
-        return field1.isSelected() ? Boolean.TRUE : Boolean.FALSE;
+        if (field1.isSelected())
+        {
+            return Boolean.TRUE;
+        }
+        if (field2.isSelected())
+        {
+            return Boolean.FALSE;
+        }
+        return null;
     }
 
     public void setValue(Boolean object) {
-        boolean selected = object!= null ? (object).booleanValue() :false;
-        field1.setSelected(selected);
-        field2.setSelected(!selected);
+        if ( object == null)
+        {
+            field1.setSelected( false );
+            field2.setSelected( false );
+        }
+        else
+        {
+            boolean selected = object.booleanValue();
+            field1.setSelected(selected);
+            field2.setSelected(!selected);
+        }
     }
 
     public void actionPerformed(ActionEvent evt) {

@@ -19,6 +19,7 @@ import javax.swing.JMenuItem;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -63,7 +64,8 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     {
 		// #TODO this cast need to be replaced without adding the setter methods to the readOnly interface CalendarModel
     	CalendarSelectionModel castedModel = (CalendarSelectionModel)model;
-		castedModel.markInterval( start, end);
+    	TimeInterval interval = new TimeInterval(start, end);
+		castedModel.setMarkedIntervals( Collections.singleton(interval), !keepTime );
 		Collection<Allocatable> markedAllocatables = getMarkedAllocatables();
 		castedModel.setMarkedAllocatables( markedAllocatables);
     }
@@ -129,9 +131,9 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 	        if ( appointment != null ) {
 	            if (!clipboard.isWholeReservation())
 	           	{
-	        	   addAppointmentAction(menu,component,p).setPaste( keepTime );
+	        	   addAppointmentAction(menu,component,p).setPaste( );
 	            }
-	            addAppointmentAction(menu,component,p).setPasteAsNew(  keepTime );
+	            addAppointmentAction(menu,component,p).setPasteAsNew( );
 	        }
 	
 	        menu.show(component,p.x,p.y);

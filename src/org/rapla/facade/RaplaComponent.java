@@ -276,6 +276,10 @@ public class RaplaComponent
     	}
     	
 		Date selectedDate = model.getSelectedDate();
+        if ( selectedDate == null)
+        {
+            selectedDate = model.getStartDate();
+        }
 		if ( selectedDate == null)
 		{
 			selectedDate = getQuery().today();
@@ -820,7 +824,7 @@ public class RaplaComponent
 		return false;
 	}
 
-	protected List<Reservation> copy(Collection<Reservation> toCopy, Date beginn) throws RaplaException 
+	protected List<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
 	{
 		List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
 		Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));
@@ -831,21 +835,13 @@ public class RaplaComponent
 		    {
 		        firstStart = ReservationStartComparator.getStart( reservation);
 		    }
-		    Reservation copy = copy(reservation, beginn, firstStart);
+		    Reservation copy = copy(reservation, beginn, firstStart, keepTime);
 		    copies.add( copy);
 		}
 		return copies;
 	}
 	
-	public Reservation copyAppointment(Reservation reservation, Date beginn) throws RaplaException 
-	{
-		Date firstStart = ReservationStartComparator.getStart( reservation);
-		Reservation copy = copy(reservation, beginn, firstStart);
-		return copy;
-	}
-	
-	private Reservation copy(Reservation reservation, Date destStart,Date firstStart) throws RaplaException {
-	    boolean keepTime = true;
+	private Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime) throws RaplaException {
 		Reservation r =  getModification().clone( reservation);
 		Appointment[] appointments = r.getAppointments();
 	

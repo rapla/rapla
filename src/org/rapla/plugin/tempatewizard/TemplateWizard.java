@@ -31,11 +31,14 @@ import java.util.TreeSet;
 
 import javax.swing.MenuElement;
 
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
@@ -86,6 +89,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 
     class TemplateMenuItem extends RaplaMenuItem
     {
+        private static final long serialVersionUID = 1L;
         Allocatable template;
 
         public TemplateMenuItem(String id, Allocatable template) {
@@ -97,6 +101,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
             return template;
         }
     }
+
     public MenuElement getMenuElement() {
 		boolean canCreateReservation = canCreateReservation();
 		MenuElement element;
@@ -263,38 +268,54 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 	public void actionPerformed(ActionEvent e) {
 		try
 		{
-			CalendarModel model = getService(CalendarModel.class);
+		    Collection<Reservation> reservations;
+		    TemplateMenuItem source = (TemplateMenuItem) e.getSource();
+            Allocatable template = source.getTemplate();
+            reservations = getQuery().getTemplateReservations(template);
+            if (reservations.size() == 0)
+            {
+                showException(new EntityNotFoundException("Template " + template + " is empty. Please create events in template first."), getMainComponent());
+                return;
+            }
+            Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
+            CalendarSelectionModel model = getService( CalendarSelectionModel.class);
+		    Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+		    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
+            boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
 	    	Date beginn = getStartDate( model);
-	    	TemplateMenuItem source = (TemplateMenuItem) e.getSource();
-	    	Allocatable templateName = source.getTemplate();
-	    	List<Reservation> newReservations;
-       		Collection<Reservation> reservations = getQuery().getTemplateReservations(templateName);
-       		if (reservations.size() > 0)
+	    	List<Reservation> newReservations = copy( reservations, beginn, keepTime);
+       		if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
        		{
-	       		newReservations = copy( reservations, beginn);
-				Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-				if (markedAllocatables != null )
-				{
-					for (Reservation event: newReservations)
-					{
-						if ( event.getAllocatables().length == 0)
-						{
-							for ( Allocatable alloc:markedAllocatables)
-							{
-								if (!event.hasAllocated(alloc))
-								{
-									event.addAllocatable( alloc);
-								}
-							}	
-						}
-					}
-				}
+       		    Appointment app = newReservations.iterator().next().getAppointments()[0];
+       		    TimeInterval first = markedIntervals.iterator().next();
+       		    Date end = first.getEnd();
+       		    if (!markedIntervalTimeEnabled)
+       		    {
+       		        end = getRaplaLocale().toDate( end,app.getEnd() );
+       		    }
+       		    if (!beginn.before(end))
+       		    {
+       		        end = new Date( app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR );
+       		    }
+       		    app.move(app.getStart(), end);
        		}
-	    	else
-	    	{
-	    		showException(new EntityNotFoundException("Template " + templateName + " is empty. Please create events in template first."), getMainComponent());
-	    		return;
-	    	}
+            Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+            if (markedAllocatables != null )
+            {
+                for (Reservation event: newReservations)
+                {
+                    if ( event.getAllocatables().length == 0)
+                    {
+                        for ( Allocatable alloc:markedAllocatables)
+                        {
+                            if (!event.hasAllocated(alloc))
+                            {
+                                event.addAllocatable( alloc);
+                            }
+                        }   
+                    }
+                }
+            }
 			
 //			if ( newReservations.size() == 1)
 //			{
