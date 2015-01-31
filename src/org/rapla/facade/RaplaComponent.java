@@ -824,7 +824,7 @@ public class RaplaComponent
 		return false;
 	}
 
-	protected List<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
+	protected Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
 	{
 		List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
 		Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));

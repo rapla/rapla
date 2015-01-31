@@ -1443,7 +1443,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		}
 		
 		public boolean execute() throws RaplaException {
-			List<Reservation> clones = copy(fromReservation,start, keepTime);
+			Collection<Reservation> clones = copy(fromReservation,start, keepTime);
 			array = clones.toArray(Reservation.RESERVATION_ARRAY);
 			getModification().storeAndRemove(array , Reservation.RESERVATION_ARRAY);
 			return true;
