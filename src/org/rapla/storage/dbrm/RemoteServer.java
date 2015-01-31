@@ -25,6 +25,7 @@ public interface RemoteServer extends RemoteJsonService {
 	@ResultType(LoginTokens.class)
 	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
 	
+	/** same as login but passes the login info into a LoginCredentials Object*/
 	@ResultType(LoginTokens.class)
     FutureResult<LoginTokens> auth(@WebParam(name="credentials") LoginCredentials credentials);
 	
