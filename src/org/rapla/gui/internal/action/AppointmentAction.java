@@ -80,6 +80,17 @@ public class AppointmentAction extends RaplaAction {
         setEnabled(canCreateReservation());
         return this;
     }
+
+    public AppointmentAction setCut(AppointmentBlock appointmentBlock, Collection<Allocatable> contextAllocatables) {
+        this.appointmentBlock = appointmentBlock;
+        this.type = CUT;
+        this.contextAllocatables = contextAllocatables;
+        putValue(NAME, getString("cut"));
+        putValue(SMALL_ICON, getIcon("icon.cut"));
+        setEnabled(canCreateReservation());
+        return this;
+    }
+
     
     public AppointmentAction setPaste( ) {
         this.type = PASTE;
@@ -177,6 +188,7 @@ public class AppointmentAction extends RaplaAction {
             switch (type) {
             case DELETE: delete();break;
             case COPY: copy();break;
+            case CUT: cut();break;
             case PASTE: paste(false);break;
             case PASTE_AS_NEW: paste( true);break;
           //  case NEW: newReservation();break;
@@ -215,14 +227,17 @@ public class AppointmentAction extends RaplaAction {
        getReservationController().copyAppointment(appointmentBlock,parent,point, contextAllocatables);
     }
     
-
+    private void cut() throws RaplaException 
+    {
+       getReservationController().cutAppointment(appointmentBlock,parent,point, contextAllocatables);
+    }
 
     private void paste(boolean asNewReservation) throws RaplaException {
         
 		ReservationController reservationController = getReservationController();
 		CalendarSelectionModel model = getService( CalendarSelectionModel.class);
     	Date start = getStartDate(model);
-    	boolean keepTime = model.isMarkedIntervalTimeEnabled();
+    	boolean keepTime = !model.isMarkedIntervalTimeEnabled();
     	reservationController.pasteAppointment(	start
                                                ,parent
                                                ,point

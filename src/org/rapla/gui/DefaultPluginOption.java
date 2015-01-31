@@ -121,6 +121,7 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
         readConfig( config );
     }
 
+    @SuppressWarnings({ "deprecation", "unused" })
     protected Configuration getConfig()  throws RaplaException {
         return ((PreferencesImpl)preferences).getOldPluginConfig(getPluginClass().getName());
     }

@@ -109,6 +109,9 @@ See French text.
 	<entry key="icon.copy">
 		<icon src="gui/images/eclipse-icons/copy.gif"/>
 	</entry>
+	<entry key="icon.cut">
+		<icon src="gui/images/eclipse-icons/cut.gif"/>
+	</entry>
 	<entry key="icon.paste">
 		<icon src="gui/images/eclipse-icons/paste.gif"/>
 	</entry>
@@ -403,6 +406,17 @@ See French text.
         <text lang="pl">Kolor</text>
 		<text lang="pt">Cor</text>
 		<text lang="fi">Väri</text>
+    </entry>
+     <entry key="cut">
+        <text lang="en">Cut</text>
+        <text lang="de">Ausschneiden</text>
+        <text lang="fr">Couper</text>
+        <text lang="es">Cortar</text>
+        <text lang="cs">Vyjmutí</text>
+        <text lang="nl">Knippen</text>
+        <text lang="pl">Wytnij</text>
+		<text lang="pt">Cortar</text>
+		<text lang="fi">Leikata</text>
     </entry>
     <entry key="copy">
         <text lang="en">Copy</text>
@@ -3532,6 +3546,19 @@ See French text.
 		<text lang="pt">O que você deseja copiar?</text>
 		<text lang="fi">Mitä haluat kopioida?</text>
     </entry>
+    
+   <entry key="cut_appointment.format">
+        <text lang="en">What do you want to cut?</text>
+        <text lang="de">Was wollen Sie ausschneiden?</text>
+        <text lang="fr">Que voulez-vous couper ?</text>
+        <text lang="es">¿Qué es lo que desea cortar?</text>
+        <text lang="cs">Co chcete vyjmutí?</text>
+        <text lang="nl">Wat wil knippen?</text>
+        <text lang="pl">Co chcesz wytnij?</text>
+		<text lang="pt">O que você deseja cortar?</text>
+		<text lang="fi">Mitä haluat laikata?</text>
+    </entry>
+    
     <entry key="move_appointment.format">
         <text lang="en">What do you want to move?</text>
         <text lang="de">Was wollen Sie verschieben?</text>
