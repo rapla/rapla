@@ -41,7 +41,6 @@ public class AppointmentAction extends RaplaAction {
     public final static int PASTE_AS_NEW = 10;
     public final static int DELETE_SELECTION = 11;
     
-    private boolean keepTime = false;
     Component parent;
     Point point;
     int type;
@@ -82,17 +81,15 @@ public class AppointmentAction extends RaplaAction {
         return this;
     }
     
-    public AppointmentAction setPaste( boolean keepTime) {
+    public AppointmentAction setPaste( ) {
         this.type = PASTE;
-        this.keepTime = keepTime;
         putValue(NAME, getString("paste_into_existing_event"));
         putValue(SMALL_ICON, getIcon("icon.paste"));
         setEnabled(isAppointmentOnClipboard() && canCreateReservation());
         return this;
     }
 
-    public AppointmentAction setPasteAsNew( boolean keepTime) {
-        this.keepTime = keepTime;
+    public AppointmentAction setPasteAsNew( ) {
         this.type = PASTE_AS_NEW;
         putValue(NAME, getString("paste_as") + " " + getString( "new_reservation" ) );
         putValue(SMALL_ICON, getIcon("icon.paste_new"));
@@ -225,6 +222,7 @@ public class AppointmentAction extends RaplaAction {
 		ReservationController reservationController = getReservationController();
 		CalendarSelectionModel model = getService( CalendarSelectionModel.class);
     	Date start = getStartDate(model);
+    	boolean keepTime = model.isMarkedIntervalTimeEnabled();
     	reservationController.pasteAppointment(	start
                                                ,parent
                                                ,point

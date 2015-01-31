@@ -37,7 +37,7 @@ public interface CalendarSelectionModel extends CalendarModel{
     
     CalendarSelectionModel clone();
 	
-	void setMarkedIntervals(Collection<TimeInterval> timeIntervals);
+	void setMarkedIntervals(Collection<TimeInterval> timeIntervals,  boolean timeEnabled);
 	/** calls setMarkedIntervals with a single interval from start to end*/
 	void markInterval(Date start, Date end);
 
@@ -45,5 +45,7 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     /** CalendarModels do not update automatically but need to be notified on changes from the outside*/
 	void dataChanged(ModificationEvent evt) throws RaplaException;
+
+    boolean isMarkedIntervalTimeEnabled();
 
 }

@@ -5326,6 +5326,12 @@ See French text.
 	   <text lang="pt">Novo evento a partir de um modelo</text>
 	   <text lang="fi">Uusi tapahtuma mallilla</text>
     </entry>
+    <entry key="fixedtimeandduration">
+       <text lang="en">Fixed time and duration</text>
+       <text lang="de">Vorgegebene Zeit und Dauer</text>
+    </entry>
+        
+    
     <entry key="csv.export">
         <text lang="en">Export to CSV</text>
         <text lang="de">Exportiere als CSV</text>

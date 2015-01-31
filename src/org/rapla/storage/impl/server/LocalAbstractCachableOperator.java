@@ -136,7 +136,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private Map<String,SortedSet<Appointment>> appointmentMap;
 	//private SortedSet<LastChangedTimestamp> timestampSet;
     private SortedBidiMap<String,DeleteUpdateEntry> deleteUpdateSet;
-
     
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
@@ -229,8 +228,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setId( key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
             addAttributeWithInternalId(type,"name", AttributeType.STRING);
-            //addAttributeWithInternalId(type,"start", AttributeType.DATE);
-            //addAttributeWithInternalId(type,"end", AttributeType.DATE);
+            {
+                Attribute att = addAttributeWithInternalId(type,"fixedtimeandduration", AttributeType.BOOLEAN);
+                att.setDefaultValue(Boolean.TRUE);
+            }
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
             type.setResolver( this);
             {
@@ -2785,12 +2786,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return attribute;
 	}
 	
-	private void addAttributeWithInternalId(DynamicType dynamicType,String key, AttributeType type) throws RaplaException {
+	private Attribute addAttributeWithInternalId(DynamicType dynamicType,String key, AttributeType type) throws RaplaException {
 	    String id = "rapla_"+ dynamicType.getKey() + "_" +key; 
         Attribute attribute = newAttribute(type, id);
         attribute.setKey(key);
 		setName(attribute.getName(), key);
 		dynamicType.addAttribute( attribute);
+		return attribute;
 	}
 	
 	private DynamicTypeImpl newDynamicType(String classificationType, String key,Category userGroups) throws RaplaException {

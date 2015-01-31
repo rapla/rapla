@@ -693,7 +693,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     	CommandUndo<RaplaException> pasteCommand;
     	if ( reservations.size() > 1)
     	{
-    		pasteCommand = new ReservationPaste(reservations, start);
+    		pasteCommand = new ReservationPaste(reservations, start, keepTime);
     	}
     	else
     	{
@@ -1434,14 +1434,16 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		private final Collection<Reservation> fromReservation;
 		Date start;
 		Reservation[] array;
+		boolean keepTime;
 		
-		public ReservationPaste(Collection<Reservation> fromReservation,Date start) {
+		public ReservationPaste(Collection<Reservation> fromReservation,Date start, boolean keepTime) {
 			this.fromReservation        = fromReservation;
 			this.start = start;
+			this.keepTime = keepTime;
 		}
 		
 		public boolean execute() throws RaplaException {
-			List<Reservation> clones = copy(fromReservation,start);
+			List<Reservation> clones = copy(fromReservation,start, keepTime);
 			array = clones.toArray(Reservation.RESERVATION_ARRAY);
 			getModification().storeAndRemove(array , Reservation.RESERVATION_ARRAY);
 			return true;

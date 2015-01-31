@@ -95,6 +95,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Collection<TimeInterval> timeIntervals = Collections.emptyList();
     Collection<Allocatable> markedAllocatables = Collections.emptyList();
     Locale locale;
+    boolean markedIntervalTimeEnabled = false;
     Map<DynamicType,ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
@@ -518,7 +519,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public void setSelectedDate(Date date) {
         if ( date == null)
             throw new IllegalStateException("Date can't be null");
+        if ( selectedDate != null && !date.equals( selectedDate))
+        {
+            Collection<TimeInterval> empty = Collections.emptyList();
+            setMarkedIntervals( empty, false);
+        }
         this.selectedDate = date;
+        
     }
 
     @Override
@@ -1315,22 +1322,24 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	}
 
 	@Override
-	public void setMarkedIntervals(Collection<TimeInterval> timeIntervals)
+	public void setMarkedIntervals(Collection<TimeInterval> timeIntervals, boolean timeEnabled)
 	{
 		if ( timeIntervals != null)
 		{
 			this.timeIntervals = Collections.unmodifiableCollection(timeIntervals);
+			markedIntervalTimeEnabled = timeEnabled;
 		}
 		else
 		{
 			this.timeIntervals = Collections.emptyList();
+			markedIntervalTimeEnabled = false;
 		}
 	}
 
 	@Override
     public void markInterval(Date start, Date end) {
 		TimeInterval timeInterval = new TimeInterval( start, end);
-		setMarkedIntervals( Collections.singletonList( timeInterval));
+		setMarkedIntervals( Collections.singletonList( timeInterval), false);
 	}
 
 	@Override
@@ -1341,6 +1350,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	@Override
 	public void setMarkedAllocatables(Collection<Allocatable> allocatables) {
 		this.markedAllocatables = allocatables;
+	}
+	
+	@Override
+	public boolean isMarkedIntervalTimeEnabled() 
+	{
+	    return markedIntervalTimeEnabled;
 	}
 
 	public Collection<Appointment> getAppointments(TimeInterval interval) throws RaplaException 
