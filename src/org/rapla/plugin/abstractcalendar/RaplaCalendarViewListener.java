@@ -129,7 +129,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 	        RaplaClipboard clipboard = getService(RaplaClipboard.class);
 			Appointment appointment =  clipboard.getAppointment();
 	        if ( appointment != null ) {
-	            if (!clipboard.isWholeReservation())
+	            if (clipboard.isPasteExistingPossible())
 	           	{
 	        	   addAppointmentAction(menu,component,p).setPaste( );
 	            }
@@ -261,6 +261,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
             	copyContextAllocatables = Collections.emptyList();
             }
 			addAppointmentAction( menu, component, p).setCopy(appointmentBlock,copyContextAllocatables);
+	        addAppointmentAction( menu, component, p).setCut(appointmentBlock,copyContextAllocatables);
             addAppointmentAction( menu, component, p ).setEdit(appointmentBlock);
             if ( !isException) {
                 addAppointmentAction( menu, component, p).setDelete(appointmentBlock);

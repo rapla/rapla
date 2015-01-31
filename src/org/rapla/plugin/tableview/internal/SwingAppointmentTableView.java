@@ -15,7 +15,6 @@ import java.awt.print.PrinterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +45,7 @@ import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.ObjectMenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.ReservationController;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.VisibleTimeInterval;
 import org.rapla.gui.internal.action.AppointmentAction;
@@ -69,33 +69,15 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     JComponent scrollpane;
     TableSorter sorter;
 
-	ActionListener copyListener = new ActionListener() {
-		
-		public void actionPerformed(ActionEvent evt) 
-		{
-	        List<AppointmentBlock> selectedEvents = getSelectedEvents();
-            if ( selectedEvents.size() == 1) {
-            	AppointmentBlock appointmentBlock = selectedEvents.get( 0);
-				try {
-					Component sourceComponent = table;
-					Point p = null;
-					Collection<Allocatable> contextAllocatables = Collections.emptyList();
-					getReservationController().copyAppointment(appointmentBlock,sourceComponent,p, contextAllocatables);
-				} catch (RaplaException e) {
-					showException( e, getComponent());
-				}
-            }
-            copy(table, evt);
-		}
-
-	};
+	ActionListener copyListener = new CopyListener();
+    CopyListener cutListener = new CopyListener();
 
 	private JComponent container;
 
     public SwingAppointmentTableView( RaplaContext context, CalendarModel model, final boolean editable ) throws RaplaException
     {
         super( context );
-       
+        cutListener.setCut( true );
         table = new JTable() {
             private static final long serialVersionUID = 1L;
             
@@ -151,7 +133,8 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         table.getTableHeader().setReorderingAllowed(false);
        
     	table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
-        
+        table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
+    	
         dateChooser = new IntervalChooserPanel( context, model);
         dateChooser.addDateChangeListener( new DateChangeListener() {
             public void dateChanged( DateChangeEvent evt )
@@ -237,6 +220,43 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 		}
 	}
 
+    private final class CopyListener implements ActionListener {
+        boolean cut;
+
+        public void actionPerformed(ActionEvent evt) 
+		{
+	        List<AppointmentBlock> selectedEvents = getSelectedEvents();
+            if ( selectedEvents.size() == 1) {
+            	AppointmentBlock appointmentBlock = selectedEvents.get( 0);
+				try {
+					Component sourceComponent = table;
+					Point p = null;
+					Collection<Allocatable> contextAllocatables = model.getMarkedAllocatables();
+					ReservationController reservationController = getReservationController();
+                    if ( isCut())
+                    {
+                        reservationController.cutAppointment(appointmentBlock,sourceComponent,p, contextAllocatables);
+                    }
+                    else
+                    {
+                        reservationController.copyAppointment(appointmentBlock,sourceComponent,p, contextAllocatables);
+                    }
+				} catch (RaplaException e) {
+					showException( e, getComponent());
+				}
+            }
+            copy(table, evt);
+		}
+
+        public boolean isCut() {
+	            return cut;
+		 }
+
+        public void setCut(boolean cut) {
+		     this.cut = cut;
+		 }
+    }
+
     class PopupTableHandler extends MouseAdapter 
     {
         void showPopup(MouseEvent me) 
@@ -310,13 +330,26 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             MenuFactory menuFactory = getService(MenuFactory.class);
             menuFactory.addReservationWizards( newMenu, menuContext, null);
         }
-        if ( selectedEvents.size() != 0) 	
+        //TODO add cut and copy for more then 1 block
+        if ( selectedEvents.size() == 1) 	
 		{
-            final JMenuItem copyItem = new JMenuItem();
-        	copyItem.addActionListener( copyListener);
-        	copyItem.setIcon(  getIcon("icon.copy"));
-        	copyItem.setText(getString("copy"));
-            editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            {
+                final JMenuItem copyItem = new JMenuItem();
+                copyItem.addActionListener( cutListener);
+                copyItem.setText(getString("cut"));
+                copyItem.setIcon(  getIcon("icon.cut"));
+                editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            }
+            {
+                final JMenuItem copyItem = new JMenuItem();
+                copyItem.addActionListener( copyListener);
+                copyItem.setText(getString("copy"));
+                copyItem.setIcon(  getIcon("icon.copy"));
+                editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            }
+		}
+        if ( selectedEvents.size() != 0)    
+        {    
             addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
         }
        

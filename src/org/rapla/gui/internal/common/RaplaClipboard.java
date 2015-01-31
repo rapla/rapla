@@ -32,11 +32,19 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
 {
     private Appointment appointment;
     private Collection<Reservation> reservations = Collections.emptyList();
-    private boolean wholeReservation;
 
 	private Allocatable[] restrictedAllocatables;
 	private Collection<Allocatable> contextAllocatables = Collections.emptyList();
+	public enum CopyType
+	{
+	    CUT_BLOCK,
+	    CUT_RESERVATION,
+	    COPY_RESERVATION,
+	    COPY_BLOCK
+	}
 
+	CopyType copyType;
+	
     public RaplaClipboard( RaplaContext sm ) 
     {
         super( sm );
@@ -56,16 +64,16 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
 	private void clearAppointment()
     {
         this.appointment = null;
-        this.wholeReservation = false;
+        this.copyType = CopyType.COPY_BLOCK;
         this.restrictedAllocatables = null;
         this.reservations = Collections.emptyList();
         this.contextAllocatables = Collections.emptyList();
     }
 
-    public void setAppointment( Appointment appointment, boolean wholeReservation, Reservation destReservation, Allocatable[] restrictedAllocatables,Collection<Allocatable> contextAllocatables )
+    public void setAppointment( Appointment appointment,  Reservation destReservation, CopyType copyType, Allocatable[] restrictedAllocatables,Collection<Allocatable> contextAllocatables )
     {
     	this.appointment = appointment;
-        this.wholeReservation = wholeReservation;
+    	this.copyType = copyType;
         this.reservations = Collections.singleton(destReservation);
         this.restrictedAllocatables = restrictedAllocatables;
         this.contextAllocatables = contextAllocatables;
@@ -80,7 +88,7 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
     	}
     	Collections.sort( appointmentList, new AppointmentStartComparator());
     	appointment = appointmentList.get(0);
-    	wholeReservation = true;
+    	copyType = CopyType.COPY_RESERVATION;
     	restrictedAllocatables = Allocatable.ALLOCATABLE_ARRAY;
     	reservations = copyReservation;
     	this.contextAllocatables = contextAllocatables;
@@ -88,8 +96,13 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
     
     public boolean isWholeReservation() 
     {
-  		return wholeReservation;
+  		return copyType == CopyType.COPY_RESERVATION  || copyType == CopyType.CUT_RESERVATION;
   	}
+    
+    public boolean isPasteExistingPossible()
+    {
+        return copyType == CopyType.COPY_BLOCK || copyType ==CopyType.CUT_BLOCK;
+    }
     
     public Appointment getAppointment()
     {

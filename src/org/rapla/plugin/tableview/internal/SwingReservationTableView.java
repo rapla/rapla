@@ -46,10 +46,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.ReservationController;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.VisibleTimeInterval;
 import org.rapla.gui.internal.common.InternMenus;
-import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.toolkit.MenuInterface;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaPopupMenu;
@@ -69,37 +69,13 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     JComponent container;
     TableSorter sorter;
 
-	ActionListener copyListener = new ActionListener() {
-		
-		public void actionPerformed(ActionEvent evt) 
-		{
-	        List<Reservation> selectedEvents = getSelectedEvents();
-	        List<Reservation> clones = new ArrayList<Reservation>();
-	        try {
-				
-		        for (Reservation r:selectedEvents)
-		        {
-		        	Reservation copyReservation = getModification().clone(r);
-		        	clones.add( copyReservation);
-		        }
-			} catch (RaplaException e) {
-				showException( e, getComponent());
-			}
-	        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-	        getClipboard().setReservation( clones, markedAllocatables);
-            copy(table, evt);            
-		}
-
-		private RaplaClipboard getClipboard() {
-	        return getService(RaplaClipboard.class);
-	    }
-
-	};
-
+    CopyListener copyListener = new CopyListener();
+    CopyListener cutListener = new CopyListener();
+	
     public SwingReservationTableView( RaplaContext context, final CalendarModel model, final boolean editable ) throws RaplaException
     {
         super( context );
-       
+        cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
             
@@ -160,7 +136,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         table.getTableHeader().setReorderingAllowed(false);
        
     	table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
-        
+    	table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
+    	
         dateChooser = new IntervalChooserPanel( context, model);
         dateChooser.addDateChangeListener( new DateChangeListener() {
             public void dateChanged( DateChangeEvent evt )
@@ -181,6 +158,37 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
       	table.addFocusListener( listener);
     }
     
+    private final class CopyListener implements ActionListener {
+        boolean cut;
+        public void actionPerformed(ActionEvent evt) 
+		{
+	        List<Reservation> selectedEvents = getSelectedEvents();
+	        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+	        try {
+	            ReservationController reservationController = getReservationController();
+                if ( isCut())
+	            {
+                    reservationController.cutReservations(selectedEvents, markedAllocatables);
+	            }
+	            else
+	            {
+	                reservationController.copyReservations(selectedEvents, markedAllocatables);
+	            }
+            } catch (RaplaException ex) {
+                showException(ex, getComponent());
+            }
+	        copy(table, evt);            
+		}
+        
+        public boolean isCut() {
+            return cut;
+        }
+        
+        public void setCut(boolean cut) {
+            this.cut = cut;
+        }
+    }
+
     class Listener implements ListSelectionListener, FocusListener
     {
 	   public void valueChanged(ListSelectionEvent e) {
@@ -298,12 +306,22 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         
         // add the edit methods
         if ( selectedEvents.size() != 0) {
-        	final JMenuItem copyItem = new JMenuItem();
-        	copyItem.addActionListener( copyListener);
-        	copyItem.setText(getString("copy"));
-        	copyItem.setIcon(  getIcon("icon.copy"));
-        	editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
-        	menuFactory.addObjectMenu( editMenu, menuContext, "EDIT_BEGIN");
+            {
+                final JMenuItem copyItem = new JMenuItem();
+            	copyItem.addActionListener( cutListener);
+            	copyItem.setText(getString("cut"));
+            	copyItem.setIcon(  getIcon("icon.cut"));
+            	editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            }
+            {
+                final JMenuItem copyItem = new JMenuItem();
+                copyItem.addActionListener( copyListener);
+                copyItem.setText(getString("copy"));
+                copyItem.setIcon(  getIcon("icon.copy"));
+                editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            }
+
+            menuFactory.addObjectMenu( editMenu, menuContext, "EDIT_BEGIN");
         } 
 
 	}

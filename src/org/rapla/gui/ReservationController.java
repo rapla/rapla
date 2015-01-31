@@ -42,8 +42,13 @@ public interface ReservationController
     void deleteAppointment( AppointmentBlock appointmentBlock, Component sourceComponent, Point point )  throws RaplaException;
 
     Appointment copyAppointment( AppointmentBlock appointmentBlock, Component sourceComponent, Point point,Collection<Allocatable> contextAllocatables ) throws RaplaException;
+    Appointment cutAppointment(AppointmentBlock appointmentBlock, Component parent, Point point, Collection<Allocatable> contextAllocatables) throws RaplaException;
 
     void pasteAppointment( Date start, Component sourceComponent, Point point, boolean asNewReservation, boolean keepTime ) throws RaplaException;
+
+    void copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException;
+    
+    void cutReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException;
 
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
