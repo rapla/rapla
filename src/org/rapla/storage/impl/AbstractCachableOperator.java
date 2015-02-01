@@ -341,7 +341,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 
 	protected Lock readLock() throws RaplaException {
-		return RaplaComponent.lock( lock.readLock(), 10);
+		return RaplaComponent.lock( lock.readLock(), 20);
 	}
 	
 	protected void unlock(Lock lock) {
