@@ -23,7 +23,6 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
     final CommandScheduler commandQueue;
     final Logger callLogger;
     final RemoteConnectionInfo remoteConnectionInfo;
-    final I18nBundle i18n;
     RaplaHTTPConnector connector;
     
     @Inject
@@ -32,12 +31,12 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         this.commandQueue = commandQueue;
         this.callLogger = callLogger;
         this.remoteConnectionInfo = remoteConnectionInfo;
-        this.i18n = i18n;
         String server = remoteConnectionInfo.getServerURL();
         String errorString = i18n.format("error.connect", server) + " ";
         connector = new RaplaHTTPConnector( commandQueue,errorString, callLogger);
     }
-
+    
+    
     public <T> T getRemoteMethod(final Class<T> a) throws RaplaContextException  
     {
         InvocationHandler proxy = new InvocationHandler() 

@@ -66,6 +66,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.AnnotationEditExtension;
@@ -277,20 +278,32 @@ public class RaplaClientServiceImpl extends RaplaMainContainer implements Client
         frameControllerList = getContext().lookup( FrameControllerList.class);
     }
 
+    class SwingScheduler extends DefaultScheduler
+    {
+        public SwingScheduler(Logger logger) {
+            super(logger, 3);
+        }
+
+        @Override
+        protected Runnable createTask(final Command command) {
+            Runnable timerTask = new Runnable() {
+                public void run() {
+                    Runnable runnable = SwingScheduler.super.createTask( command);
+                    javax.swing.SwingUtilities.invokeLater(runnable);
+                }
+                public String toString()
+                {
+                    return command.toString();
+                }
+            };
+            return timerTask;
+        }         
+    }
+    
     @Override
-	protected Runnable createTask(final Command command) {
-		Runnable timerTask = new Runnable() {
-			public void run() {
-				Runnable runnable = RaplaClientServiceImpl.super.createTask( command);
-				javax.swing.SwingUtilities.invokeLater(runnable);
-			}
-			public String toString()
-			{
-				return command.toString();
-			}
-		};
-		return timerTask;
-	}
+    protected CommandScheduler createCommandQueue() {
+        return new SwingScheduler(getLogger());
+    }
 
 	public ClientFacade getFacade() throws RaplaContextException {
         return  getContext().lookup( ClientFacade.class);
