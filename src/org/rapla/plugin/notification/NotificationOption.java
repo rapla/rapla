@@ -71,7 +71,8 @@ public class NotificationOption extends RaplaGUIComponent implements OptionPanel
         notifyIfOwnerCheckBox.setEnabled( true );
         RaplaMap<Allocatable> raplaEntityList = preferences.getEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG );
         if ( raplaEntityList != null ){
-        	selection.setAllocatables(raplaEntityList.values());
+        	Collection<Allocatable> values = raplaEntityList.values();
+            selection.setAllocatables(values);
         } 
     }
 

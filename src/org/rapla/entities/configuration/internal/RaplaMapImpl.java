@@ -424,12 +424,21 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     	else
     	{
     		List<Entity> result = new ArrayList<Entity>();
-    		Iterable<String> values = links.getReferencedIds();
-    		for (String id: values)
+    		for (Map.Entry<String, Object> entry:entrySet())
     		{
-				Entity resolved = links.getResolver().tryResolve( id);
-				result.add( resolved);
+    		    result.add((Entity)entry.getValue());
     		}
+//    		Iterable<String> values = links.getReferencedIds();
+//    		for (String id: values)
+//    		{
+//				EntityResolver resovler = links.getResolver();
+//				if (resovler == null)
+//				{
+//				    throw new IllegalStateException("Resolver not set in map. ");
+//				}
+//                Entity resolved = resovler.tryResolve( id);
+//				result.add( resolved);
+//    		}
     		return result;
     	}
     }
@@ -517,7 +526,12 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 			{
 				return null;
 			}
-			Entity resolve = links.getResolver().tryResolve( id );
+			EntityResolver resolver = links.getResolver();
+			if (resolver == null)
+			{
+			    throw new IllegalStateException("Resolver not set in links map. ");
+			}
+            Entity resolve = resolver.tryResolve( id );
 			return resolve;
 		}
 
