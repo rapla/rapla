@@ -78,11 +78,11 @@ public class RaplaMainContainer extends ContainerImpl
         addContainerProvidedComponent( ClientFacade.class, FacadeImpl.class);
         if ( caller instanceof SimpleProvider )
         {
-            SimpleProvider simpleProvider = (SimpleProvider) caller;
+            SimpleProvider<RemoteServiceCaller> simpleProvider = (SimpleProvider<RemoteServiceCaller>) caller;
             if ( simpleProvider.get() == null)
             {
                 String className = RemoteServiceCallerImpl.class.getName();
-                Object instanciate = instanciate(className, null, getLogger());
+                RemoteServiceCaller instanciate = (RemoteServiceCaller) instanciate(className, null, getLogger());
                 simpleProvider.setValue(instanciate);
             }
         }
