@@ -105,7 +105,6 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     /**
      * @see org.rapla.gui.OptionPanel#show()
      */
-    @SuppressWarnings("deprecation")
     public void show() throws RaplaException 
     {
         activate.setText( getString("selected"));
@@ -116,8 +115,18 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
 			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
 		} catch (Throwable e) {
 		}
-        config = getConfig();
-        activate.setSelected( config.getAttributeAsBoolean("enabled", defaultSelection));
+        
+		config = getConfig();
+
+		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+		String className = getPluginClass().getName();
+        Configuration pluginClassConfig = pluginConfig.find("class", className);
+        if ( pluginClassConfig == null )
+        {
+            // use old config for compatibilty
+            pluginClassConfig = config;
+        }
+        activate.setSelected( pluginClassConfig.getAttributeAsBoolean("enabled", defaultSelection));
         readConfig( config );
     }
 
