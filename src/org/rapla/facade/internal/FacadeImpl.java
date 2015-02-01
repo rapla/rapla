@@ -1008,12 +1008,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	@SuppressWarnings("unchecked")
 	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
-		return (RaplaMap<T>) new RaplaMapImpl(map);
+		RaplaMapImpl impl = new RaplaMapImpl(map);
+		impl.setResolver( operator );
+        RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
+        return raplaMap;
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T> RaplaMap<T> newRaplaMap(Collection<T> col) {
-		return (RaplaMap<T>) new RaplaMapImpl(col);
+		RaplaMapImpl impl = new RaplaMapImpl(col);
+        impl.setResolver( operator );
+		RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
+		return raplaMap;
 	}
 
 	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {
