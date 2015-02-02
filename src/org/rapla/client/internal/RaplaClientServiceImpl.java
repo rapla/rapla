@@ -35,7 +35,7 @@ import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 
 import org.rapla.ConnectInfo;
-import org.rapla.RaplaMainContainer;
+import org.rapla.RaplaClient;
 import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
@@ -119,7 +119,7 @@ import org.rapla.storage.dbrm.StatusUpdater;
 
 /** Implementation of the ClientService.
 */
-public class RaplaClientServiceImpl extends RaplaMainContainer implements ClientServiceContainer,ClientService,UpdateErrorListener
+public class RaplaClientServiceImpl extends RaplaClient implements ClientServiceContainer,ClientService,UpdateErrorListener
 {
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     I18nBundle i18n;
