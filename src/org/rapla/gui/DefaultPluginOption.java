@@ -118,9 +118,13 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
         
 		config = getConfig();
 
-		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
 		String className = getPluginClass().getName();
-        Configuration pluginClassConfig = pluginConfig.find("class", className);
+		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+        Configuration pluginClassConfig = null;
+		if ( pluginConfig != null)
+		{
+		    pluginClassConfig = pluginConfig.find("class", className);
+		}
         if ( pluginClassConfig == null )
         {
             // use old config for compatibilty
