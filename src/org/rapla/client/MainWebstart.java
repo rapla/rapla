@@ -26,7 +26,10 @@ final public class MainWebstart
         	main.startRapla("client");
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);
-            main.raplaContainer.dispose();
+            if (main.raplaContainer != null)
+            {
+                main.raplaContainer.dispose();
+            }
             System.out.flush();
             try
             {
