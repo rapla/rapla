@@ -110,6 +110,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         counter.setTime(startDate);
         int year = counter.get(Calendar.YEAR);
         SimpleDateFormat format = new SimpleDateFormat("MMMMMM",locale);
+        format.setTimeZone( getTimeZone() );
         String monthname = format.format(counter.getTime());
         // calculate the blocks
         for (int i=0; i<daysInMonth; i++) {
