@@ -271,6 +271,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             TimeZone timeZone = registry.getTimeZone(timezoneId);
             if ( timeZone == null)
             {
+                // FIXME create VTimezones for GMT+1-12 and GMT-1-12 
+                // if ( timezoneId.startsWith("GMT") )
                 String fallback = "Etc/GMT";
                 getLogger().error("Timezone " + timezoneId + " not found in ical registry. " + " Using "+ fallback);
                 timeZone = registry.getTimeZone(fallback);
