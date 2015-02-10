@@ -375,7 +375,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             allAllocatables.addAll(Arrays.asList( r.getAllocatables()));
         }
-        
+        List<Appointment> appointmentsWithoutTemplates = new ArrayList<Appointment>();
 		if ( appointments == null)
 		{
 			allocatableBindings.clear();
@@ -386,35 +386,34 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			appointments = new ArrayList<Appointment>();
 	        for (Reservation r:mutableReservations)
 	        {
-	            appointments.addAll(r.getSortedAppointments());
+	            Collection<Appointment> sortedAppointments = r.getSortedAppointments();
+                appointments.addAll(sortedAppointments);
+	            if (!RaplaComponent.isTemplate( r ))
+                {
+	                appointmentsWithoutTemplates.addAll( sortedAppointments);
+                }
+            
 	        }
+	        
 		}
-	
 		
 		try
 		{
-		    for (Reservation r:mutableReservations)
-		    {
-    			if (!RaplaComponent.isTemplate( r ))
-    			{
-    				//      System.out.println("getting allocated resources");
-    				
-    				Map<Allocatable,  Collection<Appointment>> allocatableBindings = getQuery().getAllocatableBindings(allAllocatables,appointments).get();
-    				removeFromBindings( appointments);
-    				for ( Map.Entry<Allocatable,  Collection<Appointment>> entry: allocatableBindings.entrySet())
-    				{
-    					Allocatable alloc = entry.getKey();
-    					Collection<Appointment> list = this.allocatableBindings.get( alloc);
-    					if ( list == null)
-    					{
-    						list = new HashSet<Appointment>();
-    						this.allocatableBindings.put( alloc, list);
-    					}
-    					Collection<Appointment> bindings = entry.getValue();
-    					list.addAll( bindings);
-    				}
-    			}
-		    }
+			//      System.out.println("getting allocated resources");
+			Map<Allocatable,  Collection<Appointment>> allocatableBindings = getQuery().getAllocatableBindings(allAllocatables,appointmentsWithoutTemplates).get();
+			removeFromBindings( appointments);
+			for ( Map.Entry<Allocatable,  Collection<Appointment>> entry: allocatableBindings.entrySet())
+			{
+				Allocatable alloc = entry.getKey();
+				Collection<Appointment> list = this.allocatableBindings.get( alloc);
+				if ( list == null)
+				{
+					list = new HashSet<Appointment>();
+					this.allocatableBindings.put( alloc, list);
+				}
+				Collection<Appointment> bindings = entry.getValue();
+				list.addAll( bindings);
+			}
 			//this.allocatableBindings.putAll(allocatableBindings);
 			completeModel.treeDidChange();
 			selectedModel.treeDidChange();
