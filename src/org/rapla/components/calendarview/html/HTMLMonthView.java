@@ -98,7 +98,7 @@ public class HTMLMonthView extends AbstractHTMLView {
         
 		// Rapla 1.4: Show month and year in monthview
 		SimpleDateFormat monthYearFormat = new SimpleDateFormat("MMMMM yyyy", locale);
-		//monthYearFormat.setTimeZone( getTimeZone() );
+		monthYearFormat.setTimeZone( getTimeZone() );
 		result.append("<h2 class=\"title\">" + monthYearFormat.format(startDate) + "</h2>\n");
         
         result.append("<table class=\"month_table\">\n");
