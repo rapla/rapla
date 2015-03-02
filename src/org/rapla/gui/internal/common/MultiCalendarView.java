@@ -328,7 +328,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         try
         {
         	// don't show filter button in template mode
-        	filter.getButton().setVisible( getModification().getTemplate() == null);
+        	//filter.getButton().setVisible( getModification().getTemplate() == null);
             listenersEnabled = false;
             String viewId = model.getViewId();
             SwingViewFactory factory = findFactory( viewId );

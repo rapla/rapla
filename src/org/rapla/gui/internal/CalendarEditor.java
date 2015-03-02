@@ -288,7 +288,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			{
 	  	        savedViews.getComponent().setVisible( !templateMode  );
 	  	        templatePanel.setVisible( templateMode);
-	  	        resourceSelection.getFilterButton().setVisible( !templateMode );
+	  	        //resourceSelection.getFilterButton().setVisible( !templateMode );
 	  		    if ( content.getLeftComponent() != left )
 				{
 					content.setLeftComponent( left);

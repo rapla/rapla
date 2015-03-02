@@ -310,6 +310,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     	    {
     	        beforeTemplateConf = createConfiguration();
     	        setSelectedObjects(Collections.singleton(ALLOCATABLES_ROOT));
+    	        setAllocatableFilter( null );
+    	        setReservationFilter( null );
     	    }
     	    else if ( beforeTemplateConf != null)
     	    {
@@ -696,10 +698,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
     
     private boolean isInFilter( Allocatable classifiable) {
-        if (isTemplateModus())
-        {
-            return true;
-        }
+//        if (isTemplateModus())
+//        {
+//            return true;
+//        }
         final Classification classification = classifiable.getClassification();
         final DynamicType type = classification.getType();
         final ClassificationFilter classificationFilter = allocatableFilter.get( type);
@@ -790,7 +792,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public ClassificationFilter[] getReservationFilter() throws RaplaException 
     {
         Collection<ClassificationFilter> filter ;
-        if ( isDefaultEventTypes() || isTemplateModus())
+        if ( isDefaultEventTypes() /*|| isTemplateModus()*/)
         {
             filter = new ArrayList<ClassificationFilter>();
             for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
@@ -812,7 +814,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Override
     public ClassificationFilter[] getAllocatableFilter() throws RaplaException {
         Collection<ClassificationFilter> filter ;
-        if ( isDefaultResourceTypes() || isTemplateModus())
+        if ( isDefaultResourceTypes() /*|| isTemplateModus()*/)
         {
             filter = new ArrayList<ClassificationFilter>();
             for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
@@ -881,10 +883,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		
 		List<Reservation> reservations = new ArrayList<Reservation>(reservationsToRestrict);
 		// Don't restrict templates
-		if ( isTemplateModus())
-		{
-			return reservations;
-		}
+//		if ( isTemplateModus())
+//		{
+//			return reservations;
+//		}
 		ClassificationFilter[] reservationFilter = getReservationFilter();
     	if ( isDefaultEventTypes())
     	{
