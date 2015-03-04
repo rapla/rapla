@@ -512,6 +512,42 @@ class ConflictFinder {
 		return result;
 	}
 	
+	public boolean isActiveConflict(Conflict conflict,Date today)
+	{
+	    Appointment appointment1 = getAppointment( conflict.getAppointment1());
+        Appointment appointment2 = getAppointment( conflict.getAppointment2());
+        if ( appointment1 == null || appointment2 == null)
+        {
+            return false;
+        }
+        if (ConflictImpl.endsBefore( appointment1, appointment2, today))
+        {
+            return false;
+        }
+        if (!ConflictImpl.isConflict(appointment1, appointment2, today))
+        {
+            return false;
+        }
+        Reservation res1 = appointment1.getReservation();
+        Reservation res2 = appointment2.getReservation();
+        Allocatable alloc = resolver.tryResolve(conflict.getAllocatableId(), Allocatable.class);
+        if ( res1 == null || res2 == null || alloc == null)
+        {
+            return false;
+        }
+        String annotation = alloc.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
+        boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+        if ( holdBackConflicts)
+        {
+            return false;
+        }
+        if (res1.hasAllocated(alloc, appointment1) && res2.hasAllocated(alloc,appointment2))
+        {
+            return true;
+        }
+        return false;
+	}
+	
 	private Appointment getAppointment(String id) 
 	{
 		return resolver.tryResolve(id, Appointment.class);
@@ -679,8 +715,9 @@ class ConflictFinder {
 //		return foundAppointment;
 //	}
 
-	public void removeOldConflicts(UpdateResult result, Date today) 
+	public int removeOldConflicts(UpdateResult result, Date today) 
 	{
+	    int count = 0;
 		for (Set<Conflict> sortedSet: conflictMap.values())
 		{
 			Iterator<Conflict> it = sortedSet.iterator();
@@ -690,10 +727,12 @@ class ConflictFinder {
 				if ( endsBefore( conflict,today))
 				{
 					it.remove();
+					count++;
 					result.addOperation( new UpdateResult.Remove(conflict));
 				}
 			}
 		}
+		return count;
 		
 	}
 

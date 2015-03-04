@@ -273,8 +273,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	        User user = null;
 	        DynamicType t = getDynamicType( RAPLA_TEMPLATE);
 	        DynamicType templateType = (DynamicType)editObject(t, user);
+	        // TODO What does this method do?
 	    }
-        
     }
 	
 	public LocalAbstractCachableOperator(Logger logger,  I18nBundle i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
@@ -922,7 +922,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		// The conflict map
 		Logger logger = getLogger();
         conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, cache);
-		long delay = DateTools.MILLISECONDS_PER_HOUR;
+		long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
 		long period = DateTools.MILLISECONDS_PER_HOUR;
 		Command cleanUpConflicts = new Command() {
 			
@@ -1075,8 +1075,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        removeConflictsFromCache(getConflictsToDeleteFromCache(result));
+        // Order is important. Can't remove from database if removed from cache first
         removeConflictsFromDatabase(getConflictsToDeleteFromDatabase(result));
+        removeConflictsFromCache(getConflictsToDeleteFromCache(result));
 //      Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
 //      for ( Change change:changes)
 //      {
@@ -1545,12 +1546,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		UpdateResult result = createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
 		//Date today = getCurrentTimestamp();
 		Date today = today();
-		List<Conflict> conflictsToDelete;
+		Set<Conflict> conflictsToDelete;
 		{
     		Lock readLock = readLock();
     		try
     		{
-    			conflictFinder.removeOldConflicts(result, today);
+    			@SuppressWarnings("unused")
+                int count = conflictFinder.removeOldConflicts(result, today);
                 conflictsToDelete = getConflictsToDeleteFromCache(result);
         	}
         	finally
@@ -1559,13 +1561,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         	}
 		}
 		
+        Collection<Conflict> conflicts = cache.getConflicts();
+        for (Conflict conflict:conflicts)
+        {
+            if (!conflictFinder.isActiveConflict(conflict, today))
+            {
+               conflictsToDelete.add( conflict); 
+            }
+        }
+        
 		if ( conflictsToDelete.size() >0)
 		{
+		    getLogger().info("Removing old conflicts " + conflictsToDelete.size());
 		    Lock writeLock = writeLock();
 	        try
 	        {
-	            removeConflictsFromCache(conflictsToDelete);
+	            //Order is important they can't be removed from database if they are not in cache
 	            removeConflictsFromDatabase(conflictsToDelete);
+	            removeConflictsFromCache(conflictsToDelete);
 	        }
 	        finally
 	        {
@@ -1575,19 +1588,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		fireStorageUpdated( result );
     }
 
-    protected void removeConflictsFromCache(List<Conflict> disabledConflicts) {
+    protected void removeConflictsFromCache(Collection<Conflict> disabledConflicts) {
         for (Conflict conflict:disabledConflicts)
         {
             cache.remove( conflict);
         }
     }
     
-    protected void removeConflictsFromDatabase(@SuppressWarnings("unused") List<Conflict> disabledConflicts) {        
+    protected void removeConflictsFromDatabase(@SuppressWarnings("unused") Collection<Conflict> disabledConflicts) {        
     }
 
-    private List<Conflict> getConflictsToDeleteFromCache(UpdateResult result) {
+    private Set<Conflict> getConflictsToDeleteFromCache(UpdateResult result) {
         Set<Entity> removed = result.getRemoved();
-        List<Conflict> conflicts = new ArrayList<Conflict>();
+        Set<Conflict> conflicts = new HashSet<Conflict>();
         for ( Entity entity:removed)
         {
             if ( entity instanceof Conflict)
