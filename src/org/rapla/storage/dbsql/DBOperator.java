@@ -640,7 +640,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    protected void removeConflictsFromDatabase(List<Conflict> disabledConflicts) 
+    protected void removeConflictsFromDatabase(Collection<Conflict> disabledConflicts) 
     {
         super.removeConflictsFromDatabase(disabledConflicts);
         if ( disabledConflicts.size() <1)
