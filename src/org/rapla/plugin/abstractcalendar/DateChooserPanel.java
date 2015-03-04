@@ -131,7 +131,6 @@ public class DateChooserPanel extends RaplaGUIComponent
         }
     }
 
-
     public void dispose() {
         periodChooser.removeActionListener( listener );
         periodChooser.dispose();
@@ -184,6 +183,16 @@ public class DateChooserPanel extends RaplaGUIComponent
     public JComponent getComponent() {
         return panel;
     }
+    
+    protected int getIncrementAmount(int incrementSize) 
+    {
+        if (incrementSize == Calendar.WEEK_OF_YEAR)
+        {
+            int daysInWeekview = getCalendarOptions().getDaysInWeekview();
+            return Math.max(1,daysInWeekview / 7 );
+        }
+        return 1;
+    }
 
     class Listener implements ActionListener, DateChangeListener {
 
@@ -198,7 +207,7 @@ public class DateChooserPanel extends RaplaGUIComponent
 			calendar.setTime(date2);
 
             if (evt.getSource() == prevButton) {
-                calendar.add(incrementSize,-1);
+                calendar.add(incrementSize,-getIncrementAmount(incrementSize ));
             }
             //eingefuegt: rku
             if (evt.getSource() == todayButton) {
@@ -207,7 +216,7 @@ public class DateChooserPanel extends RaplaGUIComponent
             }
  
             if (evt.getSource() == nextButton) {
-                calendar.add(incrementSize,1);
+                calendar.add(incrementSize,getIncrementAmount(incrementSize ));
             }
             if (evt.getSource() == periodChooser) {
                 date = periodChooser.getDate();

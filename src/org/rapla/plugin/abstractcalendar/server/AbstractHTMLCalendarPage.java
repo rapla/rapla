@@ -117,6 +117,16 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
     
     abstract protected void configureView() throws RaplaException;
 
+    protected int getIncrementAmount(int incrementSize) 
+    {
+        if (incrementSize == Calendar.WEEK_OF_YEAR)
+        {
+            int daysInWeekview = getCalendarOptions().getDaysInWeekview();
+            return Math.max(1,daysInWeekview / 7 );
+        }
+        return 1;
+    }
+    
     public void generatePage( ServletContext context,HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         response.setContentType("text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
@@ -139,10 +149,11 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
                 out.close();
                 throw new ServletException( ex);
             }
+            int incrementSize = getIncrementSize();
             if ( request.getParameter("next") != null)
-                calendarview.add( getIncrementSize(), 1);
+                calendarview.add( incrementSize, getIncrementAmount(incrementSize));
             if ( request.getParameter("prev") != null)
-                calendarview.add( getIncrementSize(), -1);
+                calendarview.add( incrementSize, -getIncrementAmount(incrementSize));
         }
 
         Date currentDate = calendarview.getTime();
