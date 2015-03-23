@@ -20,7 +20,7 @@ import java.util.Calendar;
 /** Renders the weekdays (or any other day of week, if selected) in a special color. */
 public class WeekendHighlightRenderer implements DateRenderer {
 
-    Color m_weekendBackgroundColor = new Color(0xe2, 0xf3, 0xff);
+    Color m_weekendBackgroundColor = new Color(0xc9, 0xf3, 0xff);
 
     boolean[] m_highlightedDays = new boolean[10];
 
