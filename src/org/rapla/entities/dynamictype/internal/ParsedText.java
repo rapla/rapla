@@ -39,7 +39,7 @@ public class ParsedText implements Serializable {
     /** the variable format elements*/
     transient List<Function> variablesList ;
     // used for fast storage of text without variables
-    transient private String first;
+    transient private String first="";
 
     String formatString;
     
@@ -82,6 +82,7 @@ public class ParsedText implements Serializable {
         	Function func  =parseFunctions(context,content);
         	variablesList.add( func);
         }
+        first = "";
         if ( variablesList.isEmpty() )
         {
             if (nonVariablesList.size()>0)
@@ -865,14 +866,17 @@ public class ParsedText implements Serializable {
                 DynamicTypeImpl type = (DynamicTypeImpl)classification2.getType();
                 String annotationName = context.getAnnotationName();
                 ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
-                int callStackDepth = context.getCallStackDepth();
-                if ( callStackDepth >5)
+                if (parsedAnnotation != null)
                 {
-                    return "ErrorSelfReferenceCausesNameOverflow";
+                    int callStackDepth = context.getCallStackDepth();
+                    if ( callStackDepth >5)
+                    {
+                        return "ErrorSelfReferenceCausesNameOverflow";
+                    }
+                    EvalContext evalContext = new EvalContext( context.getLocale(), callStackDepth + 1, annotationName, classification2);
+                    String formatName = parsedAnnotation.formatName( evalContext);
+                    buf.append(formatName);
                 }
-                EvalContext evalContext = new EvalContext( context.getLocale(), callStackDepth + 1, annotationName, classification2);
-                String formatName = parsedAnnotation.formatName( evalContext);
-                return formatName;
             }
             else
             {

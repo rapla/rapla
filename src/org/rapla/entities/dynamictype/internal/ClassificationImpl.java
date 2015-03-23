@@ -185,6 +185,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     {
         DynamicTypeImpl type = (DynamicTypeImpl)getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
+        if ( parsedAnnotation == null)
+        {
+            return "";
+        }
         EvalContext evalContext = new EvalContext(locale, 0, annotationName, this );
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
