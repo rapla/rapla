@@ -173,6 +173,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     {
         DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
+        if (parsedAnnotation == null)
+        {
+            return "";
+        }
         EvalContext evalContext = new ReservationEvalContext(locale, 0, annotationName, this );
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
