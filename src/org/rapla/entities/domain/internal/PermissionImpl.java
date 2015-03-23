@@ -198,7 +198,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
             long pStartTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * minAdvance.longValue();
 
-            if ( start == null || start.getTime() < pStartTime ) {
+            if ( start == null || start.getTime() > pStartTime ) {
                 //System.out.println( " start before permission " + start  + " < " + pStartTime );
                 return false;
             }
@@ -206,7 +206,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         if ( maxAdvance != null ) {
             long pEndTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * (maxAdvance.longValue() + 1);
-            if ( end == null || pEndTime < end.getTime() ) {
+            if ( end == null || end.getTime() > pEndTime   ) {
                 //System.out.println( " end after permission " + end  + " > " + pEndTime );
                 return false;
             }
