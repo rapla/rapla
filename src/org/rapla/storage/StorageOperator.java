@@ -68,6 +68,7 @@ public interface StorageOperator extends EntityResolver {
         original, <strong>always</strong> edit the object returned by editObject.*/
     Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
 
+    /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
     Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound) throws RaplaException;
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
