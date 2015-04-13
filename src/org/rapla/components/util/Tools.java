@@ -185,4 +185,8 @@ public abstract class Tools
         }
         return lineEntries;
     }
+
+	public static String createXssSafeString(String value) {
+	    return value != null ? value.replaceAll("<","&lt;").replaceAll(">", "&gt;").replaceAll("\"", "'") : null;
+	}
 }

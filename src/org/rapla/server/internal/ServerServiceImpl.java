@@ -55,10 +55,10 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.rest.server.RaplaAPIPage;
-import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.RaplaDynamicTypesRestPage;
 import org.rapla.rest.server.RaplaEventsRestPage;
 import org.rapla.rest.server.RaplaResourcesRestPage;
+import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
@@ -74,6 +74,7 @@ import org.rapla.servletpages.DefaultHTMLMenuEntry;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
 import org.rapla.servletpages.RaplaJNLPPageGenerator;
+import org.rapla.servletpages.RaplaLoginPageGenerator;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
@@ -240,6 +241,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addWebpage( "raplaclient",RaplaJNLPPageGenerator.class );
         addWebpage( "raplaapplet",RaplaAppletPageGenerator.class );
         addWebpage( "store",RaplaStorePage.class);
+        addWebpage( "login",RaplaLoginPageGenerator.class);
         
         I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 

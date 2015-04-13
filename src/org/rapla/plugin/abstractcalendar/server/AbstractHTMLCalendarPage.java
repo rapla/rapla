@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.components.util.Tools;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -138,7 +139,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
             Date today = getQuery().today();
 			calendarview.setTime( today );
         } else if ( request.getParameter("day") != null ) {
-            String dateString = removeXSS(request.getParameter("year") + "-"
+            String dateString = Tools.createXssSafeString(request.getParameter("year") + "-"
                                + request.getParameter("month") + "-"
                                + request.getParameter("day"));
             
@@ -316,12 +317,8 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 
     String getHiddenField( String fieldname, String value) {
         // prevent against css attacks
-        value = removeXSS(value);
+        value = Tools.createXssSafeString(value);
         return "<input type=\"hidden\" name=\"" + fieldname + "\" value=\"" + value + "\"/>";
-    }
-
-    private String removeXSS(String value) {
-        return value.replaceAll("<","&lt;").replaceAll(">", "&gt;").replaceAll("\"", "'");
     }
 
     String getHiddenField( String fieldname, int value) {
