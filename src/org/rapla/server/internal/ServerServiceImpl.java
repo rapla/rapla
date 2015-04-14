@@ -55,10 +55,10 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.rest.server.RaplaAPIPage;
+import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.RaplaDynamicTypesRestPage;
 import org.rapla.rest.server.RaplaEventsRestPage;
 import org.rapla.rest.server.RaplaResourcesRestPage;
-import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
@@ -74,7 +74,6 @@ import org.rapla.servletpages.DefaultHTMLMenuEntry;
 import org.rapla.servletpages.RaplaAppletPageGenerator;
 import org.rapla.servletpages.RaplaIndexPageGenerator;
 import org.rapla.servletpages.RaplaJNLPPageGenerator;
-import org.rapla.servletpages.RaplaLoginPageGenerator;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.servletpages.RaplaStatusPageGenerator;
 import org.rapla.servletpages.RaplaStorePage;
@@ -132,7 +131,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     
     RemoteSessionImpl adminSession;
 
-    public static class ServerBackendContext
+    public static class ServerContainerContext
     {
         DataSource dbDatasource;
         String fileDatasource;
@@ -149,7 +148,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     }
     
     @Inject
-    public ServerServiceImpl( Logger logger, ServerBackendContext backendContext, String selectedStorage) throws Exception
+    public ServerServiceImpl( Logger logger, ServerContainerContext containerContext, String selectedStorage) throws Exception
     {
         super(  logger, new SimpleProvider<RemoteServiceCaller>() );
         ((SimpleProvider<RemoteServiceCaller>) remoteServiceCaller).setValue( new RemoteServiceCaller() {
@@ -180,23 +179,23 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
 
         });
-        if ( backendContext.fileDatasource != null)
+        if ( containerContext.fileDatasource != null)
         {
-            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, backendContext.fileDatasource );
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, containerContext.fileDatasource );
             addContainerProvidedComponent( FileOperator.class, FileOperator.class);
         }
-        if ( backendContext.dbDatasource != null)
+        if ( containerContext.dbDatasource != null)
         {
-            addContainerProvidedComponentInstance( DataSource.class, backendContext.dbDatasource );
+            addContainerProvidedComponentInstance( DataSource.class, containerContext.dbDatasource );
             addContainerProvidedComponent( DBOperator.class, DBOperator.class);
         }
-        if ( backendContext.fileDatasource != null && backendContext.dbDatasource != null)
+        if ( containerContext.fileDatasource != null && containerContext.dbDatasource != null)
         {
             addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
         }
-        if ( backendContext.mailSession != null)
+        if ( containerContext.mailSession != null)
         {
-            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAMAIL, backendContext.mailSession);
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAMAIL, containerContext.mailSession);
         }
         
         initialize();
@@ -241,7 +240,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addWebpage( "raplaclient",RaplaJNLPPageGenerator.class );
         addWebpage( "raplaapplet",RaplaAppletPageGenerator.class );
         addWebpage( "store",RaplaStorePage.class);
-        addWebpage( "login",RaplaLoginPageGenerator.class);
         
         I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
 
