@@ -131,7 +131,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     
     RemoteSessionImpl adminSession;
 
-    public static class ServerBackendContext
+    public static class ServerContainerContext
     {
         DataSource dbDatasource;
         String fileDatasource;
@@ -148,7 +148,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     }
     
     @Inject
-    public ServerServiceImpl( Logger logger, ServerBackendContext backendContext, String selectedStorage) throws Exception
+    public ServerServiceImpl( Logger logger, ServerContainerContext containerContext, String selectedStorage) throws Exception
     {
         super(  logger, new SimpleProvider<RemoteServiceCaller>() );
         ((SimpleProvider<RemoteServiceCaller>) remoteServiceCaller).setValue( new RemoteServiceCaller() {
@@ -179,23 +179,23 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
 
         });
-        if ( backendContext.fileDatasource != null)
+        if ( containerContext.fileDatasource != null)
         {
-            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, backendContext.fileDatasource );
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, containerContext.fileDatasource );
             addContainerProvidedComponent( FileOperator.class, FileOperator.class);
         }
-        if ( backendContext.dbDatasource != null)
+        if ( containerContext.dbDatasource != null)
         {
-            addContainerProvidedComponentInstance( DataSource.class, backendContext.dbDatasource );
+            addContainerProvidedComponentInstance( DataSource.class, containerContext.dbDatasource );
             addContainerProvidedComponent( DBOperator.class, DBOperator.class);
         }
-        if ( backendContext.fileDatasource != null && backendContext.dbDatasource != null)
+        if ( containerContext.fileDatasource != null && containerContext.dbDatasource != null)
         {
             addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
         }
-        if ( backendContext.mailSession != null)
+        if ( containerContext.mailSession != null)
         {
-            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAMAIL, backendContext.mailSession);
+            addContainerProvidedComponentInstance( ServerService.ENV_RAPLAMAIL, containerContext.mailSession);
         }
         
         initialize();

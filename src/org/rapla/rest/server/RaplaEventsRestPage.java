@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
@@ -19,8 +20,12 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.server.ServerServiceContainer;
 import org.rapla.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
@@ -28,12 +33,13 @@ import org.rapla.storage.RaplaSecurityException;
 @WebService
 public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGenerator
 {
-    public RaplaEventsRestPage(RaplaContext context) throws RaplaException 
-    {
-        super(context);
-    }
-    
-    private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
+
+	@Inject
+    public RaplaEventsRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger) throws RaplaException {
+		super(facade, serverContainer, logger, true);
+	}
+
+	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
 
     
     public List<ReservationImpl> list(@WebParam(name="user") User user, @WebParam(name="start")Date start, @WebParam(name="end")Date end, @WebParam(name="resources") List<String> resources, @WebParam(name="eventTypes") List<String> eventTypes,@WebParam(name="attributeFilter") Map<String,String> simpleFilter ) throws Exception
@@ -53,7 +59,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         for ( Reservation r:reservations)
         {
             EntityResolver entityResolver = getEntityResolver();
-            if ( canRead(r, user, entityResolver ))
+            if ( RaplaComponent.canRead(r, user, entityResolver ))
             {
                 result.add((ReservationImpl) r);
             }
@@ -61,10 +67,10 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
         return result;
     }
     
-    public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
+	public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        if (!canRead(event, user, getEntityResolver() ))
+        if (!RaplaComponent.canRead(event, user, getEntityResolver() ))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -73,7 +79,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
     
     public ReservationImpl update(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
     {
-        if (!canModify(event, user, getEntityResolver()))
+        if (!RaplaComponent.canModify(event, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

@@ -13,7 +13,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.ServerServiceImpl.ServerBackendContext;
+import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
 import org.rapla.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
@@ -24,14 +24,14 @@ public class ServerStarter
     Runnable shutdownCommand;
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
     Collection<ServletRequestPreprocessor> processors;
-    ServerBackendContext backendContext;
+    ServerContainerContext backendContext;
     String env_rapladatasource;
     public ServerStarter(Logger logger, RaplaJNDIContext jndi)
     {
         this.logger = logger;
         shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
 
-        ServerBackendContext backendContext = createBackendContext(logger, jndi);
+        ServerContainerContext backendContext = createBackendContext(logger, jndi);
         this.backendContext = backendContext;
         env_rapladatasource = jndi.lookupEnvString( "rapladatasource", true);
         if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
@@ -52,7 +52,7 @@ public class ServerStarter
         }
     }
 
-    public static ServerBackendContext createBackendContext(Logger logger, RaplaJNDIContext jndi) {
+    public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) {
         String env_raplafile;
         DataSource env_rapladb = null;
         Object env_raplamail;
@@ -76,7 +76,7 @@ public class ServerStarter
         {
             logger.info("Configured mail service via JNDI");
         }
-        ServerBackendContext backendContext = new ServerBackendContext();
+        ServerContainerContext backendContext = new ServerContainerContext();
         backendContext.fileDatasource = env_raplafile;
         backendContext.dbDatasource = env_rapladb;
         backendContext.mailSession = env_raplamail;

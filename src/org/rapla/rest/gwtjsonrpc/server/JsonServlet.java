@@ -39,6 +39,7 @@ import javax.jws.WebService;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.smartcardio.ATR;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.components.util.ParseDateException;
@@ -262,7 +263,9 @@ public class JsonServlet {
         if ("2.0".equals(req.getParameter("jsonrpc"))) {
             final JsonObject d = new JsonObject();
             d.addProperty("jsonrpc", "2.0");
-            d.addProperty("method", req.getParameter("method"));
+            String attribute = (String)req.getAttribute(JSON_METHOD);
+            final String methodParam = req.getParameter("method");
+			d.addProperty("method", methodParam != null ? methodParam : attribute);
             d.addProperty("id", req.getParameter("id"));
             try {
                 String parameter = req.getParameter("params");
@@ -444,7 +447,7 @@ public class JsonServlet {
             final byte[] body = new byte[len];
             int off = 0;
             while (off < len) {
-                final int n = in.read(body, off, len - off);
+            	final int n = in.read(body, off, len - off);
                 if (n <= 0) {
                     throw new JsonParseException("Invalid Request Incomplete Body");
                 }

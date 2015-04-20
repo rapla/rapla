@@ -8,7 +8,7 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.RaplaJNDIContext;
-import org.rapla.server.internal.ServerServiceImpl.ServerBackendContext;
+import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
@@ -24,7 +24,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
     {
         super(logger, new SimpleProvider<RemoteServiceCaller>());
         shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
-        ServerBackendContext backendContext = ServerStarter.createBackendContext(logger, jndi);
+        ServerContainerContext backendContext = ServerStarter.createBackendContext(logger, jndi);
         String fileDatasource = backendContext.getFileDatasource();
         if ( fileDatasource != null)
         {

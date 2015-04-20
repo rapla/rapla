@@ -31,6 +31,8 @@ public class LoginTokens {
     }
    
     public static LoginTokens fromString(String s){
+    	if(s.startsWith("\""))s=s.replaceFirst("\"", "");
+    	if(s.endsWith("\""))s=s.substring(0, s.length()-1);
         String[] split = s.split("#");
         String accessToken2 = split[0];
         long parseLong = Long.parseLong(split[1]);
