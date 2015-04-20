@@ -176,7 +176,7 @@ public abstract class  AbstractCalendar {
     public static String formatDayOfWeekDateMonth(Date date, Locale locale) {
         //SimpleDateFormat format =  new SimpleDateFormat("EEE", locale);
         int weekday = DateTools.getWeekday( date);
-        String datePart = getWeekdayName(weekday, locale);
+        String datePart = getWeekdayName(weekday, locale).substring(0,3);
         String dateOfMonthPart = AbstractCalendar.formatDateMonth( date,locale );
         return datePart + " " + dateOfMonthPart ;
     }

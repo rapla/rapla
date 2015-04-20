@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -754,15 +755,14 @@ public class RaplaComponent
     protected I18nBundle childBundle;
     /** lookup I18nBundle from the serviceManager */
     protected I18nBundle getI18n() {
-//    	TypedComponentRole<I18nBundle> childBundleName = getChildBundleName();
-//        if ( childBundleName != null) {
-//            if ( childBundle == null) {
-//                I18nBundle pluginI18n = getService(childBundleName );
-//                childBundle = new CompoundI18n(pluginI18n,getI18nDefault());
-//            }
-//            return childBundle;
-//        }
-//        return getI18nDefault();
+    	TypedComponentRole<I18nBundle> childBundleName = getChildBundleName();
+        if ( childBundleName != null) {
+            if ( childBundle == null) {
+                I18nBundle pluginI18n = getService(childBundleName );
+                childBundle = new CompoundI18n(pluginI18n,i18n);
+            }
+            return childBundle;
+        }
         return i18n;
     }
 

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,7 +66,6 @@ import org.rapla.facade.Conflict.Util;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -132,7 +132,8 @@ public abstract class RaplaBuilder
 //	
 	@Inject
 	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, Logger logger, AppointmentFormater appointmentFormater) {
-        buildStrategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
+        Locale locale = raplaLocale.getLocale();
+        buildStrategy = new GroupAllocatablesStrategy( locale );
         this.raplaLocale = raplaLocale;
         this.clientFacade = clientFacade;
         this.i18n = i18n;
