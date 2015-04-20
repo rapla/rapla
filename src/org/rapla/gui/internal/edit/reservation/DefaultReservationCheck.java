@@ -14,11 +14,13 @@ package org.rapla.gui.internal.edit.reservation;
 
 import java.awt.Component;
 
+import javax.inject.Inject;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -28,8 +30,11 @@ import org.rapla.gui.toolkit.DialogUI;
 
 public class DefaultReservationCheck extends RaplaGUIComponent implements ReservationCheck
 {
-    public DefaultReservationCheck(RaplaContext context) {
+    AppointmentFormater appointmentFormater;
+    @Inject
+    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater) {
         super(context);
+        this.appointmentFormater = appointmentFormater;
     }
 
     public boolean check(Reservation reservation, Component sourceComponent) throws RaplaException {
@@ -56,7 +61,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements Reserv
                     (getI18n().format
                      (
                       "warning.duplicated_appointments"
-                      ,getAppointmentFormater().getShortSummary(duplicatedAppointment)
+                      ,appointmentFormater.getShortSummary(duplicatedAppointment)
                       )
                      );
                 warningPanel.add( warningLabel);

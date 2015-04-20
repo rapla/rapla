@@ -23,7 +23,6 @@ import java.util.concurrent.locks.Lock;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -54,7 +53,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
 /**
@@ -66,19 +64,61 @@ public class RaplaComponent
 	public static final String RaplaResourcesId = "org.rapla.RaplaResources";
     public static final TypedComponentRole<I18nBundle> RAPLA_RESOURCES = new TypedComponentRole<I18nBundle>(RaplaResourcesId);
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
-	private final ClientServiceManager serviceManager;
+	//private final ClientServiceManager serviceManager;
     private TypedComponentRole<I18nBundle> childBundleName;
     private Logger logger;
+    RaplaLocale raplaLocale;
+    I18nBundle i18n;
+    ClientFacade facade;
     private RaplaContext context;
 
-    public RaplaComponent(RaplaContext context) {
-        try {
-            logger = context.lookup(Logger.class );
-        } catch (RaplaContextException e) {
-            logger = new ConsoleLogger();
-        }
+    
+    protected RaplaComponent(RaplaContext context) 
+    {
         this.context = context;
-        this.serviceManager = new ClientServiceManager();
+        try
+        {
+            this.facade = context.lookup(ClientFacade.class);
+        }
+        catch (RaplaContextException ex)
+        {
+            serviceExcption(ClientFacade.class, ex);
+        }
+        try
+        {
+            this.i18n =context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        }
+        catch (RaplaContextException ex)
+        {
+            serviceExcption(RaplaComponent.RAPLA_RESOURCES, ex);
+        }
+        try
+        {
+            this.raplaLocale = context.lookup( RaplaLocale.class);
+        }
+        catch (RaplaContextException ex)
+        {
+            serviceExcption(RaplaLocale.class, ex);
+        }
+        try{
+            logger = context.lookup(Logger.class);
+        }
+        catch (RaplaContextException ex)
+        {
+            serviceExcption(Logger.class, ex);
+        }
+    }
+    
+    public RaplaComponent(ClientFacade facade, I18nBundle i18n, RaplaLocale raplaLocale, Logger logger) {
+//        try {
+//            logger = context.lookup(Logger.class );
+//        } catch (RaplaContextException e) {
+//            logger = new ConsoleLogger();
+//        }
+        this.facade = facade;
+        this.i18n = i18n;
+        this.logger = logger;
+        this.raplaLocale = raplaLocale;
     }
     
     public EntityResolver getEntityResolver() 
@@ -100,6 +140,7 @@ public class RaplaComponent
         this.childBundleName =  childBundleName;
     }
 
+    @Deprecated
     final protected Container getContainer() throws RaplaContextException {
         return getContext().lookup(Container.class);
     }
@@ -627,25 +668,36 @@ public class RaplaComponent
     	return getCalendarOptions( user);
     }
     
-    protected CalendarOptions getCalendarOptions(User user) {
+    protected CalendarOptions getCalendarOptions(final User user) {
+        return getCalendarOptions(user, getClientFacade());
+    }
+
+    static public CalendarOptions getCalendarOptions(final User user, final ClientFacade clientFacade) {
         RaplaConfiguration conf = null;
         try {
+            // check if user has calendar options
             if ( user != null)
             {
-                conf = getQuery().getPreferences( user ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = clientFacade.getPreferences( user ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
+            // check if system has calendar options
             if ( conf == null)
             {
-                conf = getQuery().getPreferences( null ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = clientFacade.getPreferences( null ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             if ( conf != null)
             {
                 return new CalendarOptionsImpl( conf );
             }
+            
         } catch (RaplaException ex) {
 
         }
-        return getService( CalendarOptions.class);
+        try {
+            return new CalendarOptionsImpl( new RaplaConfiguration() );
+        } catch (RaplaException e) {
+            throw new IllegalStateException( e);
+        }
     }
 
     protected User getUser() throws RaplaException {
@@ -663,7 +715,7 @@ public class RaplaComponent
      */
 	protected <T> T getService(Class<T> role) {
         try {
-            return context.lookup( role);
+            return getContext().lookup( role);
         } catch (RaplaContextException e) {
              throw serviceExcption(role, e); 
         }
@@ -672,24 +724,26 @@ public class RaplaComponent
     protected UnsupportedOperationException serviceExcption(Object role, RaplaContextException e) {
         return new UnsupportedOperationException("Service not supported in this context: " + role, e);
     }
-   
+//   
     protected <T> T getService(TypedComponentRole<T> role) {
         try {
-            return context.lookup(role);
+            return getContext().lookup(role);
         } catch (RaplaContextException e) {
             throw serviceExcption(role, e); 
         }
     }
     
+    @Deprecated
     protected RaplaContext getContext() {
         return context;
     }
 
     /** lookup RaplaLocale from the context */
     protected RaplaLocale getRaplaLocale() {
-        if (serviceManager.raplaLocale == null)
-            serviceManager.raplaLocale = getService(RaplaLocale.class);
-        return serviceManager.raplaLocale;
+        return raplaLocale;
+//        if (serviceManager.raplaLocale == null)
+//            serviceManager.raplaLocale = getService(RaplaLocale.class);
+//        return serviceManager.raplaLocale;
     }
 
 
@@ -700,29 +754,30 @@ public class RaplaComponent
     protected I18nBundle childBundle;
     /** lookup I18nBundle from the serviceManager */
     protected I18nBundle getI18n() {
-    	TypedComponentRole<I18nBundle> childBundleName = getChildBundleName();
-        if ( childBundleName != null) {
-            if ( childBundle == null) {
-                I18nBundle pluginI18n = getService(childBundleName );
-                childBundle = new CompoundI18n(pluginI18n,getI18nDefault());
-            }
-            return childBundle;
-        }
-        return getI18nDefault();
+//    	TypedComponentRole<I18nBundle> childBundleName = getChildBundleName();
+//        if ( childBundleName != null) {
+//            if ( childBundle == null) {
+//                I18nBundle pluginI18n = getService(childBundleName );
+//                childBundle = new CompoundI18n(pluginI18n,getI18nDefault());
+//            }
+//            return childBundle;
+//        }
+//        return getI18nDefault();
+        return i18n;
     }
 
-    private I18nBundle getI18nDefault() {
-        if (serviceManager.i18n == null)
-            serviceManager.i18n = getService(RaplaComponent.RAPLA_RESOURCES);
-        return serviceManager.i18n;
-    }
-
+//    private I18nBundle getI18nDefault() {
+//        if (serviceManager.i18n == null)
+//            serviceManager.i18n = getService(RaplaComponent.RAPLA_RESOURCES);
+//        return serviceManager.i18n;
+//    }
+//
     /** lookup AppointmentFormater from the serviceManager */
-    protected AppointmentFormater getAppointmentFormater() {
-        if (serviceManager.appointmentFormater == null)
-            serviceManager.appointmentFormater = getService(AppointmentFormater.class);
-        return serviceManager.appointmentFormater;
-    }
+//    protected AppointmentFormater getAppointmentFormater() {
+//        if (serviceManager.appointmentFormater == null)
+//            serviceManager.appointmentFormater = getService(AppointmentFormater.class);
+//        return serviceManager.appointmentFormater;
+//    }
 
     /** lookup PeriodModel from the serviceManager */
     protected PeriodModel getPeriodModel() {
@@ -739,9 +794,7 @@ public class RaplaComponent
     }
 
     final protected ClientFacade getClientFacade() {
-        if (serviceManager.facade == null)
-            serviceManager.facade =  getService( ClientFacade.class );
-        return serviceManager.facade;
+        return facade;
     }
 
     /** lookup ModificationModule from the serviceManager */

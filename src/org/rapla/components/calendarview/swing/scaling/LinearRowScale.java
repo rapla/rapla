@@ -1,8 +1,8 @@
 package org.rapla.components.calendarview.swing.scaling;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
+
+import org.rapla.components.util.DateTools;
 
 
 
@@ -11,7 +11,6 @@ public class LinearRowScale implements IRowScale
     private int rowSize = 15;
     private int rowsPerHour = 4;
     final private static int MINUTES_PER_HOUR= 60;
-    private TimeZone timeZone = TimeZone.getDefault();
 
     private int mintime;
     private int maxtime;
@@ -20,11 +19,6 @@ public class LinearRowScale implements IRowScale
     
     public LinearRowScale()
     {
-    }
-    
-    public void setTimeZone( TimeZone timeZone)
-    {
-        this.timeZone = timeZone;
     }
     
     public int getRowsPerDay()
@@ -75,9 +69,7 @@ public class LinearRowScale implements IRowScale
     }
     
     private int getMinuteOfDay(Date time) {
-       Calendar cal = getCalendar();
-       cal.setTime(time);
-       return (cal.get(Calendar.HOUR_OF_DAY )) * MINUTES_PER_HOUR + cal.get(Calendar.MINUTE);
+       return (DateTools.getMinuteOfDay(time.getTime()));
    }
 
    public int getYCoord(Date time)  {
@@ -101,14 +93,6 @@ public class LinearRowScale implements IRowScale
    }
 
  
-   private Calendar calendar = null;
-   private Calendar getCalendar() {
-       // Lazy creation of the calendar
-       if (calendar == null)
-           calendar = Calendar.getInstance(timeZone);
-       return calendar;
-   }
-
     public boolean isPaintRowThick( int row )
     {
         return  row % rowsPerHour == 0;

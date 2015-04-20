@@ -37,6 +37,7 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -144,9 +145,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	@Inject
 	public FacadeImpl(StorageOperator operator, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, CommandScheduler notifyQueue, Logger logger) {
+	    
 		this.operator = operator;
 		this.logger = logger;
-	    this.i18n = i18n;
+		this.i18n = i18n;
         this.notifyQueue = notifyQueue;
 		locale = i18n.getLocale();
 		operator.addStorageUpdateListener(this);

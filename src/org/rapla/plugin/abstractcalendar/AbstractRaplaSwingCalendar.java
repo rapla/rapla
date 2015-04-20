@@ -80,7 +80,6 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         view = createView( !printable);
         view.setEditable(editable);
         view.setLocale( getRaplaLocale().getLocale() );
-        view.setTimeZone(getRaplaLocale().getTimeZone());
         if ( editable )
         {
             view.addCalendarViewListener( createListener() );

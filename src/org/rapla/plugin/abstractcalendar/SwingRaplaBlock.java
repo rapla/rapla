@@ -45,8 +45,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.gui.InfoFactory;
 import org.rapla.gui.toolkit.AWTColorUtil;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
@@ -151,14 +149,7 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
             }
             else
             {
-                try
-                {
-                    InfoFactory infoFactory = getBuildContext().getServiceManager().lookup( InfoFactory.class);
-                    text = infoFactory.getToolTip( getAppointment(), false );
-                }
-                catch ( RaplaContextException ex )
-                {
-                }
+                text = getContext().getTooltip( );
             }
             return "<html>" + text + "</html>";
         }

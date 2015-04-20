@@ -32,6 +32,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -53,7 +54,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         super( sm);
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(sm) );
         views.put( Reservation.TYPE, new ReservationInfoUI(sm) );
-        views.put( Appointment.TYPE, new AppointmentInfoUI(sm) );
+        views.put( Appointment.TYPE, new AppointmentInfoUI(sm, getService(AppointmentFormater.class)) );
         views.put( Allocatable.TYPE, new AllocatableInfoUI(sm) );
         views.put( User.TYPE, new UserInfoUI(sm) );
         views.put( Period.TYPE, new PeriodInfoUI(sm) );

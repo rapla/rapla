@@ -18,7 +18,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -112,10 +111,9 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
 
-        Calendar calendar = createCalendar();
-        calendar.setTime(getStartDate());
-        int firstDayOfWeek = getFirstWeekday();
-        calendar.set( Calendar.DAY_OF_WEEK, firstDayOfWeek);
+//        calendar.setTime(getStartDate());
+//        int firstDayOfWeek = getFirstWeekday();
+//        calendar.set( Calendar.DAY_OF_WEEK, firstDayOfWeek);
 
         if ( rowNames.length > 0) {
         	tableLayout.insertColumn(0, leftColumnSize);
@@ -209,7 +207,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         Dimension dim;
         if (column != null ) {
         	Date date = getDateFromColumn(column);
-            jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale,getTimeZone()));
+            jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale));
             jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
          	dim = new Dimension(this.slotSize,20);
         }
@@ -320,20 +318,15 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     }
 
     Date createDate(DaySlot slot, int row, boolean startOfRow) {
-        Calendar calendar = createCalendar();
-        Date startDate = getStartDate();
-		calendar.setTime( startDate );
-        calendar.set( Calendar.DAY_OF_WEEK, getFirstWeekday() );
-        calendar.add( Calendar.DATE , getSlotNr( slot ) % getDaysInView() );
+        Date startDate = DateTools.cutDate(getStartDate());
+        Date date = DateTools.getFirstWeekday( startDate, getFirstWeekday());
+		int column = getSlotNr( slot ) % getDaysInView();
+        Date result = DateTools.addDays( date , column);
         //calendar.set( Calendar.DAY_OF_WEEK, getDayOfWeek(slot) );
         if ( !startOfRow ) {
-            calendar.add( Calendar.DATE , 1 );
+            result =DateTools.addDays(result,1 );
         }
-        calendar.set( Calendar.HOUR_OF_DAY, 0 );
-        calendar.set( Calendar.MINUTE, 0 );
-        calendar.set( Calendar.SECOND, 0 );
-        calendar.set( Calendar.MILLISECOND, 0 );
-        return calendar.getTime();
+        return result;
     }
     
 

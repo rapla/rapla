@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.client.RaplaClientExtensionPoints;
@@ -44,6 +45,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -70,10 +72,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
      That prevents editing the same Reservation in different windows
      */
     Collection<ReservationEditImpl> editWindowList = new ArrayList<ReservationEditImpl>();
-
-    public ReservationControllerImpl(RaplaContext sm)
+    AppointmentFormater appointmentFormater;
+    
+    @Inject
+    public ReservationControllerImpl(RaplaContext sm, AppointmentFormater appointmentFormater)
     {
         super(sm);
+        this.appointmentFormater=appointmentFormater; 
         getUpdateModule().addModificationListener(this);
     }
 
@@ -489,7 +494,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         }
         if ( appointment.getRepeating() != null && reservation.getAppointments().length > 1 )
         {
-        	String shortSummary = getAppointmentFormater().getShortSummary(appointment);
+        	String shortSummary = appointmentFormater.getShortSummary(appointment);
         	optionList.add(getString("serie") + ": " + shortSummary);
         	iconList.add(getIcon("icon.repeating"));
         	actionList.add(DialogAction.SERIE);

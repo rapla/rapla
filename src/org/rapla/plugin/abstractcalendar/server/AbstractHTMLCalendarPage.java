@@ -166,7 +166,6 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
             throw new ServletException( ex );
         }
         view.setLocale( getRaplaLocale().getLocale() );
-        view.setTimeZone(getRaplaLocale().getTimeZone());
         view.setToDate(model.getSelectedDate());
         model.setStartDate( view.getStartDate() );
         model.setEndDate( view.getEndDate() );

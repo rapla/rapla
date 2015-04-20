@@ -30,7 +30,7 @@ public abstract class AbstractHTMLView extends AbstractCalendar implements Calen
    
     abstract public Collection<Block> getBlocks();
 
-    void checkBlock( Block bl ) {
+    protected void checkBlock( Block bl ) {
         Date endDate = getEndDate();
 		if ( !bl.getStart().before(endDate)) {
             throw new IllegalStateException("Start-date " +bl.getStart() + " must be before calendar end at " +endDate);

@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -28,6 +31,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -36,9 +40,10 @@ import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.ServerExtension;
@@ -53,23 +58,27 @@ public class NotificationService extends RaplaComponent
     ClientFacade clientFacade;
     MailToUserInterface mailToUserInterface;
     protected CommandScheduler mailQueue;
+    AppointmentFormater appointmentFormater;
 
-    public NotificationService(RaplaContext context) throws RaplaException
+    @Inject
+    public NotificationService(ClientFacade facade,I18nBundle i18nBundle, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
     {
-        super( context);
+        super( facade, i18nBundle, raplaLocale, logger);
+        this.clientFacade = facade;
         setLogger( getLogger().getChildLogger("notification"));
-        clientFacade =  context.lookup(ClientFacade.class);
         setChildBundleName( NotificationPlugin.RESOURCE_FILE );
-        if ( !context.has( MailToUserInterface.class ))
+        try
         {
-        	getLogger().error("Could not start notification service, because Mail Plugin not activated. Check for mail plugin activation or errors.");
-        	return;
+            this.mailToUserInterface = mailToUserInterface.get();
         }
-
-        
-        mailToUserInterface = context.lookup( MailToUserInterface.class );
-        mailQueue = context.lookup( CommandScheduler.class);
+        catch (Exception ex)
+        {
+            getLogger().error("Could not start notification service, because Mail Plugin not activated. Check for mail plugin activation or errors.");
+            return;
+        }
+        this.mailQueue = mailQueue;
         clientFacade.addAllocationChangedListener(this);
+        this.appointmentFormater = appointmentFormater;
         getLogger().info("NotificationServer Plugin started");
     }
 
@@ -301,11 +310,11 @@ public class NotificationService extends RaplaComponent
 
     private void printAppointment(StringBuilder buf, Appointment app) {
         buf.append("\n");
-        buf.append(getAppointmentFormater().getSummary(app));
+        buf.append(appointmentFormater.getSummary(app));
         buf.append("\n");
         Repeating repeating = app.getRepeating();
         if ( repeating != null ) {
-            buf.append(getAppointmentFormater().getSummary(app.getRepeating()));
+            buf.append(appointmentFormater.getSummary(app.getRepeating()));
             buf.append("\n");
             if ( repeating.hasExceptions() ) {
                 String exceptionString =
@@ -341,7 +350,7 @@ public class NotificationService extends RaplaComponent
         for (int i = 0;  i < restriction.length ; i++) {
             if (i >0)
                 buf.append(", ");
-            buf.append( getAppointmentFormater().getShortSummary( restriction[i]) );
+            buf.append( appointmentFormater.getShortSummary( restriction[i]) );
         }
         buf.append(")");
     }

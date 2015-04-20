@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.util.DateTools;
@@ -49,7 +50,7 @@ public class HTMLMonthView extends AbstractHTMLView {
     
     public void rebuild() {
         //      we need to clone the calendar, because we modify the calendar object int the getExclude() method 
-        Calendar counter = (Calendar) blockCalendar.clone(); 
+        //Calendar counter = (Calendar) blockCalendar.clone(); 
         
         // calculate the blocks
         Iterator<Builder> it= builders.iterator();
@@ -70,59 +71,58 @@ public class HTMLMonthView extends AbstractHTMLView {
         }
         int lastRow = 0;
         HTMLSmallDaySlot[][] table = new HTMLSmallDaySlot[ROWS][COLUMNS];
-        counter.setTime(startDate);
+        Date counter = startDate;
         int firstDayOfWeek = getFirstWeekday();
-		if ( counter.get(Calendar.DAY_OF_WEEK) != firstDayOfWeek)
+		if ( DateTools.getWeekday(counter) != firstDayOfWeek)
         {
-			counter.set(Calendar.DAY_OF_WEEK, firstDayOfWeek);
-			if ( counter.getTime().after( startDate))
+			counter = DateTools.getFirstWeekday(counter, firstDayOfWeek);
+			if ( counter.after( startDate))
 			{
-				counter.add(Calendar.DATE, -7);
+				counter = DateTools.addDays( counter,  -7);
 			}
         }
-		Date time = counter.getTime();
-		int offset = (int) DateTools.countDays(counter.getTime(),startDate);
+		Date time = counter;
+		int offset = (int) DateTools.countDays(counter,startDate);
         // add headers
      
-	    counter.setTime(startDate);
+	    counter = startDate;
         for (int i=0; i<daysInMonth; i++) {
             int column = (offset + i) % 7;
-            int row = (counter.get(Calendar.DATE) + 6 - column ) /  7;
+            int row = (DateTools.getDayOfMonth(counter) + 6 - column ) /  7;
             table[row][column] = slots[i];
             lastRow = row;
             slots[i].sort();
-            counter.add(Calendar.DATE,1);
+            counter = DateTools.addDays(counter,1);
         }
         
         StringBuffer result = new StringBuffer();
         
 		// Rapla 1.4: Show month and year in monthview
-		SimpleDateFormat monthYearFormat = new SimpleDateFormat("MMMMM yyyy", locale);
-		monthYearFormat.setTimeZone( getTimeZone() );
-		result.append("<h2 class=\"title\">" + monthYearFormat.format(startDate) + "</h2>\n");
+		
+		result.append("<h2 class=\"title\">" + AbstractCalendar.formatMonthYear( startDate, locale) + "</h2>\n");
         
         result.append("<table class=\"month_table\">\n");
         result.append("<tr>\n");
 
-        counter.setTime( time );
+        counter = time ;
         for (int i=0;i<COLUMNS;i++) {
             if (isExcluded(i)) {
-            	counter.add(Calendar.DATE, 1);
+                counter = DateTools.addDays(counter,1);
             	continue;
             }
 
-            int weekday = counter.get(Calendar.DAY_OF_WEEK);
-        	if ( counter.getTime().equals( startDate))
+            int weekday = DateTools.getWeekday(counter);
+        	if ( counter.equals( startDate))
         	{
         		offset = i;
         	}
             result.append("<td class=\"month_header\" width=\"14%\">");
             result.append("<nobr>");
-            String name = getWeekdayName(weekday);
+            String name = getWeekdayName(weekday, locale);
             result.append(name);
             result.append("</nobr>");
             result.append("</td>");
-            counter.add(Calendar.DATE, 1);
+            counter = DateTools.addDays(counter,1);
         }
         result.append("\n</tr>");
         
@@ -158,8 +158,7 @@ public class HTMLMonthView extends AbstractHTMLView {
 
     public void addBlock(Block block,int col,int slot) {
         checkBlock( block );
-        blockCalendar.setTime(block.getStart());
-        int day = blockCalendar.get(Calendar.DATE);
+        int day = DateTools.getDayOfMonth(block.getStart());
         slots[day-1].putBlock( block );
     }
    

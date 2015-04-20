@@ -17,17 +17,27 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     public ClassificationInfoUI(RaplaContext sm) {
         super(sm);
+    }
+    
+    public ClassificationInfoUI(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger)
+    {
+        super(i18n, raplaLocale, facade, logger);
     }
 
     public void insertClassificationTitle( Classifiable classifiable, StringBuffer buf ) {

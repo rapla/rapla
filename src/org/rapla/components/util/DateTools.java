@@ -34,6 +34,7 @@ public abstract class DateTools
         return (int) ((date % MILLISECONDS_PER_DAY)/ MILLISECONDS_PER_HOUR);
     }
 
+
     public static int getMinuteOfHour(long date) {
         return (int) ((date % MILLISECONDS_PER_HOUR)/ MILLISECONDS_PER_MINUTE);
     }
@@ -74,6 +75,12 @@ public abstract class DateTools
         return string;
 	}
 
+	public static int getDaysInMonth(Date date)
+	{
+	    DateWithoutTimezone date2 = toDate(date.getTime());
+	    return getDaysInMonth( date2.year, date2.month);
+	}
+	
 	public static int getDaysInMonth(int year, int month)
     {
 		int _month = month+1; 
@@ -266,6 +273,12 @@ public abstract class DateTools
     	}
     	return weekday;
     }
+    
+    public static int getYear(Date date) {
+        DateWithoutTimezone date2 = toDate( date.getTime());
+        return date2.year;
+    }
+
 
     public static int getDayOfWeekInMonth(Date date) 
     {
@@ -449,6 +462,24 @@ public abstract class DateTools
 			
 		}
 		return max;
+   }
+
+
+   public static Date getFirstWeekday(Date date, int firstWeekday)
+   {
+       int weekday = getWeekday( date);
+       int diff =  firstWeekday- weekday;
+       if ( diff >0)
+       {
+           diff -= 7;
+       }
+       Date result = DateTools.addDays( date, diff);
+//       
+//       calendar.setTime( startDate );
+//       calendar.set( Calendar.DAY_OF_WEEK, firstWeekday );
+//       getWeekday(date)
+       return result;
+       
    }
 
 

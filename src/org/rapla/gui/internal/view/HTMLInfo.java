@@ -19,24 +19,36 @@ import java.util.Date;
 import java.util.Iterator;
 
 import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
-public abstract class HTMLInfo<T> extends RaplaComponent {
-    public HTMLInfo(RaplaContext sm) {
-        super(sm);
+public abstract class HTMLInfo<T>  extends RaplaComponent {
+    
+    public HTMLInfo(RaplaContext context)  {
+        super(context);
+    }
+
+    public HTMLInfo(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+        super( facade, i18n, raplaLocale, logger);
+//        this.i18n = i18n;
+//        this.raplaLocale = raplaLacale;
     }
 
     /** performs xml-encoding of a string the output goes to the buffer*/
     static public void encode(String text,StringBuffer buf) {
         buf.append( encode ( text ));
     }
+    
+    
 
     static public String encode(String string) {
         String text = XMLWriter.encode( string );
@@ -64,12 +76,12 @@ public abstract class HTMLInfo<T> extends RaplaComponent {
             RaplaLocale raplaLocale = getRaplaLocale();
             if ( createTime != null)
             {
-                buf.append(getString("created_at"));
+                buf.append(getI18n().getString("created_at"));
                 buf.append(" ");
                 buf.append(raplaLocale.formatTimestamp(createTime));
                 buf.append(", ");
             }
-            buf.append(getString("last_changed"));
+            buf.append(getI18n().getString("last_changed"));
             buf.append(" ");
             buf.append(raplaLocale.formatTimestamp(lastChangeTime));
             buf.append("</div>");
@@ -170,16 +182,17 @@ public abstract class HTMLInfo<T> extends RaplaComponent {
     
     abstract protected String createHTMLAndFillLinks(T object,LinkController controller) throws RaplaException ;
     
+    
     protected String getTitle(T object) {
         StringBuffer buf = new StringBuffer();
-        buf.append(getString("view"));
+        buf.append(getI18n().getString("view"));
         if ( object instanceof RaplaObject)
         {
             RaplaType raplaType = ((RaplaObject) object).getRaplaType();
             String localName = raplaType.getLocalName();
             try
             {
-                String name = getString(localName);
+                String name = getI18n().getString(localName);
                 buf.append( " ");
                 buf.append( name);
             }
@@ -191,7 +204,7 @@ public abstract class HTMLInfo<T> extends RaplaComponent {
         if ( object instanceof Named)
         {
             buf.append(" ");
-            buf.append( ((Named) object).getName( getLocale()));
+            buf.append( ((Named) object).getName( getI18n().getLocale()));
         }
         return buf.toString();
     }

@@ -17,7 +17,6 @@ import java.awt.Font;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -35,7 +34,6 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.scaling.IRowScale;
 import org.rapla.components.calendarview.swing.scaling.LinearRowScale;
-import org.rapla.components.calendarview.swing.scaling.VariableRowScale;
 import org.rapla.components.util.DateTools;
 
 /** Graphical component for displaying a calendar like weekview.
@@ -264,8 +262,6 @@ public class SwingWeekView extends AbstractSwingCalendar
             int pixelPerHour = linearScale.getRowsPerHour() * linearScale.getRowSize();
             
             timeScale.setBackground(component.getBackground());
-
-            linearScale.setTimeZone( timeZone );
             if ( isEditable())
             {
                 timeScale.setTimeIntervall(0, 24, pixelPerHour);
@@ -282,8 +278,6 @@ public class SwingWeekView extends AbstractSwingCalendar
         {
             timeScale.setBackground(component.getBackground());
             timeScale.setTimeIntervall(0, 24, 60);
-            VariableRowScale periodScale = (VariableRowScale) rowScale;
-            periodScale.setTimeZone( timeZone );
         }
         
         // create Slots
@@ -338,7 +332,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
         Date date = getDateFromColumn(column);
-        jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale,getTimeZone()));
+        jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale));
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
         jLabel.setOpaque(false);
@@ -434,17 +428,15 @@ public class SwingWeekView extends AbstractSwingCalendar
     
 
     protected Date createDate(DaySlot slot,int index, boolean startOfRow) {
-        Calendar calendar = createCalendar();
-        calendar.setTime( getStartDate() );
-        calendar.set( Calendar.DAY_OF_WEEK, getFirstWeekday() );
-        calendar.add( Calendar.DATE , getSlotNr( slot ) %getDaysInView());
+        Date startDate = DateTools.cutDate(getStartDate());
+        Date date = DateTools.getFirstWeekday(startDate,getFirstWeekday());
+        date = DateTools.addDays(date , getSlotNr( slot ) %getDaysInView());
         if (!startOfRow)
             index++;
-        calendar.set(Calendar.HOUR_OF_DAY,rowScale.calcHour(index));
-        calendar.set(Calendar.MINUTE,rowScale.calcMinute(index));
-        calendar.set(Calendar.SECOND,0);
-        calendar.set(Calendar.MILLISECOND,0);
-        return calendar.getTime();
+        int calcHour = rowScale.calcHour(index);
+        int calcMinute = rowScale.calcMinute(index);
+        date = new Date(date.getTime() +calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE );
+        return date;
     }
     
   

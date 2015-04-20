@@ -13,19 +13,19 @@
 
 package org.rapla.components.calendarview.html;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.util.DateTools;
 
 public class HTMLWeekView extends AbstractHTMLView {
     private int endMinutes;
@@ -126,11 +126,23 @@ public class HTMLWeekView extends AbstractHTMLView {
            Builder b= it.next();
            if (b.isEnabled()) { b.build(this); }
         }
+        boolean useAM_PM = org.rapla.components.calendarview.AbstractCalendar.isAmPmFormat( locale );
+        for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
+            boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
+            if ( isLine || minuteOfDay == minMinute) {
+                minuteBlock.add( minuteOfDay);
+            }
+        }
+ 
+        buildHtml( headerNames, useAM_PM);
+    }
 
+    private void buildHtml( String[] headerNames, boolean useAM_PM) {
+        int columns = getColumnCount();
+        int firstEventMarkerId = 7;
         StringBuffer result = new StringBuffer();
         result.append("<table class=\"week_table\">\n");
         result.append("<tbody>");
-        
         result.append("<tr>\n");
         result.append("<th class=\"week_number\">"+weeknumber+"</th>");
         for (int i=0;i<multSlots.length;i++) {
@@ -144,17 +156,8 @@ public class HTMLWeekView extends AbstractHTMLView {
         }
         result.append("\n</tr>");
         result.append("<tr></tr>");
-        boolean useAM_PM = org.rapla.components.calendarview.AbstractCalendar.isAmPmFormat( locale );
-        int firstEventMarkerId = 7;
         boolean firstEventMarkerSet = false;
  
-        for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
-        	boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
-        	if ( isLine || minuteOfDay == minMinute) {
-        		minuteBlock.add( minuteOfDay);
-        	}
-        }
-
         for (Integer minuteOfDay:minuteBlock) {
         	
         	if ( minuteBlock.last().equals( minuteOfDay))
@@ -168,7 +171,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 			boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
             if ( fullHour || minuteOfDay == minMinute) {
             	int rowspan = calcRowspan(minuteOfDay, ((minuteOfDay  / 60) + 1) * 60);
-            	String timeString = formatTime(minuteOfDay, useAM_PM);
+            	String timeString = AbstractCalendar.formatTime(minuteOfDay, useAM_PM, locale);
                 result.append("<th class=\"week_times\" rowspan=\""+ rowspan  +"\"><nobr>");
                 result.append(timeString);
                 result.append("</nobr>");
@@ -223,8 +226,8 @@ public class HTMLWeekView extends AbstractHTMLView {
 					Block block = slot.getBlock(minuteOfDay);
 					if ( block != null)
 					{
-						blockCalendar.setTime( block.getEnd());
-						int endMinute = Math.min(maxMinute,blockCalendar.get(Calendar.HOUR_OF_DAY) * 60 + blockCalendar.get(Calendar.MINUTE));
+						long endTime = block.getEnd().getTime();
+                        int endMinute = Math.min(maxMinute,DateTools.getMinuteOfDay(endTime));
 						int rowspan = calcRowspan(minuteOfDay, endMinute);
 						result.append("<td valign=\"top\" class=\"week_block\"");
 						result.append(" rowspan=\"" + rowspan + "\"" );
@@ -321,12 +324,10 @@ public class HTMLWeekView extends AbstractHTMLView {
 
 
 	protected String createColumnHeader(int i) {
-		blockCalendar.setTime(getStartDate());
-		blockCalendar.add(Calendar.DATE, i);
+		Date date = DateTools.addDays(getStartDate(), i);
 		String headerName = AbstractCalendar.formatDayOfWeekDateMonth
-		    (blockCalendar.getTime()
+		    (date
 		     ,locale
-		     ,timeZone
 		     );
 		return headerName;
 	}
@@ -336,16 +337,15 @@ public class HTMLWeekView extends AbstractHTMLView {
    public void addBlock(Block block,int column,int slot) {
         checkBlock ( block );
         HTMLDaySlot multiSlot =multSlots[column];
-        blockCalendar.setTime( block.getStart());
-       
+        long start = block.getStart().getTime();
         int startMinute =  Math.max(minMinute,(
-            blockCalendar.get(Calendar.HOUR_OF_DAY)* 60
-            + blockCalendar.get(Calendar.MINUTE)
+                DateTools.getHourOfDay( start)* 60
+            + DateTools.getMinuteOfHour( start)
             ));
-        blockCalendar.setTime(block.getEnd());
+        long end = block.getEnd().getTime();
         int endMinute =  (Math.min(maxMinute,
-            blockCalendar.get(Calendar.HOUR_OF_DAY)* 60
-            + blockCalendar.get(Calendar.MINUTE)
+                DateTools.getHourOfDay( end)* 60
+                + DateTools.getMinuteOfHour( end)
             ));
         blocks.add(block);
 //        startBlock.add( startMinute);
@@ -354,19 +354,6 @@ public class HTMLWeekView extends AbstractHTMLView {
         minuteBlock.add( endMinute);
         multiSlot.putBlock( block, slot, startMinute);
         
-    }
-
-    private String formatTime(int minuteOfDay,boolean useAM_PM) {
-        blockCalendar.set(Calendar.MINUTE, minuteOfDay%60);
-        int hour = minuteOfDay/60;
-        blockCalendar.set(Calendar.HOUR_OF_DAY, hour);
-        SimpleDateFormat format = new SimpleDateFormat(useAM_PM ? "h:mm" : "H:mm", locale);
-        format.setTimeZone(blockCalendar.getTimeZone());
-        if (useAM_PM && hour == 12 && minuteOfDay%60 == 0) {
-            return format.format(blockCalendar.getTime()) + " PM";
-        } else {
-            return format.format(blockCalendar.getTime());
-        }
     }
    
     protected class HTMLDaySlot extends ArrayList<Slot> {

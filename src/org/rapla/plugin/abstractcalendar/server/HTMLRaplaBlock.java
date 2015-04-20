@@ -22,7 +22,6 @@ import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.gui.internal.view.AppointmentInfoUI;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 
 
@@ -111,7 +110,6 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         
         
         
-        AppointmentInfoUI reservationInfo = new AppointmentInfoUI(getContext().getBuildContext().getServiceManager());
         URL url = null;
         Attribute[] attributes = getReservation().getClassification().getAttributes();
         for ( int i=0;i<attributes.length;i++) {
@@ -146,7 +144,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         {
 
             buf.append( "<span class=\"tooltip\">");
-            buf.append(reservationInfo.getTooltip(getAppointment()));
+            buf.append(getContext().getTooltip());
             buf.append( "</span>");
         }
 

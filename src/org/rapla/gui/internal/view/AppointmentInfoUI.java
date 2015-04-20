@@ -13,18 +13,37 @@
 package org.rapla.gui.internal.view;
 
 
+import javax.inject.Inject;
+
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class AppointmentInfoUI extends HTMLInfo<Appointment> {
 	ReservationInfoUI parent;
+	AppointmentFormater appointmentFormater;
 	
-    public AppointmentInfoUI(RaplaContext sm) {
+    public AppointmentInfoUI(RaplaContext sm, AppointmentFormater appointmentFormater) {
         super(sm);
         parent = new ReservationInfoUI( sm);
+        this.appointmentFormater = appointmentFormater;
     }
+    
+    @Inject
+    public AppointmentInfoUI(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    {
+        super( i18n, raplaLocale, facade, logger);
+        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater);
+        this.appointmentFormater = appointmentFormater;
+    }
+    
 
     public String getTooltip(Appointment appointment) {
         Reservation reservation =  appointment.getReservation();
@@ -38,7 +57,7 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
     
     void insertAppointmentSummary(Appointment appointment, StringBuffer buf) {
        buf.append("<div>");
-       buf.append( getAppointmentFormater().getSummary( appointment ) );
+       buf.append( appointmentFormater.getSummary( appointment ) );
        buf.append("</div>");
    }
 

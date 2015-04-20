@@ -91,6 +91,7 @@ import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
@@ -178,6 +179,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
 	FilterEditButton filter;
 
+	AppointmentFormater appointmentFormater;
+	
 	public AllocatableSelection(RaplaContext context)  
 	{
 		this(context, false, new CommandHistory());
@@ -187,6 +190,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	{
 		super(context);
 		// Undo Command History
+		appointmentFormater = getService(AppointmentFormater.class);
 		this.commandHistory = commandHistory;
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
@@ -523,7 +527,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		this.appointmentIndexStrings = new String[appointments.length];
 		for (int i = 0; i < appointments.length; i++)
 		{
-			this.appointmentStrings[i] = getAppointmentFormater().getVeryShortSummary(appointments[i]);
+			this.appointmentStrings[i] = appointmentFormater.getVeryShortSummary(appointments[i]);
 			this.appointmentIndexStrings[i] = getRaplaLocale().formatNumber(i + 1);
 		}
 	}
@@ -1524,7 +1528,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 				item.setUI(new StayOpenCheckBoxMenuItemUI());
 				
 				// set conflicting icon if appointment causes conflicts
-				String appointmentSummary = getAppointmentFormater().getShortSummary(appointments[i]);
+				String appointmentSummary = appointmentFormater.getShortSummary(appointments[i]);
 				if (allocBinding != null && allocBinding.conflictingAppointments[i])
 				{
 					item.setText((i + 1) + ": " + appointmentSummary);
@@ -1783,7 +1787,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     // Prevent the JCheckboxMenuItem from closing the JPopupMenu
                     
                     // set conflicting icon if appointment causes conflicts
-                    String appointmentSummary = getAppointmentFormater().getShortSummary(appointments[i]);
+                    String appointmentSummary = appointmentFormater.getShortSummary(appointments[i]);
                     if (allocBinding.conflictingAppointments[i])
                     {
                         item.setText((i + 1) + ": " + appointmentSummary);

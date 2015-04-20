@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
@@ -43,6 +46,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -55,6 +59,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.Conflict.Util;
 import org.rapla.facade.RaplaComponent;
@@ -65,9 +70,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.internal.view.AppointmentInfoUI;
 import org.rapla.gui.toolkit.RaplaColors;
 
-public abstract class RaplaBuilder extends RaplaComponent
+public abstract class RaplaBuilder 
     implements
         Builder
         ,Cloneable
@@ -102,10 +108,65 @@ public abstract class RaplaBuilder extends RaplaComponent
 
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
     
-	public RaplaBuilder(RaplaContext sm) {
-        super(sm);
+	final private RaplaLocale raplaLocale;
+	final private ClientFacade clientFacade;
+	final private I18nBundle i18n;
+	final private Logger logger;
+	final private AppointmentFormater appointmentFormater;
+	
+//	public RaplaBuilder(RaplaContext context)  {
+//	    try
+//	    {
+//    	    raplaLocale = context.lookup(RaplaLocale.class);
+//    	    clientFacade = context.lookup(ClientFacade.class);
+//    	    i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+//    	    logger = context.lookup(Logger.class);
+//    	    appointmentFormater = context.lookup( AppointmentFormater.class);
+//	    }
+//	    catch (RaplaException ex)
+//	    {
+//	        throw new IllegalStateException( ex);
+//	    }
+//	
+//    }
+//	
+	@Inject
+	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, Logger logger, AppointmentFormater appointmentFormater) {
         buildStrategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
+        this.raplaLocale = raplaLocale;
+        this.clientFacade = clientFacade;
+        this.i18n = i18n;
+        this.logger = logger;
+        this.appointmentFormater = appointmentFormater;
+	}
+	    
+
+    protected RaplaLocale getRaplaLocale() 
+    {
+        return raplaLocale;
     }
+    
+    protected ClientFacade getClientFacade() 
+    {
+        return clientFacade;
+    }
+    
+    protected I18nBundle getI18n() 
+    {
+        return i18n;
+    }
+    
+    protected Logger getLogger() {
+        return logger;
+    }
+    
+    
+    protected EntityResolver getEntityResolver()
+    {
+        return clientFacade.getOperator();
+    }
+
+
 
     public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
     	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
@@ -124,13 +185,13 @@ public abstract class RaplaBuilder extends RaplaComponent
         }
      
         if ( startDate != null && !allocatables.isEmpty()) {
-            List<Reservation> reservationsForAllocatables = Arrays.asList(getQuery().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate));
+            List<Reservation> reservationsForAllocatables = Arrays.asList(getClientFacade().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate));
 			allReservationsForAllocatables.addAll( reservationsForAllocatables);
         }
     
         if ( !conflictsSelected.isEmpty() )
         {
-        	filteredReservations = getQuery().getReservations( conflictsSelected);
+        	filteredReservations = getClientFacade().getReservations( conflictsSelected);
         	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, filteredReservations);
         }
         else
@@ -145,7 +206,7 @@ public abstract class RaplaBuilder extends RaplaComponent
         	}
         }
         User user = model.getUser();
-		CalendarOptions calendarOptions = getCalendarOptions( user);
+		CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
         nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
         isResourceColoring =calendarOptions.isResourceColoring();
         isEventColoring =calendarOptions.isEventColoring();
@@ -448,7 +509,8 @@ public abstract class RaplaBuilder extends RaplaComponent
 
     public void build(CalendarView wv) {
     	ArrayList<Block> blocks = new ArrayList<Block>();
-    	BuildContext buildContext = new BuildContext(this, blocks);
+    	AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
+    	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
         Assert.notNull(preparedBlocks, "call prepareBuild first");
         for (AppointmentBlock block:preparedBlocks)
         {
@@ -507,12 +569,12 @@ public abstract class RaplaBuilder extends RaplaComponent
 
 	protected boolean isAnonymous(User user,Appointment appointment) {
 		EntityResolver entityResolver = getEntityResolver();
-        return !canRead(appointment, user, entityResolver);
+        return !RaplaComponent.canRead(appointment, user, entityResolver);
 	}
 
     private boolean isMovable(Reservation reservation) {
         EntityResolver entityResolver = getEntityResolver();
-        return selectedReservations.contains( reservation ) && canModify(reservation, editingUser, entityResolver);
+        return selectedReservations.contains( reservation ) && RaplaComponent.canModify(reservation, editingUser, entityResolver);
     }
 
     public boolean isConflictsSelected() {
@@ -529,18 +591,19 @@ public abstract class RaplaBuilder extends RaplaComponent
         Map<Allocatable,String> colors;
         I18nBundle i18n;
         RaplaLocale raplaLocale;
-        RaplaContext serviceManager;
         Logger logger;
         User user;
         List<Block> blocks;
 		private boolean isResourceColoring;
 		private boolean isEventColoring;
         private boolean showTooltips;
-
+        final AppointmentInfoUI appointmentInfoUI;
+        
         @SuppressWarnings("unchecked")
-		public BuildContext(RaplaBuilder builder, List<Block> blocks)
+		public BuildContext(RaplaBuilder builder, AppointmentInfoUI appointmentInfoUI, List<Block> blocks)
         {
         	this.blocks = blocks;
+        	this.appointmentInfoUI = appointmentInfoUI;
             this.raplaLocale = builder.getRaplaLocale();
             this.bResourceVisible = builder.bResourceVisible;
             this.bPersonVisible= builder.bPersonVisible;
@@ -548,7 +611,6 @@ public abstract class RaplaBuilder extends RaplaComponent
             this.bRepeatingVisible= builder.bRepeatingVisible;
             this.colors = (Map<Allocatable,String>) builder.colors.clone();
             this.i18n =builder.getI18n();
-            this.serviceManager = builder.getContext();
             this.logger = builder.getLogger();
             this.user = builder.editingUser;
             this.conflictsSelected = builder.isConflictsSelected();
@@ -564,10 +626,6 @@ public abstract class RaplaBuilder extends RaplaComponent
 
         public RaplaLocale getRaplaLocale() {
             return raplaLocale;
-        }
-
-        public RaplaContext getServiceManager() {
-            return serviceManager;
         }
 
         public List<Block> getBlocks()
@@ -621,6 +679,12 @@ public abstract class RaplaBuilder extends RaplaComponent
         public boolean isShowToolTips() {
             return showTooltips;
         }
+
+        public AppointmentInfoUI getAppointmentInfo() 
+        {
+            return appointmentInfoUI;
+        }
+
     }
 
     /** This context contains the shared information for one particular RaplaBlock.*/
@@ -724,6 +788,13 @@ public abstract class RaplaBuilder extends RaplaComponent
 
         public boolean isAnonymous() {
         	return isAnonymous;
+        }
+        
+        public String getTooltip() 
+        {
+            AppointmentInfoUI factory = getBuildContext().getAppointmentInfo();
+            Appointment appointment = getAppointment();
+            return factory.getTooltip( appointment);
         }
 
     }

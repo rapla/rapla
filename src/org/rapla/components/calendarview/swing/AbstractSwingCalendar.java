@@ -22,7 +22,6 @@ import java.awt.event.ComponentListener;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -87,9 +86,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         	component.add(jTitlePanel,"1,0");
         	component.add(jCenter,"1,1");
         }
-        this.timeZone = TimeZone.getDefault();
         setLocale( Locale.getDefault() );
-        
         if ( showScrollPane)
         {
 	        component.addComponentListener( new ComponentListener() {

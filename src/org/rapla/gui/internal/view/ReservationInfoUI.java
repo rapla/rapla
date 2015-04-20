@@ -16,18 +16,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
+
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
 
+    AppointmentFormater appointmentFormater;
     public ReservationInfoUI(RaplaContext sm) {
         super(sm);
+        appointmentFormater = getService(AppointmentFormater.class);
+    }
+
+    @Inject
+    public ReservationInfoUI(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    {
+        super(i18n, raplaLocale, facade, logger);
+        this.appointmentFormater = appointmentFormater;
     }
 
     private void addRestriction(Reservation reservation, Allocatable allocatable, StringBuffer buf) {
@@ -39,7 +56,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         for (int i=0; i<appointments.length ; i++) {
             if (i >0)
                 buf.append(", ");
-            encode(getAppointmentFormater().getShortSummary(appointments[i]), buf );
+            encode(appointmentFormater.getShortSummary(appointments[i]), buf );
         }
         buf.append(")");
         buf.append("</small>");
@@ -138,7 +155,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
             buf.append( "</td>\n");
             buf.append( "<td>\n");
             String appointmentSummary =
-                getAppointmentFormater().getSummary( appointments[i] );
+                appointmentFormater.getSummary( appointments[i] );
             encode( appointmentSummary, buf );
             Repeating repeating = appointments[i].getRepeating();
             if ( repeating != null ) {
@@ -146,11 +163,11 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
                 buf.append("<small>");
                 List<Period> periods = getPeriodModel().getPeriodsFor(appointments[i].getStart());
                 String repeatingSummary =
-                    getAppointmentFormater().getSummary(repeating,periods);
+                    appointmentFormater.getSummary(repeating,periods);
                 encode( repeatingSummary, buf ) ;
                 if ( repeating.hasExceptions() ) {
                     buf.append("<br>");
-                    buf.append( getAppointmentFormater().getExceptionSummary(repeating) );
+                    buf.append( appointmentFormater.getExceptionSummary(repeating) );
                 }
                 buf.append("</small>");
             }

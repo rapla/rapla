@@ -13,11 +13,8 @@
 package org.rapla.components.calendarview;
 import java.util.Collection;
 import java.util.Date;
-import java.util.TimeZone;
 public interface CalendarView
 {
-    public TimeZone getTimeZone();
-    
     /** returns the first Date that will be displayed in the calendar */
     public Date getStartDate();
     /** returns the last Date that will be displayed in the calendar */

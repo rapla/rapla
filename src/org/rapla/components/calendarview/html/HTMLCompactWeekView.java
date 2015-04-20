@@ -14,9 +14,9 @@
 package org.rapla.components.calendarview.html;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -91,11 +91,6 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
            Builder b= it.next();
            if (b.isEnabled()) { b.build(this); }
         }
-
-        Calendar calendar = createCalendar(); 
-        calendar.setTime(getStartDate());
-        calendar.set( Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
-
         // resource header
 
         // add headers
@@ -153,15 +148,14 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
 
 	protected List<String> getHeaderNames() {
 		List<String> headerNames = new ArrayList<String>();
-        blockCalendar.setTime(getStartDate());
+        Date date = getStartDate();
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
             headerNames.add (AbstractCalendar.formatDayOfWeekDateMonth
-                (blockCalendar.getTime()
+                (date
                  ,locale
-                 ,timeZone
                  ));
-             blockCalendar.add(Calendar.DATE, 1);
+            date = DateTools.addDay( date);
         }
 		return headerNames;
 	}

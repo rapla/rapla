@@ -49,6 +49,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
@@ -84,11 +85,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     @SuppressWarnings("unchecked")
     SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
-    
+    AppointmentFormater appointmentFormater;
 	@SuppressWarnings("unchecked")
 	AppointmentListEdit(RaplaContext sm, CommandHistory commandHistory)
 			throws RaplaException {
 		super(sm);
+        this.appointmentFormater = getService( AppointmentFormater.class);
+
 		this.commandHistory = commandHistory;
         appointmentController = new AppointmentController(sm, commandHistory);
         listEdit = new RaplaListEdit<Appointment>(getI18n(),appointmentController.getComponent(), listener);
@@ -199,16 +202,16 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             identifier.setIndex(index);
             content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));
             content.removeAll();
-            JLabel label1 = new JLabel(getAppointmentFormater().getSummary(appointment));
+            JLabel label1 = new JLabel(appointmentFormater.getSummary(appointment));
             content.add( label1 );
             if (appointment.getRepeating() != null) {
                 label1.setIcon( getIcon("icon.repeating") );
                 Repeating r = appointment.getRepeating();
                 List<Period> periods = getPeriodModel().getPeriodsFor(appointment.getStart());
-                String repeatingString = getAppointmentFormater().getSummary(r,periods);
+                String repeatingString = appointmentFormater.getSummary(r,periods);
                 content.add(new JLabel(repeatingString));
                 if ( r.hasExceptions() ) {
-                    content.add(new JLabel( getAppointmentFormater().getExceptionSummary( r ) ) );
+                    content.add(new JLabel( appointmentFormater.getExceptionSummary( r ) ) );
                 }
             } else {
                 label1.setIcon( getIcon("icon.single") );

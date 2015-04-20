@@ -17,14 +17,20 @@ package org.rapla.plugin.abstractcalendar;
 import java.util.Date;
 
 import org.rapla.components.calendarview.Block;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {
-    public SwingRaplaBuilder(RaplaContext sm) 
+    public SwingRaplaBuilder(RaplaContext context) throws RaplaContextException 
     {
-        super(sm);
+        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaComponent.RAPLA_RESOURCES), context.lookup(Logger.class),context.lookup( AppointmentFormater.class));
     }
 
     /**

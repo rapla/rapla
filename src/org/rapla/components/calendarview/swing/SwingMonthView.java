@@ -18,7 +18,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -29,10 +28,12 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.DateWithoutTimezone;
 
 /** Graphical component for displaying a calendar like monthview.
  *
@@ -97,7 +98,6 @@ public class SwingMonthView extends AbstractSwingCalendar
 
     public void rebuild() {
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
-        Calendar counter = createCalendar(); 
         Iterator<Builder> it= builders.iterator();
         Date startDate = getStartDate();
 		while (it.hasNext()) {
@@ -107,15 +107,13 @@ public class SwingMonthView extends AbstractSwingCalendar
         
         // create fields
         slots = new SmallDaySlot[daysInMonth];
-        counter.setTime(startDate);
-        int year = counter.get(Calendar.YEAR);
-        SimpleDateFormat format = new SimpleDateFormat("MMMMMM",locale);
-        format.setTimeZone( getTimeZone() );
-        String monthname = format.format(counter.getTime());
+        Date counter =startDate;
+        int year = DateTools.getYear(counter);
+        String monthname = AbstractCalendar.formatMonth(counter, locale);
         // calculate the blocks
         for (int i=0; i<daysInMonth; i++) {
-            createField(i, counter.getTime());
-            counter.add(Calendar.DATE,1);
+            createField(i, counter);
+            counter = DateTools.addDays( counter, 1);
         }
         // clear everything
         jHeader.removeAll();
@@ -130,40 +128,40 @@ public class SwingMonthView extends AbstractSwingCalendar
         }
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
-        counter.setTime(startDate);
+        counter = startDate; 
         int firstDayOfWeek = getFirstWeekday();
-		if ( counter.get(Calendar.DAY_OF_WEEK) != firstDayOfWeek)
+		if ( DateTools.getWeekday(counter) != firstDayOfWeek)
         {
-			counter.set(Calendar.DAY_OF_WEEK, firstDayOfWeek);
-			if ( counter.getTime().after( startDate))
+		    counter = DateTools.getFirstWeekday( counter, getFirstWeekday());
+			if ( counter.after( startDate))
 			{
-				counter.add(Calendar.DATE, -7);
+	            counter = DateTools.addDays( counter, -7);
 			}
         }
         // add headers
-        int offset = (int) DateTools.countDays(counter.getTime(),startDate);
+        int offset = (int) DateTools.countDays(counter,startDate);
         for (int i=0;i<COLUMNS;i++) {
-        	int weekday = counter.get(Calendar.DAY_OF_WEEK);
+        	int weekday = DateTools.getDayOfWeekInMonth(counter);
         	if ( !isExcluded(i) ) {
                 tableLayout.insertColumn(i, slotSize );
                 jHeader.add( createSlotHeader( weekday ) );
             } else {
                 tableLayout.insertColumn(i, 0);
             }
-            counter.add(Calendar.DATE,1);
+            counter = DateTools.addDays( counter, 1);
         }
         for (int i=0;i<ROWS;i++) {
             tableLayout.insertRow(i, TableLayout.PREFERRED );
         }
         // add Fields
-        counter.setTime(startDate);
+        counter =startDate;
         for (int i=0; i<daysInMonth; i++) {
             int column = (offset + i) % 7;
-            int row = (counter.get(Calendar.DATE) + 6 - column ) /  7;
+            int row = (DateTools.getDayOfMonth(counter) + 6 - column ) /  7;
             if ( !isExcluded( column ) ) {
                 jCenter.add( slots[i] , "" + column + "," + row);
             }
-            counter.add(Calendar.DATE,1);
+            counter = DateTools.addDays( counter, 1);
         }
         selectionHandler.clearSelection();
         jHeader.validate();
@@ -217,7 +215,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     protected JComponent createSlotHeader(int weekday) {
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
-        jLabel.setText( getWeekdayName(weekday) );
+        jLabel.setText( getWeekdayName(weekday, locale) );
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
         jLabel.setOpaque(false);
@@ -294,18 +292,13 @@ public class SwingMonthView extends AbstractSwingCalendar
     }
     
     Date createDate(DaySlot slot, int row, boolean startOfRow) {
-        Calendar calendar = createCalendar();
-        calendar.setTime( getStartDate() );
+        DateWithoutTimezone date = DateTools.toDate( getStartDate().getTime());
         int dayOfMonth = getSlotNr( slot ) +1;
-        calendar.set( Calendar.DAY_OF_MONTH, dayOfMonth);
+        Date result = new Date(DateTools.toDate(date.year ,date.month, dayOfMonth));
         if ( !startOfRow ) {
-            calendar.add( Calendar.DATE , 1 );
+            result= DateTools.addDays(result,1 );
         }
-        calendar.set( Calendar.HOUR_OF_DAY, 0 );
-        calendar.set( Calendar.MINUTE, 0 );
-        calendar.set( Calendar.SECOND, 0 );
-        calendar.set( Calendar.MILLISECOND, 0 );
-        return calendar.getTime();
+        return result;
     }
 
 	@Override
