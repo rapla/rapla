@@ -75,7 +75,7 @@ public class TimeScale extends JComponent
     private void createHours(RaplaLocale locale) {
         hours = new String[24];
         for (int i=0;i<24;i++) {
-            hours[i] = locale.formatTime( i * 60);
+            hours[i] = locale.formatHour( i);
         }
     }
 

@@ -52,6 +52,7 @@ public interface RaplaLocale
     String[] getAvailableLanguages();
 
     /** creates a calendar initialized with the Rapla timezone ( that is always GMT+0 for Rapla  )  and the selected locale*/
+    @Deprecated
     Calendar createCalendar();
 
     String formatTime( Date date );
@@ -91,7 +92,7 @@ public interface RaplaLocale
     String getWeekday( Date date );
 
      /** Monthname of date. */
-    String getMonth( Date date );
+    String formatMonth( Date date );
 
     String getCharsetNonUtf();
 
@@ -113,8 +114,9 @@ public interface RaplaLocale
 
     String formatTime( int minuteOfDay );
 
-    String formatMonth(Date date);
-
+    
     String formatMonthYear(Date startDate);
+
+    String formatHour(int i);
 
 }

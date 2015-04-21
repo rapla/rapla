@@ -80,7 +80,7 @@ public class AppointmentFormaterImpl
             if (repeating.isMonthly())
                 return getWeekdayOfMonth( appointment.getStart() )  +  weekday + timeString;
             if (repeating.isYearly())
-                return getDayOfMonth( appointment.getStart() )  +  loc.getMonth(appointment.getStart()) +" " + timeString;
+                return getDayOfMonth( appointment.getStart() )  +  loc.formatMonth(appointment.getStart()) +" " + timeString;
         }
         String date = loc.formatDate(appointment.getStart());
         return weekday + " " +date + " " + timeString;
@@ -151,7 +151,7 @@ public class AppointmentFormaterImpl
             if (repeating.isYearly())
             {
                 buf.append( getDayOfMonth( start ) );
-                buf.append( loc.getMonth( start ) );
+                buf.append( loc.formatMonth( start ) );
             }
             else
             {
