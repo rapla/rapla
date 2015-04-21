@@ -151,10 +151,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         Date date = getStartDate();
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
-            headerNames.add (AbstractCalendar.formatDayOfWeekDateMonth
-                (date
-                 ,locale
-                 ));
+            headerNames.add (getRaplaLocale().formatDayOfWeekDateMonth(date ));
             date = DateTools.addDay( date);
         }
 		return headerNames;

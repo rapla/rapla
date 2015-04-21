@@ -99,7 +99,7 @@ public class HTMLMonthView extends AbstractHTMLView {
         
 		// Rapla 1.4: Show month and year in monthview
 		
-		result.append("<h2 class=\"title\">" + AbstractCalendar.formatMonthYear( startDate, locale) + "</h2>\n");
+		result.append("<h2 class=\"title\">" + getRaplaLocale().formatMonthYear( startDate ) + "</h2>\n");
         
         result.append("<table class=\"month_table\">\n");
         result.append("<tr>\n");
@@ -118,7 +118,7 @@ public class HTMLMonthView extends AbstractHTMLView {
         	}
             result.append("<td class=\"month_header\" width=\"14%\">");
             result.append("<nobr>");
-            String name = getWeekdayName(weekday, locale);
+            String name = getRaplaLocale().getWeekdayName(weekday);
             result.append(name);
             result.append("</nobr>");
             result.append("</td>");

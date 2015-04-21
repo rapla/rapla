@@ -39,6 +39,7 @@ import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.components.calendarview.swing.SwingMonthView;
 import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarViewExample {
@@ -46,7 +47,9 @@ public final class RaplaCalendarViewExample {
     JFrame frame;
     private List<MyAppointment> appointments = new ArrayList<MyAppointment>();
     
+    RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl();
     public RaplaCalendarViewExample() {
+        raplaLocale.getLocaleSelector().setLocale( Locale.GERMANY);
         frame = new JFrame("Calendar test") {
             private static final long serialVersionUID = 1L;
 
@@ -100,7 +103,9 @@ public final class RaplaCalendarViewExample {
         tabbedPane.addTab("Weekview", wv.getComponent());
         Date today = new Date();
         // set to German locale
-        wv.setLocale( Locale.GERMANY);
+        wv.setLocale( new RaplaLocaleImpl());
+
+        wv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday
         List<Integer> excludeDays = new ArrayList<Integer>();
         excludeDays.add( new Integer(1));
@@ -135,7 +140,7 @@ public final class RaplaCalendarViewExample {
         final SwingWeekView dv = new SwingWeekView();
         tabbedPane.addTab("Dayview", dv.getComponent());
         // set to German locale
-        dv.setLocale( Locale.GERMANY);
+        dv.setLocale( raplaLocale);
         dv.setSlotSize( 300 );
         // we exclude everyday except the monday of the current week
         Set<Integer> excludeDays = new HashSet<Integer>();
@@ -180,7 +185,7 @@ public final class RaplaCalendarViewExample {
         tabbedPane.addTab("Monthview", mv.getComponent());
         Date today = new Date();
         // set to German locale
-        mv.setLocale( Locale.GERMANY);
+        mv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday
         List<Integer> excludeDays = new ArrayList<Integer>();
         excludeDays.add( new Integer(1));

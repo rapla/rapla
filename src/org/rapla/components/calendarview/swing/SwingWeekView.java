@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Locale;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -29,12 +28,12 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.scaling.IRowScale;
 import org.rapla.components.calendarview.swing.scaling.LinearRowScale;
 import org.rapla.components.util.DateTools;
+import org.rapla.framework.RaplaLocale;
 
 /** Graphical component for displaying a calendar like weekview.
  */
@@ -120,7 +119,7 @@ public class SwingWeekView extends AbstractSwingCalendar
     }
 
 
-    public void setLocale(Locale locale) {
+    public void setLocale(RaplaLocale locale) {
         super.setLocale( locale );
         if ( timeScale != null )
             timeScale.setLocale( locale );
@@ -332,7 +331,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
         Date date = getDateFromColumn(column);
-        jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale));
+        jLabel.setText(raplaLocale.formatDayOfWeekDateMonth(date));
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
         jLabel.setOpaque(false);

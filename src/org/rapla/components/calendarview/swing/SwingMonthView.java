@@ -109,7 +109,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         slots = new SmallDaySlot[daysInMonth];
         Date counter =startDate;
         int year = DateTools.getYear(counter);
-        String monthname = AbstractCalendar.formatMonth(counter, locale);
+        String monthname = getRaplaLocale().formatMonth(counter);
         // calculate the blocks
         for (int i=0; i<daysInMonth; i++) {
             createField(i, counter);
@@ -215,7 +215,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     protected JComponent createSlotHeader(int weekday) {
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
-        jLabel.setText( getWeekdayName(weekday, locale) );
+        jLabel.setText( getRaplaLocale().getWeekdayName(weekday) );
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
         jLabel.setOpaque(false);

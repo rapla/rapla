@@ -27,14 +27,10 @@ import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.logger.Logger;
 
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
 	TimeZone zone;
-    TimeZone systemTimezone;
-    TimeZone importExportTimeZone;
-
 	LocaleSelector localeSelector = new LocaleSelectorImpl();
 
     String[] availableLanguages;
@@ -44,14 +40,15 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     String LANGUAGE = "language";
     String CHARSET = "charset";
     String charsetForHtml;
+    private TimeZone importExportTimeZone;
 
     @Inject
-    public RaplaLocaleImpl(Logger logger )
+    public RaplaLocaleImpl( )
     {
-        this(new DefaultConfiguration(), logger);
+        this(new DefaultConfiguration());
     }
     
-	public RaplaLocaleImpl(Configuration config,Logger logger )  
+	public RaplaLocaleImpl(Configuration config )  
     {
 		String selectedCountry = config.getChild( COUNTRY).getValue(Locale.getDefault().getCountry() );
         Configuration languageConfig = config.getChild( LANGUAGES );
@@ -83,14 +80,9 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
             selectedLanguage = Locale.getDefault().getLanguage();
         localeSelector.setLocale( new Locale(selectedLanguage, selectedCountry) );
         zone = DateTools.getTimeZone();
-        systemTimezone = TimeZone.getDefault();
-        importExportTimeZone = systemTimezone;
-        logger.info("Configured Locale= " + getLocaleSelector().getLocale().toString());
+        importExportTimeZone = TimeZone.getDefault();
     }
 
-    public TimeZone getSystemTimeZone() {
-		return systemTimezone;
-	}
 
 	public LocaleSelector getLocaleSelector() {
         return localeSelector;
@@ -98,9 +90,15 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
 	public Date fromUTCTimestamp(Date date)
 	{
-		Date raplaTime = toRaplaTime( importExportTimeZone,date );
-		return raplaTime;
+        long time = date.getTime();
+        long offset =  importExportTimeZone.getOffset(time);
+        long raplaTime = time + offset;
+		return new Date(raplaTime);
 	}
+	
+	public void setImportExportTimeZone(TimeZone importExportTimeZone) {
+        this.importExportTimeZone = importExportTimeZone;
+    }
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getAvailableLanguages()
@@ -184,27 +182,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 		return dateFormat + " (" + getWeekday(date) + ")";
     }
     
-    @Deprecated
-    public String formatTimestamp( Date date, TimeZone timezone ) 
-    {
-    	Locale locale = getLocale();
-        StringBuffer buf = new StringBuffer();
-		{
-    		DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale );
-    		format.setTimeZone( timezone );
-    		String formatDate= format.format( date );
-			buf.append( formatDate);
-        }
-        buf.append(" ");
-        {
-    		DateFormat format = DateFormat.getTimeInstance( DateFormat.SHORT, locale );
-    		format.setTimeZone( timezone );
-    		String formatTime = format.format( date );
-			buf.append( formatTime);
-        }
-        return buf.toString();
-    }
-
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getWeekday(java.util.Date)
@@ -237,15 +214,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     public TimeZone getTimeZone() {
         return zone;
     }
-    
-    public TimeZone getImportExportTimeZone() {
-		return importExportTimeZone;
-	}
-
-	public void setImportExportTimeZone(TimeZone importExportTimeZone) {
-		this.importExportTimeZone = importExportTimeZone;
-	}
-    
+        
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getLocale()
      */
@@ -258,7 +227,8 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return charsetForHtml;
     }
 
-	
+    
+
 
 
 }

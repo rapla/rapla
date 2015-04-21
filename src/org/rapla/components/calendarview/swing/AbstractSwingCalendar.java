@@ -86,7 +86,6 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         	component.add(jTitlePanel,"1,0");
         	component.add(jCenter,"1,1");
         }
-        setLocale( Locale.getDefault() );
         if ( showScrollPane)
         {
 	        component.addComponentListener( new ComponentListener() {

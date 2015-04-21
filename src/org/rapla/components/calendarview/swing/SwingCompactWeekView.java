@@ -207,7 +207,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         Dimension dim;
         if (column != null ) {
         	Date date = getDateFromColumn(column);
-            jLabel.setText(AbstractCalendar.formatDayOfWeekDateMonth(date,locale));
+            jLabel.setText(getRaplaLocale().formatDayOfWeekDateMonth(date));
             jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
          	dim = new Dimension(this.slotSize,20);
         }

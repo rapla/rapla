@@ -18,13 +18,10 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Rectangle;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
 
 import javax.swing.JComponent;
 
-import org.rapla.components.calendarview.AbstractCalendar;
+import org.rapla.framework.RaplaLocale;
 
 /** A vertical scale displaying the hours of day. Uses am/pm notation
  * in the appropriate locale.
@@ -49,14 +46,13 @@ public class TimeScale extends JComponent
 
     
     public TimeScale() {
-        useAM_PM = AbstractCalendar.isAmPmFormat(Locale.getDefault());
-        createHours(Locale.getDefault());
+        useAM_PM = false;
     }
     
-    public void setLocale(Locale locale) {
+    public void setLocale(RaplaLocale locale) {
         if (locale == null)
             return;
-        useAM_PM = AbstractCalendar.isAmPmFormat(locale);
+        useAM_PM = locale.isAmPmFormat();
         createHours(locale);
     }
 
@@ -76,13 +72,10 @@ public class TimeScale extends JComponent
         setPreferredSize(new Dimension( SCALE_WIDTH, (maxHour-minHour + 1) * pixelPerHour * repeat));
     }
 
-    private void createHours(Locale locale) {
+    private void createHours(RaplaLocale locale) {
         hours = new String[24];
-        Calendar cal = Calendar.getInstance(locale);
-        SimpleDateFormat format = new SimpleDateFormat(useAM_PM ? "h" : "H",locale);
         for (int i=0;i<24;i++) {
-            cal.set(Calendar.HOUR_OF_DAY,i);
-            hours[i] = format.format(cal.getTime());
+            hours[i] = locale.formatTime( i * 60);
         }
     }
 

@@ -54,14 +54,14 @@ public class RaplaLocaleTest extends TestCase {
 
     public void testDateFormat3() throws Exception
     {
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(createConfig("de","DE"), new ConsoleLogger());
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(createConfig("de","DE"));
         String s = raplaLocale.formatDate(new SerializableDateTimeFormat().parseDate("2001-01-12",false));
         assertEquals( "12.01.01", s);
     }
 
     public void testTimeFormat4() 
     {
-        RaplaLocale raplaLocale= new RaplaLocaleImpl(createConfig("en","US"), new ConsoleLogger());
+        RaplaLocale raplaLocale= new RaplaLocaleImpl(createConfig("en","US"));
         Calendar cal = Calendar.getInstance(raplaLocale.getTimeZone()
 					    ,Locale.US);
         cal.set(Calendar.HOUR_OF_DAY,21);

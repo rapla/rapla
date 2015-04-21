@@ -126,7 +126,7 @@ public class HTMLWeekView extends AbstractHTMLView {
            Builder b= it.next();
            if (b.isEnabled()) { b.build(this); }
         }
-        boolean useAM_PM = org.rapla.components.calendarview.AbstractCalendar.isAmPmFormat( locale );
+        boolean useAM_PM = getRaplaLocale().isAmPmFormat(  );
         for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
             boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
             if ( isLine || minuteOfDay == minMinute) {
@@ -171,7 +171,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 			boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
             if ( fullHour || minuteOfDay == minMinute) {
             	int rowspan = calcRowspan(minuteOfDay, ((minuteOfDay  / 60) + 1) * 60);
-            	String timeString = AbstractCalendar.formatTime(minuteOfDay, useAM_PM, locale);
+            	String timeString = getRaplaLocale().formatTime(minuteOfDay);
                 result.append("<th class=\"week_times\" rowspan=\""+ rowspan  +"\"><nobr>");
                 result.append(timeString);
                 result.append("</nobr>");
@@ -325,10 +325,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 
 	protected String createColumnHeader(int i) {
 		Date date = DateTools.addDays(getStartDate(), i);
-		String headerName = AbstractCalendar.formatDayOfWeekDateMonth
-		    (date
-		     ,locale
-		     );
+		String headerName = getRaplaLocale().formatDayOfWeekDateMonth(date );
 		return headerName;
 	}
 

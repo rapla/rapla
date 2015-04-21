@@ -138,7 +138,7 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(Logger.class,logger);
         commandQueue = createCommandQueue();
         addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
-        RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(new DefaultConfiguration(), logger);
+        RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl();
         addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
         Configuration parentConfig = I18nBundleImpl.createConfig( RaplaComponent.RAPLA_RESOURCES.getId() );
         {
