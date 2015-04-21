@@ -82,7 +82,6 @@ public abstract class RaplaBuilder
     private Collection<Reservation> selectedReservations;
     private List<Allocatable> selectedAllocatables = new ArrayList<Allocatable>();
 
-    private boolean enabled= true;
     private boolean bExceptionsExcluded = false;
     private boolean bResourceVisible = true;
     private boolean bPersonVisible = true;
@@ -99,11 +98,8 @@ public abstract class RaplaBuilder
     BuildStrategy buildStrategy;
 
     HashSet<Reservation> allReservationsForAllocatables = new HashSet<Reservation>();
-    int max =0;
-    int min =0;
 
     
-    List<AppointmentBlock> preparedBlocks = null;
     public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
 
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
@@ -265,14 +261,6 @@ public abstract class RaplaBuilder
 
     public User getEditingUser() {
         return this.editingUser;
-    }
-
-    public boolean isEnabled()  {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enable) {
-        this.enabled = enable;
     }
 
     public void setBuildStrategy(BuildStrategy strategy) {
@@ -461,7 +449,7 @@ public abstract class RaplaBuilder
 
 
     /** selects all blocks that should be visible and calculates the max start- and end-time  */
-    public void prepareBuild(Date start,Date end) {
+    public PreperationResult prepareBuild(Date start,Date end) {
     	boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
         HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
@@ -474,11 +462,11 @@ public abstract class RaplaBuilder
         {
             app.createBlocks(start, end, blocks, excludeExceptions);
         }
-        preparedBlocks = splitBlocks(blocks, start, end);
+        List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end);
 
         // calculate new start and end times
-        max =0;
-        min =24*60;
+        int max =0;
+        int min =24*60;
         for (AppointmentBlock block:blocks)
         {
             int starthour = DateTools.getHourOfDay(block.getStart());
@@ -494,21 +482,13 @@ public abstract class RaplaBuilder
             if (starthour>=max)
                 max = Math.min(24*60 , starthour *60 + startminute);
         }
+        return new PreperationResult( min, max,preparedBlocks);
     }
 
-    public int getMinMinutes() {
-        Assert.notNull(preparedBlocks, "call prepareBuild first");
-        return min;
-    }
-
-    public int getMaxMinutes() {
-        Assert.notNull(preparedBlocks, "call prepareBuild first");
-        return max;
-    }
 
     protected abstract Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
 
-    public void build(CalendarView wv) {
+    public void build(CalendarView wv, Collection<AppointmentBlock> preparedBlocks) {
     	ArrayList<Block> blocks = new ArrayList<Block>();
     	AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
     	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);

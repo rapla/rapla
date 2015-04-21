@@ -30,9 +30,9 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
@@ -85,7 +85,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     }
 
     TableLayout tableLayout;
-    public void rebuild() {
+    public void rebuild(Builder b) {
         rows.clear();
         columnMap.clear();
         for ( int i=0; i<rowNames.length; i++ ) {
@@ -93,21 +93,14 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         }
         
         // calculate the blocks
-        Iterator<Builder> it= builders.iterator();
-        while (it.hasNext()) {
-            Builder b= it.next();
-            b.prepareBuild(getStartDate(), getEndDate());
-        }
-
+        PreperationResult prep = b.prepareBuild(getStartDate(), getEndDate());
+        
         // clear everything
         jHeader.removeAll();
         jCenter.removeAll();
-        // build Blocks
-        it= builders.iterator();
-        while (it.hasNext()) {
-            Builder b= it.next();
-            if (b.isEnabled()) { b.build(this); }
-        }
+        
+        b.build(this, prep.getBlocks());
+        
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
 

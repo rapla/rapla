@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -30,6 +29,7 @@ import javax.swing.JScrollPane;
 
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.calendarview.swing.scaling.IRowScale;
 import org.rapla.components.calendarview.swing.scaling.LinearRowScale;
 import org.rapla.components.util.DateTools;
@@ -227,7 +227,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         return daySlots[column].isEmpty();
     }
 
-    public void rebuild() {
+    public void rebuild(Builder b) {
     	daySlots= new LargeDaySlot[getColumnCount()];
     	selectionHandler.clearSelection();
     	
@@ -240,18 +240,14 @@ public class SwingWeekView extends AbstractSwingCalendar
         int end = endMinutes ;
 
         // calculate the blocks
-        Iterator<Builder> it= builders.iterator();
-        while (it.hasNext()) {
-            Builder b= it.next();
-            b.prepareBuild(getStartDate(),getEndDate());
-            if (! bEditable) {
-                start = Math.min(b.getMinMinutes(),start);
-                end = Math.max(b.getMaxMinutes(),end);
-                if (start<0)
-                    throw new IllegalStateException("builder.getMin() is smaller than 0");
-                if (end>24*60)
-                    throw new IllegalStateException("builder.getMax() is greater than 24");
-            }
+        PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
+        if (! bEditable) {
+            start = Math.min(prep.getMinMinutes(),start);
+            end = Math.max(prep.getMaxMinutes(),end);
+            if (start<0)
+                throw new IllegalStateException("builder.getMin() is smaller than 0");
+            if (end>24*60)
+                throw new IllegalStateException("builder.getMax() is greater than 24");
         }
 
         //rowScale = new VariableRowScale();
@@ -287,11 +283,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         }
 
         // build Blocks
-        it= builders.iterator();
-        while (it.hasNext()) {
-            Builder b= it.next();
-            if (b.isEnabled()) { b.build(this); }
-        }
+        b.build(this, prep.getBlocks());
         
         // add Slots
         for (int i=0; i<daySlots.length; i++) {

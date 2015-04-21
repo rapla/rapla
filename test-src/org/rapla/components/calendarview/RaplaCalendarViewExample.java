@@ -20,6 +20,7 @@ import java.awt.Point;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,13 +40,15 @@ import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.components.calendarview.swing.SwingMonthView;
 import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarViewExample {
     private JTabbedPane tabbedPane = new JTabbedPane();
     JFrame frame;
-    private List<MyAppointment> appointments = new ArrayList<MyAppointment>();
+    private List<Appointment> appointments = new ArrayList<Appointment>();
     
     RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl();
     public RaplaCalendarViewExample() {
@@ -84,8 +87,10 @@ public final class RaplaCalendarViewExample {
         Date start = cal.getTime();
         cal.set( Calendar.HOUR_OF_DAY, 14);
         Date end = cal.getTime();
-        appointments.add( new MyAppointment( start, end, "TEST" ));
         
+        
+        // FIXME add real appointments
+  //      appointments.add( new MyAppointment( start, end, "TEST" ));
         
         // the second appointment 
         cal.set( Calendar.DAY_OF_WEEK, Calendar.WEDNESDAY);
@@ -93,7 +98,8 @@ public final class RaplaCalendarViewExample {
         Date start2 = cal.getTime();
         cal.set( Calendar.HOUR_OF_DAY, 15);
         Date end2 = cal.getTime();
-        appointments.add( new MyAppointment( start2, end2, "TEST2" ));
+        // FIXME add real
+//        appointments.add( new MyAppointment( start2, end2, "TEST2" ));
     }
 
     
@@ -121,16 +127,16 @@ public final class RaplaCalendarViewExample {
         wv.setToDate( today );
         
         // create blocks for today
-        wv.addBuilder( new MyBuilder(  appointments ) );
-
-        wv.rebuild();
+        final MyBuilder myBuilder = new MyBuilder(  appointments );
+        
+        wv.rebuild(myBuilder);
         // Now we scroll to the first workhour
         wv.scrollToStart();
         
-        wv.addCalendarViewListener( new MyCalendarListener(wv) );
+        wv.addCalendarViewListener( new MyCalendarListener(wv, myBuilder) );
         tabbedPane.addChangeListener( new ChangeListener() {
             public void stateChanged(ChangeEvent arg0) {
-                wv.rebuild();
+                wv.rebuild(myBuilder);
             }
         });
     }
@@ -164,17 +170,18 @@ public final class RaplaCalendarViewExample {
         dv.setToDate( mondayOfWeek ) ;
         
         // create blocks for today
-        dv.addBuilder( new MyBuilder( appointments ) );
+        final MyBuilder myBuilder = new MyBuilder(  appointments );
+        
+        dv.rebuild(myBuilder);
 
-        dv.rebuild();
         // Now we scroll to the first workhour
         dv.scrollToStart();
         
-        dv.addCalendarViewListener( new MyCalendarListener(dv) );
+        dv.addCalendarViewListener( new MyCalendarListener(dv, myBuilder) );
 
         tabbedPane.addChangeListener( new ChangeListener() {
             public void stateChanged(ChangeEvent arg0) {
-                dv.rebuild();
+                dv.rebuild(myBuilder);
             }
         });
     }
@@ -195,85 +202,43 @@ public final class RaplaCalendarViewExample {
         mv.setToDate( today );
         
         // create blocks for today
-        mv.addBuilder( new MyBuilder(  appointments ) );
 
-        mv.rebuild();
+        final MyBuilder b = new MyBuilder(  appointments );
+        mv.rebuild(b);
         
-        mv.addCalendarViewListener( new MyMonthCalendarListener(mv) );
+        mv.addCalendarViewListener( new MyMonthCalendarListener(mv, b) );
 
         tabbedPane.addChangeListener( new ChangeListener() {
             public void stateChanged(ChangeEvent arg0) {
-                mv.rebuild();
+                mv.rebuild(b);
             }
         });
 
     }
     
 
-    public class MyAppointment {
-        Date start;
-        Date end;
-        String label;
-
-        public MyAppointment(Date start, Date end, String label) {
-            this.start =  start;
-            this.end = end;
-            this.label = label;
-        }
-        
-        public void move(Date newStart) {
-            long diff = end.getTime() - start.getTime();
-            start = new Date(newStart.getTime());
-            end = new Date( newStart.getTime() + diff);
-        }
-
-        public void resize(Date newStart, Date newEnd) {
-            if ( newStart != null )
-            {
-                this.start =  newStart;
-            }
-            if ( newEnd != null )
-            {
-                this.end = newEnd;
-            }
-        }
-
-        public Date getStart() {
-            return start;
-        }
-
-        public Date getEnd() {
-            return end;
-        }
-        
-        public String getLabel() {
-            return label;
-        }
-    }
-
-
     static class MyBuilder implements Builder {
         final AbstractGroupStrategy strategy;
-        List<Block> blocks;
-        List<MyAppointment> appointments;
+        List<Appointment> appointments;
         boolean enable = true;
         
-        MyBuilder(List<MyAppointment> appointments) {
+        MyBuilder(List<Appointment> appointments) {
             this.appointments = appointments;
             strategy = new BestFitStrategy();
             strategy.setResolveConflictsEnabled( true );
         }
          
-        public void prepareBuild(Date startDate, Date endDate) {
-            blocks = new ArrayList<Block>();
-            for ( Iterator<MyAppointment> it = appointments.iterator(); it.hasNext(); )
+        public PreperationResult prepareBuild(Date startDate, Date endDate) {
+            List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+            for ( Iterator<Appointment> it = appointments.iterator(); it.hasNext(); )
             {
-                MyAppointment appointment = it.next();
+                Appointment appointment = it.next();
                 if ( !appointment.getStart().before( startDate) && !appointment.getEnd().after( endDate ))
                 {
-                    blocks.add( new MyBlock(  appointment ));
+                    blocks.add( new AppointmentBlock(  appointment ));
                 }
             }
+            return new PreperationResult(0, 24*60, blocks);
         }
 
         public int getMaxMinutes() {
@@ -284,8 +249,14 @@ public final class RaplaCalendarViewExample {
             return 0;
         }
 
-        public void build(CalendarView cv) {
-            strategy.build( cv, blocks);
+        public void build(CalendarView cv,Collection<AppointmentBlock> blocks ) {
+            List<Block> swingBlocks = new ArrayList<Block>();
+            for ( AppointmentBlock block:blocks)
+            {
+                Appointment appointment = block.getAppointment();
+                swingBlocks .add( new MyBlock(  appointment ));
+            }
+            strategy.build( cv, swingBlocks);
         }
 
         public void setEnabled(boolean enable) {
@@ -301,12 +272,12 @@ public final class RaplaCalendarViewExample {
     
     static class MyBlock implements SwingBlock {
         JLabel myBlockComponent;
-        MyAppointment appointment;
+        Appointment appointment;
         
-        public MyBlock(MyAppointment appointment) {
+        public MyBlock(Appointment appointment) {
             this.appointment = appointment;
             myBlockComponent = new JLabel();
-            myBlockComponent.setText( appointment.getLabel() );
+            myBlockComponent.setText( appointment.getReservation().getName(null) );
             myBlockComponent.setBorder( BorderFactory.createLineBorder( Color.BLACK));
             myBlockComponent.setBackground( Color.LIGHT_GRAY);
             myBlockComponent.setOpaque( true );
@@ -321,7 +292,7 @@ public final class RaplaCalendarViewExample {
             return appointment.getEnd();
         }
 
-        public MyAppointment getAppointment() {
+        public Appointment getAppointment() {
             return appointment;
         }
 
@@ -349,7 +320,7 @@ public final class RaplaCalendarViewExample {
 
 
 		public String getName() {
-			return appointment.getLabel();
+			return appointment.getReservation().getName(null);
 		}
     }
     
@@ -357,9 +328,11 @@ public final class RaplaCalendarViewExample {
     
     static class MyCalendarListener implements ViewListener {
         CalendarView view;
+        Builder builder;
         
-        public MyCalendarListener(CalendarView view) {
+        public MyCalendarListener(CalendarView view, Builder builder) {
             this.view = view;
+            this.builder = builder;
         }
         
         public void selectionPopup(Component slotComponent, Point p, Date start, Date end, int slotNr) {
@@ -379,30 +352,30 @@ public final class RaplaCalendarViewExample {
         }
 
         public void moved(Block block, Point p, Date newStart, int slotNr) {
-            MyAppointment appointment = ((MyBlock) block).getAppointment();
+            Appointment appointment = ((MyBlock) block).getAppointment();
             appointment.move( newStart);
             System.out.println("Block moved");
-            view.rebuild();
+            view.rebuild(builder);
         }
 
         public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr) {
-            MyAppointment appointment = ((MyBlock) block).getAppointment();
-            appointment.resize( newStart, newEnd);
+            Appointment appointment = ((MyBlock) block).getAppointment();
+            appointment.move( newStart, newEnd);
             System.out.println("Block resized");
-            view.rebuild();
+            view.rebuild(builder);
         }
 
     }
     
     static class MyMonthCalendarListener extends MyCalendarListener {
 
-        public MyMonthCalendarListener(CalendarView view) {
-            super(view);
+        public MyMonthCalendarListener(CalendarView view,Builder builder) {
+            super(view, builder);
         }
 
         @Override
         public void moved(Block block, Point p, Date newStart, int slotNr) {
-            MyAppointment appointment = ((MyBlock) block).getAppointment();
+            Appointment appointment = ((MyBlock) block).getAppointment();
             Calendar cal = Calendar.getInstance();
             cal.setTime( appointment.getStart() );
             int hour = cal.get( Calendar.HOUR_OF_DAY);
@@ -412,7 +385,7 @@ public final class RaplaCalendarViewExample {
             cal.set( Calendar.MINUTE, minute);
             appointment.move( cal.getTime());
             System.out.println("Block moved to " + cal.getTime());
-            view.rebuild();
+            view.rebuild(builder);
         }
 
     }

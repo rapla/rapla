@@ -22,9 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
 
 public class HTMLCompactWeekView extends AbstractHTMLView {
@@ -69,7 +69,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
 
     
-    public void rebuild() {
+    public void rebuild(Builder b) {
     	List<String> headerNames;
     	int columns = getColumnCount();
 		headerNames = getHeaderNames();
@@ -79,18 +79,11 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
             addRow();
         }
         // calculate the blocks
-        Iterator<Builder> it= builders.iterator();
-        while (it.hasNext()) {
-           Builder b= it.next();
-           b.prepareBuild(getStartDate(),getEndDate());
-        }
+        PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
         
         // build Blocks
-        it= builders.iterator();
-        while (it.hasNext()) {
-           Builder b= it.next();
-           if (b.isEnabled()) { b.build(this); }
-        }
+        b.build(this, prep.getBlocks()); 
+        
         // resource header
 
         // add headers

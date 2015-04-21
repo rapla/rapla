@@ -28,6 +28,7 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
 import org.rapla.components.calendar.DateRendererAdapter;
+import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.util.DateTools;
@@ -82,10 +83,10 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
         
 
             @Override
-            public void rebuild() {
+            public void rebuild(Builder b) {
                 // update week
                 weekTitle.setText(MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate()));
-                super.rebuild();
+                super.rebuild(b);
             }
         };
         return wv;

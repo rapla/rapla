@@ -27,6 +27,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
@@ -84,8 +85,8 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
             }
             
             @Override
-            public void rebuild() {
-                super.rebuild();
+            public void rebuild(Builder b) {
+                super.rebuild(b);
                 String dateText = getRaplaLocale().formatDateShort(getStartDate());
                 weekTitle.setText( dateText);
             }

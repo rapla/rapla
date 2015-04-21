@@ -1,15 +1,12 @@
 package org.rapla.components.calendarview;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
 
 public abstract class  AbstractCalendar {
 	private int daysInView = 7;
@@ -21,7 +18,6 @@ public abstract class  AbstractCalendar {
     private Date endDate;
     protected int daysInMonth;
     
-    protected Collection<Builder> builders = new ArrayList<Builder>();
     protected RaplaLocale raplaLocale;
     
 	public int getDaysInView() {
@@ -97,15 +93,6 @@ public abstract class  AbstractCalendar {
             calcMinMaxDates( getStartDate() );
     }
     
-    public void rebuild(Builder builder) {
-        try {
-            addBuilder( builder);
-            rebuild();
-        } finally {
-            removeBuilder( builder );
-        }
-    }
-    
     public void calcMinMaxDates(Date date)
     {
     	date = DateTools.cutDate(date);
@@ -131,21 +118,6 @@ public abstract class  AbstractCalendar {
         	endDate =DateTools.addDays(startDate, daysInView);
     	}
 	}
-    
-    public abstract void rebuild();
-    
-    public Iterator<Builder> getBuilders() {
-        return builders.iterator();
-    }
-
-    public void addBuilder(Builder b) {
-        builders.add(b);
-    }
-
-    public void removeBuilder(Builder b) {
-        builders.remove(b);
-    }
-
     
     public RaplaLocale getRaplaLocale()
     {

@@ -27,7 +27,7 @@ public interface CalendarView
      * Then it calls the build method of all added builders, so that they can add blocks into the CalendarView again.
      * After all blocks are added the Calendarthat repaints the screen. 
      */
-    public void rebuild();
+    public void rebuild(Builder builder);
     
     /** Adds a block. You can optionaly specify a slot, if the day-view supports multiple slots (like in the weekview).
      *  If the selected slot does not exist it will be created. This method is usually called by the builders.

@@ -19,18 +19,16 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
@@ -96,14 +94,10 @@ public class SwingMonthView extends AbstractSwingCalendar
     
     TableLayout tableLayout;
 
-    public void rebuild() {
+    public void rebuild(Builder b) {
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
-        Iterator<Builder> it= builders.iterator();
         Date startDate = getStartDate();
-		while (it.hasNext()) {
-            Builder b= it.next();
-            b.prepareBuild(startDate,getEndDate() );
-        }
+        PreperationResult prep = b.prepareBuild(startDate,getEndDate() );
         
         // create fields
         slots = new SmallDaySlot[daysInMonth];
@@ -121,11 +115,8 @@ public class SwingMonthView extends AbstractSwingCalendar
        
         monthTitle.setText( monthname + " " + year);
         // build Blocks
-        it= builders.iterator();
-        while (it.hasNext()) {
-            Builder b= it.next();
-            if (b.isEnabled()) { b.build(this); }
-        }
+        b.build(this, prep.getBlocks());
+        
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
         counter = startDate; 

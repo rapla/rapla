@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
 
+import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
@@ -43,10 +44,10 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage
         HTMLCompactWeekView weekView = new HTMLCompactWeekView()
         {
           	@Override
-        	public void rebuild() {
+        	public void rebuild(Builder b) {
         		 String weeknumberString = MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate());
         		 setWeeknumber(weeknumberString);
-        		 super.rebuild();
+        		 super.rebuild(b);
         	}
         };
         weekView.setLeftColumnSize(0.01);

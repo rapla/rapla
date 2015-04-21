@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
@@ -51,9 +52,9 @@ public class HTMLDayResourcePage extends HTMLDayViewPage {
           	  	}
             }
             
-            public void rebuild() {
+            public void rebuild(Builder b) {
                 setWeeknumber(getRaplaLocale().formatDateShort(getStartDate()));
-        		super.rebuild();
+        		super.rebuild(b);
         	}
     		
         };

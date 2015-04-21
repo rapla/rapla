@@ -13,17 +13,14 @@
 
 package org.rapla.components.calendarview.html;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
 
 public class HTMLMonthView extends AbstractHTMLView {
@@ -48,27 +45,19 @@ public class HTMLMonthView extends AbstractHTMLView {
         return true;
     }
     
-    public void rebuild() {
+    public void rebuild(Builder b) {
         //      we need to clone the calendar, because we modify the calendar object int the getExclude() method 
         //Calendar counter = (Calendar) blockCalendar.clone(); 
         
         // calculate the blocks
-        Iterator<Builder> it= builders.iterator();
         final Date startDate = getStartDate();
-		while (it.hasNext()) {
-           Builder b= it.next();
-           b.prepareBuild(startDate,getEndDate());
-        }
+        PreperationResult prep = b.prepareBuild(startDate,getEndDate());
         slots = new HTMLSmallDaySlot[ daysInMonth ];
         for (int i=0;i<slots.length;i++) {
             slots[i] = new HTMLSmallDaySlot(String.valueOf( i + 1));
         }
         
-        it= builders.iterator();
-        while (it.hasNext()) {
-           Builder b= it.next();
-           if (b.isEnabled()) { b.build(this); }
-        }
+        b.build(this, prep.getBlocks());
         int lastRow = 0;
         HTMLSmallDaySlot[][] table = new HTMLSmallDaySlot[ROWS][COLUMNS];
         Date counter = startDate;

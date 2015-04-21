@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
 import org.rapla.facade.CalendarModel;
@@ -37,9 +38,9 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
     protected AbstractHTMLView createCalendarView() {
         HTMLWeekView weekView = new HTMLWeekView()
         {
-        	public void rebuild() {
+        	public void rebuild(Builder b) {
                 setWeeknumber(MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate()));
-        		super.rebuild();
+        		super.rebuild(b);
         	}
         };
         return weekView;

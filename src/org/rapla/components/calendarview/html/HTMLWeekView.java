@@ -17,14 +17,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
 
 public class HTMLWeekView extends AbstractHTMLView {
@@ -88,7 +86,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 		return getDaysInView();
 	}
 
-    public void rebuild() {
+    public void rebuild(Builder b) {
         int columns = getColumnCount();
         blocks.clear();
         multSlots = new HTMLDaySlot[columns];
@@ -104,28 +102,20 @@ public class HTMLWeekView extends AbstractHTMLView {
         int start = startMinutes;
         int end = endMinutes;
         minuteBlock.clear();
-        Iterator<Builder> it= builders.iterator();
-        while (it.hasNext()) {
-           Builder b= it.next();
-           b.prepareBuild(getStartDate(),getEndDate());
-           start = Math.min(b.getMinMinutes(),start);
-           end = Math.max(b.getMaxMinutes(),end);
-           if (start<0)
-             throw new IllegalStateException("builder.getMin() is smaller than 0");
-           if (end>24*60)
-             throw new IllegalStateException("builder.getMax() is greater than 24");
-        }
+        PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
+        start = Math.min(prep.getMinMinutes(),start);
+        end = Math.max(prep.getMaxMinutes(),end);
+        if (start<0)
+            throw new IllegalStateException("builder.getMin() is smaller than 0");
+        if (end>24*60)
+            throw new IllegalStateException("builder.getMax() is greater than 24");
         minMinute = start ;
         maxMinute = end ;
         for (int i=0;i<multSlots.length;i++) {
             multSlots[i] = new HTMLDaySlot(2);
         }
 
-        it= builders.iterator();
-        while (it.hasNext()) {
-           Builder b= it.next();
-           if (b.isEnabled()) { b.build(this); }
-        }
+        b.build(this, prep.getBlocks());
         boolean useAM_PM = getRaplaLocale().isAmPmFormat(  );
         for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
             boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;

@@ -12,7 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
+import java.util.Collection;
 import java.util.Date;
+
+import org.rapla.entities.domain.AppointmentBlock;
 
 public interface Builder {
    /** Calculate the blocks that should be displayed in the weekview.
@@ -22,23 +25,46 @@ public interface Builder {
     * @param start
     * @param end
     */
-    void prepareBuild(Date start, Date end);
+    PreperationResult prepareBuild(Date start, Date end);
    
-    /** The maximal ending-time of all blocks that should be displayed.
-     Call prepareBuild first to calculate the blocks.*/
-    int getMaxMinutes();
     
-    /** The minimal starting-time of all blocks that should be displayed.
-     Call prepareBuild first to calculate the blocks.*/
-    int getMinMinutes();
+    public class PreperationResult
+    {
+        final int minMinutes;
+        final int maxMinutes;
+        final Collection<AppointmentBlock> blocks;
+        public PreperationResult(int min, int max,Collection<AppointmentBlock> blocks )
+        {
+            this.minMinutes = min;
+            this.maxMinutes = max;
+            this.blocks = blocks;
+        }
+        /** The maximal ending-time of all blocks that should be displayed.
+        Call prepareBuild first to calculate the blocks.*/
+        public int getMaxMinutes()
+        {
+            return maxMinutes;
+        }
+        /** The minimal starting-time of all blocks that should be displayed.
+       Call prepareBuild first to calculate the blocks.*/
+        public int getMinMinutes()
+        {
+            return minMinutes;
+        }
+        
+        public Collection<AppointmentBlock> getBlocks()
+        {
+            return blocks;
+        }
+
+    }
+    
    
     /** Build the calculated blocks into the weekview. This method should not be called manually.
      * It is called by the CalendarView during the build process.
      * @see #prepareBuild */
-    void build(CalendarView cv);
+    void build(CalendarView cv, Collection<AppointmentBlock> blocks);
     
-    void setEnabled(boolean enable);
-    boolean isEnabled();
 }
 
 
