@@ -80,7 +80,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	Date startDate;
     Date endDate;
     Date selectedDate;
-    List<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
+    Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
     String title;
     ClientFacade m_facade;
     String selectedView;
@@ -687,14 +687,20 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     private Collection<Allocatable> getFilteredAllocatables() throws RaplaException {
-        List<Allocatable> list = new ArrayList<Allocatable>();
+        Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
+        // TODO should be replaced with getAllocatables(allocatableFilter.values();
         for ( Allocatable allocatable :m_facade.getAllocatables())
         {
-            if ( isInFilter( allocatable) && (user == null || allocatable.canRead(user))) {
+            if ( isInFilterAndCanRead(allocatable)) {
                 list.add( allocatable);
             }
         }
         return list;
+    }
+
+    private boolean isInFilterAndCanRead(Allocatable allocatable)
+    {
+        return isInFilter( allocatable) && (user == null || allocatable.canRead(user));
     }
     
     private boolean isInFilter( Allocatable classifiable) {
@@ -735,22 +741,24 @@ public class CalendarModelImpl implements CalendarSelectionModel
         
         boolean allAllocatablesSelected = selectedObjects.contains( CalendarModelImpl.ALLOCATABLES_ROOT);
         
-        Collection<Allocatable> filteredList = getFilteredAllocatables();
-        for (Iterator<Allocatable> it = filteredList.iterator();it.hasNext();)
+        if ( dynamicTypes.size() > 0 || allAllocatablesSelected)
         {
-        	Allocatable oneSelectedItem =  it.next();
-            if ( selectedObjects.contains(oneSelectedItem)) {
-                continue;
-            }
-            Classification classification = oneSelectedItem.getClassification();
-            if ( classification == null)
+            Collection<Allocatable> filteredList = getFilteredAllocatables();
+            for (Allocatable oneSelectedItem:filteredList)
             {
-            	continue;
-            }
-             if ( allAllocatablesSelected || dynamicTypes.contains(classification.getType()))
-             {
-                result.add( oneSelectedItem );
-                continue;
+            	if ( selectedObjects.contains(oneSelectedItem)) {
+                    continue;
+                }
+                Classification classification = oneSelectedItem.getClassification();
+                if ( classification == null)
+                {
+                	continue;
+                }
+                if ( allAllocatablesSelected || dynamicTypes.contains(classification.getType()))
+                {
+                    result.add( oneSelectedItem );
+                    continue;
+                }
             }
         }
 
@@ -957,24 +965,32 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
 	protected Collection<Allocatable> getSelectedAllocatablesAsList()
 			throws RaplaException {
+        
 		Collection<Allocatable> result = new HashSet<Allocatable>();
-        for(RaplaObject object:getSelectedObjectsAndChildren()) {
+        Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
+        boolean conflictsDetected = false;
+        for(RaplaObject object:selectedObjectsAndChildren) {
+            Allocatable alloc = null;
             if ( object.getRaplaType() ==  Conflict.TYPE ) {
-                result.add( ((Conflict)object).getAllocatable() );
-            }
-        }
-        // We ignore the allocatable selection if there are conflicts selected
-        if ( result.isEmpty())
-        {
-            for(RaplaObject object:getSelectedObjectsAndChildren()) {
-                if ( object.getRaplaType() ==Allocatable.TYPE ) {
-                    result.add( (Allocatable)object  );
+                if ( !conflictsDetected)
+                {
+                    // We ignore the allocatable selection if there are conflicts selected
+                    result.clear();
+                    conflictsDetected = true;
                 }
+                alloc = ((Conflict)object).getAllocatable();
+                
+                
+            }
+            if ( !conflictsDetected && object.getRaplaType() ==Allocatable.TYPE ) {
+                alloc = (Allocatable)object ;
+            }
+            if ( alloc != null && isInFilterAndCanRead( alloc))
+            {
+                result.add( alloc );
             }
         }
-        Collection<Allocatable> filteredAllocatables = getFilteredAllocatables();
-        result.retainAll( filteredAllocatables);
-		return result;
+        return result;
 	}
 
     public Collection<Conflict> getSelectedConflicts()  {

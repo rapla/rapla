@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -80,7 +81,7 @@ public abstract class RaplaBuilder
 {
 
     private Collection<Reservation> selectedReservations;
-    private List<Allocatable> selectedAllocatables = new ArrayList<Allocatable>();
+    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<Allocatable>();
 
     private boolean bExceptionsExcluded = false;
     private boolean bResourceVisible = true;
@@ -167,6 +168,7 @@ public abstract class RaplaBuilder
 
     public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
     	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+
     	conflictingAppointments = null;
     	conflictsSelected.clear();
         conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
@@ -178,11 +180,17 @@ public abstract class RaplaBuilder
 	    }
         else
         {
+
+//            long time = System.currentTimeMillis();
             allocatables = Arrays.asList(  model.getSelectedAllocatables());
+//            getLogger().info("Kram took " + (System.currentTimeMillis() - time) + " ms ");
+
         }
      
+        
         if ( startDate != null && !allocatables.isEmpty()) {
-            List<Reservation> reservationsForAllocatables = Arrays.asList(getClientFacade().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate));
+            Reservation[] events = getClientFacade().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate);
+            List<Reservation> reservationsForAllocatables = Arrays.asList(events);
 			allReservationsForAllocatables.addAll( reservationsForAllocatables);
         }
     
@@ -287,7 +295,7 @@ public abstract class RaplaBuilder
         this.bRepeatingVisible = bVisible;
     }
 
-    public List<Allocatable> getAllocatables() {
+    public Collection<Allocatable> getAllocatables() {
         return selectedAllocatables;
     }
 
@@ -384,8 +392,9 @@ public abstract class RaplaBuilder
     {
         selectedAllocatables.clear();
         if (allocatables != null ) {
-            selectedAllocatables.addAll(new HashSet<Allocatable>(allocatables));
-            Collections.sort( selectedAllocatables, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
+            List<Allocatable> list = new ArrayList<Allocatable>();
+            Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
+            selectedAllocatables.addAll(new HashSet<Allocatable>(list));
         }
         createColorMap();
     }
@@ -455,7 +464,9 @@ public abstract class RaplaBuilder
         HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
         allReservations.addAll( allReservationsForAllocatables);
         
+        //long time = System.currentTimeMillis();
         Collection<Appointment> appointments = AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
+        //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks
         final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         for (Appointment app:appointments)
@@ -489,26 +500,33 @@ public abstract class RaplaBuilder
     protected abstract Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
 
     public void build(CalendarView wv, Collection<AppointmentBlock> preparedBlocks) {
-    	ArrayList<Block> blocks = new ArrayList<Block>();
-    	AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
-    	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
-        Assert.notNull(preparedBlocks, "call prepareBuild first");
-        for (AppointmentBlock block:preparedBlocks)
+        ArrayList<Block> blocks = new ArrayList<Block>();
         {
-            Date start = new Date( block.getStart() );
-            Date end = new Date( block.getEnd() );
-            RaplaBlockContext[] blockContext = getBlocksForAppointment( block, buildContext );
-            for ( int j=0;j< blockContext.length; j++) {
-                blocks.add( createBlock(blockContext[j], start, end));
+            //long time = System.currentTimeMillis();
+            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
+        	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
+            Assert.notNull(preparedBlocks, "call prepareBuild first");
+            for (AppointmentBlock block:preparedBlocks)
+            {
+                Date start = new Date( block.getStart() );
+                Date end = new Date( block.getEnd() );
+                RaplaBlockContext[] blockContext = getBlocksForAppointment( block, buildContext );
+                for ( int j=0;j< blockContext.length; j++) {
+                    blocks.add( createBlock(blockContext[j], start, end));
+                }
             }
+            //logger.info( "Block creation took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
+        //long time = System.currentTimeMillis();
         buildStrategy.build(wv, blocks);
+        //logger.info( "Build strategy took " + (System.currentTimeMillis() - time) + " ms.");
+
     }
 
     private RaplaBlockContext[] getBlocksForAppointment(AppointmentBlock block, BuildContext buildContext) {
     	Appointment appointment = block.getAppointment();
-        boolean isBlockSelected = selectedReservations.contains( appointment.getReservation());
+    	boolean isBlockSelected = selectedReservations.contains( appointment.getReservation());
         boolean isConflictsSelected = isConflictsSelected();
 		if ( !isBlockSelected && (!nonFilteredEventsVisible && !isConflictsSelected))
         {

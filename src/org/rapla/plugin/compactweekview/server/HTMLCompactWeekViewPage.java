@@ -16,6 +16,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -88,10 +89,11 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage
         strategy.setFixedSlotsEnabled( true );
         builder.setBuildStrategy( strategy );
 
-        List<Allocatable> allocatables = builder.getAllocatables();
+        Collection<Allocatable> allocatables = builder.getAllocatables();
         String[] slotNames = new String[ allocatables.size() ];
+        Iterator<Allocatable> it = allocatables.iterator();
         for (int i = 0; i < slotNames.length; i++ ) {
-            Allocatable allocatable =  allocatables.get( i );
+            Allocatable allocatable =  it.next();
             String slotName = allocatable.getName( getRaplaLocale().getLocale() );
             slotNames[i] = XMLWriter.encode( slotName );
         }
