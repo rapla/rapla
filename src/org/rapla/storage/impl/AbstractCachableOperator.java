@@ -241,6 +241,17 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return allocatables;
 	}
 
+	protected boolean isInFilter( Classifiable classifiable,ClassificationFilter[] filters)
+	{
+	    if ( filters == null)
+	    {
+	        return( !DynamicTypeImpl.isInternalType(classifiable) );
+	    }
+	    else
+	    {
+	        return ClassificationFilter.Util.matches(filters, classifiable);
+	    }
+	}
 	protected void removeFilteredClassifications(	Collection<? extends Classifiable> list, ClassificationFilter[] filters) {
 		if (filters == null)
 		{

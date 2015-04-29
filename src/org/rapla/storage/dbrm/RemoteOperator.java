@@ -899,8 +899,18 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             @SuppressWarnings("unchecked")
             @Override
             public Collection<Reservation> get() throws Exception {
-                List<ReservationImpl> list = serverQuery.get();
-                processReservationResult(list, filters);
+                List<ReservationImpl> list;
+                {
+                    long time = System.currentTimeMillis();
+                    list = serverQuery.get();
+                    logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+                }
+                {
+                    long time = System.currentTimeMillis();
+                    processReservationResult(list, filters);
+                    logger.info("event post processing took  " + (System.currentTimeMillis() - time) + " ms");
+                }
+
                 return (Collection) list;
             }
 
@@ -931,7 +941,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     private Collection<Reservation> processReservationResult(List<ReservationImpl> list,ClassificationFilter[] filters) throws RaplaException {
-        
     	try
     	{
 		    Lock lock = readLock();
@@ -949,10 +958,12 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	        while ( it.hasNext())
 	        {
 	        	Object object = it.next();
-	        	Reservation next = (Reservation)object;
-	        	result.add( next);
+	        	Reservation classifiable = (Reservation)object;
+	        	if ( isInFilter(classifiable, filters))
+	        	{
+	        	    result.add( classifiable);
+	        	}
 	        }
-	        removeFilteredClassifications(result, filters);
 	        return result;
     	}
 	    catch (RaplaException ex)
