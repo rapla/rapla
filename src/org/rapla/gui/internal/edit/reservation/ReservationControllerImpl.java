@@ -53,6 +53,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EventCheck;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationCheck;
 import org.rapla.gui.ReservationController;
@@ -1559,18 +1560,30 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		}
 
 		boolean save(Collection<Reservation> reservations,Component sourceComponent) throws RaplaException {
-		        Collection<ReservationCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK);
-		        for (ReservationCheck check:checkers)
 		        {
-		            for (Reservation reservation:reservations)
-		            {
-		                boolean successful= check.check(reservation, sourceComponent);
-		                if ( !successful)
-		                {
-		                    return false;
-		                }
-		            }
+    		        Collection<ReservationCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK);
+    		        for (ReservationCheck check:checkers)
+    		        {
+    		            for (Reservation reservation:reservations)
+    		            {
+    		                boolean successful= check.check(reservation, sourceComponent);
+    		                if ( !successful)
+    		                {
+    		                    return false;
+    		                }
+    		            }
+    		        }
 		        }
+		        
+		        Collection<EventCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.EVENT_SAVE_CHECK);
+                for (EventCheck check:checkers)
+                {
+                    boolean successful= check.check(reservations, sourceComponent);
+                    if ( !successful)
+                    {
+                        return false;
+                    }
+                }
 		        try {
 		            getModification().storeObjects( newReservations.toArray( Reservation.RESERVATION_ARRAY) );
 		            return true;

@@ -13,6 +13,7 @@
 package org.rapla.gui.internal.edit.reservation;
 
 import java.awt.Component;
+import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.swing.BoxLayout;
@@ -24,11 +25,11 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EventCheck;
 import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationCheck;
 import org.rapla.gui.toolkit.DialogUI;
 
-public class DefaultReservationCheck extends RaplaGUIComponent implements ReservationCheck
+public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
 {
     AppointmentFormater appointmentFormater;
     @Inject
@@ -37,42 +38,45 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements Reserv
         this.appointmentFormater = appointmentFormater;
     }
 
-    public boolean check(Reservation reservation, Component sourceComponent) throws RaplaException {
+    public boolean check(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
         try
         {
-            getClientFacade().checkReservation( reservation);
-            Appointment[] appointments = reservation.getAppointments();
-            Appointment duplicatedAppointment = null;
-            for (int i=0;i<appointments.length;i++) {
-                for (int j=i + 1;j<appointments.length;j++)
-                    if (appointments[i].matches(appointments[j])) {
-                        duplicatedAppointment = appointments[i];
-                        break;
-                    }
-            }
-            
-            
             JPanel warningPanel = new JPanel();
-            warningPanel.setLayout( new BoxLayout( warningPanel, BoxLayout.Y_AXIS));
-            if (duplicatedAppointment != null) {
-                JLabel warningLabel = new JLabel();
-                warningLabel.setForeground(java.awt.Color.red);
-                warningLabel.setText
-                    (getI18n().format
-                     (
-                      "warning.duplicated_appointments"
-                      ,appointmentFormater.getShortSummary(duplicatedAppointment)
-                      )
-                     );
-                warningPanel.add( warningLabel);
-            }
-            
-            if (reservation.getAllocatables().length == 0)
+            for (Reservation reservation:reservations)
             {
-                JLabel warningLabel = new JLabel();
-                warningLabel.setForeground(java.awt.Color.red);
-                warningLabel.setText(getString("warning.no_allocatables_selected"));
-                warningPanel.add( warningLabel);
+                getClientFacade().checkReservation( reservation);
+                Appointment[] appointments = reservation.getAppointments();
+                Appointment duplicatedAppointment = null;
+                for (int i=0;i<appointments.length;i++) {
+                    for (int j=i + 1;j<appointments.length;j++)
+                        if (appointments[i].matches(appointments[j])) {
+                            duplicatedAppointment = appointments[i];
+                            break;
+                        }
+                }
+                
+                
+                warningPanel.setLayout( new BoxLayout( warningPanel, BoxLayout.Y_AXIS));
+                if (duplicatedAppointment != null) {
+                    JLabel warningLabel = new JLabel();
+                    warningLabel.setForeground(java.awt.Color.red);
+                    warningLabel.setText
+                        (getI18n().format
+                         (
+                          "warning.duplicated_appointments"
+                          ,appointmentFormater.getShortSummary(duplicatedAppointment)
+                          )
+                         );
+                    warningPanel.add( warningLabel);
+                }
+                
+                if (reservation.getAllocatables().length == 0)
+                {
+                    JLabel warningLabel = new JLabel();
+                    warningLabel.setForeground(java.awt.Color.red);
+                    warningLabel.setText(getString("warning.no_allocatables_selected"));
+                    warningPanel.add( warningLabel);
+                }
             }
             
             if (  warningPanel.getComponentCount() > 0) {

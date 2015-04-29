@@ -262,8 +262,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponentInstance( InternMenus.CALENDAR_SETTINGS, settingsMenu );
         addContainerProvidedComponentInstance( InternMenus.EXTRA_MENU_ROLE, helpMenu );
         
-        addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, DefaultReservationCheck.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, ConflictReservationCheck.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, DefaultReservationCheck.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, ConflictReservationCheck.class);
         
         boolean webstartEnabled =getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.WEBSTART;
 

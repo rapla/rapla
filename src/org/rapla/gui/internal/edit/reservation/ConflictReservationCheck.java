@@ -31,30 +31,33 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EventCheck;
 import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationCheck;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaTree;
 
-public class ConflictReservationCheck extends RaplaGUIComponent implements ReservationCheck
+public class ConflictReservationCheck extends RaplaGUIComponent implements EventCheck
 {
     public ConflictReservationCheck(RaplaContext context) {
         super(context);
     }
 
-    public boolean check(Reservation reservation, Component sourceComponent) throws RaplaException {
-        Conflict[] conflicts =  getQuery().getConflicts(reservation);
+    public boolean check(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
         List<Conflict> conflictList = new ArrayList<Conflict>();
-        for ( Conflict conflict: conflicts)
+        for (Reservation reservation:reservations)
         {
-            if ( conflict.checkEnabled())
+            Conflict[] conflicts =  getQuery().getConflicts(reservation);
+            for ( Conflict conflict: conflicts)
             {
-                conflictList.add( conflict);
+                if ( conflict.checkEnabled())
+                {
+                    conflictList.add( conflict);
+                }
             }
         }
-        if (conflicts.length == 0) {
+        if (conflictList.size() == 0) {
             return true;
         }
         boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
