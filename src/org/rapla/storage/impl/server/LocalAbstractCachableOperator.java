@@ -2376,7 +2376,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		storeAndRemove(storeObjects, removeObjects, null);
 	}
 	
-	protected String encrypt(String encryption, String password) throws RaplaException {
+	public static String encrypt(String encryption, String password) throws RaplaException {
 		MessageDigest md;
 		try {
 			md = MessageDigest.getInstance(encryption);
