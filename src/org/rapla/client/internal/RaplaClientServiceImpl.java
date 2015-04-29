@@ -276,8 +276,8 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         editMenu.add( new RaplaSeparator("EDIT_BEGIN"));
         editMenu.add( new RaplaSeparator("EDIT_END"));
         
-        addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, DefaultReservationCheck.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK, ConflictReservationCheck.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, DefaultReservationCheck.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, ConflictReservationCheck.class);
         
         boolean webstartEnabled =getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.WEBSTART;
 

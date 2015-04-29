@@ -4,6 +4,7 @@ package org.rapla.client;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.AppointmentStatusFactory;
+import org.rapla.gui.EventCheck;
 import org.rapla.gui.ObjectMenuFactory;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.PluginOptionPanel;
@@ -63,6 +64,11 @@ public interface RaplaClientExtensionPoints
      *@see ReservationCheck 
      **/
     Class<ReservationCheck> RESERVATION_SAVE_CHECK = ReservationCheck.class;
+
+    /** you can add an interactive check when the user stores a reservation 
+     *@see ReservationCheck 
+     **/
+    Class<EventCheck> EVENT_SAVE_CHECK = EventCheck.class;
 
     /** add your own menu entries in the context menu of an object. To do this provide
       an ObjectMenuFactory under this entry.
