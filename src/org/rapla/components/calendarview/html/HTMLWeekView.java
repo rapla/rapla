@@ -281,22 +281,22 @@ public class HTMLWeekView extends AbstractHTMLView {
     {
     	if ( start == end)
     	{
-    		return 0;
+    		return 1;
     	}
     	SortedSet<Integer> tailSet = minuteBlock.tailSet( start);
-    	int col = 0;
+    	int row = 0;
     	for (Integer minute:tailSet)
     	{
     		if ( minute< end)
     		{
-    			col++;
+    			row++;
     		}
     		else
     		{
     			break;
     		}
     	}
-    	return col;
+    	return Math.max(1, row);
     }
 
 	public String getWeeknumber() {
