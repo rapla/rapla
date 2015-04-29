@@ -161,7 +161,7 @@
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/common/javax.inject.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/common/javax.inject.jar"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="eclipse-build"/>
 </classpath>
