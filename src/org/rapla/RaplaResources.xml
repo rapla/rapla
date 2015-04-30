@@ -5488,4 +5488,90 @@ See French text.
 		<text lang="pt">sem classificação</text>   
         <text lang="fi">ei järjestelyä</text>		
     </entry>
+    <entry key="sunday">
+        <text lang="en">sunday</text>
+        <text lang="de">Sonntag</text>
+    </entry>
+    <entry key="monday">
+        <text lang="en">monday</text>
+        <text lang="de">Montag</text>
+    </entry>
+    <entry key="tuesday">
+        <text lang="en">tuesday</text>
+        <text lang="de">Dienstag</text>
+    </entry>
+    <entry key="wednesday">
+        <text lang="en">wednesday</text>
+        <text lang="de">Mittwoch</text>
+    </entry>
+    <entry key="thursday">
+        <text lang="en">thursday</text>
+        <text lang="de">Donnerstag</text>
+    </entry>
+    <entry key="friday">
+        <text lang="en">friday</text>
+        <text lang="de">Freitag</text>
+    </entry>
+    <entry key="saturday">
+        <text lang="en">saturday</text>
+        <text lang="de">Samstag</text>
+    </entry>
+    <entry key="january">
+        <text lang="en">january</text>
+        <text lang="de">Januar</text>
+    </entry>
+    <entry key="february">
+        <text lang="en">february</text>
+        <text lang="de">Februar</text>
+    </entry>
+    <entry key="march">
+        <text lang="en">march</text>
+        <text lang="de">März</text>
+    </entry>
+    <entry key="april">
+        <text lang="en">april</text>
+        <text lang="de">April</text>
+    </entry>
+    <entry key="may">
+        <text lang="en">may</text>
+        <text lang="de">Mai</text>
+    </entry>
+    <entry key="june">
+        <text lang="en">june</text>
+        <text lang="de">Juni</text>
+    </entry>
+    <entry key="july">
+        <text lang="en">july</text>
+        <text lang="de">Juli</text>
+    </entry>
+    <entry key="august">
+        <text lang="en">august</text>
+        <text lang="de">August</text>
+    </entry>
+    <entry key="september">
+        <text lang="en">september</text>
+        <text lang="de">September</text>
+    </entry>
+    <entry key="october">
+        <text lang="en">october</text>
+        <text lang="de">Oktober</text>
+    </entry>
+    <entry key="november">
+        <text lang="en">november</text>
+        <text lang="de">November</text>
+    </entry>
+    <entry key="december">
+        <text lang="en">december</text>
+        <text lang="de">Dezember</text>
+    </entry>
+    <entry key="date.format">
+        <text lang="en">december</text>
+        <text lang="de">Dezember</text>
+    </entry>
+    <entry key="number.format">
+        <text lang="en">december</text>
+        <text lang="de">Dezember</text>
+    </entry>
+    
+    
 </resources>
