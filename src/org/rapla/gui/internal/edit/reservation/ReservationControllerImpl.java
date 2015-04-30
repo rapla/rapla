@@ -71,7 +71,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
      * in a map, to lookup if the reservation is already beeing edited.
      That prevents editing the same Reservation in different windows
      */
-    Collection<ReservationEditImpl> editWindowList = new ArrayList<ReservationEditImpl>();
+    Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
     AppointmentFormater appointmentFormater;
     
     @Inject
@@ -83,7 +83,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     }
 
     void addReservationEdit(ReservationEdit editWindow) {
-        editWindowList.add((ReservationEditImpl)editWindow);
+        editWindowList.add(editWindow);
     }
 
     void removeReservationEdit(ReservationEdit editWindow) {
@@ -111,9 +111,9 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         throws RaplaException {
         // Lookup if the reservation is already beeing edited
         ReservationEditImpl c = null;
-        Iterator<ReservationEditImpl> it = editWindowList.iterator();
+        Iterator<ReservationEdit> it = editWindowList.iterator();
         while (it.hasNext()) {
-            c = it.next();
+            c = (ReservationEditImpl)it.next();
             if (c.getReservation().isIdentical(reservation))
                 break;
             else
@@ -734,9 +734,10 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     public void dataChanged(ModificationEvent evt) throws RaplaException {
     	
     	// we need to clone the list, because it could be modified during edit
-        ArrayList<ReservationEditImpl> clone = new ArrayList<ReservationEditImpl>(editWindowList);
-        for ( ReservationEditImpl c:clone)
+        ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
+        for ( ReservationEdit edit:clone)
         {
+            ReservationEditImpl c = (ReservationEditImpl)edit;
             c.refresh(evt);
             TimeInterval invalidateInterval = evt.getInvalidateInterval();
 			Reservation original = c.getOriginal();
