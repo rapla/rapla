@@ -187,7 +187,7 @@ public abstract class RaplaBuilder
 
         }
      
-        
+        allReservationsForAllocatables.clear();
         if ( startDate != null && !allocatables.isEmpty()) {
             Reservation[] events = getClientFacade().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate);
             List<Reservation> reservationsForAllocatables = Arrays.asList(events);
