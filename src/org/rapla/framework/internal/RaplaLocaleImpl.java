@@ -293,7 +293,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return result;
     }
 
-    
     public String formatMonth( Date date ) {
         TimeZone timeZone = getTimeZone();
         Locale locale = getLocale();
@@ -301,32 +300,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         format.setTimeZone( timeZone );
         return format.format( date );
     }
-
-
-    
-//    public String formatMonth(Date date)
-//    {    
-//        int month = DateTools.toDate( date.getTime()).month;
-//        String result;
-//        switch (month)
-//        {
-//            case 0: result= "january";break;
-//            case 1: result= "february";break;
-//            case 2: result= "march";break;
-//            case 3: result= "april";break;
-//            case 4: result= "may";break;
-//            case 5: result= "june";break;
-//            case 6: result= "july";break;
-//            case 7: result= "august";break;
-//            case 8: result= "september";break;
-//            case 9: result= "october";break;
-//            case 10: result= "november";break;
-//            case 11: result= "december";break;
-//            default: throw new IllegalArgumentException("Month " + month + " not supported.");
-//        }
-//        return result;
-//    }
-
     
 
 

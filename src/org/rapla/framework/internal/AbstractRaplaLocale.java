@@ -3,6 +3,7 @@ package org.rapla.framework.internal;
 import java.util.Date;
 
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 
@@ -113,5 +114,75 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         return string;
     }
 
+      public String formatMonth(Date date)
+      {    
+          int month = DateTools.toDate( date.getTime()).month;
+          String result;
+          switch (month)
+          {
+              case 1: result= "january";break;
+              case 2: result= "february";break;
+              case 3: result= "march";break;
+              case 4: result= "april";break;
+              case 5: result= "may";break;
+              case 6: result= "june";break;
+              case 7: result= "july";break;
+              case 8: result= "august";break;
+              case 9: result= "september";break;
+              case 10: result= "october";break;
+              case 11: result= "november";break;
+              case 12: result= "december";break;
+              default: throw new IllegalArgumentException("Month " + month + " not supported.");
+          }
+          return result;
+      }
 
+    
+    public String formatDateMonth(Date date ) {
+        DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
+        return date2.month + "/" + date2.day;
+    }
+  
+    @Override
+    public String formatDayOfWeekDateMonth(Date date)
+    {
+        int weekday = DateTools.getWeekday( date);
+        String datePart = getWeekdayName(weekday).substring(0,2);
+        String dateOfMonthPart = formatDateMonth( date  );
+        return datePart + " " + dateOfMonthPart ;
+    }
+
+    @Override
+    public boolean isAmPmFormat()
+    {
+        return false;
+    }
+
+    @Override
+    public String getWeekdayName(int weekday)
+    {
+        String result;
+        switch (weekday)
+          {
+              case 1: result= "sunday";break;
+              case 2: result= "monday";break;
+              case 3: result= "tuesday";break;
+              case 4: result= "wednesday";break;
+              case 5: result= "thursday";break;
+              case 6: result= "friday";break;
+              case 7: result= "saturday";break;
+              default: throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
+          }
+        return result;
+    }
+
+
+    @Override
+    public String formatMonthYear(Date date)
+    {
+        int year = DateTools.toDate( date.getTime()).year;
+        String result = formatMonth( date ) + " " + year;
+        return result;
+    }
+    
 }

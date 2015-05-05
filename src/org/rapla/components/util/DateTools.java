@@ -279,7 +279,17 @@ public abstract class DateTools
         return date2.year;
     }
 
+    public static int getMonth(Date date) {
+        DateWithoutTimezone date2 = toDate( date.getTime());
+        return date2.month;
+    }
 
+    public static int getDayOfMonth(Date date) {
+        DateWithoutTimezone date2 = toDate( date.getTime());
+        int result = date2.day;
+        return result;
+    }
+    
     public static int getDayOfWeekInMonth(Date date) 
     {
     	DateWithoutTimezone date2 = toDate( date.getTime());
@@ -295,14 +305,7 @@ public abstract class DateTools
 //		long daysSince1970 = millis >= 0 ? millis/ MILLISECONDS_PER_DAY : ((millis + MILLISECONDS_PER_DAY - 1)/ MILLISECONDS_PER_DAY  + 1) ;
 //        int weekday = daysSince1970 + 4;	
 //    	
-//    }
-
-    
-    public static int getDayOfMonth(Date date) {
-    	DateWithoutTimezone date2 = toDate( date.getTime());
-    	int result = date2.day;
-    	return result;
-    }
+//    }    
 
 //    /** uses the calendar-object for date comparison.
 //    * Use this for non GMT Dates*/
