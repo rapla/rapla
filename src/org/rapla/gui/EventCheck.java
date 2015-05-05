@@ -10,5 +10,5 @@ public interface EventCheck
 {
     /** @param sourceComponent 
      * @return true if the reservation check is successful and false if the save dialog should be aborted*/
-    boolean check(Collection<Reservation> reservation, Object sourceComponent) throws RaplaException;
+    boolean check(Collection<Reservation> reservation, PopupContext sourceComponent) throws RaplaException;
 }

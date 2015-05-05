@@ -858,7 +858,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         Date from = new Date( appointmentBlock.getStart());
     	if ( newStart.equals(from))
             return;
-        getLogger().debug("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
+        getLogger().info("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
         resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 

@@ -32,8 +32,10 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EventCheck;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaTree;
@@ -44,7 +46,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         super(context);
     }
 
-    public boolean check(Collection<Reservation> reservations, Object sourceComponent) throws RaplaException {
+    public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         List<Conflict> conflictList = new ArrayList<Conflict>();
         for (Reservation reservation:reservations)
         {
@@ -69,7 +71,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         JComponent content = getConflictPanel(conflictList);
         DialogUI dialog = DialogUI.create(
                 getContext()
-                ,(Component)sourceComponent
+                ,((SwingPopupContext)sourceComponent).getParent()
                     ,true
                     ,content
                     ,new String[] {

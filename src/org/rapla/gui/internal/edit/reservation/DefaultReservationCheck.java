@@ -26,7 +26,9 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EventCheck;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 
 public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
@@ -38,7 +40,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         this.appointmentFormater = appointmentFormater;
     }
 
-    public boolean check(Collection<Reservation> reservations, Object sourceComponent) throws RaplaException {
+    public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         try
         {
             JPanel warningPanel = new JPanel();
@@ -82,7 +84,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
             if (  warningPanel.getComponentCount() > 0) {
                 DialogUI dialog = DialogUI.create(
                         getContext()
-                        ,(Component)sourceComponent
+                        ,((SwingPopupContext)sourceComponent).getParent()
                         ,true
                         ,warningPanel
                         ,new String[] {
