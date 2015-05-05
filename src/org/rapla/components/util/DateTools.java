@@ -359,6 +359,15 @@ public abstract class DateTools
 	   long millis = diff * MILLISECONDS_PER_DAY;
 	   return millis;
    }
+
+   
+   public static Date toDateTime(Date date, Date time )
+   {
+       long millisTime = time.getTime() - DateTools.cutDate( time.getTime());
+       Date result = new Date( DateTools.cutDate(date.getTime()) + millisTime);
+       return result;
+   }
+
    
    public static class DateWithoutTimezone
    {
@@ -380,6 +389,11 @@ public abstract class DateTools
 	   public String toString()
 	   {
 		   return hour+":" +minute + ":" + second + "." + milliseconds;
+	   }
+	   
+	   public long getMilliseconds()
+	   {
+	       return hour * MILLISECONDS_PER_HOUR + minute * MILLISECONDS_PER_MINUTE + second * 1000 + milliseconds;
 	   }
    }
    

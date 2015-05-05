@@ -44,6 +44,8 @@ import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
+import org.rapla.gui.internal.SwingPopupContext;
 
 
 public class DialogUI extends JDialog
@@ -335,6 +337,7 @@ public class DialogUI extends JDialog
         return bClosed;
     }
 
+    
     public void start(Point p) {
         //Validate frames that have preset sizes
         //Pack frames that have useful preferred size info, e.g. from their layout

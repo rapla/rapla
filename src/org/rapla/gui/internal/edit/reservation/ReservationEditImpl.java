@@ -13,6 +13,8 @@
 package org.rapla.gui.internal.edit.reservation;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -61,6 +63,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.AppointmentListener;
 import org.rapla.gui.AppointmentStatusFactory;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.toolkit.DialogUI;
@@ -341,7 +344,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         allocatableEdit.dataChanged(evt);
     }
 
-    void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException  {
+    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException  {
     	ModificationModule mod = getModification();
         boolean bNew = false;
         if ( reservation.isReadOnly()) {
@@ -381,7 +384,32 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         getPrivateReservationController().addReservationEdit(this);
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
+        deleteButton.setEnabled( canAdmin( reservation ));
+        if ( !canModify( reservation) ) 
+        {
+            disableComponentAndAllChildren(appointmentEdit.getComponent());
+            disableComponentAndAllChildren(reservationInfo.getComponent());
+        }
     }
+
+    @Override
+    public void toFront()
+    {
+        frame.requestFocus();
+        frame.toFront();
+    }
+    
+    static void disableComponentAndAllChildren(Container component) {
+        component.setEnabled( false );
+        Component[] components = component.getComponents();
+        for ( int i=0; i< components.length; i++)
+        {
+            if ( components[i] instanceof Container) {
+                disableComponentAndAllChildren( (Container) components[i] );
+            }
+        }
+    }
+
 
     @Override
     public Reservation getReservation() {
@@ -568,7 +596,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         	
             bSaving = true;
             
-            ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(Collections.singleton(mutableReservation), original != null ? Collections.singleton( original) : null, frame);
+            PopupContext popupContext = createPopupContext(frame, null);
+            ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(Collections.singleton(mutableReservation), original != null ? Collections.singleton( original) : null, popupContext);
             if (getClientFacade().getCommandHistory().storeAndExecute(saveCommand))
             {
                 setSaved(true);

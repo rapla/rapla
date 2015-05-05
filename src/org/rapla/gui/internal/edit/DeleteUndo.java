@@ -9,23 +9,27 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements CommandUndo<RaplaException> {
+public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaException> {
 	// FIXME Delete of categories in multiple levels can cause the lower levels not to be deleted if it contains categories higher in rank but same hierarchy that are also deleted
 	// FIXME Needs a check last changed
 	private List<T> entities;
 	Map<Category,Category> removedCategories = new LinkedHashMap<Category, Category>();
-	public DeleteUndo(RaplaContext context,Collection<T> entities)  
+	ClientFacade facade;
+	I18nBundle i18n;
+	public DeleteUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> entities)  
 	{
-	    super(context);
+	    this.facade = facade;
+	    this.i18n = i18n;
 		this.entities = new ArrayList<T>();
 		for ( T entity: entities)
 		{
@@ -40,6 +44,16 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 			}
 		}
 	}
+	
+	public ClientFacade getFacade()
+    {
+        return facade;
+    }
+	
+	public I18nBundle getI18n()
+    {
+        return i18n;
+    }
 	
 	public boolean execute() throws RaplaException 
 	{
@@ -67,7 +81,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	    	    }
 	    	    else
 	    	    {
-		            parentClone = getModification().edit( parent );
+		            parentClone = getFacade().edit( parent );
 		            toStore.add( parentClone);
 	    	    }
 	    	    if ( parentClone != null)
@@ -84,7 +98,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		Entity<?>[] arrayStore = toStore.toArray( Category.ENTITY_ARRAY);
 		@SuppressWarnings("unchecked")
 		Entity<T>[] arrayRemove = toRemove.toArray(new Entity[]{});
-		getModification().storeAndRemove(arrayStore,arrayRemove);
+		getFacade().storeAndRemove(arrayStore,arrayRemove);
 		return true;
 	}
 	
@@ -101,7 +115,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
             // we change the owner of deleted entities because we can't create new objects with owners others than the current user
             if ( mutableEntity instanceof Ownable)
             {
-                User user = getUser();
+                User user = getFacade().getUser();
                 ((Ownable) mutableEntity).setOwner( user);
             }
 			toStore.add( mutableEntity);
@@ -123,7 +137,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
     	     }
     	     else
     	     {
-	             parentClone = getModification().edit( parent );
+	             parentClone = getFacade().edit( parent );
 		 	     Entity castedParent1 = parentClone;
 	             @SuppressWarnings({ "cast", "unchecked" })
 	             Entity<T> castedParent = (Entity<T>) castedParent1;
@@ -139,7 +153,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 		// Todo generate undo for category store
 		@SuppressWarnings("unchecked")
         Entity<T>[] array = toStore.toArray(new Entity[]{});
-		getModification().storeObjects( array);
+		getFacade().storeObjects( array);
 		return true;
 	}
 	
@@ -148,11 +162,11 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
      {
 	     Iterator<T> iterator = entities.iterator();
 	     StringBuffer buf = new StringBuffer();
-	     buf.append(getString("delete") );
+	     buf.append(getI18n().getString("delete") );
 	     if ( iterator.hasNext())
 	     {
 	         RaplaType raplaType = iterator.next().getRaplaType();
-	         buf.append( " " +  getString(raplaType.getLocalName()));
+	         buf.append( " " +  getI18n().getString(raplaType.getLocalName()));
 	     }
          return buf.toString();
      }   

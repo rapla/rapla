@@ -37,7 +37,6 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -55,8 +54,10 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
+import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -1371,6 +1372,73 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		return castedResult;
 	}
+	
+	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
+	    {
+	        List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
+	        Collections.sort( sortedReservations, new ReservationStartComparator(i18n.getLocale()));
+	        List<Reservation> copies = new ArrayList<Reservation>();
+	        Date firstStart = null;
+	        for (Reservation reservation: sortedReservations) {
+	            if ( firstStart == null )
+	            {
+	                firstStart = ReservationStartComparator.getStart( reservation);
+	            }
+	            Reservation copy = copy(reservation, beginn, firstStart, keepTime);
+	            copies.add( copy);
+	        }
+	        return copies;
+	    }
+	    
+	    public  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime) throws RaplaException {
+	        Reservation r =  clone( reservation);
+	        Appointment[] appointments = r.getAppointments();
+	    
+	        for ( Appointment app :appointments) {
+	            Repeating repeating = app.getRepeating();
+	            
+	            Date oldStart = app.getStart();
+	            Date newStart ;
+	            // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
+	            if ( keepTime)
+	            {
+	                long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
+	                Date destWithOffset = new Date(destStart.getTime() + offset );
+	                newStart = DateTools.toDateTime(  destWithOffset  , oldStart );
+	            }
+	            else
+	            {
+	                long offset = destStart.getTime() - firstStart.getTime();
+	                newStart = new Date(oldStart.getTime() + offset );
+	            }
+	            app.move( newStart) ;
+	            if (repeating != null)
+	            {
+	                Date[] exceptions = repeating.getExceptions();
+	                repeating.clearExceptions();
+	                for (Date exc: exceptions)
+	                {
+	                    long days = DateTools.countDays(oldStart, exc);
+	                    Date newDate = DateTools.addDays(newStart, days);
+	                    repeating.addException( newDate);
+	                }
+	                
+	                if ( !repeating.isFixedNumber())
+	                {
+	                    Date oldEnd = repeating.getEnd();
+	                    if ( oldEnd != null)
+	                    {
+	                        // If we don't have and ending destination, just make the repeating to the original length
+	                        long days = DateTools.countDays(oldStart, oldEnd);
+	                        Date end = DateTools.addDays(newStart, days);
+	                        repeating.setEnd( end);
+	                    }
+	                }       
+	            }
+	        }
+	        return r;
+	    }
+
 
 
 	@SuppressWarnings("unchecked")

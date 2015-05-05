@@ -1,7 +1,5 @@
 package org.rapla.gui;
 
-import java.awt.Component;
-import java.awt.Point;
 import java.util.Collection;
 import java.util.Date;
 
@@ -31,20 +29,20 @@ public interface ReservationController
 {
     ReservationEdit edit( Reservation reservation ) throws RaplaException;
     ReservationEdit edit( AppointmentBlock appointmentBlock) throws RaplaException;
-    boolean save(Reservation reservation,Component sourceComponent) throws RaplaException;
-    boolean save(Collection<Reservation> reservation,Component sourceComponent) throws RaplaException;
+    boolean save(Reservation reservation,PopupContext context) throws RaplaException;
+    boolean save(Collection<Reservation> reservation,PopupContext context) throws RaplaException;
 
     public ReservationEdit[] getEditWindows();
 
     /** copies an appointment without interaction */
     Appointment copyAppointment( Appointment appointment ) throws RaplaException;
 
-    void deleteAppointment( AppointmentBlock appointmentBlock, Component sourceComponent, Point point )  throws RaplaException;
+    void deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context )  throws RaplaException;
 
-    Appointment copyAppointment( AppointmentBlock appointmentBlock, Component sourceComponent, Point point,Collection<Allocatable> contextAllocatables ) throws RaplaException;
-    Appointment cutAppointment(AppointmentBlock appointmentBlock, Component parent, Point point, Collection<Allocatable> contextAllocatables) throws RaplaException;
+    Appointment copyAppointment( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
+    Appointment cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException;
 
-    void pasteAppointment( Date start, Component sourceComponent, Point point, boolean asNewReservation, boolean keepTime ) throws RaplaException;
+    void pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime ) throws RaplaException;
 
     void copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException;
     
@@ -52,17 +50,16 @@ public interface ReservationController
 
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    void moveAppointment( AppointmentBlock appointmentBlock,  Date newStart, Component sourceComponent, Point point, boolean keepTime ) throws RaplaException;
+    void moveAppointment( AppointmentBlock appointmentBlock,  Date newStart, PopupContext context, boolean keepTime ) throws RaplaException;
 
   
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    void resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, Component sourceComponent, Point p, boolean keepTime ) throws RaplaException;
+    void resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, PopupContext context, boolean keepTime ) throws RaplaException;
     
-	void exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, Component sourceComponent, Point p) throws RaplaException;
+	void exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, PopupContext context) throws RaplaException;
 	
 	boolean isAppointmentOnClipboard();
 	
-	void deleteBlocks(Collection<AppointmentBlock> blockList, Component parent,Point point) throws RaplaException;
-   
+	void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException;
 }

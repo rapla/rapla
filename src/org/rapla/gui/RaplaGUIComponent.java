@@ -14,6 +14,7 @@ package org.rapla.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -48,6 +49,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
@@ -83,6 +85,23 @@ public class RaplaGUIComponent extends RaplaComponent
 		Logger logger = getLogger();
 		showException(ex, owner, context, logger);
 	}
+	
+
+	public void showError(Exception ex,PopupContext context) {
+	    Component owner= null;
+	    if ( context instanceof SwingPopupContext)
+	    {
+	        owner = ((SwingPopupContext) context).getParent();
+	    }
+	    showException(ex, owner);
+	}
+
+	
+	protected PopupContext createPopupContext(Component parent, Point p)
+    {
+        return new SwingPopupContext(parent, p);
+    }
+
 	
 	static public void showException(Throwable ex, Component owner,
 			RaplaContext context, Logger logger) {

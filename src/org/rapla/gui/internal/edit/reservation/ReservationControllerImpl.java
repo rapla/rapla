@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit.reservation;
 
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Point;
-import java.awt.datatransfer.StringSelection;
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -33,14 +28,16 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
-import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -49,13 +46,15 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.gui.EventCheck;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationCheck;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.internal.common.RaplaClipboard;
@@ -64,9 +63,8 @@ import org.rapla.gui.internal.edit.DeleteUndo;
 import org.rapla.gui.internal.edit.SaveUndo;
 import org.rapla.gui.internal.view.HTMLInfo.Row;
 import org.rapla.gui.internal.view.ReservationInfoUI;
-import org.rapla.gui.toolkit.DialogUI;
 
-public class ReservationControllerImpl extends RaplaGUIComponent implements ModificationListener, ReservationController
+public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
     /** We store all open ReservationEditWindows with their reservationId
      * in a map, to lookup if the reservation is already beeing edited.
@@ -74,13 +72,45 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
      */
     Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
     AppointmentFormater appointmentFormater;
-    
+    ReservationEditFactory editProvider;
+    ClientFacade facade;
+    private RaplaLocale raplaLocale;
+    private Logger logger;
+    private I18nBundle i18n;
+    private CalendarSelectionModel calendarModel;
+    private RaplaClipboard clipboard;
     @Inject
-    public ReservationControllerImpl(RaplaContext sm, AppointmentFormater appointmentFormater)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
-        super(sm);
+        this.facade = facade;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
+        this.i18n = i18n;
+        this.calendarModel = calendarModel;
         this.appointmentFormater=appointmentFormater; 
-        getUpdateModule().addModificationListener(this);
+        this.editProvider = editProvider;
+        this.clipboard = clipboard;
+        facade.addModificationListener(this);
+    }
+    
+    protected ClientFacade getFacade()
+    {
+        return facade;
+    }
+    
+    protected RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
+    }
+    
+    protected Logger getLogger()
+    {
+        return logger;
+    }
+    
+    protected I18nBundle getI18n()
+    {
+        return i18n;
     }
 
     void addReservationEdit(ReservationEdit editWindow) {
@@ -103,15 +133,10 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         return  editWindowList.toArray( new ReservationEdit[] {});
     }
 
-    private ReservationEditImpl newEditWindow() throws RaplaException {
-        ReservationEditImpl c = new ReservationEditImpl(getContext());
-        return c;
-    }
-
     private ReservationEdit startEdit(Reservation reservation,AppointmentBlock appointmentBlock)
         throws RaplaException {
         // Lookup if the reservation is already beeing edited
-        ReservationEditImpl c = null;
+        ReservationEdit c = null;
         Iterator<ReservationEdit> it = editWindowList.iterator();
         while (it.hasNext()) {
             c = (ReservationEditImpl)it.next();
@@ -122,40 +147,21 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         }
 
         if (c != null) {
-            c.frame.requestFocus();
-            c.frame.toFront();
+            c.toFront();
         } else {
-            c = newEditWindow();
-            
+            c = editProvider.create(reservation, appointmentBlock);
             // only is allowed to exchange allocations
-            c.editReservation(reservation, appointmentBlock);
-            c.deleteButton.setEnabled( canAdmin( reservation ));
-            if ( !canModify( reservation) ) 
-            {
-                disableComponentAndAllChildren(c.appointmentEdit.getComponent());
-                disableComponentAndAllChildren(c.reservationInfo.getComponent());
-            }
         }
         return c;
     }
 
-    static void disableComponentAndAllChildren(Container component) {
-        component.setEnabled( false );
-        Component[] components = component.getComponents();
-        for ( int i=0; i< components.length; i++)
-        {
-            if ( components[i] instanceof Container) {
-                disableComponentAndAllChildren( (Container) components[i] );
-            }
-        }
-    }
+    
 
 	public void deleteBlocks(Collection<AppointmentBlock> blockList,
-			Component parent, Point point) throws RaplaException 
+			PopupContext context) throws RaplaException 
 	{
-	    DialogUI dlg = getInfoFactory().createDeleteDialog(blockList.toArray(), parent);
-        dlg.start();
-        if (dlg.getSelectedIndex() != 0)
+	    boolean deleted = showDeleteDialog(context,blockList.toArray());
+        if ( !deleted)
             return;
         
 		Set<Appointment> appointmentsToRemove = new LinkedHashSet<Appointment>();
@@ -220,11 +226,60 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		}
 		
 	    DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
-	    CommandHistory commanHistory = getModification().getCommandHistory();
+	    CommandHistory commanHistory = getFacade().getCommandHistory();
         commanHistory.storeAndExecute( command);
 	}
 
-	class DeleteBlocksCommand extends DeleteUndo<Reservation>
+	abstract protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException;
+    
+	abstract protected PopupContext getPopupContext();
+    
+    abstract protected void showException(Exception ex,PopupContext sourceComponent);
+
+    abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<Icon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException;
+
+    abstract protected Collection<EventCheck> getEventChecks() throws RaplaException;
+/*
+    protected boolean showDeleteDialog(PopupContext context, Object[] deletables)
+    {
+        InfoFactory infoFactory = getService(InfoFactory.class);
+        DialogUI dlg =infoFactory.createDeleteDialog(deletables, context);
+        dlg.start();
+        int result = dlg.getSelectedIndex();
+        return result == 0;
+    }
+
+    private int showDialog(String action, PopupContext context, List<String> optionList, List<Icon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException
+    {
+        DialogUI dialog = DialogUI.create(
+                getContext()
+                ,context
+                ,true
+                ,title
+                ,content
+                ,optionList.toArray(new String[] {})
+        );
+        dialog.setIcon(dialogIcon);
+        for ( int i=0;i< optionList.size();i++)
+        {
+            dialog.getButton(i).setIcon(iconList.get( i));
+        }
+        
+        dialog.start(context);
+        int index = dialog.getSelectedIndex();
+        return index;
+    }
+    
+    protected Collection<EventCheck> getEventChecks()
+    {
+        Collection<EventCheck> checkers = getContainer().lookupServicesFor(EventCheck.class);
+        return checkers;
+    }
+*/
+
+   
+    
+    class DeleteBlocksCommand extends DeleteUndo<Reservation>
 	{
 	    Set<Reservation> reservationsToRemove;
 	    Set<Appointment> appointmentsToRemove; 
@@ -234,7 +289,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	    private Map<Appointment,Reservation> parentReservations = new HashMap<Appointment,Reservation>();
 	      
 	    public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) {
-	        super( ReservationControllerImpl.this.getContext(),reservationsToRemove);
+	        super( ReservationControllerImpl.this.getFacade(),ReservationControllerImpl.this.getI18n(),reservationsToRemove);
 	        this.reservationsToRemove = reservationsToRemove;
 	        this.appointmentsToRemove = appointmentsToRemove;
 	        this.exceptionsToAdd = exceptionsToAdd;
@@ -254,7 +309,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     	        Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
-                    mutableReservation = getModification().edit( reservation);
+                    mutableReservation = getFacade().edit( reservation);
                     toUpdate.put( reservation, mutableReservation);
                 }
                 Allocatable[] restrictedAllocatables = mutableReservation.getRestrictedAllocatables(appointment);
@@ -271,7 +326,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
                 Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
-                    mutableReservation = getModification().edit( reservation);
+                    mutableReservation = getFacade().edit( reservation);
                     toUpdate.put( reservation, mutableReservation);
                 }
                 Appointment found = mutableReservation.findAppointment( appointment);
@@ -290,7 +345,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             }
     	    Reservation[] updateArray = toUpdate.values().toArray(Reservation.RESERVATION_ARRAY);
     		Reservation[] removeArray = reservationsToRemove.toArray( Reservation.RESERVATION_ARRAY);
-    		getModification().storeAndRemove(updateArray, removeArray);
+    		getFacade().storeAndRemove(updateArray, removeArray);
     		return true;
         }
 	    
@@ -306,7 +361,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
                 Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
-                    mutableReservation = getModification().edit( reservation);
+                    mutableReservation = getFacade().edit( reservation);
                     toUpdate.put( reservation, mutableReservation);
                 }
                 mutableReservation.addAppointment( appointment);
@@ -319,7 +374,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
                 Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
-                    mutableReservation = getModification().edit( reservation);
+                    mutableReservation = getFacade().edit( reservation);
                     toUpdate.put( reservation, mutableReservation);
                 }
                 Appointment found = mutableReservation.findAppointment( appointment);
@@ -339,7 +394,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
           
             Reservation[] updateArray = toUpdate.values().toArray(Reservation.RESERVATION_ARRAY);
             Reservation[] removeArray = Reservation.RESERVATION_ARRAY;
-            getModification().storeAndRemove(updateArray,removeArray);
+            getFacade().storeAndRemove(updateArray,removeArray);
             return true;
 	    }
 	    
@@ -354,13 +409,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	    
 	    public String getCommandoName() 
 	    {
-	        return getString(isCut() ? "cut" :"delete") + " " + getString("appointments");
+	        return getI18n().getString(isCut() ? "cut" :"delete") + " " + getI18n().getString("appointments");
 	    }
 	}
 
-    public void deleteAppointment(AppointmentBlock appointmentBlock, Component sourceComponent, Point point) throws RaplaException {
+    public void deleteAppointment(AppointmentBlock appointmentBlock, PopupContext context) throws RaplaException {
     	boolean includeEvent = true;
-        final DialogAction dialogResult = showDialog(appointmentBlock, "delete", includeEvent, sourceComponent, point);
+        final DialogAction dialogResult = showDialog(appointmentBlock, "delete", includeEvent, context);
 		deleteAppointment(appointmentBlock, dialogResult, false);
     }
 
@@ -404,18 +459,19 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         {
             public String getCommandoName() {
                 String name;
+                I18nBundle i18n = getI18n();
                 if (dialogResult == DialogAction.SINGLE)
-                    name =getI18n().format("single_appointment.format",startDate);
+                    name =i18n.format("single_appointment.format",startDate);
                 else if (dialogResult == DialogAction.EVENT)
-                    name = getString("reservation");
+                    name = i18n.getString("reservation");
                 else if  (dialogResult == DialogAction.SERIE)
-                    name = getString("serie");
+                    name = i18n.getString("serie");
                 else
-                    name = getString("appointment");
-                return getString(isCut ? "cut" :"delete") + " " + name;
+                    name = i18n.getString("appointment");
+                return i18n.getString(isCut ? "cut" :"delete") + " " + name;
             }
         };
-        CommandHistory commandHistory = getModification().getCommandHistory();
+        CommandHistory commandHistory = getFacade().getCommandHistory();
         commandHistory.storeAndExecute( command );
     }
     
@@ -460,7 +516,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     }
     
     public Appointment copyAppointment(Appointment appointment) throws RaplaException {
-        return getModification().clone(appointment);
+        return getFacade().clone(appointment);
     }
 
     enum DialogAction
@@ -474,8 +530,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     private DialogAction showDialog(AppointmentBlock appointmentBlock
             ,String action
             ,boolean includeEvent
-            ,Component sourceComponent
-            ,Point point
+            ,PopupContext context
     		) throws RaplaException
     {
     	Appointment appointment = appointmentBlock.getAppointment();
@@ -489,54 +544,42 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         
         if ( reservation.getAppointments().length <=1 ||  includeEvent)
         {
-        	optionList.add(getString("reservation"));
-        	iconList.add(getIcon("icon.edit_window_small"));
+            optionList.add(i18n.getString("reservation"));
+        	iconList.add(i18n.getIcon("icon.edit_window_small"));
         	actionList.add(DialogAction.EVENT);
         }
         if ( appointment.getRepeating() != null && reservation.getAppointments().length > 1 )
         {
-        	String shortSummary = appointmentFormater.getShortSummary(appointment);
-        	optionList.add(getString("serie") + ": " + shortSummary);
-        	iconList.add(getIcon("icon.repeating"));
+            String shortSummary = appointmentFormater.getShortSummary(appointment);
+        	optionList.add(i18n.getString("serie") + ": " + shortSummary);
+        	iconList.add(i18n.getIcon("icon.repeating"));
         	actionList.add(DialogAction.SERIE);
         }
         if ( (appointment.getRepeating() != null  && isNotEmptyWithExceptions( appointment, Collections.singletonList(from)))|| reservation.getAppointments().length > 1)
         {
-        	optionList.add(getI18n().format("single_appointment.format",dateString));
-        	iconList.add(getIcon("icon.single"));
+        	optionList.add(i18n.format("single_appointment.format",dateString));
+        	iconList.add(i18n.getIcon("icon.single"));
         	actionList.add( DialogAction.SINGLE);
         }
         if (optionList.size() > 1) {
           
-			DialogUI dialog = DialogUI.create(
-                    getContext()
-                    ,sourceComponent
-                    ,true
-                    ,getString(action)
-                    ,getString(action+ "_appointment.format")
-                    ,optionList.toArray(new String[] {})
-            );
-            dialog.setIcon(getIcon("icon.question"));
-            for ( int i=0;i< optionList.size();i++)
-            {
-            	dialog.getButton(i).setIcon(iconList.get( i));
-            }
+            String title = i18n.getString(action);
+            String content = i18n.getString(action+ "_appointment.format");
+            ImageIcon dialogIcon = i18n.getIcon("icon.question");
             
-            dialog.start(point);
-            int index = dialog.getSelectedIndex();
-            if ( index < 0)
-            {
-            	return DialogAction.CANCEL;
-            }
+			int index = showDialog(action, context, optionList, iconList, title, content, dialogIcon);
+			if ( index < 0)
+			{
+			    return DialogAction.CANCEL;
+			}
             return actionList.get(index);
         }
         else
         {
         	if ( action.equals("delete"))
         	{
-        		 DialogUI dlg = getInfoFactory().createDeleteDialog( new Object[]{ appointment.getReservation()}, sourceComponent);
-        		 dlg.start();
-        		 if (dlg.getSelectedIndex() != 0)
+        		 boolean deleted = showDeleteDialog(context, new Object[] {appointment.getReservation()});
+        		 if ( !deleted)
         			 return DialogAction.CANCEL;
         	       
         	}
@@ -547,28 +590,27 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         }
         return DialogAction.EVENT;
     }
-   
+
+
 
     public Appointment copyAppointment(
             AppointmentBlock appointmentBlock
-            ,Component sourceComponent
-            ,Point point
+            ,PopupContext context
             ,Collection<Allocatable> contextAllocatables
             )
                     throws RaplaException
     {
-        return copyCutAppointment(appointmentBlock, sourceComponent, point, contextAllocatables,"copy", false);
+        return copyCutAppointment(appointmentBlock, context, contextAllocatables,"copy", false);
     }
 
     public Appointment cutAppointment(
             AppointmentBlock appointmentBlock
-            ,Component sourceComponent
-            ,Point point
+            ,PopupContext context
             ,Collection<Allocatable> contextAllocatables
             )
                     throws RaplaException
     {
-        return copyCutAppointment(appointmentBlock, sourceComponent, point, contextAllocatables, "cut", false);
+        return copyCutAppointment(appointmentBlock, context, contextAllocatables, "cut", false);
     }
     
     public void copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException
@@ -576,7 +618,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         List<Reservation> clones = new ArrayList<Reservation>();
         for (Reservation r:reservations)
         {
-            Reservation copyReservation = getModification().clone(r);
+            Reservation copyReservation = getFacade().clone(r);
             clones.add( copyReservation);
         }
         getClipboard().setReservation( clones, contextAllocatables);
@@ -587,7 +629,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         List<Reservation> clones = new ArrayList<Reservation>();
         for (Reservation r:reservations)
         {
-            Reservation copyReservation = getModification().clone(r);
+            Reservation copyReservation = getFacade().clone(r);
             clones.add( copyReservation);
         }
         getClipboard().setReservation( clones, contextAllocatables);
@@ -597,18 +639,17 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd)
         {
             public String getCommandoName() {
-                return getString("cut");
+                return getI18n().getString("cut");
             }
         };
-        CommandHistory commandHistory = getModification().getCommandHistory();
+        CommandHistory commandHistory = getFacade().getCommandHistory();
         commandHistory.storeAndExecute( command );
     }
 
 
     private Appointment copyCutAppointment(
     		                           AppointmentBlock appointmentBlock
-                                       ,Component sourceComponent
-                                       ,Point point
+                                       ,PopupContext context
                                        ,Collection<Allocatable> contextAllocatables
                                        ,String action
                                        ,boolean skipDialog
@@ -625,14 +666,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         }
         else
         {
-            dialogResult = showDialog(appointmentBlock, action, true, sourceComponent, point);
+            dialogResult = showDialog(appointmentBlock, action, true, context);
         }
         Reservation sourceReservation = appointment.getReservation();
        
         // copy info text to system clipboard
         {
 	        StringBuffer buf = new StringBuffer();
-	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getContext());
+	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(),getRaplaLocale(), getFacade(),logger,appointmentFormater);
 	    	boolean excludeAdditionalInfos = false;
 	    
 			List<Row> attributes = reservationInfoUI.getAttributes(sourceReservation, null, null, excludeAdditionalInfos);
@@ -641,20 +682,8 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 				buf.append( row.getField());
 			}
 			String string = buf.toString();
+			raplaClipboard.copyToSystemClipboard( string);
 			
-			try
-			{
-				final IOInterface service = getIOService();
-				
-			    if (service != null) {
-			    	StringSelection transferable = new StringSelection(string);
-					
-					service.setContents(transferable, null);
-			    } 
-			}
-			catch (AccessControlException ex)
-			{
-			}
         }
 	        
         Allocatable[] restrictedAllocatables = sourceReservation.getRestrictedAllocatables(appointment);
@@ -663,17 +692,9 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         {
         	copy = copyAppointment(appointment);
         	copy.setRepeatingEnabled(false);
-        	Calendar cal = getRaplaLocale().createCalendar();
-        	cal.setTime( copy.getStart());
-        	int hour_of_day = cal.get( Calendar.HOUR_OF_DAY);
-        	int minute = cal.get( Calendar.MINUTE);
-        	int second = cal.get( Calendar.SECOND);
-        	cal.setTimeInMillis( appointmentBlock.getStart());
-        	cal.set( Calendar.HOUR_OF_DAY, hour_of_day);
-        	cal.set( Calendar.MINUTE,minute);
-        	cal.set( Calendar.SECOND,second);
-        	cal.set( Calendar.MILLISECOND,0);
-        	Date newStart = cal.getTime();
+        	Date date = DateTools.cutDate(copy.getStart());
+        	TimeWithoutTimezone time = DateTools.toTime(date.getTime());
+        	Date newStart = new Date(date.getTime() + time.getMilliseconds());
         	copy.move(newStart);
         	RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_BLOCK : CopyType.COPY_BLOCK;
         	raplaClipboard.setAppointment(copy,  sourceReservation,copyType, restrictedAllocatables, contextAllocatables);
@@ -681,7 +702,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         else if ( dialogResult == DialogAction.EVENT && appointment.getReservation().getAppointments().length >1)
         {
         	Reservation reservation = appointment.getReservation();
-        	Reservation clone = getModification().clone( reservation);
+        	Reservation clone = getFacade().clone( reservation);
             int num  = getAppointmentIndex(appointment);
             Appointment[] clonedAppointments = clone.getAppointments();
             if ( num >= clonedAppointments.length)
@@ -757,7 +778,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 				{
 					try
 					{
-						Reservation persistant = getModification().getPersistant( original);
+						Reservation persistant = getFacade().getPersistant( original);
 						Date version = persistant.getLastChanged();
 						Date originalVersion = original.getLastChanged();
 						if ( originalVersion != null && version!= null && originalVersion.before( version))
@@ -778,14 +799,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 
 	private RaplaClipboard getClipboard() 
 	{
-        return getService(RaplaClipboard.class);
+        return clipboard;
     }
 	
     public boolean isAppointmentOnClipboard() {
         return (getClipboard().getAppointment() != null || !getClipboard().getReservations().isEmpty());
     }
     
-    public void pasteAppointment(Date start, Component sourceComponent, Point point, boolean asNewReservation, boolean keepTime) throws RaplaException {
+    public void pasteAppointment(Date start, PopupContext sourceComponent, boolean asNewReservation, boolean keepTime) throws RaplaException {
     	RaplaClipboard clipboard = getClipboard();
     
     	Collection<Reservation> reservations = clipboard.getReservations();
@@ -812,7 +833,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			          + "' at " + start);
 			
 	    	
-	    	Collection<Allocatable> currentlyMarked = getService(CalendarSelectionModel.class).getMarkedAllocatables();
+	    	Collection<Allocatable> currentlyMarked = calendarModel.getMarkedAllocatables();
 	    	Collection<Allocatable> previouslyMarked = clipboard.getContextAllocatables();
 	    	// exchange allocatables if pasted in a different allocatable slot
 	    	if ( copyWholeReservation && currentlyMarked != null && previouslyMarked != null && currentlyMarked.size() == 1 && previouslyMarked.size() == 1)
@@ -824,7 +845,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 					if ( !reservation.hasAllocated(newAllocatable))
 					{
 						AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
-						AllocatableExchangeCommand cmd = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable,null, sourceComponent, point);
+						AllocatableExchangeCommand cmd = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable,null, sourceComponent);
 						reservation = cmd.getModifiedReservationForExecute();
 						appointment = reservation.getAppointments()[0];
 					}
@@ -832,22 +853,22 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	    	}
 	    	pasteCommand = new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, sourceComponent);
     	}
-    	getClientFacade().getCommandHistory().storeAndExecute(pasteCommand);
+    	getFacade().getCommandHistory().storeAndExecute(pasteCommand);
     }
 
-    public void moveAppointment(AppointmentBlock appointmentBlock,Date newStart,Component sourceComponent,Point p, boolean keepTime) throws RaplaException {
+    public void moveAppointment(AppointmentBlock appointmentBlock,Date newStart,PopupContext context, boolean keepTime) throws RaplaException {
         Date from = new Date( appointmentBlock.getStart());
     	if ( newStart.equals(from))
             return;
         getLogger().debug("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
-        resizeAppointment(appointmentBlock, newStart, null, sourceComponent, p, keepTime);
+        resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 
-	public void resizeAppointment(AppointmentBlock appointmentBlock,  Date newStart, Date newEnd, Component sourceComponent, Point p, boolean keepTime) throws RaplaException {
+	public void resizeAppointment(AppointmentBlock appointmentBlock,  Date newStart, Date newEnd, PopupContext context, boolean keepTime) throws RaplaException {
         boolean includeEvent = newEnd == null;
         Appointment appointment = appointmentBlock.getAppointment();
         Date from = new Date(appointmentBlock.getStart());
-		DialogAction result = showDialog(appointmentBlock, "move", includeEvent, sourceComponent, p);
+		DialogAction result = showDialog(appointmentBlock, "move", includeEvent, context);
 		
         if (result == DialogAction.CANCEL) {
         	return;
@@ -859,8 +880,8 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         {
         	newStart = new Date( oldStart.getTime() + getOffset(oldStart, newStart, keepTime));
         }
-        AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart, newEnd, sourceComponent, result, keepTime);
-		getClientFacade().getCommandHistory().storeAndExecute(resizeCommand);
+        AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart, newEnd, context, result, keepTime);
+		getFacade().getCommandHistory().storeAndExecute(resizeCommand);
     }
 
 	public long getOffset(Date appStart, Date newStart, boolean keepTime) {
@@ -880,13 +901,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		return offset;
 	}
 
-    public boolean save(Reservation reservation, Component sourceComponent) throws RaplaException {
+    public boolean save(Reservation reservation, PopupContext sourceComponent) throws RaplaException {
         return save(Collections.singleton(reservation), sourceComponent);
     }  
     
-    public boolean save(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
+    public boolean save(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
-        if (getClientFacade().getCommandHistory().storeAndExecute(saveCommand))
+        if (getFacade().getCommandHistory().storeAndExecute(saveCommand))
         {
             return true;
         }
@@ -896,18 +917,18 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
  
 
     @Override
-    public void exchangeAllocatable(final AppointmentBlock appointmentBlock,final Allocatable oldAllocatable,final Allocatable newAllocatable,final Date newStart,final Component sourceComponent, final Point point)
+    public void exchangeAllocatable(final AppointmentBlock appointmentBlock,final Allocatable oldAllocatable,final Allocatable newAllocatable,final Date newStart,PopupContext context)
 			 throws RaplaException 
 	{
-        AllocatableExchangeCommand command = exchangeAllocatebleCmd( appointmentBlock, oldAllocatable, newAllocatable,newStart, sourceComponent, point);
+        AllocatableExchangeCommand command = exchangeAllocatebleCmd( appointmentBlock, oldAllocatable, newAllocatable,newStart, context);
         if ( command != null)
         {
-        	CommandHistory commandHistory = getModification().getCommandHistory();
+        	CommandHistory commandHistory = getFacade().getCommandHistory();
 			commandHistory.storeAndExecute( command );
         }
 	}
 
-	protected AllocatableExchangeCommand exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,final Allocatable newAllocatable, Date newStart,final Component sourceComponent,	final Point point) throws RaplaException {
+	protected AllocatableExchangeCommand exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,final Allocatable newAllocatable, Date newStart,PopupContext context) throws RaplaException {
 		Map<Allocatable,Appointment[]> newRestrictions = new HashMap<Allocatable, Appointment[]>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
@@ -923,7 +944,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     	Appointment copy = null;
 		Appointment[] restriction = reservation.getRestriction(oldAllocatable);
 		boolean includeEvent = restriction.length ==  0;
-		DialogAction result = showDialog(appointmentBlock, "exchange_allocatables", includeEvent, sourceComponent, point);
+		DialogAction result = showDialog(appointmentBlock, "exchange_allocatables", includeEvent, context);
         if (result == DialogAction.CANCEL)
             return null;
 
@@ -1043,7 +1064,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             Appointment app= addAppointment != null ? addAppointment : appointment;
             newStart = new Date( app.getStart().getTime()+ offset);
         }
-        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable,newStart, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded, sourceComponent);
+        AllocatableExchangeCommand command = new AllocatableExchangeCommand( appointment, oldAllocatable, newAllocatable,newStart, newRestrictions, removeAllocatable, addAllocatable, addAppointment, exceptionsAdded, context);
 		return command;
 	}
 
@@ -1061,10 +1082,10 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         List<Date> exceptionsAdded;
         Date newStart;
         boolean firstTimeCall = true;
-        Component sourceComponent;
+        PopupContext sourceComponent;
         
         AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, Date newStart,Map<Allocatable, Appointment[]> newRestrictions, boolean removeAllocatable, boolean addAllocatable, Appointment addAppointment,
-            List<Date> exceptionsAdded, Component sourceComponent)  
+            List<Date> exceptionsAdded, PopupContext sourceComponent)  
         {
             this.appointment = appointment;
             this.oldAllocatable = oldAllocatable;
@@ -1090,14 +1111,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             }
             else
             {
-                getModification().store( modifiableReservation );
+                getFacade().store( modifiableReservation );
                 return true;
             }
         }
 
 		protected Reservation getModifiedReservationForExecute() throws RaplaException {
 			Reservation reservation = appointment.getReservation();
-            Reservation modifiableReservation = getModification().edit(reservation);
+            Reservation modifiableReservation = getFacade().edit(reservation);
             if ( addAppointment != null)
             {
                 modifiableReservation.addAppointment( addAppointment);
@@ -1164,14 +1185,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         public boolean undo() throws RaplaException 
         {
             Reservation modifiableReservation = getModifiedReservationForUndo();
-            getModification().store( modifiableReservation);
+            getFacade().store( modifiableReservation);
             return true;
         }
 
 		protected Reservation getModifiedReservationForUndo()
 				throws RaplaException {
-			Reservation persistant = getModification().getPersistant(appointment.getReservation());
-            Reservation modifiableReservation = getModification().edit(persistant);
+			Reservation persistant = getFacade().getPersistant(appointment.getReservation());
+            Reservation modifiableReservation = getFacade().edit(persistant);
             if ( addAppointment != null)
             {
                 Appointment found = modifiableReservation.findAppointment( addAppointment );
@@ -1222,7 +1243,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
         
         public String getCommandoName() 
         {
-            return getString("exchange_allocatables");
+            return getI18n().getString("exchange_allocatables");
         }
     }
     
@@ -1244,14 +1265,14 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     	private final Date newEnd;
     	
     	private final Appointment appointment;
-    	private final Component sourceComponent;
+    	private final PopupContext sourceComponent;
     	private final DialogAction dialogResult;
     	
     	private Appointment lastCopy;
 		private boolean firstTimeCall = true;
 		private boolean keepTime;
 
-    	public AppointmentResize(Appointment appointment, Date oldStart, Date oldEnd, Date newStart, Date newEnd, Component sourceComponent, DialogAction dialogResult, boolean keepTime) {
+    	public AppointmentResize(Appointment appointment, Date oldStart, Date oldEnd, Date newStart, Date newEnd, PopupContext sourceComponent, DialogAction dialogResult, boolean keepTime) {
         	this.oldStart        = oldStart;
         	this.oldEnd          = oldEnd;
         	this.newStart        = newStart;
@@ -1284,7 +1305,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		private boolean doMove(boolean resizing, Date sourceStart,
 				Date destStart, Date destEnd, boolean undo) throws RaplaException {
 			Reservation reservation        = appointment.getReservation();
-            Reservation mutableReservation = getModification().edit(reservation);
+            Reservation mutableReservation = getFacade().edit(reservation);
             Appointment mutableAppointment = mutableReservation.findAppointment(appointment);
             
             if (mutableAppointment == null) {
@@ -1376,13 +1397,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			}
 			else
 			{
-				getModification().store( mutableReservation );
+				getFacade().store( mutableReservation );
 				return true;
 			}
 		}
 		
 		public String getCommandoName() {
-			return getString("move");
+			return getI18n().getString("move");
 		}
     }
     
@@ -1405,13 +1426,13 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		private final boolean asNewReservation;
 		private final boolean copyWholeReservation;
 		private final long offset;
-		private final Component sourceComponent;
+		private final PopupContext sourceComponent;
 		
 		private Reservation saveReservation = null;
 		private Appointment saveAppointment = null;
 		private boolean firstTimeCall = true;
 		
-		public AppointmentPaste(Appointment fromAppointment, Reservation fromReservation, Allocatable[] restrictedAllocatables, boolean asNewReservation, boolean copyWholeReservation, long offset, Component sourceComponent) {
+		public AppointmentPaste(Appointment fromAppointment, Reservation fromReservation, Allocatable[] restrictedAllocatables, boolean asNewReservation, boolean copyWholeReservation, long offset, PopupContext sourceComponent) {
 			this.fromAppointment        = fromAppointment;
 			this.fromReservation        = fromReservation;
 			this.restrictedAllocatables = restrictedAllocatables;
@@ -1427,7 +1448,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			Reservation mutableReservation = null;
 			
 			if (asNewReservation) {
-			    mutableReservation =  getModification().clone(saveReservation != null ? saveReservation : fromReservation);
+			    mutableReservation =  getFacade().clone(saveReservation != null ? saveReservation : fromReservation);
 	        	
 	        	// Alle anderen Appointments verschieben / entfernen
 	            Appointment[] appointments = mutableReservation.getAppointments();
@@ -1444,7 +1465,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 	                }
 	            }
 	        } else {
-				mutableReservation =  getModification().edit(fromReservation);
+				mutableReservation =  getFacade().edit(fromReservation);
 	        }
 			
 			if (!copyWholeReservation) {
@@ -1467,27 +1488,27 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			}
 			else
 			{
-				getModification().store( mutableReservation );
+				getFacade().store( mutableReservation );
 				return true;
 			}
 		}
 
 		public boolean undo() throws RaplaException {			
 			if (asNewReservation) {
-				Reservation mutableReservation = getModification().edit(saveReservation);
-				getModification().remove(mutableReservation);
+				Reservation mutableReservation = getFacade().edit(saveReservation);
+				getFacade().remove(mutableReservation);
 				return true;
 			} else {
-				Reservation mutableReservation = getModification().edit(saveReservation);
+				Reservation mutableReservation = getFacade().edit(saveReservation);
 				mutableReservation.removeAppointment(saveAppointment);
-	            getModification().store(mutableReservation);
+	            getFacade().store(mutableReservation);
 				return true;
 			}
 		}
 		
 		public String getCommandoName() 
 		{
-			return getString("paste");
+			return getI18n().getString("paste");
 		}	
     	
     }
@@ -1507,41 +1528,33 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		}
 		
 		public boolean execute() throws RaplaException {
-			clones = copy(fromReservations,start, keepTime);
-			Component sourceComponent = getMainComponent();
+			clones = getFacade().copy(fromReservations,start, keepTime);
+			PopupContext sourceComponent = getPopupContext();
 			save(clones, sourceComponent);
 			return true;
 		}
 
-		public boolean undo() throws RaplaException {			
-			getModification().storeAndRemove(Reservation.RESERVATION_ARRAY,clones.toArray( Reservation.RESERVATION_ARRAY) );
+
+        public boolean undo() throws RaplaException {			
+			getFacade().storeAndRemove(Reservation.RESERVATION_ARRAY,clones.toArray( Reservation.RESERVATION_ARRAY) );
 			return true;
 		}	
 		
 		public String getCommandoName() 
 		{
-			return getString("paste");
+			return getI18n().getString("paste");
 		}	
     	
     }
     
-	/**
-	 * This class collects any information of an appointment that is saved 
-	 * to the calendar view.
-	 * This is where undo/redo for saving an appointment 
-	 * in the calendar view is realized. 
-	 * @author Jens Fritz
-	 *
-	 */
-    //Erstellt von Dominik Krickl-Vorreiter
-    class ReservationSave extends SaveUndo<Reservation> {
+	class ReservationSave extends SaveUndo<Reservation> {
     	
-    	private final Component sourceComponent;
+    	private final PopupContext sourceComponent;
     	Collection<Reservation> newReservations;
 
-    	public ReservationSave(Collection<Reservation> newReservations, Collection<Reservation> original, Component sourceComponent)
+    	public ReservationSave(Collection<Reservation> newReservations, Collection<Reservation> original, PopupContext sourceComponent)
     	{
-    		super(ReservationControllerImpl.this.getContext(),newReservations, original);
+    		super(ReservationControllerImpl.this.getFacade(), ReservationControllerImpl.this.getI18n(),newReservations, original);
     		this.sourceComponent  = sourceComponent;
     		this.newReservations = newReservations;
     	}
@@ -1559,40 +1572,25 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 			}
 		}
 
-		boolean save(Collection<Reservation> reservations,Component sourceComponent) throws RaplaException {
-		        {
-    		        Collection<ReservationCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.RESERVATION_SAVE_CHECK);
-    		        for (ReservationCheck check:checkers)
-    		        {
-    		            for (Reservation reservation:reservations)
-    		            {
-    		                boolean successful= check.check(reservation, sourceComponent);
-    		                if ( !successful)
-    		                {
-    		                    return false;
-    		                }
-    		            }
-    		        }
-		        }
-		        
-		        Collection<EventCheck> checkers = getContainer().lookupServicesFor(RaplaClientExtensionPoints.EVENT_SAVE_CHECK);
-                for (EventCheck check:checkers)
+		boolean save(Collection<Reservation> reservations,PopupContext sourceComponent) throws RaplaException {
+	        Collection<EventCheck> checkers = getEventChecks();
+            for (EventCheck check:checkers)
+            {
+                boolean successful= check.check(reservations, sourceComponent);
+                if ( !successful)
                 {
-                    boolean successful= check.check(reservations, sourceComponent);
-                    if ( !successful)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-		        try {
-		            getModification().storeObjects( newReservations.toArray( Reservation.RESERVATION_ARRAY) );
-		            return true;
-		        } catch (Exception ex) {
-		            showException(ex,sourceComponent);
-		            return false;
-		        }
-		    }
-		   
+            }
+	        try {
+	            getFacade().storeObjects( newReservations.toArray( Reservation.RESERVATION_ARRAY) );
+	            return true;
+	        } catch (Exception ex) {
+	            showException(ex,sourceComponent);
+	            return false;
+	        }
+		}
+		
     	
     }
 }

@@ -59,9 +59,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#toDate(java.util.Date, java.util.Date)
      */
     public Date toDate( Date date, Date time ) {
-    	long millisTime = time.getTime() - DateTools.cutDate( time.getTime());
-    	Date result = new Date( DateTools.cutDate(date.getTime()) + millisTime);
-    	return result;
+    	return DateTools.toDateTime(date, time);
 //        Calendar cal1 = createCalendar();
 //        Calendar cal2 = createCalendar();
 //        cal1.setTime( date );

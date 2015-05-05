@@ -39,6 +39,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditController;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.toolkit.DialogUI;
@@ -209,8 +210,9 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                     @SuppressWarnings("unchecked")
                     Collection<Reservation> castToReservation = (Collection<Reservation>) saveObjects;
                     Component mainComponent = getMainComponent();
+                    PopupContext popupContext = createPopupContext(mainComponent, null);
                     ReservationController reservationController = getReservationController();
-                    if (!reservationController.save( castToReservation, mainComponent))
+                    if (!reservationController.save( castToReservation, popupContext))
                     {
                         return;
                     }
@@ -218,7 +220,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                 else if ( canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" })
-                    SaveUndo<T> saveCommand = new SaveUndo(getContext(), entities,  originals);
+                    SaveUndo<T> saveCommand = new SaveUndo(getClientFacade(),getI18n(), entities,  originals);
     		        CommandHistory commandHistory = getModification().getCommandHistory();
                     commandHistory.storeAndExecute(saveCommand);
                 } 

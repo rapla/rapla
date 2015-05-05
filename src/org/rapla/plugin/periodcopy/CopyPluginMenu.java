@@ -122,7 +122,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements IdentifiableMe
 
         }
         Collection<Reservation> originalEntity = null;
-		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getContext(), newReservations, originalEntity);
+		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getClientFacade(), getI18n(), newReservations, originalEntity);
         getModification().getCommandHistory().storeAndExecute( cmd);
     }
 

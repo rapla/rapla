@@ -283,7 +283,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 		    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
             boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
 	    	Date beginn = getStartDate( model);
-	    	Collection<Reservation> newReservations = copy( reservations, beginn, keepTime);
+	    	Collection<Reservation> newReservations = getModification().copy( reservations, beginn, keepTime);
        		if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
        		{
        		    Appointment app = newReservations.iterator().next().getAppointments()[0];

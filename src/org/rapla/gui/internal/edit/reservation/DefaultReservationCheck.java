@@ -38,7 +38,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         this.appointmentFormater = appointmentFormater;
     }
 
-    public boolean check(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
+    public boolean check(Collection<Reservation> reservations, Object sourceComponent) throws RaplaException {
         try
         {
             JPanel warningPanel = new JPanel();
@@ -82,7 +82,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
             if (  warningPanel.getComponentCount() > 0) {
                 DialogUI dialog = DialogUI.create(
                         getContext()
-                        ,sourceComponent
+                        ,(Component)sourceComponent
                         ,true
                         ,warningPanel
                         ,new String[] {
@@ -112,7 +112,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         }
         catch (RaplaException ex)
         {
-            showWarning( ex.getMessage(), sourceComponent);
+            showWarning( ex.getMessage(), (Component)sourceComponent);
             return false;
         }
     }

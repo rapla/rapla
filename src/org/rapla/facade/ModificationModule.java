@@ -91,8 +91,11 @@ public interface ModificationModule {
      * returns an editable working copy of an object. Only objects return by this method and new objects are editable.
      * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
     <T extends Entity> T edit(T obj) throws RaplaException;
-
+    
     <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
+    
+    /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/ 
+    Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException;
     
     /** Returns the persistant version of a working copy.
      * Throws an {@link org.rapla.entities.EntityNotFoundException} when the

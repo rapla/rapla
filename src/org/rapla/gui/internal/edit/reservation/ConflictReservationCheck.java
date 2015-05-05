@@ -44,7 +44,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         super(context);
     }
 
-    public boolean check(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
+    public boolean check(Collection<Reservation> reservations, Object sourceComponent) throws RaplaException {
         List<Conflict> conflictList = new ArrayList<Conflict>();
         for (Reservation reservation:reservations)
         {
@@ -69,7 +69,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         JComponent content = getConflictPanel(conflictList);
         DialogUI dialog = DialogUI.create(
                 getContext()
-                ,sourceComponent
+                ,(Component)sourceComponent
                     ,true
                     ,content
                     ,new String[] {
@@ -87,7 +87,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
             try {
                 return true;
             } catch (Exception ex) {
-                showException(ex,sourceComponent);
+                showException(ex,(Component)sourceComponent);
                 return false;
             }
         }

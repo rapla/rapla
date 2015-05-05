@@ -5,9 +5,11 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
@@ -17,23 +19,28 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-
-public class SaveUndo<T extends Entity> extends RaplaComponent implements CommandUndo<RaplaException> {
+public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> newEntities;
 	protected final List<T> oldEntities;
 	protected final String commandoName;
    	protected boolean firstTimeCall = true;
+   	private ClientFacade facade;
+   	I18nBundle i18n;
 	
-	public SaveUndo(RaplaContext context,Collection<T> newEntity,Collection<T> originalEntity) 
+	public SaveUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> newEntity,Collection<T> originalEntity) 
 	{
-		this( context, newEntity, originalEntity, null);
+		this( facade, i18n,newEntity, originalEntity, null);
 	}
-	public SaveUndo(RaplaContext context,Collection<T> newEntity,Collection<T> originalEntity, String commandoName) 
+	
+
+	
+	public SaveUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName) 
 	{
-	    super(context);
+	    this.facade = facade;
+	    this.i18n = i18n;
 	    this.commandoName = commandoName;
 	    this.newEntities = new ArrayList<T>();
 		for ( T entity: newEntity)
@@ -62,6 +69,21 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		}
 	}
 	
+	protected ClientFacade getFacade()
+    {
+        return facade;
+    }
+	
+	protected I18nBundle getI18n()
+	{
+	    return i18n;
+	}
+	
+	protected Locale getLocale()
+	{
+	    return getI18n().getLocale();
+	}
+	
 	public boolean execute() throws RaplaException {
 		final boolean isNew = oldEntities == null;
 
@@ -69,7 +91,7 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		Map<T,T> newEntitiesPersistant = null;
 		if ( !firstTimeCall || !isNew)
 		{
-			newEntitiesPersistant= getModification().getPersistant(newEntities);
+			newEntitiesPersistant= getFacade().getPersistant(newEntities);
 		}
 		if ( firstTimeCall)
 		{
@@ -94,13 +116,13 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		}
 		@SuppressWarnings("unchecked")
         Entity<T>[] array = toStore.toArray(new Entity[]{});
-		getModification().storeObjects( array);
+		getFacade().storeObjects( array);
 		return true;
 	}
 
 	protected void checklastChanged(List<T> entities, Map<T,T> persistantVersions) throws RaplaException,
 			EntityNotFoundException {
-		getUpdateModule().refresh();
+		getFacade().refresh();
 		for ( T entity:entities)
 		{
 			if ( entity instanceof ModifiableTimestamp)
@@ -109,7 +131,7 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 				if ( persistant != null) 
 				{
 					User lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !getUser().equals(lastChangedBy))
+					if (lastChangedBy != null && !getFacade().getUser().equals(lastChangedBy))
 					{
 						String name = entity instanceof Named ? ((Named) entity).getName( getLocale()) : entity.toString();
 						throw new RaplaException(getI18n().format("error.new_version", name));
@@ -134,13 +156,13 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		boolean isNew = oldEntities == null;
 
 		if (isNew) {
-			Map<T,T> newEntitiesPersistant = getModification().getPersistant(newEntities);
+			Map<T,T> newEntitiesPersistant = getFacade().getPersistant(newEntities);
 			checklastChanged(newEntities, newEntitiesPersistant);
             Entity[] array = newEntities.toArray(new Entity[]{});
-			getModification().removeObjects(array);
+			getFacade().removeObjects(array);
 		} else {
 			List<T> toStore = new ArrayList<T>();
-			Map<T,T> oldEntitiesPersistant = getModification().getPersistant(oldEntities);
+			Map<T,T> oldEntitiesPersistant = getFacade().getPersistant(oldEntities);
 			checklastChanged(oldEntities, oldEntitiesPersistant);
 			for ( T entity: oldEntities)
     		{
@@ -153,7 +175,7 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
     		}
 			@SuppressWarnings("unchecked")
             Entity<T>[] array = toStore.toArray(new Entity[]{});
-			getModification().storeObjects( array);
+			getFacade().storeObjects( array);
 		
 		}
 		return true;
@@ -166,7 +188,7 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		{
 			for ( ReferenceInfo info: ((SimpleEntity) entity).getReferenceInfo())
 			{
-				getClientFacade().getOperator().resolve( info.getId(), info.getType());
+				getFacade().getOperator().resolve( info.getId(), info.getType());
 			}
 		}
 		if ( entity instanceof Classifiable)
@@ -197,11 +219,12 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 	     boolean isNew = oldEntities == null;     
          Iterator<T> iterator = newEntities.iterator();
          StringBuffer buf = new StringBuffer();
-         buf.append(isNew ? getString("new"): getString("edit") );
+         I18nBundle i18n = getI18n();
+         buf.append(isNew ? i18n.getString("new"): i18n.getString("edit") );
          if ( iterator.hasNext())
          {
              RaplaType raplaType = iterator.next().getRaplaType();
-             buf.append(" " + getString(raplaType.getLocalName()));
+             buf.append(" " + i18n.getString(raplaType.getLocalName()));
          }
          return buf.toString();
      }   

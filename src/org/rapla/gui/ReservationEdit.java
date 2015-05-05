@@ -6,6 +6,7 @@ import java.util.Date;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 
@@ -26,4 +27,8 @@ public interface ReservationEdit
     void removeAppointmentListener(AppointmentListener listener);
    
     Collection<Appointment> getSelectedAppointments();
+
+    void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException;
+
+    void toFront();
 }

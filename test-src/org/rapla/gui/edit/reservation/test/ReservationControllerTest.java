@@ -77,7 +77,7 @@ public final class ReservationControllerTest extends GUITestCase {
 				AppointmentBlock appointmentBlock = new AppointmentBlock( appointment);
 				Date newStart = DateTools.addDay(appointment.getStart());
 				try {
-					c.moveAppointment(appointmentBlock, newStart, null, p,	keepTime);
+					c.moveAppointment(appointmentBlock, newStart, createPopupContext(),	keepTime);
 					Appointment app = clientService.getFacade().getPersistant(reservation).getAppointments()[0];
 					assertEquals(DateTools.addDay(from), app.getStart());
 					// Now the test can end
@@ -86,6 +86,7 @@ public final class ReservationControllerTest extends GUITestCase {
 					e.printStackTrace();
 				}
 			}
+
 		});
 		// We block a mutex to wait for the move thread to finish
 		mutex.acquire();

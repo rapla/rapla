@@ -19,6 +19,8 @@ import javax.swing.JComponent;
 
 import org.rapla.RaplaTestCase;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameController;
 import org.rapla.gui.toolkit.FrameControllerList;
@@ -34,8 +36,14 @@ public abstract class GUITestCase extends RaplaTestCase {
     
     protected <T> T getService(Class<T> role) throws RaplaException {
            return getClientService().getContext().lookup( role);
-       }
+    }
 
+    protected PopupContext createPopupContext()
+    {
+        return new SwingPopupContext( null, null);
+    }
+
+    
     public void interactiveTest(String methodName) {
         try {
             setUp();

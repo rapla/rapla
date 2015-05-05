@@ -21,14 +21,13 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.RaplaGUIComponent;
 
 
-public class RaplaClipboard extends RaplaGUIComponent implements ModificationListener
+public class RaplaClipboard implements ModificationListener
 {
     private Appointment appointment;
     private Collection<Reservation> reservations = Collections.emptyList();
@@ -45,10 +44,9 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
 
 	CopyType copyType;
 	
-    public RaplaClipboard( RaplaContext sm ) 
+    public RaplaClipboard( ClientFacade facade ) 
     {
-        super( sm );
-        getUpdateModule().addModificationListener( this );
+        facade.addModificationListener( this );
     }
 
     public void dataChanged( ModificationEvent evt ) throws RaplaException
@@ -136,6 +134,12 @@ public class RaplaClipboard extends RaplaGUIComponent implements ModificationLis
 
 	public void setContextAllocatables(Collection<Allocatable> contextAllocatables) {
 		this.contextAllocatables = contextAllocatables;
+	}
+	
+	/** by default does nothing. Can be overriden with sytem specific implementation */
+	public void copyToSystemClipboard(String content)
+	{
+	    
 	}
 
 

@@ -44,6 +44,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.ObjectMenuFactory;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.SwingCalendarView;
@@ -229,17 +230,17 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             if ( selectedEvents.size() == 1) {
             	AppointmentBlock appointmentBlock = selectedEvents.get( 0);
 				try {
-					Component sourceComponent = table;
 					Point p = null;
+					PopupContext popupContext = createPopupContext(table, p);
 					Collection<Allocatable> contextAllocatables = model.getMarkedAllocatables();
 					ReservationController reservationController = getReservationController();
                     if ( isCut())
                     {
-                        reservationController.cutAppointment(appointmentBlock,sourceComponent,p, contextAllocatables);
+                        reservationController.cutAppointment(appointmentBlock,popupContext, contextAllocatables);
                     }
                     else
                     {
-                        reservationController.copyAppointment(appointmentBlock,sourceComponent,p, contextAllocatables);
+                        reservationController.copyAppointment(appointmentBlock,popupContext, contextAllocatables);
                     }
 				} catch (RaplaException e) {
 					showException( e, getComponent());
@@ -373,23 +374,24 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     	Component parent = getComponent();
     	AppointmentBlock appointmentBlock = (AppointmentBlock) context.getFocusedObject();
     	Point p = context.getPoint();
+        PopupContext popupContext = createPopupContext(parent, p);
     	@SuppressWarnings("unchecked")
         Collection<AppointmentBlock> selection = (Collection<AppointmentBlock>)context.getSelectedObjects();
     	if ( appointmentBlock != null)
 	    {
-			{
-				AppointmentAction action = new AppointmentAction(getContext(),parent,p);
+    	    {
+				AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 				action.setDelete(appointmentBlock);
 				menu.insertAfterId(new JMenuItem(action), afterId);
 			}
 			{
-				AppointmentAction action = new AppointmentAction(getContext(),parent,p);
+				AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 				action.setView(appointmentBlock);
 				menu.insertAfterId(new JMenuItem(action), afterId);
 			}
 			
 			{
-		        AppointmentAction action = new AppointmentAction(getContext(),parent,p);
+		        AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 		        action.setEdit(appointmentBlock);
 		        menu.insertAfterId(new JMenuItem(action), afterId);
 	        }
@@ -397,7 +399,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 	    }
     	else if ( selection !=  null && selection.size() > 0)
     	{
-	        AppointmentAction action = new AppointmentAction(getContext(),parent,p);
+	        AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 	        action.setDeleteSelection(selection);
 	        menu.insertAfterId(new JMenuItem(action), afterId);
         }
@@ -417,6 +419,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 		}
 		return  menu;
     }
+    
 
 	public TimeInterval getVisibleTimeInterval() {
 		return new TimeInterval(model.getStartDate(), model.getEndDate());

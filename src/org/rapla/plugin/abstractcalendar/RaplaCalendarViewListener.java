@@ -184,8 +184,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         	Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
 			getReservationController().moveAppointment(b.getAppointmentBlock()
                                                        ,newStartWithOffset
-                                                       ,calendarContainerComponent
-                                                       ,p, keepTime);
+                                                       ,createPopupContext(calendarContainerComponent ,p), keepTime);
         } catch (RaplaException ex) {
             showException(ex,b.getView());
         }
@@ -207,8 +206,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
            getReservationController().resizeAppointment(b.getAppointmentBlock()
                     ,newStart
                     ,newEnd
-                    ,calendarContainerComponent
-                    ,p, keepTime);
+                    ,createPopupContext(calendarContainerComponent,p), keepTime);
         } catch (RaplaException ex) {
             showException(ex,b.getView());
         }
@@ -292,10 +290,11 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
    
 	public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getContext(),parent,p);
+        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent,p));
         menu.add(new JMenuItem(action));
         return action;
     }
+
    
     
 }

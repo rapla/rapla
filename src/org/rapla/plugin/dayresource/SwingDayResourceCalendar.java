@@ -38,6 +38,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -176,7 +177,8 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
 						 AppointmentBlock appointmentBlock= raplaBlock.getAppointmentBlock();
-						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc,newStart, getMainComponent(),p);
+						 PopupContext popupContext = createPopupContext(getMainComponent(),p);
+                         getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc,newStart, popupContext);
 					 }
 					 else
 					 {

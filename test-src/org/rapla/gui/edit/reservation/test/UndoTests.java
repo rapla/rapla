@@ -21,6 +21,7 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.tests.GUITestCase;
 import org.rapla.gui.toolkit.DialogUI;
@@ -103,7 +104,8 @@ public class UndoTests extends GUITestCase {
 					AppointmentBlock appointmentBlock = new AppointmentBlock( appOrig);
 					Date newStart = changedAppointment.getStart();
 					Date newEnd = changedAppointment.getEnd();
-					control.resizeAppointment(appointmentBlock, newStart, newEnd, null, null, false);
+					PopupContext popupContext = createPopupContext();
+                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
 				} catch (RaplaException e) {
 					fail(e.getMessage());
 				}
@@ -159,7 +161,8 @@ public class UndoTests extends GUITestCase {
 					AppointmentBlock appointmentBlock = new AppointmentBlock( event.getAppointments()[0]);
 					Date newStart = changedAppointment.getStart();
 					Date newEnd = changedAppointment.getEnd();
-					control.resizeAppointment(appointmentBlock, newStart, newEnd, null, null, false);
+					PopupContext popupContext= createPopupContext();
+                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
 				} catch (RaplaException e) {
 					fail(e.getMessage());
 				}
@@ -217,7 +220,8 @@ public class UndoTests extends GUITestCase {
 			public void run() {
 				try {
 					AppointmentBlock appointmentBlock = new AppointmentBlock( persistantEvent.getAppointments()[0]);
-					control.deleteAppointment(appointmentBlock, null, null);
+					PopupContext popupContext = createPopupContext();
+                    control.deleteAppointment(appointmentBlock, popupContext);
 				} catch (RaplaException e) {
 					fail(e.getMessage());
 				}

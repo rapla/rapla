@@ -1,6 +1,5 @@
 package org.rapla.gui;
 
-import java.awt.Component;
 import java.util.Collection;
 
 import org.rapla.entities.domain.Reservation;
@@ -11,5 +10,5 @@ public interface EventCheck
 {
     /** @param sourceComponent 
      * @return true if the reservation check is successful and false if the save dialog should be aborted*/
-    boolean check(Collection<Reservation> reservation, Component sourceComponent) throws RaplaException;
+    boolean check(Collection<Reservation> reservation, Object sourceComponent) throws RaplaException;
 }

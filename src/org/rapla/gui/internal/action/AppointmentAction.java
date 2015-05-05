@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.Component;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.util.Collection;
 import java.util.Date;
@@ -25,9 +23,11 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
+import org.rapla.gui.internal.SwingPopupContext;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -41,8 +41,7 @@ public class AppointmentAction extends RaplaAction {
     public final static int PASTE_AS_NEW = 10;
     public final static int DELETE_SELECTION = 11;
     
-    Component parent;
-    Point point;
+    PopupContext popupContext;
     int type;
     AppointmentBlock appointmentBlock;
 
@@ -50,11 +49,10 @@ public class AppointmentAction extends RaplaAction {
 //    ReservationWizard wizard;
 	private Collection<Allocatable> contextAllocatables;
     
-    public AppointmentAction(RaplaContext context,Component parent,Point point) 
+    public AppointmentAction(RaplaContext context,PopupContext popupContext)
     {
         super( context);
-        this.parent = parent;
-        this.point = point;
+        this.popupContext = popupContext;
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -198,7 +196,7 @@ public class AppointmentAction extends RaplaAction {
             case DELETE_SELECTION: deleteSelection();break;
             }
         } catch (RaplaException ex) {
-            showException(ex,parent);
+            showError(ex,popupContext);
         } // end of try-catch
     }
 
@@ -206,12 +204,12 @@ public class AppointmentAction extends RaplaAction {
     	if ( this.blockList == null){
     		return;
     	}
-    	 getReservationController().deleteBlocks(blockList,parent,point);
+    	 getReservationController().deleteBlocks(blockList,popupContext);
 	}
 
     public void view() throws RaplaException {
         Appointment appointment = appointmentBlock.getAppointment();
-    	getInfoFactory().showInfoDialog(appointment.getReservation(),parent,point);
+    	getInfoFactory().showInfoDialog(appointment.getReservation(),((SwingPopupContext)popupContext).getParent());
     }
 
     public void edit() throws RaplaException {
@@ -219,17 +217,17 @@ public class AppointmentAction extends RaplaAction {
     }
 
     private void delete() throws RaplaException {
-        getReservationController().deleteAppointment(appointmentBlock,parent,point);
+        getReservationController().deleteAppointment(appointmentBlock,popupContext);
     }
 
     private void copy() throws RaplaException 
     {
-       getReservationController().copyAppointment(appointmentBlock,parent,point, contextAllocatables);
+       getReservationController().copyAppointment(appointmentBlock,popupContext, contextAllocatables);
     }
     
     private void cut() throws RaplaException 
     {
-       getReservationController().cutAppointment(appointmentBlock,parent,point, contextAllocatables);
+       getReservationController().cutAppointment(appointmentBlock,popupContext, contextAllocatables);
     }
 
     private void paste(boolean asNewReservation) throws RaplaException {
@@ -239,8 +237,7 @@ public class AppointmentAction extends RaplaAction {
     	Date start = getStartDate(model);
     	boolean keepTime = !model.isMarkedIntervalTimeEnabled();
     	reservationController.pasteAppointment(	start
-                                               ,parent
-                                               ,point
+                                               ,popupContext
                                                ,asNewReservation, keepTime);
     }
 

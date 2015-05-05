@@ -309,7 +309,7 @@ public class RaplaObjectAction extends RaplaAction {
 			}
 	    }
 	    @SuppressWarnings({ "rawtypes", "unchecked" })
-        DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getContext(), entities);
+        DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getClientFacade(),getI18n(), entities);
 	    if ( undoable)
 	    {
 	    	getModification().getCommandHistory().storeAndExecute(deleteCommand);
