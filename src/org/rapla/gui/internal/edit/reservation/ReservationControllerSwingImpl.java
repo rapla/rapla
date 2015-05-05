@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -73,7 +72,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
         return result == 0;
     }
 
-    protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<Icon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException
+    protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<ImageIcon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException
     {
         Point point = null;
         Component parent = null;

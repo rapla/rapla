@@ -14,7 +14,6 @@ package org.rapla.gui.internal.edit.reservation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -29,7 +28,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
 import org.rapla.components.util.DateTools;
@@ -139,7 +137,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         ReservationEdit c = null;
         Iterator<ReservationEdit> it = editWindowList.iterator();
         while (it.hasNext()) {
-            c = (ReservationEditImpl)it.next();
+            c = it.next();
             if (c.getReservation().isIdentical(reservation))
                 break;
             else
@@ -236,7 +234,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     
     abstract protected void showException(Exception ex,PopupContext sourceComponent);
 
-    abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<Icon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException;
+    abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<ImageIcon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException;
 
     abstract protected Collection<EventCheck> getEventChecks() throws RaplaException;
 /*
@@ -538,7 +536,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     	Reservation reservation = appointment.getReservation();
         getLogger().debug(action + " '" + appointment + "' for reservation '" +  reservation + "'");
         List<String> optionList = new ArrayList<String>();
-        List<Icon> iconList = new ArrayList<Icon>();
+        List<ImageIcon> iconList = new ArrayList<ImageIcon>();
         List<DialogAction> actionList = new ArrayList<ReservationControllerImpl.DialogAction>();
         String dateString = getRaplaLocale().formatDate(from);
         
@@ -759,7 +757,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
         for ( ReservationEdit edit:clone)
         {
-            ReservationEditImpl c = (ReservationEditImpl)edit;
+            ReservationEdit c = edit;
             c.refresh(evt);
             TimeInterval invalidateInterval = evt.getInvalidateInterval();
 			Reservation original = c.getOriginal();
@@ -885,18 +883,16 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     }
 
 	public long getOffset(Date appStart, Date newStart, boolean keepTime) {
-		Calendar calendar = getRaplaLocale().createCalendar();        		
-        calendar.setTime( newStart);
-		if ( keepTime)
-        {
-        	Calendar cal2 = getRaplaLocale().createCalendar();        		
-            cal2.setTime( appStart);
-        	calendar.set(Calendar.HOUR_OF_DAY, cal2.get( Calendar.HOUR_OF_DAY));
-        	calendar.set(Calendar.MINUTE, cal2.get( Calendar.MINUTE));
-           	calendar.set(Calendar.SECOND, cal2.get( Calendar.SECOND));
-           	calendar.set(Calendar.MILLISECOND, cal2.get( Calendar.MILLISECOND));
-        }
-        Date newStartAdjusted = calendar.getTime();
+	    Date newStartAdjusted;
+	    if (!keepTime)
+	    {
+	        newStartAdjusted = newStart;
+	    }
+	    else
+	    {
+	        //TimeWithoutTimezone oldStartTime = DateTools.toTime( appStart.getTime());
+            newStartAdjusted = DateTools.toDateTime( newStart, appStart);
+	    }
         long offset = newStartAdjusted.getTime() - appStart.getTime();
 		return offset;
 	}
@@ -951,14 +947,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         if (result == DialogAction.SINGLE && appointment.getRepeating() != null) {
             copy = copyAppointment(appointment);
             copy.setRepeatingEnabled(false);
-            Calendar cal = getRaplaLocale().createCalendar();
-            long start = appointment.getStart().getTime();
-			int hour = DateTools.getHourOfDay(start);
-			int minute = DateTools.getMinuteOfHour(start);
-			cal.setTime(date);
-            cal.set(Calendar.HOUR_OF_DAY,hour);
-            cal.set(Calendar.MINUTE, minute);
-            copy.move(cal.getTime());
+            Date dateTime = DateTools.toDateTime(  date, appointment.getStart());
+			copy.move(dateTime);
         }
      
         if (result == DialogAction.EVENT && includeEvent )

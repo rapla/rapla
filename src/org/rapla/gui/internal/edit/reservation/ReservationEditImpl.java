@@ -302,7 +302,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         appointmentEdit.addAppointment( appointment);
     }
 
-    void deleteReservation() throws RaplaException {
+    public void deleteReservation() throws RaplaException {
         if (bDeleting)
             return;
         getLogger().debug("Reservation has been deleted.");
@@ -318,7 +318,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         closeWindow();
     }
 
-    void updateReservation(Reservation newReservation) throws RaplaException {
+    public void updateReservation(Reservation newReservation) throws RaplaException {
         if (bSaving)
             return;
         getLogger().debug("Reservation has been changed.");
@@ -340,7 +340,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
     }
 
-    void refresh(ModificationEvent evt) throws RaplaException {
+    public void refresh(ModificationEvent evt) throws RaplaException {
         allocatableEdit.dataChanged(evt);
     }
 
@@ -651,12 +651,10 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
     }
 
-    @Override
     public void addReservationChangeListener(ChangeListener listener) {
         changeListenerList.add(listener);
     }
 
-    @Override
     public void removeReservationChangeListener(ChangeListener listener) {
         changeListenerList.remove( listener);
         

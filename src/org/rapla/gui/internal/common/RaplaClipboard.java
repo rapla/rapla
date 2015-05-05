@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import javax.inject.Inject;
+
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -44,6 +46,7 @@ public class RaplaClipboard implements ModificationListener
 
 	CopyType copyType;
 	
+	@Inject
     public RaplaClipboard( ClientFacade facade ) 
     {
         facade.addModificationListener( this );
