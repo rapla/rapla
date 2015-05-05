@@ -76,5 +76,42 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 		return new SerializableDateTimeFormat();
 	}
 
+	public String formatTime(int minuteOfDay) {
+        boolean useAM_PM = isAmPmFormat();
+        int minute = minuteOfDay%60;
+        int hour = minuteOfDay/60;
+        String displayedHour = "" + (useAM_PM ? hour %12 : hour);
+        String displayedMinute = minute > 9 ? ""+ minute : "0"+minute ;
+        String string = displayedHour + ":" + displayedMinute;
+        if (useAM_PM ) {
+            if ( hour >= 12)
+            {
+                string += " PM";
+            }
+            else
+            {
+                string += " AM";
+            }
+        }
+        return string;
+    }
+
+    public String formatHour(int hour) {
+        boolean useAM_PM = isAmPmFormat();
+        String displayedHour = "" + (useAM_PM ? hour %12 : hour);
+        String string = displayedHour;
+        if (useAM_PM ) {
+            if ( hour >= 12)
+            {
+                string += " PM";
+            }
+            else
+            {
+                string += " AM";
+            }
+        }
+        return string;
+    }
+
 
 }
