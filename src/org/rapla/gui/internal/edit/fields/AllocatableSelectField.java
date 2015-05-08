@@ -67,9 +67,17 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables);
 		if (dynamicTypeConstraint !=null)
 		{
-			TreeNode child = ((TreeNode)treeModel.getRoot()).getChildAt(0);
-			((DefaultMutableTreeNode)child).removeFromParent();
-			treeModel = new DefaultTreeModel( child );
+			TreeNode treeNode = (TreeNode)treeModel.getRoot();
+			if ( treeNode.getChildCount() > 0)
+			{
+			    TreeNode child = treeNode.getChildAt(0);
+			    ((DefaultMutableTreeNode)child).removeFromParent();
+			    treeModel = new DefaultTreeModel( child );
+			}
+			else
+			{
+			    treeModel = new DefaultTreeModel( new DefaultMutableTreeNode());
+			}
 		}
 		return treeModel;
     }
