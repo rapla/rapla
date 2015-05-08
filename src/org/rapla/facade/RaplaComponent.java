@@ -18,6 +18,8 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
+import javax.inject.Inject;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.CompoundI18n;
@@ -67,7 +69,6 @@ public class RaplaComponent
     I18nBundle i18n;
     ClientFacade facade;
     private RaplaContext context;
-
     
     protected RaplaComponent(RaplaContext context) 
     {
@@ -187,6 +188,13 @@ public class RaplaComponent
             return false;
         }
 
+    }
+    
+    /** @deprecated please request {@link AppointmentFormater} with {@link Inject}*/
+    @Deprecated
+    public AppointmentFormater getAppointmentFormater()
+    {
+        return getService( AppointmentFormater.class);
     }
 
     final public boolean isModifyPreferencesAllowed() {
