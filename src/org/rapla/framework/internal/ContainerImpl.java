@@ -791,7 +791,7 @@ public class ContainerImpl implements Container
             if ( pluginConfig == null)
             {
                 pluginClassname2 = pluginClassname2.replaceAll(".client.", ".");
-                pluginConfig = raplaConfig.find( "class", pluginClassname );
+                pluginConfig = raplaConfig.find( "class", pluginClassname2 );
             }
         }
         return pluginConfig;
