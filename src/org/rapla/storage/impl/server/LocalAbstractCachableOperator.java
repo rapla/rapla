@@ -259,6 +259,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			addAttributeWithInternalId(type,"status",AttributeType.STRING);
 			addAttributeWithInternalId(type,"retries", AttributeType.STRING);
 			addAttributeWithInternalId(type,"lastRetry", AttributeType.DATE);
+			addAttributeWithInternalId(type,"lastError", AttributeType.STRING);
 			type.setResolver( this);
 			type.setReadOnly();
 			cache.put( type);
