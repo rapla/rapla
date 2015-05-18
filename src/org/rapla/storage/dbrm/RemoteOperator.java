@@ -908,7 +908,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 {
                     long time = System.currentTimeMillis();
                     processReservationResult(list, filters);
-                    logger.info("event post processing took  " + (System.currentTimeMillis() - time) + " ms");
+                    logger.debug("event post processing took  " + (System.currentTimeMillis() - time) + " ms");
                 }
 
                 return (Collection) list;
