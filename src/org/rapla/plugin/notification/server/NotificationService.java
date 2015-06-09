@@ -22,10 +22,12 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -61,12 +63,12 @@ public class NotificationService extends RaplaComponent
     AppointmentFormater appointmentFormater;
 
     @Inject
-    public NotificationService(ClientFacade facade,I18nBundle i18nBundle, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
+    public NotificationService(ClientFacade facade,@Named(RaplaComponent.RaplaResourcesId) I18nBundle   i18nBundle,@Named(NotificationPlugin.ResourceFileId) I18nBundle   childBundle, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
     {
-        super( facade, i18nBundle, raplaLocale, logger);
+        super( facade, new  CompoundI18n(childBundle,i18nBundle), raplaLocale, logger);
         this.clientFacade = facade;
         setLogger( getLogger().getChildLogger("notification"));
-        setChildBundleName( NotificationPlugin.RESOURCE_FILE );
+        //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         try
         {
             this.mailToUserInterface = mailToUserInterface.get();

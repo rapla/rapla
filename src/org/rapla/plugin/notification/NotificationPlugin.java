@@ -25,7 +25,8 @@ import org.rapla.framework.TypedComponentRole;
 
 public class NotificationPlugin implements PluginDescriptor<ClientServiceContainer>
 {
-    public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(NotificationPlugin.class.getPackage().getName() + ".NotificationResources");
+    public static final String ResourceFileId = "org.rapla.plugin.notification.NotificationResources";
+    public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(ResourceFileId);
     public static final boolean ENABLE_BY_DEFAULT = false;
 	public final static TypedComponentRole<Boolean> NOTIFY_IF_OWNER_CONFIG = new TypedComponentRole<Boolean>("org.rapla.plugin.notification.notify_if_owner");
 	public final static TypedComponentRole<RaplaMap<Allocatable>> ALLOCATIONLISTENERS_CONFIG = new TypedComponentRole<RaplaMap<Allocatable>>("org.rapla.plugin.notification.allocationlisteners");
