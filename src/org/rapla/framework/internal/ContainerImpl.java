@@ -12,7 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +33,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Named;
+import javax.inject.Provider;
 import javax.jws.WebService;
 
 import org.rapla.components.util.Cancelable;
@@ -605,7 +610,7 @@ public class ContainerImpl implements Container
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Object instanciate( String componentClassName, Configuration config, Logger logger ) throws RaplaContextException
     {
-    	RaplaContext context = m_context;
+    	final RaplaContext context = m_context;
 		Class componentClass;
         try {
             componentClass = Class.forName( componentClassName );
@@ -616,10 +621,59 @@ public class ContainerImpl implements Container
         Object[] params = null;
         if ( c != null) {
             Class[] types = c.getParameterTypes();
+            Annotation[][] parameterAnnotations = c.getParameterAnnotations();
+            Type[] genericParameterTypes = c.getGenericParameterTypes();
             params = new Object[ types.length ];
             for (int i=0; i< types.length; i++ ) {
                 Class type = types[i];
-                Object p;
+                Object p = null;
+                Annotation[] annotations = parameterAnnotations[i];
+                for ( Annotation annotation: annotations)
+                {
+                    if ( annotation.annotationType().equals( Named.class))
+                    {
+                        String value = ((Named)annotation).value();
+                        Object lookup = getContext().lookup( new TypedComponentRole( value));
+                        p = lookup;
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                String typeName = type.getName();
+                final Type type2 = genericParameterTypes[i];
+                if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
+                {
+                    Type[] actualTypeArguments = ((ParameterizedType)type2).getActualTypeArguments();
+                    if ( actualTypeArguments.length > 0)
+                    {
+                        final Type param = actualTypeArguments[0];
+                        if ( param instanceof Class)
+                        {
+                            final Class<? extends Type> class1 = (Class<? extends Type>) param;
+                            p = new Provider()
+                            {
+                                @Override
+                                public Object get() {
+                                    try {
+                                        return context.lookup(class1);
+                                    } catch (RaplaContextException e) {
+                                        throw new IllegalStateException( e.getMessage(),e);
+                                    }
+                                }
+                            };
+                        }
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                
+                
                 if ( type.isAssignableFrom( RaplaContext.class)) {
                     p = context;
                 } else  if ( type.isAssignableFrom( Configuration.class)) {
