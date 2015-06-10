@@ -16,6 +16,7 @@ package org.rapla.storage.xml;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -68,8 +69,15 @@ class ClassifiableWriter extends RaplaXMLWriter {
             {
             	String attributeName = namespacePrefix + attribute.getKey();
             	openElementOnLine(attributeName);
-	            
-            	printAttributeValue(attribute, value);
+            	try
+            	{
+            	    printAttributeValue(attribute, value);
+            	} 
+            	catch (EntityNotFoundException ex)
+            	{
+            	    throw new EntityNotFoundException("Illegal value in attribute  " + attribute.getKey() + ":  '" +  value + "' not allowed or not found. Classification info " +classification);
+            	}   
+
             	closeElementOnLine(attributeName);
 
             	println();

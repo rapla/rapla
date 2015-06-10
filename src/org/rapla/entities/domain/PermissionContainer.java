@@ -33,6 +33,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 
@@ -557,7 +558,19 @@ public interface PermissionContainer extends Ownable
                     Permission.AccessLevel accessLevel = p.getAccessLevel();
                     if (group != null && accessLevel == Permission.AccessLevel.ADMIN)
                     {
-                        newCategories.add( group );
+                        Object rootCategory = attribute.getConstraint( ConstraintIds.KEY_ROOT_CATEGORY );
+                        if ( rootCategory == null )
+                        {
+                            newCategories.add( group );
+                        }
+                        else if ( rootCategory instanceof Category)
+                        {
+                            Category root = (Category) rootCategory;
+                            if ( root.isAncestorOf( group ))
+                            {
+                                newCategories.add( group );
+                            }
+                        }
                     }
                 }
                 classification.setValues( attribute, newCategories);

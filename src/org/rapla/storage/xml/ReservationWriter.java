@@ -38,7 +38,14 @@ public class ReservationWriter extends ClassifiableWriter {
         closeTag();
         printAnnotations( r, false);
         //      System.out.println(((Entity)r).getId() + " Name: " + r.getName() +" User: " + r.getUser());
-        printClassification(r.getClassification());
+//        try
+//        {
+            printClassification(r.getClassification());
+//        }
+//        catch (EntityNotFoundException ex)
+//        {
+//            getLogger().error("Can't write " + r + "  with Template (" + r.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE)  + ") Cause " + ex);
+//        }
         {
             Appointment[] appointments = r.getAppointments();
             for (int i = 0; i< appointments.length; i ++) {
