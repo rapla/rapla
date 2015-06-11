@@ -92,6 +92,11 @@ public abstract class AbstractRaplaBlock implements Block
         return m_context;
     }
     
+    public boolean isBlockSelected()
+    {
+        return getContext().isBlockSelected();
+    }
+    
     public Allocatable getGroupAllocatable()
     {
     	return getContext().getGroupAllocatable();

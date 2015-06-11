@@ -113,6 +113,7 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.FilterEditButton;
 import org.rapla.gui.internal.MenuFactoryImpl;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.common.CalendarAction;
 import org.rapla.gui.internal.edit.ClassifiableFilterEdit;
 import org.rapla.gui.toolkit.AWTColorUtil;
@@ -790,7 +791,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	}
 	
     protected MenuContext createMenuContext(Point p, Object obj) {
-        MenuContext menuContext = new MenuContext(getContext(), obj, getComponent(), p);
+        MenuContext menuContext = new MenuContext(getContext(), obj, new SwingPopupContext(getComponent(), p));
         return menuContext;
     }
     

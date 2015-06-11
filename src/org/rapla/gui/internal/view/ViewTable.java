@@ -30,6 +30,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.HTMLView;
 import org.rapla.gui.toolkit.RaplaWidget;
 
@@ -163,7 +164,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         		Assert.notNull(object,"link was not found in linkMap");
         		Assert.notNull(getInfoFactory());
         		try {
-        			getInfoFactory().showInfoDialog(object,htmlView);
+        			getInfoFactory().showInfoDialog(object,new SwingPopupContext(htmlView,null));
         		} catch (RaplaException ex) {
         			showException(ex,getComponent());
         		} // end of try-catch

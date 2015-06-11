@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,6 +34,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditController;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 
 /** This class handles the edit-ui for all entities (except reservations). */
@@ -133,17 +133,18 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 			return null;
 	}
 
-	public <T extends Entity> void edit(T obj, Component owner) throws RaplaException {
-		edit(obj, guessTitle(obj), owner);
+	@Override
+	public <T extends Entity> void edit(T obj, PopupContext popupContext) throws RaplaException {
+		edit(obj, guessTitle(obj), popupContext);
 	}
 
-	public <T extends Entity> void editNew(T obj, Component owner)
+	public <T extends Entity> void editNew(T obj, PopupContext popupContext)
 			throws RaplaException {
-		edit(obj, guessTitle(obj), owner, true);
+		edit(obj, guessTitle(obj), popupContext, true);
 	}
 
-	public <T extends Entity> void edit(T[] obj, Component owner) throws RaplaException {
-		edit(obj, guessTitle(obj), owner);
+	public <T extends Entity> void edit(T[] obj, PopupContext popupContext) throws RaplaException {
+		edit(obj, guessTitle(obj), popupContext);
 	}
 
 
@@ -154,12 +155,12 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 	 * @see org.rapla.gui.edit.IEditController#edit(org.rapla.entities.Entity,
 	 * java.lang.String, java.awt.Component)
 	 */
-	public <T extends Entity> void edit(T obj, String title, Component owner)
+	public <T extends Entity> void edit(T obj, String title, PopupContext popupContext )
 			throws RaplaException {
-		edit(obj, title, owner, false);
+		edit(obj, title, popupContext, false);
 	}
 	
-	protected <T extends Entity> void edit(T obj, String title, Component owner,boolean createNew )
+	protected <T extends Entity> void edit(T obj, String title, PopupContext popupContext,boolean createNew )
 				throws RaplaException {
 		
 		// Hack for 1.6 compiler compatibility
@@ -191,14 +192,14 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 			c.dlg.requestFocus();
 			c.dlg.toFront();
 		} else {
-            editAndOpenDialog( Collections.singletonList( obj),title, owner, createNew);
+            editAndOpenDialog( Collections.singletonList( obj),title, popupContext, createNew);
 		}
 	}
 	
 //	method analog to edit(Entity obj, String title, Component owner)
 
 //	however for using with arrays
-	public  <T extends Entity> void edit(T[] obj, String title, Component owner)
+	public  <T extends Entity> void edit(T[] obj, String title, PopupContext popupContext)
 			throws RaplaException {
 		
 //		checks if all entities are from the same type; otherwise return
@@ -206,21 +207,21 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 		
 //		if selektion contains only one object start usual Edit dialog
 		if(obj.length == 1){
-			edit(obj[0], title, owner);
+			edit(obj[0], title, popupContext);
 		}
 		else
 		{
-		    editAndOpenDialog(Arrays.asList(obj), title, owner, false);
+		    editAndOpenDialog(Arrays.asList(obj), title, popupContext, false);
     	}
 	}
 
-    protected <T extends Entity> void editAndOpenDialog(List<T> list, String title, Component owner, boolean createNew) throws RaplaException {
+    protected <T extends Entity> void editAndOpenDialog(List<T> list, String title, PopupContext popupContext, boolean createNew) throws RaplaException {
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
     	Collection<T> toEdit = getModification().edit( list);
     	if (toEdit.size() > 0) {
         	EditComponent<T> ui = createUI(toEdit.iterator().next(), createNew);
         	EditDialog<T> gui = new EditDialog<T>(getContext(), ui, false);
-            gui.start(toEdit, title, owner);
+            gui.start(toEdit, title, popupContext);
         }
     }
 }

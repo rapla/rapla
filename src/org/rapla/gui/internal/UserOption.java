@@ -93,9 +93,7 @@ public class UserOption extends RaplaGUIComponent
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction;
-
-        passwordChangeAction = new PasswordChangeAction(getContext(),getComponent());
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null));
         User user = getUser();
 		passwordChangeAction.changeObject(user);
         changePasswordButton.setAction(passwordChangeAction);

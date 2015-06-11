@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui;
-import java.awt.Component;
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,19 +21,17 @@ import org.rapla.framework.RaplaDefaultContext;
 public class MenuContext extends RaplaDefaultContext
 {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
-    Point p;
     Object focused;
-    Component parent;
+    private final PopupContext popupContext;
     
     public MenuContext(RaplaContext parentContext, Object focusedObject) {
-        this( parentContext, focusedObject, null, null );
+        this( parentContext, focusedObject, null );
     }
 
-    public MenuContext(RaplaContext parentContext,  Object focusedObject, Component parent,Point p) {
+    public MenuContext(RaplaContext parentContext,  Object focusedObject, PopupContext popupContext) {
         super( parentContext);
         this.focused = focusedObject;
-        this.parent= parent ;
-        this.p = p;
+        this.popupContext = popupContext;
     }
 
     public void setSelectedObjects(Collection<?> selectedObjects) {
@@ -46,13 +42,9 @@ public class MenuContext extends RaplaDefaultContext
         return selectedObjects;
     }
 
-    public Point getPoint() {
-        return p;
-
-    }
-
-    public Component getComponent() {
-        return parent;
+    public PopupContext getPopupContext()
+    {
+        return popupContext;
     }
 
     public Object getFocusedObject() {

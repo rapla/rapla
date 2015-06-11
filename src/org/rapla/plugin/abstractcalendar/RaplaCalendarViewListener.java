@@ -291,7 +291,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 	public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
         AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent,p));
-        menu.add(new JMenuItem(action));
+        menu.add(action);
         return action;
     }
 

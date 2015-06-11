@@ -143,7 +143,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         if ( getService(ClientService.class).canSwitchBack() ) {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction( new UserAction(getContext(),null,null).setSwitchToUser());
+            switchBack.setAction( new UserAction(getContext(),null).setSwitchToUser());
             adminMenu.add( switchBack );
         }
 
@@ -339,7 +339,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             public void actionPerformed(ActionEvent arg0) {
                 try {
                 	EditController editContrl = getService(EditController.class);
-                    editContrl.edit( preferences, getMainComponent());
+                    editContrl.edit( preferences, createPopupContext(getMainComponent(),null));
                 } catch (RaplaException ex) {
                     showException( ex, getMainComponent());
                 }

@@ -42,6 +42,7 @@ import org.rapla.gui.EditController;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.DisposingTool;
 
@@ -66,7 +67,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         return (EditControllerImpl) getService(EditController.class);
     }
 
-    public int start(Collection<T> editObjects,String title,Component owner)
+    public int start(Collection<T> editObjects,String title,PopupContext popupContext)
         throws
             RaplaException
     {
@@ -105,7 +106,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
             panel.setLayout( new BorderLayout());
             panel.add( editComponent, BorderLayout.CENTER);
             editComponent.setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
-            dlg = DialogUI.create(getContext(),owner,modal,panel,new String[] {
+            dlg = DialogUI.create(getContext(),SwingPopupContext.extractParent(popupContext),modal,panel,new String[] {
                 getString("save")
                 ,getString("cancel")
             });

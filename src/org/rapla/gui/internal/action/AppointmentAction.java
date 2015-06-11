@@ -27,7 +27,6 @@ import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
-import org.rapla.gui.internal.SwingPopupContext;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -209,7 +208,7 @@ public class AppointmentAction extends RaplaAction {
 
     public void view() throws RaplaException {
         Appointment appointment = appointmentBlock.getAppointment();
-    	getInfoFactory().showInfoDialog(appointment.getReservation(),((SwingPopupContext)popupContext).getParent());
+    	getInfoFactory().showInfoDialog(appointment.getReservation(), popupContext);
     }
 
     public void edit() throws RaplaException {

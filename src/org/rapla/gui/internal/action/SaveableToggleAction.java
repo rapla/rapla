@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.RaplaAction;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 
 public class SaveableToggleAction extends RaplaAction {
@@ -68,7 +69,7 @@ public class SaveableToggleAction extends RaplaAction {
  	                prefs.putEntry( configEntry, newSelected);
  	                getModification().store( prefs);
  	            } catch (Exception ex) {
- 	                showException(  ex, null );
+ 	                showException(  ex, new SwingPopupContext(null, null) );
  	                return;
  	            }
  	   }

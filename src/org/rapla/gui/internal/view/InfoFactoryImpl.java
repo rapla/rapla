@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.view;
 
-import java.awt.Component;
-import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -39,7 +37,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.InfoFactory;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
 /** The factory can creatres an information-panel or dialog for
@@ -110,23 +110,14 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     }
 
     /* (non-Javadoc)
-     * @see org.rapla.gui.view.IInfoUIFactory#showInfoDialog(java.lang.Object, java.awt.Component)
-     */
-    public void showInfoDialog( Object object, Component owner )
-    throws RaplaException
-    {
-        showInfoDialog( object, owner, null);
-    }
-
-    /* (non-Javadoc)
      * @see org.rapla.gui.view.IInfoUIFactory#showInfoDialog(java.lang.Object, java.awt.Component, java.awt.Point)
      */
-    public <T> void showInfoDialog( T object, Component owner, Point point )
+    public <T> void showInfoDialog( T object, PopupContext popupContext )
         throws RaplaException
     {
        
         final ViewTable<T> viewTable = new ViewTable<T>(getContext());
-        final DialogUI dlg = DialogUI.create(getContext(),owner
+        final DialogUI dlg = DialogUI.create(getContext(),popupContext
                                        ,false
                                        ,viewTable.getComponent()
                                        ,new String[] {
@@ -148,7 +139,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         }
         dlg.setTitle( viewTable.getDialogTitle() );
         dlg.setDefault(2);
-        dlg.start( point );
+        dlg.start( SwingPopupContext.extractPoint(popupContext) );
 
         dlg.getButton(0).setAction( new AbstractAction() {
             private static final long serialVersionUID = 1L;
@@ -190,10 +181,10 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     /* (non-Javadoc)
      * @see org.rapla.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.Component)
      */
-    public DialogUI createDeleteDialog( Object[] deletables, Component owner ) throws RaplaException {
+    public DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getContext());
         DeleteInfoUI deleteView = new DeleteInfoUI(getContext());
-        DialogUI dlg = DialogUI.create(getContext(),owner
+        DialogUI dlg = DialogUI.create(getContext(),popupContext
                                        ,true
                                        ,viewTable.getComponent()
                                        ,new String[] {

@@ -3,14 +3,15 @@ package org.rapla.gui.toolkit;
 import java.awt.Component;
 
 import javax.swing.JComponent;
-import javax.swing.JMenuItem;
+
+import org.rapla.gui.RaplaAction;
 
 /** JPopupMenu and JMenu don't have a common interface, so this is a common interface
  * for RaplaMenu and RaplaPopupMenu
 */
 public interface MenuInterface {
-    JMenuItem add(JMenuItem item);
-    void remove(JMenuItem item);
+    void add(RaplaAction item);
+    void remove(RaplaAction item);
     void addSeparator();
     void removeAll();
 

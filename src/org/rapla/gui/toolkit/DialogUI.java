@@ -130,6 +130,10 @@ public class DialogUI extends JDialog
         return invisibleSharedFrame;
     }
 
+    public static DialogUI create(RaplaContext context,PopupContext popupContext,boolean modal,JComponent content,String[] options) throws RaplaException {
+        return create(context, SwingPopupContext.extractParent(popupContext), modal, content, options);
+    }
+    
     public static DialogUI create(RaplaContext context,Component owner,boolean modal,JComponent content,String[] options) throws RaplaException {
         DialogUI dlg;
         Component topLevel = getOwnerWindow(owner);

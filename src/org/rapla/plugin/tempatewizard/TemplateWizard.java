@@ -44,6 +44,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
@@ -336,7 +337,7 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
 					list.add( cast);
 				}
 				Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
-                getEditController().edit(array, getMainComponent());
+                getEditController().edit(array, new SwingPopupContext(getMainComponent(), null));
 				//SaveUndo<Reservation> saveUndo = new SaveUndo<Reservation>(getContext(), list, null);
 				//getModification().getCommandHistory().storeAndExecute( saveUndo);
 			}

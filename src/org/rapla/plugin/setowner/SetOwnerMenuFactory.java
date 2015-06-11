@@ -34,6 +34,7 @@ import org.rapla.gui.MenuContext;
 import org.rapla.gui.ObjectMenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaTree;
@@ -135,7 +136,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
                 }
                 catch (RaplaException ex )
                 {
-                    showException( ex, menuContext.getComponent());
+                    showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()));
                 } 
             }
          });

@@ -13,14 +13,18 @@
 package org.rapla.gui.toolkit;
 
 import java.awt.Component;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import org.rapla.gui.RaplaAction;
+
 public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
     private static final long serialVersionUID = 1L;
-    
+    private Map<RaplaAction, JMenuItem> mapping = new HashMap<RaplaAction, JMenuItem>();
     public RaplaPopupMenu() {
         super();
     }
@@ -68,9 +72,20 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
         insert( component, index);
     }
 
-    public void remove( JMenuItem item )
+    public void remove( RaplaAction item )
     {
-    	super.remove( item );
+    	final JMenuItem menuItem = mapping.get(item);
+    	if(menuItem != null){
+    	    super.remove( menuItem );
+    	}
+    }
+    
+    @Override
+    public void add(RaplaAction menuItem)
+    {
+        final JMenuItem item = new JMenuItem(menuItem);
+        mapping.put(menuItem, item);
+        super.add(item);
     }
 
 

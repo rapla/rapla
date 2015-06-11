@@ -49,6 +49,7 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.VisibleTimeInterval;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.action.AppointmentAction;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.toolkit.MenuInterface;
@@ -320,7 +321,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
       
         
-        MenuContext menuContext = new MenuContext( getContext(), focusedObject,getComponent(), p);
+        MenuContext menuContext = new MenuContext( getContext(), focusedObject,new SwingPopupContext(getComponent(), p));
         menuContext.put(RaplaCalendarViewListener.SELECTED_DATE, focusedObject != null ? new Date(focusedObject.getStart()): new Date());
         {
             menuContext.setSelectedObjects( selectedEvents);
@@ -373,7 +374,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     {
     	Component parent = getComponent();
     	AppointmentBlock appointmentBlock = (AppointmentBlock) context.getFocusedObject();
-    	Point p = context.getPoint();
+    	Point p = SwingPopupContext.extractPoint(context.getPopupContext());
         PopupContext popupContext = createPopupContext(parent, p);
     	@SuppressWarnings("unchecked")
         Collection<AppointmentBlock> selection = (Collection<AppointmentBlock>)context.getSelectedObjects();

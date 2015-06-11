@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
-import java.awt.Component;
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -48,6 +46,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.ObjectMenuFactory;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.action.DynamicTypeAction;
 import org.rapla.gui.internal.action.RaplaObjectAction;
@@ -181,9 +180,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     {
         // Do nothing if the user can't allocate anything
         User user = getUser();
-        Component parent = context.getComponent();
+        final PopupContext popupContext = context.getPopupContext();
         Object focusedObject = context.getFocusedObject();
-        Point p = context.getPoint();
      
 		if (canUserAllocateSomething( user) )
 		{
@@ -217,7 +215,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
             if ( allocatableNodeContext)
             {
                 menu.addSeparator();
-                addAllocatableMenuNew( menu, parent,p, focusedObject);                
+                addAllocatableMenuNew( menu, popupContext, focusedObject);                
             }
         }
         if ( isAdmin()  )
@@ -235,26 +233,26 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
             }
             if ( userNodeContext)
             {
-                addUserMenuNew( menu , parent, p);
+                addUserMenuNew( menu , popupContext);
             }
            
             if (allocatableNodeContext)
             {
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,parent, p);
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,parent, p);
+                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,popupContext);
+                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,popupContext);
 
             }
             if ( periodNodeContext)
             {
-                addPeriodMenuNew(  menu , parent, p );
+                addPeriodMenuNew(  menu , popupContext );
             }
             if ( categoryNodeContext )
             {
-                addCategoryMenuNew(  menu , parent, p, focusedObject );
+                addCategoryMenuNew(  menu , popupContext, focusedObject );
             }
             if ( reservationNodeContext)
             {
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION,parent, p);
+                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION,popupContext);
             }
             /*
              */
@@ -269,9 +267,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
     public MenuInterface addObjectMenu( MenuInterface menu, MenuContext context, String afterId ) throws RaplaException
     {
-        Component parent = context.getComponent();
         Object focusedObject = context.getFocusedObject();
-        Point p = context.getPoint();
+        final PopupContext popupContext = context.getPopupContext();
         
         
         Collection<Entity<?>> list = new LinkedHashSet<Entity<?>>();
@@ -279,7 +276,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         {
         	Entity<?> obj = (Entity<?>) focusedObject;
 		 	list.add(  obj );
-			addAction(menu, parent, p, afterId).setView(obj);
+			addAction(menu, popupContext, afterId).setView(obj);
 		}
         
         for ( Object obj:  context.getSelectedObjects())
@@ -295,7 +292,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 	        List<Entity<?>> deletableObjects = getDeletableObjects(list);
 	    	if ( deletableObjects.size() > 0)
 	    	{
-	       		addAction(menu,parent,p, afterId).setDeleteSelection(deletableObjects);
+	       		addAction(menu, popupContext, afterId).setDeleteSelection(deletableObjects);
 	    	}
 	   	}
        
@@ -304,19 +301,19 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         if ( editableObjects.size() == 1 )
         {
             Entity<?> first = editObjects.iterator().next();
-            addAction(menu, parent, p, afterId).setEdit(first);
+            addAction(menu, popupContext, afterId).setEdit(first);
         }
         else if  (isMultiEditSupported( editableObjects ))
         {
         
-            addAction(menu, parent, p, afterId).setEditSelection(editObjects);
+            addAction(menu, popupContext, afterId).setEditSelection(editObjects);
         }
         if ( editableObjects.size() == 1 )
     	{
     		RaplaObject next = editableObjects.iterator().next();
     		if  ( next.getRaplaType() ==  User.TYPE)
     		{
-		 		addUserMenuEdit( menu , parent, p, (User) next , afterId);
+		 		addUserMenuEdit( menu , popupContext, (User) next , afterId);
 		 	}
 	     }
 
@@ -350,8 +347,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 	}
 
 
-    private void addAllocatableMenuNew(MenuInterface menu,Component parent,Point p,Object focusedObj) throws RaplaException {
-    	RaplaObjectAction newResource = addAction(menu,parent,p).setNew( Allocatable.TYPE );
+    private void addAllocatableMenuNew(MenuInterface menu,PopupContext popupContext,Object focusedObj) throws RaplaException {
+    	RaplaObjectAction newResource = addAction(menu,popupContext).setNew( Allocatable.TYPE );
     	if (focusedObj != CalendarModelImpl.ALLOCATABLES_ROOT) 
     	{
 	        if (focusedObj instanceof DynamicType) 
@@ -393,7 +390,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 	            newResource.putValue(Action.NAME,getString("resource"));   
 	        }
 	
-	        RaplaObjectAction newPerson = addAction(menu,parent,p).setNew( Allocatable.TYPE );
+	        RaplaObjectAction newPerson = addAction(menu,popupContext).setNew( Allocatable.TYPE );
 	        newPerson.setPerson( true );
 	        DynamicType[] personType= getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON );
 	        if ( personType.length == 1)
@@ -407,35 +404,35 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     	}
     }
 
-    private void addTypeMenuNew(MenuInterface menu,String classificationType,Component parent,Point p) {
-            DynamicTypeAction newReservationType = newDynamicTypeAction(parent,p);
-            menu.add(new JMenuItem(newReservationType));
+    private void addTypeMenuNew(MenuInterface menu,String classificationType,PopupContext popupContext) {
+            DynamicTypeAction newReservationType = newDynamicTypeAction(popupContext);
+            menu.add(newReservationType);
             newReservationType.setNewClassificationType(classificationType);
             newReservationType.putValue(Action.NAME,getString(classificationType + "_type"));
     }
 
-    private void addUserMenuEdit(MenuInterface menu,Component parent,Point p,User obj,String afterId) {
+    private void addUserMenuEdit(MenuInterface menu,PopupContext popupContext,User obj,String afterId) {
 
         menu.insertAfterId( new RaplaSeparator("sep1"), afterId);
         menu.insertAfterId( new RaplaSeparator("sep2"), afterId);
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),parent);
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),popupContext);
         passwordChangeAction.changeObject( obj );
         menu.insertAfterId( new JMenuItem( passwordChangeAction ), "sep2");
 
-        UserAction switchUserAction = newUserAction(parent,p);
+        UserAction switchUserAction = newUserAction(popupContext);
         switchUserAction.setSwitchToUser();
         switchUserAction.changeObject( obj );
         menu.insertAfterId( new JMenuItem( switchUserAction ), "sep2");
     }
 
-    private void addUserMenuNew(MenuInterface menu,Component parent,Point p) {
-        UserAction newUserAction = newUserAction(parent,p);
+    private void addUserMenuNew(MenuInterface menu,PopupContext popupContext) {
+        UserAction newUserAction = newUserAction(popupContext);
         newUserAction.setNew();
-        menu.add( new JMenuItem( newUserAction ));
+        menu.add( newUserAction );
     }
 
-    private void addCategoryMenuNew(MenuInterface menu, Component parent, Point p, Object obj)  {
-    	RaplaObjectAction newAction = addAction(menu,parent,p).setNew( Category.TYPE );
+    private void addCategoryMenuNew(MenuInterface menu, PopupContext popupContext, Object obj)  {
+    	RaplaObjectAction newAction = addAction(menu,popupContext).setNew( Category.TYPE );
     	if ( obj instanceof Category)
     	{
     		newAction.changeObject((Category)obj);
@@ -447,39 +444,39 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
       	newAction.putValue(Action.NAME,getString("category"));
     }
 
-    private void addPeriodMenuNew(MenuInterface menu, Component parent, Point p) {
-        Action newAction = addAction(menu,parent,p).setNew( Period.TYPE );
+    private void addPeriodMenuNew(MenuInterface menu, PopupContext popupContext) {
+        Action newAction = addAction(menu,popupContext).setNew( Period.TYPE );
         newAction.putValue(Action.NAME,getString("period"));
 
     }
 
-    private RaplaObjectAction addAction(MenuInterface menu, Component parent,Point p) {
-        RaplaObjectAction action = newObjectAction(parent,p);
-        menu.add(new JMenuItem(action));
+    private RaplaObjectAction addAction(MenuInterface menu, PopupContext popupContext) {
+        RaplaObjectAction action = newObjectAction(popupContext);
+        menu.add( action );
         return action;
     }
 
-    private RaplaObjectAction addAction(MenuInterface menu, Component parent,Point p,String id) {
-        RaplaObjectAction action = newObjectAction(parent,p);
+    private RaplaObjectAction addAction(MenuInterface menu, PopupContext popupContext,String id) {
+        RaplaObjectAction action = newObjectAction(popupContext);
         menu.insertAfterId( new JMenuItem(action), id);
         return action;
     }
 
-    private RaplaObjectAction newObjectAction(Component parent,Point point) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(),parent, point);
+    private RaplaObjectAction newObjectAction(PopupContext popupContext) {
+        RaplaObjectAction action = new RaplaObjectAction(getContext(),popupContext);
         return action;
     }
 
 
-    private DynamicTypeAction newDynamicTypeAction(Component parent,Point point) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(),parent,point);
+    private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
+        DynamicTypeAction action = new DynamicTypeAction(getContext(),popupContext);
         return action;
     }
 
 
 
-    private UserAction newUserAction(Component parent,Point point) {
-        UserAction action = new UserAction(getContext(),parent,point);
+    private UserAction newUserAction(PopupContext popupContext) {
+        UserAction action = new UserAction(getContext(),popupContext);
         return action;
     }
 

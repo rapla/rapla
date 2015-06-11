@@ -11,20 +11,15 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.Component;
-import java.awt.Point;
-
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 
 public class DynamicTypeAction extends  RaplaObjectAction {
 	String classificationType;
-    public DynamicTypeAction(RaplaContext sm,Component parent)  {
-        super(sm,parent);
-    }
-    public DynamicTypeAction(RaplaContext sm,Component parent,Point p)  {
-        super(sm,parent,p);
+    public DynamicTypeAction(RaplaContext sm,PopupContext popupContext)  {
+        super(sm,popupContext);
     }
 
     public DynamicTypeAction setNewClassificationType(String classificationType) {
@@ -35,7 +30,7 @@ public class DynamicTypeAction extends  RaplaObjectAction {
 
     protected void newEntity() throws RaplaException {
         DynamicType newDynamicType = getModification().newDynamicType(classificationType);
-        getEditController().edit(newDynamicType, parent);
+        getEditController().edit(newDynamicType, getPopupContext());
     }
 
 

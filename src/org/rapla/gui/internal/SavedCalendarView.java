@@ -133,7 +133,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             try 
             {
                 String[] objects = new String[] { getSelectedFile().name};
-                DialogUI dlg = getInfoFactory().createDeleteDialog( objects, getMainComponent());
+                DialogUI dlg = getInfoFactory().createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
                 dlg.start();
                 if (dlg.getSelectedIndex() != 0)
                     return;

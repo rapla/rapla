@@ -61,12 +61,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
 
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
     {
-        Component test = null;
-        if ( context instanceof SwingPopupContext)
-        {
-            test = ((SwingPopupContext) context).getParent();
-        }
-        DialogUI dlg =infoFactory.createDeleteDialog(deletables, test);
+        DialogUI dlg =infoFactory.createDeleteDialog(deletables, context);
         dlg.start();
         int result = dlg.getSelectedIndex();
         return result == 0;

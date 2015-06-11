@@ -181,7 +181,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
     
     protected MenuContext createMenuContext(Point p, Object obj) {
-        MenuContext menuContext = new MenuContext(getContext(), obj, getComponent(), p);
+        MenuContext menuContext = new MenuContext(getContext(), obj, new SwingPopupContext(getComponent(), p));
         return menuContext;
     }
     
@@ -233,7 +233,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), getComponent(),null);
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null));
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);

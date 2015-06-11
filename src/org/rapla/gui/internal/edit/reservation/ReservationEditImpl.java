@@ -66,6 +66,7 @@ import org.rapla.gui.AppointmentStatusFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
+import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.EmptyLineBorder;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -548,7 +549,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                         closeWindow();
                 }
             } catch (RaplaException ex) {
-                showException(ex, null);
+                showException(ex, new SwingPopupContext(null, null));
             }
         }
 
@@ -619,7 +620,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     public void delete() throws RaplaException {
         try {
             DialogUI dlg = getInfoFactory().createDeleteDialog(new Object[] {mutableReservation}
-                                                               ,frame);
+                                                               ,new SwingPopupContext(frame, null));
             dlg.start();
             if (dlg.getSelectedIndex() == 0) {
                 bDeleting = true;

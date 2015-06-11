@@ -20,6 +20,7 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.toolkit.DialogUI;
 
@@ -27,11 +28,11 @@ import org.rapla.gui.toolkit.DialogUI;
 public class PasswordChangeAction extends RaplaAction {
     
     Object object;
-    Component parent;
+    PopupContext popupContext;
 
-    public PasswordChangeAction(RaplaContext context,Component parent) {
+    public PasswordChangeAction(RaplaContext context,PopupContext popupContext) {
         super( context);
-        this.parent = parent;
+        this.popupContext = popupContext;
         putValue(NAME, getI18n().format("change.format",getString("password")));
     }
 
@@ -59,7 +60,7 @@ public class PasswordChangeAction extends RaplaAction {
                 return;
             changePassword((User) object, !getUser().isAdmin());
         } catch (RaplaException ex) {
-            showException(ex, this.parent);
+            showException(ex, popupContext);
         }
     }
 
@@ -83,7 +84,7 @@ public class PasswordChangeAction extends RaplaAction {
         public void start() throws RaplaException
         {
             ui = new PasswordChangeUI(getContext(),showOld);
-            dlg = DialogUI.create(getContext(),parent,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
+            dlg = DialogUI.create(getContext(),popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
             dlg.getButton(0).setAction(this);

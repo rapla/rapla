@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action.user;
-import java.awt.Component;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,22 +20,21 @@ import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.internal.edit.EditDialog;
 
 
 public class UserAction extends RaplaAction {
     Object object;
-    Component parent;
     public final int NEW = 1;
     public final int SWITCH_TO_USER = 3;
     int type = NEW;
-    Point point;
+    private PopupContext popupContext;
 
-    public UserAction(RaplaContext sm,Component parent,Point point) {
+    public UserAction(RaplaContext sm,PopupContext popupContext) {
         super( sm);
-        this.parent = parent;
-        this.point = point;
+        this.popupContext = popupContext;
     }
 
     public UserAction setNew() {
@@ -99,18 +96,18 @@ public class UserAction extends RaplaAction {
                 EditDialog<User> gui = new EditDialog<User>(getContext(),ui);
                 List<User> singletonList = new ArrayList<User>();
                 singletonList.add(newUser);
-                if (gui.start( singletonList ,getString("user"), parent) == 0
+                if (gui.start( singletonList ,getString("user"), popupContext) == 0
                     && getUserModule().canChangePassword() )
                     changePassword(newUser,false);
                 object = newUser;
             }
         } catch (RaplaException ex) {
-            showException(ex, this.parent);
+            showException(ex, popupContext);
         }
     }
 
     public void changePassword(User user,boolean showOld) throws RaplaException{
-        new PasswordChangeAction(getContext(),parent).changePassword( user, showOld);
+        new PasswordChangeAction(getContext(),popupContext).changePassword( user, showOld);
     }
 
 
