@@ -41,6 +41,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.action.user.PasswordChangeAction;
+import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 
@@ -96,7 +97,7 @@ public class UserOption extends RaplaGUIComponent
         PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null));
         User user = getUser();
 		passwordChangeAction.changeObject(user);
-        changePasswordButton.setAction(passwordChangeAction);
+        changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));
         changePasswordButton.setText(getString("change"));
     	usernameLabel.setText(user.getUsername());
     }

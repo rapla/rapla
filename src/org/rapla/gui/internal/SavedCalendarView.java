@@ -44,6 +44,7 @@ import org.rapla.gui.RaplaAction;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.common.MultiCalendarView;
+import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
@@ -72,7 +73,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             putValue(SMALL_ICON,getIcon("icon.save"));
         }
 
-        public void actionPerformed(ActionEvent arg0) {
+        public void actionPerformed() {
             save();
         }
     }
@@ -90,7 +91,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             
         }
 
-        public void actionPerformed(ActionEvent arg0) {
+        public void actionPerformed() {
             try 
             {   
 				CalendarSelectionModel model = getService( CalendarSelectionModel.class);
@@ -129,7 +130,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             
         }
 
-        public void actionPerformed(ActionEvent arg0) {
+        public void actionPerformed() {
             try 
             {
                 String[] objects = new String[] { getSelectedFile().name};
@@ -227,17 +228,17 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         //selectionBox.setMaximumSize( new Dimension(200,30));
         selectionBox.setPreferredSize( new Dimension(150,30));
         
-        save.setAction( saveAction);
-        publish.setAction(publishAction);
+        save.setAction(new ActionWrapper(saveAction));
+        publish.setAction(new ActionWrapper(publishAction));
         RaplaMenu settingsMenu = getService(InternMenus.CALENDAR_SETTINGS);
-        settingsMenu.insertAfterId(new JMenuItem(saveAction), null);
+        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(saveAction)), null);
         if ( publishAction.hasPublishActions())
         {
-            settingsMenu.insertAfterId(new JMenuItem(publishAction), null);
+            settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(publishAction)), null);
         }
-        settingsMenu.insertAfterId(new JMenuItem(deleteAction),null);
+        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(deleteAction)),null);
         
-        delete.setAction( deleteAction);
+        delete.setAction(new ActionWrapper(deleteAction));
        // toolbar.add(new JLabel(getString("calendar")));
        // toolbar.add(new JToolBar.Separator());
         toolbar.add( selectionBox);

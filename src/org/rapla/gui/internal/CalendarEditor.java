@@ -150,13 +150,18 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         max.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
         tree.setIcon( getIcon("icon.tree"));
         JButton min = new RaplaButton(RaplaButton.SMALL);
-        ActionListener minmaxAction = new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
+        ActionListener minmaxAction = new ActionListener() 
+        {
+			public void actionPerformed(ActionEvent e) 
+			{
 				savedViews.closeFilter();
 				int index = viewMenu.getIndexOfEntryWithId(SHOW_SELECTION_MENU_ENTRY);
 				JMenuItem component = (JMenuItem)viewMenu.getMenuComponent( index);
-				((SaveableToggleAction)component.getAction()).toggleCheckbox( component);
+				((SaveableToggleAction)component.getAction()).actionPerformed();
+				final boolean newSelected = !component.isSelected();
+				component.setSelected(newSelected);
+			    javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+			    component.setIcon(newSelected ? getIcon("icon.checked"):getIcon("icon.unchecked"));
 			}
 		};
 		min.addActionListener( minmaxAction);

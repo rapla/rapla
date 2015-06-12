@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action.user;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
@@ -54,7 +53,7 @@ public class PasswordChangeAction extends RaplaAction {
 
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         try {
             if (object == null)
                 return;

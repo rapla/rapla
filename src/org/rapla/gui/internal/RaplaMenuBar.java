@@ -40,6 +40,7 @@ import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -58,6 +59,7 @@ import org.rapla.gui.internal.action.user.UserAction;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.edit.TemplateEdit;
 import org.rapla.gui.internal.print.PrintAction;
+import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
@@ -133,7 +135,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         JMenuItem printMenu = new JMenuItem( getString("print"));
         PrintAction printAction =  new PrintAction(getContext());
-        printMenu.setAction( printAction );
+        printMenu.setAction( new ActionWrapper(printAction) );
         printAction.setEnabled( true );
         CalendarSelectionModel model = getService(CalendarSelectionModel.class);
         printAction.setModel(model);
@@ -143,20 +145,20 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         if ( getService(ClientService.class).canSwitchBack() ) {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction( new UserAction(getContext(),null).setSwitchToUser());
+            switchBack.setAction( new ActionWrapper(new UserAction(getContext(),null).setSwitchToUser()));
             adminMenu.add( switchBack );
         }
 
         boolean server = getUpdateModule().isClientForServer();
         if ( server  && isAdmin() ) {
             JMenuItem restartServer = new JMenuItem();
-            restartServer.setAction( new RestartServerAction(getContext()));
+            restartServer.setAction( new ActionWrapper(new RestartServerAction(getContext())));
             adminMenu.add( restartServer );
         }
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction( new RestartRaplaAction(getContext()));
+        restart.setAction( new ActionWrapper(new RestartRaplaAction(getContext())));
         systemMenu.add( restart );
 	      
         systemMenu.setMnemonic('F');
@@ -204,19 +206,19 @@ public class RaplaMenuBar extends RaplaGUIComponent
         
         {
             SaveableToggleAction action = new SaveableToggleAction( context, "show_tips",RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY);
-        	RaplaMenuItem menu = action.createMenuItem();
+        	RaplaMenuItem menu = createMenuItem(action);
         	viewMenu.insertBeforeId( menu, "view_save" );
         	action.setEnabled( modifyPreferencesAllowed);
         }
         {
         	SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY);
-        	RaplaMenuItem menu = action.createMenuItem();
+        	RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId( menu, "view_save" );
             action.setEnabled( modifyPreferencesAllowed);
         }
         {
     		SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
-        	RaplaMenuItem menu = action.createMenuItem();
+        	RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId( menu, "view_save" );
         }
 
@@ -243,6 +245,24 @@ public class RaplaMenuBar extends RaplaGUIComponent
         importMenu.setEnabled( importMenu.getMenuComponentCount() != 0);
         getUpdateModule().addModificationListener( listener);
     }
+
+   private RaplaMenuItem createMenuItem(SaveableToggleAction action) throws RaplaException
+   {
+       RaplaMenuItem menu = new RaplaMenuItem(action.getName());
+       menu.setAction(new ActionWrapper(action, getI18n()));
+       final User user = getUser();
+       final Preferences preferences = getQuery().getPreferences( user );
+       boolean selected = preferences.getEntryAsBoolean( action.getConfigEntry() , true);
+       if(selected) {
+           menu.setSelected(true);
+           menu.setIcon(getIcon("icon.checked"));
+       }
+       else {
+           menu.setSelected(false);
+           menu.setIcon(getIcon("icon.unchecked"));
+       }
+       return menu;
+   }
 
 	protected void updateTemplateText() {
 		if ( templateEdit == null)

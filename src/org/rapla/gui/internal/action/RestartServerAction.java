@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.event.ActionEvent;
-
 import javax.swing.SwingUtilities;
 
 import org.rapla.framework.RaplaContext;
@@ -32,7 +30,7 @@ public class RestartServerAction extends RaplaAction {
         putValue(SMALL_ICON,getIcon("icon.restart"));
     }
     
-    public void actionPerformed(ActionEvent arg0) {
+    public void actionPerformed() {
         SwingUtilities.invokeLater( new Runnable() {
             public void run() {
                 try {

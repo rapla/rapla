@@ -52,6 +52,7 @@ import org.rapla.gui.internal.action.DynamicTypeAction;
 import org.rapla.gui.internal.action.RaplaObjectAction;
 import org.rapla.gui.internal.action.user.PasswordChangeAction;
 import org.rapla.gui.internal.action.user.UserAction;
+import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuInterface;
 import org.rapla.gui.toolkit.RaplaMenuItem;
@@ -417,12 +418,12 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         menu.insertAfterId( new RaplaSeparator("sep2"), afterId);
         PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),popupContext);
         passwordChangeAction.changeObject( obj );
-        menu.insertAfterId( new JMenuItem( passwordChangeAction ), "sep2");
+        menu.insertAfterId( new JMenuItem( new ActionWrapper(passwordChangeAction) ), "sep2");
 
         UserAction switchUserAction = newUserAction(popupContext);
         switchUserAction.setSwitchToUser();
         switchUserAction.changeObject( obj );
-        menu.insertAfterId( new JMenuItem( switchUserAction ), "sep2");
+        menu.insertAfterId( new JMenuItem( new ActionWrapper(switchUserAction) ), "sep2");
     }
 
     private void addUserMenuNew(MenuInterface menu,PopupContext popupContext) {
@@ -445,7 +446,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private void addPeriodMenuNew(MenuInterface menu, PopupContext popupContext) {
-        Action newAction = addAction(menu,popupContext).setNew( Period.TYPE );
+        Action newAction = new ActionWrapper(addAction(menu,popupContext).setNew( Period.TYPE ));
         newAction.putValue(Action.NAME,getString("period"));
 
     }
@@ -458,7 +459,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
     private RaplaObjectAction addAction(MenuInterface menu, PopupContext popupContext,String id) {
         RaplaObjectAction action = newObjectAction(popupContext);
-        menu.insertAfterId( new JMenuItem(action), id);
+        menu.insertAfterId( new JMenuItem(new ActionWrapper(action)), id);
         return action;
     }
 

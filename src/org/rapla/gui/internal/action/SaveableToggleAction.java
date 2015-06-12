@@ -11,18 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.event.ActionEvent;
-
-import javax.swing.JMenuItem;
-
-import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.internal.SwingPopupContext;
-import org.rapla.gui.toolkit.RaplaMenuItem;
 
 public class SaveableToggleAction extends RaplaAction {
 	
@@ -38,34 +31,17 @@ public class SaveableToggleAction extends RaplaAction {
         //putValue(SMALL_ICON,getIcon("icon.unchecked"));
     }
    
-   public RaplaMenuItem createMenuItem() throws RaplaException
-   {
-	   RaplaMenuItem menu = new RaplaMenuItem(name);
-       menu.setAction( this);
-       final User user = getUser();
-       final Preferences preferences = getQuery().getPreferences( user );
-       boolean selected = preferences.getEntryAsBoolean( configEntry , true);
-       if(selected) {
-           menu.setSelected(true);
-           menu.setIcon(getIcon("icon.checked"));
-       }
-       else {
-           menu.setSelected(false);
-           menu.setIcon(getIcon("icon.unchecked"));
-       }
-       return menu;
-   }
-
-   public void actionPerformed(ActionEvent evt) {
-	   toggleCheckbox((JMenuItem)evt.getSource());
-   }
+    public String getName()
+    {
+        return name;
+    }
    
-   public void toggleCheckbox(JMenuItem toolTip) {
- 	   boolean newSelected = !toolTip.isSelected();
+   public void actionPerformed() {
  	   	if ( isModifyPreferencesAllowed())
  	   	{
  	   	    try {
  	                Preferences prefs = this.newEditablePreferences();
+ 	               boolean newSelected = !prefs.getEntryAsBoolean(configEntry, false);
  	                prefs.putEntry( configEntry, newSelected);
  	                getModification().store( prefs);
  	            } catch (Exception ex) {
@@ -73,9 +49,11 @@ public class SaveableToggleAction extends RaplaAction {
  	                return;
  	            }
  	   }
- 	   toolTip.setSelected(newSelected);
- 	   javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
- 	   toolTip.setIcon(newSelected ? getIcon("icon.checked"):getIcon("icon.unchecked"));
  	}
+
+    public TypedComponentRole<Boolean> getConfigEntry()
+    {
+        return configEntry;
+    }
 
 }

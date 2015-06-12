@@ -52,6 +52,7 @@ import org.rapla.gui.VisibleTimeInterval;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.action.AppointmentAction;
 import org.rapla.gui.internal.common.InternMenus;
+import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.MenuInterface;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
@@ -383,18 +384,18 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     	    {
 				AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 				action.setDelete(appointmentBlock);
-				menu.insertAfterId(new JMenuItem(action), afterId);
+				menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
 			}
 			{
 				AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 				action.setView(appointmentBlock);
-				menu.insertAfterId(new JMenuItem(action), afterId);
+				menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
 			}
 			
 			{
 		        AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 		        action.setEdit(appointmentBlock);
-		        menu.insertAfterId(new JMenuItem(action), afterId);
+		        menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
 	        }
 	        
 	    }
@@ -402,7 +403,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     	{
 	        AppointmentAction action = new AppointmentAction(getContext(),popupContext);
 	        action.setDeleteSelection(selection);
-	        menu.insertAfterId(new JMenuItem(action), afterId);
+	        menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
         }
 	
 	    

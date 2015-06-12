@@ -15,6 +15,8 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.Action;
+
 import org.rapla.client.ClientService;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
@@ -79,7 +81,7 @@ public class UserAction extends RaplaAction {
 
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         try {
             if (type == SWITCH_TO_USER) {
                 ClientService service = getService( ClientService.class);
@@ -109,6 +111,5 @@ public class UserAction extends RaplaAction {
     public void changePassword(User user,boolean showOld) throws RaplaException{
         new PasswordChangeAction(getContext(),popupContext).changePassword( user, showOld);
     }
-
 
 }
