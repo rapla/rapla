@@ -34,7 +34,6 @@ import java.util.TreeMap;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -68,7 +67,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -82,13 +80,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
 	Date startDate;
     Date endDate;
     Date selectedDate;
-    List<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
+    Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
     String title;
     ClientFacade m_facade;
     String selectedView;
-    I18nBundle i18n;
-    RaplaContext context;
-    RaplaLocale raplaLocale;
+    //RaplaContext context;
+    //RaplaLocale raplaLocale;
     User user;
     Map<String,String> optionMap = new HashMap<String,String>();
     //Map<String,String> viewOptionMap = new HashMap<String,String>();
@@ -97,15 +94,19 @@ public class CalendarModelImpl implements CalendarSelectionModel
     boolean defaultResourceTypes = true;
     Collection<TimeInterval> timeIntervals = Collections.emptyList();
     Collection<Allocatable> markedAllocatables = Collections.emptyList();
+    Locale locale;
     boolean markedIntervalTimeEnabled = false;
     Map<DynamicType,ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
-    public CalendarModelImpl(RaplaContext context, User user, ClientFacade facade) throws RaplaException {
-        this.context = context;
-        this.raplaLocale =context.lookup(RaplaLocale.class);
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+    public CalendarModelImpl(RaplaContext context, User user, ClientFacade facade) throws RaplaException 
+    {
+        this( context.lookup(RaplaLocale.class).getLocale(), user, facade);
+    }
+    
+    public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
+        this.locale = locale;
         m_facade = facade;
         if ( user == null && m_facade.isSessionActive()) {
             user = m_facade.getUser();
@@ -640,8 +641,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			} catch (IllegalAnnotationException e) {
 				return e.getMessage();
 			}
-        	Locale locale = raplaLocale.getLocale();
-			EvalContext evalContext = new EvalContext( locale);
+        	EvalContext evalContext = new EvalContext( locale);
 			String result = parsedTitle.formatName( evalContext);
         	return result;
         }
@@ -680,21 +680,27 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if (object == null)
             return "";
         if (object instanceof Named) {
-            String name = ((Named) object).getName(getI18n().getLocale());
+            String name = ((Named) object).getName(locale);
             return (name != null) ? name : "";
         }
         return object.toString();
     }
 
     private Collection<Allocatable> getFilteredAllocatables() throws RaplaException {
-        List<Allocatable> list = new ArrayList<Allocatable>();
+        Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
+        // TODO should be replaced with getAllocatables(allocatableFilter.values();
         for ( Allocatable allocatable :m_facade.getAllocatables())
         {
-            if ( isInFilter( allocatable) && (user == null || allocatable.canRead(user))) {
+            if ( isInFilterAndCanRead(allocatable)) {
                 list.add( allocatable);
             }
         }
         return list;
+    }
+
+    private boolean isInFilterAndCanRead(Allocatable allocatable)
+    {
+        return isInFilter( allocatable) && (user == null || allocatable.canRead(user));
     }
     
     private boolean isInFilter( Allocatable classifiable) {
@@ -735,22 +741,24 @@ public class CalendarModelImpl implements CalendarSelectionModel
         
         boolean allAllocatablesSelected = selectedObjects.contains( CalendarModelImpl.ALLOCATABLES_ROOT);
         
-        Collection<Allocatable> filteredList = getFilteredAllocatables();
-        for (Iterator<Allocatable> it = filteredList.iterator();it.hasNext();)
+        if ( dynamicTypes.size() > 0 || allAllocatablesSelected)
         {
-        	Allocatable oneSelectedItem =  it.next();
-            if ( selectedObjects.contains(oneSelectedItem)) {
-                continue;
-            }
-            Classification classification = oneSelectedItem.getClassification();
-            if ( classification == null)
+            Collection<Allocatable> filteredList = getFilteredAllocatables();
+            for (Allocatable oneSelectedItem:filteredList)
             {
-            	continue;
-            }
-             if ( allAllocatablesSelected || dynamicTypes.contains(classification.getType()))
-             {
-                result.add( oneSelectedItem );
-                continue;
+            	if ( selectedObjects.contains(oneSelectedItem)) {
+                    continue;
+                }
+                Classification classification = oneSelectedItem.getClassification();
+                if ( classification == null)
+                {
+                	continue;
+                }
+                if ( allAllocatablesSelected || dynamicTypes.contains(classification.getType()))
+                {
+                    result.add( oneSelectedItem );
+                    continue;
+                }
             }
         }
 
@@ -838,7 +846,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(context, user, m_facade);
+            clone = new CalendarModelImpl(locale, user, m_facade);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
 			clone.setConfiguration( config, alternativOptions);
@@ -957,24 +965,32 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
 	protected Collection<Allocatable> getSelectedAllocatablesAsList()
 			throws RaplaException {
+        
 		Collection<Allocatable> result = new HashSet<Allocatable>();
-        for(RaplaObject object:getSelectedObjectsAndChildren()) {
+        Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
+        boolean conflictsDetected = false;
+        for(RaplaObject object:selectedObjectsAndChildren) {
+            Allocatable alloc = null;
             if ( object.getRaplaType() ==  Conflict.TYPE ) {
-                result.add( ((Conflict)object).getAllocatable() );
-            }
-        }
-        // We ignore the allocatable selection if there are conflicts selected
-        if ( result.isEmpty())
-        {
-            for(RaplaObject object:getSelectedObjectsAndChildren()) {
-                if ( object.getRaplaType() ==Allocatable.TYPE ) {
-                    result.add( (Allocatable)object  );
+                if ( !conflictsDetected)
+                {
+                    // We ignore the allocatable selection if there are conflicts selected
+                    result.clear();
+                    conflictsDetected = true;
                 }
+                alloc = ((Conflict)object).getAllocatable();
+                
+                
+            }
+            if ( !conflictsDetected && object.getRaplaType() ==Allocatable.TYPE ) {
+                alloc = (Allocatable)object ;
+            }
+            if ( alloc != null && isInFilterAndCanRead( alloc))
+            {
+                result.add( alloc );
             }
         }
-        Collection<Allocatable> filteredAllocatables = getFilteredAllocatables();
-        result.retainAll( filteredAllocatables);
-		return result;
+        return result;
 	}
 
     public Collection<Conflict> getSelectedConflicts()  {
@@ -1009,14 +1025,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         return result;
    }
-
-    protected I18nBundle getI18n() {
-        return i18n;
-    }
-
-    protected RaplaLocale getRaplaLocale() {
-        return raplaLocale;
-    }
 
     @Override
     public boolean isOnlyCurrentUserSelected() {
@@ -1109,16 +1117,20 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private boolean isOldDefaultNameBehavoir(final String filename) 
 	{
 		List<String> translations = new ArrayList<String>();
-		translations.add( getI18n().getString("default") );
 		translations.add( "default" );
 		translations.add( "Default" );
-		translations.add( "Standard" );
+	    translations.add( "Standard" );
 		translations.add( "Standaard");
 		// special for polnish
 		if (filename.startsWith( "Domy") && filename.endsWith("lne"))
 		{
 			return true;
 		}
+		if (filename.startsWith( "D") && filename.endsWith("faut"))
+		{
+		    return true;
+		}
+		
 		if (filename.startsWith( "Est") && filename.endsWith("ndar"))
 		{
 			return true;
