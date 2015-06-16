@@ -51,6 +51,7 @@ import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.rest.gwtjsonrpc.common.JsonConstants;
 import org.rapla.rest.jsonpatch.mergepatch.server.JsonMergePatch;
+import org.rapla.storage.RaplaSecurityException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -181,7 +182,6 @@ public class JsonServlet {
         call.versionValue = new JsonPrimitive("2.0");
         call.noCache();
         call.onInternalFailure(ex);
-
         final String out = formatResult(call);
         RPCServletUtils.writeResponse(servletContext, call.httpResponse, out, out.length() > 256 && RPCServletUtils.acceptsGzipEncoding(call.httpRequest));
     }
@@ -566,6 +566,9 @@ public class JsonServlet {
     private int to2_0ErrorCode(final ActiveCall src) {
         final Throwable e = src.externalFailure;
         final Throwable i = src.internalFailure;
+        if (e instanceof RaplaSecurityException || i instanceof RaplaSecurityException) {
+            return -32000 /* Security Exception. */;
+        }
         if (e instanceof NoSuchRemoteMethodException || i instanceof NoSuchRemoteMethodException) {
             return -32601 /* Method not found. */;
         }

@@ -18,6 +18,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.TypedComponentRole;
 
 /**
  * This class adds just the get Type method to the DefaultConfiguration so that the config can be stored in a preference object
@@ -59,6 +60,30 @@ public class RaplaConfiguration extends DefaultConfiguration implements RaplaObj
    public RaplaConfiguration replace(  Configuration oldChild, Configuration newChild) 
    {
 	   return (RaplaConfiguration) super.replace( oldChild, newChild);
+   }
+   
+   public String getChildValue(TypedComponentRole<String> key, String defaultValue )
+   {
+       String id = key.getId();
+       Configuration child = getChild( id);
+       String result = child.getValue(defaultValue);
+       return result;
+   }
+   
+   public Integer getChildValue(TypedComponentRole<Integer> key, Integer defaultValue )
+   {
+       String id = key.getId();
+       Configuration child = getChild( id);
+       Integer result = child.getValueAsInteger(defaultValue);
+       return result;
+   }
+   
+   public Boolean getChildValue(TypedComponentRole<Boolean> key, Boolean defaultValue )
+   {
+       String id = key.getId();
+       Configuration child = getChild( id);
+       Boolean result = child.getValueAsBoolean(defaultValue);
+       return result;
    }
           
    @Override

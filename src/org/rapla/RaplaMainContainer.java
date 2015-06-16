@@ -44,9 +44,5 @@ public class RaplaMainContainer extends RaplaClient
     {
         super(  env );
     }
-    
-
-    
-	        
  }
 
