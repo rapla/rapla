@@ -114,7 +114,7 @@ final public class RaplaMainContainer extends ContainerImpl
 	public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
 	Logger callLogger;
 	
-    public RaplaMainContainer() throws Exception {
+	public RaplaMainContainer() throws Exception {
         this(new RaplaStartupEnvironment());
     }
 

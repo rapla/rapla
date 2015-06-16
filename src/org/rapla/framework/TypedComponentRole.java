@@ -1,5 +1,10 @@
 package org.rapla.framework;
 
+/**
+ * Could be replaced by javax.inject.qualifier
+ * 
+ */
+
 @SuppressWarnings("unused")
 public class TypedComponentRole<T> {
     String id;
