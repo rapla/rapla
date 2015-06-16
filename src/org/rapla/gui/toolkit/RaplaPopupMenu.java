@@ -83,7 +83,7 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
     @Override
     public void add(RaplaAction menuItem)
     {
-        final JMenuItem item = new JMenuItem(menuItem);
+        final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
         mapping.put(menuItem, item);
         super.add(item);
     }

@@ -237,7 +237,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);
-                    editAction.actionPerformed(null);
+                    editAction.actionPerformed();
                 }
             }
         }

@@ -2085,7 +2085,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 				calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
 				Collection<Appointment> appointments = Arrays.asList( AllocatableSelection.this.appointments);
 				calendarAction.setStart(findFirstStart(appointments));
-				calendarAction.actionPerformed(evt);
+				calendarAction.actionPerformed();
 			}
 		}
 

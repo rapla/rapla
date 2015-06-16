@@ -13,7 +13,6 @@
 package org.rapla.gui.internal.print;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
 import java.awt.print.PageFormat;
 
 import javax.swing.SwingUtilities;
@@ -43,7 +42,7 @@ public class PrintAction extends RaplaAction {
         m_pageFormat = pageFormat;
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         Component parent = getMainComponent();
         try {
             boolean modal = true;

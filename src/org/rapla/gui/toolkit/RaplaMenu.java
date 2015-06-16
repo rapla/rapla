@@ -92,7 +92,7 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
 	@Override
 	public void add(RaplaAction item)
 	{
-	    final JMenuItem menuItem = new JMenuItem(item);
+	    final JMenuItem menuItem = new JMenuItem(new ActionWrapper(item));
 	    mapping.put(item, menuItem);
         super.add(menuItem);
 	}

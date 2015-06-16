@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.event.ActionEvent;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -180,7 +179,7 @@ public class AppointmentAction extends RaplaAction {
         return this;
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         try {
             switch (type) {
             case DELETE: delete();break;

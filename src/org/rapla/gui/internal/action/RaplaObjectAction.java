@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -163,7 +160,7 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         try {
             switch (type) {
             case DELETE: delete();break;

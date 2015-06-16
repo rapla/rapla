@@ -11,8 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.action;
-import java.awt.event.ActionEvent;
-
 import org.rapla.client.ClientService;
 import org.rapla.framework.RaplaContext;
 import org.rapla.gui.RaplaAction;
@@ -32,7 +30,7 @@ public class RestartRaplaAction extends RaplaAction{
         putValue(SMALL_ICON,getIcon("icon.restart"));
     }
 
-    public void actionPerformed(ActionEvent arg0) {
+    public void actionPerformed() {
         boolean logoutAvailable = getService(ClientService.class).isLogoutAvailable();
         if ( logoutAvailable)
         {

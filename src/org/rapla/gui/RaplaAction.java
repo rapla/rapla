@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.Action;
-
 import org.rapla.framework.RaplaContext;
 
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {

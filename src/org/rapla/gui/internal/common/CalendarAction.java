@@ -13,7 +13,6 @@
 package org.rapla.gui.internal.common;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
 import java.util.Date;
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class CalendarAction extends RaplaAction {
         this.start = start;
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed() {
         try {
             RaplaFrame frame = new RaplaFrame(getContext());
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
