@@ -209,6 +209,13 @@ public class ConflictImpl extends SimpleEntity implements Conflict
 		}
 		Date toDate = DateTools.addDays( today, 365 * 10);
 		Date date = getFirstConflictDate(fromDate, toDate, app1, app2);
+		if ( date == null)
+		{
+		    // in case no overlapping is found, add the last of the start dates as conflict date
+		    // this should not occur often as conflicts should only be added if they have overlapping appointments
+		    // however noone prevents an api user from doing this
+		    date = start1.after( start2 ) ? start1: start2;
+		}
 		return date;
 	}
 
@@ -459,13 +466,16 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         }
         return null;
     }
-	public static void addConflicts(Collection<Conflict> conflictList, Allocatable allocatable,Appointment appointment1, Appointment appointment2,Date today)
+	public static void checkAndAddConflicts(Collection<Conflict> conflictList, Allocatable allocatable,Appointment appointment1, Appointment appointment2,Date today)
 	{
-        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today);
-        // Rapla 1.4: Don't add conflicts twice
-        if (!contains(conflict, conflictList) )
+	    if (ConflictImpl.isConflict(appointment1, appointment2, today))
         {
-            conflictList.add(conflict);
+	        final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today);
+	        // Rapla 1.4: Don't add conflicts twice
+	        if (!contains(conflict, conflictList) )
+	        {
+	            conflictList.add(conflict);
+	        }
         }
 	}
 	
@@ -512,7 +522,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict
         {
         	checkEnd = maxEnd2;
         }
-        if (checkEnd != null && ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
+        if (ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
         {
         	return false;
         }
