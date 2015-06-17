@@ -736,10 +736,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 								
 								Appointment appointment1 = appointment;
 								Appointment appointment2 = conflictingAppointment;
-								if (ConflictImpl.isConflict(appointment1, appointment2, today))
-		                		{
-		                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2, today);
-		                		}
+								ConflictImpl.checkAndAddConflicts(conflictList, allocatable,appointment1, appointment2, today);
 							}
 						}
 					}
