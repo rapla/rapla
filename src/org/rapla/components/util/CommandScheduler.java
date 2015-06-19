@@ -20,8 +20,10 @@ package org.rapla.components.util;
  */
 public interface CommandScheduler  
 {
-	public Cancelable schedule(Command object, long delay);
-	public Cancelable schedule(Command object, long delay, long period);
+	public Cancelable schedule(Command command, long delay);
+	public Cancelable schedule(Command command, long delay, long period);
+	/** if two commands are scheduled for the same synchronisation object then they must be executed in the order in which they are scheduled*/
+	public Cancelable scheduleSynchronized(Object synchronizationObject,Command command, long delay);
 }
 
 

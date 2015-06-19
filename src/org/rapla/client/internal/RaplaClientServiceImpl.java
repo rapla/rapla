@@ -330,6 +330,12 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 		{
 			return parent.toString();
 		}
+
+        @Override
+        public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
+        {
+            return parent.scheduleSynchronized(synchronizationObject, command, delay);
+        }
 	}
 	
     public ClientFacade getFacade() throws RaplaContextException {

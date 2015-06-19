@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -33,6 +34,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.jws.WebService;
@@ -452,6 +454,119 @@ public class ContainerImpl implements Container
 			Runnable task = createTask(command);
 			return schedule(task, delay, period);
 		}
+		
+		abstract class  CancableCommand implements Cancelable, Command
+		{
+		    long delay;
+		    private Command command;
+            
+		    volatile Thread.State status = Thread.State.NEW;
+		    Cancelable cancelable;
+            CancableCommand next;
+            
+		    public CancableCommand(Command command, long delay)
+            {
+                this.command = command;
+                this.delay = delay;
+            }
+
+            @Override
+            public void execute() throws Exception
+            {
+                try
+                {
+                    if ( status == Thread.State.NEW)
+                    {
+                        status = Thread.State.RUNNABLE;
+                        command.execute();
+                    }
+                }
+                finally
+                {
+                    status = Thread.State.TERMINATED;
+                    scheduleNext();
+                }
+            }
+            @Override
+            public void cancel()
+            {
+                if ( cancelable != null && status == Thread.State.RUNNABLE )
+                {
+                    // send interrupt if thread is running
+                    cancelable.cancel();
+                }
+                status = Thread.State.TERMINATED;
+            }
+
+            public void pushToEndOfQueue(CancableCommand wrapper)
+            {
+                if ( next == null)
+                {
+                    next = wrapper;
+                }
+                else
+                {
+                    next.pushToEndOfQueue( wrapper);
+                }
+            }
+
+            public void scheduleThis()
+            {
+                cancelable = schedule(this, delay);
+            }
+
+            private void scheduleNext()
+            {
+                if ( next != null)
+                {
+                    replaceWithNext( next);
+                    next.scheduleThis();
+                } 
+                else
+                {
+                    endOfQueueReached();
+                }
+            }
+
+            abstract protected void replaceWithNext(CancableCommand next);
+
+            abstract protected void endOfQueueReached();
+		}
+		
+		ConcurrentHashMap<Object, CancableCommand> futureTasks= new ConcurrentHashMap<Object, CancableCommand>();
+        @Override
+        public Cancelable scheduleSynchronized(final Object synchronizationObject, Command command, final long delay)
+        {
+            CancableCommand wrapper = new CancableCommand(command,delay)
+            {
+                @Override
+                protected void replaceWithNext(CancableCommand next)
+                {
+                    futureTasks.replace( synchronizationObject , this, next);
+                }
+                @Override
+                protected void endOfQueueReached()
+                {
+                    synchronized (synchronizationObject)
+                    {
+                        futureTasks.remove( synchronizationObject);
+                    }
+                }
+            };
+            synchronized (synchronizationObject)
+            {
+                CancableCommand existing = futureTasks.putIfAbsent( synchronizationObject, wrapper);
+                if (existing == null)
+                {
+                    wrapper.scheduleThis();
+                }
+                else
+                {
+                    existing.pushToEndOfQueue( wrapper );
+                }
+                return wrapper;
+            }
+        }
 
 		public void cancel() {
 			try{
@@ -485,6 +600,7 @@ public class ContainerImpl implements Container
 			{
 			}
 		}
+
 	}
 
 	class RoleEntry {
@@ -584,6 +700,10 @@ public class ContainerImpl implements Container
         for (Constructor constructor:constructors) {
             Class[] types = constructor.getParameterTypes();
             boolean compatibleParameters = true;
+            if (constructor.getAnnotation( Inject.class) != null)
+            {
+                return constructor;
+            }
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
                 if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class) || getContext().has( type))) 
