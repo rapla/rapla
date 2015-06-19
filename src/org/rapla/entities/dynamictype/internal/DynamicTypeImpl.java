@@ -621,21 +621,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     }
 
-    public static boolean isInternalType(Classifiable classifiable) {
-		boolean isRaplaType =false;
-		Classification classification = classifiable.getClassification();
-		if ( classification != null )
-		{
-			String classificationType = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			if ( classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE))
-			{
-				isRaplaType = true;
-			}
-		}
-		return isRaplaType;
-	}
-
-
 	static class DynamicTypeParseContext implements ParseContext {
 		private DynamicTypeImpl type;
 

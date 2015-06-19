@@ -47,7 +47,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
@@ -259,7 +258,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Iterator<? extends Classifiable> it = list.iterator();
 			while (it.hasNext()) {
 				Classifiable classifiable = it.next();
-				if ( DynamicTypeImpl.isInternalType(classifiable) )
+				if ( Classifiable.ClassifiableUtil.isInternalType(classifiable) )
 				{
 					it.remove();
 				}
