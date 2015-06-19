@@ -244,7 +244,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	{
 	    if ( filters == null)
 	    {
-	        return( !DynamicTypeImpl.isInternalType(classifiable) );
+	        return( !Classifiable.ClassifiableUtil.isInternalType(classifiable) );
 	    }
 	    else
 	    {

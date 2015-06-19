@@ -778,20 +778,20 @@ public class ContainerImpl implements Container
         return pluginList;
     }
     
-    private Configuration findPluginConfig(RaplaConfiguration raplaConfig, String pluginClassname) {
+    private Configuration findPluginConfig(RaplaConfiguration raplaConfig, final String pluginClassname) {
         Configuration pluginConfig;
         // TODO should be replaced with a more descriptive approach instead of looking for the config by guessing from the package name
         pluginConfig = raplaConfig.find( "class", pluginClassname );
         // If no plugin config for server is found look for plugin config for client plugin
         if ( pluginConfig == null )
         {
-            String pluginClassname2 = pluginClassname.replaceAll("ServerPlugin", "Plugin");
-            pluginClassname2 = pluginClassname2.replaceAll(".server.", ".client.");
-            pluginConfig = raplaConfig.find( "class", pluginClassname2 );
+            String newClassname = pluginClassname.replaceAll("ServerPlugin", "Plugin");
+            newClassname = newClassname.replaceAll(".server.", ".client.");
+            pluginConfig = raplaConfig.find( "class", newClassname );
             if ( pluginConfig == null)
             {
-                pluginClassname2 = pluginClassname2.replaceAll(".client.", ".");
-                pluginConfig = raplaConfig.find( "class", pluginClassname2 );
+                newClassname = newClassname.replaceAll(".client.", ".");
+                pluginConfig = raplaConfig.find( "class", newClassname );
             }
         }
         return pluginConfig;
