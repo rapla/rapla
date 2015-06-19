@@ -1779,11 +1779,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
-	private void addRemovedUserDependant(UpdateEvent evt, EntityStore store,User user) {
+	// add all objects that are dependet on a user and can be safely removed and are added to the remove list
+	private void addRemovedUserDependant(UpdateEvent updateEvt, EntityStore store,User user) {
 		PreferencesImpl preferences = cache.getPreferencesForUserId(user.getId());
+		// remove preferences of user
 		if (preferences != null)
 		{
-			evt.putRemove(preferences);
+			updateEvt.putRemove(preferences);
 		}
 		List<Entity>referencingEntities = getReferencingEntities( user, store);
 		Iterator<Entity>it = referencingEntities.iterator();
@@ -1795,12 +1797,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			{
 				Classification classification = ((Classifiable) entity).getClassification();
                 DynamicType type = classification.getType();
-				if (((DynamicTypeImpl)type).isInternal())
+                // remove all internal resources (e.g. templates) that have the user as owner
+                if (((DynamicTypeImpl)type).isInternal())
 				{
 					User owner = ((Ownable)entity).getOwner();
 					if ( owner != null && owner.equals( user))
 					{
-					    evt.putRemove( entity);
+					    updateEvt.putRemove( entity);
 					    if ( type.getKey().equals(StorageOperator.RAPLA_TEMPLATE))
 					    {
 					        templates.add( (Allocatable) entity );
@@ -1809,6 +1812,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					}
 				} 
 			}
+			// change the lastchangedby for all objects that are last edited by the user. Change last changed to null
 			if (entity instanceof Timestamp) {
 				Timestamp timestamp = (Timestamp) entity;
 				User lastChangedBy = timestamp.getLastChangedBy();
@@ -1825,9 +1829,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 						 continue;
 					 }
 				}
-				if (evt.getStoreObjects().contains(entity)) 
+				// check if entity is already in updateEvent (e.g. is modified)
+				if (updateEvt.getStoreObjects().contains(entity)) 
 				{
-					((SimpleEntity)evt.findEntity(entity)).setLastChangedBy(null);
+					((SimpleEntity)updateEvt.findEntity(entity)).setLastChangedBy(null);
 				}
 				else
 				{
@@ -1836,10 +1841,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     Entity persistant= cache.tryResolve( entity.getId(), typeClass);
 					Entity dependant = editObject( entity, persistant, user);
 					((SimpleEntity)dependant).setLastChangedBy( null );
-					evt.putStore(entity);
+					updateEvt.putStore(entity);
 				}
 			}
 		}
+		// now delete template events for the removed templates 
 		for ( Allocatable template:templates)
 		{
 		    String templateId = template.getId();
@@ -1848,7 +1854,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 if (reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, "").equals( templateId))
                 {
-                    evt.putRemove(reservation);
+                    updateEvt.putRemove(reservation);
                 }
             }
 		}

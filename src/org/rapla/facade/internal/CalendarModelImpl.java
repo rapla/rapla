@@ -171,6 +171,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		}
 		return false;
     }
+    
 
     public boolean setConfiguration(CalendarModelConfiguration config, final Map<String,String> alternativOptions) throws RaplaException {
     	ArrayList<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
@@ -1385,6 +1386,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		List<Appointment> result = AppointmentImpl.getAppointments(reservations, allocatables);
 		return result;
 	}
+
 	
 }
 
