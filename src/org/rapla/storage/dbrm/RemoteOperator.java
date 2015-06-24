@@ -202,6 +202,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                         
                         try {
                             User user = loadFromEvent( evt);
+                            initRefresh();
                             callback.onSuccess( user );
                         } catch (RaplaException e) {
                             callback.onFailure( e);
