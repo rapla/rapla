@@ -100,22 +100,22 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	/**
      * This method is used to compare two appointment blocks by their start dates
      */
-	public int compareTo(AppointmentBlock other) 
+	public int compareTo(AppointmentBlock a2) 
 	{
-        if (other.start > start)
-            return -1;
-        if (other.start < start) 
-            return 1;
-        if (other.end > end)
-            return 1;
-        if (other.end < end)
-            return -1;
-        if ( other == this)
+        if ( a2 == this)
         {
             return 0;
         }
-        @SuppressWarnings("unchecked")
-		int compareTo = appointment.compareTo(other.appointment);
+        AppointmentBlock a1 =this ;
+        if (a2.start > a1.start)
+            return -1;
+        if (a2.start < a1.start) 
+            return 1;
+        if (a2.end > a1.end)
+            return 1;
+        if (a2.end < a1.end)
+            return -1;
+        int compareTo = appointment.getId().compareTo(a2.appointment.getId());
 		return compareTo;
     }
 	
@@ -131,6 +131,16 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	        return false;
 	    }
 	    return appointment.equals( other.appointment);
+	}
+	
+	@Override
+	public int hashCode()
+	{
+	    if ( appointment == null)
+	    {
+	        return super.hashCode();
+	    }
+	    return appointment.hashCode();
 	}
 	
 	

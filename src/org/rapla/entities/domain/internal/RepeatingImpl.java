@@ -237,8 +237,9 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         }
         for (int i=0;i<exceptions.length;i++) {
             //System.out.println("Comparing exception " + exceptions[i] + " with " + new Date(time));
-            if (exceptions[i].getTime()<=time
-                && time<exceptions[i].getTime() + DateTools.MILLISECONDS_PER_DAY) {
+            final long excTime = exceptions[i].getTime();
+            if (DateTools.cutDate(excTime)<=time
+                && time<DateTools.fillDate(excTime)) {
                 //System.out.println("Exception matched " + exceptions[i]);
                 return true;
             }

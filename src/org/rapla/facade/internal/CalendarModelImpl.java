@@ -49,7 +49,6 @@ import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentBlockStartComparator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Classification;
@@ -1283,7 +1282,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         		}
         	}
         }
-        Collections.sort(appointments, new AppointmentBlockStartComparator());
+        Collections.sort(appointments);
         return appointments;
 	}
 

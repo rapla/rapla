@@ -114,12 +114,12 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     /** this method will be used for future enhancements */
     void setWholeDays(boolean enable);
 
-    /** adds all Appointment-blocks in the given period to the appointmentBlockArray.
+    /** adds all Appointment-blocks in the given period to the blocks collection.
         A block is in the period if its starttime<end or its endtime>start. Exceptions are excluded, i.e. there is no block on an exception date. 
      */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks);
     
-    /** adds all Appointment-blocks in the given period to the appointmentBlockArray.
+    /** adds all Appointment-blocks in the given period to the blocks collection.
     A block is in the period if its starttime<end or its endtime>start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
     */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);

@@ -384,7 +384,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             } 
             return false;
         }
-
         DD=DE?BUG: print("s = appointmentstart, e = appointmentend, c1 = intervalstart c2 = intervalend");
         DD=DE?BUG: print("s:" + n(s) + " e:" + n(e) + " c2:" + n(c2) + " c1:" + n(c1));
         if (s <c2 && e>c1  && (!repeating.isException(s) || !excludeExceptions)) {
