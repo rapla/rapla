@@ -12,9 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.util.ArrayList;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
@@ -22,7 +27,6 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.EditField;
 import org.rapla.gui.internal.edit.fields.BooleanField;
 import org.rapla.gui.internal.edit.fields.ClassificationField;
 import org.rapla.gui.internal.edit.fields.PermissionListField;
@@ -37,20 +41,42 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     
     public AllocatableEditUI(RaplaContext context, boolean internal) throws RaplaException {
         super(context);
-        this.internal = internal;
-        ArrayList<EditField> fields = new ArrayList<EditField>();
         classificationField = new ClassificationField<Allocatable>(context);
-        fields.add(classificationField );
         permissionField = new PermissionListField(context,getString("permissions"));
-        //permissionField.addChangeListener( listener );
-        fields.add( permissionField );
         if ( !internal)
         {
             holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
-            fields.add(holdBackConflictsField );
         }
         permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
-        setFields(fields);
+        final JComponent permissionPanel = permissionField.getComponent();
+        final JComponent holdBackConflictPanel = holdBackConflictsField.getComponent();
+        editPanel.setLayout( new BorderLayout());
+        editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
+        editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+        classificationField.addChangeListener(new ChangeListener()
+        {
+            
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                final boolean mainTabSelected = classificationField.isMainTabSelected();
+                permissionPanel.setVisible( !mainTabSelected);
+                if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
+                {
+                    editPanel.remove( holdBackConflictPanel);
+                    editPanel.add( permissionPanel, BorderLayout.SOUTH);
+                    editPanel.repaint();
+                }
+                
+                if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
+                {
+                    editPanel.remove( permissionPanel );
+                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                    editPanel.repaint();
+                }
+            }
+        });
+        editPanel.setPreferredSize( new Dimension(800,600));
     }
 
     public void mapToObjects() throws RaplaException {
