@@ -45,7 +45,9 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.AppointmentBlockEvalContext;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.ReservationEvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
@@ -182,7 +184,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return "";
         }
-        AppointmentBlockEvalContext evalContext = new AppointmentBlockEvalContext(locale, 0, annotationName, block );
+        EvalContext evalContext = block != null ? new AppointmentBlockEvalContext(locale, 0, annotationName, block ) : new ReservationEvalContext(locale, 0, annotationName, this);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
