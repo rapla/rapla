@@ -242,6 +242,19 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     }
 
     public  boolean isValid(Object obj) {
+        if ( type.equals( AttributeType.CATEGORY))
+        {
+            if ( !(obj instanceof Category))
+            {
+                return false;
+            }
+            final Category rootCategory = (Category)getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+            if (rootCategory != null)
+            {
+                final Category cat = (Category)obj;
+                rootCategory.isAncestorOf( cat);
+            }
+        }
         return true;
     }
 

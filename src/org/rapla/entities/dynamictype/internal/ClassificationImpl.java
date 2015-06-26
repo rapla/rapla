@@ -360,7 +360,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		ArrayList<String> newValues = new ArrayList<String>();
 		for (Object value:values)
 		{
-			String stringValue = ((AttributeImpl)attribute).toStringValue(value);
+		    String stringValue = toSafeString(attribute, value);
 			if ( stringValue != null)
 			{
 				newValues.add(stringValue);
@@ -371,10 +371,21 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         name = null;
     }
 
+    private String toSafeString(Attribute attribute, Object value) throws IllegalArgumentException
+    {
+        final AttributeImpl attributeImpl = (AttributeImpl)attribute;
+        if ( !attributeImpl.isValid(value))
+        {
+            throw new IllegalArgumentException("value " + value + " is not a valid for attribute " + attribute);
+        }
+        String stringValue = attributeImpl.toStringValue(value);
+        return stringValue;
+    }
+
     public <T> void addValue(Attribute attribute,T value) {
     	checkWritable();
     	String attributeKey = attribute.getKey();
-    	String stringValue = ((AttributeImpl)attribute).toStringValue( value);
+    	String stringValue = toSafeString(attribute, value);
         if ( stringValue == null)
         {
         	return;
