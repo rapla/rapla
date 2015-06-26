@@ -25,6 +25,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.BuildContext;
 
@@ -52,7 +53,14 @@ public abstract class AbstractRaplaBlock implements Block
     
     public String getName()
     {
-    	return getReservation().getName( m_raplaLocale.getLocale());
+        return getReservationName();
+    }
+    
+    public String getReservationName()
+    {
+        String annotiationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+        String name = getReservation().format( m_raplaLocale.getLocale(), annotiationName, m_context.getAppointmentBlock());
+        return name;
     }
 
     public Date getStart()  {

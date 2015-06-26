@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
@@ -35,6 +37,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -651,6 +654,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentFunction(type);
             }
+            else if (variableName.equals("event:appointmentBlock")) 
+            {
+                return new AppointmentBlockFunction(type);
+            }
 	        return null;
 		}
 		
@@ -778,6 +785,51 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             }
             
         }
+		
+		class AppointmentBlockFunction extends ParsedText.Function
+        {
+            AppointmentBlockFunction(DynamicType type) 
+            {
+                super("event:appointmentBlock");
+            }
+
+            @Override
+            public String eval(EvalContext context) {
+                if ( context instanceof AppointmentBlockEvalContext)
+                {
+                    final AppointmentBlock block = ((AppointmentBlockEvalContext)context).getBlock();
+                    if ( block != null)
+                    {
+                        final int appointmentNumber = getAppointmentNumber( block);
+                        return "" + appointmentNumber;
+                    }
+                }
+                return "";
+            }
+            
+            private int getAppointmentNumber(AppointmentBlock appointmentBlock)
+            {
+                final long blockStart = appointmentBlock.getEnd();
+                final Date end = new Date(blockStart);
+                final Appointment appointment = appointmentBlock.getAppointment();
+                final Reservation reservation = appointment.getReservation();
+                final Date start = reservation.getFirstDate(); 
+                SortedSet<AppointmentBlock> blocks = new TreeSet<AppointmentBlock>();
+                for (Appointment app:reservation.getAppointments())
+                {
+                    app.createBlocks( start, end, blocks);
+                }
+                final SortedSet<AppointmentBlock> headSet = blocks.headSet( appointmentBlock);
+                final int size = headSet.size();
+//                final long appoimtmentStart = reservation.getFirstDate().getTime();
+//                if (appoimtmentStart ==  start)
+//                {
+//                    return 1;
+//                }
+                return size + 1;
+            }
+            
+        }
 	}
 	
 	static public class ReservationEvalContext extends EvalContext
@@ -795,6 +847,23 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             return reservation;
         }
         
+    }
+
+    static public class AppointmentBlockEvalContext extends ReservationEvalContext
+    {
+        private AppointmentBlock block;
+
+        public AppointmentBlockEvalContext(Locale locale, int callStackDepth, String annotationName, AppointmentBlock block)
+        {
+            super(locale, callStackDepth, annotationName, block.getAppointment().getReservation());
+            this.block = block;
+        }
+
+        public AppointmentBlock getBlock()
+        {
+            return block;
+        }
+
     }
 
 	public static boolean isTransferedToClient(Classifiable classifiable) {

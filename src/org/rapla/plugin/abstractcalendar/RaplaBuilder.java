@@ -741,7 +741,7 @@ public abstract class RaplaBuilder
         public AppointmentBlock getAppointmentBlock() {
         	return appointmentBlock;
         }
-        
+
         public Appointment getAppointment() {
         	Appointment appointment =appointmentBlock.getAppointment();
         	return appointment;

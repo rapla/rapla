@@ -35,6 +35,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
@@ -43,9 +44,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.ReservationEvalContext;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.AppointmentBlockEvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
-import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
@@ -171,13 +171,18 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String format(Locale locale, String annotationName)
     {
+        return format( locale, annotationName, null);
+    }
+
+    public String format(Locale locale, String annotationName, AppointmentBlock block)
+    {
         DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
         if (parsedAnnotation == null)
         {
             return "";
         }
-        EvalContext evalContext = new ReservationEvalContext(locale, 0, annotationName, this );
+        AppointmentBlockEvalContext evalContext = new AppointmentBlockEvalContext(locale, 0, annotationName, block );
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
