@@ -392,7 +392,7 @@ public abstract class RaplaBuilder
     {
         selectedAllocatables.clear();
         if (allocatables != null ) {
-            List<Allocatable> list = new ArrayList<Allocatable>();
+            List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
             Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
             selectedAllocatables.addAll(new HashSet<Allocatable>(list));
         }
