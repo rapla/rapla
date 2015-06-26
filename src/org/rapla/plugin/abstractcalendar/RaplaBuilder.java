@@ -28,8 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
@@ -679,34 +677,6 @@ public abstract class RaplaBuilder extends RaplaComponent
         
         public AppointmentBlock getAppointmentBlock() {
         	return appointmentBlock;
-        }
-        
-        public String getAppointmentBlockExtraInfo()
-        {
-            int number = getAppointmentNumber( appointmentBlock);
-            return number + ":";
-        }
-        
-        private int getAppointmentNumber(AppointmentBlock appointmentBlock)
-        {
-            final long blockStart = appointmentBlock.getEnd();
-            final Date end = new Date(blockStart);
-            final Appointment appointment = appointmentBlock.getAppointment();
-            final Reservation reservation = appointment.getReservation();
-            final Date start = reservation.getFirstDate(); 
-            SortedSet<AppointmentBlock> blocks = new TreeSet<AppointmentBlock>();
-            for (Appointment app:reservation.getAppointments())
-            {
-                app.createBlocks( start, end, blocks);
-            }
-            final SortedSet<AppointmentBlock> headSet = blocks.headSet( appointmentBlock);
-            final int size = headSet.size();
-//            final long appoimtmentStart = reservation.getFirstDate().getTime();
-//            if (appoimtmentStart ==  start)
-//            {
-//                return 1;
-//            }
-            return size + 1;
         }
 
         public Appointment getAppointment() {

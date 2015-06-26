@@ -34,6 +34,7 @@ public interface DynamicTypeAnnotations
 	String VALUE_CONFLICTS_ALWAYS="always";
 	String VALUE_CONFLICTS_WITH_OTHER_TYPES="withOtherTypes";
 	
+	
 	String KEY_TRANSFERED_TO_CLIENT = "transferedToClient";
 	String VALUE_TRANSFERED_TO_CLIENT_NEVER = "never";
 	
