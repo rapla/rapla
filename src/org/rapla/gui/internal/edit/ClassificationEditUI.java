@@ -45,7 +45,19 @@ import org.rapla.gui.internal.edit.fields.TextField;
 
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
-	public ClassificationEditUI(RaplaContext sm) {
+    String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
+	
+    public String getSelectedView()
+    {
+        return selectedView;
+    }
+
+    public void setSelectedView(String selectedView)
+    {
+        this.selectedView = selectedView;
+    }
+
+    public ClassificationEditUI(RaplaContext sm) {
 		super(sm);
 	}
 
@@ -189,7 +201,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 	
 	public void setObjects(List<Classification> classificationList) throws RaplaException {
 		this.objectList = classificationList;
-		// determining of the DynmicTypes from the classifications
+		recreateFields();
+	}
+
+    public void recreateFields() throws RaplaException
+    {
+        // determining of the DynmicTypes from the classifications
 		Set<DynamicType> types = new HashSet<DynamicType>();
 		for (Classification c : objectList) {
 			types.add(c.getType());
@@ -202,11 +219,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			// create fields for attributes
 			List<SetGetField<?>> fields= new ArrayList<SetGetField<?>>();
 			for (Attribute attribute:attributes) {
-			    String view = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
-			    if ( view.equals( AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW))
+			    boolean isVisible = isVisible(attribute);
+			    if ( !isVisible)
 			    {
 			        continue;
 			    }
+
 			    SetGetField<?> field = createField(attribute);
 				//field.setUser(classificationList);
 				fields.add( field);
@@ -215,8 +233,15 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			// show fields
 			setFields(fields);
 		}
-		mapFromObjects();
-	}
+        mapFromObjects();
+    }
+
+    protected boolean isVisible(Attribute attribute)
+    {
+        String view = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
+        boolean isVisible = view.equals( getSelectedView() ) || view.equals( AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
+        return isVisible;
+    }
 
 	public void mapTo(SetGetField<?> field) {
          // checks if the EditField shows a common value

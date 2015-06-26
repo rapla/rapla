@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
@@ -32,6 +35,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -40,6 +44,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.common.NamedListCellRenderer;
 import org.rapla.gui.internal.edit.ClassificationEditUI;
+import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaListComboBox;
 
 /****************************************************************
@@ -56,13 +61,17 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	DynamicType oldDynamicType;
 	List<Classification> oldClassifications; // enhancement to array
 	final String multipleValues = TextField.getOutputForMultipleValues();
-	
+    
 	JScrollPane scrollPane;
+	JPanel header;
+	RaplaButton tabSelector;
 	
+    boolean mainTabSelected = true;
+    
 	public ClassificationField(RaplaContext context)  {
 		super(context);
 		editUI = new ClassificationEditUI(context);
-		editUI.addChangeListener( new ChangeListener() {
+		editUI.addChangeListener( new ChangeListener() { 
             
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -179,12 +188,23 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
 		typeSelector.addActionListener(this);
 
+		
 		content.setLayout(new BorderLayout());
-		JPanel container = new JPanel();
-		container.setLayout(new BorderLayout());
-		container.add(typeSelector, BorderLayout.WEST);
-		content.add(container, BorderLayout.NORTH);
-
+		JPanel header = new JPanel();
+		header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
+        final String typeName = classificationType + "_type";
+		header.add( new JLabel(getString(typeName) +":"));
+		header.add(Box.createHorizontalStrut(20));
+		header.add(typeSelector);
+		header.add(Box.createHorizontalStrut(30));
+		tabSelector = new RaplaButton();
+        header.add(tabSelector);
+        header.add(Box.createHorizontalGlue());
+        tabSelector.addActionListener( this);
+        
+        updateTabSelectionText();
+        
+		content.add(header, BorderLayout.NORTH);
 		JComponent editComponent = editUI.getComponent();
 
 		scrollPane = new JScrollPane(editComponent,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
@@ -197,6 +217,27 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.add(scrollPane, BorderLayout.CENTER);
 	}
 
+    private void updateTabSelectionText()
+    {
+        tabSelector.setText( mainTabSelected ?
+                getInfoButton()
+                :getString("back")
+                );
+        tabSelector.setIcon( mainTabSelected ?
+                null
+                : getIcon("icon.list")
+                );
+    }
+
+    private String getInfoButton() {
+        return getString("additional-view") + " / " +getString("permissions");
+    }
+    
+    public boolean isMainTabSelected()
+    {
+        return mainTabSelected;
+    }
+	
 	public void setScrollingAlwaysEnabled( boolean enabled)
 	{
 	    scrollPane.setVerticalScrollBarPolicy( enabled ? JScrollPane.VERTICAL_SCROLLBAR_ALWAYS : JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED );
@@ -207,6 +248,15 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	public void actionPerformed(ActionEvent event) {
 		try {
 			Object source = event.getSource();
+			if (source == tabSelector) {
+			    mainTabSelected = !mainTabSelected;
+			    
+		        updateTabSelectionText();
+		        editUI.mapToObjects();
+		        editUI.setSelectedView( mainTabSelected ? AttributeAnnotations.VALUE_EDIT_VIEW_MAIN : AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL);
+		        editUI.recreateFields();
+		        fireContentChanged();
+			}
 			if (source == typeSelector) {
 				// checks if a DynamicType has been selected in ComboBox
 				if (typeSelector.getSelectedItem() instanceof DynamicType) {
