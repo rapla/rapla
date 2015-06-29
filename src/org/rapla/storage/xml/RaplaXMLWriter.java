@@ -240,10 +240,8 @@ abstract public class RaplaXMLWriter extends XMLWriter
                 {
                     throw new IllegalStateException("Illegal category circle detected!");
                 }
-                pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
             }
-
-            
+            pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
         }
         String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
         return keyPathString;
