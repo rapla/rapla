@@ -66,7 +66,6 @@ public interface Attribute extends Entity<Attribute>,MultiLanguageNamed,Annotata
      */
     boolean needsChange(Object value);
 
-    boolean isValid(Object object);
     boolean isOptional();
     void setOptional(boolean bOptional);
     Object getConstraint(String key);

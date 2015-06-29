@@ -812,7 +812,6 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     	    if ( valueAsString != null )
             {
     	        Object value = AttributeImpl.parseAttributeValue(attribute, valueAsString);
-    	        
     	        classification.addValue( attribute, value);
             }
         }

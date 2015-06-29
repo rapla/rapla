@@ -374,10 +374,6 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     private String toSafeString(Attribute attribute, Object value) throws IllegalArgumentException
     {
         final AttributeImpl attributeImpl = (AttributeImpl)attribute;
-        if ( !attributeImpl.isValid(value))
-        {
-            throw new IllegalArgumentException("value " + value + " is not a valid for attribute " + attribute);
-        }
         String stringValue = attributeImpl.toStringValue(value);
         return stringValue;
     }
