@@ -591,8 +591,12 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                    //System.out.println( attribute.getConstraintKeys());
                    throw new RaplaException("Can't find " + ConstraintIds.KEY_ROOT_CATEGORY + " for attribute " + attribute);
                 }
-                Category categoryFromPath = rootCategory.getCategoryFromPath(path);
-                if ( categoryFromPath == null)
+                Category categoryFromPath; 
+                try
+                {
+                    categoryFromPath = rootCategory.getCategoryFromPath(path);
+                } 
+                catch (EntityNotFoundException ex)
                 {
                     while ( rootCategory.getParent() != null)
                     {
