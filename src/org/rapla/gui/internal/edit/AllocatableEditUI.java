@@ -37,22 +37,29 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     ClassificationField<Allocatable> classificationField;
     PermissionListField permissionField;
     BooleanField holdBackConflictsField;
-    boolean internal =false;
+    final boolean internal;
     
     public AllocatableEditUI(RaplaContext context, boolean internal) throws RaplaException {
         super(context);
+        this.internal = internal;
         classificationField = new ClassificationField<Allocatable>(context);
         permissionField = new PermissionListField(context,getString("permissions"));
+        
+        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+        final JComponent permissionPanel = permissionField.getComponent();
+        editPanel.setLayout( new BorderLayout());
+        editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
+        final JComponent holdBackConflictPanel;
         if ( !internal)
         {
             holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
+            holdBackConflictPanel = holdBackConflictsField.getComponent();
+            editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
         }
-        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
-        final JComponent permissionPanel = permissionField.getComponent();
-        final JComponent holdBackConflictPanel = holdBackConflictsField.getComponent();
-        editPanel.setLayout( new BorderLayout());
-        editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
-        editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+        else
+        {
+            holdBackConflictPanel = null;
+        }
         classificationField.addChangeListener(new ChangeListener()
         {
             
@@ -61,17 +68,23 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             {
                 final boolean mainTabSelected = classificationField.isMainTabSelected();
                 permissionPanel.setVisible( !mainTabSelected);
-                if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
+                if ( !mainTabSelected && !editPanel.isAncestorOf( permissionPanel) )
                 {
-                    editPanel.remove( holdBackConflictPanel);
+                    if ( holdBackConflictPanel != null)
+                    {
+                        editPanel.remove( holdBackConflictPanel);
+                    }
                     editPanel.add( permissionPanel, BorderLayout.SOUTH);
                     editPanel.repaint();
                 }
                 
-                if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
+                if (  mainTabSelected && (holdBackConflictPanel == null || !editPanel.isAncestorOf( holdBackConflictPanel)) )
                 {
                     editPanel.remove( permissionPanel );
-                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                    if ( holdBackConflictPanel != null)
+                    {
+                        editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                    }
                     editPanel.repaint();
                 }
             }
