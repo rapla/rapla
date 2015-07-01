@@ -177,12 +177,9 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
     {
         for (Reservation event : events)
         {
-            if (event.getAllocatables().length == 0)
+            for (Allocatable alloc : allocatables)
             {
-                for (Allocatable alloc : allocatables)
-                {
-                    event.addAllocatable(alloc);
-                }
+                event.addAllocatable(alloc);
             }
         }
     }
