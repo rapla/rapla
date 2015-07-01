@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -53,7 +55,10 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         if ( !internal)
         {
             holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
-            holdBackConflictPanel = holdBackConflictsField.getComponent();
+            holdBackConflictPanel = new JPanel();
+            holdBackConflictPanel.setLayout( new BorderLayout());
+            holdBackConflictPanel.add( new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);
+            holdBackConflictPanel.add( holdBackConflictsField.getComponent(), BorderLayout.CENTER);
             editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
         }
         else
