@@ -351,6 +351,13 @@ public abstract class DateTools
 	   return millis;
    }
    
+   public static Date toDateTime(Date date, Date time )
+   {
+       long millisTime = time.getTime() - DateTools.cutDate( time.getTime());
+       Date result = new Date( DateTools.cutDate(date.getTime()) + millisTime);
+       return result;
+   }
+   
    public static class DateWithoutTimezone
    {
 	   public int year;

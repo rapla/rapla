@@ -184,6 +184,10 @@ public class AppointmentAction extends RaplaAction {
     }
 
     public void actionPerformed(ActionEvent evt) {
+        actionPerformed();
+    }
+    
+    public void actionPerformed() {
         try {
             switch (type) {
             case DELETE: delete();break;

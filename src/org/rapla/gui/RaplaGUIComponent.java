@@ -14,6 +14,7 @@ package org.rapla.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -48,6 +49,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.internal.action.AppointmentAction;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
@@ -256,6 +258,11 @@ public class RaplaGUIComponent extends RaplaComponent
         };
     }
 
+    @Deprecated 
+    public AppointmentAction createAppointmentAction(Component component, Point p)
+    {
+        return new AppointmentAction(getContext(),component, p);
+    }
 
     public RaplaTime createRaplaTime() {
         RaplaTime cal = new RaplaTime( getI18n().getLocale(), getRaplaLocale().getTimeZone());
