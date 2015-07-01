@@ -47,7 +47,7 @@ public class AppointmentAction extends RaplaAction {
 //    ReservationWizard wizard;
 	private Collection<Allocatable> contextAllocatables;
     
-    public AppointmentAction(RaplaContext context,PopupContext popupContext)
+	public AppointmentAction(RaplaContext context,PopupContext popupContext)
     {
         super( context);
         this.popupContext = popupContext;

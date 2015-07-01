@@ -50,6 +50,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.internal.SwingPopupContext;
+import org.rapla.gui.internal.action.AppointmentAction;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
@@ -87,6 +88,16 @@ public class RaplaGUIComponent extends RaplaComponent
 	    RaplaContext context = getContext();
 		Logger logger = getLogger();
 		showException(ex, owner, context, logger);
+	}
+	
+	/**
+	 * only used for backwards compatibility
+	 * 
+	 */
+	@Deprecated 
+	public AppointmentAction createAppointmentAction(Component component, Point p)
+	{
+	    return new AppointmentAction(getContext(),createPopupContext(component, p));
 	}
 	
 
