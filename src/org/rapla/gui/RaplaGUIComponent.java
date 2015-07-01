@@ -288,7 +288,7 @@ public class RaplaGUIComponent extends RaplaComponent
     }
 
 
-    protected EditController getEditController() {
+    public EditController getEditController() {
         return  getService( EditController.class );
     }
 
