@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeSet;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -359,7 +360,9 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     }
     
     public User getFirstAdmin(StorageOperator operator) throws RaplaException {
-        for (User u:operator.getUsers())
+        Set<User> sorted = new TreeSet<User>( User.USER_COMPARATOR);
+        sorted.addAll( operator.getUsers());
+        for (User u:sorted)
         {
             if ( u.isAdmin())
             {
