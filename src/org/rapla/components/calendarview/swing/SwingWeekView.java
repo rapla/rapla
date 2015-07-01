@@ -264,8 +264,9 @@ public class SwingWeekView extends AbstractSwingCalendar
             }
             else
             {
-                timeScale.setTimeIntervall(start / 60, end / 60, pixelPerHour);
-                linearScale.setTimeIntervall( (start /60) * 60, Math.min( 24 * 60, ((end / 60) + ((end%60 != 0) ? 1 : 0)) * 60 ));
+                timeScale.setTimeIntervall(start / 60, Math.min( 24,(int)Math.ceil(end / 60.0)), pixelPerHour);
+                final int endMinute = Math.min( 24 * 60, ((end / 60) + ((end%60 != 0) ? 1 : 0)) * 60 );
+                linearScale.setTimeIntervall( (start /60) * 60, endMinute);
             }
             linearScale.setWorktimeMinutes( this.startMinutes, this.endMinutes);
         }
