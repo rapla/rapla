@@ -311,7 +311,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     	    if (changeToTemplate)
     	    {
     	        beforeTemplateConf = createConfiguration();
-    	        setSelectedObjects(Collections.singleton(ALLOCATABLES_ROOT));
+    	        setSelectedObjects(Collections.emptyList());
     	        setAllocatableFilter( null );
     	        setReservationFilter( null );
     	    }
