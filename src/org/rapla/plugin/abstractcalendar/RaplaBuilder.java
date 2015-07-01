@@ -427,7 +427,7 @@ public abstract class RaplaBuilder extends RaplaComponent
                 min = starthour * 60 + startminute;
             if ((endhour >0 || endminute>0) && (endhour *60 + endminute)<min  )
                 min = Math.max(0,endhour-1) * 60 + endminute;
-            if ((endhour != 0 || endminute != 0) && (endhour != 23 && endminute!=59) && (endhour *60 + endminute)>max)
+            if ((endhour != 0 || endminute != 0) && (endhour != 23 || endminute!=59) && (endhour *60 + endminute)>max)
                 max = Math.min(24*60 , endhour  * 60 + endminute);
             if (starthour>=max)
                 max = Math.min(24*60 , starthour *60 + startminute);
