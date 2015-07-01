@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EventCheck;
@@ -34,15 +35,18 @@ import org.rapla.gui.toolkit.DialogUI;
 public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
 {
     AppointmentFormater appointmentFormater;
+    CalendarModel model;
     @Inject
-    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater) {
+    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model) {
         super(context);
         this.appointmentFormater = appointmentFormater;
+        this.model = model;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         try
         {
+            
             JPanel warningPanel = new JPanel();
             for (Reservation reservation:reservations)
             {
@@ -56,7 +60,18 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                             break;
                         }
                 }
-                
+                if (!model.isMatchingSelectionAndFilter(reservation, null))
+                {
+                    JLabel warningLabel = new JLabel();
+                    warningLabel.setForeground(java.awt.Color.red);
+                    final String warning = getI18n().format("warning.not_in_calendar",reservation.getName( getLocale()));
+                    warningLabel.setText
+                        (
+                          warning
+                         );
+                    warningPanel.add( warningLabel);
+                }
+                    
                 
                 warningPanel.setLayout( new BoxLayout( warningPanel, BoxLayout.Y_AXIS));
                 if (duplicatedAppointment != null) {

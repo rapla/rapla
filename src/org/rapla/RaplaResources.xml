@@ -1665,6 +1665,12 @@ See French text.
 		<text lang="fi">VAROITUS: Sama ajanvaraus esiintyy useita kertoja [{0}]!</text>
 
     </entry>
+    
+    <entry key="warning.not_in_calendar">
+       <text lang="de">WARNUNG: {0} wird nicht in der Kalenderansicht angezeigt. Sind die eingestellten Ressourcen und Attribute korrekt?</text>
+       <text lang="en">WARNING: {0} will not be displayed in the calendar view. Are the selected resources and attributes correct?</text>
+    </entry>        
+    
     <entry key="warning.no_reserve_permission">
         <text lang="en">You have no permissions to reserve/change [{0}] an appointment [{1}]!</text>
         <text lang="de">Sie haben keine Zugriffsrechte um [{0}] an dem Termin [{1}] zu reservieren/ändern!</text>

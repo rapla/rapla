@@ -145,7 +145,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
     	{
     		return false;
     	}
-		Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
+		return isMatchingSelectionAndFilter(reservation, appointment);
+    }
+
+    public boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException
+    {
+        Allocatable[] allocatables = appointment == null ? reservation.getAllocatables() : reservation.getAllocatablesFor(appointment);
 		HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>( Arrays.asList(allocatables));
 		Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
 		hashSet.retainAll( selectedObjectsAndChildren);
