@@ -205,7 +205,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     	getLogger().info("Starting gui ");
 		
         super.init( );
-
         facadeName = m_config.getChild("facade").getValue("*");
 
         addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
@@ -325,17 +324,19 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 			Runnable task = createTask(command);
 			return parent.schedule(task, delay, period);
 		}
+
+		@Override
+        public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
+        {
+            Runnable task = createTask(command);
+            return parent.scheduleSynchronized(synchronizationObject, task, delay);
+        }
 		
 		public String toString()
 		{
 			return parent.toString();
 		}
 
-        @Override
-        public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
-        {
-            return parent.scheduleSynchronized(synchronizationObject, command, delay);
-        }
 	}
 	
     public ClientFacade getFacade() throws RaplaContextException {
