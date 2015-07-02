@@ -267,6 +267,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 	        }
 	        Collection<Entity> migratedTemplates = migrateTemplates();
 	        cache.putAll( migratedTemplates);
+	        removeInconsistentEntities(cache, list);
 	        for (Entity entity: migratedTemplates) {
 	            ((RefEntity)entity).setReadOnly();
 	        }

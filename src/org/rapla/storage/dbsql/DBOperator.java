@@ -724,7 +724,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
-        resolveInitial( list, this);
+		resolveInitial( list, this );
+        removeInconsistentEntities(cache, list);
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll( migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
@@ -746,7 +747,6 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
         processPermissionGroups();
 	}
-    
     
     @SuppressWarnings("deprecation")
     protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException {

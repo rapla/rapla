@@ -811,8 +811,18 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
 	    	String valueAsString = rset.getString( 3);
     	    if ( valueAsString != null )
             {
-    	        Object value = AttributeImpl.parseAttributeValue(attribute, valueAsString);
-    	    	classification.addValue( attribute, value);
+    	        try
+    	        {
+    	            Object value = AttributeImpl.parseAttributeValue(attribute, valueAsString);
+    	            if ( value != null)
+    	            {
+    	                classification.addValue( attribute, value);
+    	            }
+    	        }
+    	        catch(RaplaException e)
+    	        {
+                    getLogger().error("DynamicType '" +classification.getType() +"' doesnt have a valid attribute with the key " + attributekey + " Current allocatable/reservation Id " + classifiableId + ". Ignoring attribute.");
+    	        }
             }
         }
     }
