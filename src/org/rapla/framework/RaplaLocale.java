@@ -20,17 +20,19 @@ Also it provides basic formating information for the dates.
 </p>
 <p>
 Configuration is done in the rapla.xconf:
+</p>
 <pre>
-&lt;locale>
- &lt;languages default="de">
-   &lt;language>de&lt;/language>
-   &lt;language>en&lt;/language>
- &lt;/languages>
- &lt;country>US&lt;/country>
-&lt;/locale>
+&lt;locale&gt;
+ &lt;languages default="de"&gt;
+   &lt;language&gt;de&lt;/language&gt;
+   &lt;language&gt;en&lt;/language&gt;
+ &lt;&gt;languages&gt;
+ &lt;country&gt;US&lt;/country&gt;
+&lt;/locale&gt;
 </pre>
-If languages default is not set, the system default wil be used.<br>
-If country code is not set, the system default will be used.<br>
+<p>
+If languages default is not set, the system default wil be used.
+If country code is not set, the system default will be used.
 </p>
 
 <p>

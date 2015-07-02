@@ -26,7 +26,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
 /** The RaplaNumber is an adapter for NumberField.
- * <strong>Warning!<strong> Currently only Longs are supported.
+ * <strong>Warning!</strong> Currently only Longs are supported.
  * @see NumberField
  */
 public final class RaplaNumber extends JPanel{

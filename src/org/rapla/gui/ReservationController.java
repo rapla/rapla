@@ -11,6 +11,7 @@ import org.rapla.framework.RaplaException;
 
 /** Use the ReservationController to modify or create a {@link Reservation}.
     This class handles all interactions with the user. Examples:
+    <ul>
     <li>
     If you edit a reservation it will first check, if there is already is an
     open edit-window for the reservation and will give focus to that window instead of
@@ -24,6 +25,7 @@ import org.rapla.framework.RaplaException;
     <li>
     If conflicts are found, a conflict panel will be displayed on saving.
     </li>
+    </ul>
  */
 public interface ReservationController
 {

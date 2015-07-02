@@ -18,9 +18,9 @@ import java.util.Comparator;
 /**
  *
  * Reverts the Original Comparator
- *  -1 ->  1
- *   1 -> -1
- *   0 ->  0
+ *  -1 -&gt;  1
+ *   1 -&gt; -1
+ *   0 -&gt;  0
  */
 public class InverseComparator<T> implements Comparator<T> {
     Comparator<T> original;

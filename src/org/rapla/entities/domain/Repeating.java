@@ -24,8 +24,10 @@ public interface Repeating {
     void setInterval(int interval);
     /** returns the number of intervals between two repeatings.
      * That are in the selected context:
+     * <ul>
      * <li>For weekly repeatings: Number of weeks.</li>
      * <li>For dayly repeatings: Number of days.</li>
+     * </ul>
      */
     int getInterval();
     /** The value returned depends which method was called last.

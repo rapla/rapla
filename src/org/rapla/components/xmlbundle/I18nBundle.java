@@ -27,11 +27,11 @@ Example Usage:
 */
 
 public interface I18nBundle {
-    /** same as </code>format(key,new Object[] {obj1});</code>
+    /** same as <code>format(key,new Object[] {obj1});</code>
         @see #format(String,Object[])
      */
     String format(String key,Object obj1) throws MissingResourceException;
-    /** same as </code>format(key,new Object[] {obj1, obj2});</code>
+    /** same as <code>format(key,new Object[] {obj1, obj2});</code>
         @see #format(String,Object[])
      */
     String format(String key,Object obj1,Object obj2) throws MissingResourceException;
