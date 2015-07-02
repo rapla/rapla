@@ -16,11 +16,13 @@ public interface ServerServiceContainer extends Container
 
     /**
      * You can add arbitrary serlvet pages to your rapla webapp.
-     *
+     *<p>
      * Example that adds a page with the name "my-page-name" and the class
      * "org.rapla.plugin.myplugin.MyPageGenerator". You can call this page with <code>rapla?page=my-page-name</code>
-     * <p/>
+     * </p>
+     * <p>
      * In the provideService Method of your PluginDescriptor do the following
+     * </p>
      <pre>
      container.addContainerProvidedComponent( RaplaExtensionPoints.SERVLET_PAGE_EXTENSION, "org.rapla.plugin.myplugin.MyPageGenerator", "my-page-name", config);
      </pre>
@@ -29,8 +31,7 @@ public interface ServerServiceContainer extends Container
      */
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass);
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass, Configuration config);
-    /** @return null when the server doesn't have the webpage 
-     * @throws RaplaContextException */
+    /** @return null when the server doesn't have the webpage  */
 	RaplaPageGenerator getWebpage(String page);
 	
 	public User getUser(HttpServletRequest request) throws RaplaException;

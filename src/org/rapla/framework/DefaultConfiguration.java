@@ -276,7 +276,6 @@ public class DefaultConfiguration implements Configuration {
 
     /**
      * @param configuration
-     * @throws ConfigurationException
      */
     public DefaultConfiguration remove(Configuration configuration) {
         String localName = getName();

@@ -26,7 +26,7 @@ public interface TimeRenderer {
         Return null if you don't want to use a tooltip for this time.*/
     public String getToolTipText(int hourOfDay,int minute);
     
-    /** returns a formated text of the duration can return null if the duration should not be appended, e.g. if its < 0*/
+    /** returns a formated text of the duration can return null if the duration should not be appended, e.g. if its &lt; 0*/
     public String getDurationString(int durationInMinutes);
 
 }

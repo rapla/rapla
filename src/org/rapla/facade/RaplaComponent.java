@@ -778,7 +778,7 @@ public class RaplaComponent
     }
 
 
-    /** calls "&lt;html>" + getI18n().getString(key) + "&lt;/html>"*/
+    /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
     final public String getStringAsHTML(String key) {
         return "<html>" + getI18n().getString(key) + "</html>";
     }

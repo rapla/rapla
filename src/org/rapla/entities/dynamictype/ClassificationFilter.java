@@ -32,7 +32,7 @@ import java.util.Iterator;
     <p>
       The following Example matches all classifications
       with a title-value that contains either "rapla" or "sourceforge"
-      ,a size-value that is > 5 and a category-department-value that
+      ,a size-value that is &gt; 5 and a category-department-value that
       is either the departmentA or the departmentB.
     </p>
 
@@ -48,7 +48,7 @@ import java.util.Iterator;
       f.addRule(
                  "size"
                  ,new Object{
-                      {">", new Integer(5)}
+                      {"&gt;", new Integer(5)}
                   });
 
 	   Category departemntCategory = facade.getRootCategory().getCategory("departments");
