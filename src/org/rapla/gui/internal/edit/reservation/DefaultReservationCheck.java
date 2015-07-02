@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit.reservation;
 
-import java.awt.Component;
 import java.util.Collection;
 
 import javax.inject.Inject;
@@ -129,7 +128,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         }
         catch (RaplaException ex)
         {
-            showWarning( ex.getMessage(), (Component)sourceComponent);
+            showWarning( ex.getMessage(), ((SwingPopupContext)sourceComponent).getParent());
             return false;
         }
     }
