@@ -52,7 +52,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     {
 		String selectedCountry = config.getChild( COUNTRY).getValue(Locale.getDefault().getCountry() );
         Configuration languageConfig = config.getChild( LANGUAGES );
-        charsetForHtml = config.getChild(CHARSET).getValue("iso-8859-15");
+        charsetForHtml = config.getChild(CHARSET).getValue("utf-8");
         Configuration[] languages = languageConfig.getChildren( LANGUAGE );
         if ( languages.length == 0)
         {
