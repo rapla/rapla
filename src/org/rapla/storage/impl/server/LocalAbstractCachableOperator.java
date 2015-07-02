@@ -2050,7 +2050,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	}
 	
+	protected void removeInconsistentEntities(LocalCache cache, Collection<Entity> list)
+    {
+        for (Iterator iterator = list.iterator(); iterator.hasNext();)
+        {
+            Entity entity = (Entity) iterator.next();
+            try
+            {
+                checkConsitency(entity,cache.getSuperCategory());
+            }
+            catch (RaplaException e)
+            {
+                if(entity instanceof Reservation){
+                    getLogger().error("Not loading entity with id: "+ entity.getId(), e);
+                    cache.remove( entity );
+                    iterator.remove();
+                }
+            }
+        }
+    }
+	
 	/** Check if the objects are consistent, so that they can be safely stored. */
+	/**
+	 * @param evt
+	 * @param store
+	 * @throws RaplaException
+	 */
 	protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException {
 		Collection<EntityReferencer> entityReferences = evt.getEntityReferences();
         for (EntityReferencer referencer : entityReferences) {
@@ -2069,75 +2094,76 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 			
 		for (Entity entity : evt.getStoreObjects()) {
-		    CategoryImpl superCategory = store.getSuperCategory();
-			RaplaType raplaType = entity.getRaplaType();
-            if (Category.TYPE == raplaType) {
-				if (entity.equals(superCategory)) {
-					// Check if the user group is missing
-					Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
-					if (userGroups == null) {
-						throw new RaplaException("The category with the key '"
-								+ Permission.GROUP_CATEGORY_KEY
-								+ "' is missing.");
-					}
-				} else {
-					// check if the category to be stored has a parent
-					Category category = (Category) entity;
-					Category parent = category.getParent();
-					if (parent == null) {
-						throw new RaplaException("The category " + category
-								+ " needs a parent.");
-					}
-					else 
-					{
-						int i = 0;
-						while ( true)
-						{
-							if ( parent == null)
-							{
-								throw new RaplaException("Category needs to be a child of super category.");
-							} 
-							else if ( parent.equals( superCategory))
-							{
-								break;
-							}
-							parent = parent.getParent();
-							i++;
-							if ( i>80)
-							{
-								throw new RaplaException("infinite recursion detection for category " + category);
-							}
-						}
-					}
-				}
-			} 
-            else if ( Reservation.TYPE == raplaType)
-			{
-                Reservation reservation = (Reservation) entity;
-                checkReservation(reservation);
-			}
-            else if ( DynamicType.TYPE == raplaType)
-            {
-                DynamicType type = (DynamicType) entity;
-                DynamicTypeImpl.validate( type, i18n);
-            }
+		    checkConsitency(entity, store.getSuperCategory());
 		}
 		
 	}
+
+    protected void checkConsitency(Entity entity, Category superCategory) throws RaplaException
+    {
+        RaplaType raplaType = entity.getRaplaType();
+        if (Category.TYPE == raplaType) {
+        	if (entity.equals(superCategory)) {
+        		// Check if the user group is missing
+        		Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
+        		if (userGroups == null) {
+        			throw new RaplaException("The category with the key '"
+        					+ Permission.GROUP_CATEGORY_KEY
+        					+ "' is missing.");
+        		}
+        	} else {
+        		// check if the category to be stored has a parent
+        		Category category = (Category) entity;
+        		Category parent = category.getParent();
+        		if (parent == null) {
+        			throw new RaplaException("The category " + category
+        					+ " needs a parent.");
+        		}
+        		else 
+        		{
+        			int i = 0;
+        			while ( true)
+        			{
+        				if ( parent == null)
+        				{
+        					throw new RaplaException("Category needs to be a child of super category.");
+        				} 
+        				else if ( parent.equals( superCategory))
+        				{
+        					break;
+        				}
+        				parent = parent.getParent();
+        				i++;
+        				if ( i>80)
+        				{
+        					throw new RaplaException("infinite recursion detection for category " + category);
+        				}
+        			}
+        		}
+        	}
+        } 
+        else if ( Reservation.TYPE == raplaType)
+        {
+            Reservation reservation = (Reservation) entity;
+            checkReservation(reservation);
+        }
+        else if ( DynamicType.TYPE == raplaType)
+        {
+            DynamicType type = (DynamicType) entity;
+            DynamicTypeImpl.validate( type, i18n);
+        }
+    }
 	
 	protected void checkReservation(Reservation reservation) throws RaplaException {
-        if (reservation.getAppointments().length == 0) {
-            throw new RaplaException(i18n.getString("error.no_appointment"));
-        }
-
         Locale locale = i18n.getLocale();
         String name = reservation.getName(locale);
         if (name.trim().length() == 0) {
-            throw new RaplaException(i18n.getString("error.no_reservation_name"));
+            throw new RaplaException(i18n.getString("error.no_reservation_name") + " [" + reservation.getId()+  "]");
+        }
+        if (reservation.getAppointments().length == 0) {
+            throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId()+  "]");
         }
     }
-
-	
 
 	protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException {
 		Collection<String> removedIds = evt.getRemoveIds();

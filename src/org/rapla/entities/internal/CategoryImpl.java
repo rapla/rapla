@@ -313,6 +313,10 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     }
 
     public Category getCategoryFromPath(String path) throws EntityNotFoundException {
+        if ( path.trim().isEmpty() )
+        {
+            return this;
+        }
         int start = 0;
         int end = 0;
         int pos = 0;
@@ -327,6 +331,10 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
             String key = path.substring(start,end);
             category = category.getCategory(key);
             pos = end + 1;
+        }
+        if ( category == this)
+        {
+            throw new EntityNotFoundException("could not resolve xpath: " + path);
         }
         if (category == null)
             throw new EntityNotFoundException("could not resolve category xpath expression: " + path);
