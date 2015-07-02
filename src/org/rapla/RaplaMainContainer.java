@@ -82,6 +82,7 @@ Configuration of the main container is usually done via the raplaserver.xconf
 </p>
 <p>
 The Main Container provides the following Services to all RaplaComponents
+</p>
 <ul>
 <li>I18nBundle</li>
 <li>AppointmentFormater</li>
@@ -89,7 +90,6 @@ The Main Container provides the following Services to all RaplaComponents
 <li>LocaleSelector</li>
 <li>RaplaMainContainer.PLUGIN_LIST (A list of all available plugins)</li>
 </ul>
-</p>
 
   @see I18nBundle
   @see RaplaLocale
