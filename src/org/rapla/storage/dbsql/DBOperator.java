@@ -159,7 +159,11 @@ public class DBOperator extends LocalAbstractCachableOperator
         boolean withTransactionSupport = true;
         return createConnection(withTransactionSupport);
     }
+    
     public Connection createConnection(boolean withTransactionSupport) throws RaplaException {
+        return createConnection(withTransactionSupport, 0);
+    }
+    private Connection createConnection(final boolean withTransactionSupport, final int count) throws RaplaException {
     	Connection connection = null;
         try {
         	 //datasource lookup 
@@ -242,6 +246,11 @@ public class DBOperator extends LocalAbstractCachableOperator
         	 if ( connection != null)
         	 {
         		 close(connection);
+        	 }
+        	 if ( ex instanceof SQLException && count <2)
+        	 {
+        	     getLogger().warn("Getting error " + ex.getMessage() + ". Retrying.");
+        	     return createConnection(withTransactionSupport, count+1);
         	 }
              if ( ex instanceof RaplaDBException)
              {
@@ -736,8 +745,11 @@ public class DBOperator extends LocalAbstractCachableOperator
     	}
         try 
         {
-        	getLogger().debug("Closing "  + connection);
-        	connection.close();
+            if (!connection.isClosed())
+        	{
+                getLogger().debug("Closing "  + connection);
+        	    connection.close();
+        	}
         } 
         catch (SQLException e) 
         {
