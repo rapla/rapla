@@ -108,30 +108,30 @@ public class DefaultScheduler implements CommandScheduler {
 		return schedule(task, delay, period);
 	}
 	
-	abstract class  CancableCommand implements Cancelable, Command
+	abstract class  CancableTask implements Cancelable, Runnable
     {
         long delay;
-        private Command command;
+        private Runnable task;
         
         volatile Thread.State status = Thread.State.NEW;
         Cancelable cancelable;
-        CancableCommand next;
+        CancableTask next;
         
-        public CancableCommand(Command command, long delay)
+        public CancableTask(Runnable task, long delay)
         {
-            this.command = command;
+            this.task = task;
             this.delay = delay;
         }
 
         @Override
-        public void execute() throws Exception
+        public void run() 
         {
             try
             {
                 if ( status == Thread.State.NEW)
                 {
                     status = Thread.State.RUNNABLE;
-                    command.execute();
+                    task.run();
                 }
             }
             finally
@@ -151,7 +151,7 @@ public class DefaultScheduler implements CommandScheduler {
             status = Thread.State.TERMINATED;
         }
 
-        public void pushToEndOfQueue(CancableCommand wrapper)
+        public void pushToEndOfQueue(CancableTask wrapper)
         {
             if ( next == null)
             {
@@ -181,19 +181,25 @@ public class DefaultScheduler implements CommandScheduler {
             }
         }
 
-        abstract protected void replaceWithNext(CancableCommand next);
+        abstract protected void replaceWithNext(CancableTask next);
 
         abstract protected void endOfQueueReached();
     }
     
-    ConcurrentHashMap<Object, CancableCommand> futureTasks= new ConcurrentHashMap<Object, CancableCommand>();
+    ConcurrentHashMap<Object, CancableTask> futureTasks= new ConcurrentHashMap<Object, CancableTask>();
     @Override
     public Cancelable scheduleSynchronized(final Object synchronizationObject, Command command, final long delay)
     {
-        CancableCommand wrapper = new CancableCommand(command,delay)
+        Runnable task = createTask(command);
+        return scheduleSynchronized(synchronizationObject, task, delay);
+    }
+    
+    public Cancelable scheduleSynchronized(final Object synchronizationObject, Runnable task, final long delay)
+    {
+        CancableTask wrapper = new CancableTask(task,delay)
         {
             @Override
-            protected void replaceWithNext(CancableCommand next)
+            protected void replaceWithNext(CancableTask next)
             {
                 futureTasks.replace( synchronizationObject , this, next);
             }
@@ -208,7 +214,7 @@ public class DefaultScheduler implements CommandScheduler {
         };
         synchronized (synchronizationObject)
         {
-            CancableCommand existing = futureTasks.putIfAbsent( synchronizationObject, wrapper);
+            CancableTask existing = futureTasks.putIfAbsent( synchronizationObject, wrapper);
             if (existing == null)
             {
                 wrapper.scheduleThis();
