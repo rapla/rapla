@@ -159,7 +159,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		}
 		Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
 		hashSet.retainAll( selectedObjectsAndChildren);
-		boolean matchesEventObjects =  hashSet.size() != 0;
+		boolean matchesEventObjects =  hashSet.size() != 0 || selectedObjectsAndChildren.size() == 0;
 		if ( !matchesEventObjects)
 		{
 			return false;
