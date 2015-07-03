@@ -92,6 +92,7 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
                     }
                     editPanel.repaint();
                 }
+                AllocatableEditUI.this.stateChanged(e);
             }
         });
         editPanel.setPreferredSize( new Dimension(800,600));
