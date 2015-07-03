@@ -16,17 +16,11 @@ import java.util.List;
 import java.util.Locale;
 
 import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
-import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
@@ -72,7 +66,6 @@ public class TemplateEdit extends RaplaGUIComponent
                     allocatableEdit.mapToObjects();
                     List<Allocatable> objects = allocatableEdit.getObjects();
                     toStore.addAll( objects);
-                    getLogger().info("Content changed" + objects);
                 } catch (RaplaException e) {
                     getLogger().error( e.getMessage(), e);
                 }
@@ -179,43 +172,6 @@ public class TemplateEdit extends RaplaGUIComponent
         templateList.getList().setSelectedValue(  template ,shouldScroll );
     }
 
-    class DetailPanel 
-    {
-        JPanel panel = new JPanel();
-        final JTextField textField = new JTextField(20);
-        
-        public DetailPanel() {
-            addCopyPaste( textField);
-            panel.setPreferredSize( new Dimension(600,300));
-            panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.FILL, 5,TableLayout.PREFERRED},{TableLayout.PREFERRED,5,TableLayout.FILL, TableLayout.PREFERRED}}));
-            panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-            panel.add(new JLabel("Templatename:"), "0,0");
-            panel.add(textField, "2,0");
-
-        }
-        
-        /**
-         * @throws RaplaException  
-         */
-        public void mapFrom(Allocatable template) throws RaplaException
-        {
-            if ( template != null)
-            {
-                Locale locale = getLocale();
-                textField.setText( template.getName( locale));
-            }
-            else
-            {
-                textField.setText( "");
-            }
-        }
-        
-        JComponent getPanel()
-        {
-            return panel;
-        }
-    }
-    
     public void startTemplateEdit() {
         final Component parentComponent = getMainComponent();
         try {
