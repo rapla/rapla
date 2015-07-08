@@ -39,9 +39,6 @@
 		<sourceDirectory>${basedir}/src</sourceDirectory>
 		<resources>
 			<resource>
-				<directory>${basedir}/resources</directory>
-			</resource>
-			<resource>
 				<directory>${basedir}/gwt-src</directory>
 			</resource>
 		</resources>
