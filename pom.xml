@@ -37,6 +37,11 @@
 		<itext.version>4.2.1</itext.version>
 		<javax.inject.version>1</javax.inject.version>
 		<supercsv.version>2.0.1</supercsv.version>
+		<!-- Properties to sign the client jars -->
+		<signer.alias>rapla</signer.alias>
+		<signer.keystore>${basedir}/raplaselfsigned.ks</signer.keystore>
+		<signer.keypass></signer.keypass>
+		<signer.storepass>raplaselfsigned</signer.storepass>
 	</properties>
 
 	<build>
@@ -199,6 +204,29 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jarsigner-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<alias>${signer.alias}</alias>
+					<keystore>${signer.keystore}</keystore>
+					<keypass>${signer.keypass}</keypass>
+					<storepass>${signer.storepass}</storepass>
+					<archiveDirectory>${project.build.directory}/${project.build.finalName}</archiveDirectory>
+					<includes>
+						<include>webclient/*.jar</include>
+					</includes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
