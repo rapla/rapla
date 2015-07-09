@@ -33,6 +33,10 @@
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<gson.version>2.3.1</gson.version>
+		<itext.version>4.2.1</itext.version>
+		<javax.inject.version>1</javax.inject.version>
+		<supercsv.version>2.0.1</supercsv.version>
 	</properties>
 
 	<build>
@@ -79,14 +83,122 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.6</version>
 				<configuration>
 					<archiveClasses>true</archiveClasses>
+					<warSourceExcludes>Rapla/Rapla.nocache.js</warSourceExcludes>
 					<packagingExcludes>**/*.java</packagingExcludes>
 					<warSourceDirectory>${basedir}/war</warSourceDirectory>
 					<webXml>${basedir}/war/WEB-INF/web.xml</webXml>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+					<finalName>raplaclient</finalName>
+					<includes>
+						<include>org/rapla/client/**</include>
+						<include>org/rapla/components/**</include>
+						<include>org/rapla/entities/**</include>
+						<include>org/rapla/examples/**</include>
+						<include>org/rapla/facade/**</include>
+						<include>org/rapla/framework/**</include>
+						<include>org/rapla/gui/**</include>
+						<include>org/rapla/plugin/**</include>
+						<include>org/rapla/rest/**</include>
+						<include>org/rapla/*.class</include>
+						<!-- Actually not generated, bu in original included -->
+						<include>org/rapla/*.properties</include>
+					</includes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.10</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.google.code.gson</groupId>
+									<artifactId>gson</artifactId>
+									<version>${gson.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>com.lowagie</groupId>
+									<artifactId>itext</artifactId>
+									<version>${itext.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>javax.inject</groupId>
+									<artifactId>javax.inject</artifactId>
+									<version>${javax.inject.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>net.sf.supercsv</groupId>
+									<artifactId>super-csv</artifactId>
+									<version>${supercsv.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+							<outputDirectory>${project.build.directory}/wars</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>true</overWriteSnapshots>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -95,12 +207,12 @@
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-			<version>2.3.1</version>
+			<version>${gson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.lowagie</groupId>
 			<artifactId>itext</artifactId>
-			<version>4.2.1</version>
+			<version>${itext.version}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>jfreechart</artifactId>
@@ -159,7 +271,7 @@
 		<dependency>
 			<groupId>javax.inject</groupId>
 			<artifactId>javax.inject</artifactId>
-			<version>1</version>
+			<version>${javax.inject.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
