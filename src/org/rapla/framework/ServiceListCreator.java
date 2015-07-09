@@ -51,6 +51,15 @@ public class ServiceListCreator {
     {
         File topDir = new File(srcDir);
     	List<String> list = findPluginClasses(topDir, null);
+    	final File file = new File(destFile);
+    	if(file.exists())
+    	{
+    	    file.delete();
+    	}
+    	else
+    	{
+    	    file.getParentFile().mkdirs();
+    	}
         Writer writer = new BufferedWriter(new FileWriter( destFile ));
         try
         {
