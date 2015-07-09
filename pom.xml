@@ -88,29 +88,6 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>compile</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.6</version>
 				<configuration>
@@ -222,9 +199,9 @@
 					<keystore>${signer.keystore}</keystore>
 					<keypass>${signer.keypass}</keypass>
 					<storepass>${signer.storepass}</storepass>
-					<archiveDirectory>${project.build.directory}/${project.build.finalName}</archiveDirectory>
+					<archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
 					<includes>
-						<include>webclient/*.jar</include>
+						<include>*.jar</include>
 					</includes>
 				</configuration>
 			</plugin>
