@@ -131,20 +131,20 @@
 				<configuration>
 					<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
 					<finalName>raplaclient</finalName>
-					<includes>
-						<include>org/rapla/client/**</include>
-						<include>org/rapla/components/**</include>
-						<include>org/rapla/entities/**</include>
-						<include>org/rapla/examples/**</include>
-						<include>org/rapla/facade/**</include>
-						<include>org/rapla/framework/**</include>
-						<include>org/rapla/gui/**</include>
-						<include>org/rapla/plugin/**</include>
-						<include>org/rapla/rest/**</include>
-						<include>org/rapla/*.class</include>
-						<!-- Actually not generated, bu in original included -->
-						<include>org/rapla/*.properties</include>
-					</includes>
+					<excludes>
+						<exclude>**/*.gwt.xml</exclude>
+						<exclude>**/*.gwt.xml</exclude>
+						<exclude>org/rapla/gwt/**</exclude>
+						<exclude>org/rapla/bootstrap/*</exclude>
+						<exclude>**/Slf4jAdapter**</exclude>
+						<exclude>**/server/**</exclude>
+						<exclude>**/server/**</exclude>
+						<exclude>**/storage/xml/**</exclude>
+						<exclude>**/storage/dbfile/**</exclude>
+						<exclude>**/storage/dbsql/**</exclude>
+						<exclude>**/servletpages/**</exclude>
+						<exclude>se/**</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
