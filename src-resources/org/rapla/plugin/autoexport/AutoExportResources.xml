@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<!DOCTYPE resources PUBLIC "-//rapla team//DTD Language Files 1.0//" "http://rapla.sf.net/dtds/resources.dtd">
+<resources default="en">
+  <entry key="show_navigation">
+    <text lang="en">Show navigation bar</text>
+    <text lang="de">Zeige den Navigationsbalken</text>
+    <text lang="fr">Affiche la barre de navigation</text>
+    <text lang="es">Indicar la navegación</text>
+    <text lang="nl">Navigatie balk</text>
+  </entry>
+  <entry key="only_allocation_info">
+    <text lang="en">Only allocation information</text>
+    <text lang="de">Nur Belegungsinformationen</text>
+    <text lang="fr">Seulement allocation</text>
+    <text lang="es">Sólo asignaciones</text>
+    <text lang="cs">Moje rozvržení</text>
+    <text lang="nl">Enkel bezetting</text>
+    <text lang="pl">Tylko przydział zasobów</text>
+	<text lang="pt">Apenas alocações</text>
+  </entry>
+  <entry key="webserver">
+	<text lang="en">Web Server</text>
+	<text lang="de">Web-Server</text>
+	<text lang="fr">Serveur Web</text>
+	<text lang="es">Servidor Web</text>
+	<text lang="es">Webový Server</text>
+	<text lang="nl">Web Server</text>
+  </entry>
+  <entry key="calendar_list">
+    <text lang="en">Exported calendars</text>
+    <text lang="de">Exportierte Kalender</text>
+    <text lang="fr">Calendriers Exportés</text>
+    <text lang="es">calendarios exportados</text>
+    <text lang="nl">Gepubliceerde Planningen</text>
+  </entry>
+<!--
+  <entry key="triggger_export">
+  </entry>
+  <entry key="export_trigggerd">
+    <text lang="en">Export triggered. You probably need to wait a moment until the files are updated on the server!</text>
+    <text lang="de">Export angestossen. Geben Sie der zu exportierenden Datei einen Namen!</text>
+    <text lang="Fr">Export déclenché. Vous devrez probablement attendre un moment avant que les fichiers soient mis a jour sur le serveur!</text>
+    <text lang="es">¡Se está exportando. Probablemente necesite esperar un momento a que se actualicen los ficheros en el servidor!</text>
+  </entry>
+-->
+</resources>

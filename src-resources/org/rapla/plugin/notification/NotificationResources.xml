@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<!DOCTYPE resources SYSTEM "../../components/xmlbundle/resources.dtd">
+<resources default="en">
+  <entry key="notification_options">
+    <text lang="en">Notification options</text>
+    <text lang="de">Benachrichtigungs Optionen</text>
+    <text lang="fr">Options de notification</text>
+    <text lang="es">Notificaciones</text>
+    <text lang="nl">Bericht van wijziging</text>
+  </entry>
+  <entry key="mail_subject">
+    <text lang="en">Rapla: Allocation change of [{0}]</text>
+    <text lang="de">Rapla: Reservierungsbenachrichtigung [{0}]</text>
+    <text lang="fr">Rapla: Changement d'allocation pour [{0}]</text>
+    <text lang="es">Rapla: Cambio de asignación para [{0}]</text>
+    <text lang="nl">Rapla: Reservatie wijziging voor [{0}]</text>
+  </entry>
+
+  <entry key="mail_body">
+    <text lang="en">The following allocation changes have been made by [{0}]:</text>
+    <text lang="de">Die folgenden Belegungsänderungen wurden von [{0}] vorgenommen:</text>
+    <text lang="fr">Les changement d'allocation suivants ont été faits:</text>
+    <text lang="es">Se han hecho los siguientes cambios de asignación:</text>
+    <text lang="nl">Volgende wijzigen werden uitgevoerd door [{0}]:</text>
+  </entry>
+
+  <entry key="appointment.add">
+    <text lang="en">New appointment for [{0}]:</text>
+    <text lang="de">Neuer Termin für [{0}]:</text>
+    <text lang="fr">Nouvelle réservation pour [{0}] :</text>
+    <text lang="es">Nueva cita para [{0}]</text>
+    <text lang="nl">Nieuwe afspraak voor [{0}]:</text>
+  </entry>
+
+  <entry key="appointment.change">
+    <text lang="en">Appointment changed for [{0}] from:</text>
+    <text lang="de">Termin verändert für [{0}] von:</text>
+    <text lang="fr">Changement d''horaire pour [{0}] c''était:</text>
+    <text lang="es">Cambio de cita para [{0}]</text>
+    <text lang="nl">Afspraak gewijzigd voor [{0}] van:</text>
+  </entry>
+
+  <entry key="appointment.remove">
+    <text lang="en">Removed appointment for [{0}]:</text>
+    <text lang="de">Termin für [{0}] gelöscht:</text>
+    <text lang="fr">Libération de [{0}] le:</text>
+    <text lang="es">Se eliminó la cita para [{0}]:</text>
+    <text lang="nl">Afspraak verwijdert voor [{0}]:</text>
+  </entry>
+  <entry key="moved_to">
+    <text lang="en">to: </text>
+    <text lang="de">nach: </text>
+    <text lang="fr">à:</text>
+    <text lang="es">para:</text>
+    <text lang="nl">naar: </text>
+  </entry>  
+  <entry key="modified_by">
+    <text lang="en">Modified by [{0}]</text>
+    <text lang="de">verändert durch [{0}]</text>
+    <text lang="fr">Modifié par [{0}]</text>
+    <text lang="es">Modificado por [{0}]</text>
+    <text lang="nl">Gewijzigd door [{0}]</text>
+  </entry>  
+  <entry key="complete_reservation">
+    <text lang="en">Complete event</text>
+    <text lang="de">Komplette Veranstaltung</text>
+    <text lang="fr">Description complète de l'évènement</text>
+    <text lang="es">Descriptción completa del evento</text>
+    <text lang="nl">Volledige reservatie</text>
+  </entry>  
+
+  <entry key="notify_if_owner">
+    <text lang="en">Also notify on modification of own events.</text>
+    <text lang="de">Benachrichtige auch bei Änderungen an eigenen Veranstaltungen.</text>
+    <text lang="fr">Je veux être notifié pour les changements faits par moi-même</text>
+    <text lang="es">Quiero ser notificado de los cambios hechos por mí mismo</text>
+    <text lang="nl">Evenals bij een wijziging van eigen reservaties.</text>
+  </entry>
+  <entry key="notification.option.description">
+    <text lang="en">Mail for every allocation change of the listed resources and persons</text>
+    <text lang="de">Mail bei Belegungsänderung von folgenden Ressourcen und Personen</text>
+    <text lang="fr">Envoit de Mail à chaque changement d'allocation des resources/personnes listées</text>
+    <text lang="es">Envío de correo a cada cambio de asignación de recursos/personas listado</text>
+    <text lang="nl">Stuur mij een bericht van wijziging van een reservatie met volgende Personen &amp; Middelen</text>
+  </entry>
+  <entry key="subscribe_notification">
+    <text lang="en">Select resources for notification</text>
+    <text lang="de">Wählen Sie Ressourcen für die Benachrichtigung</text>
+    <text lang="fr">Sélectionnez les ressources pour la notification</text>
+    <text lang="es">Seleccione los recursos para la notificación</text>
+    <text lang="cs">Vyberte zdroje pro oznámení</text>
+    <text lang="nl">Selecteer middelen voor kennisgeving:</text>
+	<text lang="pl">Wybierz zasoby do powiadomienia</text>
+	<text lang="da">Vælg ressourcer til anmeldelse</text>
+  </entry>
+  <entry key="disclaimer_1">
+    <text lang="en">------------------------------------------------------------------------------------------------------------------------------
+        This email has been sent by [{0}] </text>
+    <text lang="de">------------------------------------------------------------------------------------------------------------------------------
+        Diese E-mail wurde von [{0}] gesendet, </text>
+    <text lang="fr"></text>
+  	<text lang="es"></text> 
+  	<text lang="nl">------------------------------------------------------------------------------------------------------------------------------
+        Dit bericht werd verstuurd door [{0}] </text> 
+  </entry>
+  <entry key="disclaimer_2">
+    <text lang="en">because you opted for notification on ressource/s --{0}--. If you do not want to receive this message, change your notification settings in your personal settings.
+        ------------------------------------------------------------------------------------------------------------------------------</text>
+    <text lang="de">weil Sie über Veränderungen der Ressource/n --{0}-- benachrichtigt werden wollten. Wenn Sie diese Nachricht nicht mehr erhalten wollen, ändern Sie die Benachrichtigungseinstellungen in ihren persönlichen Einstellungen.
+        ------------------------------------------------------------------------------------------------------------------------------</text>
+    <text lang="fr"></text>
+  	<text lang="es"></text>  
+    <text lang="nl">omdat je de optie \"bericht bij wijziging\" opteert voor het middel --{0}--. Wijzig je notificatie voorkeur als je dit bericht niet meer wenst te ontvangen.
+        ------------------------------------------------------------------------------------------------------------------------------</text>
+  </entry>
+</resources>

@@ -42,11 +42,24 @@
 		<signer.keystore>${basedir}/raplaselfsigned.ks</signer.keystore>
 		<signer.keypass></signer.keypass>
 		<signer.storepass>raplaselfsigned</signer.storepass>
+		<!-- Text Properties -->
+		<doc.name>rapla</doc.name>
+		<doc.version>${version}</doc.version>
+		<doc.date>${timestamp}</doc.date>
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+		<doc.year>2000-2015</doc.year>
+		<doc.copyright>Rapla Team</doc.copyright>
+		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
+		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
+		<doc.homepage>http://code.google.com/p/rapla</doc.homepage>
 	</properties>
 
 	<build>
 		<sourceDirectory>${basedir}/src</sourceDirectory>
 		<resources>
+			<resource>
+				<directory>${basedir}/src-resources</directory>
+			</resource>
 			<resource>
 				<directory>${basedir}/gwt-src</directory>
 			</resource>
@@ -188,6 +201,7 @@
 				<version>1.1.1</version>
 				<executions>
 					<execution>
+						<id>PluginList</id>
 						<phase>prepare-package</phase>
 						<goals>
 							<goal>java</goal>
@@ -200,7 +214,49 @@
 							</arguments>
 						</configuration>
 					</execution>
+					<execution>
+						<id>Properties</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.rapla.components.xmlbundle.impl.ResourceFileGenerator</mainClass>
+							<arguments>
+								<argument>${basedir}/src-resources</argument>
+								<argument>${project.build.directory}/unfiltered-resources</argument>
+							</arguments>
+						</configuration>
+					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<outputDirectory>${project.build.directory}/classes</outputDirectory>
+					<resources>
+						<resource>
+							<directory>${project.build.directory}/unfiltered-resources</directory>
+							<includes>
+								<include>**/*.properties</include>
+							</includes>
+							<filtering>true</filtering>
+						</resource>
+					</resources>
+					<delimiters>
+						<delimiter>@</delimiter>
+					</delimiters>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+org.rapla.plugin.eventtimecalculator.EventTimeCalculatorReSources.xml 
+provides the possibility to use the plugin in different languages.
+
+currently supported languages are english, german.
+-->
+<resources default="en">
+    <entry key="allow_user_prefs">
+        <text lang="en">Allow user specific preferences</text>
+        <text lang="de">Benutzerspezifische Anpassung erlauben</text>
+    </entry>
+    <entry key="infinite">
+        <text lang="en">without end</text>
+        <text lang="de">ohne Ende</text>
+        <text lang="fr">répéter indéfiniment</text>
+        <text lang="es">indefinido</text>
+        <text lang="cs">nemá konec</text>
+        <text lang="nl">tot</text>
+        <text lang="pl">oowtarzaj bez końca</text>
+		<text lang="pt">repetir sempre</text>
+    </entry>
+	<entry key="total_duration">
+        <text lang="en">Total duration</text>
+        <text lang="de">Gesamtdauer</text>
+        <text lang="fr">Total duration</text>
+        <text lang="es">Total duration</text>
+        <text lang="cs">Total duration</text> 
+        <text lang="nl">Totale duur</text>
+        <text lang="pl">Total duration</text>   
+    </entry>
+    <entry key="duration">
+        <text lang="en">duration</text>
+        <text lang="de">Dauer</text>
+        <text lang="fr">duration</text>
+        <text lang="es">duration</text>
+        <text lang="cs">duration</text>
+        <text lang="nl">duur</text>
+        <text lang="pl">duration</text>
+    </entry>
+    <entry key="lunch_break">
+        <text lang="en">lunch break</text>
+        <text lang="de">Mittagspause</text>
+      <text lang="nl">middag pause</text>
+		<text lang="pl">lunch break</text>
+    </entry>
+    <entry key="time_till_break">
+        <text lang="en">time till break</text>
+        <text lang="de">Zeit bis zur Pause</text>
+        <text lang="fr">time till break</text>
+        <text lang="es">time till break</text>
+        <text lang="cs">time till break</text>
+		<text lang="nl">Tijd tot pause</text>
+		<text lang="pl">time till break</text>
+    </entry>
+    <entry key="break_duration">
+        <text lang="en">break duration</text>
+        <text lang="de">Pausendauer</text>
+        <text lang="fr">break duration</text>
+        <text lang="es">break duration</text>
+        <text lang="cs">break duration</text>
+		<text lang="nl">duur pause</text>
+		<text lang="pl">break duration</text>
+    </entry>
+    <entry key="lunch_break_duration">
+        <text lang="en">lunch break duration</text>
+        <text lang="de">Mittagspausendauer</text>
+        <text lang="fr">lunch break duration</text>
+        <text lang="es">lunch break duration</text>
+        <text lang="cs">lunch break duration</text>
+		<text lang="nl">middag pause duur</text>
+		<text lang="pl">lunch break duration</text>
+    </entry>
+    <entry key="minutes">
+        <text lang="en">min</text>
+        <text lang="de">Min.</text>
+        <text lang="fr">min</text>
+        <text lang="es">min</text>
+        <text lang="cs">min</text>
+		<text lang="nl">minuten</text>
+		<text lang="pl">min</text>
+    </entry>
+    <entry key="hours">
+        <text lang="en">h</text>
+        <text lang="de">Std.</text>
+        <text lang="fr">h</text>
+        <text lang="es">h</text>
+        <text lang="cs">h</text>
+		<text lang="nl">uur</text>
+		<text lang="pl">h</text>
+    </entry>
+    <entry key="user_settings">
+        <text lang="en">user settings:</text>
+        <text lang="de">Benutzerspezifische Einstellungen:</text>
+        <text lang="fr">user settings:</text>
+        <text lang="es">user settings:</text>
+        <text lang="cs">user settings:</text>
+		<text lang="nl">user settings:</text>
+		<text lang="pl">user settings:</text>
+    </entry>
+    <entry key="default_preferences">
+        <text lang="en">default preferences</text>
+        <text lang="de">Standardeinstellungen</text>
+        <text lang="fr">default preferences</text>
+        <text lang="es">default preferences</text>
+        <text lang="cs">default preferences</text>
+		<text lang="nl">standard voorkeur</text>
+		<text lang="pl">default preferences</text>
+    </entry>
+    <entry key="time_unit">
+        <text lang="en">time unit:</text>
+        <text lang="de">Minuten pro Zeiteinheit:</text>
+        <text lang="fr">time unit:</text>
+        <text lang="es">time unit:</text>
+        <text lang="cs">time unit:</text>
+        <text lang="nl">tijd eenheid in minuten:</text>
+        <text lang="pl">time unit:</text>
+    </entry>
+    <entry key="time_format">
+        <text lang="en">time format ({0} = # time units, {1} = rest)</text>
+        <text lang="de">Format der Zeiteinheit ({0} = volle Zeiteinheiten, {1} = Rest)</text>
+        <text lang="fr">time format:</text>
+        <text lang="es">time format:</text>
+        <text lang="cs">time format:</text>
+        <text lang="nl">tijd formaat:</text>
+        <text lang="pl">time format:</text>
+    </entry>
+    <entry key="EventTimeCalculatorPlugin">
+        <text lang="en">Time Calculation Options</text>
+        <text lang="de">Stundenmodell Einstellungen</text>
+        <text lang="fr">Time Calculation Plugin</text>
+        <text lang="es">Time Calculation Plugin</text>
+        <text lang="cs">Time Calculation Plugin</text>
+        <text lang="nl">Time Calculation Plugin</text>
+        <text lang="pl">Time Calculation Plugin</text>
+    </entry>
+</resources>
