@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla</artifactId>
-	<version>1.8.2-SNAPSHOT</version>
+	<version>2.0-SNAPSHOT</version>
 	<url>https://github.com/rapla/rapla</url>
 	<description>rapla - resource scheduling and event planing</description>
 	<name>rapla - resource scheduling and event planing</name>
@@ -37,21 +37,12 @@
 		<itext.version>4.2.1</itext.version>
 		<javax.inject.version>1</javax.inject.version>
 		<supercsv.version>2.0.1</supercsv.version>
+		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
 		<!-- Properties to sign the client jars -->
-		<signer.alias>rapla</signer.alias>
-		<signer.keystore>${basedir}/raplaselfsigned.ks</signer.keystore>
-		<signer.keypass></signer.keypass>
-		<signer.storepass>raplaselfsigned</signer.storepass>
-		<!-- Text Properties -->
-		<doc.name>rapla</doc.name>
-		<doc.version>${project.version}</doc.version>
-		<doc.date>${timestamp}</doc.date>
+        <!-- Text Properties -->
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-		<doc.year>2000-2015</doc.year>
-		<doc.copyright>Rapla Team</doc.copyright>
-		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
-		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
-		<doc.homepage>http://code.google.com/p/rapla</doc.homepage>
+		<doc.date>${maven.build.timestamp}</doc.date>
+		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 	</properties>
 
 	<build>
@@ -59,21 +50,21 @@
 		<resources>
 			<resource>
 				<directory>${basedir}/src-resources</directory>
-		        <filtering>true</filtering>
-		        <includes>
-		          <include>**/*.xml</include>
-		          <include>**/*.txt</include>
-		          <include>**/*.properties</include>
-		        </includes>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/*.xml</include>
+					<include>**/*.txt</include>
+					<include>**/*.properties</include>
+				</includes>
 			</resource>
 			<resource>
 				<directory>${basedir}/src-resources</directory>
-		        <filtering>false</filtering>
-		        <excludes>
-		          <exclude>**/*.xml</exclude>
-		          <exclude>**/*.txt</exclude>
-		          <exclude>**/*.properties</exclude>
-		        </excludes>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/*.xml</exclude>
+					<exclude>**/*.txt</exclude>
+					<exclude>**/*.properties</exclude>
+				</excludes>
 			</resource>
 			<resource>
 				<directory>${basedir}/gwt-src</directory>
@@ -126,6 +117,35 @@
 					<webXml>${basedir}/war/WEB-INF/web.xml</webXml>
 				</configuration>
 			</plugin>
+
+			
+
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.1.1</version>
+				<executions>
+					<execution>
+						<id>PluginList</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.rapla.framework.ServiceListCreator</mainClass>
+							<arguments>
+								<argument>${project.build.directory}/classes</argument>
+								<argument>${project.build.directory}/classes/META-INF/rapla-plugin.list</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<!-- <execution> <id>Properties</id> <phase>prepare-package</phase> 
+						<goals> <goal>java</goal> </goals> <configuration> <mainClass>org.rapla.components.xmlbundle.impl.ResourceFileGenerator</mainClass> 
+						<arguments> <argument>${basedir}/src-resources</argument> <argument>${project.build.directory}/unfiltered-resources</argument> 
+						</arguments> </configuration> </execution> -->
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -139,7 +159,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+					<outputDirectory>${webapp.dir}/webclient</outputDirectory>
 					<finalName>raplaclient</finalName>
 					<excludes>
 						<exclude>**/*.gwt.xml</exclude>
@@ -212,69 +232,73 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.1.1</version>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
 				<executions>
-					<execution>
-						<id>PluginList</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
+				 	<execution>
+				 	    <id>loadbuildproperties</id>
+						<phase>validate</phase>
 						<configuration>
-							<mainClass>org.rapla.framework.ServiceListCreator</mainClass>
-							<arguments>
-								<argument>${project.build.directory}/classes</argument>
-								<argument>${project.build.directory}/${project.build.finalName}/META-INF/rapla-plugin.list</argument>
-							</arguments>
+						    <exportAntProperties>true</exportAntProperties>
+							<tasks>
+							    <echo>in validate phase (1 of 21)</echo>
+							    <available file="${basedir}/${build.properties}" property="build.properties.present" />
+    	          
+						    	<copy todir="${basedir}">
+						            <fileset dir="${basedir}">
+						                <include name="build.properties.template" unless="build.properties.present" />
+						            </fileset>
+						            <mapper type="glob" from="*.template" to="*" />
+						        </copy>
+							    <property file="${basedir}/build.properties"/>
+                                <property file="${basedir}/doc.properties"/>
+                                <property name="doc.version">${project.version}</property>
+                                <property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
+       	                        <property name="keystore.password" value="raplaselfsigned" />
+                                <property name="keystore.keypass" value="${keystore.password}" />
+                                <property name="keystore.alias" value="rapla" />
+                                <property name="doc.name" value="rapla"/>
+								<property name="doc.revision" value=""/>
+		                        <property name="doc.year" value="2000-2015"/>
+		                        <property name="doc.copyright" value="Rapla Team"/>
+		                        <property name="doc.developer-list-link" value="http://lists.sourceforge.net/lists/listinfo/rapla-developers"/>
+		                        <property name="doc.developer-list" value="rapla-developers@lists.sourceforge.net"/>
+		                        <property name="doc.homepage" value="http://rapla.org"/>
+							</tasks>
 						</configuration>
-					</execution>
-					<!-- 
-					<execution>
-						<id>Properties</id>
-						<phase>prepare-package</phase>
 						<goals>
-							<goal>java</goal>
+							<goal>run</goal>
 						</goals>
+					</execution>
+				 	<execution>
+				 	    <id>generateclientlibsproperties</id>
+						<phase>prepare-package</phase>
 						<configuration>
-							<mainClass>org.rapla.components.xmlbundle.impl.ResourceFileGenerator</mainClass>
-							<arguments>
-								<argument>${basedir}/src-resources</argument>
-								<argument>${project.build.directory}/unfiltered-resources</argument>
-							</arguments>
+							<tasks>
+								<path id="dist.contents">
+									<fileset dir="${webapp.dir}/webclient">
+										<include name="*.jar" />
+									</fileset>
+								</path>
+								<path id="dist.contents.dir">
+									<dirset dir="${webapp.dir}/webclient">
+									</dirset>
+								</path>
+								<property name="prop.dist.contents" refid="dist.contents" />
+								<property name="prop.dist.contents.dir" refid="dist.contents.dir" />
+								<echo file="${webapp.dir}/WEB-INF/classes/clientlibs.properties">${prop.dist.contents}</echo>
+								<replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
+									token="${prop.dist.contents.dir}${file.separator}" value=""
+									preserveLastModified="true" />
+								<replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
+									token="${path.separator}" value=";" preserveLastModified="true" />
+							</tasks>
 						</configuration>
-					</execution>
-					 -->
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.7</version>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
 						<goals>
-							<goal>copy-resources</goal>
+							<goal>run</goal>
 						</goals>
 					</execution>
 				</executions>
-				<configuration>
-					<outputDirectory>${project.build.directory}/classes</outputDirectory>
-					<resources>
-						<resource>
-							<directory>${project.build.directory}/unfiltered-resources</directory>
-							<includes>
-								<include>**/*.properties</include>
-							</includes>
-							<filtering>true</filtering>
-						</resource>
-					</resources>
-					<delimiters>
-						<delimiter>@</delimiter>
-					</delimiters>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -289,10 +313,10 @@
 					</execution>
 				</executions>
 				<configuration>
-					<alias>${signer.alias}</alias>
-					<keystore>${signer.keystore}</keystore>
-					<keypass>${signer.keypass}</keypass>
-					<storepass>${signer.storepass}</storepass>
+					<alias>${keystore.alias}</alias>
+					<keystore>${keystore.file}</keystore>
+					<keypass>${keystore.keypass}</keypass>
+					<storepass>${keystore.password}</storepass>
 					<archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
 					<includes>
 						<include>*.jar</include>
@@ -490,4 +514,54 @@
 			</snapshots>
 		</repository>
 	</repositories>
+	<!-- 
+	<profiles>
+	  <profile>
+        <id>properties-missing</id>
+        <activation>
+          <file>
+	        <missing>${basedir}/build.properties</missing>
+          </file>
+        </activation>
+        <properties>
+		  <keystore.file>${basedir}/raplaselfsigned.ks</keystore.file>
+		  <keystore.password>raplaselfsigned</keystore.password>
+		  <keystore.alias>rapla</keystore.alias>
+          <keystore.keypass></keystore.keypass>
+        </properties>
+      </profile>
+      <profile>
+        <id>properties-set</id>
+        <activation>
+	        <file>
+    	      <exists>${basedir}/build.properties</exists>
+    	    </file>
+        </activation>
+        <build>
+          <plugins>
+			<plugin>
+	            <groupId>org.codehaus.mojo</groupId>
+	            <artifactId>properties-maven-plugin</artifactId>
+	            <version>1.0-alpha-2</version>
+	            <executions>
+	                <execution>
+	                    <phase>prepare-package</phase>
+	                    <goals>
+	                        <goal>read-project-properties</goal>
+	                    </goals>
+	                    <configuration>
+	                        <files>
+	                            <file>${basedir}/build.properties</file>
+	                        </files>
+	                        <quiet>true</quiet>
+	                    </configuration>
+	                </execution>
+	            </executions>
+	        </plugin>
+        </plugins>
+        </build>
+      </profile>
+      
+	</profiles>
+	 -->
 </project>

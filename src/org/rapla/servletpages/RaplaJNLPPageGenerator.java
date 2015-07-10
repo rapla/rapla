@@ -148,14 +148,9 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
         out.println("       <menu submenu=\"" + menuName +  "\"/>");
         out.println(" </shortcut>");
         out.println("</information>");
-        boolean allpermissionsAllowed = IOUtil.isSigned();
-        final String parameter = request.getParameter("sandbox");
-        if (allpermissionsAllowed && (parameter== null || parameter.trim().toLowerCase().equals("false")))
-        {
-            out.println("<security>");
-            out.println("  <all-permissions/>");
-            out.println("</security>");
-        }
+        out.println("<security>");
+        out.println("  <all-permissions/>");
+        out.println("</security>");
         out.println("<resources>");
         out.println("  <j2se version=\"1.4+\"/>");
         

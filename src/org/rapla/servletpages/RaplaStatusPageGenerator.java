@@ -33,11 +33,8 @@ public class RaplaStatusPageGenerator implements RaplaPageGenerator{
         out.println("</head>" );
 
         out.println( "<body>" );
-        boolean isSigned = IOUtil.isSigned();
-        String signed = m_i18n.getString( isSigned ? "yes": "no");
-        
         String javaversion = System.getProperty("java.version");
-     	out.println( "<p>Server running </p>" +  m_i18n.format("info.text", signed, javaversion));
+     	out.println( "<p>Server running </p>" +  m_i18n.format("info.text", "yes", javaversion));
         out.println( "<hr>" );
         out.println( "</body>" );
         out.println( "</html>" );

@@ -29,7 +29,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.StringTokenizer;
 
 /** Some IOHelper methods. */
@@ -219,7 +218,12 @@ abstract public class IOUtil {
             int start = filePath.indexOf(basePath);
             if (start != 0)
                 throw new IOException(basePath + " not ancestor of " + filePath);
-            return filePath.substring(basePath.length());
+            String substring = filePath.substring(basePath.length());
+            if (substring.startsWith("/") || substring.startsWith("\\"))
+            {
+                substring = substring.substring(1);
+            }
+            return substring;
         }
 
         /** returns the relative path of file to base.
@@ -272,27 +276,6 @@ abstract public class IOUtil {
             return bytes.toString();
         }
 
-		public static boolean isSigned() {
-		    try
-		    {
-		        final ClassLoader classLoader = IOUtil.class.getClassLoader();
-		        {
-		            final Enumeration<URL> resources = classLoader.getResources("META-INF/RAPLA.SF");
-		            if (resources.hasMoreElements() )
-		                 return true;
-		        }
-		        {
-		            final Enumeration<URL> resources = classLoader.getResources("META-INF/RAPLA.DSA");
-		            if (resources.hasMoreElements() )
-		                return true;
-		        }
-		    }
-		    catch ( IOException ex)
-		    {
-		        
-		    }
-		    return false;
-		}
 
 
 }

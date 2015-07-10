@@ -37,7 +37,6 @@ import javax.swing.SwingUtilities;
 
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
@@ -391,8 +390,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                         getLogger().warn("Permission to system properties denied!");
                     }
                     
-                    boolean isSigned = IOUtil.isSigned();
-                    String signed = getString( isSigned ? "yes": "no");
+                    String signed = getString( "yes" );
                     String mainText = getI18n().format("info.text",signed,javaversion);
                     StringBuffer completeText = new StringBuffer();
                     completeText.append( mainText);
