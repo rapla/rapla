@@ -1,4 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<?xml version="1.0" encoding="UTF-8"?>
+<!--*- coding: utf-8 -*-->
 <!DOCTYPE resources PUBLIC "-//rapla team//DTD Language Files 1.0//" "http://rapla.sf.net/dtds/resources.dtd">
 <!-- Welcome to the rapla-internationalization
 It's easy to add a new language. Just add a new row with the language
@@ -243,10 +244,10 @@ See French text.
 		<icon src="gui/images/error.png"/>
 	</entry>
     <entry key="icon.redo">
-        <icon src="gui/images/eclipse-icons/redo.png" />
+        <icon src="gui/images/eclipse-icons/redo.png"/>
     </entry>
     <entry key="icon.undo">
-        <icon src="gui/images/eclipse-icons/undo.png" />
+        <icon src="gui/images/eclipse-icons/undo.png"/>
     </entry>
 
 	<!-- common dialogs -->
@@ -1788,22 +1789,22 @@ See French text.
         
     </entry>
     <entry key="warning.update">
-        <text lang="en">The object &quot;{0}&quot; you are editing has been changed outside the window.
+        <text lang="en">The object "{0}" you are editing has been changed outside the window.
     The current editing will be aborted.</text>
-        <text lang="de">Das Objekt &quot;{0}&quot;, das gerade bearbeitet
+        <text lang="de">Das Objekt "{0}", das gerade bearbeitet
     wird, wurde geändert. Der aktuelle Editiervorgang wird abgebrochen.
     </text>
-        <text lang="fr">L''objet &quot;{0}&quot; que vous éditez a été modifié hors de la fenêtre.
+        <text lang="fr">L''objet "{0}" que vous éditez a été modifié hors de la fenêtre.
     Cette édition va être interrompue.</text>
-    	<text lang="es">El objeto &quot;{0}&quot; que está editando ha sido modificado fuera de la ventana
+    	<text lang="es">El objeto "{0}" que está editando ha sido modificado fuera de la ventana
     La edición actual va a ser interrumpida.</text>
-        <text lang="cs">Objekt &quot;{0}&quot; který je editován bude změněn mimo okno. Současná editace bude přerušena.</text>
-        <text lang="nl">Het object &quot;{0}&quot; dat je bewerkt, werd gewijzigd. Bewerken wordt onderbroken.</text>
-		<text lang="pl">Edytowany przez Ciebie obiekt &quot;{0}&quot; został zmieniony poza tym oknem.
+        <text lang="cs">Objekt "{0}" který je editován bude změněn mimo okno. Současná editace bude přerušena.</text>
+        <text lang="nl">Het object "{0}" dat je bewerkt, werd gewijzigd. Bewerken wordt onderbroken.</text>
+		<text lang="pl">Edytowany przez Ciebie obiekt "{0}" został zmieniony poza tym oknem.
     Obecne zmiany zostaną porzucone.</text>
-		<text lang="pt">O objeto &quot;{0}&quot; que você está editando foi alterado em outra janela.
+		<text lang="pt">O objeto "{0}" que você está editando foi alterado em outra janela.
     A edição atual será cancelada.</text>	
-	    <text lang="fi">Kohdetta &quot;{0}&quot; jota muokkaat, on muutettu tämän ikkunan ulkopuolella.
+	    <text lang="fi">Kohdetta "{0}" jota muokkaat, on muutettu tämän ikkunan ulkopuolella.
     Nykyinen muokkaus keskeytetään.</text>
     </entry>
     <!-- Errors -->
@@ -1907,35 +1908,35 @@ See French text.
 		<text lang="fi">Sinun täytyy tarjota avain: {0}</text>
     </entry>
     <entry key="error.invalid_key">
-        <text lang="en">&quot;{0}&quot; is not a valid key!
+        <text lang="en">"{0}" is not a valid key!
             Note: You can only use a combination of max. 50 letters, digits or one of the
             following characters {1}. The key must start with {2} or a letter! Example: room_size
         </text>
-        <text lang="de">&quot;{0}&quot; ist kein gültiger Schlüssel!
+        <text lang="de">"{0}" ist kein gültiger Schlüssel!
             Note: Sie können nur eine Kombination von max. 50 Buchstaben, Ziffern oder einer der
             Folgende Zeichen {1}. Der Schlüssel muss mit {2} oder einem Buchstaben beginnen! Beispiel: Anzahl_Plätze
         </text>
-        <text lang="fr">&quot;{0}&quot; n''est pas une clé valide!
+        <text lang="fr">"{0}" n''est pas une clé valide!
             Note: Vous pouvez utiliser une combinaison d''un max. de 50 lettres, chiffres ou caractères suivants {1}. La clé doit commencer par {2} ou une lettre! Exemple: Nombre_de_places
         </text>
-        <text lang="es">¡&quot;{0}&quot; no es una clave válida!
+        <text lang="es">¡"{0}" no es una clave válida!
             Nota : Sólo se puede utilizar una combinación de max. 50 letras, dígitos o uno de los
       		siguientes caracteres {1}. La clave debe comenzar con {2} o una carta! Ejemplo: Número_de_plazas
       	</text>
-        <text lang="cs">&quot;{0}&quot; je neplatný klíč! <br/>
+        <text lang="cs">"{0}" je neplatný klíč! <br/>
             Note: Můžete použít pouze v kombinaci s Max. 50 písmen, číslice nebo jeden z
       		tyto znaky {1}. Klíč musí začínat {2} nebo dopis! Např.: mistnost_velikost
         </text>
-     	  <text lang="nl">&quot;{0}&quot; is een ongeldige sleutel!
+     	  <text lang="nl">"{0}" is een ongeldige sleutel!
            Nota: Maximaal 50 letters, cijfers of {1} beginnend met {2} of een letter!
         </text>
-        <text lang="pl">&quot;{0}&quot; jest nieprawidłowym kluczem!
+        <text lang="pl">"{0}" jest nieprawidłowym kluczem!
            Wskazówka: Możesz użyć kominacji maks. 50 liter, cyfr oraz jednego z tych znaków {1}. Klucz musi zaczynać się od {2} lub od litery! Przykład: ilość_miejsc
         </text>
-		<text lang="pt">&quot;{0}&quot; não é uma chave válida!
+		<text lang="pt">"{0}" não é uma chave válida!
 		Nota: Você pode usar apenas uma combinação de, no máximo, 50 letras, números ou 
 		um dos seguintes caracteres {1}. A chave deve começar com {2} ou uma letra!</text>
-		<text lang="fi">&quot;{0}&quot; ei ole pätevä avain!
+		<text lang="fi">"{0}" ei ole pätevä avain!
             Huom: Voit käyttää ainoastaan 50:n kirjaimen, numeron tai seuraavien merkkien yhdistelmää 
             {1}. Avaimen täytyy alkaa {2} tai kirjaimella! Esim: huone_koko
         </text>
@@ -1963,17 +1964,17 @@ See French text.
 		<text lang="fi">Näillä kohteilla on riippuvuuksia</text>
     </entry>
     <entry key="error.not_unique">
-        <text lang="en">The name &quot;{0}&quot; is already
+        <text lang="en">The name "{0}" is already
      taken. Please choose a different name!</text>
-        <text lang="de">Der Name &quot;{0}&quot; ist schon
+        <text lang="de">Der Name "{0}" ist schon
      vergeben. Bitte wählen Sie einen Anderen!</text>
-        <text lang="fr">Le nom &quot;{0}&quot; est déjà utilisé. Choisissez-en un autre !</text>
-        <text lang="es">¡El nombre &quot;{0}&quot; ya está en uso. Por favor, escoja un nombre diferente!</text>
-        <text lang="cs">Jméno &quot;{0}&quot; je využíváno. Vyber jiné!</text>
-        <text lang="nl">De naam &quot;{0}&quot; is reeds in gebruik. Kies een andere naam!</text>
-        <text lang="pl">Nazwa &quot;{0}&quot; jest już zajęta. Wybierz inną.</text>
-		<text lang="pt">O nome &quot;{0}&quot; já está sendo usado. Favor escolha um nome diferente!</text>
-		<text lang="fi">Nimi &quot;{0}&quot; on jo
+        <text lang="fr">Le nom "{0}" est déjà utilisé. Choisissez-en un autre !</text>
+        <text lang="es">¡El nombre "{0}" ya está en uso. Por favor, escoja un nombre diferente!</text>
+        <text lang="cs">Jméno "{0}" je využíváno. Vyber jiné!</text>
+        <text lang="nl">De naam "{0}" is reeds in gebruik. Kies een andere naam!</text>
+        <text lang="pl">Nazwa "{0}" jest już zajęta. Wybierz inną.</text>
+		<text lang="pt">O nome "{0}" já está sendo usado. Favor escolha um nome diferente!</text>
+		<text lang="fi">Nimi "{0}" on jo
      varattu. Valitse toinen nimi!</text>
     </entry>
     <entry key="error.new_version">
@@ -3513,10 +3514,10 @@ See French text.
 		<text lang="fi">Poikkeuspäivät:</text>
     </entry>
     <entry key="appointment.search_free">
-		<text lang="en">free appointment >></text>
-		<text lang="de">Freier Termin >></text>
+		<text lang="en">free appointment &gt;&gt;</text>
+		<text lang="de">Freier Termin &gt;&gt;</text>
         <text lang="fr">Recherche disponibilité</text>
-		<text lang="nl">Zoek vrije afspraak >></text>
+		<text lang="nl">Zoek vrije afspraak &gt;&gt;</text>
 		<text lang="fi">vapaa aika</text>
 	</entry>
 	<entry key="appointment.convert">
@@ -4123,13 +4124,13 @@ See French text.
 		<text lang="fi">Sulje</text>
     </entry>
     <entry key="exit.abort">
-        <text lang="en">Continue Rapla >></text>
-        <text lang="de">Weiter planen >></text>
-        <text lang="fr">Continuer Rapla >></text>
-        <text lang="es">Continuar Rapla >></text>
+        <text lang="en">Continue Rapla &gt;&gt;</text>
+        <text lang="de">Weiter planen &gt;&gt;</text>
+        <text lang="fr">Continuer Rapla &gt;&gt;</text>
+        <text lang="es">Continuar Rapla &gt;&gt;</text>
         <text lang="cs">Pokračuj v plánování</text>
         <text lang="nl">Terugkeren</text>
-        <text lang="pl">Wróć do Rapla >></text>
+        <text lang="pl">Wróć do Rapla &gt;&gt;</text>
 		<text lang="pt">Não sair</text>
 		<text lang="fi">Älä sulje</text>
     </entry>
@@ -4227,7 +4228,7 @@ See French text.
       (C) Copyright @doc.year@ @doc.copyright@
       <p>Rapla-Webseite: <strong>@doc.homepage@</strong>
             </p>
-            <p>Envoyer vos propositions d&quot;évolutions, questions, ou erreurs trouvées
+            <p>Envoyer vos propositions d"évolutions, questions, ou erreurs trouvées
          à la Mailingliste anglophone développeurs :<br/>
                 <strong>@doc.developer-list@</strong>
             </p>
@@ -4490,42 +4491,42 @@ See French text.
         <text lang="en">
             <strong>Rapla</strong> version @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
       <p>
-                <strong>Rapla</strong> comes with <a href="warranty">NO&#160;WARRANTY</a>!!
+                <strong>Rapla</strong> comes with <a href="warranty">NO WARRANTY</a>!!
       This is free software, you are welcome to redistribute it under certain
       <a href="license">conditions</a>.</p>
         </text>
         <text lang="de">
             <strong>Rapla</strong> Version @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
-        <p>Für <strong>Rapla</strong> besteht <a href="warranty">KEINE&#160;GARANTIE</a>!!
+        <p>Für <strong>Rapla</strong> besteht <a href="warranty">KEINE GARANTIE</a>!!
       <strong>Rapla</strong> ist freie Software, die Sie unter bestimmten
       <a href="license">Bedingungen</a> weitergeben dürfen.</p>
        </text>
       <text lang="fr">
       <strong>Rapla</strong> Version @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
-      <p><strong>Rapla</strong> est <a href="warranty">SANS&#160;GARANTIE</a>!!
+      <p><strong>Rapla</strong> est <a href="warranty">SANS GARANTIE</a>!!
       <strong>Rapla</strong> est un logiciel libre, que vous pouvez utiliser et distribuer suivant ces <a href="license">conditions</a>.</p>
         </text>
       <text lang="es">
       <strong>Rapla</strong> Version @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
-      <p><strong>¡¡Rapla</strong> viene <a href="warranty">SIN&#160;GARANTÍA</a>!!
+      <p><strong>¡¡Rapla</strong> viene <a href="warranty">SIN GARANTÍA</a>!!
       <strong>Rapla</strong> es software libre, así que puede usarlo y distribuirlo bajo las siguientes <a href="license">condiciones</a>.</p>
         </text>
         <text lang="cs">
             <strong>Rapla</strong> Verze @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
-            <p><strong>Na systém Rapla</strong> není poskytována <a href="warranty">ŽÁDNÁ&#160;ZÁRUKA</a>!!
+            <p><strong>Na systém Rapla</strong> není poskytována <a href="warranty">ŽÁDNÁ ZÁRUKA</a>!!
             <strong>Rapla</strong> Toto je volný software a je možné jej rozšiřovat pouze za určitých 
             <a href="licenčních">podmínek</a>.</p>
         </text>   
         <text lang="nl">
             <strong>Rapla</strong> versie @doc.version@ : @doc.buildtime@<br/>
             (C) Copyright @doc.year@ @doc.copyright@
-            <p><strong>Rapla</strong> wordt geleverd <a href="warranty">ZONDER&#160;GARANTIE</a>.</p>
+            <p><strong>Rapla</strong> wordt geleverd <a href="warranty">ZONDER GARANTIE</a>.</p>
             Deze software kan enkel onder bepaalde <a href="license">voorwaarden</a> vrij worden verspreid.
         </text>
         <text lang="pl">
             <strong>Rapla</strong> wersja @doc.version@ (C) Copyright @doc.year@ @doc.copyright@
       <p>
-                <strong>Rapla</strong> jest dostarczana <a href="warranty">BEZ ŻADNEJ&#160;GWARANCJI</a>!!!
+                <strong>Rapla</strong> jest dostarczana <a href="warranty">BEZ ŻADNEJ GWARANCJI</a>!!!
 	  To jest darmowe oprogramowanie, możesz je rozprowadzać pod pewnymi
       <a href="license">warunkami</a>.</p>
         </text>
@@ -5039,15 +5040,15 @@ See French text.
 		<text lang="fi">Poista {0}</text>
     </entry>
     <entry key="translation.format">
-        <text lang="en">Translations for &quot;{0}&quot;:</text>
-        <text lang="de">Übersetzungen von &quot;{0}&quot;:</text>
-        <text lang="fr">Traduction de &quot;{0}&quot;:</text>
-        <text lang="es">Traducción de &quot;{0}&quot;:</text>
-        <text lang="cs">Překlady pro &quot;{0}&quot;:</text>
-        <text lang="nl">Vertaling voor &quot;{0}&quot;:</text>
-        <text lang="pl">Tłumaczenia na &quot;(0)&quot;:</text>
-		<text lang="pt">Traduções para &quot;{0}&quot;:</text>
-		<text lang="fi">Käännökset &quot;{0}&quot;:</text>
+        <text lang="en">Translations for "{0}":</text>
+        <text lang="de">Übersetzungen von "{0}":</text>
+        <text lang="fr">Traduction de "{0}":</text>
+        <text lang="es">Traducción de "{0}":</text>
+        <text lang="cs">Překlady pro "{0}":</text>
+        <text lang="nl">Vertaling voor "{0}":</text>
+        <text lang="pl">Tłumaczenia na "(0)":</text>
+		<text lang="pt">Traduções para "{0}":</text>
+		<text lang="fi">Käännökset "{0}":</text>
     </entry>
     <entry key="change.format">
         <text lang="en">Change {0}</text>

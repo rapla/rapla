@@ -44,7 +44,7 @@
 		<signer.storepass>raplaselfsigned</signer.storepass>
 		<!-- Text Properties -->
 		<doc.name>rapla</doc.name>
-		<doc.version>${version}</doc.version>
+		<doc.version>${project.version}</doc.version>
 		<doc.date>${timestamp}</doc.date>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 		<doc.year>2000-2015</doc.year>
@@ -59,6 +59,21 @@
 		<resources>
 			<resource>
 				<directory>${basedir}/src-resources</directory>
+		        <filtering>true</filtering>
+		        <includes>
+		          <include>**/*.xml</include>
+		          <include>**/*.txt</include>
+		          <include>**/*.properties</include>
+		        </includes>
+			</resource>
+			<resource>
+				<directory>${basedir}/src-resources</directory>
+		        <filtering>false</filtering>
+		        <excludes>
+		          <exclude>**/*.xml</exclude>
+		          <exclude>**/*.txt</exclude>
+		          <exclude>**/*.properties</exclude>
+		        </excludes>
 			</resource>
 			<resource>
 				<directory>${basedir}/gwt-src</directory>
@@ -129,6 +144,7 @@
 					<excludes>
 						<exclude>**/*.gwt.xml</exclude>
 						<exclude>**/*.gwt.xml</exclude>
+						<exclude>**/*Resources.xml</exclude>
 						<exclude>org/rapla/gwt/**</exclude>
 						<exclude>org/rapla/bootstrap/*</exclude>
 						<exclude>**/Slf4jAdapter**</exclude>
@@ -214,6 +230,7 @@
 							</arguments>
 						</configuration>
 					</execution>
+					<!-- 
 					<execution>
 						<id>Properties</id>
 						<phase>prepare-package</phase>
@@ -228,6 +245,7 @@
 							</arguments>
 						</configuration>
 					</execution>
+					 -->
 				</executions>
 			</plugin>
 			<plugin>

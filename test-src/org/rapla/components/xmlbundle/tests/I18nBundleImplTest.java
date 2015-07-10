@@ -13,53 +13,36 @@
 package org.rapla.components.xmlbundle.tests;
 import java.util.Locale;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 
 public class I18nBundleImplTest extends AbstractI18nTest {
     I18nBundleImpl i18n;
-    boolean useFile;
     LocaleSelector localeSelector;
     Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN);
 
     public I18nBundleImplTest(String name) {
-        this(name, true);
-    }
-
-    public I18nBundleImplTest(String name,boolean useFile) {
         super(name);
-        this.useFile = useFile;
     }
 
     protected void setUp() throws Exception {
-        DefaultConfiguration config = new DefaultConfiguration("i18n");
-        if (this.useFile) {
-            DefaultConfiguration child = new DefaultConfiguration("file");
-            child.setValue("src/org/rapla/RaplaResources.xml");
-            config.addChild(child);
-        } else {
-            config.setAttribute("id","org.rapla.RaplaResources");
-        }
+        String config = "org.rapla.RaplaResources";
+        
         i18n = create(config);
     }
 
-    private I18nBundleImpl create(Configuration config) throws Exception {
+    private I18nBundleImpl create(String config) throws Exception {
         I18nBundleImpl i18n;
-        RaplaDefaultContext context = new RaplaDefaultContext();
         localeSelector = new LocaleSelectorImpl();
-        context.put(LocaleSelector.class,localeSelector);
-        i18n = new I18nBundleImpl(context,config,new ConsoleLogger());
+        i18n = new I18nBundleImpl(localeSelector,new ConsoleLogger(), config);
         return i18n;
     }
 
@@ -73,18 +56,10 @@ public class I18nBundleImplTest extends AbstractI18nTest {
     public static Test suite() {
         TestSuite suite = new TestSuite();
         // The first four test only succeed if the Resource Bundles are build.
-        suite.addTest(new I18nBundleImplTest("testLocaleChanged",false));
-        suite.addTest(new I18nBundleImplTest("testGetIcon",false));
-        suite.addTest(new I18nBundleImplTest("testGetString",false));
-        suite.addTest(new I18nBundleImplTest("testLocale",false));
-        /*
-       */
-        suite.addTest(new I18nBundleImplTest("testInvalidConfig",true));
-        suite.addTest(new I18nBundleImplTest("testLocaleChanged",true));
-        suite.addTest(new I18nBundleImplTest("testGetIcon",true));
-        suite.addTest(new I18nBundleImplTest("testGetString",true));
-        suite.addTest(new I18nBundleImplTest("testLocale",true));
-
+        suite.addTest(new I18nBundleImplTest("testLocaleChanged"));
+        suite.addTest(new I18nBundleImplTest("testGetIcon"));
+        suite.addTest(new I18nBundleImplTest("testGetString"));
+        suite.addTest(new I18nBundleImplTest("testLocale"));
         return suite;
     }
 
@@ -96,21 +71,8 @@ public class I18nBundleImplTest extends AbstractI18nTest {
     }
 
     public void testInvalidConfig() throws Exception {
-        if (!this.useFile)
-            return;
-        DefaultConfiguration config = new DefaultConfiguration("i18n");
         try {
-            create(config);
-            assertTrue("id is missing should be reported", true);
-        } catch (Exception ex) {
-        }
-        config.setAttribute("id","org.rapla.RaplaResources");
-        DefaultConfiguration child = new DefaultConfiguration("file");
-        child.setValue("./src/org/rapla/RaplaResou");
-        config.addChild( child );
-        try {
-            create(config);
-            assertTrue("file ./src/org/rapla/RaplaResou should fail", true);
+            create("i18n");
         } catch (Exception ex) {
         }
     }

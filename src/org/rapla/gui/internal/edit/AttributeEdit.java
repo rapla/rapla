@@ -78,7 +78,7 @@ public class AttributeEdit extends RaplaGUIComponent
     public AttributeEdit(RaplaContext context) throws RaplaException {
         super( context);
         constraintPanel = new DefaultConstraints(context);
-        listEdit = new RaplaListEdit<Attribute>( getI18n(), constraintPanel.getComponent(), listener );
+        listEdit = new RaplaListEdit<Attribute>( getI18n(),getImages(), constraintPanel.getComponent(), listener );
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );

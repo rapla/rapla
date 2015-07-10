@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.impl;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,18 +22,12 @@ import java.util.ResourceBundle;
 import java.util.TreeMap;
 
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 
-import org.rapla.components.util.IOUtil;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
@@ -72,13 +60,11 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     String className;
     Locale locale;
     Logger logger = null;
-    LocaleSelectorImpl m_localeSelector;
-
-    final String dictionaryFile;
+    LocaleSelector localeSelector;
+    
     final RaplaDictionary dict;
     
     LinkedHashMap<Locale,LanguagePack> packMap = new LinkedHashMap<Locale,LanguagePack>();
-    String parentId = null;
     class LanguagePack
     {
 	    Locale locale;
@@ -87,16 +73,7 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 	    public String getString( String key ) throws MissingResourceException
 	    {
 	        String lang = locale.getLanguage();
-			if ( dictionaryFile != null )
-	        {
-	        	String lookup = dict.lookup(key, lang);
-	        	if ( lookup == null)
-	        	{
-	        		throw new MissingResourceException("Entry not found for "+ key, dictionaryFile, key);
-	        	}
-				return lookup;
-	        }
-	        DictionaryEntry entry = dict.getEntry(key);
+			DictionaryEntry entry = dict.getEntry(key);
 	        String string;
 	        if ( entry != null)
 	    	{
@@ -119,195 +96,30 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 				}
 	    	}
 	        return string;
-	    }
-	    
-	    public ImageIcon getIcon( String key ) throws MissingResourceException
-	    {
-	        String iconfile; 
-	        try
-	        {
-	            iconfile = getString( key );
-	        }
-	        catch ( MissingResourceException ex )
-	        {
-	            getLogger().debug( ex.getMessage() ); //BJO
-	            throw ex;
-	        }
-	        try
-	        {
-	            ImageIcon icon = (ImageIcon) iconCache.get( iconfile );
-	            if ( icon == null )
-	            {
-	                icon = new ImageIcon( loadResource( iconfile ), key );
-	                iconCache.put( iconfile, icon );
-	            } // end of if ()
-	            return icon;
-	        }
-	        catch ( Exception ex )
-	        {
-	            String message = "Icon " + iconfile + " can't be created: " + ex.getMessage();
-	            getLogger().error( message );
-	            throw new MissingResourceException( message, className, key );
-	        }
-	    }
-	    
-	    private final byte[] loadResource( String fileName ) throws IOException
-	    {
-	        return IOUtil.readBytes( getResourceFromFile( fileName ) );
-	    }
-
-	    private URL getResourceFromFile( String fileName ) throws IOException
-	    {
-	        URL resource = null;
-	        String base;
-	        if ( dictionaryFile == null )
-	        {
-	        	if ( resourceBundle == null)
-	        	{
-	        		throw new IOException("Resource Bundle for locale " + locale + " is missing while looking up " + fileName);
-	        	}
-				if ( resourceBundle instanceof PropertyResourceBundleWrapper)
-	        	{
-	        		base = ((PropertyResourceBundleWrapper) resourceBundle).getName();
-	        	}
-	        	else
-	        	{        		
-	        		base = resourceBundle.getClass().getName();
-	        	}
-	            base = base.substring(0,base.lastIndexOf("."));
-	        	base = base.replaceAll("\\.", "/");
-	        	String file = "/" + base + "/" + fileName;
-	            resource = I18nBundleImpl.class.getResource( file );
-	    		
-	        }
-	        else
-	        {
-	        	if ( getLogger().isDebugEnabled() )
-		                getLogger().debug( "Looking for resourcefile " + fileName + " in classpath ");
-		         
-	        	URL resourceBundleURL = getClass().getClassLoader().getResource(dictionaryFile);
-	        	if (resourceBundleURL != null)
-	        	{
-	        		resource = new URL( resourceBundleURL, fileName);
-	        		base = resource.getPath();
-	        	}
-	        	else
-	        	{
-	        		base = ( new File( dictionaryFile ) ).getParent();
-	        		if ( base != null)
-	        		{	
-	        			if ( getLogger().isDebugEnabled() )
-	        				getLogger().debug( "Looking for resourcefile " + fileName + " in directory " + base );
-	        			File resourceFile = new File( base, fileName );
-	        			if ( resourceFile.exists() )
-	        				resource = resourceFile.toURI().toURL();
-	        		}
-	        	}
-	        }
-	        if ( resource == null )
-	            throw new IOException( "File '"
-	                    + fileName
-	                    + "' not found. "
-	                    + " in bundle "
-	                    + className
-	                    + " It must be in the same location as '"
-	                    + base
-	                    + "'" );
-	        return resource;
-	    }
+	    }	    
     }
     
     /**
      * @throws RaplaException when the resource-file is missing or can't be accessed
      or can't be parsed
      */
-    public I18nBundleImpl( RaplaContext context, Configuration config, Logger logger ) throws RaplaException
+    public I18nBundleImpl( LocaleSelector selector,  Logger logger, String classname )
     {
+        this.localeSelector = selector;
         enableLogging( logger );
-        Locale locale;
-        try
+        this.className = classname;
+        if ( className != null ) 
         {
-            m_localeSelector =  (LocaleSelectorImpl) context.lookup( LocaleSelector.class ) ;
+            className = className.trim();
         }
-        catch (RaplaContextException ex)
-        {
-        }
-        if ( m_localeSelector != null )
-        {
-            m_localeSelector.addLocaleChangeListenerFirst( this );
-            locale = m_localeSelector.getLocale();
-            
-        }
-        else
-        {
-        	locale =  Locale.getDefault();
-        }
-        String filePath = config.getChild( "file" ).getValue( null );
-        try
-        {
-        	InputStream resource;
-            if ( filePath == null )
-            {
-                className = config.getChild( "classname" ).getValue( null );
-                if ( className == null ) 
-                {
-                    className = config.getAttribute( "id" );
-                }
-                else
-                {
-                    className = className.trim();
-                }
-                String resourceFile = "" + className.replaceAll("\\.", "/") + ".xml";
-                resource = getClass().getClassLoader().getResourceAsStream(resourceFile);
-                dictionaryFile = resource != null ? resourceFile : null;
-            }
-            else
-            {
-            	File file = new File( filePath);
-      		    getLogger().info( "getting lanaguageResources  from " + file.getCanonicalPath() );
-      		    resource = new FileInputStream( file );
-      		    dictionaryFile = filePath;
-            }
-            if ( resource != null)
-            {
-            	dict = new TranslationParser().parse( resource );
-            	resource.close();
-            }
-            else
-            {
-            	dict = new RaplaDictionary(locale.getLanguage());
-            }
-        }
-        catch ( Exception ex )
-        {
-            throw new RaplaException( ex );
-        }
-        setLocale( locale );
-        try
-        {
-            parentId = getPack(locale).getString( TranslationParser.PARENT_BUNDLE_IDENTIFIER );
-        }
-        catch ( MissingResourceException ex )
-        {
-        }
-    }
-
-    public String getParentId()
-    {
-        return parentId;
-    }
-
-    public static Configuration createConfig( String resourceFile )
-    {
-        DefaultConfiguration config = new DefaultConfiguration( "component");
-        config.setAttribute( "id", resourceFile.toString() );
-        return config;
+        setLocale(localeSelector.getLocale());
+        localeSelector.addLocaleChangeListener( this);
+        dict = new RaplaDictionary(getLocale().getLanguage());
     }
 
     public void dispose()
     {
-        if ( m_localeSelector != null )
-            m_localeSelector.removeLocaleChangeListener( this );
+        localeSelector.removeLocaleChangeListener( this );
     }
 
     public void localeChanged( LocaleChangeEvent evt )
@@ -353,30 +165,20 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
         return msg.format( obj );
     }
 
-    public ImageIcon getIcon( String key ) throws MissingResourceException
-    {
-    	ImageIcon icon = getPack(getLocale()).getIcon( key);
-    	return icon;
-    }
-
     public Locale getLocale()
     {
-        if ( locale == null )
-            throw new IllegalStateException( "Call setLocale first!" );
         return locale;
     }
 
     public String getLang()
     {
-        if ( locale == null )
-            throw new IllegalStateException( "Call setLocale first!" );
+        Locale locale = getLocale();
         return locale.getLanguage();
     }
 
     public String getString( String key ) throws MissingResourceException
     {
-    	if ( locale == null )
-             throw new IllegalStateException( "Call setLocale first!" );
+        Locale locale = getLocale();
 		return getString(key, locale);
     }
 
@@ -421,9 +223,13 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 //        return replaceAll( text, "<br/>", "<br></br>" );
 //    }
 
-    public void setLocale( Locale locale )
+    private void setLocale( Locale locale )
     {
     	this.locale = locale;
+    	if ( dict != null)
+    	{
+    	    this.dict.setDefaultLang( locale.getLanguage());
+    	}
     	getLogger().debug( "Locale changed to " + locale );
     	try
     	{
@@ -451,169 +257,10 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 	        }
 			pack = new LanguagePack();
 			pack.locale = locale;
-			if ( dictionaryFile == null )
-			{
-				pack.resourceBundle = new ResourceBundleLoader().loadResourceBundle( className, locale );
-		    }
-			packMap.put( locale, pack);
+			pack.resourceBundle = ResourceBundleLoader.loadResourceBundle( className, locale );
+		    packMap.put( locale, pack);
 			return pack;
 		}
 	}
 
-}
-
-class ResourceBundleLoader 
-{
-	
-    /** this method imitates the orginal
-     * <code>ResourceBundle.getBundle(String className,Locale
-     * locale)</code> which causes problems when the locale is changed
-     * to the base locale (english). For a full description see
-     * ResourceBundle.getBundle(String className) in the java-api.*/
-    public ResourceBundle loadResourceBundle( String className, Locale locale ) throws MissingResourceException
-    {
-        String tries[] = new String[7];
-        StringBuffer buf = new StringBuffer();
-        tries[6] = className;
-        buf.append( className );
-        if ( locale.getLanguage().length() > 0 )
-        {
-            buf.append( '_' );
-            buf.append( locale.getLanguage() );
-            tries[2] = buf.toString();
-        }
-        if ( locale.getCountry().length() > 0 )
-        {
-            buf.append( '_' );
-            buf.append( locale.getCountry() );
-            tries[1] = buf.toString();
-        }
-        if ( locale.getVariant().length() > 0 )
-        {
-            buf.append( '_' );
-            buf.append( locale.getVariant() );
-            tries[0] = buf.toString();
-        }
-        buf.delete( className.length(), buf.length() - 1 );
-        Locale defaultLocale = Locale.getDefault();
-        if ( defaultLocale.getLanguage().length() > 0 )
-        {
-            buf.append( defaultLocale.getLanguage() );
-            tries[5] = buf.toString();
-        }
-        if ( defaultLocale.getCountry().length() > 0 )
-        {
-            buf.append( '_' );
-            buf.append( defaultLocale.getCountry() );
-            tries[4] = buf.toString();
-        }
-        if ( defaultLocale.getVariant().length() > 0 )
-        {
-            buf.append( '_' );
-            buf.append( defaultLocale.getVariant() );
-            tries[3] = buf.toString();
-        }
-
-        ResourceBundle bundle = null;
-        for ( int i = 0; i < tries.length; i++ )
-        {
-            if ( tries[i] == null )
-                continue;
-            bundle = loadBundle( tries[i] );
-            if ( bundle != null )
-            {
-                loadParent( tries, i, bundle );
-                return bundle;
-            }
-        }
-        throw new MissingResourceException( "'" + className + "' not found. The resource-file is missing.", className,
-                                            "" );
-    }
-    
-    private ResourceBundle loadBundle( String name )
-    {
-        InputStream io = null;
-        try
-        {
-            String pathName = getPropertyFileNameFromClassName( name );
-            io = this.getClass().getResourceAsStream( pathName );
-            if ( io != null )
-            {
-                return new PropertyResourceBundleWrapper(io , name);
-            }
-            ResourceBundle bundle = (ResourceBundle) this.getClass().getClassLoader().loadClass( name ).newInstance();
-            return bundle;
-        }
-        catch ( Exception ex )
-        {
-            return null;
-        }
-        catch ( ClassFormatError ex )
-        {
-            return null;
-        }
-        finally
-        {
-            if ( io != null)
-            {
-                try {
-                    io.close();
-                } catch (IOException e) {
-                    return null;
-                }
-            }
-        }
-    }
-
-	private void loadParent( String[] tries, int i, ResourceBundle bundle )
-    {
-        ResourceBundle parent = null;
-        if ( i == 0 || i == 3 )
-        {
-            parent = loadBundle( tries[i++] );
-            if ( parent != null )
-                setParent( bundle, parent );
-            bundle = parent;
-        }
-        if ( i == 1 || i == 4 )
-        {
-            parent = loadBundle( tries[i++] );
-            if ( parent != null )
-                setParent( bundle, parent );
-            bundle = parent;
-        }
-        if ( i == 2 || i == 5 )
-        {
-            parent = loadBundle( tries[6] );
-            if ( parent != null )
-                setParent( bundle, parent );
-        }
-    }
-
-    private void setParent( ResourceBundle bundle, ResourceBundle parent )
-    {
-        try
-        {
-            Method method = bundle.getClass().getMethod( "setParent", new Class[]
-                { ResourceBundle.class } );
-            method.invoke( bundle, new Object[]
-                { parent } );
-        }
-        catch ( Exception ex )
-        {
-        }
-    }
-
-    private String getPropertyFileNameFromClassName( String classname )
-    {
-        StringBuffer result = new StringBuffer( classname );
-        for ( int i = 0; i < result.length(); i++ )
-        {
-            if ( result.charAt( i ) == '.' )
-                result.setCharAt( i, '/' );
-        }
-        result.insert( 0, '/' );
-        result.append( ".properties" );
-        return result.toString();
-    }
 }

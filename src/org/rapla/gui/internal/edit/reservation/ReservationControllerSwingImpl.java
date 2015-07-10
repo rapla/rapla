@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.swing.ImageIcon;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -23,6 +22,7 @@ import org.rapla.gui.EventCheck;
 import org.rapla.gui.InfoFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.toolkit.DialogUI;
@@ -33,6 +33,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     InfoFactory infoFactory;    
     RaplaContext context;
     Wrapper wrapper;
+    RaplaImages images;
 
     class Wrapper extends RaplaGUIComponent
     {
@@ -50,13 +51,14 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     
     @Inject
     public ReservationControllerSwingImpl(RaplaContext context,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,
-            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, Container container,InfoFactory infoFactory)
+            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, Container container,InfoFactory infoFactory, RaplaImages images)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard);
         this.infoFactory = infoFactory;
         this.container = container;
         this.context = context;
         this.wrapper = new Wrapper(context);
+        this.images = images;
     }
 
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
@@ -67,7 +69,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
         return result == 0;
     }
 
-    protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<ImageIcon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException
+    protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException
     {
         Point point = null;
         Component parent = null;
@@ -86,10 +88,17 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
                 ,content
                 ,optionList.toArray(new String[] {})
         );
-        dialog.setIcon(dialogIcon);
+        if ( dialogIcon != null)
+        {
+            dialog.setIcon(images.getIconFromKey(dialogIcon));
+        }
         for ( int i=0;i< optionList.size();i++)
         {
-            dialog.getButton(i).setIcon(iconList.get( i));
+            final String string = iconList.get( i);
+            if ( string != null)
+            {
+                dialog.getButton(i).setIcon(images.getIconFromKey(string));
+            }
         }
         
         dialog.start(point);

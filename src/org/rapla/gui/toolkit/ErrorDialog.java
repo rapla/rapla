@@ -28,14 +28,19 @@ import javax.swing.JScrollPane;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.images.RaplaImages;
+
+import com.google.gwt.resources.gss.ImageSpriteCreator;
 
 final public class ErrorDialog extends RaplaComponent {
+    RaplaImages images;
     /**
      * @param context
      * @throws RaplaException
      */
     public ErrorDialog(RaplaContext context) throws RaplaException {
         super(context);
+        images = context.lookup( RaplaImages.class);
     }
 
     public static final int WARNING_MESSAGE = 1;
@@ -166,7 +171,7 @@ final public class ErrorDialog extends RaplaComponent {
 
             DialogUI dlg = DialogUI.create(getContext(),owner,true,component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
-            dlg.setIcon(getI18n().getIcon("icon.error"));
+            dlg.setIcon(images.getIconFromKey("icon.error"));
             dlg.start();
         } catch (Exception ex) {
             getLogger().error( e.getMessage(), e);
@@ -177,7 +182,7 @@ final public class ErrorDialog extends RaplaComponent {
     private void showDialog(String title, String message,Component owner) {
         try {
             DialogUI dlg = DialogUI.create(getContext(),owner,true,title,message);
-            dlg.setIcon(getI18n().getIcon("icon.error"));
+            dlg.setIcon(images.getIconFromKey("icon.error"));
             dlg.start();
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
@@ -187,7 +192,7 @@ final public class ErrorDialog extends RaplaComponent {
     public void showWarningDialog(String title, String message,Component owner) {
         try {
             DialogUI dlg = DialogUI.create(getContext(),owner,true,title,message);
-            dlg.setIcon(getI18n().getIcon("icon.warning"));
+            dlg.setIcon(images.getIconFromKey("icon.warning"));
             dlg.start();
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());

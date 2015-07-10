@@ -51,14 +51,6 @@ public class CompoundI18n implements I18nBundle {
          }
     }
 
-    public ImageIcon getIcon(String key) {
-    	try {
-    	    return inner.getIcon(key);
-    	} catch (MissingResourceException ex) {
-    	    return outer.getIcon(key);
-    	}
-    }
-
     public String getString(String key) {
     	try {
     	    return inner.getString(key);

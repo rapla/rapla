@@ -7,22 +7,25 @@ import javax.swing.JMenuItem;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.gui.Action;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.action.SaveableToggleAction;
 
 public class ActionWrapper implements javax.swing.Action
 {
     private final Action delegate;
     private final I18nBundle locale;
+    RaplaImages images;
 
     public ActionWrapper(Action delegate)
     {
-        this(delegate, null);
+        this(delegate, null, null);
     }
 
-    public ActionWrapper(Action delegate, I18nBundle locale)
+    public ActionWrapper(Action delegate, I18nBundle locale, RaplaImages images)
     {
         this.delegate = delegate;
         this.locale = locale;
+        this.images = images;
     }
 
     @Override
@@ -35,7 +38,7 @@ public class ActionWrapper implements javax.swing.Action
             final boolean newSelected = !component.isSelected();
             component.setSelected(newSelected);
             javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
-            component.setIcon(newSelected ? locale.getIcon("icon.checked") : locale.getIcon("icon.unchecked"));
+            component.setIcon(newSelected ? images.getIconFromKey("icon.checked") : images.getIconFromKey("icon.unchecked"));
         }
     }
 

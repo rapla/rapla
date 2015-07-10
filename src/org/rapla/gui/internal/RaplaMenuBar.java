@@ -249,7 +249,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
    private RaplaMenuItem createMenuItem(SaveableToggleAction action) throws RaplaException
    {
        RaplaMenuItem menu = new RaplaMenuItem(action.getName());
-       menu.setAction(new ActionWrapper(action, getI18n()));
+       menu.setAction(new ActionWrapper(action, getI18n(),getImages()));
        final User user = getUser();
        final Preferences preferences = getQuery().getPreferences( user );
        boolean selected = preferences.getEntryAsBoolean( action.getConfigEntry() , true);

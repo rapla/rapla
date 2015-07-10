@@ -23,12 +23,19 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.net.URL;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.TreeMap;
 
 import javax.swing.Action;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
@@ -44,11 +51,15 @@ import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.IOUtil;
+import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
 import org.rapla.entities.DependencyException;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.action.AppointmentAction;
 import org.rapla.gui.toolkit.ErrorDialog;
@@ -310,10 +321,14 @@ public class RaplaGUIComponent extends RaplaComponent
     
     /** calls getI18n().getIcon(key) */
     final public ImageIcon getIcon(String key) {
-        return getI18n().getIcon(key);
+        return getImages().getIconFromKey( key);
     }
-
-
+    
+    final public RaplaImages getImages()
+    {
+        return getService( RaplaImages.class);
+    }
+    
     public EditController getEditController() {
         return  getService( EditController.class );
     }

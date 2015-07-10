@@ -14,7 +14,7 @@ public class Rapla implements EntryPoint
     public void onModuleLoad()
     {
         //        GWT.log("da: " + new TimeInterval(new Date(), new Date(System.currentTimeMillis() + 1000)));
-        GWT.log("asdsdakhgödawltqeiwutöq9235wsjfkl" + DateTools.formatDate(new Date()));
+        GWT.log("Hallo" + DateTools.formatDate(new Date()));
     }
 
 }

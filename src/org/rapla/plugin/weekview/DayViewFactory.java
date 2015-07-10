@@ -20,7 +20,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
-import org.rapla.gui.images.Images;
+import org.rapla.gui.images.RaplaImages;
 
 public class DayViewFactory extends RaplaComponent implements SwingViewFactory
 {
@@ -50,7 +50,7 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
     public Icon getIcon()
     {
         if ( icon == null) {
-            icon = Images.getIcon("/org/rapla/plugin/weekview/images/day.png");
+            icon = RaplaImages.getIcon("/org/rapla/plugin/weekview/images/day.png");
         }
         return icon;
     }

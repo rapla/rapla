@@ -54,6 +54,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -96,6 +97,7 @@ public class CalendarPrintDialog extends DialogUI
     JButton previousPage = new JButton("<");
     JLabel pageLabel = new JLabel();
     JButton nextPage =  new JButton(">");
+    RaplaImages images;
     
     boolean updatePageCount = true;
     int pageCount;
@@ -182,8 +184,6 @@ public class CalendarPrintDialog extends DialogUI
         init(context);
     }
 
-	
-
     protected CalendarPrintDialog(RaplaContext context,Frame owner) throws RaplaException {
         super(context,owner);
         init(context);
@@ -191,7 +191,7 @@ public class CalendarPrintDialog extends DialogUI
     
     private void init(RaplaContext context) throws RaplaException{
 		exportServiceList = new ExportServiceList( context);
-		
+		images = context.lookup( RaplaImages.class);
     }
     
     private void init(boolean modal,CalendarSelectionModel model,PageFormat format) throws Exception {
@@ -293,13 +293,13 @@ public class CalendarPrintDialog extends DialogUI
         //sizeLabel.setText("Endedatum:");
         titleLabel.setText(i18n.getString("weekview.print.title_textfield")+":");
         setTitle(i18n.getString("weekview.print.dialog_title"));
-        printbutton.setIcon(i18n.getIcon("icon.print"));
+        printbutton.setIcon(images.getIconFromKey("icon.print"));
         savebutton.setText(i18n.getString("print_to_file"));
-        savebutton.setIcon(i18n.getIcon("icon.pdf"));
+        savebutton.setIcon(images.getIconFromKey("icon.pdf"));
         printbutton.setText(i18n.getString("print"));
         formatbutton.setText(i18n.getString("weekview.print.format_button"));
         cancelbutton.setText(i18n.getString("cancel"));
-        cancelbutton.setIcon(i18n.getIcon("icon.cancel"));
+        cancelbutton.setIcon(images.getIconFromKey("icon.cancel"));
         pageLabel.setText(""+1);
         /*
         if (getSession().getValue(LAST_SELECTED_SIZE) != null)
@@ -453,7 +453,7 @@ public class CalendarPrintDialog extends DialogUI
                             ,i18n.getString("file_saved")
                             ,new String[] { i18n.getString("ok")}
                             );
-			dlg.setIcon(i18n.getIcon("icon.pdf"));
+			dlg.setIcon(images.getIconFromKey("icon.pdf"));
             dlg.setDefault(0);
             dlg.start();
             return (dlg.getSelectedIndex() == 0);

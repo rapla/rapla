@@ -113,7 +113,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         // create the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("SETOWNER");
         setOwnerItem.setText(getI18n().getString("changeowner"));
-        setOwnerItem.setIcon(getI18n().getIcon("icon.tree.persons"));
+        setOwnerItem.setIcon(getIcon("icon.tree.persons"));
         setOwnerItem.addActionListener( new ActionListener()
         {
             public void actionPerformed( ActionEvent e )

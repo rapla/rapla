@@ -48,6 +48,11 @@ class RaplaDictionary {
     public String getDefaultLang() {
         return defaultLang;
     }
+    
+    public void setDefaultLang(String defaultLang)
+    {
+        this.defaultLang = defaultLang;
+    }
 
     public String[] getAvailableLanguages() {
         return availableLang.toArray(new String[0]);

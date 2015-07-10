@@ -24,13 +24,17 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gui.images.RaplaImages;
 
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {
+    RaplaImages images;
+    
     public SwingRaplaBuilder(RaplaContext context) throws RaplaContextException 
     {
         super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaComponent.RAPLA_RESOURCES), context.lookup(Logger.class),context.lookup( AppointmentFormater.class));
+        this.images= context.lookup( RaplaImages.class);
     }
 
     /**
@@ -39,6 +43,7 @@ public class SwingRaplaBuilder extends RaplaBuilder
     protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
         SwingRaplaBlock block = new SwingRaplaBlock();
         block.contextualize(blockContext);
+        block.setImages( images);
         block.setStart(start);
         block.setEnd(end);
         return block;

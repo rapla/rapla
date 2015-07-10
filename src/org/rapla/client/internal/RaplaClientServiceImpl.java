@@ -76,7 +76,7 @@ import org.rapla.gui.MenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.TreeFactory;
-import org.rapla.gui.images.Images;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.CalendarOption;
 import org.rapla.gui.internal.MainFrame;
 import org.rapla.gui.internal.MenuFactoryImpl;
@@ -133,7 +133,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
 	static boolean lookAndFeelSet;
-    
+	
 	public RaplaClientServiceImpl(StartupEnvironment env) throws Exception {
         super( env);
     }
@@ -165,8 +165,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         defaults.put("CheckBoxMenuItem.font", textFont);
         defaults.put("CheckBox.font", textFont);
         defaults.put("ComboBox.font", textFont);
-        defaults.put("Tree.expandedIcon",Images.getIcon("/org/rapla/gui/images/eclipse-icons/tree_minus.gif"));
-        defaults.put("Tree.collapsedIcon",Images.getIcon("/org/rapla/gui/images/eclipse-icons/tree_plus.gif"));
+        defaults.put("Tree.expandedIcon",RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_minus.gif"));
+        defaults.put("Tree.collapsedIcon",RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_plus.gif"));
         defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN,(float)10.));
         lookAndFeelSet = true;
     }
@@ -174,7 +174,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     @Override
     protected void initialize() throws Exception {
         super.initialize();
-    	advanceLoading(false);
+        advanceLoading(false);
     	StartupEnvironment env = getContext().lookup(StartupEnvironment.class);
         int startupMode = env.getStartupMode();
         final Logger logger = getLogger();
@@ -204,7 +204,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponentInstance( LocaleSelector.class,raplaLocale.getLocaleSelector());        
         addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
-            	
+        addContainerProvidedComponent( RaplaImages.class, RaplaImages.class );
         addContainerProvidedComponent( RaplaClipboard.class, RaplaSwingClipboard.class );
         addContainerProvidedComponent( TreeFactory.class, TreeFactoryImpl.class );
         addContainerProvidedComponent( MenuFactory.class, MenuFactoryImpl.class );
@@ -701,7 +701,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
             };
             loginAction.putValue(Action.NAME,i18n.getString("login"));
             exitAction.putValue(Action.NAME,i18n.getString("exit"));
-            dlg.setIconImage(i18n.getIcon("icon.rapla_small").getImage());
+            dlg.setIconImage(context.lookup( RaplaImages.class).getIconFromKey("icon.rapla_small").getImage());
             dlg.setLoginAction( loginAction);
             dlg.setExitAction( exitAction );
             //dlg.setSize( 480, 270);

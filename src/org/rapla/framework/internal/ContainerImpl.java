@@ -41,6 +41,7 @@ import javax.inject.Provider;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -84,6 +85,7 @@ public class ContainerImpl implements Container
     protected I18nBundle i18n;
     protected final Provider<RemoteServiceCaller> remoteServiceCaller;
     public static boolean DEVELOPMENT_RESSOLVING = false;
+    protected RaplaLocaleImpl raplaLocale;
 
     public ContainerImpl( Logger logger, final Provider<RemoteServiceCaller> remoteServiceCaller)  {
     	this.logger = logger;
@@ -138,13 +140,9 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(Logger.class,logger);
         commandQueue = createCommandQueue();
         addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
-        RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl();
+        raplaLocale = new RaplaLocaleImpl();
         addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
-        Configuration parentConfig = I18nBundleImpl.createConfig( RaplaComponent.RAPLA_RESOURCES.getId() );
-        {
-            addContainerProvidedComponent(RaplaComponent.RAPLA_RESOURCES,I18nBundleImpl.class, parentConfig);
-        }
-
+        addResourceFile(RaplaComponent.RAPLA_RESOURCES);
     }
     
     @SuppressWarnings("unchecked")
@@ -184,8 +182,8 @@ public class ContainerImpl implements Container
 
     public void addResourceFile(TypedComponentRole<I18nBundle> file)
     {
-        Configuration config = I18nBundleImpl.createConfig( file.getId() );
-        addContainerProvidedComponent(file, I18nBundleImpl.class, config);
+        LocaleSelector localeSelector = raplaLocale.getLocaleSelector();
+        addContainerProvidedComponentInstance(file, new I18nBundleImpl(localeSelector,getLogger(), file.getId()));
     }
     
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass) {

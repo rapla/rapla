@@ -20,7 +20,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
-import org.rapla.gui.images.Images;
+import org.rapla.gui.images.RaplaImages;
 
 public class AppointmentTableViewFactory extends RaplaComponent implements SwingViewFactory
 {
@@ -50,7 +50,7 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     public Icon getIcon()
     {
         if ( icon == null) {
-            icon = Images.getIcon("/org/rapla/plugin/tableview/images/table.png");
+            icon = RaplaImages.getIcon("/org/rapla/plugin/tableview/images/table.png");
         }
         return icon;
     }

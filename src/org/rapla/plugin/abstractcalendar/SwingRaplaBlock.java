@@ -45,22 +45,33 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.toolkit.AWTColorUtil;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
 {
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
-
+    private RaplaImages images;
+    
     public Icon getRepeatingIcon() {
-        return getI18n().getIcon("icon.repeating");
+        if ( images == null)
+        {
+            return null;
+        }
+        return images.getIconFromKey("icon.repeating");
+
     }
+    
 
     public ImageIcon getExceptionBackgroundIcon() {
-        return getI18n().getIcon("icon.exceptionBackground");
+        if ( images == null)
+        {
+            return null;
+        }
+        return images.getIconFromKey("icon.exceptionBackground");
     }
-
-
+    
     private BufferedImage getExceptionImage()
     {
         if ( exceptionImage != null )
@@ -550,6 +561,12 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
     public String toString()
     {
     	return getName() + " " + getStart() + " - " + getEnd();
+    }
+
+
+    public void setImages(RaplaImages images)
+    {
+        this.images = images;
     }
 
 }

@@ -24,21 +24,7 @@ public abstract class AbstractI18nTest extends TestCase {
     public AbstractI18nTest(String name) {
 	   super(name);
     }
-    public void testGetIcon() {
-    	Icon icon = getI18n().getIcon("icon.question");
-    	assertNotNull("returned icon is null",icon);	
-    	boolean failed = false;
-    	try {
-    	    icon = getI18n().getIcon("this_icon_request_should_fail");
-    	} catch (MissingResourceException ex) {
-    	    failed = true;
-    	}
-    	assertTrue(
-    		   "Request for 'this_icon_request_should_fail' should throw MissingResourceException"
-    		   ,failed
-    		   );
-    }
-
+    
     public void testGetString() { 
     	String string = getI18n().getString("cancel");
     	if (getI18n().getLocale().getLanguage().equals("de"))

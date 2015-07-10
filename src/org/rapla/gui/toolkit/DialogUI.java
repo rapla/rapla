@@ -45,6 +45,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.PopupContext;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.SwingPopupContext;
 
 
@@ -257,10 +258,11 @@ public class DialogUI extends JDialog
     private void service(RaplaContext context) throws RaplaException {
         this.context = context;
     	i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+    	RaplaImages images = context.lookup(RaplaImages.class); 
     	if (useDefaultOptions) {
     		if (buttons.length > 1) {
     			getButton(0).setText(i18n.getString("ok"));
-    			getButton(1).setIcon(i18n.getIcon("icon.abort"));
+    			getButton(1).setIcon(images.getIconFromKey("icon.abort"));
     			getButton(1).setText(i18n.getString("abort"));
     		} else {
     			getButton(0).setText(i18n.getString("ok"));

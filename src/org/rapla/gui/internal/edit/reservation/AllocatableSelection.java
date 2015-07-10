@@ -1505,7 +1505,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 				Allocatable allocatable = (Allocatable) selectedObject;
 				allocBinding = calcConflictingAppointments(allocatable);
 			}
-			Icon conflictIcon = getI18n().getIcon("icon.allocatable_taken");
+			Icon conflictIcon = getIcon("icon.allocatable_taken");
 			allMenu.setText(getString("every_appointment"));
 			selectedMenu.setText(getString("selected_on"));
 			appointmentList.clear();
@@ -1792,7 +1792,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     if (allocBinding.conflictingAppointments[i])
                     {
                         item.setText((i + 1) + ": " + appointmentSummary);
-                        Icon conflictIcon = getI18n().getIcon("icon.allocatable_taken");
+                        Icon conflictIcon = getIcon("icon.allocatable_taken");
                         item.setIcon(conflictIcon);
                     }
                     else
@@ -1866,16 +1866,21 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		
 		public AllocationTreeCellRenderer(boolean checkRestrictions)
 		{
-			forbiddenIcon = getI18n().getIcon("icon.no_perm");
-			conflictIcon = getI18n().getIcon("icon.allocatable_taken");
-			freeIcon = getI18n().getIcon("icon.allocatable_available");
-			notAlwaysAvailableIcon = getI18n().getIcon("icon.allocatable_not_always_available");
-			personIcon = getI18n().getIcon("icon.tree.persons");
-			personNotAlwaysAvailableIcon = getI18n().getIcon("icon.tree.person_not_always_available");
+			forbiddenIcon = getIconFromKey("icon.no_perm");
+			conflictIcon = getIconFromKey("icon.allocatable_taken");
+			freeIcon = getIconFromKey("icon.allocatable_available");
+			notAlwaysAvailableIcon = getIconFromKey("icon.allocatable_not_always_available");
+			personIcon = getIconFromKey("icon.tree.persons");
+			personNotAlwaysAvailableIcon = getIconFromKey("icon.tree.person_not_always_available");
 			this.checkRestrictions = checkRestrictions;
-			setOpenIcon(getI18n().getIcon("icon.folder"));
-			setClosedIcon(getI18n().getIcon("icon.folder"));
+			setOpenIcon(getIconFromKey("icon.folder"));
+			setClosedIcon(getIconFromKey("icon.folder"));
 			setLeafIcon(freeIcon);
+		}
+		
+		public Icon getIconFromKey(String key)
+		{
+		    return AllocatableSelection.this.getIcon( key);
 		}
 		
 		public Icon getAvailableIcon(Allocatable allocatable)

@@ -43,11 +43,6 @@ public interface I18nBundle {
     */
     String format(String key,Object... obj) throws MissingResourceException;
 
-    /** returns the specified icon from the image-resource-file.
-        @throws MissingResourceException if not found or can't be loaded.
-     */
-    ImageIcon getIcon(String key) throws MissingResourceException;
-
     /** returns the specified string from the selected resource-file.
      * Same as getString(key,getLocale())
      *  @throws MissingResourceException if not found or can't be loaded.

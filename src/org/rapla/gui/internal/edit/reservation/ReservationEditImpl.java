@@ -216,7 +216,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.addDetailListener(listener);
         frame.addVetoableChangeListener(listener);
 
-        frame.setIconImage( getI18n().getIcon("icon.edit_window_small").getImage());
+        frame.setIconImage( getIcon("icon.edit_window_small").getImage());
         
         JPanel contentPane = (JPanel) frame.getContentPane();
         contentPane.setLayout(new BorderLayout());

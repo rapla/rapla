@@ -234,7 +234,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     
     abstract protected void showException(Exception ex,PopupContext sourceComponent);
 
-    abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<ImageIcon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException;
+    abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException;
 
     abstract protected Collection<EventCheck> getEventChecks() throws RaplaException;
 /*
@@ -536,34 +536,34 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     	Reservation reservation = appointment.getReservation();
         getLogger().debug(action + " '" + appointment + "' for reservation '" +  reservation + "'");
         List<String> optionList = new ArrayList<String>();
-        List<ImageIcon> iconList = new ArrayList<ImageIcon>();
+        List<String> iconList = new ArrayList<String>();
         List<DialogAction> actionList = new ArrayList<ReservationControllerImpl.DialogAction>();
         String dateString = getRaplaLocale().formatDate(from);
         
         if ( reservation.getAppointments().length <=1 ||  includeEvent)
         {
             optionList.add(i18n.getString("reservation"));
-        	iconList.add(i18n.getIcon("icon.edit_window_small"));
+        	iconList.add("icon.edit_window_small");
         	actionList.add(DialogAction.EVENT);
         }
         if ( appointment.getRepeating() != null && reservation.getAppointments().length > 1 )
         {
             String shortSummary = appointmentFormater.getShortSummary(appointment);
         	optionList.add(i18n.getString("serie") + ": " + shortSummary);
-        	iconList.add(i18n.getIcon("icon.repeating"));
+        	iconList.add("icon.repeating");
         	actionList.add(DialogAction.SERIE);
         }
         if ( (appointment.getRepeating() != null  && isNotEmptyWithExceptions( appointment, Collections.singletonList(from)))|| reservation.getAppointments().length > 1)
         {
         	optionList.add(i18n.format("single_appointment.format",dateString));
-        	iconList.add(i18n.getIcon("icon.single"));
+        	iconList.add("icon.single");
         	actionList.add( DialogAction.SINGLE);
         }
         if (optionList.size() > 1) {
           
             String title = i18n.getString(action);
             String content = i18n.getString(action+ "_appointment.format");
-            ImageIcon dialogIcon = i18n.getIcon("icon.question");
+            String dialogIcon = "icon.question";
             
 			int index = showDialog(action, context, optionList, iconList, title, content, dialogIcon);
 			if ( index < 0)

@@ -42,6 +42,7 @@ import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.toolkit.AWTColorUtil;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaWidget;
@@ -138,7 +139,7 @@ final public class RaplaListEdit<T> implements
     JPanel toolbar = new JPanel();
     
     
-    public RaplaListEdit(I18nBundle i18n, JComponent detailContent,ActionListener callback) 
+    public RaplaListEdit(I18nBundle i18n, RaplaImages images,JComponent detailContent,ActionListener callback) 
     {
         this.callback = callback;
         toolbar.setLayout( new BoxLayout( toolbar, BoxLayout.X_AXIS));
@@ -195,8 +196,8 @@ final public class RaplaListEdit<T> implements
         modelUpdate();
 
         createNewButton.setText(i18n.getString("new"));
-        createNewButton.setIcon(i18n.getIcon("icon.new"));
-        removeButton.setIcon(i18n.getIcon("icon.delete"));
+        createNewButton.setIcon(images.getIconFromKey("icon.new"));
+        removeButton.setIcon(images.getIconFromKey("icon.delete"));
         removeButton.setText(i18n.getString("delete"));
         nothingSelectedLabel.setHorizontalAlignment(JLabel.CENTER);
         nothingSelectedLabel.setText(i18n.getString("nothing_selected"));
