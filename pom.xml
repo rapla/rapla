@@ -120,10 +120,6 @@
 					<webXml>${basedir}/war/WEB-INF/web.xml</webXml>
 				</configuration>
 			</plugin>
-
-			
-
-
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
@@ -155,30 +151,44 @@
 				<version>2.6</version>
 				<executions>
 					<execution>
+						<id>Rapla Client Jar</id>
 						<phase>prepare-package</phase>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/webclient</outputDirectory>
+							<finalName>raplaclient</finalName>
+							<excludes>
+								<exclude>**/*.gwt.xml</exclude>
+								<exclude>**/*Resources.xml</exclude>
+								<exclude>org/rapla/gwt/**</exclude>
+								<exclude>org/rapla/bootstrap/*</exclude>
+								<exclude>**/Slf4jAdapter**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/storage/xml/**</exclude>
+								<exclude>**/storage/dbfile/**</exclude>
+								<exclude>**/storage/dbsql/**</exclude>
+								<exclude>**/servletpages/**</exclude>
+								<exclude>se/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>Rapla Bootstrap Jar</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<finalName>raplabootstrap</finalName>
+							<includes>
+								<include>org/rapla/bootstrap/**/*.java</include>
+							</includes>
+						</configuration>
 					</execution>
 				</executions>
-				<configuration>
-					<outputDirectory>${webapp.dir}/webclient</outputDirectory>
-					<finalName>raplaclient</finalName>
-					<excludes>
-						<exclude>**/*.gwt.xml</exclude>
-						<exclude>**/*Resources.xml</exclude>
-						<exclude>org/rapla/gwt/**</exclude>
-						<exclude>org/rapla/bootstrap/*</exclude>
-						<exclude>**/Slf4jAdapter**</exclude>
-						<exclude>**/server/**</exclude>
-						<exclude>**/server/**</exclude>
-						<exclude>**/storage/xml/**</exclude>
-						<exclude>**/storage/dbfile/**</exclude>
-						<exclude>**/storage/dbsql/**</exclude>
-						<exclude>**/servletpages/**</exclude>
-						<exclude>se/**</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -325,6 +335,24 @@
 					</includes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.5.5</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>rapla-${version}</finalName>
+							<descriptor>${basedir}/rapla.assembly.xml</descriptor>
+							<appendAssemblyId>false</appendAssemblyId>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -441,12 +469,30 @@
 			<artifactId>jetty-server</artifactId>
 			<version>${jetty.version}</version>
 			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.servlet</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-webapp</artifactId>
 			<version>${jetty.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-jndi</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.mail.glassfish</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty.aggregate</groupId>
