@@ -68,6 +68,9 @@
 			</resource>
 			<resource>
 				<directory>${basedir}/gwt-src</directory>
+				<excludes>
+					<exclude>jre</exclude>
+				</excludes>
 			</resource>
 		</resources>
 		<testSourceDirectory>${basedir}/test-src</testSourceDirectory>
@@ -162,7 +165,6 @@
 					<outputDirectory>${webapp.dir}/webclient</outputDirectory>
 					<finalName>raplaclient</finalName>
 					<excludes>
-						<exclude>**/*.gwt.xml</exclude>
 						<exclude>**/*.gwt.xml</exclude>
 						<exclude>**/*Resources.xml</exclude>
 						<exclude>org/rapla/gwt/**</exclude>
