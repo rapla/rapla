@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE web-app
-    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
-    "http://java.sun.com/j2ee/dtds/web-app_2_3.dtd">
-
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
 <web-app>
   <!-- Servlet Configuration ========================================== -->
-  <listener>
-    <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
-  </listener>
   <filter>
      <filter-name>RaplaFilter</filter-name>
      <filter-class>org.rapla.server.HTTPMethodOverrideFilter</filter-class>
@@ -22,7 +16,10 @@
     <filter-name>RaplaFilter</filter-name>
     <url-pattern>/rapla</url-pattern>
   </filter-mapping>
-  
+
+  <listener>
+    <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
+  </listener>  
   
   <servlet>
     <servlet-name>RaplaServer</servlet-name>
@@ -47,26 +44,6 @@
     <url-pattern>/rapla</url-pattern>
   </servlet-mapping>
   
-  
-  <env-entry>
-	  <env-entry-name>raplafile</env-entry-name>
-	  <env-entry-value>${context-root}/data.xml</env-entry-value>
-	  <env-entry-type>java.lang.String</env-entry-type>
-  </env-entry>
-  
-  <env-entry>
-	  <env-entry-name>rapladatasource</env-entry-name>
-	  <env-entry-value>raplafile</env-entry-value>
-	  <env-entry-type>java.lang.String</env-entry-type>
-  </env-entry>
-
-  <resource-ref>
-     <description>Rapla database</description>
-     <res-ref-name>jdbc/rapladb</res-ref-name>
-     <res-type>javax.sql.DataSource</res-type>
-     <res-auth>Container</res-auth>
-  </resource-ref>
-
   <mime-mapping>
      <extension>css</extension>
       <mime-type>text/css</mime-type>
@@ -81,4 +58,23 @@
     <welcome-file>redirect.html</welcome-file>
   </welcome-file-list>
 
+  <resource-ref>
+     <description>Rapla database</description>
+     <res-ref-name>jdbc/rapladb</res-ref-name>
+     <res-type>javax.sql.DataSource</res-type>
+     <res-auth>Container</res-auth>
+  </resource-ref>
+   
+  <env-entry>
+	  <env-entry-name>raplafile</env-entry-name>
+	  <env-entry-value>${context-root}/data.xml</env-entry-value>
+	  <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
+  
+  <env-entry>
+	  <env-entry-name>rapladatasource</env-entry-name>
+	  <env-entry-value>raplafile</env-entry-value>
+	  <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
+ 
 </web-app>
