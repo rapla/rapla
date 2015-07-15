@@ -43,6 +43,12 @@
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 		<doc.date>${maven.build.timestamp}</doc.date>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
+		<doc.revision></doc.revision>
+		<doc.year>2000-2015</doc.year>
+		<doc.copyright>Rapla Team</doc.copyright>
+		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
+		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
+		<doc.homepage>http://rapla.org</doc.homepage>
 	</properties>
 
 	<build>
@@ -237,11 +243,11 @@
 				<executions>
 				 	<execution>
 				 	    <id>loadbuildproperties</id>
-						<phase>validate</phase>
+						<phase>prepare-package</phase>
 						<configuration>
 						    <exportAntProperties>true</exportAntProperties>
 							<tasks>
-							    <echo>in validate phase (1 of 21)</echo>
+							    <echo>Reading build.properties</echo>
 							    <available file="${basedir}/${build.properties}" property="build.properties.present" />
     	          
 						    	<copy todir="${basedir}">
@@ -251,19 +257,12 @@
 						            <mapper type="glob" from="*.template" to="*" />
 						        </copy>
 							    <property file="${basedir}/build.properties"/>
-                                <property file="${basedir}/doc.properties"/>
-                                <property name="doc.version">${project.version}</property>
                                 <property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
        	                        <property name="keystore.password" value="raplaselfsigned" />
                                 <property name="keystore.keypass" value="${keystore.password}" />
                                 <property name="keystore.alias" value="rapla" />
                                 <property name="doc.name" value="rapla"/>
-								<property name="doc.revision" value=""/>
-		                        <property name="doc.year" value="2000-2015"/>
-		                        <property name="doc.copyright" value="Rapla Team"/>
-		                        <property name="doc.developer-list-link" value="http://lists.sourceforge.net/lists/listinfo/rapla-developers"/>
-		                        <property name="doc.developer-list" value="rapla-developers@lists.sourceforge.net"/>
-		                        <property name="doc.homepage" value="http://rapla.org"/>
+								<property name="doc.version">${project.version}</property>
 							</tasks>
 						</configuration>
 						<goals>
