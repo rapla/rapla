@@ -157,12 +157,6 @@
 		</dependencySet>
 		<dependencySet>
 			<includes>
-				<include>*slf4j*</include>
-			</includes>
-			<outputDirectory>lib/logging</outputDirectory>
-		</dependencySet>
-		<dependencySet>
-			<includes>
 				<include>*hsqldb*</include>
 			</includes>
 			<outputDirectory>lib/ext</outputDirectory>

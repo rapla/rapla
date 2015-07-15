@@ -80,6 +80,11 @@
 				</excludes>
 			</resource>
 		</resources>
+		<testResources>
+			<testResource>
+				<directory>${basedir}/test-resources</directory>
+			</testResource>
+		</testResources>
 		<testSourceDirectory>${basedir}/test-src</testSourceDirectory>
 		<plugins>
 			<plugin>
@@ -104,9 +109,12 @@
 		        <artifactId>maven-surefire-plugin</artifactId>
 		        <version>2.18.1</version>
 		        <configuration>
-		          <includes>
-		            <include>**/bootstrap/*.*</include>
-		          </includes>
+		          	<includes>
+		            	<include>**/bootstrap/*.*</include>
+		          	</includes>
+		          	<excludes>
+		          		<exclude>**/bootstrap/*.png</exclude>
+          			</excludes>
 		        </configuration>
 		      </plugin>
 			<plugin>
@@ -156,10 +164,6 @@
 							</arguments>
 						</configuration>
 					</execution>
-					<!-- <execution> <id>Properties</id> <phase>prepare-package</phase> 
-						<goals> <goal>java</goal> </goals> <configuration> <mainClass>org.rapla.components.xmlbundle.impl.ResourceFileGenerator</mainClass> 
-						<arguments> <argument>${basedir}/src-resources</argument> <argument>${project.build.directory}/unfiltered-resources</argument> 
-						</arguments> </configuration> </execution> -->
 				</executions>
 			</plugin>
 			<plugin>
@@ -419,6 +423,7 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4j.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>javax.mail</groupId>
@@ -447,14 +452,6 @@
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 			<scope>test</scope>
-			<!-- 
-			<exclusions>
-				<exclusion>
-					<artifactId>hamcrest-core</artifactId>
-					<groupId>org.hamcrest</groupId>
-				</exclusion>
-			</exclusions>
-			 -->
 		</dependency>
 		<!-- GWT -->
 		<dependency>
@@ -574,54 +571,4 @@
 			</snapshots>
 		</repository>
 	</repositories>
-	<!-- 
-	<profiles>
-	  <profile>
-        <id>properties-missing</id>
-        <activation>
-          <file>
-	        <missing>${basedir}/build.properties</missing>
-          </file>
-        </activation>
-        <properties>
-		  <keystore.file>${basedir}/raplaselfsigned.ks</keystore.file>
-		  <keystore.password>raplaselfsigned</keystore.password>
-		  <keystore.alias>rapla</keystore.alias>
-          <keystore.keypass></keystore.keypass>
-        </properties>
-      </profile>
-      <profile>
-        <id>properties-set</id>
-        <activation>
-	        <file>
-    	      <exists>${basedir}/build.properties</exists>
-    	    </file>
-        </activation>
-        <build>
-          <plugins>
-			<plugin>
-	            <groupId>org.codehaus.mojo</groupId>
-	            <artifactId>properties-maven-plugin</artifactId>
-	            <version>1.0-alpha-2</version>
-	            <executions>
-	                <execution>
-	                    <phase>prepare-package</phase>
-	                    <goals>
-	                        <goal>read-project-properties</goal>
-	                    </goals>
-	                    <configuration>
-	                        <files>
-	                            <file>${basedir}/build.properties</file>
-	                        </files>
-	                        <quiet>true</quiet>
-	                    </configuration>
-	                </execution>
-	            </executions>
-	        </plugin>
-        </plugins>
-        </build>
-      </profile>
-      
-	</profiles>
-	 -->
 </project>
