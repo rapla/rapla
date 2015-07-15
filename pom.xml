@@ -42,6 +42,7 @@
         <!-- Text Properties -->
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 		<doc.date>${maven.build.timestamp}</doc.date>
+		<doc.version>${project.version}</doc.version>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 		<doc.revision></doc.revision>
 		<doc.year>2000-2015</doc.year>
@@ -98,6 +99,16 @@
 					<!-- </dependency> -->
 				</dependencies>
 			</plugin>
+			<plugin>
+		        <groupId>org.apache.maven.plugins</groupId>
+		        <artifactId>maven-surefire-plugin</artifactId>
+		        <version>2.18.1</version>
+		        <configuration>
+		          <includes>
+		            <include>**/bootstrap/*.*</include>
+		          </includes>
+		        </configuration>
+		      </plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>gwt-maven-plugin</artifactId>
@@ -188,9 +199,9 @@
 							<goal>test-jar</goal>
 						</goals>
 						<configuration>
-							<finalName>raplabootstrap</finalName>
+						    <finalName>raplabootstrap</finalName>
 							<includes>
-								<include>org/rapla/bootstrap/**/*.java</include>
+								<include>org/rapla/bootstrap/*.*</include>
 							</includes>
 						</configuration>
 					</execution>
@@ -436,12 +447,14 @@
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 			<scope>test</scope>
+			<!-- 
 			<exclusions>
 				<exclusion>
 					<artifactId>hamcrest-core</artifactId>
 					<groupId>org.hamcrest</groupId>
 				</exclusion>
 			</exclusions>
+			 -->
 		</dependency>
 		<!-- GWT -->
 		<dependency>

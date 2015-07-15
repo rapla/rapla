@@ -21,7 +21,7 @@ public class RaplaJettyLoader
     			System.setProperty( "java.awt.headless", "true" );
     		}
     	}
-        String dirList = "resources";
+    	String dirList = "lib,lib/logging,lib/ext,resources";
         String classname = "org.rapla.bootstrap.CustomJettyStarter";
         String methodName = "main";
         //System.setProperty( "java.awt.headless", "true" );

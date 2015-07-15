@@ -15,17 +15,20 @@ package org.rapla.framework.logger.internal;
 
 import javax.inject.Provider;
 
-import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
 
 
 @SuppressWarnings("restriction")
 public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger> {
-    static ILoggerFactory logManager = LoggerFactory.getILoggerFactory();
-    
+    static final public int TRACE_INT = 00;
+    static final public int DEBUG_INT = 10;
+    static final public int INFO_INT = 20;
+    static final public int WARN_INT = 30;
+    static final public int ERROR_INT = 40;
+
     static public org.rapla.framework.logger.Logger getLoggerForCategory(String categoryName) {
-    	LocationAwareLogger loggerForCategory = (LocationAwareLogger)logManager.getLogger(categoryName);
+        LocationAwareLogger loggerForCategory = (LocationAwareLogger)LoggerFactory.getILoggerFactory().getLogger(categoryName);
         return new Wrapper(loggerForCategory, categoryName);
     }
 
@@ -47,11 +50,11 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
         }
 
         public void debug(String message) {
-            log(LocationAwareLogger.DEBUG_INT, message);
+            log(DEBUG_INT, message);
         }
 
 		public void info(String message) {
-            log( LocationAwareLogger.INFO_INT, message);
+            log(INFO_INT, message);
         }
 
         private void log(int infoInt, String message) {
@@ -66,19 +69,19 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
         
 
         public void warn(String message) {
-            log( LocationAwareLogger.WARN_INT, message);
+            log( WARN_INT, message);
         }
 
         public void warn(String message, Throwable cause) {
-        	log( LocationAwareLogger.WARN_INT, message, cause);
+        	log( WARN_INT, message, cause);
         }
 
         public void error(String message) {
-        	log( LocationAwareLogger.ERROR_INT, message);
+        	log( ERROR_INT, message);
         }
 
         public void error(String message, Throwable cause) {
-        	log( LocationAwareLogger.ERROR_INT, message, cause);
+        	log( ERROR_INT, message, cause);
         }
 
         public org.rapla.framework.logger.Logger getChildLogger(String childLoggerName) 

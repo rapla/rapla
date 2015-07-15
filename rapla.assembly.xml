@@ -9,7 +9,8 @@
 	</formats>
 	<files>
 		<file>
-			<source>${project.build.directory}/raplabootstrap.jar</source>
+			<source>${project.build.directory}/raplabootstrap-tests.jar</source>
+	        <destName>raplabootstrap.jar</destName>
 			<outputDirectory></outputDirectory>
 		</file>
 		<file>
