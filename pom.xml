@@ -39,7 +39,7 @@
 		<supercsv.version>2.0.1</supercsv.version>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
 		<!-- Properties to sign the client jars -->
-        <!-- Text Properties -->
+		<!-- Text Properties -->
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 		<doc.date>${maven.build.timestamp}</doc.date>
 		<doc.version>${project.version}</doc.version>
@@ -105,18 +105,18 @@
 				</dependencies>
 			</plugin>
 			<plugin>
-		        <groupId>org.apache.maven.plugins</groupId>
-		        <artifactId>maven-surefire-plugin</artifactId>
-		        <version>2.18.1</version>
-		        <configuration>
-		          	<includes>
-		            	<include>**/bootstrap/*.*</include>
-		          	</includes>
-		          	<excludes>
-		          		<exclude>**/bootstrap/*.png</exclude>
-          			</excludes>
-		        </configuration>
-		      </plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.18.1</version>
+				<configuration>
+					<includes>
+						<include>**/bootstrap/*.*</include>
+					</includes>
+					<excludes>
+						<exclude>**/bootstrap/*.png</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>gwt-maven-plugin</artifactId>
@@ -203,7 +203,7 @@
 							<goal>test-jar</goal>
 						</goals>
 						<configuration>
-						    <finalName>raplabootstrap</finalName>
+							<finalName>raplabootstrap</finalName>
 							<includes>
 								<include>org/rapla/bootstrap/*.*</include>
 							</includes>
@@ -268,27 +268,28 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
 				<executions>
-				 	<execution>
-				 	    <id>loadbuildproperties</id>
+					<execution>
+						<id>loadbuildproperties</id>
 						<phase>prepare-package</phase>
 						<configuration>
-						    <exportAntProperties>true</exportAntProperties>
+							<exportAntProperties>true</exportAntProperties>
 							<tasks>
-							    <echo>Reading build.properties</echo>
-							    <available file="${basedir}/${build.properties}" property="build.properties.present" />
-    	          
-						    	<copy todir="${basedir}">
-						            <fileset dir="${basedir}">
-						                <include name="build.properties.template" unless="build.properties.present" />
-						            </fileset>
-						            <mapper type="glob" from="*.template" to="*" />
-						        </copy>
-							    <property file="${basedir}/build.properties"/>
-                                <property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
-       	                        <property name="keystore.password" value="raplaselfsigned" />
-                                <property name="keystore.keypass" value="${keystore.password}" />
-                                <property name="keystore.alias" value="rapla" />
-                                <property name="doc.name" value="rapla"/>
+								<echo>Reading build.properties</echo>
+								<available file="${basedir}/${build.properties}"
+									property="build.properties.present" />
+
+								<copy todir="${basedir}">
+									<fileset dir="${basedir}">
+										<include name="build.properties.template" unless="build.properties.present" />
+									</fileset>
+									<mapper type="glob" from="*.template" to="*" />
+								</copy>
+								<property file="${basedir}/build.properties" />
+								<property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
+								<property name="keystore.password" value="raplaselfsigned" />
+								<property name="keystore.keypass" value="${keystore.password}" />
+								<property name="keystore.alias" value="rapla" />
+								<property name="doc.name" value="rapla" />
 								<property name="doc.version">${project.version}</property>
 							</tasks>
 						</configuration>
@@ -296,8 +297,8 @@
 							<goal>run</goal>
 						</goals>
 					</execution>
-				 	<execution>
-				 	    <id>generateclientlibsproperties</id>
+					<execution>
+						<id>generateclientlibsproperties</id>
 						<phase>prepare-package</phase>
 						<configuration>
 							<tasks>
@@ -367,6 +368,28 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<packaging>jar</packaging>
+							<artifactId>${project.artifactId}</artifactId>
+							<groupId>${project.groupId}</groupId>
+							<version>${project.version}</version>
+							<file>
+								${project.build.directory}/${project.artifactId}-${project.version}/WEB-INF/lib/${project.artifactId}-${project.version}.jar
+							</file>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 
