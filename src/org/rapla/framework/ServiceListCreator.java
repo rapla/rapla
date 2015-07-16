@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Stack;
 
 import org.rapla.framework.logger.Logger;
+import org.rapla.gwt.client.Rapla;
 
 import com.google.gwt.inject.client.GinModule;
 
@@ -131,10 +132,10 @@ public class ServiceListCreator
             writer.write("  <inherits name='com.google.gwt.user.theme.clean.Clean'/>\n");
             writer.write("  <inherits name='com.google.gwt.inject.Inject'/>\n");
             writer.write("  <inherits name='org.rapla.Rapla_main_module'/>\n");
-            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
-            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
-            writer.write("  <source path=''/>\n");
-            writer.write("  <entry-point class='org.rapla.client.gwt.Rapla'/>\n");
+//            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
+//            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
+            writer.write("  <source path='client'/>\n");
+            writer.write("  <entry-point class='"+ Rapla.class.getCanonicalName() +"'/>\n");
             writer.write("  <set-property name='user.agent' value='safari' />\n");
             writer.write("  <extend-property name='locale' values='de' />\n");
             writer.write("  <set-property name='locale' value='de' />\n");
