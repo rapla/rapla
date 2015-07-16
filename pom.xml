@@ -79,6 +79,9 @@
 					<exclude>jre</exclude>
 				</excludes>
 			</resource>
+			<resource>
+				<directory>${project.build.directory}/generated-resources</directory>
+			</resource>
 		</resources>
 		<testResources>
 			<testResource>
@@ -500,7 +503,13 @@
 			<version>${gwt.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!-- Scope Runtime -->
+		<dependency>
+			<groupId>com.google.gwt.inject</groupId>
+			<artifactId>gin</artifactId>
+			<version>2.1.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<!--  Scope Runtime  -->
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
