@@ -12,17 +12,22 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.framework;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Writer;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import org.rapla.framework.logger.Logger;
@@ -97,16 +102,19 @@ public class ServiceListCreator
     public static void processDir(String srcDir, String destFile) throws ClassNotFoundException, IOException
     {
         File topDir = new File(srcDir);
-
-        createPluginList(destFile, topDir);
-        createGwtXml(topDir);
+        System.out.println("generating " + destFile);
+        createPluginList(destFile, topDir, pluginSelectorStrategy);
+        final String gwtDestFile = destFile + "-gwt";
+        System.out.println("generating " + gwtDestFile);
+        createPluginList(gwtDestFile, topDir, gwtPluginSelectorStrategy);
+        createGwtXml(topDir, gwtDestFile);
     }
 
-    private static void createGwtXml(File topDir) throws IOException, ClassNotFoundException
+    private static void createGwtXml(File topDir, String gwtDestFile) throws IOException, ClassNotFoundException
     {
-        List<String> list = findPluginClasses(topDir, null, gwtPluginSelectorStrategy);
-        String destFile = topDir.getParentFile().getAbsolutePath() + File.separator + "generated-resources" + File.separator + "org" + File.separator + "rapla" + File.separator + "gwt"
-                + File.separator + "Rapla.gwt.xml";
+        final Set<String> list = plugins(gwtDestFile);
+        String destFile = topDir.getParentFile().getAbsolutePath() + File.separator + "generated-resources" + File.separator + "org" + File.separator + "rapla"
+                + File.separator + "gwt" + File.separator + "Rapla.gwt.xml";
         final File file = new File(destFile);
         if (file.exists())
         {
@@ -132,10 +140,10 @@ public class ServiceListCreator
             writer.write("  <inherits name='com.google.gwt.user.theme.clean.Clean'/>\n");
             writer.write("  <inherits name='com.google.gwt.inject.Inject'/>\n");
             writer.write("  <inherits name='org.rapla.Rapla_main_module'/>\n");
-//            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
-//            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
+            //            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
+            //            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
             writer.write("  <source path='client'/>\n");
-            writer.write("  <entry-point class='"+ Rapla.class.getCanonicalName() +"'/>\n");
+            writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
             writer.write("  <set-property name='user.agent' value='safari' />\n");
             writer.write("  <extend-property name='locale' values='de' />\n");
             writer.write("  <set-property name='locale' value='de' />\n");
@@ -145,7 +153,7 @@ public class ServiceListCreator
             writer.write("  <define-configuration-property name='extra.ginModules' is-multi-valued='true' />\n");
             for (String className : list)
             {
-                writer.write("<extend-configuration-property name='extra.ginModules' value='");
+                writer.write("  <extend-configuration-property name='extra.ginModules' value='");
                 writer.write(className);
                 writer.write("' />\n");
             }
@@ -157,9 +165,34 @@ public class ServiceListCreator
         }
     }
 
-    private static void createPluginList(String destFile, File topDir) throws ClassNotFoundException, IOException
+    private static Set<String> plugins(String gwtDestFile) throws IOException
     {
-        List<String> list = findPluginClasses(topDir, null, pluginSelectorStrategy);
+        Set<String> pluginNames = new LinkedHashSet<String>();
+        Enumeration<URL> pluginEnum = ServiceListCreator.class.getClassLoader().getResources("META-INF/rapla-plugin.list-gwt");
+        while (pluginEnum.hasMoreElements())
+        {
+            final InputStreamReader is = new InputStreamReader((pluginEnum.nextElement()).openStream());
+            readPlugins(pluginNames, is);
+        }
+        readPlugins(pluginNames, new InputStreamReader(new FileInputStream(new File(gwtDestFile))));
+        return pluginNames;
+    }
+
+    private static void readPlugins(Set<String> pluginNames, final InputStreamReader is) throws IOException
+    {
+        BufferedReader reader = new BufferedReader(is);
+        while (true)
+        {
+            String plugin = reader.readLine();
+            if (plugin == null)
+                break;
+            pluginNames.add(plugin);
+        }
+    }
+
+    private static void createPluginList(String destFile, File topDir, SelectorStrategy selectorStrategy) throws ClassNotFoundException, IOException
+    {
+        List<String> list = findPluginClasses(topDir, null, selectorStrategy);
         final File file = new File(destFile);
         if (file.exists())
         {
