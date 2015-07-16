@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to='Rapla'>
+  <!-- Inherit the core Web Toolkit stuff.                        -->
+  
+  <inherits name="com.google.gwt.xml.XML" />
+  <inherits name='com.google.gwt.user.User'/>
+  <inherits name="com.google.gwt.http.HTTP"/>
+  <inherits name='com.google.gwt.logging.Logging'/>
+  <inherits name="com.google.gwt.i18n.CldrLocales" />
+  <inherits name="com.google.gwt.i18n.I18N" />
+  
+  <!-- Inherit the default GWT style sheet.  You can change       -->
+  <!-- the theme of your GWT application by uncommenting          -->
+  <!-- any one of the following lines.                            -->
+  <inherits name='com.google.gwt.user.theme.clean.Clean'/>
+  <inherits name="com.google.gwt.inject.Inject"/>
+  
+
+  <!-- Inherit the default GWT style sheet.  You can change       -->
+  <!-- the theme of your GWT application by uncommenting          -->
+  <!-- any one of the following lines.                            -->
+  <inherits name='com.google.gwt.user.theme.standard.Standard' />
+  <!-- <inherits name='com.google.gwt.user.theme.chrome.Chrome'/> -->
+  <!-- <inherits name='com.google.gwt.user.theme.dark.Dark'/>     -->
+  <inherits name='org.rapla.Rapla_main_module'/>
+
+  <!-- Other module inherits                                      -->
+  <set-property name="user.agent" value="safari" />
+
+  <!-- Specify the app entry point class.                         -->
+  <entry-point class='org.rapla.gwt.client.Rapla' />
+
+  <!-- Specify the paths for translatable code                    -->
+  <source path='client' />
+
+  <set-property name="gwt.logging.logLevel" value="INFO"/>       
+  <set-property name="gwt.logging.enabled" value="TRUE"/>  
+  
+  <!-- SuperDevMode -->
+  <set-configuration-property name="devModeRedirectEnabled" value="true"/>
+  
+  <define-configuration-property name="extra.ginModules" is-multi-valued="true" />
+  <!--  Replace with your ReservationGWTModule -->
+  <!-- 
+  <extend-configuration-property name="extra.ginModules" value="${rapla.gwt.plugins}" />
+   -->
+   <extend-configuration-property name="extra.ginModules" value="org.rapla.gwt.client.plugin.TestGWTModule" />
+  
+
+</module>

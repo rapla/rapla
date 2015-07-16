@@ -45,12 +45,12 @@ detected.
 	<Arg>
 		<!--  HSQLDB is provided with the jetty bundled with rapla	-->
 	<!--
-	-->
        <New class="org.hsqldb.jdbc.JDBCDataSource">
          <Set name="Url">jdbc:hsqldb:<SystemProperty name="jetty.home" default="." />/data/rapla-hsqldb</Set>
          <Set name="User">db_user</Set>
          <Set name="Password">your_pwd</Set>
 	   </New>
+	-->
 
   <!-- Mysql Database -->
   <!--

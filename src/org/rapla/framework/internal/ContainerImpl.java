@@ -60,7 +60,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.ServiceListCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -703,13 +702,13 @@ public class ContainerImpl implements Container
         {
             Set<String> pluginNames = new LinkedHashSet<String>();
     
-            boolean isDevelopment = getContext().has(ContainerImpl.ENV_DEVELOPMENT) ? getContext().lookup( ContainerImpl.ENV_DEVELOPMENT) : DEVELOPMENT_RESSOLVING;
+//            boolean isDevelopment = getContext().has(ContainerImpl.ENV_DEVELOPMENT) ? getContext().lookup( ContainerImpl.ENV_DEVELOPMENT) : DEVELOPMENT_RESSOLVING;
             Enumeration<URL> pluginEnum =  ConfigTools.class.getClassLoader().getResources("META-INF/rapla-plugin.list");
-            if (!pluginEnum.hasMoreElements() || isDevelopment)
-            { 
-                Collection<String> result = ServiceListCreator.findPluginClasses(logger);
-                pluginNames.addAll(result);
-            }
+//            if (!pluginEnum.hasMoreElements() || isDevelopment)
+//            { 
+//                Collection<String> result = ServiceListCreator.findPluginClasses(logger);
+//                pluginNames.addAll(result);
+//            }
                 
             while ( pluginEnum.hasMoreElements() ) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader((pluginEnum.nextElement()).openStream()));
