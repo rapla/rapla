@@ -83,7 +83,7 @@
 				</excludes>
 			</resource>
 			<resource>
-				<directory>${project.build.directory}/generated-resources</directory>
+				<directory>${basedir}/generated-resources</directory>
 			</resource>
 		</resources>
 		<testResources>
@@ -505,12 +505,6 @@
 			<version>4.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mailapi</artifactId>
 			<version>1.4.3</version>
@@ -575,7 +569,6 @@
 			<version>2.3.3</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
@@ -616,6 +609,12 @@
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-deploy</artifactId>
 			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
