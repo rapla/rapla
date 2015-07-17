@@ -38,7 +38,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 
 public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageGenerator

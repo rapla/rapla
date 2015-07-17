@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.servletpages;
+package org.rapla.server.servletpages;
 import java.io.IOException;
 
 import javax.servlet.ServletContext;

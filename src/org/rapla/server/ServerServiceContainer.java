@@ -7,7 +7,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public interface ServerServiceContainer extends Container 
 {
@@ -27,7 +27,7 @@ public interface ServerServiceContainer extends Container
      container.addContainerProvidedComponent( RaplaExtensionPoints.SERVLET_PAGE_EXTENSION, "org.rapla.plugin.myplugin.MyPageGenerator", "my-page-name", config);
      </pre>
 
-    *@see org.rapla.servletpages.RaplaPageGenerator
+    *@see org.rapla.server.servletpages.RaplaPageGenerator
      */
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass);
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass, Configuration config);

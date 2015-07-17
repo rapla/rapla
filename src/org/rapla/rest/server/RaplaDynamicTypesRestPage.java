@@ -14,7 +14,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 @WebService
 public class RaplaDynamicTypesRestPage extends AbstractRestPage implements RaplaPageGenerator

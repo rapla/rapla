@@ -19,7 +19,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
-import org.rapla.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 /**
  * User: kuestermann

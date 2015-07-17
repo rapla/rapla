@@ -14,7 +14,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
-import org.rapla.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
 {

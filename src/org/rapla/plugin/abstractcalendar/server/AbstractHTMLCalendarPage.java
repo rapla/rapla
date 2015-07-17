@@ -42,7 +42,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements RaplaPageGenerator
 {

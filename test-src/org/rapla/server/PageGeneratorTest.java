@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.ServletTestBase;
 import org.rapla.rest.client.HTTPConnector;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public class PageGeneratorTest extends ServletTestBase {
     

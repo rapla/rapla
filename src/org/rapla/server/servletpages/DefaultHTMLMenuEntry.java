@@ -1,4 +1,4 @@
-package org.rapla.servletpages;
+package org.rapla.server.servletpages;
 
 import java.io.PrintWriter;
 

@@ -20,7 +20,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPageGenerator {
 

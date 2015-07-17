@@ -17,7 +17,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public class ReservationHTMLTableViewFactory extends RaplaComponent implements HTMLViewFactory
 {

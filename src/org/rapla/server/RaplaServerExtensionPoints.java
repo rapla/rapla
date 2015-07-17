@@ -3,8 +3,8 @@ package org.rapla.server;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.SwingViewFactory;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
-import org.rapla.servletpages.RaplaMenuGenerator;
-import org.rapla.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.servletpages.RaplaMenuGenerator;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 /** Constant Pool of basic extension points of the Rapla server.
  * You can add your extension  in the provideService Method of your PluginDescriptor

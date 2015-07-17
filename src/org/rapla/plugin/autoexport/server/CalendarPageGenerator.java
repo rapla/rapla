@@ -35,7 +35,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.server.RaplaServerExtensionPoints;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 
 /******* USAGE: ************

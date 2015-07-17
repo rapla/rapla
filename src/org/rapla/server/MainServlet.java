@@ -40,8 +40,8 @@ import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
-import org.rapla.servletpages.RaplaPageGenerator;
-import org.rapla.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
 public class MainServlet extends HttpServlet {
     
     private static final long serialVersionUID = 1L;

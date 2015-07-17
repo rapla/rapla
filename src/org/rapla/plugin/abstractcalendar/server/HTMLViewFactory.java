@@ -17,7 +17,7 @@ package org.rapla.plugin.abstractcalendar.server;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public interface HTMLViewFactory
 {

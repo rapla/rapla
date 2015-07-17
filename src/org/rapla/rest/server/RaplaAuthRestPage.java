@@ -23,7 +23,7 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;

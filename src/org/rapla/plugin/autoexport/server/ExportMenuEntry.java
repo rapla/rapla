@@ -3,7 +3,7 @@ package org.rapla.plugin.autoexport.server;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.RaplaContext;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.servletpages.DefaultHTMLMenuEntry;
+import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 
 public class ExportMenuEntry extends DefaultHTMLMenuEntry
 {

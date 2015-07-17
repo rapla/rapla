@@ -41,7 +41,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
-import org.rapla.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public class Export2iCalServlet extends RaplaComponent implements RaplaPageGenerator {
 

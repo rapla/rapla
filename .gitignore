@@ -12,3 +12,5 @@
 /rapla.pkcs7
 /RAPLA-INSTALLATION.txt
 /certificate/
+/target/
+/.settings/
