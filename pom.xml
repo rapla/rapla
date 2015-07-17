@@ -83,7 +83,7 @@
 				</excludes>
 			</resource>
 			<resource>
-				<directory>${project.build.directory}/generated-resources</directory>
+				<directory>${basedir}/generated-resources</directory>
 			</resource>
 		</resources>
 		<testResources>
@@ -505,12 +505,6 @@
 			<version>4.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mailapi</artifactId>
 			<version>1.4.3</version>
@@ -575,7 +569,6 @@
 			<version>2.3.3</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
@@ -619,6 +612,12 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
@@ -650,28 +649,48 @@
 		</dependency>
 	</dependencies>
 
-	<pluginRepositories>
-		<pluginRepository>
-			<id>google-plugin-snapshots</id>
-			<url>https://nexus.codehaus.org/content/groups/snapshots-group/</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
+	<!-- <pluginRepositories> -->
+	<!-- <pluginRepository> -->
+	<!-- <id>google-plugin-snapshots</id> -->
+	<!-- <url>https://nexus.codehaus.org/content/groups/snapshots-group/</url> -->
+	<!-- <releases> -->
+	<!-- <enabled>false</enabled> -->
+	<!-- </releases> -->
+	<!-- <snapshots> -->
+	<!-- <enabled>true</enabled> -->
+	<!-- </snapshots> -->
+	<!-- </pluginRepository> -->
+	<!-- </pluginRepositories> -->
 	<repositories>
 		<repository>
-			<id>google-snapshots</id>
-			<url>https://github.com/manolo/gwt-snapshot/raw/master/</url>
+			<id>Maven nuxeo</id>
+			<url>http://maven.nuxeo.org/nexus/content/repositories/public/</url>
 			<releases>
-				<enabled>false</enabled>
+				<enabled>true</enabled>
 			</releases>
 			<snapshots>
-				<enabled>true</enabled>
+				<enabled>false</enabled>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>Maven Repo1</id>
+			<url>https://repo1.maven.org/maven2/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<!-- <repository> -->
+		<!-- <id>google-snapshots</id> -->
+		<!-- <url>https://github.com/manolo/gwt-snapshot/raw/master/</url> -->
+		<!-- <releases> -->
+		<!-- <enabled>false</enabled> -->
+		<!-- </releases> -->
+		<!-- <snapshots> -->
+		<!-- <enabled>true</enabled> -->
+		<!-- </snapshots> -->
+		<!-- </repository> -->
 	</repositories>
 </project>
