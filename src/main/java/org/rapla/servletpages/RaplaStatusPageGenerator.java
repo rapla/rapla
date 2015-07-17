@@ -29,7 +29,7 @@ public class RaplaStatusPageGenerator implements RaplaPageGenerator{
         out.println( "<html>" );
         out.println( "<head>" );
         out.println("  <link REL=\"stylesheet\" href=\"" + linkPrefix + "default.css\" type=\"text/css\">");
-        out.println("  <title>Rapla Server status!</title>");
+        out.println("  <title>Rapla Server status</title>");
         out.println("</head>" );
 
         out.println( "<body>" );
