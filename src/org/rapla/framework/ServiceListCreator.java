@@ -113,7 +113,7 @@ public class ServiceListCreator
     private static void createGwtXml(File topDir, String gwtDestFile) throws IOException, ClassNotFoundException
     {
         final Set<String> list = plugins(gwtDestFile);
-        String destFile = topDir.getParentFile().getParentFile().getAbsolutePath() + File.separator + "generated-resources" + File.separator + "org" + File.separator + "rapla"
+        String destFile = topDir.getAbsolutePath() + File.separator + "org" + File.separator + "rapla"
                 + File.separator + "gwt" + File.separator + "Rapla.gwt.xml";
         final File file = new File(destFile);
         if (file.exists())
@@ -124,6 +124,7 @@ public class ServiceListCreator
         {
             file.getParentFile().mkdirs();
         }
+        System.out.println("generating gwt.xml file: "+destFile);
         final Writer writer = new BufferedWriter(new FileWriter(destFile));
         try
         {
