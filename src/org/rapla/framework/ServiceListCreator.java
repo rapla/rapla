@@ -172,9 +172,24 @@ public class ServiceListCreator
         while (pluginEnum.hasMoreElements())
         {
             final InputStreamReader is = new InputStreamReader((pluginEnum.nextElement()).openStream());
+            try
+            {
+                readPlugins(pluginNames, is);
+            }
+            finally
+            {
+                is.close();
+            }
+        }
+        final InputStreamReader is = new InputStreamReader(new FileInputStream(new File(gwtDestFile)));
+        try
+        {
             readPlugins(pluginNames, is);
         }
-        readPlugins(pluginNames, new InputStreamReader(new FileInputStream(new File(gwtDestFile))));
+        finally
+        {
+            is.close();
+        }
         return pluginNames;
     }
 
