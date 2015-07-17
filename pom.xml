@@ -57,7 +57,9 @@
 	</properties>
 
 	<build>
+	<!--
 		<sourceDirectory>${basedir}/src</sourceDirectory>
+		-->
 		<resources>
 			<resource>
 				<directory>${basedir}/src-resources</directory>
