@@ -28,7 +28,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.swing.ImageIcon;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
