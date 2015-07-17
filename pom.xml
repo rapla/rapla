@@ -98,16 +98,16 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
-					<!-- <compilerId>eclipse</compilerId> -->
+					<compilerId>eclipse</compilerId>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
 				</configuration>
 				<dependencies>
-					<!-- <dependency> -->
-					<!-- <groupId>org.codehaus.plexus</groupId> -->
-					<!-- <artifactId>plexus-compiler-eclipse</artifactId> -->
-					<!-- <version>2.5</version> -->
-					<!-- </dependency> -->
+					<dependency>
+						<groupId>org.codehaus.plexus</groupId>
+						<artifactId>plexus-compiler-eclipse</artifactId>
+						<version>2.5</version>
+					</dependency>
 				</dependencies>
 			</plugin>
 			<plugin>
@@ -443,6 +443,26 @@
 									<action>
 										<execute>
 											<runOnIncremental>true</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-compiler-plugin</artifactId>
+				<!--  
+										<groupId>org.codehaus.plexus</groupId>
+										<artifactId>plexus-compiler-eclipse</artifactId>
+										-->
+										<versionRange>[1.0.0,)</versionRange>
+										<goals>
+											<goal>compile</goal>
+											<goal>testCompile</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<runOnIncremental>false</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
