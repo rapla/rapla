@@ -16,4 +16,5 @@
 /eclipseBuild/
 /bin/
 /.classpath
+/.settings/
 /generated-resources/
