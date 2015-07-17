@@ -39,7 +39,6 @@ import javax.jws.WebService;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.smartcardio.ATR;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.components.util.ParseDateException;

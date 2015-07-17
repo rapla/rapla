@@ -74,7 +74,8 @@
 				<excludes>
 					<exclude>**/*.xml</exclude>
 					<exclude>**/*.txt</exclude>
-					<exclude>**/*.properties</exclude>
+					<exclude>**
+					/*.properties</exclude>
 				</excludes>
 			</resource>
 			<resource>
@@ -96,10 +97,13 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
+				<!-- 
 					<compilerId>eclipse</compilerId>
+					 -->
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
 				</configuration>
+				<!-- 
 				<dependencies>
 					<dependency>
 						<groupId>org.codehaus.plexus</groupId>
@@ -107,6 +111,7 @@
 						<version>2.5</version>
 					</dependency>
 				</dependencies>
+				 -->
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -463,15 +468,15 @@
 										</execute>
 									</action>
 								</pluginExecution>
+								<!-- 
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
 										<artifactId>maven-compiler-plugin</artifactId>
-				<!--  
 										<groupId>org.codehaus.plexus</groupId>
 										<artifactId>plexus-compiler-eclipse</artifactId>
-										-->
 										<versionRange>[1.0.0,)</versionRange>
+										
 										<goals>
 											<goal>compile</goal>
 											<goal>testCompile</goal>
@@ -479,10 +484,11 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-											<runOnIncremental>false</runOnIncremental>
+											<runOnIncremental>true</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
+								 -->
 							</pluginExecutions>
 						</lifecycleMappingMetadata>
 					</configuration>
