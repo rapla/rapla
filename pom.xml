@@ -42,7 +42,7 @@
 		<javax.inject.version>1</javax.inject.version>
 		<supercsv.version>2.0.1</supercsv.version>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
-		<!-- Properties to sign the client jars -->
+		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
 		<!-- Text Properties -->
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 		<doc.date>${maven.build.timestamp}</doc.date>
@@ -62,7 +62,7 @@
 		-->
 		<resources>
 			<resource>
-				<directory>${basedir}/src-resources</directory>
+				<directory>${basedir}/src/main/resources</directory>
 				<filtering>true</filtering>
 				<includes>
 					<include>**/*.xml</include>
@@ -71,7 +71,7 @@
 				</includes>
 			</resource>
 			<resource>
-				<directory>${basedir}/src-resources</directory>
+				<directory>${basedir}/src/main/resources</directory>
 				<filtering>false</filtering>
 				<excludes>
 					<exclude>**/*.xml</exclude>
@@ -81,18 +81,12 @@
 				</excludes>
 			</resource>
 			<resource>
-				<directory>${basedir}/gwt-src</directory>
+				<directory>${basedir}/src/main/gwt-jre</directory>
 				<excludes>
 					<exclude>jre</exclude>
 				</excludes>
 			</resource>
 		</resources>
-		<testResources>
-			<testResource>
-				<directory>${basedir}/test-resources</directory>
-			</testResource>
-		</testResources>
-		<testSourceDirectory>${basedir}/test-src</testSourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -136,8 +130,8 @@
 					<archiveClasses>true</archiveClasses>
 					<warSourceExcludes>Rapla/Rapla.nocache.js</warSourceExcludes>
 					<packagingExcludes>**/*.java</packagingExcludes>
-					<warSourceDirectory>${basedir}/war</warSourceDirectory>
-					<webXml>${basedir}/war/WEB-INF/web.xml</webXml>
+					<warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
+					<webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -372,9 +366,9 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/distriubtions</outputDirectory>
+							<outputDirectory>${project.build.directory}/distriubtion</outputDirectory>
 							<finalName>rapla-${project.version}</finalName>
-							<descriptor>${basedir}/rapla.assembly.xml</descriptor>
+							<descriptor>${basedir}/src/assembly/rapla.assembly.xml</descriptor>
 							<appendAssemblyId>false</appendAssemblyId>
 						</configuration>
 					</execution>
@@ -442,7 +436,7 @@
 					<httpConnector>
 						<port>8051</port>
 					</httpConnector>
-					<contextXml>contexts/rapla-develop.xml</contextXml>
+					<contextXml>src/test/resources/rapla-develop.xml</contextXml>
 				</configuration>
 			</plugin>
 		</plugins>
