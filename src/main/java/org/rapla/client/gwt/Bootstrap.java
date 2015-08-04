@@ -1,4 +1,4 @@
-package org.rapla.gwt.client;
+package org.rapla.client.gwt;
 
 import java.util.Set;
 

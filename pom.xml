@@ -57,9 +57,7 @@
 	</properties>
 
 	<build>
-	<!--
-		<sourceDirectory>${basedir}/src</sourceDirectory>
-		-->
+		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
 		<resources>
 			<resource>
 				<directory>${basedir}/src/main/resources</directory>
@@ -93,21 +91,13 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
-				<!-- 
-					<compilerId>eclipse</compilerId>
-					 -->
+					<!-- <compilerId>eclipse</compilerId> -->
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
 				</configuration>
-				<!-- 
-				<dependencies>
-					<dependency>
-						<groupId>org.codehaus.plexus</groupId>
-						<artifactId>plexus-compiler-eclipse</artifactId>
-						<version>2.5</version>
-					</dependency>
-				</dependencies>
-				 -->
+				<!-- <dependencies> <dependency> <groupId>org.codehaus.plexus</groupId> 
+					<artifactId>plexus-compiler-eclipse</artifactId> <version>2.5</version> </dependency> 
+					</dependencies> -->
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -168,7 +158,7 @@
 				</executions>
 				<configuration>
 					<runTarget>Rapla.html</runTarget>
-					<module>org.rapla.gwt.Rapla</module>
+					<module>org.rapla.Rapla</module>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -432,12 +422,47 @@
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
 				<version>9.3.1.v20150714</version>
+	            <dependencies>
+					<dependency>
+						<groupId>ch.qos.logback</groupId>
+						<artifactId>logback-classic</artifactId>
+						<version>${logback.version}</version>
+						<exclusions>
+						  <exclusion>
+		  					<groupId>org.slf4j</groupId>
+							<artifactId>slf4j-simple</artifactId>
+						  </exclusion>
+						</exclusions>
+					</dependency>
+					<dependency>
+						<groupId>ch.qos.logback</groupId>
+						<artifactId>logback-core</artifactId>
+						<version>${logback.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+						<version>${slf4j.version}</version>
+					</dependency>
+				</dependencies>
 				<configuration>
 					<httpConnector>
 						<port>8051</port>
 					</httpConnector>
-					<contextXml>src/test/resources/rapla-develop.xml</contextXml>
+					<useProvidedScope>true</useProvidedScope>
+					<systemProperties>
+						<systemProperty>
+							<name>org.eclipse.jetty.util.log.Log</name>
+							<value>org.eclipse.jetty.util.log.Slf4jLog</value>
+						</systemProperty>
+						<systemProperty>
+							<name>logback.configurationFile</name>
+							<value>src/test/resources/logback.xml</value>
+						</systemProperty>
+					</systemProperties>
+					<contextXml>src/test/contexts/rapla-develop.xml</contextXml>
 				</configuration>
+
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -464,27 +489,12 @@
 										</execute>
 									</action>
 								</pluginExecution>
-								<!-- 
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-compiler-plugin</artifactId>
-										<groupId>org.codehaus.plexus</groupId>
-										<artifactId>plexus-compiler-eclipse</artifactId>
-										<versionRange>[1.0.0,)</versionRange>
-										
-										<goals>
-											<goal>compile</goal>
-											<goal>testCompile</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute>
-											<runOnIncremental>true</runOnIncremental>
-										</execute>
-									</action>
-								</pluginExecution>
-								 -->
+								<!-- <pluginExecution> <pluginExecutionFilter> <groupId>org.apache.maven.plugins</groupId> 
+									<artifactId>maven-compiler-plugin</artifactId> <groupId>org.codehaus.plexus</groupId> 
+									<artifactId>plexus-compiler-eclipse</artifactId> <versionRange>[1.0.0,)</versionRange> 
+									<goals> <goal>compile</goal> <goal>testCompile</goal> </goals> </pluginExecutionFilter> 
+									<action> <execute> <runOnIncremental>true</runOnIncremental> </execute> </action> 
+									</pluginExecution> -->
 							</pluginExecutions>
 						</lifecycleMappingMetadata>
 					</configuration>

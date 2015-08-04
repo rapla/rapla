@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import org.rapla.client.gwt.Rapla;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwt.client.Rapla;
 
 import com.google.gwt.inject.client.GinModule;
 
@@ -114,7 +114,7 @@ public class ServiceListCreator
     {
         final Set<String> list = plugins(gwtDestFile);
         String destFile = topDir.getAbsolutePath() + File.separator + "org" + File.separator + "rapla"
-                + File.separator + "gwt" + File.separator + "Rapla.gwt.xml";
+                + File.separator + "Rapla.gwt.xml";
         final File file = new File(destFile);
         if (file.exists())
         {
@@ -144,6 +144,7 @@ public class ServiceListCreator
             //            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
             //            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
             writer.write("  <source path='client'/>\n");
+            writer.write("  <source path='plugin'/>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
             writer.write("  <set-property name='user.agent' value='safari' />\n");
             writer.write("  <extend-property name='locale' values='de' />\n");

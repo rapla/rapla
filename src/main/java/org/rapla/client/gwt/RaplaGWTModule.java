@@ -1,4 +1,4 @@
-package org.rapla.gwt.client;
+package org.rapla.client.gwt;
 
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapterWithoutClassnameSupport;

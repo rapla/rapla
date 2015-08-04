@@ -1,6 +1,6 @@
-package org.rapla.gwt.client.plugin;
+package org.rapla.client.gwt.plugin;
 
-import org.rapla.gwt.client.Greeter;
+import org.rapla.client.gwt.Greeter;
 
 public class MyGWTGreeter implements Greeter
 {

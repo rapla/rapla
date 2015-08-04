@@ -1,4 +1,4 @@
-package org.rapla.gwt.client;
+package org.rapla.client.gwt;
 
 import com.google.gwt.inject.client.GinModules;
 import com.google.gwt.inject.client.Ginjector;

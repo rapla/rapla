@@ -15,6 +15,7 @@ package org.rapla.framework.logger.internal;
 
 import javax.inject.Provider;
 
+import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
 
@@ -25,11 +26,36 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
     static final public int DEBUG_INT = 10;
     static final public int INFO_INT = 20;
     static final public int WARN_INT = 30;
+    
     static final public int ERROR_INT = 40;
-
+    static ILoggerFactory iLoggerFactory;
+    
     static public org.rapla.framework.logger.Logger getLoggerForCategory(String categoryName) {
-        LocationAwareLogger loggerForCategory = (LocationAwareLogger)LoggerFactory.getILoggerFactory().getLogger(categoryName);
+        
+        if (iLoggerFactory == null)
+        {
+            iLoggerFactory = createFactory();
+        }
+
+        LocationAwareLogger loggerForCategory = (LocationAwareLogger)iLoggerFactory.getLogger(categoryName);
         return new Wrapper(loggerForCategory, categoryName);
+    }
+
+    private static ILoggerFactory createFactory()
+    {
+        iLoggerFactory = LoggerFactory.getILoggerFactory();
+        if ( iLoggerFactory.getClass().getName().equalsIgnoreCase("org.slf4j.impl.SimpleLoggerFactory"))
+        {
+            try
+            {
+                iLoggerFactory = (ILoggerFactory) Slf4jAdapter.class.getClassLoader().loadClass("ch.qos.logback.classic.LoggerContext").newInstance();
+            }
+            catch (Exception e)
+            {
+                iLoggerFactory.getLogger("bootstrap").error(e.getMessage(), e);
+            }
+        }
+        return iLoggerFactory;
     }
 
     public org.rapla.framework.logger.Logger get() {

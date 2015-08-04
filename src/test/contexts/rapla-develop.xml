@@ -18,7 +18,7 @@ detected.
  <Set name="baseResource">
     <!--  you can add additional war files here. Also if in development mode, rapla will search for war folders in plugin projects that are on the classpath -->
     <New class="org.eclipse.jetty.util.resource.ResourceCollection">
-      <Arg><SystemProperty name="jetty.home" default="."/>/war</Arg>
+      <Arg>src/main/webapp</Arg>
     </New>
   </Set>
  
@@ -29,7 +29,7 @@ detected.
   <New id="raplafile" class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg></Arg>
 	<Arg>raplafile</Arg>
-	<Arg type="java.lang.String"><SystemProperty name="jetty.home" default="." />/data/data.xml</Arg>
+	<Arg type="java.lang.String">data/data.xml</Arg>
 <!-- 	<Arg type="java.lang.String"><SystemProperty name="jetty.home" default="." />/data/wochenplan.xml</Arg> -->
 	<Arg type="boolean">true</Arg>
   </New>
@@ -84,7 +84,7 @@ detected.
   <!-- Normaly you don't have to modify the settings below -->
 
  <!--  this is important for large data sets to submit -->
- <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml</Set>
+ <Set name="defaultsDescriptor">src/test/etc/webdefault.xml</Set>
  <Set name="maxFormContentSize">10000000</Set>
  <Set name="extractWAR">true</Set>
  <Set name="copyWebDir">true</Set>
