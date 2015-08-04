@@ -18,7 +18,7 @@ detected.
  <Set name="baseResource">
     <!--  you can add additional war files here. Also if in development mode, rapla will search for war folders in plugin projects that are on the classpath -->
     <New class="org.eclipse.jetty.util.resource.ResourceCollection">
-      <Arg>src/main/webapp</Arg>
+      <Arg>src/main/webapp,src/main/webapp2</Arg>
     </New>
   </Set>
  
@@ -98,7 +98,9 @@ detected.
      <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
      <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
      <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+     <!-- 
      <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
+      -->
      <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
     </Array>
   </Set>

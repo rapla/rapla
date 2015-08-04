@@ -56,6 +56,7 @@ public class CustomJettyStarter
 	Class ServerC ;
 	Class ConfigurationC;
     Class ConnectorC; 
+    Class ServerConnectorC;
 	Class ResourceC; 
 	Class EnvEntryC; 
 	Class LifeCyleC; 
@@ -211,6 +212,7 @@ public class CustomJettyStarter
                     stopMethod = ServerC.getMethod("stop");
                     ConfigurationC =loader.loadClass("org.eclipse.jetty.xml.XmlConfiguration");
                     ConnectorC = loader.loadClass("org.eclipse.jetty.server.Connector");
+                    ServerConnectorC = loader.loadClass("org.eclipse.jetty.server.ServerConnector");
                 	ResourceC = loader.loadClass("org.eclipse.jetty.util.resource.Resource");
                 	EnvEntryC = loader.loadClass("org.eclipse.jetty.plus.jndi.EnvEntry");
                 	LifeCyleC = loader.loadClass( "org.eclipse.jetty.util.component.LifeCycle");
@@ -258,7 +260,7 @@ public class CustomJettyStarter
                      
                             	for (Object c: connectors)
                             	{
-                            		port = (Integer) ConnectorC.getMethod("getPort").invoke(c);
+                            		port = (Integer) ServerConnectorC.getMethod("getPort").invoke(c);
                                     if ( removeConnectors)
                                     {
                                     	ServerC.getMethod("removeConnector", ConnectorC).invoke(server, c);
@@ -340,6 +342,10 @@ public class CustomJettyStarter
                         	}
                        }
                     }
+//                    while (true)
+//                    {
+//                        Thread.sleep(1000);
+//                    }
                 }
                 catch (Exception e)
                 {

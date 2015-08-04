@@ -33,10 +33,10 @@
   </appender>
   
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${jetty.home}/logs/rapla.log</file>
+    <file>${jetty.home}/../../logs/rapla.log</file>
     <!--  log the last 30 days and put them in separate files -->
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${jetty.home}/logs/rapla_%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>${jetty.home}/../../logs/rapla_%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>30</maxHistory>
       <cleanHistoryOnStart>true</cleanHistoryOnStart>
     </rollingPolicy>
@@ -57,10 +57,10 @@
   </appender>
 
   <appender name="FILE_CALLS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${jetty.home}/logs/rapla_calls.log</file>
+    <file>${jetty.home}/../../logs/rapla_calls.log</file>
     <!--  log the last 30 days and put them in separate files -->
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${jetty.home}/logs/rapla_calls%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>${jetty.home}/../../logs/rapla_calls%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>2</maxHistory>
       <cleanHistoryOnStart>true</cleanHistoryOnStart>
     </rollingPolicy>
@@ -110,10 +110,10 @@
   </root>
 
   <appender name="FILE_CLIENT_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${jetty.home}/logs/rapla_client.csv</file>
+    <file>${jetty.home}/../../logs/rapla_client.csv</file>
     <!--  log the last 30 days and put them in separate files -->
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${jetty.home}/logs/rapla_client%d{yyyy-MM-dd}.csv</fileNamePattern>
+      <fileNamePattern>${jetty.home}/../../logs/rapla_client%d{yyyy-MM-dd}.csv</fileNamePattern>
       <maxHistory>30</maxHistory>
       <cleanHistoryOnStart>true</cleanHistoryOnStart>
     </rollingPolicy>
