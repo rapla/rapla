@@ -11,8 +11,22 @@
 	<licenses>
 		<license>
 			<name>GNU GPL v3</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+            <distribution>repo</distribution>
 		</license>
 	</licenses>
+	<developers>
+	 <developer>
+	   <name>Christopher Kohlhaas</name>
+	   <email>christopher.kohlhaas@gmail.com</email>
+	   <organizationUrl>https://github.com/kohlhaas</organizationUrl>
+	 </developer>
+	 <developer>
+	   <name>Martin Geuer</name>
+	   <email>martin.geuer@gmail.com</email>
+	   <organizationUrl>https://github.com/mgeuer</organizationUrl>
+	 </developer>
+	</developers>
 	<organization>
 		<name>Rapla</name>
 		<url>http://rapla.org</url>
@@ -39,7 +53,6 @@
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<gson.version>2.3.1</gson.version>
-		<itext.version>4.2.1</itext.version>
 		<javax.inject.version>1</javax.inject.version>
 		<supercsv.version>2.0.1</supercsv.version>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
@@ -204,14 +217,6 @@
 									<groupId>com.google.code.gson</groupId>
 									<artifactId>gson</artifactId>
 									<version>${gson.version}</version>
-									<type>jar</type>
-									<overWrite>true</overWrite>
-									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-								</artifactItem>
-								<artifactItem>
-									<groupId>com.lowagie</groupId>
-									<artifactId>itext</artifactId>
-									<version>${itext.version}</version>
 									<type>jar</type>
 									<overWrite>true</overWrite>
 									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
@@ -509,29 +514,6 @@
 			<version>${gson.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.lowagie</groupId>
-			<artifactId>itext</artifactId>
-			<version>${itext.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>jfreechart</artifactId>
-					<groupId>jfree</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>pdf-renderer</artifactId>
-					<groupId>org.swinglabs</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>bctsp-jdk14</artifactId>
-					<groupId>org.bouncycastle</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>dom4j</artifactId>
-					<groupId>dom4j</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
 			<groupId>org.mnode.ical4j</groupId>
 			<artifactId>ical4j</artifactId>
 			<version>1.0.6</version>
@@ -749,49 +731,5 @@
 		</dependency>
 
 	</dependencies>
-
-	<!-- <pluginRepositories> -->
-	<!-- <pluginRepository> -->
-	<!-- <id>google-plugin-snapshots</id> -->
-	<!-- <url>https://nexus.codehaus.org/content/groups/snapshots-group/</url> -->
-	<!-- <releases> -->
-	<!-- <enabled>false</enabled> -->
-	<!-- </releases> -->
-	<!-- <snapshots> -->
-	<!-- <enabled>true</enabled> -->
-	<!-- </snapshots> -->
-	<!-- </pluginRepository> -->
-	<!-- </pluginRepositories> -->
-	<repositories>
-		<repository>
-			<id>Maven nuxeo</id>
-			<url>http://maven.nuxeo.org/nexus/content/repositories/public/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>Maven Repo1</id>
-			<url>https://repo1.maven.org/maven2/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<!-- <repository> -->
-		<!-- <id>google-snapshots</id> -->
-		<!-- <url>https://github.com/manolo/gwt-snapshot/raw/master/</url> -->
-		<!-- <releases> -->
-		<!-- <enabled>false</enabled> -->
-		<!-- </releases> -->
-		<!-- <snapshots> -->
-		<!-- <enabled>true</enabled> -->
-		<!-- </snapshots> -->
-		<!-- </repository> -->
-	</repositories>
+	
 </project>

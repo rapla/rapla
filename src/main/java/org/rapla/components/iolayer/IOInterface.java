@@ -31,7 +31,6 @@ public interface IOInterface {
                                    ,PageFormat format
                                    ,boolean askFormat
                                    ,java.awt.Component owner
-                                   ,boolean pdf
                                    )
         throws IOException,UnsupportedOperationException;
 
@@ -39,7 +38,6 @@ public interface IOInterface {
             Printable printable
             ,PageFormat format
             ,OutputStream out
-            ,boolean pdf
                          )
         throws IOException,UnsupportedOperationException;
 

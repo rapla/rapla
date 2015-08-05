@@ -176,20 +176,15 @@ final public class WebstartIO extends DefaultIO {
         }
     }
 
-    public String saveAsFileShowDialog(String dir,Printable printable,PageFormat format,boolean askFormat,Component owner, boolean pdf) throws IOException,UnsupportedOperationException {
+    @Override
+    public String saveAsFileShowDialog(String dir,Printable printable,PageFormat format,boolean askFormat,Component owner) throws IOException,UnsupportedOperationException {
         if (askFormat) { format= showFormatDialog(format); }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        callExport(printable,format,out, pdf);
+        callExport(printable,format,out);
         if (dir == null)
             dir = "";
-        if ( pdf){
-        	return saveFile( null, dir, new String[] {"pdf"},"RaplaOutput.pdf", out.toByteArray());
-        }
-        else
-        {
-        	return saveFile( null, dir, new String[] {"ps"},"RaplaOutput.ps", out.toByteArray());
-        }
+        return saveFile( null, dir, new String[] {"ps"},"RaplaOutput.ps", out.toByteArray());
     }
 
     public String saveFile(Frame frame,String dir, String[] fileExtensions, String filename, byte[] content) throws IOException {

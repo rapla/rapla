@@ -111,11 +111,7 @@ public class DefaultIO  implements IOInterface{
         }
     }
 
-    protected void callExport(Printable printable, PageFormat format,OutputStream out, boolean pdf) throws UnsupportedOperationException,IOException {
-        if ( pdf)
-        {
-        	ITextPrinter.createPdf(printable, out, format);
-        }
+    protected void callExport(Printable printable, PageFormat format,OutputStream out) throws UnsupportedOperationException,IOException {
         save(printable,format,out);
     }
     
@@ -186,7 +182,8 @@ public class DefaultIO  implements IOInterface{
         }
         }
 
-    public String saveAsFileShowDialog(String dir,Printable printable,PageFormat format,boolean askFormat,Component owner, boolean pdf) throws UnsupportedOperationException,IOException {
+    @Override
+    public String saveAsFileShowDialog(String dir,Printable printable,PageFormat format,boolean askFormat,Component owner) throws UnsupportedOperationException,IOException {
         if (askFormat) { format= showFormatDialog(format); }
         JFileChooser chooser = new JFileChooser();
         chooser.setAcceptAllFileFilterUsed(false);
@@ -196,14 +193,14 @@ public class DefaultIO  implements IOInterface{
 
         // Note: source for ExampleFileFilter can be found in FileChooserDemo,
         // under the demo/jfc directory in the Java 2 SDK, Standard Edition.
-        chooser.setFileFilter( pdf ? new PDFFileFilter() :new PSFileFilter());
+        chooser.setFileFilter( new PSFileFilter());
         int returnVal = chooser.showOpenDialog(owner);
         if(returnVal != JFileChooser.APPROVE_OPTION)
             return null;
 
         File selectedFile = chooser.getSelectedFile();
       
-        String suffix = pdf ? ".pdf" : ".ps";
+        String suffix = ".ps";
 		String name = selectedFile.getName();
 		if (!name.endsWith(suffix))
         {
@@ -211,7 +208,7 @@ public class DefaultIO  implements IOInterface{
 			selectedFile = new File( parent, name + suffix);
         }
 		OutputStream out = new FileOutputStream(selectedFile);
-        callExport(printable,format,out, pdf);
+        callExport(printable,format,out);
         out.close();
         return selectedFile.getPath();
     }
@@ -236,8 +233,8 @@ public class DefaultIO  implements IOInterface{
         }
         
     }
-    public void saveAsFile(Printable printable,PageFormat format,OutputStream out, boolean pdf) throws UnsupportedOperationException,IOException {
-        callExport(printable,format,out, pdf);
+    public void saveAsFile(Printable printable,PageFormat format,OutputStream out) throws UnsupportedOperationException,IOException {
+        callExport(printable,format,out);
     }
 
     /**

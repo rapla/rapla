@@ -50,12 +50,6 @@ public class ExportServiceList extends RaplaGUIComponent  {
             PSExportService exportService = new PSExportService(getContext());
             addService("psexport",exportService);
         }
-        
-        if (!applet) {
-        	 PDFExportService exportService = new PDFExportService(getContext());
-             addService("pdf",exportService);
-        }
-       
     }
 
     public boolean export(Printable printable,PageFormat pageFormat,Component parentComponent) throws Exception

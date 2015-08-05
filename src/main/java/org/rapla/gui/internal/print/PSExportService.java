@@ -37,7 +37,6 @@ public class PSExportService extends RaplaGUIComponent implements ExportService 
     public boolean export(Printable printable,PageFormat pageFormat,Component parentComponent) throws Exception
     {
         String dir = (String) getSessionMap().get(EXPORT_DIR);
-        boolean isPDF = false;
 		String file = printInterface.saveAsFileShowDialog
         (
                    dir
@@ -45,7 +44,6 @@ public class PSExportService extends RaplaGUIComponent implements ExportService 
                    ,pageFormat
                    ,false
                    ,parentComponent
-                   ,isPDF
                                                         );
         if (file != null)
         {
