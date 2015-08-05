@@ -135,11 +135,10 @@ public class ReservationPresenter implements ReservationController, Presenter
 
     private boolean isAllowedToWrite(Attribute attribute, final Classification classification)
     {
-        final String id = attribute.getKey();
-        final Attribute localAttribute = classification.getAttribute(id);
-        return localAttribute != null ? !localAttribute.isReadOnly() : false;
+        // TODO future
+        return true;
     }
-
+    
     @Override
     public boolean isDeleteButtonEnabled(final Reservation reservation)
     {
