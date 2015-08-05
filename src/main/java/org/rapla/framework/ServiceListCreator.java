@@ -141,8 +141,8 @@ public class ServiceListCreator
             writer.write("  <inherits name='com.google.gwt.user.theme.clean.Clean'/>\n");
             writer.write("  <inherits name='com.google.gwt.inject.Inject'/>\n");
             writer.write("  <inherits name='org.rapla.Rapla_main_module'/>\n");
-            //            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
-            //            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
+            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
+            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
             writer.write("  <source path='client'/>\n");
             writer.write("  <source path='plugin'/>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");

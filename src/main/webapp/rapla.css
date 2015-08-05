@@ -1,58 +1,226 @@
-/* Use this file to customize the Rapla HTML Pages to your style */
-body {
-	font:12px/18px "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
-	color: #333333;
+/** Add css rules here for your application. */
+/** Example rules used by the template application (remove for your app) */
+h1 {
+	font-size: 2em;
+	font-weight: bold;
+	color: #777777;
+	margin: 40px 0px 70px;
+	text-align: center;
 }
 
-/* Button Appearance */
-
-.button {
-	border:none;
-	cursor:pointer;
-	display:inline-block;
-	overflow:visible;
-	padding:0;
-	margin:0;
-	height:29px;
-	background:url("images/button.gif") right top;
+.sendButton {
+	display: block;
+	font-size: 16pt;
 }
 
-.button a, .button input {
-	font-size: 13px;
-    font-weight: bold;
-    font-family: Arial,Helvetica,Helvetica Neue,Verdana,sans-serif;
-	text-decoration:none;
-	color: #FFFFFF !important;
-	cursor:pointer;
-	outline:none;
-	overflow:visible;
-	white-space:nowrap;
+.dialogVPanel {
+	margin: 5px;
+}
+
+.serverResponseLabelError {
+	color: red;
+}
+
+/** Set ids using widget.getElement().setId("idOfElement") */
+#closeButton {
+	margin: 15px 6px 6px;
+}
+
+#raplaPopup {
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	padding: 16px;
+	border: 6px solid orange;
+	background-color: white;
+	z-index: 100;
+	overflow: auto;
+}
+
+.gwt-PopupPanel {
+	z-index: 150;
+}
+
+.navigator{
+	width: 200px;	
+}
+
+/* ADD BUTTON for new event */
+.addButton {
+	float: right;
+	width: 28px;
+	background-color: rgb(153, 184, 252);
+	border-radius: 50px;
+	color: white;
+	cursor: pointer;
+	height: 28px;
+	text-align: center;
+	margin-right: 50px;
+	font-size: 20px;
+}
+
+/* INPUT FIELDS */
+.inputWrapper {
+	height: 40px;
+	margin: 5px;
+}
+
+/* TABLE */
+.header.topleft, .header.left {
+	width: 30px;
+}
+
+.week.table {
+	width: 100%;
+	padding-top: 20px;
+	border-spacing: 0;
+	border-bottom: 1px solid #000000;
+	border-collapse: inherit;
+}
+
+.week.table td, .week.table tr {
+	padding: 0px;
+}
+
+.week.table tr.full td {
+	border-top: 1px solid #000000;
+}
+
+.week.table tr.sub td {
+	border-top: 1px solid #E2E2E2;
+}
+
+.week.table .emptyDayRow {
+	border-right: 1px solid #000000;
+}
+
+.header.left {
+	border-right: 1px solid #000000;
+	border-left: 1px solid #000000;
+}
+
+.header.top {
+	border-right: 1px solid #000000;
+	border-top: 1px solid #000000;
+}
+
+.header.topleft {
+	border-right: 1px solid #000000;
+	border-left: 1px solid #000000;
+	border-top: 1px solid #000000;
+}
+
+.week.table td {
+	padding-right: 2px;
+	vertical-align: top;
+}
+
+.week.table table {
+	display: table;
+	width: 100%;
+}
+
+.week.table .header {
+	background-color: #aaaaaa;
+	border-color: black;
+	border-right-width: 1px;
+}
+
+.week.table .emptyDayRow {
 	
-	border:none;
-	display:inline-block;
-	padding: 0 18px;
-	margin:0 !important;
-	
-	line-height:29px;
-	height:29px;
-	width:auto;
-	
-	background:url("images/button.gif") no-repeat left top;
 }
 
-/* Browser fixes */
-.button input::-moz-focus-inner {
-	padding: 0;
-	border: none;
+/* Event style */
+.week.table td.eventTd, .week.table tr.sub td.eventTd {
+	border: 1px solid #999999;
+	border-right-style: groove;
+	border-right-width: 2px;
+	border-radius: 5px;
 }
 
-.menuEntry
-{
-   padding-top:5px;
-   padding-bottom:5px;
+.event {
+	margin: 3px;
+	overflow: hidden;
 }
-/* You can also customize the calendar
-.month_table {
-	background-color: #FFFFAA;
+
+.week.table .eventTd {
+	cursor: pointer;
 }
-*/
+
+.event p {
+	margin: 10px 2px;
+}
+/* START RESERVATIONVIEW */
+/* ACTION BAR */
+.mainButtonsBar{
+	min-width: 300px;
+}
+.tabbar {
+	width: 100%;
+	height: 35px;
+}
+
+.tabbarWrapper {
+	clear: both;
+}
+
+.cancelButton, .deleteButton, .saveButton, .redoButton, .undoButton {
+	float: left;
+	width: auto;
+	/*	background-color: rgb(153, 184, 252) !important;*/
+	border-radius: 3px;
+	cursor: pointer;
+	margin: 5px;
+}
+
+.cancelButton:hover, .deleteButton:hover, .saveButton:hover, .redoButton:hover,
+	.undoButton:hover {
+	margin-left: 6px;
+	margin-right: 4px;
+	margin-top: 6px;
+	margin-bottom: 4px;
+}
+
+/* INFO VIEW */
+
+/* RESOURCES DATES VIEW */
+.dateList {
+	width: 20%;
+	padding: 2px;
+	border: 1px solid #c2c2c2;
+	float: left;
+	overflow-y: auto;
+	overflow-x: hidden;
+	height: 200px;
+}
+
+.dateBoxPopup {
+	z-index: 1005;
+}
+
+.buttonsResourceDates {
+	display: block;
+}
+
+.allDay {
+	margin-top: 10px;
+}
+
+.dateInfoLineComplete, .dateInfoLineLeft {
+	clear: both;
+}
+
+.datesButtonBar, .dateContent {
+	float: left;
+}
+
+.dateList .date {
+	cursor: pointer;
+}
+
+.dateList .selected {
+	background-color: aqua;
+}
+/* END RESERVATIONVIEW */

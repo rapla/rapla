@@ -29,6 +29,7 @@
 		<!-- <rapla.gwt.plugins>org.rapla.gwt.client.plugin.TestGWTModule</rapla.gwt.plugins> -->
 		<slf4j.version>1.7.12</slf4j.version>
 		<logback.version>1.1.3</logback.version>
+		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<!-- <jetty.version>9.3.0.v20150612</jetty.version> -->
 		<jetty.version>9.3.1.v20150714</jetty.version>
 		<maven.install.skip>true</maven.install.skip>
@@ -242,82 +243,31 @@
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
-				<!-- 
-				<dependencies>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-server</artifactId>
-						<version>${jetty.version}</version>
-						<exclusions>
-							<exclusion>
-								<artifactId>javax.servlet</artifactId>
-								<groupId>org.eclipse.jetty.orbit</groupId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-webapp</artifactId>
-						<version>${jetty.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-jndi</artifactId>
-						<version>${jetty.version}</version>
-						<exclusions>
-							<exclusion>
-								<artifactId>javax.mail.glassfish</artifactId>
-								<groupId>org.eclipse.jetty.orbit</groupId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-plus</artifactId>
-						<version>${jetty.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-deploy</artifactId>
-						<version>${jetty.version}</version>
-					</dependency>
-				</dependencies>
-				 -->
+				<!-- <dependencies> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-server</artifactId> <version>${jetty.version}</version> 
+					<exclusions> <exclusion> <artifactId>javax.servlet</artifactId> <groupId>org.eclipse.jetty.orbit</groupId> 
+					</exclusion> </exclusions> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-webapp</artifactId> <version>${jetty.version}</version> 
+					</dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-jndi</artifactId> 
+					<version>${jetty.version}</version> <exclusions> <exclusion> <artifactId>javax.mail.glassfish</artifactId> 
+					<groupId>org.eclipse.jetty.orbit</groupId> </exclusion> </exclusions> </dependency> 
+					<dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-plus</artifactId> 
+					<version>${jetty.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-deploy</artifactId> <version>${jetty.version}</version> 
+					</dependency> </dependencies> -->
 				<executions>
-				<!-- 
-					<execution>
-						<id>jetty-run</id>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<phase>compile-test</phase>
-						<configuration>
-							<target>
-								<echo>starting</echo>
-								<property name="compile_classpath" refid="maven.compile.classpath" />
-								<property name="runtime_classpath" refid="maven.runtime.classpath" />
-								<property name="test_classpath" refid="maven.test.classpath" />
-								<property name="plugin_classpath" refid="maven.plugin.classpath" />
-
-								<echo message="compile classpath: ${compile_classpath}" />
-								<echo message="runtime classpath: ${runtime_classpath}" />
-								<echo message="test classpath:    ${test_classpath}" />
-								<echo message="plugin classpath:  ${plugin_classpath}" />
-								<java classname="org.rapla.bootstrap.RaplaServerLoader"
-									fork="false" failonerror="true">
-									<classpath refid="maven.test.classpath" />
-									<classpath refid="maven.compile.classpath" />
-									<classpath refid="maven.plugin.classpath" />
-								   <classpath>
-                                      <pathelement location="src/main/java"/>
-                                    </classpath>
-									<sysproperty key="jetty.home" value="src/test" />
-								</java>
-							</target>
-						</configuration>
-
-					</execution>
-					 -->
+					<!-- <execution> <id>jetty-run</id> <goals> <goal>run</goal> </goals> 
+						<phase>compile-test</phase> <configuration> <target> <echo>starting</echo> 
+						<property name="compile_classpath" refid="maven.compile.classpath" /> <property 
+						name="runtime_classpath" refid="maven.runtime.classpath" /> <property name="test_classpath" 
+						refid="maven.test.classpath" /> <property name="plugin_classpath" refid="maven.plugin.classpath" 
+						/> <echo message="compile classpath: ${compile_classpath}" /> <echo message="runtime 
+						classpath: ${runtime_classpath}" /> <echo message="test classpath: ${test_classpath}" 
+						/> <echo message="plugin classpath: ${plugin_classpath}" /> <java classname="org.rapla.bootstrap.RaplaServerLoader" 
+						fork="false" failonerror="true"> <classpath refid="maven.test.classpath" 
+						/> <classpath refid="maven.compile.classpath" /> <classpath refid="maven.plugin.classpath" 
+						/> <classpath> <pathelement location="src/main/java"/> </classpath> <sysproperty 
+						key="jetty.home" value="src/test" /> </java> </target> </configuration> </execution> -->
 					<execution>
 						<id>PluginList</id>
 						<phase>compile</phase>
@@ -341,8 +291,9 @@
 									failonerror="true">
 									<classpath refid="maven.test.classpath" />
 									<sysproperty key="jetty.home" value="src/test" />
-									<arg value="${project.build.directory}/classes"/>
-								    <arg value="${project.build.directory}/classes/META-INF/rapla-plugin.list"/>
+									<arg value="${project.build.directory}/classes" />
+									<arg
+										value="${project.build.directory}/classes/META-INF/rapla-plugin.list" />
 								</java>
 							</target>
 						</configuration>
@@ -512,7 +463,7 @@
 			</pluginExecutionFilter> <action> <execute> <runOnIncremental>true</runOnIncremental> 
 			</execute> </action> </pluginExecution> </pluginExecutions> </lifecycleMappingMetadata> 
 			</configuration> </plugin> </plugins> </pluginManagement> -->
-					<pluginManagement>
+		<pluginManagement>
 			<plugins>
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
@@ -536,14 +487,14 @@
 											<goal>run</goal>
 										</goals>
 									</pluginExecutionFilter>
-   								    <action>
+									<action>
 										<execute>
 											<runOnIncremental>true</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
-							
+
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
@@ -642,6 +593,12 @@
 		<!-- GWT -->
 		<dependency>
 			<groupId>com.google.gwt</groupId>
+			<artifactId>gwt-dev</artifactId>
+			<version>${gwt.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.gwt</groupId>
 			<artifactId>gwt-user</artifactId>
 			<version>${gwt.version}</version>
 			<scope>provided</scope>
@@ -650,6 +607,32 @@
 			<groupId>com.google.gwt.inject</groupId>
 			<artifactId>gin</artifactId>
 			<version>2.1.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3-extras</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3-extras</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Scope Runtime -->
@@ -683,8 +666,8 @@
 			<version>${logback.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		
-	    <dependency>
+
+		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
@@ -703,7 +686,7 @@
 			<version>${logback.version}</version>
 			<scope>provided</scope>
 		</dependency>
-	    <dependency>
+		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
 			<version>${logback.version}</version>
@@ -722,49 +705,49 @@
 			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
-							<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-server</artifactId>
-						<version>${jetty.version}</version>
-						<exclusions>
-							<exclusion>
-								<artifactId>javax.servlet</artifactId>
-								<groupId>org.eclipse.jetty.orbit</groupId>
-							</exclusion>
-						</exclusions>
-						<scope>provided</scope>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-webapp</artifactId>
-						<version>${jetty.version}</version>
-						<scope>provided</scope>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-jndi</artifactId>
-						<version>${jetty.version}</version>
-						<exclusions>
-							<exclusion>
-								<artifactId>javax.mail.glassfish</artifactId>
-								<groupId>org.eclipse.jetty.orbit</groupId>
-							</exclusion>
-						</exclusions>
-						<scope>provided</scope>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-plus</artifactId>
-						<version>${jetty.version}</version>
-						<scope>provided</scope>
-					</dependency>
-					<dependency>
-						<groupId>org.eclipse.jetty</groupId>
-						<artifactId>jetty-deploy</artifactId>
-						<version>${jetty.version}</version>
-						<scope>provided</scope>
-					</dependency>
-		
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>${jetty.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.servlet</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-webapp</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-jndi</artifactId>
+			<version>${jetty.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.mail.glassfish</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-plus</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-deploy</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
 	</dependencies>
 
 	<!-- <pluginRepositories> -->

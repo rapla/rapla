@@ -43,5 +43,5 @@
 	<inherits name="Gwt_jre"/>
 <!-- 	<super-source path="../../../gwt-src/jre"/> -->
 	<!-- Specify the paths for translatable code -->
-	<!-- <inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/> -->
+	<inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/>
 </module>
