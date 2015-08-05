@@ -30,6 +30,10 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
         super();
         this.locale = locale;
         this.changeHandler = changeHandler;
+        if (initDate == null)
+        {
+            initDate = new Date();
+        }
         if (!InputUtils.isHtml5DateInputSupported())
         {
             datePicker = new DatePicker();
