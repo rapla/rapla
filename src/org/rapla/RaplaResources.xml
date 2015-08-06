@@ -5399,11 +5399,15 @@ See French text.
 		<text lang="fi">Resurssipuussa näytettävä nimen muoto</text>
     </entry>
     <entry key="nameformat_export">
-        <text lang="en">Displayed name format in export</text>
-        <text lang="de">Anzeigeformatierung im Export</text>
+        <text lang="en">Format of subject in export</text>
+        <text lang="de">Formatierung des Betreffs im Export</text>
         <text lang="fr">Mettre en forme l'affichage dans le exporter</text>
         <text lang="es">Formato de nombre visualizado si exporta</text>
 		<text lang="fi">Viennissä näytettävä nimen muoto</text>
+    </entry>
+    <entry key="descriptionformat_export">
+        <text lang="en">Format of description in export</text>
+        <text lang="de">Formatierung der Beschreibung im Export</text>
     </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>
