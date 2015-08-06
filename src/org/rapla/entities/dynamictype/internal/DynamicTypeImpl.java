@@ -654,9 +654,13 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentFunction(type);
             }
-            else if (variableName.equals("event:appointmentBlock")) 
+            else if (variableName.equals("appointmentBlock:number")) 
             {
                 return new AppointmentBlockFunction(type);
+            }
+            else if (variableName.equals("appointment:allocatables")) 
+            {
+                return new AllocatableFunction(type);
             }
 	        return null;
 		}
@@ -755,7 +759,14 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             @Override
             public Collection<Allocatable> eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
+                if ( context instanceof AppointmentEvalContext)
+                {
+                    Appointment appointment = ((AppointmentEvalContext)context).getAppointment();
+                    final Reservation reservation = appointment.getReservation();
+                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                    return asList;
+                }
+                else if ( context instanceof ReservationEvalContext)
                 {
                     Reservation reservation = ((ReservationEvalContext)context).getReservation();
                     List<Allocatable> asList = Arrays.asList(reservation.getAllocatables());
@@ -790,7 +801,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         {
             AppointmentBlockFunction(DynamicType type) 
             {
-                super("event:appointmentBlock");
+                super("appointmentBlock:number");
             }
 
             @Override
@@ -828,7 +839,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 //                }
                 return size + 1;
             }
-            
         }
 	}
 	
@@ -849,13 +859,29 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         
     }
 
-    static public class AppointmentBlockEvalContext extends ReservationEvalContext
+	static public class AppointmentEvalContext extends ReservationEvalContext
+	{
+	    private Appointment appointment;
+	    
+	    public AppointmentEvalContext( Locale locale, int callStackDepth, String annotationName, Appointment appointment)
+	    {
+	        super(locale,callStackDepth, annotationName, appointment.getReservation());
+	        this.appointment = appointment;
+	    }
+	    
+        public Appointment getAppointment()
+        {
+            return appointment;
+        }	    
+	}
+	
+    static public class AppointmentBlockEvalContext extends AppointmentEvalContext
     {
         private AppointmentBlock block;
 
         public AppointmentBlockEvalContext(Locale locale, int callStackDepth, String annotationName, AppointmentBlock block)
         {
-            super(locale, callStackDepth, annotationName, block.getAppointment().getReservation());
+            super(locale, callStackDepth, annotationName, block.getAppointment());
             this.block = block;
         }
 
