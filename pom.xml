@@ -12,20 +12,20 @@
 		<license>
 			<name>GNU GPL v3</name>
 			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
-            <distribution>repo</distribution>
+			<distribution>repo</distribution>
 		</license>
 	</licenses>
 	<developers>
-	 <developer>
-	   <name>Christopher Kohlhaas</name>
-	   <email>christopher.kohlhaas@gmail.com</email>
-	   <organizationUrl>https://github.com/kohlhaas</organizationUrl>
-	 </developer>
-	 <developer>
-	   <name>Martin Geuer</name>
-	   <email>martin.geuer@gmail.com</email>
-	   <organizationUrl>https://github.com/mgeuer</organizationUrl>
-	 </developer>
+		<developer>
+			<name>Christopher Kohlhaas</name>
+			<email>christopher.kohlhaas@gmail.com</email>
+			<organizationUrl>https://github.com/kohlhaas</organizationUrl>
+		</developer>
+		<developer>
+			<name>Martin Geuer</name>
+			<email>martin.geuer@gmail.com</email>
+			<organizationUrl>https://github.com/mgeuer</organizationUrl>
+		</developer>
 	</developers>
 	<organization>
 		<name>Rapla</name>
@@ -69,7 +69,12 @@
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
 		<doc.homepage>http://rapla.org</doc.homepage>
 	</properties>
-
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 	<build>
 		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
 		<resources>
@@ -100,6 +105,31 @@
 			</resource>
 		</resources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.3</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -171,7 +201,6 @@
 							<finalName>raplaclient</finalName>
 							<excludes>
 								<exclude>**/*.gwt.xml</exclude>
-								<exclude>**/*Resources.xml</exclude>
 								<exclude>org/rapla/gwt/**</exclude>
 								<exclude>org/rapla/bootstrap/*</exclude>
 								<exclude>**/Slf4jAdapter**</exclude>
@@ -731,5 +760,5 @@
 		</dependency>
 
 	</dependencies>
-	
+
 </project>

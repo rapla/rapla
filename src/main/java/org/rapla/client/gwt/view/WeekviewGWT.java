@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.rapla.client.gui.menu.gwt.context.ContextCreator;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter.HTMLWeekViewPresenter.HTMLDaySlot;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter.HTMLWeekViewPresenter.RowSlot;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter.HTMLWeekViewPresenter.Slot;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter.HTMLWeekViewPresenter.SpanAndMinute;
+import org.rapla.client.plugin.weekview.HTMLDaySlot;
+import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.RowSlot;
+import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.Slot;
+import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.SpanAndMinute;
 import org.rapla.components.calendarview.Block;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
