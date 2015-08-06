@@ -100,6 +100,7 @@ import org.rapla.gui.internal.edit.annotation.ConflictCreationAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.EmailAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedColumnsAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedRowsAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ExportEventDescriptionAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExportEventNameAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.LocationAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ResourceTreeNameAnnotationEdit;
@@ -237,6 +238,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ConflictCreationAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
         
         frameControllerList = new FrameControllerList(getLogger().getChildLogger("framelist"));
         addContainerProvidedComponentInstance(FrameControllerList.class,frameControllerList);
