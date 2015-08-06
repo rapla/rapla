@@ -46,7 +46,7 @@
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<!-- <jetty.version>9.3.0.v20150612</jetty.version> -->
 		<jetty.version>9.3.1.v20150714</jetty.version>
-		<maven.install.skip>true</maven.install.skip>
+		<maven.install.skip>false</maven.install.skip>
 		<gwt.version>2.7.0</gwt.version>
 		<gwt.plugin.version>2.7.0</gwt.plugin.version>
 		<maven.compiler.source>1.7</maven.compiler.source>
@@ -421,6 +421,7 @@
 				<version>2.5.5</version>
 				<executions>
 					<execution>
+					    <id>rapla.distribution</id>
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
@@ -428,10 +429,26 @@
 						<configuration>
 							<outputDirectory>${project.build.directory}/distriubtion</outputDirectory>
 							<finalName>rapla-${project.version}</finalName>
-							<descriptor>${basedir}/src/assembly/rapla.assembly.xml</descriptor>
+							<descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
 							<appendAssemblyId>false</appendAssemblyId>
+							<attach>false</attach>
 						</configuration>
 					</execution>
+					<execution>
+						<phase>package</phase>
+					    <id>rapla.jar</id>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}</outputDirectory>
+							<finalName>rapla-${project.version}</finalName>
+							<descriptor>${basedir}/src/assembly/rapla.jar.xml</descriptor>
+							<appendAssemblyId>false</appendAssemblyId>
+							<attach>true</attach>
+						</configuration>
+					</execution>
+					
 				</executions>
 			</plugin>
 			<plugin>
@@ -444,47 +461,6 @@
 						<goals>
 							<goal>jar</goal>
 						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-install-plugin</artifactId>
-				<version>2.5.2</version>
-				<executions>
-					<execution>
-						<id>install jars</id>
-						<phase>install</phase>
-						<goals>
-							<goal>install-file</goal>
-						</goals>
-						<configuration>
-							<packaging>jar</packaging>
-							<artifactId>${project.artifactId}</artifactId>
-							<groupId>${project.groupId}</groupId>
-							<version>${project.version}</version>
-							<pomFile>${basedir}/pom.xml</pomFile>
-							<file>
-								${project.build.directory}/${project.artifactId}-${project.version}/WEB-INF/lib/${project.artifactId}-${project.version}.jar
-							</file>
-							<sources>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar</sources>
-						</configuration>
-					</execution>
-					<execution>
-						<id>install war</id>
-						<phase>install</phase>
-						<goals>
-							<goal>install-file</goal>
-						</goals>
-						<configuration>
-							<packaging>war</packaging>
-							<artifactId>${project.artifactId}</artifactId>
-							<groupId>${project.groupId}</groupId>
-							<version>${project.version}</version>
-							<file>
-								${project.build.directory}/${project.artifactId}-${project.version}.war
-							</file>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
