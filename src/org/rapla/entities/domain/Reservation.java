@@ -108,6 +108,8 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 
 	String format(Locale locale, String annotationName);
 
+	String format(Locale locale, String annotationName, Appointment appointment);
+	
 	String format(Locale locale, String annotationName, AppointmentBlock block);
 
 	int indexOf(Appointment a1);

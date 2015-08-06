@@ -66,7 +66,6 @@ import net.fortuna.ical4j.util.CompatibilityHints;
 
 public class Export2iCalConverter extends RaplaComponent {
 
-    public boolean attendeeToTitle = true;
     net.fortuna.ical4j.model.TimeZone timeZone;
     private java.util.Calendar calendar;
     private String exportAttendeesAttribute;
@@ -510,16 +509,18 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param event
      */
     private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
-
-        
         Reservation reservation = appointment.getReservation();
-        String annotationName = reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null ? DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT :DynamicTypeAnnotations.KEY_NAME_FORMAT; 
-        String eventDescription = reservation.format(raplaLocale.getLocale(), annotationName);
-        if (attendeeToTitle) {
+        String eventDescription;
+        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
+        {
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointment);
+        }
+        else
+        {
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT, appointment);
             eventDescription += getAttendeeString(appointment);
         }
         properties.add(new Summary(eventDescription));
-        
     }
 
     private void addDescriptionToEvent(Appointment appointment, PropertyList properties) {
@@ -528,7 +529,7 @@ public class Export2iCalConverter extends RaplaComponent {
         String eventDescription;
         if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT) != null)
         {
-            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT);
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
         }
         else
         {
