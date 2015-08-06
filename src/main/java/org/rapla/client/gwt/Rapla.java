@@ -83,7 +83,7 @@ public class Rapla implements EntryPoint {
         } 
         else
         {
-            Window.Location.replace("../rapla?page=auth");
+            Window.Location.replace(GWT.getModuleBaseURL()+"../rapla?page=auth");
         }
     }
     
