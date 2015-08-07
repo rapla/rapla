@@ -1,0 +1,129 @@
+<configuration scan="true" scanPeriod="30 seconds" >
+<!-- 
+ <property name="jetty.home" value="../Rapla" />
+ -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoders are assigned the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <target>System.out</target>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+    </filter>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <encoder>
+    <!--  If  you want a date in the console replace with %d{yyyy-MM-dd HH:mm:ss.SSS} -->
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="STDERR"
+   class="ch.qos.logback.core.ConsoleAppender">
+   <target>System.err</target>
+   <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+   </filter>
+   <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${jetty.home}/../../logs/rapla.log</file>
+    <!--  log the last 30 days and put them in separate files -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${jetty.home}/../../logs/rapla_%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+    
+    <!-- If you want to exclude or filter certain messages with a java expression you need to download janino and place janino.jar and compiler-commons.jar into the lib/logging folder  -->
+    <!-- 
+    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">      
+      <evaluator>
+        <expression>return formattedMessage.contains("Page default.css not found");</expression>
+      </evaluator>
+      <OnMatch>DENY</OnMatch>
+    </filter>
+    -->
+  </appender>
+
+  <appender name="FILE_CALLS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${jetty.home}/../../logs/rapla_calls.log</file>
+    <!--  log the last 30 days and put them in separate files -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${jetty.home}/../../logs/rapla_calls%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>2</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+    <resetJUL>true</resetJUL>
+  </contextListener>
+  
+  <logger name="org.eclipse.jetty.plus.webapp.PlusConfiguration" level="WARN"/>
+  <logger name="org.eclipse.jetty.webapp.StandardDescriptorProcessor" level="WARN"/>
+  <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR" />
+  <logger name="net.fortuna.ical4j.model.*" level="INFO" />
+  <logger name="rapla" level="INFO" />
+  <logger name="rapla.call" level="INFO" />
+  <logger name="rapla.standalone.plugin" level="WARN" />
+  <logger name="rapla.standalonefacade" level="WARN" />
+  <logger name="rapla.remotefacade" level="INFO" />
+  <logger name="rapla.serverfacade" level="WARN" />
+  <logger name="rapla.facade.trigger.allocation" level="WARN" />
+  <logger name="rapla.raplafile" level="INFO"/>
+  <logger name="rapla.remotestub" level="WARN"/>
+  <logger name="rapla.remotestore" level="INFO"/>
+  <logger name="rapla.rapladb" level="INFO"/>
+  <!--  
+  -->
+  <!-- Uncomment if you which to log all calls to the dispatch method
+  <logger name="rapla.server.org.rapla.storage.dbrm.RemoteStorage.dispatch.arguments" level="DEBUG" additivity="false">
+    <appender-ref ref="FILE_CALLS"/>
+  </logger>
+   -->
+  <!-- Uncomment if you which to log all results to the dispatch methods
+  <logger name="rapla.server.org.rapla.storage.dbrm.RemoteStorage.dispatch.result" level="DEBUG" additivity="false">
+    <appender-ref ref="FILE_CALLS"/>
+  </logger>
+    -->
+
+  
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="STDERR" />
+    <appender-ref ref="FILE" />
+  </root>
+
+  <appender name="FILE_CLIENT_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${jetty.home}/../../logs/rapla_client.csv</file>
+    <!--  log the last 30 days and put them in separate files -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${jetty.home}/../../logs/rapla_client%d{yyyy-MM-dd}.csv</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS};%msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="rapla.server.csvaccesslog" level="DEBUG" additivity="false">
+    <appender-ref ref="FILE_CLIENT_LOG"/>
+  </logger>  
+  
+</configuration>

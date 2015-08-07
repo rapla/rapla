@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!--  Redirect logging output to h --> 
+    <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+    <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
+    
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <!-- 
+    <Set name="ThreadPool">
+      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+        <Set name="minThreads">2</Set>
+        <Set name="maxThreads">50</Set>
+      </New>
+    </Set>
+     -->
+     
+    <Get name="ThreadPool">
+      <Set name="minThreads" type="int"><Property name="jetty.threadPool.minThreads" deprecated="threads.min" default="2"/></Set>
+      <Set name="maxThreads" type="int"><Property name="jetty.threadPool.maxThreads" deprecated="threads.max" default="50"/></Set>
+      <Set name="idleTimeout" type="int"><Property name="jetty.threadPool.idleTimeout" deprecated="threads.timeout" default="60000"/></Set>
+      <Set name="detailedDump">false</Set>
+    </Get>
+    
+    <!-- =========================================================== -->
+    <!-- Add shared Scheduler instance                               -->
+    <!-- =========================================================== -->
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler"/>
+      </Arg>
+    </Call>
+
+    <!-- =========================================================== -->
+    <!-- Http Configuration.                                         -->
+    <!-- This is a common configuration instance used by all         -->
+    <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, etc.)-->
+    <!-- It configures the non wire protocol aspects of the HTTP     -->
+    <!-- semantic.                                                   -->
+    <!--                                                             -->
+    <!-- This configuration is only defined here and is used by      -->
+    <!-- reference from other XML files such as jetty-http.xml,      -->
+    <!-- jetty-https.xml and other configuration files which         -->
+    <!-- instantiate the connectors.                                 -->
+    <!--                                                             -->
+    <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
+    <!-- for all configuration that may be set here.                 -->
+    <!-- =========================================================== -->
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https" /></Set>
+      <Set name="securePort"><Property name="jetty.httpConfig.securePort" deprecated="jetty.secure.port" default="8443" /></Set>
+      <Set name="outputBufferSize"><Property name="jetty.httpConfig.outputBufferSize" deprecated="jetty.output.buffer.size" default="32768" /></Set>
+      <Set name="outputAggregationSize"><Property name="jetty.httpConfig.outputAggregationSize" deprecated="jetty.output.aggregation.size" default="8192" /></Set>
+      <Set name="requestHeaderSize"><Property name="jetty.httpConfig.requestHeaderSize" deprecated="jetty.request.header.size" default="8192" /></Set>
+      <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" deprecated="jetty.response.header.size" default="8192" /></Set>
+      <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default="true" /></Set>
+      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" deprecated="jetty.send.date.header" default="false" /></Set>
+      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="512" /></Set>
+      <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
+      <!-- Uncomment to enable handling of X-Forwarded- style headers
+      <Call name="addCustomizer">
+        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+      </Call>
+      -->
+    </New>
+    
+    <Call name="addConnector">
+    <Arg>
+      <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
+        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" deprecated="http.acceptors" default="-1"/></Arg>
+        <Arg name="selectors" type="int"><Property name="jetty.http.selectors" deprecated="http.selectors" default="-1"/></Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <!-- uncomment to support proxy protocol
+            <Item>
+              <New class="org.eclipse.jetty.server.ProxyConnectionFactory"/>
+            </Item>-->
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="host"><Property name="jetty.http.host" deprecated="jetty.host" /></Set>
+        <Set name="port"><Property name="jetty.http.port" deprecated="jetty.port" default="8051" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" deprecated="http.timeout" default="30000"/></Set>
+        <Set name="soLingerTime"><Property name="jetty.http.soLingerTime" deprecated="http.soLingerTime" default="-1"/></Set>
+        <Set name="acceptorPriorityDelta"><Property name="jetty.http.acceptorPriorityDelta" deprecated="http.acceptorPriorityDelta" default="0"/></Set>
+        <Set name="acceptQueueSize"><Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0"/></Set>
+        <Set name="reuseAddress">false</Set>
+      </New>
+    </Arg>
+  </Call>
+    
+    
+
+<!-- Example configuration for ssl connector
+	 <Call name="addConnector">
+	     <Arg>
+	       <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+	         <Arg>
+	           <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
+	             <Set name="keyStore"><SystemProperty name="jetty.home" default="." />/.keystore</Set>
+	             <Set name="keyStorePassword">secret</Set>
+	             <Set name="certAlias">rapla</Set>
+	             <Set name="ExcludeCipherSuites">
+				   <Array type="String">
+				     <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+				     <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+				     <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+				     <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+				     <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+				     <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+				     <Item>SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA</Item>
+				     <Item>SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA</Item>
+				     <Item>TLS_DHE_RSA_WITH_AES_256_CBC_SHA256</Item>
+				     <Item>TLS_DHE_DSS_WITH_AES_256_CBC_SHA256</Item>
+				     <Item>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</Item>
+				     <Item>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</Item>
+				     <Item>TLS_DHE_RSA_WITH_AES_128_CBC_SHA256</Item>
+				     <Item>TLS_DHE_DSS_WITH_AES_128_CBC_SHA256</Item>
+				     <Item>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</Item>
+				     <Item>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</Item>
+				   </Array>
+	             </Set>
+				 <Set name="ExcludeProtocols">
+				   <Array type="java.lang.String">
+				      <Item>SSLv3</Item>
+				   </Array>
+				 </Set>
+	           </New>
+	         </Arg>
+	         <Set name="port">8443</Set>
+	         <Set name="maxIdleTime">30000</Set>
+	       </New>
+	     </Arg>
+	   </Call>
+	  -->
+   
+    
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            --> 
+    <!-- =========================================================== -->
+   <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+            <!-- add a RequestLogHandler -->
+           <Item>
+              <New id="RequestLogHandler" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+   </Set>
+    
+   <Ref id="RequestLogHandler">
+      <Set name="requestLog">
+        <New id="requestLogImpl" class="ch.qos.logback.access.jetty.RequestLogImpl">
+           <Set name="fileName"><SystemProperty name="jetty.home"/>/resources/logback-access.xml</Set>
+        </New>
+      </Set>
+   </Ref>
+  
+   <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref id="contexts"/>
+        </Set>
+        <Call name="addAppProvider">
+            <Arg>
+              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+                <Set name="monitoredDirName"><Property name="jetty.home" default="." />/contexts</Set>
+                <Set name="scanInterval">1</Set>
+              </New>
+            </Arg>
+         </Call>
+      </New>
+    </Arg>
+   </Call>
+   
+   <!-- =========================================================== -->
+   <!-- extra options                                               -->
+   <!-- =========================================================== -->
+   <Set name="stopAtShutdown">true</Set>
+   <!-- ensure/prevent Server: header being sent to browsers        -->
+    
+</Configure>

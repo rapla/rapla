@@ -1,0 +1,18 @@
+<configuration scan="true" scanPeriod="30 seconds" >
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${jetty.home}/logs/request.log</file>
+    <!--  log the last 5 days and put them in separate files -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${jetty.home}/../../logs/request_%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>5</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%h %l %u %user %date "%r" %s %b</pattern>
+    </encoder>
+  </appender>
+
+  <appender-ref ref="FILE" />
+
+</configuration>

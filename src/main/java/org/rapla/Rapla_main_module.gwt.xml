@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- When updating your version of GWT, you should also update this DTD reference, 
+	so that your app can take advantage of the latest GWT module capabilities. -->
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.5.1//EN"
+  "http://google-web-toolkit.googlecode.com/svn/tags/2.5.1/distro-source/core/src/gwt-module.dtd">
+<module rename-to='Rapla_main_module'>
+	<!-- Specify the paths for translatable code -->
+	<source path='client' />
+	<source path='components/util' />
+	<source path='entities' />
+	<source path='entities/configuration' />
+	<source path='entities/configuration/internal' />
+	<source path='entities/domain' />
+	<source path='entities/domain/internal' />
+	<source path='entities/dynamictype' />
+	<source path='entities/dynamictype/internal' />
+	<source path='entities/internal' />
+	<source path='entities/storage' />
+	<source path='entities/storage/internal' />
+	<source path='components/xmlbundle' />
+	<source path='components/calendarview' />
+	<source path='plugin/abstractcalendar' />
+	<source path='plugin/abstractcalendar/server' />
+	<source path='components/xmlbundle/impl' />
+	<source path='gui' />
+	<source path='gui/toolkit' />
+	<source path='gui/internal/view' />
+	<source path='gui/internal/edit' />
+	<source path='gui/internal/edit/reservation' />
+	<source path='gui/internal/common' />
+	<source path='framework' />
+	<source path='framework/logger' />
+	<source path='facade' />
+	<source path='facade/internal' />
+	<source path='shared' />
+	<source path='storage/dbrm' />
+	<source path='storage/impl' />
+	<source path='storage/xml' />
+	<source path='storage' />
+	<source path='' includes="ConnectInfo.java" />
+	<source path='' includes="AppointmentFormaterImpl.java" />
+
+	<inherits name="Gwt_jre"/>
+<!-- 	<super-source path="../../../gwt-src/jre"/> -->
+	<!-- Specify the paths for translatable code -->
+	<inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/>
+</module>

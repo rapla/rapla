@@ -1,0 +1,754 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.rapla</groupId>
+	<artifactId>rapla</artifactId>
+	<version>2.0-SNAPSHOT</version>
+	<url>https://github.com/rapla/rapla</url>
+	<description>rapla - resource scheduling and event planing</description>
+	<name>rapla - resource scheduling and event planing</name>
+	<inceptionYear>2000</inceptionYear>
+	<licenses>
+		<license>
+			<name>GNU GPL v3</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<name>Christopher Kohlhaas</name>
+			<email>christopher.kohlhaas@gmail.com</email>
+			<organizationUrl>https://github.com/kohlhaas</organizationUrl>
+		</developer>
+		<developer>
+			<name>Martin Geuer</name>
+			<email>martin.geuer@gmail.com</email>
+			<organizationUrl>https://github.com/mgeuer</organizationUrl>
+		</developer>
+	</developers>
+	<organization>
+		<name>Rapla</name>
+		<url>http://rapla.org</url>
+	</organization>
+	<packaging>war</packaging>
+	<scm>
+		<connection>scm:git:git://github.com/rapla/rapla.git</connection>
+		<url>https://github.com/rapla/rapla.git</url>
+	</scm>
+
+	<properties>
+
+		<extra.ginModules>org.rapla.gwt.client.plugin.TestGWTModule</extra.ginModules>
+		<!-- <rapla.gwt.plugins>org.rapla.gwt.client.plugin.TestGWTModule</rapla.gwt.plugins> -->
+		<slf4j.version>1.7.12</slf4j.version>
+		<logback.version>1.1.3</logback.version>
+		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
+		<!-- <jetty.version>9.3.0.v20150612</jetty.version> -->
+		<jetty.version>9.3.1.v20150714</jetty.version>
+		<maven.install.skip>false</maven.install.skip>
+		<gwt.version>2.7.0</gwt.version>
+		<gwt.plugin.version>2.7.0</gwt.plugin.version>
+		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
+		<maven.compiler.source>1.7</maven.compiler.source>
+		<maven.compiler.target>1.7</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<gson.version>2.3.1</gson.version>
+		<javax.inject.version>1</javax.inject.version>
+		<supercsv.version>2.0.1</supercsv.version>
+		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
+		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
+		<!-- Text Properties -->
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+		<doc.date>${maven.build.timestamp}</doc.date>
+		<doc.version>${project.version}</doc.version>
+		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
+		<doc.revision></doc.revision>
+		<doc.year>2000-2015</doc.year>
+		<doc.copyright>Rapla Team</doc.copyright>
+		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
+		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
+		<doc.homepage>http://rapla.org</doc.homepage>
+	</properties>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<build>
+		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
+		<resources>
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/*.xml</include>
+					<include>**/*.txt</include>
+					<include>**/*.properties</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/*.xml</exclude>
+					<exclude>**/*.txt</exclude>
+					<exclude>**
+					/*.properties</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>${basedir}/src/main/gwt-jre</directory>
+				<excludes>
+					<exclude>jre</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.3</version>
+				<extensions>true</extensions>
+				<configuration>
+				    <serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
+				<configuration>
+					<!-- <compilerId>eclipse</compilerId> -->
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+				</configuration>
+				<!-- <dependencies> <dependency> <groupId>org.codehaus.plexus</groupId> 
+					<artifactId>plexus-compiler-eclipse</artifactId> <version>2.5</version> </dependency> 
+					</dependencies> -->
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.18.1</version>
+				<configuration>
+					<includes>
+						<include>**/bootstrap/*.*</include>
+					</includes>
+					<excludes>
+						<exclude>**/bootstrap/*.png</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<archiveClasses>true</archiveClasses>
+					<warSourceExcludes>Rapla/Rapla.nocache.js</warSourceExcludes>
+					<packagingExcludes>**/*.java</packagingExcludes>
+					<warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
+					<webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>gwt-maven-plugin</artifactId>
+				<version>${gwt.plugin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<productionMode>${gwt.plugin.productionmode}</productionMode>
+					<runTarget>Rapla.html</runTarget>
+					<module>org.rapla.Rapla</module>
+					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>Rapla Client Jar</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/webclient</outputDirectory>
+							<finalName>raplaclient</finalName>
+							<excludes>
+								<exclude>**/*.gwt.xml</exclude>
+								<exclude>org/rapla/gwt/**</exclude>
+								<exclude>org/rapla/bootstrap/*</exclude>
+								<exclude>**/Slf4jAdapter**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/storage/xml/**</exclude>
+								<exclude>**/storage/dbfile/**</exclude>
+								<exclude>**/storage/dbsql/**</exclude>
+								<exclude>**/servletpages/**</exclude>
+								<exclude>se/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>Rapla Bootstrap Jar</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<finalName>raplabootstrap</finalName>
+							<includes>
+								<include>org/rapla/bootstrap/*.*</include>
+							</includes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.10</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.google.code.gson</groupId>
+									<artifactId>gson</artifactId>
+									<version>${gson.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>javax.inject</groupId>
+									<artifactId>javax.inject</artifactId>
+									<version>${javax.inject.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>net.sf.supercsv</groupId>
+									<artifactId>super-csv</artifactId>
+									<version>${supercsv.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+							<outputDirectory>${project.build.directory}/wars</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>true</overWriteSnapshots>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<!-- <dependencies> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-server</artifactId> <version>${jetty.version}</version> 
+					<exclusions> <exclusion> <artifactId>javax.servlet</artifactId> <groupId>org.eclipse.jetty.orbit</groupId> 
+					</exclusion> </exclusions> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-webapp</artifactId> <version>${jetty.version}</version> 
+					</dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-jndi</artifactId> 
+					<version>${jetty.version}</version> <exclusions> <exclusion> <artifactId>javax.mail.glassfish</artifactId> 
+					<groupId>org.eclipse.jetty.orbit</groupId> </exclusion> </exclusions> </dependency> 
+					<dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-plus</artifactId> 
+					<version>${jetty.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+					<artifactId>jetty-deploy</artifactId> <version>${jetty.version}</version> 
+					</dependency> </dependencies> -->
+				<executions>
+					<!-- <execution> <id>jetty-run</id> <goals> <goal>run</goal> </goals> 
+						<phase>compile-test</phase> <configuration> <target> <echo>starting</echo> 
+						<property name="compile_classpath" refid="maven.compile.classpath" /> <property 
+						name="runtime_classpath" refid="maven.runtime.classpath" /> <property name="test_classpath" 
+						refid="maven.test.classpath" /> <property name="plugin_classpath" refid="maven.plugin.classpath" 
+						/> <echo message="compile classpath: ${compile_classpath}" /> <echo message="runtime 
+						classpath: ${runtime_classpath}" /> <echo message="test classpath: ${test_classpath}" 
+						/> <echo message="plugin classpath: ${plugin_classpath}" /> <java classname="org.rapla.bootstrap.RaplaServerLoader" 
+						fork="false" failonerror="true"> <classpath refid="maven.test.classpath" 
+						/> <classpath refid="maven.compile.classpath" /> <classpath refid="maven.plugin.classpath" 
+						/> <classpath> <pathelement location="src/main/java"/> </classpath> <sysproperty 
+						key="jetty.home" value="src/test" /> </java> </target> </configuration> </execution> -->
+					<execution>
+						<id>PluginList</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<echo>creating plugin meta</echo>
+								<property name="compile_classpath" refid="maven.compile.classpath" />
+								<property name="runtime_classpath" refid="maven.runtime.classpath" />
+								<property name="test_classpath" refid="maven.test.classpath" />
+								<property name="plugin_classpath" refid="maven.plugin.classpath" />
+
+								<echo message="compile classpath: ${compile_classpath}" />
+								<echo message="runtime classpath: ${runtime_classpath}" />
+								<echo message="test classpath:    ${test_classpath}" />
+								<echo message="plugin classpath:  ${plugin_classpath}" />
+								<!-- fork="true" -->
+								<java classname="org.rapla.framework.ServiceListCreator"
+									failonerror="true">
+									<classpath refid="maven.test.classpath" />
+									<sysproperty key="jetty.home" value="src/test" />
+									<arg value="${project.build.directory}/classes" />
+									<arg
+										value="${project.build.directory}/classes/META-INF/rapla-plugin.list" />
+								</java>
+							</target>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>loadbuildproperties</id>
+						<phase>prepare-package</phase>
+						<configuration>
+							<exportAntProperties>true</exportAntProperties>
+							<tasks>
+								<echo>Reading build.properties</echo>
+								<available file="${basedir}/${build.properties}"
+									property="build.properties.present" />
+
+								<copy todir="${basedir}">
+									<fileset dir="${basedir}">
+										<include name="build.properties.template" unless="build.properties.present" />
+									</fileset>
+									<mapper type="glob" from="*.template" to="*" />
+								</copy>
+								<property file="${basedir}/build.properties" />
+								<property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
+								<property name="keystore.password" value="raplaselfsigned" />
+								<property name="keystore.keypass" value="${keystore.password}" />
+								<property name="keystore.alias" value="rapla" />
+								<property name="doc.name" value="rapla" />
+								<property name="doc.version">${project.version}</property>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>generateclientlibsproperties</id>
+						<phase>prepare-package</phase>
+						<configuration>
+							<tasks>
+								<path id="dist.contents">
+									<fileset dir="${webapp.dir}/webclient">
+										<include name="*.jar" />
+									</fileset>
+								</path>
+								<path id="dist.contents.dir">
+									<dirset dir="${webapp.dir}/webclient">
+									</dirset>
+								</path>
+								<property name="prop.dist.contents" refid="dist.contents" />
+								<property name="prop.dist.contents.dir" refid="dist.contents.dir" />
+								<echo file="${webapp.dir}/WEB-INF/classes/clientlibs.properties">${prop.dist.contents}</echo>
+								<replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
+									token="${prop.dist.contents.dir}${file.separator}" value=""
+									preserveLastModified="true" />
+								<replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
+									token="${path.separator}" value=";" preserveLastModified="true" />
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jarsigner-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<alias>${keystore.alias}</alias>
+					<keystore>${keystore.file}</keystore>
+					<keypass>${keystore.keypass}</keypass>
+					<storepass>${keystore.password}</storepass>
+					<archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
+					<includes>
+						<include>*.jar</include>
+					</includes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.5.5</version>
+				<executions>
+					<execution>
+					    <id>rapla.distribution</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/distriubtion</outputDirectory>
+							<finalName>rapla-${project.version}</finalName>
+							<descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
+							<appendAssemblyId>false</appendAssemblyId>
+							<attach>false</attach>
+						</configuration>
+					</execution>
+					<execution>
+						<phase>package</phase>
+					    <id>rapla.jar</id>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}</outputDirectory>
+							<finalName>rapla-${project.version}</finalName>
+							<descriptor>${basedir}/src/assembly/rapla.jar.xml</descriptor>
+							<appendAssemblyId>false</appendAssemblyId>
+							<attach>true</attach>
+						</configuration>
+					</execution>
+					
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.4</version>
+				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<!-- <pluginManagement> <plugins> <plugin> <groupId>org.eclipse.m2e</groupId> 
+			<artifactId>lifecycle-mapping</artifactId> <version>1.0.0</version> <configuration> 
+			<lifecycleMappingMetadata> <pluginExecutions> <pluginExecution> <pluginExecutionFilter> 
+			<groupId>org.codehaus.mojo</groupId> <artifactId>exec-maven-plugin</artifactId> 
+			<versionRange>[1.0.0,)</versionRange> <goals> <goal>java</goal> </goals> 
+			</pluginExecutionFilter> <action> <execute> <runOnIncremental>true</runOnIncremental> 
+			</execute> </action> </pluginExecution> </pluginExecutions> </lifecycleMappingMetadata> 
+			</configuration> </plugin> </plugins> </pluginManagement> -->
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-antrun-plugin
+										</artifactId>
+										<versionRange>
+											[1.8,)
+										</versionRange>
+										<goals>
+											<goal>run</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<runOnIncremental>true</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	<profiles>
+		<profile>
+			<id>deploy</id>
+			<properties>
+				<gwt.plugin.productionmode>true</gwt.plugin.productionmode>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.6</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>${gson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mnode.ical4j</groupId>
+			<artifactId>ical4j</artifactId>
+			<version>1.0.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.8</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.0</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mailapi</artifactId>
+			<version>1.4.3</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>activation</artifactId>
+					<groupId>javax.activation</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>smtp</artifactId>
+			<version>1.4.7</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>activation</artifactId>
+					<groupId>javax.activation</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<version>${javax.inject.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<!-- TEST -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- GWT -->
+		<dependency>
+			<groupId>com.google.gwt</groupId>
+			<artifactId>gwt-dev</artifactId>
+			<version>${gwt.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.gwt</groupId>
+			<artifactId>gwt-user</artifactId>
+			<version>${gwt.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.gwt.inject</groupId>
+			<artifactId>gin</artifactId>
+			<version>2.1.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3-extras</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtbootstrap3</groupId>
+			<artifactId>gwtbootstrap3-extras</artifactId>
+			<version>${gwtbootstrap3.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<!-- Scope Runtime -->
+		<dependency>
+			<groupId>org.hsqldb</groupId>
+			<artifactId>hsqldb</artifactId>
+			<version>2.3.3</version>
+			<scope>provided</scope>
+		</dependency>
+		<!-- <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-server</artifactId> 
+			<version>${jetty.version}</version> <scope>provided</scope> <exclusions> 
+			<exclusion> <artifactId>javax.servlet</artifactId> <groupId>org.eclipse.jetty.orbit</groupId> 
+			</exclusion> </exclusions> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+			<artifactId>jetty-webapp</artifactId> <version>${jetty.version}</version> 
+			<scope>provided</scope> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+			<artifactId>jetty-jndi</artifactId> <version>${jetty.version}</version> <scope>provided</scope> 
+			<exclusions> <exclusion> <artifactId>javax.mail.glassfish</artifactId> <groupId>org.eclipse.jetty.orbit</groupId> 
+			</exclusion> </exclusions> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
+			<artifactId>jetty-plus</artifactId> <version>${jetty.version}</version> <scope>provided</scope> 
+			</dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-deploy</artifactId> 
+			<version>${jetty.version}</version> <scope>provided</scope> </dependency> -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-access</artifactId>
+			<version>${logback.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logback.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logback.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jul-to-slf4j</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>${jetty.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.servlet</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-webapp</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-jndi</artifactId>
+			<version>${jetty.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>javax.mail.glassfish</artifactId>
+					<groupId>org.eclipse.jetty.orbit</groupId>
+				</exclusion>
+			</exclusions>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-plus</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-deploy</artifactId>
+			<version>${jetty.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>
