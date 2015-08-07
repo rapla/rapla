@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,8 @@ import org.rapla.client.gwt.Rapla;
 import org.rapla.framework.logger.Logger;
 
 import com.google.gwt.inject.client.GinModule;
+
+import edu.emory.mathcs.backport.java.util.Arrays;
 
 /** Helper Class for automated creation of the rapla-plugin.list in the
  * META-INF directory. Can be used in the build environment.
@@ -113,8 +116,7 @@ public class ServiceListCreator
     private static void createGwtXml(File topDir, String gwtDestFile) throws IOException, ClassNotFoundException
     {
         final Set<String> list = plugins(gwtDestFile);
-        String destFile = topDir.getAbsolutePath() + File.separator + "org" + File.separator + "rapla"
-                + File.separator + "Rapla.gwt.xml";
+        String destFile = topDir.getAbsolutePath() + File.separator + "org" + File.separator + "rapla" + File.separator + "Rapla.gwt.xml";
         final File file = new File(destFile);
         if (file.exists())
         {
@@ -124,7 +126,21 @@ public class ServiceListCreator
         {
             file.getParentFile().mkdirs();
         }
-        System.out.println("generating gwt.xml file: "+destFile);
+        System.out.println("Reading inherits from META-INF/gwt.compiler.inherits");
+        final Enumeration<URL> inheritUrls = ServiceListCreator.class.getClassLoader().getResources("META-INF/gwt.compiler.inherits");
+        final Set<String> inheritsList = new HashSet<String>();
+        while(inheritUrls.hasMoreElements())
+        {
+            final InputStreamReader is = new InputStreamReader(inheritUrls.nextElement().openStream());
+            BufferedReader reader = new BufferedReader(is);
+            String inherit;
+            while ((inherit = reader.readLine()) != null)
+            {
+                inheritsList.add(inherit);
+            }
+        }
+        System.out.println("found inherits: "+inheritsList.toString());
+        System.out.println("generating gwt.xml file: " + destFile);
         final Writer writer = new BufferedWriter(new FileWriter(destFile));
         try
         {
@@ -141,8 +157,10 @@ public class ServiceListCreator
             writer.write("  <inherits name='com.google.gwt.user.theme.clean.Clean'/>\n");
             writer.write("  <inherits name='com.google.gwt.inject.Inject'/>\n");
             writer.write("  <inherits name='org.rapla.Rapla_main_module'/>\n");
-            writer.write("  <inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>\n");
-            writer.write("  <inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>\n");
+            for (String inherit : inheritsList)
+            {
+                writer.write("  <inherits name='"+inherit+"'/>\n");
+            }
             writer.write("  <source path='client'/>\n");
             writer.write("  <source path='plugin'/>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
