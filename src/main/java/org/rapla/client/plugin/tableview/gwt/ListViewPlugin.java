@@ -1,20 +1,20 @@
-package org.rapla.client.plugin.weekview.gwt;
+package org.rapla.client.plugin.tableview.gwt;
 
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.plugin.weekview.CalendarWeekView;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter;
+import org.rapla.client.plugin.tableview.CalendarTableView;
+import org.rapla.client.plugin.tableview.CalendarTableViewPresenter;
 
 import com.google.gwt.inject.client.GinModule;
 import com.google.gwt.inject.client.binder.GinBinder;
 import com.google.gwt.inject.client.multibindings.GinMultibinder;
 
-public class WeekViewPluginModule implements GinModule {
+public class ListViewPlugin implements GinModule {
 
     @Override
     public void configure(GinBinder binder) {
         GinMultibinder<CalendarPlugin> uriBinder = GinMultibinder.newSetBinder(binder, CalendarPlugin.class);
-        uriBinder.addBinding().to(CalendarWeekViewPresenter.class);
-        binder.bind(CalendarWeekView.class).to(CalendarWeekViewImpl.class);
+        uriBinder.addBinding().to(CalendarTableViewPresenter.class);
+        binder.bind(CalendarTableView.class).to(CalendarListViewImpl.class);
     }
 
 }
