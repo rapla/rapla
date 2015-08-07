@@ -49,6 +49,7 @@
 		<maven.install.skip>false</maven.install.skip>
 		<gwt.version>2.7.0</gwt.version>
 		<gwt.plugin.version>2.7.0</gwt.plugin.version>
+		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -166,6 +167,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<productionMode>${gwt.plugin.productionmode}</productionMode>
 					<runTarget>Rapla.html</runTarget>
 					<module>org.rapla.Rapla</module>
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
@@ -500,6 +502,9 @@
 	<profiles>
 		<profile>
 			<id>deploy</id>
+			<properties>
+				<gwt.plugin.productionmode>true</gwt.plugin.productionmode>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
