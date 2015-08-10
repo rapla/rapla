@@ -47,6 +47,8 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	    out.println("<html>");
 	    out.println("<head>");
 	    out.println("  <title>" + getTitle() + "</title>");
+	    out.println("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "bootstrap.min.css\" type=\"text/css\">");
 	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "calendar.css\" type=\"text/css\">");
 	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "default.css\" type=\"text/css\">");
 	    // tell the html page where its favourite icon is stored
@@ -158,15 +160,16 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	       Collections.sort( rows);
 	       
 	       StringBuffer buf = new StringBuffer();
-	       buf.append("<table class='eventtable'>");
-	       
+	       buf.append("<table class='table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
+	       buf.append("<thead><tr>");
 	       for (RaplaTableColumn<?> col: columPluigns)
 	       {
 	           buf.append("<th>");
 	           buf.append(col.getColumnName());
 	           buf.append("</th>");
 	       }
-	       
+	       buf.append("</tr></thead>");
+	       buf.append("<tbody>");
 	       for (TableRow row :rows)
 	       {
 	           buf.append("<tr>");
@@ -180,6 +183,7 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	          
 	           buf.append("</tr>");
 	       }
+	       buf.append("</tbody>");
 	       buf.append("</table>");
 	       final String result = buf.toString();
 	       return result;
