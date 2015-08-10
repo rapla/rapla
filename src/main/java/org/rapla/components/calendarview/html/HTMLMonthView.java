@@ -27,6 +27,7 @@ public class HTMLMonthView extends AbstractHTMLView {
     public final static int ROWS = 6; //without the header row
     public final static int COLUMNS = 7;
     HTMLSmallDaySlot[] slots;
+    int offset = 0;
     
     public Collection<Block> getBlocks() {
         ArrayList<Block> list = new ArrayList<Block>();
@@ -38,7 +39,14 @@ public class HTMLMonthView extends AbstractHTMLView {
     
     protected boolean isEmpty(int column) {
         for ( int i=column;i < slots.length;i+=7 ) {
-            if (!slots[i].isEmpty() ) {
+            int j = i - offset;
+            if (j<0)
+            {
+                j+=7;
+            }
+            final HTMLSmallDaySlot slot = slots[j];
+            final boolean empty = slot.isEmpty();
+            if (!empty ) {
                 return false;
             }
         }
@@ -51,6 +59,18 @@ public class HTMLMonthView extends AbstractHTMLView {
         
         // calculate the blocks
         final Date startDate = getStartDate();
+        Date counter = startDate;
+        int firstDayOfWeek = getFirstWeekday();
+        if ( DateTools.getWeekday(counter) != firstDayOfWeek)
+        {
+            counter = DateTools.getFirstWeekday(counter, firstDayOfWeek);
+            if ( counter.after( startDate))
+            {
+                counter = DateTools.addDays( counter,  -7);
+            }
+        }
+        Date time = counter;
+        offset = (int) DateTools.countDays(counter,startDate);
         PreperationResult prep = b.prepareBuild(startDate,getEndDate());
         slots = new HTMLSmallDaySlot[ daysInMonth ];
         for (int i=0;i<slots.length;i++) {
@@ -60,27 +80,17 @@ public class HTMLMonthView extends AbstractHTMLView {
         b.build(this, prep.getBlocks());
         int lastRow = 0;
         HTMLSmallDaySlot[][] table = new HTMLSmallDaySlot[ROWS][COLUMNS];
-        Date counter = startDate;
-        int firstDayOfWeek = getFirstWeekday();
-		if ( DateTools.getWeekday(counter) != firstDayOfWeek)
-        {
-			counter = DateTools.getFirstWeekday(counter, firstDayOfWeek);
-			if ( counter.after( startDate))
-			{
-				counter = DateTools.addDays( counter,  -7);
-			}
-        }
-		Date time = counter;
-		int offset = (int) DateTools.countDays(counter,startDate);
+        
         // add headers
      
 	    counter = startDate;
         for (int i=0; i<daysInMonth; i++) {
             int column = (offset + i) % 7;
             int row = (DateTools.getDayOfMonth(counter) + 6 - column ) /  7;
-            table[row][column] = slots[i];
+            final HTMLSmallDaySlot slot = slots[i];
+            slot.sort();
+            table[row][column] = slot;
             lastRow = row;
-            slots[i].sort();
             counter = DateTools.addDays(counter,1);
         }
         
