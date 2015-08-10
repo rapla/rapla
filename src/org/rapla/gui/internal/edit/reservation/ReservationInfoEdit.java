@@ -27,7 +27,6 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -39,6 +38,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -152,8 +152,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         header.add( tabSelector );
   //      header.add( permissionButton );
         
-        Border border = new EmptyLineBorder();
-        header.setBorder(  BorderFactory.createTitledBorder( border, getString("reservation_type") +":"));
+        header.setBorder(  BorderFactory.createTitledBorder( new EmptyLineBorder(), getString("reservation_type") +":"));
         Dimension dim = typeSelector.getPreferredSize();
         typeSelector.setBounds(135,0, dim.width,dim.height);
         
@@ -292,6 +291,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             if (source == tabSelector ) {
                 boolean tabSelected = selectedView == TabSelected.Info;
                 selectedView = tabSelected ? TabSelected.Main : TabSelected.Info;
+                editUI.setSelectedView( tabSelected ? AttributeAnnotations.VALUE_EDIT_VIEW_MAIN : AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL);
                 fireDetailChanged();
                 if ( selectedView == TabSelected.Info )
                 {
@@ -428,8 +428,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             int maxCompHeightInRow = 0;
             for (int i=0;i<fields.size();i++) {
                 EditField field = fields.get(i);
-                String tabview = getAttribute( i ).getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
-                if ( !tabview.equals("main-view") ) {
+                final Attribute attribute = getAttribute( i );
+                if ( !super.isVisible(attribute)) {
                     continue;
                 }
                 editPanel.add(new JLabel(getFieldName(field) + ": "),col + "," + row +",l,c");
@@ -466,6 +466,13 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             if (fields.size()>0)
                 fields.get(0).getComponent().requestFocus();
         }
+        
+        @Override
+        protected boolean isVisible(Attribute attribute)
+        {
+            return true;
+        }
+        
 
         public void stateChanged(ChangeEvent evt) {
             try {

@@ -48,6 +48,7 @@ import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.plugin.defaultwizard.DefaultWizard;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
@@ -299,56 +300,15 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
        		    }
        		    app.move(app.getStart(), end);
        		}
-            Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-            if (markedAllocatables != null )
-            {
-                for (Reservation event: newReservations)
-                {
-                    if ( event.getAllocatables().length == 0)
-                    {
-                        for ( Allocatable alloc:markedAllocatables)
-                        {
-                            if (!event.hasAllocated(alloc))
-                            {
-                                event.addAllocatable( alloc);
-                            }
-                        }   
-                    }
-                }
-            }
-			
-//			if ( newReservations.size() == 1)
-//			{
-//				Reservation next = newReservations.iterator().next();
-//				getReservationController().edit( next);
-//			}
-//			else
-			{
-				Collection<Reservation> list = new ArrayList<Reservation>();
-				for ( Reservation reservation:newReservations)
-				{
-					Reservation cast = reservation;
-					User lastChangedBy = cast.getLastChangedBy();
-					if ( lastChangedBy != null && !lastChangedBy.equals(getUser()))
-					{
-						throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
-					}
-					list.add( cast);
-				}
-				Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
-                getEditController().edit(array, getMainComponent());
-				//SaveUndo<Reservation> saveUndo = new SaveUndo<Reservation>(getContext(), list, null);
-				//getModification().getCommandHistory().storeAndExecute( saveUndo);
-			}
-			
+            Collection<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, getUser());
+            Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
+            getEditController().edit(array, getMainComponent());
 		}
 		catch (RaplaException ex)
 		{
 			showException( ex, getMainComponent());
 		}
     }
-
-    
 	
 }
 

@@ -241,9 +241,22 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
-    public  boolean isValid(Object obj) {
-        return true;
-    }
+//    public  boolean isValid(Object obj) {
+//        if ( type.equals( AttributeType.CATEGORY))
+//        {
+//            if ( !(obj instanceof Category))
+//            {
+//                return false;
+//            }
+//            final Category rootCategory = (Category)getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+//            if (rootCategory != null)
+//            {
+//                final Category cat = (Category)obj;
+//                rootCategory.isAncestorOf( cat);
+//            }
+//        }
+//        return true;
+//    }
 
     public boolean isOptional() {
         return bOptional;
@@ -578,11 +591,23 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                    //System.out.println( attribute.getConstraintKeys());
                    throw new RaplaException("Can't find " + ConstraintIds.KEY_ROOT_CATEGORY + " for attribute " + attribute);
                 }
-                Category categoryFromPath = rootCategory.getCategoryFromPath(path);
-				if ( categoryFromPath == null)
-				{
-					// TODO call convert that tries to convert from a string path
-				}
+                Category categoryFromPath; 
+                try
+                {
+                    categoryFromPath = rootCategory.getCategoryFromPath(path);
+                } 
+                catch (EntityNotFoundException ex)
+                {
+                    while ( rootCategory.getParent() != null)
+                    {
+                        rootCategory = (CategoryImpl) rootCategory.getParent();
+                        if ( rootCategory.isAncestorOf( rootCategory))
+                        {
+                            throw new IllegalStateException("Illegal category circle detected!");
+                        }
+                    }
+                    categoryFromPath = rootCategory.getCategoryFromPath(path);
+                }
                 return categoryFromPath;
             }
         } else if (trim.length() == 0)

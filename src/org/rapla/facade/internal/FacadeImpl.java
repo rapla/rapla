@@ -376,11 +376,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	final class UpdateCommandModification implements Runnable, Command {
-		Collection<ModificationListener> listenerList;
+		ModificationListener listenerList;
 		ModificationEvent modificationEvent;
 
-		public UpdateCommandModification(Collection<ModificationListener> modificationListeners, UpdateResult evt) {
-			this.listenerList = new ArrayList<ModificationListener>(modificationListeners);
+		public UpdateCommandModification(ModificationListener modificationListeners, UpdateResult evt) {
+			this.listenerList = modificationListeners;
 			this.modificationEvent = evt;
 		}
 
@@ -389,7 +389,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 
 		public void run() {
-			for (ModificationListener listener: listenerList) {
+			//]for (ModificationListener listener: listenerList)
+		    ModificationListener listener = listenerList;
+			{
 				
 				try {
 					if (isAborting())
@@ -416,14 +418,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		{
 			Collection<ModificationListener> modificationListeners = directListenerList;
-			if (modificationListeners.size() > 0 ) {
-				new UpdateCommandModification(modificationListeners,evt).execute(); 
+			for (ModificationListener mod:modificationListeners)
+			{
+			//if (modificationListeners.size() > 0 ) {
+			   
+				new UpdateCommandModification(mod,evt).execute(); 
 			}
 		}
 		{
 			Collection<ModificationListener> modificationListeners = getModificationListeners();
-			if (modificationListeners.size() > 0 ) {
-				notifyQueue.schedule(new UpdateCommandModification(modificationListeners, evt),0);
+            for (ModificationListener mod:modificationListeners)
+            {
+				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt),0);
 			}
 			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
 			if (allocationChangeListeners.size() > 0) {
@@ -736,10 +742,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 								
 								Appointment appointment1 = appointment;
 								Appointment appointment2 = conflictingAppointment;
-								if (ConflictImpl.isConflict(appointment1, appointment2, today))
-		                		{
-		                			ConflictImpl.addConflicts(conflictList, allocatable,appointment1, appointment2, today);
-		                		}
+								ConflictImpl.checkAndAddConflicts(conflictList, allocatable,appointment1, appointment2, today);
 							}
 						}
 					}

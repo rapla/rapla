@@ -205,6 +205,10 @@ public class ReservationReader extends RaplaXMLReader {
                 String groupCanReadEventsFromOthers = Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS;
                 addNewPermissionWithGroup(reservation, Permission.READ, groupCanReadEventsFromOthers);
             }
+            if ( reservation.getAppointmentList().size() == 0)
+            {
+                
+            }
             add(reservation);
         }
         

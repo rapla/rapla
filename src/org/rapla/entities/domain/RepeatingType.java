@@ -14,10 +14,12 @@ package org.rapla.entities.domain;
 
 
 /**Currently Rapla supports the following types:
+  <ul>
         <li>weekly</li>
         <li>daily</li>
         <li>monthly</li>
         <li>yearly</li>
+        </ul>
  */
 public enum RepeatingType {
     WEEKLY("weekly"),

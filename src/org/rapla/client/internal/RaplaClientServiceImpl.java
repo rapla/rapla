@@ -100,6 +100,7 @@ import org.rapla.gui.internal.edit.annotation.ConflictCreationAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.EmailAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedColumnsAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExpectedRowsAnnotationEdit;
+import org.rapla.gui.internal.edit.annotation.ExportEventDescriptionAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ExportEventNameAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.LocationAnnotationEdit;
 import org.rapla.gui.internal.edit.annotation.ResourceTreeNameAnnotationEdit;
@@ -205,7 +206,6 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
     	getLogger().info("Starting gui ");
 		
         super.init( );
-
         facadeName = m_config.getChild("facade").getValue("*");
 
         addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
@@ -238,6 +238,7 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ConflictCreationAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
+        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
         
         frameControllerList = new FrameControllerList(getLogger().getChildLogger("framelist"));
         addContainerProvidedComponentInstance(FrameControllerList.class,frameControllerList);
@@ -325,11 +326,19 @@ public class RaplaClientServiceImpl extends ContainerImpl implements ClientServi
 			Runnable task = createTask(command);
 			return parent.schedule(task, delay, period);
 		}
+
+		@Override
+        public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
+        {
+            Runnable task = createTask(command);
+            return parent.scheduleSynchronized(synchronizationObject, task, delay);
+        }
 		
 		public String toString()
 		{
 			return parent.toString();
 		}
+
 	}
 	
     public ClientFacade getFacade() throws RaplaContextException {

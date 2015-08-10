@@ -39,7 +39,7 @@ public class NavButton extends AbstractButton implements MouseListener {
 
     ButtonStateChecker m_checker = new ButtonStateChecker();
     /** You can set the alignment of the arrow with one of these four characters:
-        '<', '^', '>', 'v'
+        '&lt;', '^', '&gt;', 'v'
      */
     public NavButton(char type) {
         this(type,18);

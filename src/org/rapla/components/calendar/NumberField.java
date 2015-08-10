@@ -16,7 +16,7 @@ import java.awt.ComponentOrientation;
 
 /**
  * The NumberField only accepts integer values.
- * <strong>Warning!<strong> Currently only Longs are supported.
+ * <strong>Warning!</strong> Currently only Longs are supported.
  */
 
 public class NumberField extends AbstractBlockField {

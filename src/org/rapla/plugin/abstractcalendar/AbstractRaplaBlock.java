@@ -25,6 +25,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.BuildContext;
 
@@ -36,7 +37,7 @@ public abstract class AbstractRaplaBlock implements Block
     Date m_end;
     RaplaLocale m_raplaLocale;
     protected String timeStringSeperator = " -";
-
+    
     protected AbstractRaplaBlock() {
 
     }
@@ -46,15 +47,27 @@ public abstract class AbstractRaplaBlock implements Block
         m_raplaLocale = getBuildContext().getRaplaLocale();
     }
 
-    public String getName(Named named) {
+    public String getResourceName(Named named) {
         return named.getName(m_raplaLocale.getLocale());
     }
     
     public String getName()
     {
-    	return getReservation().getName( m_raplaLocale.getLocale());
+        return getReservationName();
     }
-
+    
+    public String getReservationName()
+    {
+        String annotiationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+        String name = getReservation().format( m_raplaLocale.getLocale(), annotiationName, m_context.getAppointmentBlock());
+//        final String appointmentBlockExtraInfo = getContext().getAppointmentBlockExtraInfo();
+//        if ( appointmentBlockExtraInfo != null)
+//        {
+//            name = appointmentBlockExtraInfo + name; 
+//        }
+        return name;
+    }
+    
     public Date getStart()  {
         return m_start;
     }
@@ -156,12 +169,12 @@ public abstract class AbstractRaplaBlock implements Block
             // Don't show startTime if its 00:00
             /* TODO nicht sinnvoll auch 0:00 als Start und Endzeit anzuzeigen?*/
             if ( !DateTools.isMidnight(getStart()) ) {
-                timeString = loc.formatTime( getStart() );
+                timeString += loc.formatTime( getStart() );
             }
             if ( !small && !DateTools.isMidnight(getEnd().getTime() + 1))  {
-				timeString = timeString + timeStringSeperator;
-                timeString = timeString + loc.formatTime( getEnd());
-           }
+				timeString += timeStringSeperator;
+                timeString += loc.formatTime( getEnd());
+            }
         }
         return timeString;
     }

@@ -88,7 +88,6 @@ abstract public class RaplaXMLWriter extends XMLWriter
         return logger;
     }
 
- 
     protected void printTimestamp(Timestamp stamp) throws IOException {
         final Date createTime = stamp.getCreateTime();
         final Date lastChangeTime = stamp.getLastChanged();
@@ -228,7 +227,22 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
     private String getKeyPath(CategoryImpl rootCategory, Category categoryValue) throws EntityNotFoundException {
-        List<String> pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
+        List<String> pathForCategory= null;
+        try
+        {
+            pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
+        } catch (EntityNotFoundException ex)
+        {
+            while ( rootCategory.getParent() != null)
+            {
+                rootCategory = (CategoryImpl) rootCategory.getParent();
+                if ( rootCategory.isAncestorOf( rootCategory))
+                {
+                    throw new IllegalStateException("Illegal category circle detected!");
+                }
+            }
+            pathForCategory = rootCategory.getPathForCategory(categoryValue, true );
+        }
         String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
         return keyPathString;
     }

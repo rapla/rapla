@@ -17,7 +17,9 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -130,28 +132,56 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 			Reservation r = getModification().newReservation( newClassification );
 	    	Appointment appointment = createAppointment(model);
 	        r.addAppointment(appointment);
-	        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-	        if ( markedAllocatables == null || markedAllocatables.size() == 0)
-	        {
-		        Allocatable[] allocatables = model.getSelectedAllocatables();
-		        if ( allocatables.length == 1)
-		        {
-		            r.addAllocatable( allocatables[0]);
-		        }
-	        }
-	        else
-	        {
-	        	for ( Allocatable alloc: markedAllocatables)
-	        	{
-	        		r.addAllocatable( alloc);
-	        	}
-	        }
-	        getReservationController().edit( r );
+	        final Collection<Reservation> singletonList = Collections.singletonList( r);
+            Collection<Reservation> list = addAllocatables(model, singletonList, getUser());
+            Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
+            getEditController().edit(array,getMainComponent());
 		}
 		catch (RaplaException ex)
 		{
 			showException( ex, getMainComponent());
 		}
+    }
+
+    public static Collection<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
+    {
+        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+        if (markedAllocatables == null || markedAllocatables.size() == 0)
+        {
+            Collection<Allocatable> allocatables = Arrays.asList(model.getSelectedAllocatables());
+            if (allocatables.size() == 1)
+            {
+                addAlloctables(newReservations, allocatables);
+            }
+        }
+        else
+        {
+            Collection<Allocatable> allocatables = markedAllocatables;
+            addAlloctables(newReservations, allocatables);
+        }
+        Collection<Reservation> list = new ArrayList<Reservation>();
+        for (Reservation reservation : newReservations)
+        {
+            Reservation cast = reservation;
+            User lastChangedBy = cast.getLastChangedBy();
+            if (lastChangedBy != null && !lastChangedBy.equals(user))
+            {
+                throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
+            }
+            list.add(cast);
+        }
+        return list;
+    }
+	
+    static private void addAlloctables(Collection<Reservation> events, Collection<Allocatable> allocatables)
+    {
+        for (Reservation event : events)
+        {
+            for (Allocatable alloc : allocatables)
+            {
+                event.addAllocatable(alloc);
+            }
+        }
     }
 
 	protected Appointment createAppointment(CalendarModel model)

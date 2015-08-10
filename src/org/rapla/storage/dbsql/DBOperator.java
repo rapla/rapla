@@ -159,7 +159,11 @@ public class DBOperator extends LocalAbstractCachableOperator
         boolean withTransactionSupport = true;
         return createConnection(withTransactionSupport);
     }
+    
     public Connection createConnection(boolean withTransactionSupport) throws RaplaException {
+        return createConnection(withTransactionSupport, 0);
+    }
+    private Connection createConnection(final boolean withTransactionSupport, final int count) throws RaplaException {
     	Connection connection = null;
         try {
         	 //datasource lookup 
@@ -242,6 +246,11 @@ public class DBOperator extends LocalAbstractCachableOperator
         	 if ( connection != null)
         	 {
         		 close(connection);
+        	 }
+        	 if ( ex instanceof SQLException && count <2)
+        	 {
+        	     getLogger().warn("Getting error " + ex.getMessage() + ". Retrying.");
+        	     return createConnection(withTransactionSupport, count+1);
         	 }
              if ( ex instanceof RaplaDBException)
              {
@@ -736,8 +745,11 @@ public class DBOperator extends LocalAbstractCachableOperator
     	}
         try 
         {
-        	getLogger().debug("Closing "  + connection);
-        	connection.close();
+            if (!connection.isClosed())
+        	{
+                getLogger().debug("Closing "  + connection);
+        	    connection.close();
+        	}
         } 
         catch (SQLException e) 
         {
@@ -751,7 +763,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         raplaSQLInput.loadAll( connection );
         Collection<Entity> list = entityStore.getList();
 		cache.putAll( list);
-        resolveInitial( list, this);
+		resolveInitial( list, this );
+        removeInconsistentEntities(cache, list);
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll( migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
@@ -773,7 +786,6 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
         processPermissionGroups();
 	}
-    
     
     @SuppressWarnings("deprecation")
     protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException {

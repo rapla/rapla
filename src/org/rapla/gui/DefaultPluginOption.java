@@ -96,7 +96,6 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     /**
      * 
      * @param config
-     * @throws RaplaException 
      */
     protected void readConfig( Configuration config)   {
     	

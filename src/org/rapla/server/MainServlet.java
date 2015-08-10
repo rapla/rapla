@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -346,7 +347,9 @@ public class MainServlet extends HttpServlet {
 	protected String getFirstAdmin() throws RaplaContextException,	RaplaException {
 		String username = null;
 		StorageOperator operator = server.getContext().lookup(StorageOperator.class);
-		for (User u:operator.getUsers())
+		Set<User> sorted = new TreeSet<User>( User.USER_COMPARATOR);
+		sorted.addAll( operator.getUsers());
+		for (User u:sorted)
 		{
 		    if ( u.isAdmin())
 		    {

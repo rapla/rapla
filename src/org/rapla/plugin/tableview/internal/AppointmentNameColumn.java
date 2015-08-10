@@ -6,6 +6,7 @@ import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.plugin.tableview.AppointmentTableColumn;
@@ -24,7 +25,7 @@ public final class AppointmentNameColumn extends RaplaComponent implements Appoi
 		//	getLocale().
 		Appointment appointment = block.getAppointment();
 		Reservation reservation = appointment.getReservation();
-		return reservation.getName(getLocale());
+		return reservation.format(getLocale(),DynamicTypeAnnotations.KEY_NAME_FORMAT, block);
 	}
 
 	public String getColumnName() {

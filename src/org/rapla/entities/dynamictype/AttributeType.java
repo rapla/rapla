@@ -15,12 +15,14 @@ package org.rapla.entities.dynamictype;
 
 /** Attributes are to DynamicTypes, what properties are to Beans.
 Currently Rapla supports the following types:
+<ul>
         <li>string</li>
         <li>int</li>
         <li>date</li>
         <li>boolean</li>
         <li>rapla:category</li>
         <li>rapla:allocatable</li>
+</ul>
 @see DynamicType */
 public enum AttributeType {
 	 STRING("string"),

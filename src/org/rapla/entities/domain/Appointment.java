@@ -13,6 +13,8 @@
 package org.rapla.entities.domain;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
@@ -112,17 +114,30 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     /** this method will be used for future enhancements */
     void setWholeDays(boolean enable);
 
-    /** adds all Appointment-blocks in the given period to the appointmentBlockArray.
-        A block is in the period if its starttime<end or its endtime>start. Exceptions are excluded, i.e. there is no block on an exception date. 
+    /** adds all Appointment-blocks in the given period to the blocks collection.
+        A block is in the period if its starttime&lt;end or its endtime&gt;start. Exceptions are excluded, i.e. there is no block on an exception date. 
      */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks);
     
-    /** adds all Appointment-blocks in the given period to the appointmentBlockArray.
-    A block is in the period if its starttime<end or its endtime>start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
+    /** adds all Appointment-blocks in the given period to the blocks collection.
+    A block is in the period if its starttime&lt;end or its endtime&gt;start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
     */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);
     
     final Appointment[] EMPTY_ARRAY = new Appointment[0];
+    
+    public class AppointmentUtil
+    {
+        static public Map<String,Appointment> idMap(Appointment[] appointments)
+        {
+            Map<String,Appointment> idMap = new LinkedHashMap<String, Appointment>();
+            for (Appointment app: appointments)
+            {
+                idMap.put( app.getId(), app );
+            }
+            return idMap;
+        }
+    }
 }
 
 

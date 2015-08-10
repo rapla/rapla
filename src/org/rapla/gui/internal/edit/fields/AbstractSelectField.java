@@ -182,6 +182,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             text = getString("nothing_selected");
         }
         selectText.setText(text);
+        multipleValues = false;
     }
 
 	protected abstract String getNodeName(T selectedCategory);
@@ -389,11 +390,13 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     }
     
  // implementation for interface MultiEditField
+    @Override
  	public boolean hasMultipleValues() {
  		return multipleValues;
  	}
 
  	// implementation for interface MultiEditField
+    @Override
  	public void setFieldForMultipleValues() {
  		multipleValues = true;
  		// sets place holder for different values

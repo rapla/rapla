@@ -74,7 +74,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
     
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        String label = XMLWriter.encode(getName( getReservation()));
+        String label = XMLWriter.encode(getReservationName( ));
         String timeString = getTimeString(false);
 
         if ( getContext().isAnonymous()) {
@@ -98,7 +98,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
                   		{
                   			buffer.append(", ");
                   		}
-                  		buffer.append(XMLWriter.encode( getName(resource)));
+                  		buffer.append(XMLWriter.encode( getResourceName(resource)));
                   	}
                   }
                   if (  !getBuildContext().isResourceVisible() && buffer.length() > 0)
@@ -162,7 +162,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
               	  continue;
             	buf.append("<br>");
                 buf.append("<span class=\"person\">");
-                buf.append(XMLWriter.encode(getName(person)));
+                buf.append(XMLWriter.encode(getResourceName(person)));
                 buf.append("</span>");
             }
         }
@@ -187,7 +187,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
 	            	   {
 	            		   first  = false;
 	            	   }
-	                   buf.append( XMLWriter.encode(getName( person )));
+	                   buf.append( XMLWriter.encode(getResourceName( person )));
 	               }
 	               buf.append("</span>");
         	   }
@@ -199,7 +199,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
                     continue;
                 buf.append("<br>");
                 buf.append("<span class=\"resource\">");
-                buf.append(XMLWriter.encode(getName(resources[i])));
+                buf.append(XMLWriter.encode(getResourceName(resources[i])));
                 buf.append("</span>");
             }
         }

@@ -45,6 +45,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     DraggingHandler draggingHandler = new DraggingHandler(this, false);
     SelectionHandler selectionHandler = new SelectionHandler(this);
     JLabel monthTitle = new JLabel();
+    int offset = 0;
 
     public SwingMonthView() {
         this(true);
@@ -61,7 +62,13 @@ public class SwingMonthView extends AbstractSwingCalendar
 
     protected boolean isEmpty(int column) {
         for ( int i=column;i < slots.length;i+=7 ) {
-            if (!slots[i].isEmpty() ) {
+            int j = i - offset;
+            if (j<0)
+            {
+                j+=7;
+            }
+            final SmallDaySlot slot = slots[j];
+            if (!slot.isEmpty() ) {
                 return false;
             }
         }
@@ -141,16 +148,22 @@ public class SwingMonthView extends AbstractSwingCalendar
 			}
         }
         // add headers
-        int offset = (int) DateTools.countDays(counter.getTime(),startDate);
-        for (int i=0;i<COLUMNS;i++) {
+        offset = (int) DateTools.countDays(counter.getTime(),startDate);
+        int[] exclusionBefore = new int[COLUMNS];
+        int exclusions= 0;
+        for (int column=0;column<COLUMNS;column++) {
         	int weekday = counter.get(Calendar.DAY_OF_WEEK);
-        	if ( !isExcluded(i) ) {
-                tableLayout.insertColumn(i, slotSize );
+        	exclusionBefore[column] =exclusions;
+            if ( !isExcluded(column) ) {
+        	    int effectiveColumn = column - exclusionBefore[column];
+                tableLayout.insertColumn(effectiveColumn, slotSize );
                 jHeader.add( createSlotHeader( weekday ) );
-            } else {
-                tableLayout.insertColumn(i, 0);
+            } 
+        	else {
+        	    exclusions++;
+//                tableLayout.insertColumn(i, 0.0);
             }
-            counter.add(Calendar.DATE,1);
+        	counter.add(Calendar.DATE,1);
         }
         for (int i=0;i<ROWS;i++) {
             tableLayout.insertRow(i, TableLayout.PREFERRED );
@@ -161,8 +174,14 @@ public class SwingMonthView extends AbstractSwingCalendar
             int column = (offset + i) % 7;
             int row = (counter.get(Calendar.DATE) + 6 - column ) /  7;
             if ( !isExcluded( column ) ) {
-                jCenter.add( slots[i] , "" + column + "," + row);
+                int effectiveColumn = column - exclusionBefore[column];
+                jCenter.add( slots[i] , "" + effectiveColumn + "," + row);
+            } 
+            else
+            {
+                //jCenter.add( new JLabel("Hallo") , "" + column + "," + row);
             }
+            
             counter.add(Calendar.DATE,1);
         }
         selectionHandler.clearSelection();

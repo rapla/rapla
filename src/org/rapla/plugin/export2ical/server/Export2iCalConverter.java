@@ -10,37 +10,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.TimeZone;
 
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
-import net.fortuna.ical4j.model.WeekDay;
-import net.fortuna.ical4j.model.component.VEvent;
-import net.fortuna.ical4j.model.component.VTimeZone;
-import net.fortuna.ical4j.model.parameter.Cn;
-import net.fortuna.ical4j.model.parameter.PartStat;
-import net.fortuna.ical4j.model.parameter.Role;
-import net.fortuna.ical4j.model.property.Attendee;
-import net.fortuna.ical4j.model.property.Categories;
-import net.fortuna.ical4j.model.property.Created;
-import net.fortuna.ical4j.model.property.DtEnd;
-import net.fortuna.ical4j.model.property.DtStamp;
-import net.fortuna.ical4j.model.property.DtStart;
-import net.fortuna.ical4j.model.property.ExDate;
-import net.fortuna.ical4j.model.property.LastModified;
-import net.fortuna.ical4j.model.property.Location;
-import net.fortuna.ical4j.model.property.Method;
-import net.fortuna.ical4j.model.property.Organizer;
-import net.fortuna.ical4j.model.property.ProdId;
-import net.fortuna.ical4j.model.property.RRule;
-import net.fortuna.ical4j.model.property.Summary;
-import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
-import net.fortuna.ical4j.util.CompatibilityHints;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -63,9 +32,40 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
 
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ComponentList;
+import net.fortuna.ical4j.model.DateTime;
+import net.fortuna.ical4j.model.PropertyList;
+import net.fortuna.ical4j.model.Recur;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import net.fortuna.ical4j.model.WeekDay;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.component.VTimeZone;
+import net.fortuna.ical4j.model.parameter.Cn;
+import net.fortuna.ical4j.model.parameter.PartStat;
+import net.fortuna.ical4j.model.parameter.Role;
+import net.fortuna.ical4j.model.property.Attendee;
+import net.fortuna.ical4j.model.property.Categories;
+import net.fortuna.ical4j.model.property.Created;
+import net.fortuna.ical4j.model.property.Description;
+import net.fortuna.ical4j.model.property.DtEnd;
+import net.fortuna.ical4j.model.property.DtStamp;
+import net.fortuna.ical4j.model.property.DtStart;
+import net.fortuna.ical4j.model.property.ExDate;
+import net.fortuna.ical4j.model.property.LastModified;
+import net.fortuna.ical4j.model.property.Location;
+import net.fortuna.ical4j.model.property.Method;
+import net.fortuna.ical4j.model.property.Organizer;
+import net.fortuna.ical4j.model.property.ProdId;
+import net.fortuna.ical4j.model.property.RRule;
+import net.fortuna.ical4j.model.property.Summary;
+import net.fortuna.ical4j.model.property.Uid;
+import net.fortuna.ical4j.model.property.Version;
+import net.fortuna.ical4j.util.CompatibilityHints;
+
 public class Export2iCalConverter extends RaplaComponent {
 
-    public boolean attendeeToTitle = true;
     net.fortuna.ical4j.model.TimeZone timeZone;
     private java.util.Calendar calendar;
     private String exportAttendeesAttribute;
@@ -184,6 +184,7 @@ public class Export2iCalConverter extends RaplaComponent {
         addLastModifiedDateToEvent(appointment, properties);
         addEndDateToEvent(appointment, properties, isAllDayEvent);
         addEventNameToEvent(appointment, properties);
+        addDescriptionToEvent(appointment, properties);
         addUidToEvent(appointment, properties);
         addLocationToEvent(appointment, properties);
         addCategories(appointment, properties);
@@ -508,15 +509,36 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param event
      */
     private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
-
-        
         Reservation reservation = appointment.getReservation();
-        String annotationName = reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null ? DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT :DynamicTypeAnnotations.KEY_NAME_FORMAT; 
-        String eventDescription = reservation.format(raplaLocale.getLocale(), annotationName);
-        if (attendeeToTitle) {
+        String eventDescription;
+        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
+        {
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointment);
+        }
+        else
+        {
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT, appointment);
             eventDescription += getAttendeeString(appointment);
         }
         properties.add(new Summary(eventDescription));
+    }
+
+    private void addDescriptionToEvent(Appointment appointment, PropertyList properties) {
+
+        Reservation reservation = appointment.getReservation();
+        String eventDescription;
+        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT) != null)
+        {
+            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
+        }
+        else
+        {
+            eventDescription = null;
+        }
+        if ( eventDescription != null)
+        {
+            properties.add(new Description(eventDescription));
+        }
     }
 
     /**

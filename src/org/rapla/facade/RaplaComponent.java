@@ -65,7 +65,8 @@ import org.rapla.framework.logger.Logger;
  */
 public class RaplaComponent 
 {
-	public static final TypedComponentRole<I18nBundle> RAPLA_RESOURCES = new TypedComponentRole<I18nBundle>("org.rapla.RaplaResources");
+    public static final String RaplaResourcesId = "org.rapla.RaplaResources";
+    public static final TypedComponentRole<I18nBundle> RAPLA_RESOURCES = new TypedComponentRole<I18nBundle>(RaplaResourcesId);
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
 	private final ClientServiceManager serviceManager;
     private TypedComponentRole<I18nBundle> childBundleName;
@@ -777,7 +778,7 @@ public class RaplaComponent
     }
 
 
-    /** calls "&lt;html>" + getI18n().getString(key) + "&lt;/html>"*/
+    /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
     final public String getStringAsHTML(String key) {
         return "<html>" + getI18n().getString(key) + "</html>";
     }

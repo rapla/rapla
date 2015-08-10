@@ -17,8 +17,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**Currently Rapla supports the following types:
+ * <ul>
         <li>weekly</li>
         <li>daily</li>
+        </ul>
  */
 public class RepeatingEnding implements Serializable {
     //  Don't forget to increase the serialVersionUID when you change the fields

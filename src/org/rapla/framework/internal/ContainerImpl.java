@@ -12,7 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -30,6 +34,9 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
 import javax.jws.WebService;
 
 import org.rapla.components.util.Cancelable;
@@ -447,6 +454,126 @@ public class ContainerImpl implements Container
 			Runnable task = createTask(command);
 			return schedule(task, delay, period);
 		}
+		
+		abstract class  CancableTask implements Cancelable, Runnable
+		{
+		    long delay;
+		    private Runnable task;
+            
+		    volatile Thread.State status = Thread.State.NEW;
+		    Cancelable cancelable;
+            CancableTask next;
+            
+		    public CancableTask(Runnable task, long delay)
+            {
+                this.task = task;
+                this.delay = delay;
+            }
+
+            @Override
+            public void run() 
+            {
+                try
+                {
+                    if ( status == Thread.State.NEW)
+                    {
+                        status = Thread.State.RUNNABLE;
+                        task.run();
+                    }
+                }
+                finally
+                {
+                    status = Thread.State.TERMINATED;
+                    scheduleNext();
+                }
+            }
+            @Override
+            public void cancel()
+            {
+                if ( cancelable != null && status == Thread.State.RUNNABLE )
+                {
+                    // send interrupt if thread is running
+                    cancelable.cancel();
+                }
+                status = Thread.State.TERMINATED;
+            }
+
+            public void pushToEndOfQueue(CancableTask wrapper)
+            {
+                if ( next == null)
+                {
+                    next = wrapper;
+                }
+                else
+                {
+                    next.pushToEndOfQueue( wrapper);
+                }
+            }
+
+            public void scheduleThis()
+            {
+                cancelable = schedule(this, delay);
+            }
+
+            private void scheduleNext()
+            {
+                if ( next != null)
+                {
+                    replaceWithNext( next);
+                    next.scheduleThis();
+                } 
+                else
+                {
+                    endOfQueueReached();
+                }
+            }
+
+            abstract protected void replaceWithNext(CancableTask next);
+
+            abstract protected void endOfQueueReached();
+		}
+		
+		ConcurrentHashMap<Object, CancableTask> futureTasks= new ConcurrentHashMap<Object, CancableTask>();
+        @Override
+        public Cancelable scheduleSynchronized(final Object synchronizationObject, Command command, final long delay)
+        {
+            Runnable task = createTask(command);
+            return scheduleSynchronized(synchronizationObject, task, delay);
+        }
+        
+        public Cancelable scheduleSynchronized(final Object synchronizationObject, Runnable task, final long delay)
+        {
+            CancableTask wrapper = new CancableTask(task,delay)
+            {
+                @Override
+                protected void replaceWithNext(CancableTask next)
+                {
+                    futureTasks.replace( synchronizationObject , this, next);
+                }
+                @Override
+                protected void endOfQueueReached()
+                {
+                    synchronized (synchronizationObject)
+                    {
+                        futureTasks.remove( synchronizationObject);
+                    }
+                }
+            };
+            synchronized (synchronizationObject)
+            {
+                CancableTask existing = futureTasks.putIfAbsent( synchronizationObject, wrapper);
+                if (existing == null)
+                {
+                    wrapper.scheduleThis();
+                }
+                else
+                {
+                    existing.pushToEndOfQueue( wrapper );
+                }
+                return wrapper;
+            }
+        }
+       
 
 		public void cancel() {
 			try{
@@ -480,6 +607,7 @@ public class ContainerImpl implements Container
 			{
 			}
 		}
+
 	}
 
 	class RoleEntry {
@@ -579,6 +707,10 @@ public class ContainerImpl implements Container
         for (Constructor constructor:constructors) {
             Class[] types = constructor.getParameterTypes();
             boolean compatibleParameters = true;
+            if (constructor.getAnnotation( Inject.class) != null)
+            {
+                return constructor;
+            }
             for (int j=0; j< types.length; j++ ) {
                 Class type = types[j];
                 if (!( type.isAssignableFrom( RaplaContext.class) || type.isAssignableFrom( Configuration.class) || type.isAssignableFrom(Logger.class) || type.isAnnotationPresent(WebService.class) || getContext().has( type))) 
@@ -605,7 +737,7 @@ public class ContainerImpl implements Container
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Object instanciate( String componentClassName, Configuration config, Logger logger ) throws RaplaContextException
     {
-    	RaplaContext context = m_context;
+    	final RaplaContext context = m_context;
 		Class componentClass;
         try {
             componentClass = Class.forName( componentClassName );
@@ -616,10 +748,59 @@ public class ContainerImpl implements Container
         Object[] params = null;
         if ( c != null) {
             Class[] types = c.getParameterTypes();
+            Annotation[][] parameterAnnotations = c.getParameterAnnotations();
+            Type[] genericParameterTypes = c.getGenericParameterTypes();
             params = new Object[ types.length ];
             for (int i=0; i< types.length; i++ ) {
                 Class type = types[i];
-                Object p;
+                Object p = null;
+                Annotation[] annotations = parameterAnnotations[i];
+                for ( Annotation annotation: annotations)
+                {
+                    if ( annotation.annotationType().equals( Named.class))
+                    {
+                        String value = ((Named)annotation).value();
+                        Object lookup = getContext().lookup( new TypedComponentRole( value));
+                        p = lookup;
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                String typeName = type.getName();
+                final Type type2 = genericParameterTypes[i];
+                if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
+                {
+                    Type[] actualTypeArguments = ((ParameterizedType)type2).getActualTypeArguments();
+                    if ( actualTypeArguments.length > 0)
+                    {
+                        final Type param = actualTypeArguments[0];
+                        if ( param instanceof Class)
+                        {
+                            final Class<? extends Type> class1 = (Class<? extends Type>) param;
+                            p = new Provider()
+                            {
+                                @Override
+                                public Object get() {
+                                    try {
+                                        return context.lookup(class1);
+                                    } catch (RaplaContextException e) {
+                                        throw new IllegalStateException( e.getMessage(),e);
+                                    }
+                                }
+                            };
+                        }
+                    }
+                }
+                if ( p!= null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                
+                
                 if ( type.isAssignableFrom( RaplaContext.class)) {
                     p = context;
                 } else  if ( type.isAssignableFrom( Configuration.class)) {

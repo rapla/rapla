@@ -15,7 +15,9 @@ package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
@@ -74,10 +76,26 @@ public class RaplaMapReader extends RaplaXMLReader  {
             entityMap.putIdPrivate( key,  id, raplaType);
         }  else if ( keyref != null) {
             childReader = null;
-            DynamicType type = getDynamicType( keyref );
-            if ( type != null) {
-            	String id = ((Entity) type).getId();
-                entityMap.putIdPrivate( key,  id, DynamicType.TYPE);
+            if ( raplaType == DynamicType.TYPE)
+            {
+                DynamicType type = getDynamicType( keyref );
+                if ( type != null) {
+                	String id = ((Entity) type).getId();
+                    entityMap.putIdPrivate( key,  id, DynamicType.TYPE);
+                }
+            }
+            if ( raplaType == Category.TYPE)
+            {
+                try
+                {
+                    Category cat = getSuperCategory().getCategoryFromPath(keyref);
+                    String id = ((Entity) cat).getId();
+                    entityMap.putIdPrivate( key,  id, DynamicType.TYPE);
+                }
+                catch (EntityNotFoundException e)
+                {
+                    getLogger().warn(e.getMessage(),e);
+                }
             }
         } else {
             childReader = getChildHandlerForType( raplaType );

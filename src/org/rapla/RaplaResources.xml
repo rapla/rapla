@@ -1665,6 +1665,12 @@ See French text.
 		<text lang="fi">VAROITUS: Sama ajanvaraus esiintyy useita kertoja [{0}]!</text>
 
     </entry>
+    
+    <entry key="warning.not_in_calendar">
+       <text lang="de">WARNUNG: {0} wird nicht in der Kalenderansicht angezeigt. Sind die eingestellten Ressourcen und Attribute korrekt?</text>
+       <text lang="en">WARNING: {0} will not be displayed in the calendar view. Are the selected resources and attributes correct?</text>
+    </entry>        
+    
     <entry key="warning.no_reserve_permission">
         <text lang="en">You have no permissions to reserve/change [{0}] an appointment [{1}]!</text>
         <text lang="de">Sie haben keine Zugriffsrechte um [{0}] an dem Termin [{1}] zu reservieren/ändern!</text>
@@ -5393,11 +5399,15 @@ See French text.
 		<text lang="fi">Resurssipuussa näytettävä nimen muoto</text>
     </entry>
     <entry key="nameformat_export">
-        <text lang="en">Displayed name format in export</text>
-        <text lang="de">Anzeigeformatierung im Export</text>
+        <text lang="en">Format of subject in export</text>
+        <text lang="de">Formatierung des Betreffs im Export</text>
         <text lang="fr">Mettre en forme l'affichage dans le exporter</text>
         <text lang="es">Formato de nombre visualizado si exporta</text>
 		<text lang="fi">Viennissä näytettävä nimen muoto</text>
+    </entry>
+    <entry key="descriptionformat_export">
+        <text lang="en">Format of description in export</text>
+        <text lang="de">Formatierung der Beschreibung im Export</text>
     </entry>
     <entry key="is_location">
         <text lang="en">Is a location</text>

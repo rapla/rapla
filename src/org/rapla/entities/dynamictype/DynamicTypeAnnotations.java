@@ -17,6 +17,7 @@ public interface DynamicTypeAnnotations
     String KEY_NAME_FORMAT="nameformat";
     String KEY_NAME_FORMAT_PLANNING="nameformat_planning";
     String KEY_NAME_FORMAT_EXPORT="nameformat_export";
+    String KEY_DESCRIPTION_FORMAT_EXPORT="descriptionformat_export";
     
     String KEY_CLASSIFICATION_TYPE="classification-type";
     String VALUE_CLASSIFICATION_TYPE_RESOURCE="resource";
@@ -33,6 +34,7 @@ public interface DynamicTypeAnnotations
 	String VALUE_CONFLICTS_NONE="never";
 	String VALUE_CONFLICTS_ALWAYS="always";
 	String VALUE_CONFLICTS_WITH_OTHER_TYPES="withOtherTypes";
+	
 	
 	String KEY_TRANSFERED_TO_CLIENT = "transferedToClient";
 	String VALUE_TRANSFERED_TO_CLIENT_NEVER = "never";
