@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import org.rapla.components.util.DateTools;
@@ -17,6 +18,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -510,14 +512,10 @@ public class Export2iCalConverter extends RaplaComponent {
      */
     private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
         Reservation reservation = appointment.getReservation();
-        String eventDescription;
-        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
+        final Locale locale = raplaLocale.getLocale();
+        String eventDescription = NameFormatUtil.getExportName(appointment, locale); 
+        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) == null)
         {
-            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointment);
-        }
-        else
-        {
-            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_NAME_FORMAT, appointment);
             eventDescription += getAttendeeString(appointment);
         }
         properties.add(new Summary(eventDescription));
