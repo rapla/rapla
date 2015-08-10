@@ -52,6 +52,7 @@ public abstract class  AbstractCalendar {
 		 SimpleDateFormat format = new SimpleDateFormat("EEEEEE",locale);
 		 Calendar calendar = createCalendar();
 		 calendar.set(Calendar.DAY_OF_WEEK, weekday);
+		 format.setTimeZone(getTimeZone());
 		 String weekdayName = format.format(calendar.getTime());
 		 return weekdayName;
 	}
