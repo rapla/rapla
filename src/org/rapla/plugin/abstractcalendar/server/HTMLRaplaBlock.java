@@ -21,6 +21,7 @@ import java.util.List;
 import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.gui.internal.view.AppointmentInfoUI;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
@@ -35,6 +36,12 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
     	timeStringSeperator ="&#160;-";
     }
 
+    @Override
+    public String getReservationName()
+    {
+        return NameFormatUtil.getExportName(getAppointmentBlock(), getI18n().getLocale());
+    }
+    
     public int getIndex() {
         return index;
     }
@@ -71,7 +78,6 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         return getColorsAsHex()[0];
     }
 
-    
     public String toString() {
         StringBuffer buf = new StringBuffer();
         String label = XMLWriter.encode(getReservationName( ));

@@ -3,6 +3,7 @@ package org.rapla.plugin.tableview.internal;
 import javax.swing.table.TableColumn;
 
 import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -19,8 +20,7 @@ public final class ReservationNameColumn extends RaplaComponent implements Reser
 
 	public Object getValue(Reservation reservation) 
 	{
-	//	getLocale().
-		return reservation.getName(getLocale());
+		return NameFormatUtil.getName(reservation,getLocale());
 	}
 	
 
@@ -33,7 +33,7 @@ public final class ReservationNameColumn extends RaplaComponent implements Reser
 	}
 
 	public String getHtmlValue(Reservation event) {
-		String value = getValue(event).toString();
+		String value = NameFormatUtil.getExportName(event, getLocale());
 		return XMLWriter.encode(value);		       
 
 	}
