@@ -175,7 +175,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
 	    	while (it.hasMoreElements())
 	    	{
 	    		Category cat= it.nextElement();
-	    		if ( !user.belongsTo( cat) && !notAllList.contains( cat))
+	    		if ( !user.getGroupList().contains(cat) && !notAllList.contains( cat))
 	    		{
 	    			user.addGroup( cat);
 	    		}
