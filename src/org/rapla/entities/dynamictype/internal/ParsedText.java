@@ -487,6 +487,10 @@ public class ParsedText implements Serializable {
 
         private String getName(Object obj, EvalContext context)
         {
+            if ( obj == null)
+            {
+                return "";
+            }
             if (!(obj instanceof Named))
             {
                 return obj.toString();
