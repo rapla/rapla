@@ -254,14 +254,15 @@ public class IntervalChooserPanel extends RaplaGUIComponent
 					            	date = calendar.getTime(); 
 					            	endDateSelection.setDate(date);
 					            }
-// BJO 00000042
-     
-            Period period = periodChooser.getPeriod();
-            if ( period == null) {
-                return;
-            }
-            updateDates( period.getStart(), period.getEnd());
-            fireDateChange( period.getStart());
+					            else if (e.getSource() == periodChooser) {
+				                    // BJO 00000042                 
+					                Period period = periodChooser.getPeriod();
+					                if ( period == null) {
+					                    return;
+					                }
+					                updateDates( period.getStart(), period.getEnd());
+					                fireDateChange( period.getStart());
+					            }
         }
 
         public void dateChanged(DateChangeEvent evt) {
