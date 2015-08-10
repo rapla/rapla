@@ -16,6 +16,8 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -250,6 +252,10 @@ public class ParsedText implements Serializable {
 		{
 			return new KeyFunction(args);
 		}
+		if ( functionName.equals("name"))
+		{
+		    return new NameFunction(args);
+		}
 		if ( functionName.equals("parent"))
 		{
 			return new ParentFunction(args);
@@ -420,6 +426,87 @@ public class ParsedText implements Serializable {
 			
 			return "";
 		}
+	}
+	
+	class NameFunction extends Function
+	{
+	    Function objectFunction;
+	    Function languageFunction;
+	    public NameFunction( List<Function> args) throws IllegalAnnotationException {
+	        super( "name", args);
+	        final int argSize = args.size();
+            if ( argSize < 1 || argSize > 2 )
+	        {
+	            throw new IllegalAnnotationException("Name Function expects one or two argument!");
+	        }
+	        objectFunction = args.get(0);
+	        languageFunction = args.size() == 2?args.get(1):null;
+	        //testMethod();
+	    }
+	    
+	    @GwtIncompatible
+	    private void testMethod() throws IllegalAnnotationException {
+	        Method method;
+	        try {
+	            Class<? extends Function> class1 = objectFunction.getClass();
+	            method = class1.getMethod("eval", new Class[] {EvalContext.class});
+	        } catch (Exception e) {
+	            String message = e.getMessage();
+	            throw new IllegalAnnotationException( "Could not parse method for internal error : " + message);
+	        }
+	        if ( !method.getReturnType().isAssignableFrom(Attribute.class))
+	        {
+	            if ( !method.getReturnType().isAssignableFrom(Category.class))
+	            {
+	                throw new IllegalAnnotationException("Key Function expects an attribute variable or a function which returns a category");
+	            }
+	        }
+	    }
+	    
+	    @Override
+	    public String eval(EvalContext context) 
+	    {
+            Object obj = objectFunction.eval(context);
+            if (obj == null)
+            {
+                return "";
+            }
+            RaplaObject raplaObject = (RaplaObject) obj;
+            RaplaType raplaType = raplaObject.getRaplaType();
+            if ( raplaType == Attribute.TYPE)
+            {
+                Classification classification = context.getClassification();
+                Object result = classification.getValue((Attribute) raplaObject);
+                return getName(result, context);
+            }
+            else
+            {
+                return getName(raplaObject, context);
+            }
+	    }
+
+        private String getName(Object obj, EvalContext context)
+        {
+            if (!(obj instanceof Named))
+            {
+                return obj.toString();
+            }
+            if (!(obj instanceof MultiLanguageNamed))
+            {
+                return ((Named) obj).getName(context.getLocale());
+            }
+            MultiLanguageNamed raplaObject = (MultiLanguageNamed) obj;
+            final String language;
+            if (languageFunction != null)
+            {
+                language = ParsedText.this.toString(languageFunction.eval(context), context);
+            }
+            else
+            {
+                language = null;
+            }
+            return raplaObject.getName().getName(language);
+        }
 	}
 	
 	
