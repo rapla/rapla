@@ -160,7 +160,7 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	       Collections.sort( rows);
 	       
 	       StringBuffer buf = new StringBuffer();
-	       buf.append("<table class='table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
+	       buf.append("<table class='export table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
 	       buf.append("<thead><tr>");
 	       for (RaplaTableColumn<?> col: columPluigns)
 	       {
