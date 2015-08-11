@@ -14,12 +14,14 @@ package org.rapla.gui.internal.edit.reservation;
 
 import java.awt.Component;
 import java.util.Collection;
+import java.util.Locale;
 
 import javax.inject.Inject;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
@@ -55,6 +57,21 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                             break;
                         }
                 }
+
+                final I18nBundle i18n = getI18n();
+                Locale locale = i18n.getLocale();
+                String name = reservation.getName(locale);
+                if (name.trim().length() == 0) {
+                    final String warning = getI18n().getString("error.no_reservation_name");
+                    JLabel warningLabel = new JLabel();
+                    warningLabel.setForeground(java.awt.Color.red);
+                    warningLabel.setText
+                    (
+                      warning
+                     );
+                    warningPanel.add( warningLabel);
+                }
+
                 if (!model.isMatchingSelectionAndFilter(reservation, null))
                 {
                     JLabel warningLabel = new JLabel();

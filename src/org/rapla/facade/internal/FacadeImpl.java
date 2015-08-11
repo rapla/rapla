@@ -1319,12 +1319,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (reservation.getAppointments().length == 0) {
 			throw new RaplaException(i18n.getString("error.no_appointment"));
 		}
-
-		Locale locale = i18n.getLocale();
-        String name = reservation.getName(locale);
-        if (name.trim().length() == 0) {
-			throw new RaplaException(i18n.getString("error.no_reservation_name"));
-		}
 	}
 
 	public <T extends Entity> T edit(T obj) throws RaplaException {
