@@ -361,13 +361,6 @@ a:hover{
 .table-striped>tbody>tr:nth-of-type(odd) {
     background-color: #E1E1E1;
 }
-/* Make dates larger */
-.export>thead>tr>th:nth-child(2),
-.export>thead>tr>th:nth-child(3)
-{
-	width: 180px;
-}
-
 
 @media print {
 	@page{size: landscape;}
