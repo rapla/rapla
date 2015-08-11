@@ -356,3 +356,15 @@ a:hover{
      display: none;
    }
 }
+
+/* HTML Export calendar */
+.table-striped>tbody>tr:nth-of-type(odd) {
+    background-color: #E1E1E1;
+}
+
+@media print {
+	@page{size: landscape;}
+	* {
+		font-size: 10px;
+	}
+}

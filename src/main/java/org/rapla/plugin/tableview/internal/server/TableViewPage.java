@@ -51,6 +51,8 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "bootstrap.min.css\" type=\"text/css\">");
 	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "calendar.css\" type=\"text/css\">");
 	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "default.css\" type=\"text/css\">");
+	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "rapla.css\" type=\"text/css\">");
+	    out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "export.css\" type=\"text/css\">");
 	    // tell the html page where its favourite icon is stored
 	    out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\"/images/favicon.ico\">");
 	    out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
@@ -160,7 +162,7 @@ abstract public class TableViewPage<T> extends RaplaComponent implements RaplaPa
 	       Collections.sort( rows);
 	       
 	       StringBuffer buf = new StringBuffer();
-	       buf.append("<table class='table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
+	       buf.append("<table class='export table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
 	       buf.append("<thead><tr>");
 	       for (RaplaTableColumn<?> col: columPluigns)
 	       {

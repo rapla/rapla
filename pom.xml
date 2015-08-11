@@ -591,6 +591,13 @@
 			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- language properties generation -->
+		<dependency>
+			<groupId>com.ibm.icu</groupId>
+			<artifactId>icu4j</artifactId>
+			<version>55.1</version>
+			<scope>test</scope>
+		</dependency>
 		<!-- GWT -->
 		<dependency>
 			<groupId>com.google.gwt</groupId>
