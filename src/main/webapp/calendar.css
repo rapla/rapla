@@ -367,3 +367,11 @@ a:hover{
 {
 	width: 180px;
 }
+
+
+@media print {
+	@page{size: landscape;}
+	* {
+		font-size: 10px;
+	}
+}
