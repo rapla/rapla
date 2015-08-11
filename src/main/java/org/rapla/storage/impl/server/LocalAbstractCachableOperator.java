@@ -2201,9 +2201,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	protected void checkReservation(Reservation reservation) throws RaplaException {
         Locale locale = i18n.getLocale();
         String name = reservation.getName(locale);
-        if (name.trim().length() == 0) {
-            throw new RaplaException(i18n.getString("error.no_reservation_name") + " [" + reservation.getId()+  "]");
-        }
         if (reservation.getAppointments().length == 0) {
             throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId()+  "]");
         }
