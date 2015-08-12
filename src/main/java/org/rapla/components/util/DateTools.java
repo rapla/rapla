@@ -289,7 +289,8 @@ public abstract class DateTools
         int result = date2.day;
         return result;
     }
-    
+
+    /** calculates how often the weekday of the passed date occured. e.g. if you pass a date thats on monday it returns 1 if its the first monday in the month and 3 if its the third monday*/
     public static int getDayOfWeekInMonth(Date date) 
     {
     	DateWithoutTimezone date2 = toDate( date.getTime());

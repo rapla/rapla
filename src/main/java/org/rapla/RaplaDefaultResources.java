@@ -18,5 +18,10 @@ public class RaplaDefaultResources {
     {
         return i18n.getString(key);
     }
+    public String format(@PropertyKey(resourceBundle = ID) String key, Object... obj)
+    {
+        return i18n.format(key, obj);
+    }
+
 
 }

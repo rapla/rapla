@@ -141,7 +141,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         int[] exclusionBefore = new int[COLUMNS];
         int exclusions= 0;
         for (int column=0;column<COLUMNS;column++) {
-            int weekday = DateTools.getDayOfWeekInMonth(counter);
+            int weekday = DateTools.getWeekday(counter);
         	exclusionBefore[column] =exclusions;
             if ( !isExcluded(column) ) {
         	    int effectiveColumn = column - exclusionBefore[column];
