@@ -3,10 +3,7 @@ package org.rapla.client.gwt;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -36,54 +33,14 @@ public class GWTRaplaLocale extends AbstractRaplaLocale {
 		return result;
 	}
 
-	public String formatDateShort(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat(DateTimeFormat.PredefinedFormat.DATE_SHORT);
-	    return format.format(date, timezoneG);
-//		StringBuffer buf = new StringBuffer();
-//	    FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
-//		DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale );
-//		format.setTimeZone( timezone );
-//	    buf = format.format(date,
-//	    					buf,
-//	                        fieldPosition
-//	                        );
-//	    if ( fieldPosition.getEndIndex()<buf.length() ) {
-//	    	buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex()+1 );
-//	    } else if ( (fieldPosition.getBeginIndex()>=0) ) {
-//	    	buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex() );
-//	    }
-//	    String result = buf.toString();
-//		return result;
-
-	}
-
-	public String formatDate(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat(DateTimeFormat.PredefinedFormat.DATE_SHORT);
-	    return format.format(date, timezoneG);
-	}
-
-	public String formatDateLong(Date date) {
-	    DateTimeFormat format = DateTimeFormat.getFormat(DateTimeFormat.PredefinedFormat.DATE_LONG);
-	    return format.format(date, timezoneG);
-	}
-
 	public String getWeekday(Date date) {
 		DateTimeFormat format = DateTimeFormat.getFormat("EE");
-	    return format.format( date, timezoneG );
-	}
-
-	public String formatMonth(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat("MMMMM");
 	    return format.format( date, timezoneG );
 	}
 
 	public String getCharsetNonUtf() 
 	{
 		throw new UnsupportedOperationException("Not supported in gwt. Please call on server");
-	}
-
-	public TimeZone getTimeZone() {
-		return DateTools.getTimeZone();
 	}
 
 	public Locale getLocale() {
@@ -97,54 +54,12 @@ public class GWTRaplaLocale extends AbstractRaplaLocale {
        throw new UnsupportedOperationException();
     }
 
-    
-    public String formatDateMonth(Date date ) {
-        DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
-        return date2.month + "/" + date2.day;
-    }
-  
     @Override
-    public String formatDayOfWeekDateMonth(Date date)
+    protected String _format(Date date, String pattern)
     {
-        int weekday = DateTools.getWeekday( date);
-        String datePart = getWeekdayName(weekday).substring(0,2);
-        String dateOfMonthPart = formatDateMonth( date  );
-        return datePart + " " + dateOfMonthPart ;
-    }
-
-    @Override
-    public boolean isAmPmFormat()
-    {
-        return false;
-    }
-
-
-    @Override
-    public String getWeekdayName(int weekday)
-    {
-        String result;
-        switch (weekday)
-          {
-              case 1: result= "sunday";break;
-              case 2: result= "monday";break;
-              case 3: result= "tuesday";break;
-              case 4: result= "wednesday";break;
-              case 5: result= "thursday";break;
-              case 6: result= "friday";break;
-              case 7: result= "saturday";break;
-              default: throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
-          }
-        return result;
-    }
-
-
-    @Override
-
-    public String formatMonthYear(Date date)
-    {
-        int year = DateTools.toDate( date.getTime()).year;
-        String result = formatMonth( date ) + " " + year;
-        return result;
+        final DateTimeFormat formatter = DateTimeFormat.getFormat(pattern);
+        final String format = formatter.format(date, timezoneG);
+        return format;
     }
 
 }

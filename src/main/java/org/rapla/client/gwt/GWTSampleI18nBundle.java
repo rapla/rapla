@@ -1,9 +1,9 @@
 package org.rapla.client.gwt;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.MissingResourceException;
-
-import javax.swing.ImageIcon;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 
@@ -50,5 +50,11 @@ final class GWTSampleI18nBundle implements I18nBundle {
     @Override
     public String getString(String key, Locale locale) {
     	return key;
+    }
+
+    @Override
+    public Collection<String> getKeys()
+    {
+        return new ArrayList<String>();
     }
 }

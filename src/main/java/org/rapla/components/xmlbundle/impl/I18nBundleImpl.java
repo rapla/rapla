@@ -13,15 +13,13 @@
 package org.rapla.components.xmlbundle.impl;
 
 import java.text.MessageFormat;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.TreeMap;
-
-import javax.swing.Icon;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
@@ -30,6 +28,8 @@ import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+
+import edu.emory.mathcs.backport.java.util.Collections;
 
 /** The default implementation of the xmlbundle component allows reading from
  a compiled ResourceBundle as well as directly from the source-xml-file.
@@ -68,7 +68,6 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     class LanguagePack
     {
 	    Locale locale;
-	    Map<String,Icon> iconCache = Collections.synchronizedMap( new TreeMap<String,Icon>() );
 	    ResourceBundle resourceBundle;
 	    public String getString( String key ) throws MissingResourceException
 	    {
@@ -97,6 +96,10 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 	    	}
 	        return string;
 	    }	    
+	    
+	    Enumeration<String> getKeys(){
+	        return resourceBundle.getKeys();
+	    }
     }
     
     /**
@@ -186,6 +189,16 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
     {
 		LanguagePack pack = getPack(locale);
 		return pack.getString(key);
+    }
+    
+    @Override
+    public Collection<String> getKeys()
+    {
+        Locale locale = getLocale();
+        LanguagePack pack = getPack(locale);
+        @SuppressWarnings("unchecked")
+        final ArrayList<String> keys = Collections.list(pack.getKeys());
+        return keys;
     }
 
 

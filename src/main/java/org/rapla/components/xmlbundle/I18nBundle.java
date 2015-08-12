@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle;
 
+import java.util.Collection;
 import java.util.Locale;
 import java.util.MissingResourceException;
 
@@ -53,6 +54,8 @@ public interface I18nBundle {
     @throws MissingResourceException if not found or can't be loaded.
      */
     String getString( String key, Locale locale);
+    
+    Collection<String> getKeys();
 
     /** @return the selected language. */
     String getLang();

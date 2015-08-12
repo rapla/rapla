@@ -12,7 +12,7 @@ public class TestI18nLocaleFormats
     @Test
     public void testAllFilesReadable()
     {
-        final File dir = new File(I18nLocaleFormats.class.getResource(I18nLocaleFormats.class.getSimpleName() + ".class").getFile()).getParentFile();
+        final File dir = new File(I18nLocaleLoadUtil.class.getResource(I18nLocaleLoadUtil.class.getSimpleName() + ".class").getFile()).getParentFile();
         final File[] listFiles = dir.listFiles();
         final String suffix = ".properties";
         for (File file : listFiles)
@@ -23,7 +23,7 @@ public class TestI18nLocaleFormats
                 final String localeString = name.substring(0, name.length() - suffix.length());
                 try
                 {
-                    final I18nLocaleFormats format = I18nLocaleFormatsImpl.read(localeString);
+                    final I18nLocaleFormats format = I18nLocaleLoadUtil.read(localeString);
                     Assert.assertNotNull(format.getFormatDateLong());
                     Assert.assertNotNull(format.isAmPmFormat());
                     Assert.assertNotNull(format.getAmPmFormat());
@@ -42,7 +42,7 @@ public class TestI18nLocaleFormats
         }
     }
 
-//    @Test
+    //    @Test
     public void testJreLocales()
     {
         final Locale[] availableLocales = Locale.getAvailableLocales();
@@ -53,7 +53,7 @@ public class TestI18nLocaleFormats
             {
                 try
                 {
-                    final I18nLocaleFormats format = I18nLocaleFormatsImpl.read(localeString);
+                    final I18nLocaleFormats format = I18nLocaleLoadUtil.read(localeString);
                     Assert.assertNotNull(format.getFormatDateLong());
                     Assert.assertNotNull(format.isAmPmFormat());
                     Assert.assertNotNull(format.getAmPmFormat());

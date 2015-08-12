@@ -1,13 +1,20 @@
 package org.rapla.framework.internal;
 
 import java.util.Date;
+import java.util.TimeZone;
 
+import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
+    private I18nLocaleFormats formats;
+    public void setLocaleFormats(I18nLocaleFormats formats)
+    {
+        this.formats = formats;
+    }
+    
     public String formatTimestamp( Date date ) 
     {
     	Date raplaDate = fromUTCTimestamp(date);
@@ -116,32 +123,19 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 
       public String formatMonth(Date date)
       {    
-          int month = DateTools.toDate( date.getTime()).month;
-          String result;
-          switch (month)
-          {
-              case 1: result= "january";break;
-              case 2: result= "february";break;
-              case 3: result= "march";break;
-              case 4: result= "april";break;
-              case 5: result= "may";break;
-              case 6: result= "june";break;
-              case 7: result= "july";break;
-              case 8: result= "august";break;
-              case 9: result= "september";break;
-              case 10: result= "october";break;
-              case 11: result= "november";break;
-              case 12: result= "december";break;
-              default: throw new IllegalArgumentException("Month " + month + " not supported.");
+          int month = DateTools.toDate( date.getTime()).month - 1;
+          final String[] months = formats.getMonths();
+          if(month >= months.length){
+              throw new IllegalArgumentException("Month " + month + " not supported.");
           }
-          return result;
+          return months[month];
       }
 
     
-    public String formatDateMonth(Date date ) {
-        DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
-        return date2.month + "/" + date2.day;
-    }
+//    public String formatDateMonth(Date date ) {
+//        DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
+//        return date2.month + "/" + date2.day;
+//    }
   
     @Override
     public String formatDayOfWeekDateMonth(Date date)
@@ -153,27 +147,26 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     }
 
     @Override
-    public boolean isAmPmFormat()
-    {
-        return false;
-    }
-
-    @Override
     public String getWeekdayName(int weekday)
     {
-        String result;
-        switch (weekday)
-          {
-              case 1: result= "sunday";break;
-              case 2: result= "monday";break;
-              case 3: result= "tuesday";break;
-              case 4: result= "wednesday";break;
-              case 5: result= "thursday";break;
-              case 6: result= "friday";break;
-              case 7: result= "saturday";break;
-              default: throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
-          }
-        return result;
+        final String[] weekdays = formats.getWeekdays();
+        if(weekday >= weekdays.length ){
+            throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
+        }
+        return weekdays[weekday];
+//        String result;
+//        switch (weekday)
+//          {
+//              case 1: result= "sunday";break;
+//              case 2: result= "monday";break;
+//              case 3: result= "tuesday";break;
+//              case 4: result= "wednesday";break;
+//              case 5: result= "thursday";break;
+//              case 6: result= "friday";break;
+//              case 7: result= "saturday";break;
+//              default: throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
+//          }
+//        return result;
     }
 
 
@@ -184,5 +177,111 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         String result = formatMonth( date ) + " " + year;
         return result;
     }
+    
+    public TimeZone getTimeZone() {
+        return DateTools.getTimeZone();
+    }
+
+    /* (non-Javadoc)
+     * @see org.rapla.common.IRaplaLocale#formatTime(java.util.Date)
+     */
+    public String formatTime( Date date ) {
+        return _format(date, formats.getFormatTime());
+//        Locale locale = getLocale();
+//        TimeZone timezone = getTimeZone();
+//      DateFormat format = DateFormat.getTimeInstance( DateFormat.SHORT, locale );
+//      format.setTimeZone( timezone );
+//      String formatTime = format.format( date );
+//      return formatTime;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.rapla.common.IRaplaLocale#formatDateShort(java.util.Date)
+     */
+    public String formatDateShort( Date date ) {
+        final String pattern = formats.getFormatDateShort();
+        return _format(date, pattern);
+//      Locale locale = getLocale();
+//      TimeZone timezone = zone;
+//      StringBuffer buf = new StringBuffer();
+//      FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
+//      DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale );
+//      format.setTimeZone( timezone );
+//      buf = format.format(date,
+//                          buf,
+//                          fieldPosition
+//                          );
+//      if ( fieldPosition.getEndIndex()<buf.length() ) {
+//          buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex()+1 );
+//      } else if ( (fieldPosition.getBeginIndex()>=0) ) {
+//          buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex() );
+//      }
+//      String result = buf.toString();
+//      return result;
+    }
+
+    /* (non-Javadoc)
+     * @see org.rapla.common.IRaplaLocale#formatDateLong(java.util.Date)
+     */
+    public String formatDateLong( Date date ) {
+        return _format(date, formats.getFormatDateLong());
+//      TimeZone timezone = zone;
+//        Locale locale = getLocale();
+//      DateFormat format = DateFormat.getDateInstance( DateFormat.MEDIUM, locale );
+//      format.setTimeZone( timezone );
+//      String dateFormat = format.format( date);
+//      return dateFormat + " (" + getWeekday(date) + ")";
+    }
+    
+    /** formats the date and month in the selected locale and timeZone*/
+    public String formatDateMonth(Date date ) {
+        return _format(date, formats.getFormatMonthYear());
+//        Locale locale = getLocale();
+//        FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
+//        StringBuffer buf = new StringBuffer();
+//        DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale);
+//        buf = format.format(date,
+//                buf,
+//                fieldPosition
+//                );
+//        if ( fieldPosition.getEndIndex()<buf.length() ) {
+//            buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex()+1 );
+//        } else if ( (fieldPosition.getBeginIndex()>=0) ) {
+//            buf.delete( fieldPosition.getBeginIndex(), fieldPosition.getEndIndex() );
+//        }
+//        char lastChar = buf.charAt(buf.length()-1);
+//        if (lastChar == '/' || lastChar == '-' ) {
+//            String result = buf.substring(0,buf.length()-1);
+//            return result;
+//        } else {
+//            String result = buf.toString();
+//            return result;
+//        }
+    }
+
+    /* (non-Javadoc)
+     * @see org.rapla.common.IRaplaLocale#formatDate(java.util.Date)
+     */
+    public String formatDate( Date date ) {
+        return _format(date, formats.getFormatDateLong());
+//      TimeZone timezone = zone;
+//        Locale locale = getLocale();
+//      DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale );
+//      format.setTimeZone( timezone );
+//      return format.format( date );
+    }
+
+
+    public boolean isAmPmFormat() {
+        return formats.isAmPmFormat();
+//        Locale locale = getLocale();
+//        DateFormat format= DateFormat.getTimeInstance(DateFormat.SHORT, locale);
+//        FieldPosition amPmPos = new FieldPosition(DateFormat.AM_PM_FIELD);
+//        format.format(new Date(), new StringBuffer(),amPmPos);
+//        return (amPmPos.getEndIndex()>0);
+    }
+
+    
+    protected abstract String _format(Date date, final String pattern);
     
 }
