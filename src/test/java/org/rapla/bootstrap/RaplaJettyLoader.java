@@ -12,7 +12,11 @@ public class RaplaJettyLoader
     	if ( baseDir == null)
         {
     		baseDir = ".";
-    		System.setProperty( "jetty.home", new File(baseDir ).getCanonicalPath() );
+			if ( new File("./src/test").exists())
+			{
+				baseDir = "./src/test";
+			}
+			System.setProperty( "jetty.home", new File(baseDir ).getCanonicalPath() );
     	}
     	for ( String arg:args)
     	{
