@@ -33,7 +33,6 @@ public class LanguagePropertyFilesGenerator
                 i++;
                 final PrintWriter pw = new PrintWriter(new File(parentDir, uLocale.toString() + ".properties"), "UTF-8");
                 final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(uLocale);
-                System.out.println(dateFormatSymbols);
                 pw.println("amPm=" + Arrays.toString(dateFormatSymbols.getAmPmStrings()));
                 pw.println("isAmPm=" + isAmPm(uLocale, dateFormatSymbols));
                 pw.println("shortMonths=" + Arrays.toString(dateFormatSymbols.getShortMonths()));
