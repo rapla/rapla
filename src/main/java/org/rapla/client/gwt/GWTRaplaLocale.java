@@ -38,11 +38,6 @@ public class GWTRaplaLocale extends AbstractRaplaLocale {
 	    return format.format( date, timezoneG );
 	}
 
-	public String formatMonth(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat("MMMMM");
-	    return format.format( date, timezoneG );
-	}
-
 	public String getCharsetNonUtf() 
 	{
 		throw new UnsupportedOperationException("Not supported in gwt. Please call on server");

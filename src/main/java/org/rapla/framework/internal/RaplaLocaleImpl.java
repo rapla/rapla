@@ -169,15 +169,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return result;
 
     }
-    
-    public String formatMonth( Date date ) {
-        TimeZone timeZone = getTimeZone();
-        Locale locale = getLocale();
-        SimpleDateFormat format = new SimpleDateFormat( "MMMMM", locale );
-        format.setTimeZone( timeZone );
-        return format.format( date );
-    }
-
 }
 
 
