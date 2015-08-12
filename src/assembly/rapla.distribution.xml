@@ -84,6 +84,10 @@
 			<outputDirectory>data</outputDirectory>
 		</fileSet>
 		<fileSet>
+			<directory>${project.basedir}/src/test/etc</directory>
+			<outputDirectory>etc</outputDirectory>
+		</fileSet>
+		<fileSet>
 			<directory>${rapla.distribution.directory}/logs</directory>
 			<outputDirectory>logs</outputDirectory>
 		</fileSet>
@@ -117,7 +121,7 @@
 			</includes>
 		</fileSet>
 		<fileSet>
-			<directory>${project.basedir}/</directory>
+			<directory>${rapla.distribution.directory}/</directory>
 			<outputDirectory></outputDirectory>
 			<includes>
 				<include>legal/**</include>

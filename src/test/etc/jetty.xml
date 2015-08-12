@@ -173,6 +173,7 @@
       <Set name="requestLog">
         <New id="requestLogImpl" class="ch.qos.logback.access.jetty.RequestLogImpl">
            <Set name="fileName"><SystemProperty name="jetty.home"/>/resources/logback-access.xml</Set>
+           <Call name="start" />
         </New>
       </Set>
    </Ref>

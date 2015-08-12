@@ -112,7 +112,7 @@
 				<version>1.6.3</version>
 				<extensions>true</extensions>
 				<configuration>
-				    <serverId>ossrh</serverId>
+					<serverId>ossrh</serverId>
 					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
@@ -142,6 +142,29 @@
 						<exclude>**/bootstrap/*.png</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<execution>
+						<id>copyLegalToMetaInf</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/META-INF</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${rapla.distribution.directory}/legal</directory>
+									<include>*</include>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -409,7 +432,7 @@
 				<version>2.5.5</version>
 				<executions>
 					<execution>
-					    <id>rapla.distribution</id>
+						<id>rapla.distribution</id>
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
@@ -424,7 +447,7 @@
 					</execution>
 					<execution>
 						<phase>package</phase>
-					    <id>rapla.jar</id>
+						<id>rapla.jar</id>
 						<goals>
 							<goal>single</goal>
 						</goals>
@@ -436,7 +459,7 @@
 							<attach>true</attach>
 						</configuration>
 					</execution>
-					
+
 				</executions>
 			</plugin>
 			<plugin>

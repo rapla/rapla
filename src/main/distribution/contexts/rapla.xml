@@ -76,7 +76,6 @@
       <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
       <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
       <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-      <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
       <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
     </Array>
   </Set>

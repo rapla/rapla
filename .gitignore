@@ -14,3 +14,5 @@
 /certificate/
 /target/
 /.settings/
+/src/test/data/
+/src/test/logs/
