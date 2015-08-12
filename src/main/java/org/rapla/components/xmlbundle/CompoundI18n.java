@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.MissingResourceException;
 
@@ -73,5 +76,14 @@ public class CompoundI18n implements I18nBundle {
     	} catch (MissingResourceException ex) {
     	    return outer.getString(key, locale);
     	}
+	}
+	
+	@Override
+	public Collection<String> getKeys()
+	{
+	    final LinkedHashSet<String> keys = new LinkedHashSet<String>();
+	    keys.addAll(inner.getKeys());
+	    keys.addAll(outer.getKeys());
+        return keys;
 	}
 } 

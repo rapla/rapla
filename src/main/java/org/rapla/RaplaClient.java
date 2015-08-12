@@ -13,15 +13,16 @@
 package org.rapla;
 
 import java.net.URL;
+import java.util.Locale;
 
 import javax.inject.Provider;
 
+import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.SimpleProvider;
@@ -29,9 +30,11 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
+import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.RemoteServiceCallerImpl;
 /**
@@ -110,6 +113,8 @@ public class RaplaClient extends ContainerImpl
                 simpleProvider.setValue(instanciate);
             }
         }
+        final LocalePackage localePackage = getInstance(RemoteServer.class).locale(System.currentTimeMillis()+"", raplaLocale.getLocale().toString()).get();
+        raplaLocale.setLocaleFormats(localePackage.getFormats());
         initialize();
     }
 

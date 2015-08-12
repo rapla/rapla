@@ -15,6 +15,7 @@ package org.rapla.storage.dbrm;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
+import org.rapla.components.i18n.LocalePackage;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.rest.gwtjsonrpc.common.ResultType;
@@ -40,5 +41,8 @@ public interface RemoteServer extends RemoteJsonService {
 	
 	@ResultType(LoginTokens.class)
     FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
+	
+	@ResultType(LocalePackage.class)
+	FutureResult<LocalePackage> locale(@WebParam(name="id")String id, @WebParam(name="locale") String locale);
 		
 }

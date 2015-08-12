@@ -17,6 +17,7 @@
 	<source path='entities/internal' />
 	<source path='entities/storage' />
 	<source path='entities/storage/internal' />
+	<source path='components/i18n' />
 	<source path='components/xmlbundle' />
 	<source path='components/calendarview' />
 	<source path='plugin/abstractcalendar' />
