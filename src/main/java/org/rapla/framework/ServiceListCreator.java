@@ -164,7 +164,11 @@ public class ServiceListCreator
             writer.write("  <source path='client'/>\n");
             writer.write("  <source path='plugin'/>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
-            writer.write("  <set-property name='user.agent' value='safari' />\n");
+            final String propertyUserAgent = System.getProperty("gwt.compiler.useragent", "").trim();
+            if(!propertyUserAgent.isEmpty())
+            {
+                writer.write("  <set-property name='user.agent' value='"+propertyUserAgent+"' />\n");
+            }
             writer.write("  <extend-property name='locale' values='de' />\n");
             writer.write("  <set-property name='locale' value='de' />\n");
             writer.write("  <set-property name='gwt.logging.logLevel' value='INFO'/>\n");
