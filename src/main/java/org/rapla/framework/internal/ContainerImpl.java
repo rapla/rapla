@@ -12,33 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-
 import org.rapla.AppointmentFormaterImpl;
+import org.rapla.RaplaDefaultResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
@@ -50,21 +25,25 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.Container;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaDefaultContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
@@ -142,6 +121,7 @@ public class ContainerImpl implements Container
         raplaLocale = new RaplaLocaleImpl();
         addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
         addResourceFile(RaplaComponent.RAPLA_RESOURCES);
+        addContainerProvidedComponent(RaplaDefaultResources.class,RaplaDefaultResources.class);
     }
     
     @SuppressWarnings("unchecked")

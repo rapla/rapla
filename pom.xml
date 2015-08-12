@@ -551,6 +551,12 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>com.intellij</groupId>
+			<artifactId>annotations</artifactId>
+			<version>12.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 			<version>${gson.version}</version>

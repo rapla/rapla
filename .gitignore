@@ -15,4 +15,5 @@
 /target/
 /.settings/
 /.idea/
+rapla.iml
 /src/test/logs/
