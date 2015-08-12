@@ -32,50 +32,50 @@
 			<source>${rapla.distribution.directory}/templates/scripts/rapla_sh</source>
 			<destName>rapla.sh</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>crlf</lineEnding>
+			<lineEnding>lf</lineEnding>
 		</file>
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/rapla_sh</source>
 			<destName>raplaclient.sh</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>crlf</lineEnding>
+			<lineEnding>lf</lineEnding>
 		</file>
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/raplaserver_sh</source>
 			<destName>raplaserver.sh</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>crlf</lineEnding>
+			<lineEnding>lf</lineEnding>
 		</file>
 		<!-- BAT files -->
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/rapla_bat</source>
 			<destName>rapla.bat</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>lf</lineEnding>
+			<lineEnding>crlf</lineEnding>
 		</file>		
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/rapla_bat</source>
 			<destName>raplaclient.bat</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>lf</lineEnding>
+			<lineEnding>crlf</lineEnding>
 		</file>		
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/raplaserver_bat</source>
 			<destName>raplaserver.bat</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>lf</lineEnding>
+			<lineEnding>crlf</lineEnding>
 		</file>		
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/raplaimport_bat</source>
 			<destName>raplaimport.bat</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>lf</lineEnding>
+			<lineEnding>crlf</lineEnding>
 		</file>		
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/raplaexport_bat</source>
 			<destName>raplaexport.bat</destName>
 			<fileMode>0720</fileMode>
-			<lineEnding>lf</lineEnding>
+			<lineEnding>crlf</lineEnding>
 		</file>		
 	</files>
 	<fileSets>
