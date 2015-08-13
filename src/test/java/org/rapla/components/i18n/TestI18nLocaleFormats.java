@@ -8,6 +8,13 @@ import org.junit.Test;
 
 public class TestI18nLocaleFormats
 {
+    @Test
+    public void testEncoding() throws Exception
+    {
+        final I18nLocaleFormats formats = I18nLocaleLoadUtil.read("de_DE");
+        final String month = formats.getMonths()[2];
+        Assert.assertEquals("März", month);
+    }
 
     @Test
     public void testAllFilesReadable()
