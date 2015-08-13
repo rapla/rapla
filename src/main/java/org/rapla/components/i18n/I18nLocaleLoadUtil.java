@@ -2,6 +2,8 @@ package org.rapla.components.i18n;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.Properties;
 
 import org.rapla.framework.RaplaException;
@@ -16,7 +18,8 @@ public class I18nLocaleLoadUtil
         final Properties properties = new Properties();
         try
         {
-            properties.load(stream);
+            Reader reader = new InputStreamReader(stream, "UTF-8");
+            properties.load(reader);
             String amPm = properties.getProperty("amPm");
             boolean isAmPm = Boolean.parseBoolean(properties.getProperty("isAmPm"));
             String formatDateShort = properties.getProperty("formatDateShort");
