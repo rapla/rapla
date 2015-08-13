@@ -81,10 +81,9 @@ public abstract class DateTools
 	    return getDaysInMonth( date2.year, date2.month);
 	}
 	
-	public static int getDaysInMonth(int year, int month)
+	public static int getDaysInMonth(final int year, final int month)
     {
-		int _month = month+1; 
-        if ( _month == 2)
+        if ( month == 2)
         {
             if ( isLeapYear(year))
             {
@@ -92,7 +91,7 @@ public abstract class DateTools
             }
         	return 28;
         }
-        else if ( _month  == 4 || _month == 6 || _month == 9 || _month == 11 )
+        else if ( month  == 4 || month == 6 || month == 9 || month == 11 )
         {
         	return 30;
         }
