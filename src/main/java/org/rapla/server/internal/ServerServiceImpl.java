@@ -215,7 +215,7 @@ public class ServerServiceImpl extends ContainerImpl
         {
             addContainerProvidedComponentInstance(ServerService.ENV_RAPLAMAIL, containerContext.mailSession);
         }
-
+        raplaLocale.setLocaleFormats(I18nLocaleLoadUtil.read(raplaLocale.getLocale().toString()));
         initialize();
         addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
         if (selectedStorage.equals("rapladb"))
