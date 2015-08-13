@@ -28,14 +28,6 @@ Example Usage:
 */
 
 public interface I18nBundle {
-    /** same as <code>format(key,new Object[] {obj1});</code>
-        @see #format(String,Object[])
-     */
-    String format(String key,Object obj1) throws MissingResourceException;
-    /** same as <code>format(key,new Object[] {obj1, obj2});</code>
-        @see #format(String,Object[])
-     */
-    String format(String key,Object obj1,Object obj2) throws MissingResourceException;
     /** same as
         <code>
         (new MessageFormat(getString(key))).format(obj);
@@ -53,10 +45,8 @@ public interface I18nBundle {
     /** returns the specified string from the selected resource-file for the specified locale
     @throws MissingResourceException if not found or can't be loaded.
      */
-    String getString( String key, Locale locale);
+    String getString( String key, Locale locale) throws MissingResourceException;
     
-    Collection<String> getKeys();
-
     /** @return the selected language. */
     String getLang();
 

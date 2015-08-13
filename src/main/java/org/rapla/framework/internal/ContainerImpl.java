@@ -14,10 +14,14 @@ package org.rapla.framework.internal;
 
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaDefaultResources;
+import org.rapla.components.i18n.AbstractBundle;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -56,13 +60,13 @@ public class ContainerImpl implements Container
     public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
     
     protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
-    protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String,RoleEntry>()); 
+    protected Map<String,RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String, RoleEntry>());
     Logger logger;
     Class webserviceAnnotation;
     protected CommandScheduler commandQueue;
-    protected I18nBundle i18n;
     protected final Provider<RemoteServiceCaller> remoteServiceCaller;
     public static boolean DEVELOPMENT_RESSOLVING = false;
+    protected I18nBundle i18n;
     protected RaplaLocaleImpl raplaLocale;
 
     public ContainerImpl( Logger logger, final Provider<RemoteServiceCaller> remoteServiceCaller)  {
@@ -117,11 +121,17 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(Container.class, this);
         addContainerProvidedComponentInstance(Logger.class,logger);
         commandQueue = createCommandQueue();
-        addContainerProvidedComponentInstance( CommandScheduler.class, commandQueue);
-        raplaLocale = new RaplaLocaleImpl();
-        addContainerProvidedComponentInstance( RaplaLocale.class,raplaLocale);
+        addContainerProvidedComponentInstance(CommandScheduler.class, commandQueue);
+        addContainerProvidedComponent(LocaleSelector.class, LocaleSelectorImpl.class);
+        addContainerProvidedComponent(BundleManager.class, ServerBundleManager.class);
+        addContainerProvidedComponent(RaplaLocale.class, RaplaLocaleImpl.class);
+        addResourceFile(RaplaDefaultResources.class);
+        try {
+            raplaLocale = (RaplaLocaleImpl)getContext().lookup(RaplaLocale.class);
+        } catch (RaplaContextException e) {
+           throw new IllegalStateException(e);
+        }
         addResourceFile(RaplaComponent.RAPLA_RESOURCES);
-        addContainerProvidedComponent(RaplaDefaultResources.class,RaplaDefaultResources.class);
     }
     
     @SuppressWarnings("unchecked")
@@ -161,10 +171,23 @@ public class ContainerImpl implements Container
 
     public void addResourceFile(TypedComponentRole<I18nBundle> file)
     {
-        LocaleSelector localeSelector = raplaLocale.getLocaleSelector();
-        addContainerProvidedComponentInstance(file, new I18nBundleImpl(localeSelector,getLogger(), file.getId()));
+        addContainerProvidedComponentInstance(file, new I18nBundleImpl(getLogger(), file.getId()));
     }
-    
+
+    public Iterable<Class> getResourceBundles() {
+        return resourceBundles;
+    }
+
+    Set<Class>  resourceBundles = new LinkedHashSet<Class>();
+
+    public <T extends AbstractBundle> void  addResourceFile(Class<T> abstractBundle )
+    {
+        addContainerProvidedComponent(abstractBundle, abstractBundle);
+        resourceBundles.add( abstractBundle);
+    }
+
+
+
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass) {
         addContainerProvidedComponent(roleInterface, implementingClass, null, (Configuration)null);
     }

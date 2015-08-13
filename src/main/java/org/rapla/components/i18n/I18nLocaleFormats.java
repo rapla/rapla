@@ -16,7 +16,7 @@ public class I18nLocaleFormats
     {
     }
 
-    I18nLocaleFormats(boolean isAmPm, String amPm, String formatDateShort, String formatDateLong, String[] weekdays, String[] months, String formatHour,
+    public I18nLocaleFormats(boolean isAmPm, String amPm, String formatDateShort, String formatDateLong, String[] weekdays, String[] months, String formatHour,
             String formatMonthYear, String formatTime)
     {
         super();

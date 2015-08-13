@@ -50,9 +50,9 @@ public final class RaplaCalendarViewExample {
     JFrame frame;
     private List<Appointment> appointments = new ArrayList<Appointment>();
     
-    RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl();
+    RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(null);
     public RaplaCalendarViewExample() {
-        raplaLocale.getLocaleSelector().setLocale( Locale.GERMANY);
+        //raplaLocale.getLocaleSelector().setLocale( Locale.GERMANY);
         frame = new JFrame("Calendar test") {
             private static final long serialVersionUID = 1L;
 
@@ -109,7 +109,7 @@ public final class RaplaCalendarViewExample {
         tabbedPane.addTab("Weekview", wv.getComponent());
         Date today = new Date();
         // set to German locale
-        wv.setLocale( new RaplaLocaleImpl());
+        wv.setLocale( new RaplaLocaleImpl(null));
 
         wv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday

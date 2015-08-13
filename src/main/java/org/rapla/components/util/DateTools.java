@@ -371,8 +371,25 @@ public abstract class DateTools
        return result;
    }
 
-   
-   public static class DateWithoutTimezone
+    public static Locale getLocale(String localeString) {
+        String[] parts = localeString.split("_");
+        if ( parts.length == 0)
+        {
+            throw new IllegalArgumentException("not a valid locale" + localeString);
+        }
+        if ( parts.length == 1)
+        {
+            return new Locale(parts[0]);
+        }
+        else        if ( parts.length <3)
+        {
+            return new Locale(parts[0], parts[1]);
+        }
+        return new Locale(parts[0], parts[1],parts[2]);
+    }
+
+
+    public static class DateWithoutTimezone
    {
 	   public int year;
 	   public int month;

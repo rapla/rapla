@@ -41,13 +41,11 @@ public class I18nBundleImplTest extends AbstractI18nTest {
 
     private I18nBundleImpl create(String config) throws Exception {
         I18nBundleImpl i18n;
-        localeSelector = new LocaleSelectorImpl();
-        i18n = new I18nBundleImpl(localeSelector,new ConsoleLogger(), config);
+        i18n = new I18nBundleImpl(new ConsoleLogger(), config);
         return i18n;
     }
 
     protected void tearDown() {
-        i18n.dispose();
     }
     public I18nBundle getI18n() {
         return i18n;

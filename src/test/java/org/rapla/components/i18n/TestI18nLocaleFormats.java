@@ -5,15 +5,17 @@ import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
+import org.rapla.components.util.DateTools;
 
 public class TestI18nLocaleFormats
 {
     @Test
     public void testEncoding() throws Exception
     {
-        final I18nLocaleFormats formats = I18nLocaleLoadUtil.read("de_DE");
+        final I18nLocaleFormats formats = I18nLocaleLoadUtil.read(Locale.GERMANY);
         final String month = formats.getMonths()[2];
-        Assert.assertEquals("März", month);
+        Assert.assertEquals("Mï¿½rz", month);
     }
 
     @Test
@@ -27,7 +29,7 @@ public class TestI18nLocaleFormats
             final String name = file.getName();
             if (name.endsWith(suffix))
             {
-                final String localeString = name.substring(0, name.length() - suffix.length());
+                final Locale localeString = DateTools.getLocale(name.substring(0, name.length() - suffix.length()));
                 try
                 {
                     final I18nLocaleFormats format = I18nLocaleLoadUtil.read(localeString);
@@ -60,7 +62,7 @@ public class TestI18nLocaleFormats
             {
                 try
                 {
-                    final I18nLocaleFormats format = I18nLocaleLoadUtil.read(localeString);
+                    final I18nLocaleFormats format = I18nLocaleLoadUtil.read(locale);
                     Assert.assertNotNull(format.getFormatDateLong());
                     Assert.assertNotNull(format.isAmPmFormat());
                     Assert.assertNotNull(format.getAmPmFormat());

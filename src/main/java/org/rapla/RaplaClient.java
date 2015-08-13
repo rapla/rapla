@@ -113,8 +113,6 @@ public class RaplaClient extends ContainerImpl
                 simpleProvider.setValue(instanciate);
             }
         }
-        final LocalePackage localePackage = getInstance(RemoteServer.class).locale(System.currentTimeMillis()+"", raplaLocale.getLocale().toString()).get();
-        raplaLocale.setLocaleFormats(localePackage.getFormats());
         initialize();
     }
 

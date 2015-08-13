@@ -19,6 +19,8 @@ import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.LocaleSelector;
 
+import javax.inject.Inject;
+
 
 /** If you want to change the locales during runtime put a LocaleSelector
     in the base-context. Instances of {@link I18nBundleImpl} will then register them-self
@@ -29,6 +31,7 @@ public class LocaleSelectorImpl implements LocaleSelector {
     Locale locale;
     Vector<LocaleChangeListener> localeChangeListeners = new Vector<LocaleChangeListener>();
 
+    @Inject
     public LocaleSelectorImpl() {
         locale = Locale.getDefault();
     }

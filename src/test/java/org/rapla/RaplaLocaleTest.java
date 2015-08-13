@@ -52,6 +52,7 @@ public class RaplaLocaleTest extends TestCase {
 	return config;
     }
 
+    /*
     public void testDateFormat3() throws Exception
     {
         RaplaLocale raplaLocale = new RaplaLocaleImpl(createConfig("de","DE"));
@@ -69,7 +70,7 @@ public class RaplaLocaleTest extends TestCase {
         String s = raplaLocale.formatTime(cal.getTime());
         assertEquals("9:00 PM", s);
     }
-
+*/
 
 
 }

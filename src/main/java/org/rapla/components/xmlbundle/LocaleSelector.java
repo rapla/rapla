@@ -35,5 +35,4 @@ public interface LocaleSelector {
     void setCountry(String country);
 
     String getLanguage();
-
 }

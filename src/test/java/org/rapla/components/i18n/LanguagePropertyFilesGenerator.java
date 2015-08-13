@@ -20,7 +20,7 @@ public class LanguagePropertyFilesGenerator
             final ULocale[] availableLocales = ULocale.getAvailableLocales();
             int i = 0;
             final File parentDir = new File("src" + File.separator + "main" + File.separator + "resources" + File.separator + "org" + File.separator + "rapla"
-                    + File.separator + "components" + File.separator + "i18n");
+                    + File.separator + "components" + File.separator + "i18n" + File.separator + "server" + File.separator + "locales");
             if (parentDir.exists())
             {
                 System.out.println("deleting properties dir");
@@ -31,7 +31,7 @@ public class LanguagePropertyFilesGenerator
             for (ULocale uLocale : availableLocales)
             {
                 i++;
-                final PrintWriter pw = new PrintWriter(new File(parentDir, uLocale.toString() + ".properties"), "UTF-8");
+                final PrintWriter pw = new PrintWriter(new File(parentDir, "format_"+uLocale.toString() + ".properties"), "UTF-8");
                 final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(uLocale);
                 pw.println("amPm=" + Arrays.toString(dateFormatSymbols.getAmPmStrings()));
                 pw.println("isAmPm=" + isAmPm(uLocale, dateFormatSymbols));
@@ -80,6 +80,7 @@ public class LanguagePropertyFilesGenerator
             {
                 deleteDir(file);
             }
+            file.delete();
         }
         parentDir.delete();
     }

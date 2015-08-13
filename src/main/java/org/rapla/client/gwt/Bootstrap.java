@@ -42,24 +42,6 @@ public class Bootstrap
         FacadeImpl facadeImpl = (FacadeImpl) facade;
         facadeImpl.setCachingEnabled(false);
         FutureResult<VoidResult> load = facadeImpl.load();
-        final FutureResult<LocalePackage> locale = remoteServer.locale("123", "de");
-        AsyncCallback<LocalePackage> localeCallback = new AsyncCallback<LocalePackage>()
-        {
-            
-            @Override
-            public void onSuccess(LocalePackage result)
-            {
-                logger.info("loaded language package. Starting application");
-                ((AbstractRaplaLocale) raplaLocale).setLocaleFormats(result.getFormats());
-            }
-            
-            @Override
-            public void onFailure(Throwable caught)
-            {
-                logger.error(caught.getMessage(), caught);
-            }
-        };
-        locale.get(localeCallback);
         logger.info("Loading resources");
         load.get(new AsyncCallback<VoidResult>()
         {

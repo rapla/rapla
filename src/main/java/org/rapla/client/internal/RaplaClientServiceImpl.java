@@ -201,9 +201,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 		
     	addContainerProvidedComponentInstance(ClientServiceContainer.class, this);
     	
-    	RaplaLocaleImpl raplaLocale = (RaplaLocaleImpl) getContext().lookup( RaplaLocale.class);
-        addContainerProvidedComponentInstance( LocaleSelector.class,raplaLocale.getLocaleSelector());        
-        addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
+    	addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
         addContainerProvidedComponent( RaplaImages.class, RaplaImages.class );
         addContainerProvidedComponent( RaplaClipboard.class, RaplaSwingClipboard.class );

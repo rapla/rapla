@@ -12,15 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.impl;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
-
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
@@ -29,7 +21,8 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import edu.emory.mathcs.backport.java.util.Collections;
+import java.text.MessageFormat;
+import java.util.*;
 
 /** The default implementation of the xmlbundle component allows reading from
  a compiled ResourceBundle as well as directly from the source-xml-file.
@@ -55,13 +48,11 @@ import edu.emory.mathcs.backport.java.util.Collections;
  @see LocaleSelector
  */
 
-public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposable
+public class I18nBundleImpl implements I18nBundle
 {
     String className;
     Locale locale;
     Logger logger = null;
-    LocaleSelector localeSelector;
-    
     final RaplaDictionary dict;
     
     LinkedHashMap<Locale,LanguagePack> packMap = new LinkedHashMap<Locale,LanguagePack>();
@@ -106,23 +97,16 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
      * @throws RaplaException when the resource-file is missing or can't be accessed
      or can't be parsed
      */
-    public I18nBundleImpl( LocaleSelector selector,  Logger logger, String classname )
+    public I18nBundleImpl(  Logger logger, String classname )
     {
-        this.localeSelector = selector;
         enableLogging( logger );
         this.className = classname;
         if ( className != null ) 
         {
             className = className.trim();
         }
-        setLocale(localeSelector.getLocale());
-        localeSelector.addLocaleChangeListener( this);
+        setLocale( Locale.getDefault());
         dict = new RaplaDictionary(getLocale().getLanguage());
-    }
-
-    public void dispose()
-    {
-        localeSelector.removeLocaleChangeListener( this );
     }
 
     public void localeChanged( LocaleChangeEvent evt )
@@ -191,17 +175,6 @@ public class I18nBundleImpl implements I18nBundle, LocaleChangeListener, Disposa
 		return pack.getString(key);
     }
     
-    @Override
-    public Collection<String> getKeys()
-    {
-        Locale locale = getLocale();
-        LanguagePack pack = getPack(locale);
-        @SuppressWarnings("unchecked")
-        final ArrayList<String> keys = Collections.list(pack.getKeys());
-        return keys;
-    }
-
-
 //    /* replaces XHTML with HTML because swing can't display proper XHTML*/
 //    String filterXHTML( String text )
 //    {

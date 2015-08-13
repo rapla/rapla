@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.rapla.RaplaDefaultResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.components.util.TimeInterval;
@@ -73,11 +74,11 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     ClientFacade facade;
     private RaplaLocale raplaLocale;
     private Logger logger;
-    private I18nBundle i18n;
+    private RaplaDefaultResources i18n;
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
     @Inject
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaDefaultResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -105,7 +106,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         return logger;
     }
     
-    protected I18nBundle getI18n()
+    protected RaplaDefaultResources getI18n()
     {
         return i18n;
     }

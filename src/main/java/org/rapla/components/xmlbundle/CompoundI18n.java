@@ -77,13 +77,4 @@ public class CompoundI18n implements I18nBundle {
     	    return outer.getString(key, locale);
     	}
 	}
-	
-	@Override
-	public Collection<String> getKeys()
-	{
-	    final LinkedHashSet<String> keys = new LinkedHashSet<String>();
-	    keys.addAll(inner.getKeys());
-	    keys.addAll(outer.getKeys());
-        return keys;
-	}
-} 
+}

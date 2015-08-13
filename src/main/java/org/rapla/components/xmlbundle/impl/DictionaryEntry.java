@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-class DictionaryEntry {
+public class DictionaryEntry {
     String key;
     Map<String,String> translations = Collections.synchronizedMap(new TreeMap<String,String>());
     

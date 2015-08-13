@@ -20,6 +20,7 @@ import java.util.TimeZone;
 
 import javax.inject.Inject;
 
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
@@ -28,7 +29,6 @@ import org.rapla.framework.DefaultConfiguration;
 
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
-	LocaleSelector localeSelector = new LocaleSelectorImpl();
 
     String[] availableLanguages;
 
@@ -38,52 +38,24 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     String CHARSET = "charset";
     String charsetForHtml;
     private TimeZone importExportTimeZone;
-
     @Inject
-    public RaplaLocaleImpl( )
+    public RaplaLocaleImpl(BundleManager bundleManager)
     {
-        this(new DefaultConfiguration());
-    }
-    
-	public RaplaLocaleImpl(Configuration config )  
-    {
-		String selectedCountry = config.getChild( COUNTRY).getValue(Locale.getDefault().getCountry() );
-        Configuration languageConfig = config.getChild( LANGUAGES );
-        charsetForHtml = config.getChild(CHARSET).getValue("utf-8");
-        Configuration[] languages = languageConfig.getChildren( LANGUAGE );
-        if ( languages.length == 0)
-        {
-            availableLanguages = new String[]{
-                    "de",
-                    "en",
-                    "fr",
-                    "es",
-                    "zh",
-                    "cs",
-                    "nl",
-                    "pl",
-                    "pt"
-            };
-        }
-        else
-        {
-            availableLanguages = new String[languages.length];
-            for ( int i=0;i<languages.length;i++ ) {
-                availableLanguages[i] = languages[i].getValue("en");
-            }
-        }
-        String selectedLanguage = languageConfig.getAttribute( "default", Locale.getDefault().getLanguage() );
-        if (selectedLanguage.trim().length() == 0)
-            selectedLanguage = Locale.getDefault().getLanguage();
-        localeSelector.setLocale( new Locale(selectedLanguage, selectedCountry) );
+         super(bundleManager);
+        availableLanguages = new String[]{
+                "de",
+                "en",
+                "fr",
+                "es",
+                "zh",
+                "cs",
+                "nl",
+                "pl",
+                "pt"
+        };
         importExportTimeZone = TimeZone.getDefault();
     }
 
-
-	public LocaleSelector getLocaleSelector() {
-        return localeSelector;
-    }
-	
 	public Date fromUTCTimestamp(Date date)
 	{
         long time = date.getTime();
@@ -138,15 +110,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	    return format.format( date );
     }
 
-
-
-    /* (non-Javadoc)
-     * @see org.rapla.common.IRaplaLocale#getLocale()
-     */
-    public Locale getLocale() {
-        return localeSelector.getLocale();
-    }
-    
     public String getCharsetNonUtf()
     {
         return charsetForHtml;

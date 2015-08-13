@@ -43,7 +43,7 @@ public class RaplaGWTModule implements GinModule{
     @Override
     public void configure(GinBinder binder) {
         binder.bind(Logger.class).toProvider(RaplaJDKLoggingAdapterWithoutClassnameSupport.class);
-        binder.bind(I18nBundle.class).annotatedWith(Names.named(RaplaComponent.RaplaResourcesId)).to(GWTSampleI18nBundle.class).in(Singleton.class);
+      //  binder.bind(I18nBundle.class).annotatedWith(Names.named(RaplaComponent.RaplaResourcesId)).to(GWTSampleI18nBundle.class).in(Singleton.class);
         binder.bind( RaplaLocale.class).to(GWTRaplaLocale.class).in(Singleton.class);
         binder.bind( RemoteConnectionInfo.class).in(Singleton.class);
         binder.bind( CommandScheduler.class).to(GWTCommandScheduler.class).in(Singleton.class);

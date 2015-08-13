@@ -1,26 +1,26 @@
 package org.rapla;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
 import org.jetbrains.annotations.PropertyKey;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.AbstractBundle;
+import org.rapla.components.i18n.BundleManager;
 
-public class RaplaDefaultResources {
-    I18nBundle i18n;
+import javax.inject.Inject;
+
+public class RaplaDefaultResources extends AbstractBundle {
     static final String ID = "org.rapla.RaplaResources";
     @Inject
-    public RaplaDefaultResources(@Named(ID) I18nBundle i18n)
+    public RaplaDefaultResources(BundleManager loader )
     {
-        this.i18n = i18n;
+      super(ID, loader);
     }
     public String getString(@PropertyKey(resourceBundle = ID) String key)
     {
-        return i18n.getString(key);
+        return super.getString(key);
     }
+
     public String format(@PropertyKey(resourceBundle = ID) String key, Object... obj)
     {
-        return i18n.format(key, obj);
+        return super.format(key, obj);
     }
 
 

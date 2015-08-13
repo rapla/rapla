@@ -19,23 +19,33 @@ public class ResourceBundleLoader
     {
         String tries[] = new String[7];
         StringBuffer buf = new StringBuffer();
-        tries[6] = className;
+        tries[6] = className != null ? className : "";
+        
         buf.append( className );
         if ( locale.getLanguage().length() > 0 )
         {
-            buf.append( '_' );
+            if ( buf.length() > 0 )
+            {
+                buf.append( '_' );
+            }
             buf.append( locale.getLanguage() );
             tries[2] = buf.toString();
         }
         if ( locale.getCountry().length() > 0 )
         {
-            buf.append( '_' );
+            if ( buf.length() > 0)
+            {
+                buf.append( '_' );
+            }
             buf.append( locale.getCountry() );
             tries[1] = buf.toString();
         }
         if ( locale.getVariant().length() > 0 )
         {
-            buf.append( '_' );
+            if ( buf.length() > 0)
+            {
+                buf.append( '_' );
+            }
             buf.append( locale.getVariant() );
             tries[0] = buf.toString();
         }
@@ -48,13 +58,19 @@ public class ResourceBundleLoader
         }
         if ( defaultLocale.getCountry().length() > 0 )
         {
-            buf.append( '_' );
+            if ( buf.length() > 0)
+            {
+                buf.append( '_' );
+            }
             buf.append( defaultLocale.getCountry() );
             tries[4] = buf.toString();
         }
         if ( defaultLocale.getVariant().length() > 0 )
         {
-            buf.append( '_' );
+            if ( buf.length() > 0)
+            {
+                buf.append( '_' );
+            }
             buf.append( defaultLocale.getVariant() );
             tries[3] = buf.toString();
         }

@@ -8,27 +8,32 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Iterator;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.facade.RaplaComponent;
+import org.rapla.RaplaDefaultResources;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Container;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.server.RaplaServerExtensionPoints;
 
-public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPageGenerator
+public class RaplaIndexPageGenerator implements RaplaPageGenerator
 {
 	Collection<RaplaMenuGenerator> entries;
+	RaplaDefaultResources i18n;
 	
-    public RaplaIndexPageGenerator( RaplaContext context ) throws RaplaContextException
+	ClientFacade facade;
+	@Inject
+    public RaplaIndexPageGenerator( Container container, RaplaDefaultResources i18n, ClientFacade facade) throws RaplaContextException
     {
-        super( context);
-        entries = context.lookup(Container.class).lookupServicesFor( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT);
+        this.i18n = i18n;
+        this.facade = facade;
+        entries = container.lookupServicesFor( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT);
     }
 
     public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response )
@@ -50,9 +55,9 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\""+linkPrefix+"images/favicon.ico\">");
 		out.println("    <title>");
 		 String title;
-		 final String defaultTitle = getI18n().getString("rapla.title");
+		 final String defaultTitle = i18n.getString("rapla.title");
 		 try {
-            title= getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
+            title= facade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
         } catch (RaplaException e) {
             title = defaultTitle; 
         }
@@ -65,7 +70,7 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		out.println(title);
 		out.println("    </h3>");
 		generateMenu( request, out);
-		out.println(getI18n().getString("webinfo.text"));
+		out.println(i18n.getString("webinfo.text"));
 		out.println("  </body>");
 		out.println("</html>");
 		out.close();
