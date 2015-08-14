@@ -14,7 +14,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContextException;
@@ -25,11 +25,11 @@ import org.rapla.server.RaplaServerExtensionPoints;
 public class RaplaIndexPageGenerator implements RaplaPageGenerator
 {
 	Collection<RaplaMenuGenerator> entries;
-	RaplaDefaultResources i18n;
+	RaplaResources i18n;
 	
 	ClientFacade facade;
 	@Inject
-    public RaplaIndexPageGenerator( Container container, RaplaDefaultResources i18n, ClientFacade facade) throws RaplaContextException
+    public RaplaIndexPageGenerator( Container container, RaplaResources i18n, ClientFacade facade) throws RaplaContextException
     {
         this.i18n = i18n;
         this.facade = facade;

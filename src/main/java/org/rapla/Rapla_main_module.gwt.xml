@@ -5,23 +5,25 @@
   "http://google-web-toolkit.googlecode.com/svn/tags/2.5.1/distro-source/core/src/gwt-module.dtd">
 <module rename-to='Rapla_main_module'>
 	<!-- Specify the paths for translatable code -->
-	<source path='client' />
 	<source path='components/util' />
-	<source path='entities' />
-	<source path='entities/configuration' />
-	<source path='entities/configuration/internal' />
-	<source path='entities/domain' />
-	<source path='entities/domain/internal' />
-	<source path='entities/dynamictype' />
-	<source path='entities/dynamictype/internal' />
-	<source path='entities/internal' />
+	<source path='entities'>
+	    <exclude name='**/server/**' />
+    </source>
 	<source path='entities/storage' />
 	<source path='entities/storage/internal' />
-	<source path='components/i18n' />
-	<source path='components/xmlbundle' />
+	<source path='components/i18n'>
+	   <exclude name='**/server/**' />
+	</source>
+	<source path='components/xmlbundle'>
+   	    <exclude name='**/server/**' />
+	</source>
 	<source path='components/calendarview' />
-	<source path='plugin/abstractcalendar' />
-	<source path='plugin/abstractcalendar/server' />
+	<source path='plugins'>
+   	   <exclude name='**/server/**' />
+	</source>
+	<source path='client'>
+		<exclude name='**/swing/**' />
+	</source>
 	<source path='components/xmlbundle/impl' />
 	<source path='gui' />
 	<source path='gui/toolkit' />
@@ -29,16 +31,23 @@
 	<source path='gui/internal/edit' />
 	<source path='gui/internal/edit/reservation' />
 	<source path='gui/internal/common' />
-	<source path='framework' />
-	<source path='framework/logger' />
+    <source path='framework/internal' includes="AbstractRaplaLocale.java" />
+    <source path='framework' includes="SimpleProvider.java" />
+    <source path='framework' includes="RaplaException.java" />
+    <source path='framework' includes="RaplaContext.java" />
+    <source path='framework' includes="RaplaContextException.java" />
+    <source path='framework' includes="DefaultConfiguration.java" />
+    <source path='framework' includes="ConfigurationException.java" />
+    <source path='framework' includes="Configuration.java" />
+	<source path='framework/logger' includes="Logger.java" />
 	<source path='facade' />
 	<source path='facade/internal' />
-	<source path='shared' />
 	<source path='storage/dbrm' />
 	<source path='storage/impl' />
 	<source path='storage/xml' />
 	<source path='storage' />
 	<source path='' includes="ConnectInfo.java" />
+	<source path='' includes="RaplaDefaultResources.java" />
 	<source path='' includes="AppointmentFormaterImpl.java" />
 
 	<inherits name="Gwt_jre"/>

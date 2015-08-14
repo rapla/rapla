@@ -1,6 +1,6 @@
 package org.rapla.client.gwt;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -22,7 +22,7 @@ public class ReservationControllerGWTImpl extends ReservationControllerImpl
 {
 
     @Inject
-    public ReservationControllerGWTImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaDefaultResources i18n, AppointmentFormater appointmentFormater,
+    public ReservationControllerGWTImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater,
             ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard);

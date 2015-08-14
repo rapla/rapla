@@ -13,7 +13,7 @@
 package org.rapla.framework.internal;
 
 import org.rapla.AppointmentFormaterImpl;
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -125,13 +125,12 @@ public class ContainerImpl implements Container
         addContainerProvidedComponent(LocaleSelector.class, LocaleSelectorImpl.class);
         addContainerProvidedComponent(BundleManager.class, ServerBundleManager.class);
         addContainerProvidedComponent(RaplaLocale.class, RaplaLocaleImpl.class);
-        addResourceFile(RaplaDefaultResources.class);
+        addResourceFile(RaplaResources.class);
         try {
             raplaLocale = (RaplaLocaleImpl)getContext().lookup(RaplaLocale.class);
         } catch (RaplaContextException e) {
            throw new IllegalStateException(e);
         }
-        addResourceFile(RaplaComponent.RAPLA_RESOURCES);
     }
     
     @SuppressWarnings("unchecked")
@@ -169,6 +168,11 @@ public class ContainerImpl implements Container
         }
     }
 
+    /**
+     *
+     * @Deprecated use BundleClasses instead of interfaces
+     */
+    @Deprecated
     public void addResourceFile(TypedComponentRole<I18nBundle> file)
     {
         addContainerProvidedComponentInstance(file, new I18nBundleImpl(getLogger(), file.getId()));

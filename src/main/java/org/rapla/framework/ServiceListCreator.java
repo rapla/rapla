@@ -37,6 +37,7 @@ import org.rapla.framework.logger.Logger;
 import com.google.gwt.inject.client.GinModule;
 
 import edu.emory.mathcs.backport.java.util.Arrays;
+import org.rapla.plugin.weekview.WeekViewPlugin;
 
 /** Helper Class for automated creation of the rapla-plugin.list in the
  * META-INF directory. Can be used in the build environment.
@@ -162,7 +163,9 @@ public class ServiceListCreator
                 writer.write("  <inherits name='"+inherit+"'/>\n");
             }
             writer.write("  <source path='client'/>\n");
-            writer.write("  <source path='plugin'/>\n");
+            writer.write("  <source path='plugin'>\n");
+            writer.write("    <exclude name='**/server/**' />\n");
+            writer.write("  </source>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
             final String propertyUserAgent = System.getProperty("gwt.compiler.useragent", "").trim();
             if(!propertyUserAgent.isEmpty())
