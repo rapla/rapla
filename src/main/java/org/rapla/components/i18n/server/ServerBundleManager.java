@@ -36,7 +36,7 @@ public class ServerBundleManager implements BundleManager {
 
     public Collection<String> getKeys(String packageId)
     {
-        ResourceBundle pack = loadLocale(createKey(packageId, Locale.ENGLISH), Locale.ENGLISH);
+        ResourceBundle pack = loadLocale(packageId, Locale.ENGLISH);
         final ArrayList<String> keys = Collections.list(pack.getKeys());
         return keys;
     }
