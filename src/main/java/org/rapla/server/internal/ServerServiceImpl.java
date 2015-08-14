@@ -664,21 +664,14 @@ public class ServerServiceImpl extends ContainerImpl
             {
                 
                 try {
-                    I18nLocaleFormats formats;
-//                    try {
-//                        formats = I18nLocaleLoadUtil.read(localeString);
-//                    } catch (RaplaException e) {
-//                        getLogger().warn("No locales found for given locale " + localeString);
-//                        formats = I18nLocaleLoadUtil.read(i18n.getLocale().toString());
-//                    }
-                    formats = getContext().lookup(BundleManager.class).getFormats();
+                    Locale locale = DateTools.getLocale(localeString);
+                    final I18nLocaleFormats formats = I18nLocaleLoadUtil.read(locale);
                     Map<String, Map<String, String>> bundles = new LinkedHashMap<String, Map<String, String>>();
                     for (Class<AbstractBundle> clazz : ServerServiceImpl.this.getResourceBundles()) {
                         AbstractBundle i18n = getContext().lookup(clazz);
                         String packageId = i18n.getPackageId();
                         final Collection<String> keys = i18n.getKeys();
                         final LinkedHashMap<String, String> raplaResourceIdMap = new LinkedHashMap<String, String>();
-                        Locale locale = DateTools.getLocale(localeString);
                         bundles.put(packageId, raplaResourceIdMap);
                         for (String key : keys) {
                             raplaResourceIdMap.put(key, i18n.getString(key, locale));
