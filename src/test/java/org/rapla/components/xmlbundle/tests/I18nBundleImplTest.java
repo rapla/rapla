@@ -41,7 +41,7 @@ public class I18nBundleImplTest extends AbstractI18nTest {
 
     private I18nBundleImpl create(String config) throws Exception {
         I18nBundleImpl i18n;
-        i18n = new I18nBundleImpl(new ConsoleLogger(), config);
+        i18n = new I18nBundleImpl(new ConsoleLogger(), config, new LocaleSelectorImpl());
         return i18n;
     }
 

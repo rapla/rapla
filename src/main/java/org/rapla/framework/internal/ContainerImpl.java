@@ -45,6 +45,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
+import java.nio.channels.IllegalSelectorException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -175,7 +176,16 @@ public class ContainerImpl implements Container
     @Deprecated
     public void addResourceFile(TypedComponentRole<I18nBundle> file)
     {
-        addContainerProvidedComponentInstance(file, new I18nBundleImpl(getLogger(), file.getId()));
+        LocaleSelector localeSelector;
+        try
+        {
+            localeSelector = getContext().lookup(LocaleSelector.class);
+        }
+        catch (RaplaContextException e)
+        {
+            throw new IllegalStateException("LocaleSelector not found: "+e.getMessage(), e);
+        }
+        addContainerProvidedComponentInstance(file, new I18nBundleImpl(getLogger(), file.getId(), localeSelector));
     }
 
     public Iterable<Class> getResourceBundles() {
