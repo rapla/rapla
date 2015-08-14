@@ -51,12 +51,6 @@ public class GWTRaplaLocale extends AbstractRaplaLocale {
 		throw new UnsupportedOperationException("Not supported in gwt. Please call on server");
 	}
 
-	public Locale getLocale() {
-		// FIssXME needs to be replaced by real locale
-		return Locale.GERMANY;
-	}
-
-
     @Override
     public Date fromUTCTimestamp(Date timestamp) {
        throw new UnsupportedOperationException();
