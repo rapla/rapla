@@ -39,7 +39,15 @@
     <source path='framework' includes="DefaultConfiguration.java" />
     <source path='framework' includes="ConfigurationException.java" />
     <source path='framework' includes="Configuration.java" />
+    <source path='framework' includes="RaplaLocale.java" />
+    <source path='framework' includes="TypedComponentRole.java" />
+    <source path='framework' includes="Disposable.java" />
+    <source path='framework' includes="RaplaSynchronizationException.java" />
+    <source path='framework' includes="Container.java" />
+    <source path='framework/internal' includes="RaplaLocaleImpl.java" />
+    <source path='framework/internal' includes="ContainerImpl.java" />
 	<source path='framework/logger' includes="Logger.java" />
+	<source path='framework/logger/internal' includes="RaplaJDKLoggingAdapterWithoutClassnameSupport.java" />
 	<source path='facade' />
 	<source path='facade/internal' />
 	<source path='storage/dbrm' />

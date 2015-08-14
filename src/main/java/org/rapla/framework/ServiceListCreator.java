@@ -164,7 +164,7 @@ public class ServiceListCreator
             }
             writer.write("  <source path='client'/>\n");
             writer.write("  <source path='plugin'>\n");
-            writer.write("    <exclude name='**/server/**' />\n");
+//            writer.write("    <exclude name='**/server/**' />\n");
             writer.write("  </source>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
             final String propertyUserAgent = System.getProperty("gwt.compiler.useragent", "").trim();
