@@ -32,28 +32,39 @@ public class LanguagePropertyFilesGenerator
             {
                 i++;
                 final PrintWriter pw = new PrintWriter(new File(parentDir, "format_"+uLocale.toString() + ".properties"), "UTF-8");
-                final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(uLocale);
-                pw.println("amPm=" + Arrays.toString(dateFormatSymbols.getAmPmStrings()));
-                pw.println("isAmPm=" + isAmPm(uLocale, dateFormatSymbols));
-                pw.println("shortMonths=" + Arrays.toString(dateFormatSymbols.getShortMonths()));
-                pw.println("months=" + Arrays.toString(dateFormatSymbols.getMonths()));
-                pw.println("shortWeekdays=" + Arrays.toString(dateFormatSymbols.getShortWeekdays()));
-                pw.println("weekdays=" + Arrays.toString(dateFormatSymbols.getWeekdays()));
-                Calendar cal = Calendar.getInstance(uLocale);
-                CalendarData calData = new CalendarData(uLocale, cal.getType());
-                pw.println("formatDateShort=" + calData.getDateTimePatterns()[6]);
-                pw.println("formatDateLong=" + calData.getDateTimePatterns()[7]);
-                pw.println("formatHour=" + calData.getDateTimePatterns()[3]);
-                pw.println("formatMonthYear=" + calData.getDateTimePatterns()[5]);
-                pw.println("formatTime=" + calData.getDateTimePatterns()[2]);
+                writeIntoFile(uLocale, pw);
                 pw.close();
             }
+            {// create default fallback:
+                final PrintWriter pw = new PrintWriter(new File(parentDir, "format.properties"), "UTF-8");
+                writeIntoFile(ULocale.ENGLISH, pw);
+                pw.close();
+            }
+            
         }
         catch (Exception e)
         {
             e.printStackTrace();
         }
 
+    }
+
+    private static void writeIntoFile(ULocale uLocale, final PrintWriter pw)
+    {
+        final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(uLocale);
+        pw.println("amPm=" + Arrays.toString(dateFormatSymbols.getAmPmStrings()));
+        pw.println("isAmPm=" + isAmPm(uLocale, dateFormatSymbols));
+        pw.println("shortMonths=" + Arrays.toString(dateFormatSymbols.getShortMonths()));
+        pw.println("months=" + Arrays.toString(dateFormatSymbols.getMonths()));
+        pw.println("shortWeekdays=" + Arrays.toString(dateFormatSymbols.getShortWeekdays()));
+        pw.println("weekdays=" + Arrays.toString(dateFormatSymbols.getWeekdays()));
+        Calendar cal = Calendar.getInstance(uLocale);
+        CalendarData calData = new CalendarData(uLocale, cal.getType());
+        pw.println("formatDateShort=" + calData.getDateTimePatterns()[6]);
+        pw.println("formatDateLong=" + calData.getDateTimePatterns()[7]);
+        pw.println("formatHour=" + calData.getDateTimePatterns()[3]);
+        pw.println("formatMonthYear=" + calData.getDateTimePatterns()[5]);
+        pw.println("formatTime=" + calData.getDateTimePatterns()[2]);
     }
 
     private static boolean isAmPm(ULocale locale, DateFormatSymbols dateFormatSymbols)
