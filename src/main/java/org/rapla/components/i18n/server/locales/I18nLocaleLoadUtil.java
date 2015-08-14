@@ -1,30 +1,43 @@
 package org.rapla.components.i18n.server.locales;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
-import org.rapla.framework.RaplaException;
 
 public class I18nLocaleLoadUtil
 {
 
-    public static I18nLocaleFormats read(Locale localeId) 
+    private static final Map<Locale, I18nLocaleFormats> cache = new HashMap<Locale, I18nLocaleFormats>();
+
+    public static I18nLocaleFormats read(Locale localeId)
     {
-        final String className = I18nLocaleLoadUtil.class.getPackage().getName() + ".format";
-        final ResourceBundle bundle = ResourceBundleLoader.loadResourceBundle(className, localeId);
-        String amPm = bundle.getString("amPm");
-        boolean isAmPm = Boolean.parseBoolean(bundle.getString("isAmPm"));
-        String formatDateShort = bundle.getString("formatDateShort");
-        String formatDateLong = bundle.getString("formatDateLong");
-        String formatHour = bundle.getString("formatHour");
-        String formatMonthYear = bundle.getString("formatMonthYear");
-        String formatTime = bundle.getString("formatTime");
-        String[] weekdays = parseArray(bundle.getString("weekdays"));
-        String[] months = parseArray(bundle.getString("months"));
-        final I18nLocaleFormats result = new I18nLocaleFormats(isAmPm, amPm, formatDateShort, formatDateLong, weekdays, months, formatHour, formatMonthYear, formatTime);
-        return result;
+        I18nLocaleFormats formats = cache.get(localeId);
+        if (formats != null)
+            return formats;
+        synchronized (cache)
+        {
+            formats = cache.get(localeId);
+            if (formats != null)
+                return formats;
+            final String className = I18nLocaleLoadUtil.class.getPackage().getName() + ".format";
+            final ResourceBundle bundle = ResourceBundleLoader.loadResourceBundle(className, localeId);
+            String amPm = bundle.getString("amPm");
+            boolean isAmPm = Boolean.parseBoolean(bundle.getString("isAmPm"));
+            String formatDateShort = bundle.getString("formatDateShort");
+            String formatDateLong = bundle.getString("formatDateLong");
+            String formatHour = bundle.getString("formatHour");
+            String formatMonthYear = bundle.getString("formatMonthYear");
+            String formatTime = bundle.getString("formatTime");
+            String[] weekdays = parseArray(bundle.getString("weekdays"));
+            String[] months = parseArray(bundle.getString("months"));
+            formats = new I18nLocaleFormats(isAmPm, amPm, formatDateShort, formatDateLong, weekdays, months, formatHour, formatMonthYear, formatTime);
+            cache.put(localeId, formats);
+            return formats;
+        }
     }
 
     private static String[] parseArray(String property)
