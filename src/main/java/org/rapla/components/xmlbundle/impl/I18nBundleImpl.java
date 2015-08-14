@@ -94,10 +94,11 @@ public class I18nBundleImpl implements I18nBundle
     }
     
     /**
+     * @param localeSelector 
      * @throws RaplaException when the resource-file is missing or can't be accessed
      or can't be parsed
      */
-    public I18nBundleImpl(  Logger logger, String classname )
+    public I18nBundleImpl(  Logger logger, String classname, LocaleSelector localeSelector )
     {
         enableLogging( logger );
         this.className = classname;
@@ -105,7 +106,16 @@ public class I18nBundleImpl implements I18nBundle
         {
             className = className.trim();
         }
-        setLocale( Locale.getDefault());
+        setLocale( localeSelector.getLocale());
+        localeSelector.addLocaleChangeListener(new LocaleChangeListener()
+        {
+            
+            @Override
+            public void localeChanged(LocaleChangeEvent evt)
+            {
+                I18nBundleImpl.this.localeChanged(evt);
+            }
+        });
         dict = new RaplaDictionary(getLocale().getLanguage());
     }
 
