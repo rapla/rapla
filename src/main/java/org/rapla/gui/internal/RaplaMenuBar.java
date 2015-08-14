@@ -13,28 +13,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
 
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
-
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.util.undo.CommandHistory;
@@ -58,16 +37,20 @@ import org.rapla.gui.internal.action.user.UserAction;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.edit.TemplateEdit;
 import org.rapla.gui.internal.print.PrintAction;
-import org.rapla.gui.toolkit.ActionWrapper;
-import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.HTMLView;
-import org.rapla.gui.toolkit.IdentifiableMenuEntry;
-import org.rapla.gui.toolkit.RaplaFrame;
-import org.rapla.gui.toolkit.RaplaMenu;
-import org.rapla.gui.toolkit.RaplaMenuItem;
-import org.rapla.gui.toolkit.RaplaSeparator;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.gui.toolkit.*;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Enumeration;
 
 public class RaplaMenuBar extends RaplaGUIComponent
 {
@@ -389,9 +372,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
                         javaversion = "-";
                         getLogger().warn("Permission to system properties denied!");
                     }
-                    
-                    String signed = getString( "yes" );
-                    String mainText = getI18n().format("info.text",signed,javaversion);
+
+
+                    final RaplaResources i18n = getContext().lookup(RaplaResources.class);
+                    String mainText = i18n.infoText(javaversion);
                     StringBuffer completeText = new StringBuffer();
                     completeText.append( mainText);
                     URL librariesURL = null;

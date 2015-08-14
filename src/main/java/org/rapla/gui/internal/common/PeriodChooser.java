@@ -21,6 +21,7 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JList;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Period;
@@ -43,7 +44,7 @@ public class PeriodChooser extends JComboBox implements Disposable
     public static int END_ONLY = -1;
 
     int visiblePeriods;
-    I18nBundle i18n;
+    RaplaResources i18n;
     PeriodModel periodModel;
     private boolean listenersEnabled = true;
     private boolean isWeekOfPeriodVisible = true;
@@ -55,7 +56,7 @@ public class PeriodChooser extends JComboBox implements Disposable
     public PeriodChooser(RaplaContext context,int visiblePeriods) throws RaplaException {
         //      super(RaplaButton.SMALL);
         this.visiblePeriods = visiblePeriods;
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        i18n = context.lookup(RaplaResources.class);
         setPeriodModel(  context.lookup(ClientFacade.class) .getPeriodModel());
     }
 
@@ -94,11 +95,7 @@ public class PeriodChooser extends JComboBox implements Disposable
                                ,period.getName()
                                );
         } else {
-            return i18n.format(
-                              "period.format.week"
-                              ,String.valueOf(weekOf(period,selectedDate))
-                              ,period.getName()
-                              );
+            return i18n.periodFormatWeek(weekOf(period,selectedDate),period.getName());
         }
     }
     
