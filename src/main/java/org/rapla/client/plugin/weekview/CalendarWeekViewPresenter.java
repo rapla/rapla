@@ -8,7 +8,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.DetailSelectEvent;
 import org.rapla.client.gui.menu.MenuPresenter;
@@ -57,7 +57,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     private RaplaLocale raplaLocale;
 
     @Inject
-    private RaplaDefaultResources i18n;
+    private RaplaResources i18n;
     
     @Inject
     private MenuPresenter presenter;

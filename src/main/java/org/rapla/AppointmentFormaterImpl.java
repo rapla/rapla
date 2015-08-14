@@ -45,7 +45,7 @@ public class AppointmentFormaterImpl
     }
     
     @Inject
-    public AppointmentFormaterImpl(RaplaDefaultResources i18n,RaplaLocale loc)
+    public AppointmentFormaterImpl(RaplaResources i18n,RaplaLocale loc)
     {
         this.i18n = i18n;
         this.loc = loc;

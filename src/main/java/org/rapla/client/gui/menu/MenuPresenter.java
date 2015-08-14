@@ -14,7 +14,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.client.gui.menu.MenuView.Presenter;
 import org.rapla.client.gui.menu.data.MenuCallback;
 import org.rapla.client.gui.menu.data.MenuEntry;
@@ -52,7 +52,7 @@ public class MenuPresenter extends RaplaComponent implements Presenter
     //private final MenuFactory menuFactory;
 
     @Inject
-    public MenuPresenter(ClientFacade facade, RaplaDefaultResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public MenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             CalendarSelectionModel model, ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
             MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view)
     {

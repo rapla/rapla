@@ -46,7 +46,7 @@
 	<source path='storage/impl' />
 	<source path='storage/xml' />
 	<source path='storage' />
-	<source path='' includes="RaplaDefaultResources.java" />
+	<source path='' includes="RaplaResources.java" />
 	<source path='' includes="ConnectInfo.java" />
 	<source path='' includes="RaplaDefaultResources.java" />
 	<source path='' includes="AppointmentFormaterImpl.java" />

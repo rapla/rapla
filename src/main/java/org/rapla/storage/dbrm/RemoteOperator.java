@@ -30,7 +30,7 @@ import java.util.concurrent.locks.Lock;
 import javax.inject.Inject;
 
 import org.rapla.ConnectInfo;
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -102,11 +102,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	
     public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaContextException 
     {
-        this( logger, context.lookup( RaplaDefaultResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
+        this( logger, context.lookup( RaplaResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
     }
     
     @Inject
-    public RemoteOperator( Logger logger, RaplaDefaultResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
+    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
         super(  logger, i18n,locale );
         this.remoteServer = remoteServer;
         this.remoteStorage = remoteStorage;

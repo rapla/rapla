@@ -126,7 +126,7 @@ public class CommunicatorTest extends ServletTestBase
 			RemoteServer remoteServer = context.lookup( RemoteServer.class);
 			RemoteStorage remoteStorage = context.lookup( RemoteStorage.class);
 			ConsoleLogger logger = new ConsoleLogger();
-			RaplaDefaultResources i18n = context.lookup(RaplaDefaultResources.class);
+			RaplaResources i18n = context.lookup(RaplaResources.class);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);
             RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteServer, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));

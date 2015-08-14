@@ -5,7 +5,6 @@ import java.util.Locale;
 import javax.inject.Singleton;
 
 import org.rapla.AppointmentFormaterImpl;
-import org.rapla.RaplaDefaultResources;
 import org.rapla.client.ActivityManager;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.gui.menu.MenuPresenter;
@@ -34,7 +33,6 @@ import org.rapla.gui.internal.edit.reservation.ReservationEditFactory;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.gwt.inject.client.GinModule;
 import com.google.gwt.inject.client.binder.GinBinder;

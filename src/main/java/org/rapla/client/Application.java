@@ -11,7 +11,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.event.DetailSelectEvent;
@@ -49,7 +49,7 @@ public class Application implements ApplicationView.Presenter {
     @Inject
     private CalendarSelectionModel model;
     @Inject
-    private RaplaDefaultResources i18n;
+    private RaplaResources i18n;
 	EventBus eventBus;
 	ApplicationView mainView;
 
