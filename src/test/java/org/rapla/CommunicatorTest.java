@@ -3,7 +3,6 @@ package org.rapla;
 import java.util.Date;
 
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -11,7 +10,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.ConsoleLogger;
@@ -128,7 +126,7 @@ public class CommunicatorTest extends ServletTestBase
 			RemoteServer remoteServer = context.lookup( RemoteServer.class);
 			RemoteStorage remoteStorage = context.lookup( RemoteStorage.class);
 			ConsoleLogger logger = new ConsoleLogger();
-            I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+			RaplaDefaultResources i18n = context.lookup(RaplaDefaultResources.class);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);
             RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteServer, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));

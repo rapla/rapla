@@ -8,15 +8,14 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.rapla.RaplaDefaultResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.event.DetailSelectEvent;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -30,7 +29,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -51,7 +49,7 @@ public class Application implements ApplicationView.Presenter {
     @Inject
     private CalendarSelectionModel model;
     @Inject
-    private @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n;
+    private RaplaDefaultResources i18n;
 	EventBus eventBus;
 	ApplicationView mainView;
 

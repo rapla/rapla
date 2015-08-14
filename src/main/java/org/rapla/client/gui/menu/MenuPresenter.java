@@ -13,15 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
+import org.rapla.RaplaDefaultResources;
 import org.rapla.client.gui.menu.MenuView.Presenter;
 import org.rapla.client.gui.menu.data.MenuCallback;
 import org.rapla.client.gui.menu.data.MenuEntry;
 import org.rapla.client.gui.menu.data.Point;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -53,7 +52,7 @@ public class MenuPresenter extends RaplaComponent implements Presenter
     //private final MenuFactory menuFactory;
 
     @Inject
-    public MenuPresenter(ClientFacade facade, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, Logger logger,
+    public MenuPresenter(ClientFacade facade, RaplaDefaultResources i18n, RaplaLocale raplaLocale, Logger logger,
             CalendarSelectionModel model, ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
             MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view)
     {

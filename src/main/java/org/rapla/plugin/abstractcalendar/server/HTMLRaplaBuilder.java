@@ -16,11 +16,10 @@ package org.rapla.plugin.abstractcalendar.server;
 import java.util.Date;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
+import org.rapla.RaplaDefaultResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -49,7 +48,7 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     }
 
     @Inject
-    public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, Logger logger, AppointmentFormater appointmentFormater) {
+    public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaDefaultResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         super(raplaLocale, clientFacade, i18n, logger, appointmentFormater);
     }
 

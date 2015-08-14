@@ -6,15 +6,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.rapla.RaplaDefaultResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.DetailSelectEvent;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.plugin.weekview.CalendarWeekView.Presenter;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarOptions;
@@ -58,7 +57,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     private RaplaLocale raplaLocale;
 
     @Inject
-    private @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n;
+    private RaplaDefaultResources i18n;
     
     @Inject
     private MenuPresenter presenter;

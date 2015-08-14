@@ -16,7 +16,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.rapla.components.util.DateTools;
@@ -46,7 +45,7 @@ public class AppointmentFormaterImpl
     }
     
     @Inject
-    public AppointmentFormaterImpl(@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,RaplaLocale loc)
+    public AppointmentFormaterImpl(RaplaDefaultResources i18n,RaplaLocale loc)
     {
         this.i18n = i18n;
         this.loc = loc;

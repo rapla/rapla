@@ -1,15 +1,17 @@
 package org.rapla.components.i18n.client;
 
-import com.google.inject.Inject;
+import java.util.Collection;
+import java.util.Locale;
+
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.storage.dbrm.RemoteServer;
 
-import java.text.MessageFormat;
-import java.util.*;
+import com.google.inject.Inject;
 
-public abstract class ClientBundleManager implements BundleManager {
+public class ClientBundleManager implements BundleManager {
     private final RemoteServer remoteServer;
     private final LocaleSelector selector;
     LocalePackage localePackage;
@@ -50,5 +52,12 @@ public abstract class ClientBundleManager implements BundleManager {
     @Override
     public Collection<String> getKeys(String packageId) {
         return localePackage.getBundles().get( packageId).keySet();
+    }
+
+
+    @Override
+    public I18nLocaleFormats getFormats()
+    {
+        return null;
     }
 }

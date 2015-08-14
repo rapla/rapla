@@ -5,20 +5,23 @@ import java.util.Locale;
 import javax.inject.Singleton;
 
 import org.rapla.AppointmentFormaterImpl;
+import org.rapla.RaplaDefaultResources;
 import org.rapla.client.ActivityManager;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.gui.menu.MenuView;
 import org.rapla.client.gui.menu.gwt.MenuViewImpl;
 import org.rapla.client.gui.menu.gwt.context.ContextCreator;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.client.ClientBundleManager;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.LocaleSelector;
+import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.facade.internal.FacadeImpl;
@@ -31,11 +34,11 @@ import org.rapla.gui.internal.edit.reservation.ReservationEditFactory;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
+import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.gwt.inject.client.GinModule;
 import com.google.gwt.inject.client.binder.GinBinder;
 import com.google.inject.Provides;
-import com.google.inject.name.Names;
 import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
 
@@ -43,8 +46,9 @@ public class RaplaGWTModule implements GinModule{
     @Override
     public void configure(GinBinder binder) {
         binder.bind(Logger.class).toProvider(RaplaJDKLoggingAdapterWithoutClassnameSupport.class);
-      //  binder.bind(I18nBundle.class).annotatedWith(Names.named(RaplaComponent.RaplaResourcesId)).to(GWTSampleI18nBundle.class).in(Singleton.class);
+        binder.bind(LocaleSelector.class).to(LocaleSelectorImpl.class).in(Singleton.class);
         binder.bind( RaplaLocale.class).to(GWTRaplaLocale.class).in(Singleton.class);
+        binder.bind( BundleManager.class).to(ClientBundleManager.class).in(Singleton.class);
         binder.bind( RemoteConnectionInfo.class).in(Singleton.class);
         binder.bind( CommandScheduler.class).to(GWTCommandScheduler.class).in(Singleton.class);
         binder.bind( AppointmentFormater.class).to(AppointmentFormaterImpl.class).in(Singleton.class);

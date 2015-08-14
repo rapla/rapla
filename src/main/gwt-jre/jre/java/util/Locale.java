@@ -8,11 +8,21 @@ public class Locale {
     static public final Locale ENGLISH = createConstants("en", "");
     String lang;
     String country;
+    String variant;
     
+    public Locale(String lang)
+    {
+        this(lang, null);
+    }
     public Locale(String lang,String country)
     {
-    	this.lang = lang;
-    	this.country = country;
+        this(lang, country, null);
+    }
+    public Locale(String lang,String country, String variant)
+    {
+        this.lang = lang;
+        this.country = country;
+        this.variant = variant;
     }
     
     public String getLanguage()
@@ -24,7 +34,7 @@ public class Locale {
     {
     	return country;
     }
-     
+    
     public static Locale getDefault()
     {
     	return ENGLISH;

@@ -28,9 +28,9 @@ import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.rapla.ConnectInfo;
+import org.rapla.RaplaDefaultResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -38,7 +38,6 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
@@ -57,7 +56,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.Configuration;
@@ -104,11 +102,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	
     public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaContextException 
     {
-        this( logger, context.lookup( RaplaComponent.RAPLA_RESOURCES),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
+        this( logger, context.lookup( RaplaDefaultResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
     }
     
     @Inject
-    public RemoteOperator( Logger logger, @Named(RaplaComponent.RaplaResourcesId)  I18nBundle i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
+    public RemoteOperator( Logger logger, RaplaDefaultResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
         super(  logger, i18n,locale );
         this.remoteServer = remoteServer;
         this.remoteStorage = remoteStorage;

@@ -28,10 +28,10 @@ import java.util.Set;
 import java.util.Vector;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
+import org.rapla.RaplaDefaultResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
@@ -139,13 +139,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public static FacadeImpl create(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException
 	{
-	    I18nBundle i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+	    RaplaDefaultResources i18n = context.lookup(RaplaDefaultResources.class);
 	    CommandScheduler notifyQueue = context.lookup( CommandScheduler.class );
 	    return new FacadeImpl( operator, i18n, notifyQueue,logger);
 	}
 	
 	@Inject
-	public FacadeImpl(StorageOperator operator, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, CommandScheduler notifyQueue, Logger logger) {
+	public FacadeImpl(StorageOperator operator, RaplaDefaultResources i18n, CommandScheduler notifyQueue, Logger logger) {
 	    
 		this.operator = operator;
 		this.logger = logger;
