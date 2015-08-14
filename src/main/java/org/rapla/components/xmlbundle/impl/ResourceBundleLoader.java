@@ -49,7 +49,7 @@ public class ResourceBundleLoader
             buf.append( locale.getVariant() );
             tries[0] = buf.toString();
         }
-        buf.delete( className.length(), buf.length() - 1 );
+        buf.delete( className.length() + 1, buf.length() );
         Locale defaultLocale = Locale.getDefault();
         if ( defaultLocale.getLanguage().length() > 0 )
         {
