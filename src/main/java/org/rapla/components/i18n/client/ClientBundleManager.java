@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 
+import org.gwtbootstrap3.client.ui.form.validator.MessageFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
@@ -38,7 +39,7 @@ public class ClientBundleManager implements BundleManager
         //        final MessageFormat messageFormat = new MessageFormat(string);
         //        final String format = messageFormat.format(obj);
         //        return format;
-        return string;
+        return MessageFormat.format(string, obj);
     }
 
     @Override
