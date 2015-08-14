@@ -27,9 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
-import org.rapla.RaplaDefaultResources;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.components.util.TimeInterval;
@@ -47,7 +46,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -74,11 +72,11 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     ClientFacade facade;
     private RaplaLocale raplaLocale;
     private Logger logger;
-    private RaplaDefaultResources i18n;
+    private RaplaResources i18n;
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
     @Inject
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaDefaultResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -106,7 +104,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         return logger;
     }
     
-    protected RaplaDefaultResources getI18n()
+    protected RaplaResources getI18n()
     {
         return i18n;
     }

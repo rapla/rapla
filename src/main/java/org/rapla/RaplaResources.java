@@ -6,10 +6,10 @@ import org.rapla.components.i18n.BundleManager;
 
 import javax.inject.Inject;
 
-public class RaplaDefaultResources extends AbstractBundle {
-    static final String ID = "org.rapla.RaplaResources";
+public class RaplaResources extends AbstractBundle {
+    public static final String ID = "org.rapla.RaplaResources";
     @Inject
-    public RaplaDefaultResources(BundleManager loader )
+    public RaplaResources(BundleManager loader)
     {
       super(ID, loader);
     }

@@ -20,6 +20,7 @@ import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.CompoundI18n;
@@ -59,7 +60,7 @@ import org.rapla.framework.logger.Logger;
  */
 public class RaplaComponent 
 {
-	public static final String RaplaResourcesId = "org.rapla.RaplaResources";
+	public static final String RaplaResourcesId = RaplaResources.ID;
     public static final TypedComponentRole<I18nBundle> RAPLA_RESOURCES = new TypedComponentRole<I18nBundle>(RaplaResourcesId);
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
 	//private final ClientServiceManager serviceManager;
