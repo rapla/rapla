@@ -16,9 +16,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class RaplaStatusPageGenerator implements RaplaPageGenerator{
-    I18nBundle m_i18n;
+    RaplaResources m_i18n;
     @Inject
-    public RaplaStatusPageGenerator(@Named(RaplaResources.ID) I18nBundle i18n) throws RaplaContextException {
+    public RaplaStatusPageGenerator(RaplaResources i18n) throws RaplaContextException {
         m_i18n = i18n;
     }
 
@@ -35,7 +35,7 @@ public class RaplaStatusPageGenerator implements RaplaPageGenerator{
 
         out.println( "<body>" );
         String javaversion = System.getProperty("java.version");
-     	out.println( "<p>Server running </p>" +  m_i18n.format("info.text", "yes", javaversion));
+     	out.println( "<p>Server running </p>" +  m_i18n.infoText( javaversion));
         out.println( "<hr>" );
         out.println( "</body>" );
         out.println( "</html>" );
