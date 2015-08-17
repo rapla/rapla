@@ -30,6 +30,8 @@ public abstract class DateTools
     public static final long MILLISECONDS_PER_WEEK = 7 * MILLISECONDS_PER_DAY;
     public static final int SUNDAY = 1, MONDAY = 2, TUESDAY = 3, WEDNESDAY = 4, THURSDAY = 5, FRIDAY = 6, SATURDAY = 7;
     
+    private static final String[] US_WEEKDAY_COUNTRY_CODES = new String[] { "CA", "US", "MX" };
+    
     public static int getHourOfDay(long date) {
         return (int) ((date % MILLISECONDS_PER_DAY)/ MILLISECONDS_PER_HOUR);
     }
@@ -419,7 +421,23 @@ public abstract class DateTools
 
     public static int getWeekInYear(Date date, Locale locale)
     {
+        if(isUsStyle(locale.getCountry()))
+        {
+            return getWeekInYearUs(date);
+        }
         return getWeekInYearIso(date);
+    }
+
+    private static boolean isUsStyle(String country)
+    {
+        for (String countryCode : US_WEEKDAY_COUNTRY_CODES)
+        {
+            if (countryCode.equalsIgnoreCase(country))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static int getWeekInYearUs(Date date)
