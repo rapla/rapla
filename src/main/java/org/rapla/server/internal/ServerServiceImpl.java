@@ -12,13 +12,27 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
+
 import org.rapla.components.i18n.AbstractBundle;
-import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -32,7 +46,12 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.*;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -41,25 +60,47 @@ import org.rapla.rest.RemoteLogger;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
-import org.rapla.rest.server.*;
+import org.rapla.rest.server.RaplaAPIPage;
+import org.rapla.rest.server.RaplaAuthRestPage;
+import org.rapla.rest.server.RaplaDynamicTypesRestPage;
+import org.rapla.rest.server.RaplaEventsRestPage;
+import org.rapla.rest.server.RaplaResourcesRestPage;
 import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
-import org.rapla.server.*;
-import org.rapla.server.servletpages.*;
-import org.rapla.storage.*;
+import org.rapla.server.AuthenticationStore;
+import org.rapla.server.RaplaKeyStorage;
+import org.rapla.server.RaplaServerExtensionPoints;
+import org.rapla.server.RemoteMethodFactory;
+import org.rapla.server.RemoteSession;
+import org.rapla.server.ServerService;
+import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
+import org.rapla.server.servletpages.RaplaAppletPageGenerator;
+import org.rapla.server.servletpages.RaplaIndexPageGenerator;
+import org.rapla.server.servletpages.RaplaJNLPPageGenerator;
+import org.rapla.server.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaStatusPageGenerator;
+import org.rapla.server.servletpages.RaplaStorePage;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.StorageUpdateListener;
+import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbfile.FileOperator;
-import org.rapla.storage.dbrm.*;
+import org.rapla.storage.dbrm.LoginCredentials;
+import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.dbrm.RemoteServiceCaller;
+import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
@@ -87,7 +128,6 @@ public class ServerServiceImpl extends ContainerImpl
     protected CachableStorageOperator operator;
     protected I18nBundle i18n;
 
-    ClientFacade facade;
     private AuthenticationStore authenticationStore;
     SignedToken accessTokenSigner;
     SignedToken refreshTokenSigner;
@@ -437,14 +477,6 @@ public class ServerServiceImpl extends ContainerImpl
     {
     }
 
-    /**
-     * @see org.rapla.server.ServerService#getFacade()
-     */
-    public ClientFacade getFacade()
-    {
-        return facade;
-    }
-
     private void stop()
     {
         boolean wasConnected = operator.isConnected();
@@ -662,8 +694,24 @@ public class ServerServiceImpl extends ContainerImpl
             @Override
             public FutureResult<LocalePackage> locale(String id, String localeString)
             {
-                
                 try {
+                    if (localeString == null)
+                    {
+                        final User validUser = getValidUser(session);
+                        if (validUser != null)
+                        {
+                            final Preferences preferences = operator.getPreferences(validUser, true);
+                            final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                            if (entry != null)
+                            {
+                                localeString = new Locale(entry).toString();
+                            }
+                        }
+                        if (localeString == null)
+                        {
+                            localeString = raplaLocale.getLocale().toString();
+                        }
+                    }
                     Locale locale = DateTools.getLocale(localeString);
                     final I18nLocaleFormats formats = I18nLocaleLoadUtil.read(locale);
                     Map<String, Map<String, String>> bundles = new LinkedHashMap<String, Map<String, String>>();

@@ -361,7 +361,7 @@ public class ServerTest extends ServletTestBase {
 		prefs.putEntry(TEST_CONF, conf);
 		facade1.store(prefs);
 
-		ClientFacade facade = raplaServer.getFacade();
+		ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
 		User user = facade.getUser("homer");
 		Preferences storedPrefs = facade.getPreferences(user);
 		assertNotNull(storedPrefs);
@@ -537,7 +537,7 @@ public class ServerTest extends ServletTestBase {
 
 		String reservationName = "bowling";
 		{
-			ClientFacade facade = this.raplaServer.getFacade();
+			ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
 			String description = getDescriptionOfReservation(facade,
 					reservationName);
 			assertTrue(description.contains("\n"));
@@ -555,7 +555,7 @@ public class ServerTest extends ServletTestBase {
 	{
 		// first test creation on server
 		{
-			ClientFacade facade = this.raplaServer.getFacade();
+			ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
 			DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
 			Classification classification = dynamicType.newClassification();
 			Allocatable task = facade.newAllocatable(classification, null);
