@@ -7,19 +7,15 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.rapla.client.Application;
-import org.rapla.components.i18n.LocalePackage;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.rest.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.gwt.user.client.Window;
 
@@ -32,10 +28,6 @@ public class Bootstrap
     private ClientFacade facade;
     @Inject
     private Logger logger;
-    @Inject 
-    private RaplaLocale raplaLocale;
-    @Inject
-    private RemoteServer remoteServer;
 
     public void load()
     {

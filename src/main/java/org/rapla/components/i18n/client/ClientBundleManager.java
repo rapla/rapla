@@ -24,7 +24,7 @@ public class ClientBundleManager implements BundleManager
         this.selector = selector;
         try
         {
-            localePackage = remoteServer.locale("123", getLocale().toString()).get();
+            localePackage = remoteServer.locale("123", null).get();
         }
         catch (Exception e)
         {
