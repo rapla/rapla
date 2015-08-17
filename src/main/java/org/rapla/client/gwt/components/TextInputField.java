@@ -41,6 +41,7 @@ public class TextInputField extends FlowPanel
         });
         tb.setPlaceholder(placeholder);
         tb.setAutoComplete(false);
+        tb.setValue(valueText, false);
         inputGroup.add(tb);
         add(inputGroup);
     }
