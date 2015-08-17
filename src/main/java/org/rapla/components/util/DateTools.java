@@ -424,13 +424,23 @@ public abstract class DateTools
 
     public static int getWeekInYearUs(Date date)
     {
-
-//        int dayInYear = getDayInYear(date);
-//        final int weekday = getWeekday(firstOfJanuary);
-
-        //calculateJulianDayNumberAtNoon( firstOfJanuary - cal
-//        int calendarweek = (calculateJulianDayNumberAtNoon(sundayInWeek)- calculateJulianDayNumberAtNoon(firstSundayInYear))/7+1;
-        return -1;
+        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
+        DateWithoutTimezone sundayInWeek = sundayInWeekUs(dateWithoutTimezone);
+        DateWithoutTimezone sixthOfJanuary = new DateWithoutTimezone();
+        sixthOfJanuary.year = dateWithoutTimezone.year;
+        sixthOfJanuary.month = 1;
+        sixthOfJanuary.day = 6;
+        DateWithoutTimezone firstSundayInYear = sundayInWeekUs(sixthOfJanuary);
+        int calendarweek = (calculateJulianDayNumberAtNoon(sundayInWeek) - calculateJulianDayNumberAtNoon(firstSundayInYear)) / 7 + 1;
+        DateWithoutTimezone firstOfJanuary = new DateWithoutTimezone();
+        firstOfJanuary.year = dateWithoutTimezone.year;
+        firstOfJanuary.month = 1;
+        firstOfJanuary.day = 1;
+        if (getWeekday(firstOfJanuary) != SUNDAY)
+        {
+            calendarweek++;
+        }
+        return calendarweek;
     }
 
     public static int getDayInYear(Date date)
@@ -455,8 +465,10 @@ public abstract class DateTools
     }
 
     private static DateWithoutTimezone sundayInWeekUs(DateWithoutTimezone dateWithoutTimezone) {
-        int newJulienDate = mondayInWeekJulianDay(dateWithoutTimezone) -1;
-        return fromJulianDayNumberAtNoon( newJulienDate);
+        int julianDate = calculateJulianDayNumberAtNoon(dateWithoutTimezone.year, dateWithoutTimezone.month, dateWithoutTimezone.day);
+        int day = getWeekday(dateWithoutTimezone) - 1;
+        int newJulienDate = julianDate - day;
+        return fromJulianDayNumberAtNoon(newJulienDate);
     }
 
     private static int mondayInWeekJulianDay(DateWithoutTimezone dateWithoutTimezone) {
