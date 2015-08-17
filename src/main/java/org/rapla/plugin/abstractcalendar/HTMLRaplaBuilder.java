@@ -11,7 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.plugin.abstractcalendar.server;
+package org.rapla.plugin.abstractcalendar;
 
 import java.util.Date;
 
@@ -30,7 +30,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 
 public class HTMLRaplaBuilder extends RaplaBuilder {

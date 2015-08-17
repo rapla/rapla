@@ -15,7 +15,7 @@ import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.SpanAndMinute;
 import org.rapla.components.calendarview.Block;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
-import org.rapla.plugin.abstractcalendar.server.HTMLRaplaBlock;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;

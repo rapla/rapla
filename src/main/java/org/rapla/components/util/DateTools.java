@@ -34,7 +34,6 @@ public abstract class DateTools
         return (int) ((date % MILLISECONDS_PER_DAY)/ MILLISECONDS_PER_HOUR);
     }
 
-
     public static int getMinuteOfHour(long date) {
         return (int) ((date % MILLISECONDS_PER_HOUR)/ MILLISECONDS_PER_MINUTE);
     }
@@ -172,7 +171,7 @@ public abstract class DateTools
         @see #addDays
      */
     public static Date addDay(Date date) {
-        return addDays( date, 1);
+        return addDays(date, 1);
     }
     
     public static Date addYear(Date date) {
@@ -259,20 +258,29 @@ public abstract class DateTools
     /** returns the day of week SUNDAY = 1, MONDAY = 2, TUESDAY = 3, WEDNESDAY = 4, THURSDAY = 5, FRIDAY = 6, SATURDAY = 7 */
     public static int getWeekday(Date date) {
     	long days = countDays(0,date.getTime());
-    	int weekday_zero = THURSDAY;
-    	int alt = (int) days%7;
-    	int weekday = weekday_zero + alt;
-    	if ( weekday > 7)
-    	{
-    		weekday -=7;
-    	}
-    	else if ( weekday <=0 )
-    	{
-    		weekday += 7 ;
-    	}
-    	return weekday;
+    	return getWeekday( days);
     }
     
+    public static int getWeekday(DateWithoutTimezone date) {
+        long days = calculateJulianDayNumberAtNoon( date) - date_1970_1_1;
+        return getWeekday( days);
+    }
+
+    private static int getWeekday(long daysSince19700101) {
+        int weekday_zero = THURSDAY;
+        int alt = (int) daysSince19700101%7;
+        int weekday = weekday_zero + alt;
+        if ( weekday > 7)
+        {
+            weekday -=7;
+        }
+        else if ( weekday <=0 )
+        {
+            weekday += 7 ;
+        }
+        return weekday;
+    }
+
     public static int getYear(Date date) {
         DateWithoutTimezone date2 = toDate( date.getTime());
         return date2.year;
@@ -347,8 +355,14 @@ public abstract class DateTools
      int result = (1461 * (y + 4800 + (m - 14) / 12)) / 4 + (367 * (m - 2 - 12 * ((m - 14) / 12))) / 12 - (3 * ((y + 4900 + (m - 14) / 12) / 100)) / 4 + d - 32075;
      return result;
    }
-   
-   /**
+
+    private static int calculateJulianDayNumberAtNoon(DateWithoutTimezone dateWithoutTimezone) {
+        int day = calculateJulianDayNumberAtNoon(dateWithoutTimezone.year,dateWithoutTimezone.month,dateWithoutTimezone.day);
+        return day;
+    }
+
+
+    /**
     * 
     * @param year
     * @param month ranges from 1-12
@@ -388,6 +402,75 @@ public abstract class DateTools
         return new Locale(parts[0], parts[1],parts[2]);
     }
 
+
+    public static int getWeekInYearIso(Date date)
+    {
+        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
+        DateWithoutTimezone thursdayInWeek = thursdayInWeekISO(dateWithoutTimezone);
+        int calendarweekInYear = thursdayInWeek.year;
+        DateWithoutTimezone fourthOfJanuary = new DateWithoutTimezone();
+        fourthOfJanuary.year = calendarweekInYear;
+        fourthOfJanuary.month = 1;
+        fourthOfJanuary.day = 4;
+        DateWithoutTimezone firstThursdayInYear = thursdayInWeekISO(fourthOfJanuary);
+        int calendarweek = (calculateJulianDayNumberAtNoon(thursdayInWeek)- calculateJulianDayNumberAtNoon(firstThursdayInYear))/7+1;
+        return calendarweek;
+    }
+
+    public static int getWeekInYear(Date date, Locale locale)
+    {
+        return getWeekInYearIso(date);
+    }
+
+    public static int getWeekInYearUs(Date date)
+    {
+
+//        int dayInYear = getDayInYear(date);
+//        final int weekday = getWeekday(firstOfJanuary);
+
+        //calculateJulianDayNumberAtNoon( firstOfJanuary - cal
+//        int calendarweek = (calculateJulianDayNumberAtNoon(sundayInWeek)- calculateJulianDayNumberAtNoon(firstSundayInYear))/7+1;
+        return -1;
+    }
+
+    public static int getDayInYear(Date date)
+    {
+        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
+        DateWithoutTimezone firstOfJanuary = new DateWithoutTimezone();
+        firstOfJanuary.year = dateWithoutTimezone.year;
+        firstOfJanuary.month = 1;
+        firstOfJanuary.day = 1;
+        int dayOfYear = calculateJulianDayNumberAtNoon( dateWithoutTimezone)- calculateJulianDayNumberAtNoon(firstOfJanuary) + 1;
+        return dayOfYear;
+    }
+
+    private static DateWithoutTimezone thursdayInWeekISO(DateWithoutTimezone dateWithoutTimezone) {
+        int newJulienDate = mondayInWeekJulianDay(dateWithoutTimezone) + 3;
+        return fromJulianDayNumberAtNoon( newJulienDate);
+    }
+
+    private static DateWithoutTimezone mondayInWeekISO(DateWithoutTimezone dateWithoutTimezone) {
+        int newJulienDate = mondayInWeekJulianDay(dateWithoutTimezone) ;
+        return fromJulianDayNumberAtNoon( newJulienDate);
+    }
+
+    private static DateWithoutTimezone sundayInWeekUs(DateWithoutTimezone dateWithoutTimezone) {
+        int newJulienDate = mondayInWeekJulianDay(dateWithoutTimezone) -1;
+        return fromJulianDayNumberAtNoon( newJulienDate);
+    }
+
+    private static int mondayInWeekJulianDay(DateWithoutTimezone dateWithoutTimezone) {
+
+        int julianDate = calculateJulianDayNumberAtNoon(dateWithoutTimezone.year, dateWithoutTimezone.month, dateWithoutTimezone.day);
+        // convert from weekday format SUNDAY =1, ... to MONDAY = 0, ...;
+        int day = getWeekday( dateWithoutTimezone) -2;
+        if ( day <0)
+        {
+            day +=7;
+        }
+        int newJulienDate = julianDate - day;
+        return newJulienDate;
+    }
 
     public static class DateWithoutTimezone
    {

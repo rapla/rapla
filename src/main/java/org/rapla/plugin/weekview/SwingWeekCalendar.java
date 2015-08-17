@@ -14,16 +14,7 @@
 
 package org.rapla.plugin.weekview;
 
-import java.awt.Font;
-import java.text.MessageFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-
+import org.rapla.RaplaResources;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
@@ -38,6 +29,14 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+
+import javax.swing.*;
+import java.awt.*;
+import java.text.MessageFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
@@ -85,7 +84,8 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void rebuild(Builder b) {
                 // update week
-                weekTitle.setText(MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate()));
+                RaplaResources resources = getService(RaplaResources.class);
+                weekTitle.setText(resources.calendarweek( getStartDate()));
                 super.rebuild(b);
             }
         };

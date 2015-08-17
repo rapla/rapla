@@ -8,7 +8,7 @@ import org.rapla.client.plugin.weekview.CalendarWeekView.Presenter;
 import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.RowSlot;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.PopupContext;
-import org.rapla.plugin.abstractcalendar.server.HTMLRaplaBlock;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 public interface CalendarWeekView<W> extends View<Presenter>
 {

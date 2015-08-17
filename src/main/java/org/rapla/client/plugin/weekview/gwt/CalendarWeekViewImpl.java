@@ -18,7 +18,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
-import org.rapla.plugin.abstractcalendar.server.HTMLRaplaBlock;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;

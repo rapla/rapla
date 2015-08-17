@@ -11,7 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.plugin.abstractcalendar.server;
+package org.rapla.plugin.abstractcalendar;
 
 
 import java.net.MalformedURLException;

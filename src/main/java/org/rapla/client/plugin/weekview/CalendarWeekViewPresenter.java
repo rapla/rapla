@@ -27,8 +27,8 @@ import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-import org.rapla.plugin.abstractcalendar.server.HTMLRaplaBlock;
-import org.rapla.plugin.abstractcalendar.server.HTMLRaplaBuilder;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 
 import com.google.web.bindery.event.shared.EventBus;
 
@@ -129,7 +129,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
         Date endDate = weekView.getEndDate();
         model.setStartDate(startDate);
         model.setEndDate(endDate);
-        String weeknumber = i18n.format("calendarweek.abbreviation", startDate);
+        String weeknumber = i18n.calendarweek(startDate);
         weekView.setWeeknumber(weeknumber);
         RaplaBuilder builder = builderProvider;
         builder.setNonFilteredEventsVisible(false);
