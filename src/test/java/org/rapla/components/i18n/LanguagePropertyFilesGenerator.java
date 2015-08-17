@@ -60,8 +60,8 @@ public class LanguagePropertyFilesGenerator
         pw.println("weekdays=" + Arrays.toString(dateFormatSymbols.getWeekdays()));
         Calendar cal = Calendar.getInstance(uLocale);
         CalendarData calData = new CalendarData(uLocale, cal.getType());
-        pw.println("formatDateShort=" + calData.getDateTimePatterns()[6]);
-        pw.println("formatDateLong=" + calData.getDateTimePatterns()[7]);
+        pw.println("formatDateLong=" + calData.getDateTimePatterns()[6]);
+        pw.println("formatDateShort=" + calData.getDateTimePatterns()[7]);
         pw.println("formatHour=" + calData.getDateTimePatterns()[3]);
         pw.println("formatMonthYear=" + calData.getDateTimePatterns()[5]);
         pw.println("formatTime=" + calData.getDateTimePatterns()[2]);

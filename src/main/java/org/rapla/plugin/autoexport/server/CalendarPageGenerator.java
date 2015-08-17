@@ -186,7 +186,8 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
 
 	private void writeStacktrace(HttpServletResponse response, Exception ex)
 			throws IOException {
-		 	response.setContentType( "text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
+        String charsetNonUtf = getRaplaLocale().getCharsetNonUtf();
+        response.setContentType( "text/html; charset=" + charsetNonUtf);
 		java.io.PrintWriter out = response.getWriter();
 		out.println( IOUtil.getStackTraceAsString( ex ) );
 		out.close();

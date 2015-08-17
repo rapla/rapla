@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -51,10 +52,18 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
     protected String calendarviewHTML;
     protected CalendarModel model = null;
     RaplaBuilder builder;
+    protected RaplaResources raplaResources;
 
     public AbstractHTMLCalendarPage(RaplaContext context, CalendarModel calendarModel) {
         super( context);
+        raplaResources = getService(RaplaResources.class);
         this.model = calendarModel.clone();
+    }
+
+    @Override
+    public RaplaResources getI18n()
+    {
+        return raplaResources;
     }
 
     protected RaplaBuilder createBuilder() throws RaplaException {

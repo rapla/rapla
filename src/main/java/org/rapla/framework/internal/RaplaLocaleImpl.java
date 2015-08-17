@@ -54,6 +54,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
                 "pt"
         };
         importExportTimeZone = TimeZone.getDefault();
+        charsetForHtml = "ISO-8859-1";
     }
 
 	public Date fromUTCTimestamp(Date date)
@@ -79,7 +80,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
      * @see org.rapla.common.IRaplaLocale#createCalendar()
      */
     public Calendar createCalendar() {
-        return Calendar.getInstance( getTimeZone(), getLocale() );
+        return Calendar.getInstance(getTimeZone(), getLocale());
     }
 
 
@@ -94,20 +95,9 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     protected String _format(Date date, final String pattern)
     {
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        simpleDateFormat.setTimeZone( DateTools.getTimeZone());
         final String format = simpleDateFormat.format(date);
         return format;
-    }
-
- 
-    /* (non-Javadoc)
-     * @see org.rapla.common.IRaplaLocale#getWeekday(java.util.Date)
-     */
-    public String getWeekday( Date date ) {
-    	TimeZone timeZone = getTimeZone();
-        Locale locale = getLocale();
-		SimpleDateFormat format = new SimpleDateFormat( "EE", locale );
-		format.setTimeZone( timeZone );
-	    return format.format( date );
     }
 
     public String getCharsetNonUtf()
@@ -115,23 +105,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return charsetForHtml;
     }
 
-    
-    /** formats the day of week, date and month in the selected locale and timeZone*/
-    public String formatDayOfWeekDateMonth(Date date) {
-        //SimpleDateFormat format =  new SimpleDateFormat("EEE", locale);
-        String datePart = getWeekday(date);
-        String dateOfMonthPart = formatDateMonth( date  );
-        return datePart + " " + dateOfMonthPart ;
-    }
 
-
-    public String formatMonthYear(Date date)
-    {
-        int year = DateTools.toDate( date.getTime()).year;
-        String result = formatMonth( date ) + " " + year;
-        return result;
-
-    }
 }
 
 

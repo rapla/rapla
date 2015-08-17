@@ -29,7 +29,11 @@ public class ResourceBundleLoader
                 buf.append( '_' );
             }
             buf.append( locale.getLanguage() );
-            tries[2] = buf.toString();
+            if(locale.getLanguage().equalsIgnoreCase("en")){
+                tries[2] = buf.toString().substring(0, buf.toString().length()-3);
+            }else{
+                tries[2] = buf.toString();
+            }
         }
         if ( locale.getCountry().length() > 0 )
         {
@@ -49,12 +53,20 @@ public class ResourceBundleLoader
             buf.append( locale.getVariant() );
             tries[0] = buf.toString();
         }
-        buf.delete( className.length() + 1, buf.length() );
+        buf.delete( className.length(), buf.length() );
         Locale defaultLocale = Locale.getDefault();
         if ( defaultLocale.getLanguage().length() > 0 )
         {
+            if ( buf.length() > 0)
+            {
+                buf.append( '_' );
+            }
             buf.append( defaultLocale.getLanguage() );
-            tries[5] = buf.toString();
+            if(locale.getLanguage().equalsIgnoreCase("en")){
+                tries[5] = buf.toString();
+            }else{
+                tries[5] = buf.toString().substring(0, buf.toString().length()-3);
+            }
         }
         if ( defaultLocale.getCountry().length() > 0 )
         {

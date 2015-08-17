@@ -12,7 +12,8 @@
 	<source path='entities/storage' />
 	<source path='entities/storage/internal' />
 	<source path='components/i18n'>
-	   <exclude name='**/server/**' />
+		<exclude name='LanguagePropertyFilesGenerator.java' />
+	    <exclude name='**/server/**' />
 	</source>
 	<source path='components/xmlbundle'>
    	    <exclude name='**/server/**' />

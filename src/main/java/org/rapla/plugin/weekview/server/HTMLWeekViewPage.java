@@ -14,6 +14,7 @@ package org.rapla.plugin.weekview.server;
 
 import java.text.MessageFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,7 @@ import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 
 public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 {
+
     public HTMLWeekViewPage( RaplaContext context, CalendarModel calendarModel ) 
     {
         super( context,  calendarModel );
@@ -39,7 +41,9 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
         HTMLWeekView weekView = new HTMLWeekView()
         {
         	public void rebuild(Builder b) {
-                setWeeknumber(MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate()));
+                Date startDate = getStartDate();
+                String calendarweek = getI18n().calendarweek(startDate);
+                setWeeknumber(calendarweek);
         		super.rebuild(b);
         	}
         };

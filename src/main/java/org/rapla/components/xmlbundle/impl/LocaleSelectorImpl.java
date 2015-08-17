@@ -33,7 +33,8 @@ public class LocaleSelectorImpl implements LocaleSelector {
 
     @Inject
     public LocaleSelectorImpl() {
-        locale = Locale.getDefault();
+        Locale aDefault = Locale.getDefault();
+        locale = aDefault;
     }
 
     public void addLocaleChangeListener(LocaleChangeListener listener) {

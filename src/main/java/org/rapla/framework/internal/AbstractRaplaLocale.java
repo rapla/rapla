@@ -75,15 +75,6 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      */
     public Date toDate( Date date, Date time ) {
     	return DateTools.toDateTime(date, time);
-//        Calendar cal1 = createCalendar();
-//        Calendar cal2 = createCalendar();
-//        cal1.setTime( date );
-//        cal2.setTime( time );
-//        cal1.set( Calendar.HOUR_OF_DAY, cal2.get(Calendar.HOUR_OF_DAY) );
-//        cal1.set( Calendar.MINUTE, cal2.get(Calendar.MINUTE) );
-//        cal1.set( Calendar.SECOND, cal2.get(Calendar.SECOND) );
-//        cal1.set( Calendar.MILLISECOND, cal2.get(Calendar.MILLISECOND) );
-//        return cal1.getTime();
     }
     
 	public SerializableDateTimeFormat getSerializableFormat()
@@ -92,23 +83,26 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 	}
 
 	public String formatTime(int minuteOfDay) {
-        boolean useAM_PM = isAmPmFormat();
-        int minute = minuteOfDay%60;
-        int hour = minuteOfDay/60;
-        String displayedHour = "" + (useAM_PM ? hour %12 : hour);
-        String displayedMinute = minute > 9 ? ""+ minute : "0"+minute ;
-        String string = displayedHour + ":" + displayedMinute;
-        if (useAM_PM ) {
-            if ( hour >= 12)
-            {
-                string += " PM";
-            }
-            else
-            {
-                string += " AM";
-            }
-        }
-        return string;
+
+        Date date = new Date(0 + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
+        return formatTime(date);
+//        boolean useAM_PM = isAmPmFormat();
+//        int minute = minuteOfDay%60;
+//        int hour = minuteOfDay/60;
+//        String displayedHour = "" + (useAM_PM ? hour %12 : hour);
+//        String displayedMinute = minute > 9 ? ""+ minute : "0"+minute ;
+//        String string = displayedHour + ":" + displayedMinute;
+//        if (useAM_PM ) {
+//            if ( hour >= 12)
+//            {
+//                string += " PM";
+//            }
+//            else
+//            {
+//                string += " AM";
+//            }
+//        }
+//        return string;
     }
 
     public String formatHour(int hour) {
@@ -148,9 +142,19 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     public String formatDayOfWeekDateMonth(Date date)
     {
         int weekday = DateTools.getWeekday( date);
-        String datePart = getWeekdayName(weekday).substring(0,2);
+        String datePart = getFormats().getWeekdays()[weekday].substring(0,2);
         String dateOfMonthPart = formatDateMonth( date  );
         return datePart + " " + dateOfMonthPart ;
+    }
+
+
+    /* (non-Javadoc)
+     * @see org.rapla.common.IRaplaLocale#getWeekday(java.util.Date)
+     */
+    public String getWeekday( Date date ) {
+        int weekday = DateTools.getWeekday(date);
+        String datePart = getFormats().getWeekdays()[weekday].substring(0,2);
+        return datePart;
     }
 
     @Override
@@ -161,19 +165,6 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
             throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
         }
         return weekdays[weekday];
-//        String result;
-//        switch (weekday)
-//          {
-//              case 1: result= "sunday";break;
-//              case 2: result= "monday";break;
-//              case 3: result= "tuesday";break;
-//              case 4: result= "wednesday";break;
-//              case 5: result= "thursday";break;
-//              case 6: result= "friday";break;
-//              case 7: result= "saturday";break;
-//              default: throw new IllegalArgumentException("Weekday " + weekday + " not supported.");
-//          }
-//        return result;
     }
 
 
@@ -184,7 +175,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         String result = formatMonth( date ) + " " + year;
         return result;
     }
-    
+
     public TimeZone getTimeZone() {
         return DateTools.getTimeZone();
     }
@@ -193,7 +184,8 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#formatTime(java.util.Date)
      */
     public String formatTime( Date date ) {
-        return _format(date, getFormats().getFormatTime());
+        String formatHour = getFormats().getFormatHour();
+        return _format(date, formatHour);
 //        Locale locale = getLocale();
 //        TimeZone timezone = getTimeZone();
 //      DateFormat format = DateFormat.getTimeInstance( DateFormat.SHORT, locale );
@@ -206,7 +198,20 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#formatDateShort(java.util.Date)
      */
     public String formatDateShort( Date date ) {
-        final String pattern = getFormats().getFormatDateShort();
+        final String origPattern = getFormats().getFormatDateShort();
+        StringBuffer buf = new StringBuffer(origPattern);
+        int begin = origPattern.indexOf("y");
+        int end = origPattern.lastIndexOf("y");
+        if ( end <buf.length() ) {
+            buf.delete( begin, end +1 );
+        } else if ( begin>=0 ) {
+            buf.delete( begin, end);
+        }
+        char lastChar = buf.charAt(buf.length()-1);
+        if (lastChar == '/' || lastChar == '-' ) {
+            buf.deleteCharAt(buf.length() - 1);
+        }
+        String pattern = buf.toString();
         return _format(date, pattern);
 //      Locale locale = getLocale();
 //      TimeZone timezone = zone;
@@ -231,7 +236,8 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#formatDateLong(java.util.Date)
      */
     public String formatDateLong( Date date ) {
-        return _format(date, getFormats().getFormatDateLong());
+        String formatDateLong = getFormats().getFormatDateLong();
+        return _format(date, formatDateLong);
 //      TimeZone timezone = zone;
 //        Locale locale = getLocale();
 //      DateFormat format = DateFormat.getDateInstance( DateFormat.MEDIUM, locale );
@@ -242,7 +248,9 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     
     /** formats the date and month in the selected locale and timeZone*/
     public String formatDateMonth(Date date ) {
-        return _format(date, getFormats().getFormatMonthYear());
+        return formatDateShort(date);
+//        String formatMonthYear = getFormats().getFormatMonthYear();
+//        return _format(date, formatMonthYear);
 //        Locale locale = getLocale();
 //        FieldPosition fieldPosition = new FieldPosition( DateFormat.YEAR_FIELD );
 //        StringBuffer buf = new StringBuffer();
@@ -270,7 +278,8 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#formatDate(java.util.Date)
      */
     public String formatDate( Date date ) {
-        return _format(date, getFormats().getFormatDateLong());
+        String formatDateLong = getFormats().getFormatDateLong();
+        return _format(date, formatDateLong);
 //      TimeZone timezone = zone;
 //        Locale locale = getLocale();
 //      DateFormat format = DateFormat.getDateInstance( DateFormat.SHORT, locale );
@@ -297,5 +306,6 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     public Locale getLocale() {
         return bundleManager.getLocale();
     }
+
 
 }
