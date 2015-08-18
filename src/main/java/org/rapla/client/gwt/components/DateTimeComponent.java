@@ -2,34 +2,36 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.i18n.client.DateTimeFormat.PredefinedFormat;
+import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.framework.RaplaLocale;
+
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.datepicker.client.DateBox;
 
 public class DateTimeComponent extends FlowPanel
 {
-    private final DateBox dateBegin;
+    private final DateComponent datePicker;
 
-    public DateTimeComponent(String textLabel)
+    public DateTimeComponent(String textLabel, BundleManager bundleManager, Date initDate, RaplaLocale locale, final DateValueChanged changeHandler)
     {
-        DateTimeFormat dateFormat = DateTimeFormat.getFormat(PredefinedFormat.DATE_MEDIUM);
-        final DateBox.DefaultFormat format = new DateBox.DefaultFormat(dateFormat);
         setStyleName("dateInfoLineComplete");
 
         Label beginText = new Label(textLabel);
         beginText.setStyleName("label");
         add(beginText);
 
-        dateBegin = new DateBox();
-        dateBegin.setValue(new Date(System.currentTimeMillis()));
-        dateBegin.setStyleName("dateInput");
-        dateBegin.setFormat(format);
-        add(dateBegin);
+        datePicker = new DateComponent(initDate, locale, new DateValueChanged()
+        {
+            @Override
+            public void valueChanged(Date newValue)
+            {
+                setDate(newValue);
+                changeHandler.valueChanged(newValue);
+            }
+        }, bundleManager);
+        add(datePicker);
 
-        //        timeBegin = new SmallTimeBox(new Date(-3600000));
-        //        begin.add(timeBegin);
         final Label beginTimeText = new Label("Uhr");
         beginTimeText.setStyleName("label");
         add(beginTimeText);
@@ -37,7 +39,7 @@ public class DateTimeComponent extends FlowPanel
 
     public void setDate(Date date)
     {
-        dateBegin.setValue(date, false);
+        datePicker.setDate(date);
     }
 
 }

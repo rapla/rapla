@@ -11,6 +11,7 @@ import org.gwtbootstrap3.client.ui.Column;
 import org.gwtbootstrap3.client.ui.Container;
 import org.gwtbootstrap3.client.ui.Row;
 import org.gwtbootstrap3.client.ui.constants.ColumnSize;
+import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.gwt.components.BooleanInputField;
 import org.rapla.client.gwt.components.BooleanInputField.BooleanValueChange;
@@ -24,8 +25,8 @@ import org.rapla.client.gwt.components.LongInputField;
 import org.rapla.client.gwt.components.LongInputField.LongValueChange;
 import org.rapla.client.gwt.components.TextInputField;
 import org.rapla.client.gwt.components.TextInputField.TextValueChanged;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.Category;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -43,14 +44,16 @@ public class InfoView
 
     private final FlowPanel contentPanel;
     private final Presenter presenter;
-    private final RaplaLocale raplaLocale;
-    private final User user;
+    private final RaplaResources i18n;
+    private final BundleManager bundleManager;
+    private RaplaLocale raplaLocale;
 
-    public InfoView(Presenter presenter, RaplaLocale raplaLocale, User user)
+    public InfoView(Presenter presenter, RaplaLocale raplaLocale, RaplaResources i18n, BundleManager bundleManager)
     {
         this.presenter = presenter;
         this.raplaLocale = raplaLocale;
-        this.user = user;
+        this.i18n = i18n;
+        this.bundleManager = bundleManager;
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("appointmentInfo");
     }
@@ -71,7 +74,7 @@ public class InfoView
         final Container container = new Container();
         contentPanel.add(container);
         container.setFluid(true);
-        final Locale locale = raplaLocale.getLocale();
+        final Locale locale = i18n.getLocale();
         int actualColumnsPerRow = 0;
         Row row = new Row();
         container.add(row);
@@ -86,7 +89,7 @@ public class InfoView
                 values.add(new DropDownItem(dynamicType.getName(locale), dynamicType.getId()));
                 idToDynamicType.put(dynamicType.getId(), dynamicType);
             }
-            final DropDownInputField input = new DropDownInputField("Veranstaltungsart", new DropDownValueChanged()
+            final DropDownInputField input = new DropDownInputField(i18n.getString("reservation_type"), new DropDownValueChanged()
             {
                 @Override
                 public void valueChanged(String newValue)
@@ -150,7 +153,7 @@ public class InfoView
                     {
                         getPresenter().changeAttribute(reservation, attribute, newValue);
                     }
-                });
+                }, bundleManager);
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);

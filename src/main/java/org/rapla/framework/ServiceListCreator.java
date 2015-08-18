@@ -137,7 +137,11 @@ public class ServiceListCreator
             String inherit;
             while ((inherit = reader.readLine()) != null)
             {
-                inheritsList.add(inherit);
+                inherit = inherit.trim();
+                if(!inherit.isEmpty())
+                {
+                    inheritsList.add(inherit);
+                }
             }
         }
         System.out.println("found inherits: "+inheritsList.toString());

@@ -3,6 +3,8 @@ package org.rapla.client.gwt.components;
 import java.util.Date;
 
 import org.gwtbootstrap3.extras.datepicker.client.ui.DatePicker;
+import org.gwtbootstrap3.extras.datepicker.client.ui.base.constants.DatePickerLanguage;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
@@ -25,7 +27,7 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
     private final DatePicker datePicker;
     private final DateValueChanged changeHandler;
 
-    public DateComponent(Date initDate, RaplaLocale locale, final DateValueChanged changeHandler)
+    public DateComponent(Date initDate, RaplaLocale locale, final DateValueChanged changeHandler, BundleManager bundleManager)
     {
         super();
         this.locale = locale;
@@ -34,11 +36,15 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
         {
             initDate = new Date();
         }
-        if (!InputUtils.isHtml5DateInputSupported())
+//        if (!InputUtils.isHtml5DateInputSupported())
         {
             datePicker = new DatePicker();
-            datePicker.setFormat("dd.MM.yyyy");
+            final DatePickerLanguage lang = DatePickerLanguage.valueOf(locale.getLocale().getLanguage().toUpperCase());
+            datePicker.setLanguage(lang);
+            datePicker.setFormat(bundleManager.getFormats().getFormatDateShort().toLowerCase());
+//            datePicker.setFormat("dd.mm.yyyy");
             datePicker.setShowTodayButton(true);
+            datePicker.setForceParse(true);
             add(datePicker);
             datePicker.addValueChangeHandler(new ValueChangeHandler<Date>()
             {
@@ -51,16 +57,16 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
             });
             tb = null;
         }
-        else
-        {
-            datePicker = null;
-            tb = new TextBox();
-            tb.setStyleName("dateComponent");
-            add(tb);
-            tb.setValue(locale.formatDate(initDate), false);
-            tb.getElement().setAttribute("type", "date");
-            tb.addValueChangeHandler(this);
-        }
+//        else
+//        {
+//            datePicker = null;
+//            tb = new TextBox();
+//            tb.setStyleName("dateComponent");
+//            add(tb);
+//            tb.setValue(locale.formatDate(initDate), false);
+//            tb.getElement().setAttribute("type", "date");
+//            tb.addValueChangeHandler(this);
+//        }
         setDate(initDate);
     }
 
@@ -68,11 +74,12 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
     {
         if (tb != null)
         {
+//            tb.setValue(locale.formatDate(date), false);
             this.tb.setValue(SerializableDateTimeFormat.INSTANCE.formatDate(date), false);
         }
         if (datePicker != null)
         {
-            datePicker.setValue(date);
+            datePicker.setValue(date, false);
         }
     }
 

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationView;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
@@ -14,6 +15,7 @@ import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
 import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
@@ -34,6 +36,11 @@ import com.google.gwt.user.client.ui.TabBar;
 public class ReservationViewImpl extends AbstractView<Presenter> implements ReservationView<IsWidget>
 {
 
+    @Inject
+    private RaplaResources i18n;
+    @Inject
+    private BundleManager bundleManager;
+    
     private final Logger logger;
 
     private final FlowPanel content = new FlowPanel();
@@ -108,8 +115,8 @@ public class ReservationViewImpl extends AbstractView<Presenter> implements Rese
             popup.setAnimationType(AnimationType.ROLL_DOWN);
             popups.put(reservation.getId(), popup);
             final RaplaLocale raplaLocale = getRaplaLocale();
-            infoView = new InfoView(getPresenter(), raplaLocale, user);
-            resourcesView = new ResourceDatesView(getPresenter(), raplaLocale);
+            infoView = new InfoView(getPresenter(), raplaLocale, i18n, bundleManager);
+            resourcesView = new ResourceDatesView(getPresenter(), i18n, bundleManager, raplaLocale);
             if (selectionHandler != null)
             {
                 selectionHandler.removeHandler();

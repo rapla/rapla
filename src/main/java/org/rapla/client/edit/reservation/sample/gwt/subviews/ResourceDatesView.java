@@ -1,9 +1,14 @@
 package org.rapla.client.edit.reservation.sample.gwt.subviews;
 
+import java.util.Date;
+
+import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.gfx.ImageImport;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.TerminList.DateSelected;
+import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.client.gwt.components.DateTimeComponent;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
@@ -30,9 +35,18 @@ public class ResourceDatesView
 
     private final Presenter presenter;
 
-    public ResourceDatesView(Presenter presenter, RaplaLocale raplaLocale)
+    private final RaplaResources i18n;
+
+    private final BundleManager bundleManager;
+
+    private final RaplaLocale raplaLocale;
+
+    public ResourceDatesView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
     {
         this.presenter = presenter;
+        this.i18n = i18n;
+        this.bundleManager = bundleManager;
+        this.raplaLocale = raplaLocale;
         contentPanel = new FlowPanel();
     }
 
@@ -54,7 +68,7 @@ public class ResourceDatesView
         buttonBar.setStyleName("datesButtonBar");
 
         final Image buttonPlus = new Image(ImageImport.INSTANCE.plusIcon());
-        buttonPlus.setTitle("Termin erstellen");
+        buttonPlus.setTitle(i18n.getString("new"));
         buttonPlus.setStyleName("buttonsResourceDates");
 
         buttonPlus.addClickHandler(new ClickHandler()
@@ -68,7 +82,7 @@ public class ResourceDatesView
 
         final Image buttonGarbageCan = new Image(ImageImport.INSTANCE.crossGreyIcon());
         buttonGarbageCan.setStyleName("buttonsResourceDates");
-        buttonGarbageCan.setTitle("Termin l\u00F6schen");
+        buttonGarbageCan.setTitle(i18n.getString("clear"));
         buttonGarbageCan.addClickHandler(new ClickHandler()
         {
             public void onClick(ClickEvent e)
@@ -87,40 +101,62 @@ public class ResourceDatesView
         final FlowPanel dateInfos = new FlowPanel();
         dateInfos.setStyleName("dateInfos");
 
-        final DateTimeComponent begin = new DateTimeComponent("Beginn:");
-
-        // initialize and declarate Panel and Elements for End Time and Date
-        final DateTimeComponent end = new DateTimeComponent("Ende:");
-
-        //creatin the checkbox for whole day and add a handler
-        final CheckBox cbWholeDay = new CheckBox("ganzt\u00E4gig");
-        cbWholeDay.setStyleName("allDay");
-        begin.add(cbWholeDay);
-        cbWholeDay.addClickHandler(new ClickHandler()
+        final Date startDate = new Date();
+        DateValueChanged startChangeHandler = new DateValueChanged()
         {
             @Override
-            public void onClick(ClickEvent event)
+            public void valueChanged(Date newValue)
             {
-                //                getPresenter().onWholeDaySelected();
+                
             }
+        };
+        final DateTimeComponent begin = new DateTimeComponent(i18n.getString("start_date"), bundleManager, startDate, raplaLocale, startChangeHandler);
+        {
+            //creatin the checkbox for whole day and add a handler
+            final CheckBox cbWholeDay = new CheckBox(i18n.getString("all-day"));
+            cbWholeDay.setStyleName("allDay");
+            begin.add(cbWholeDay);
+            cbWholeDay.addClickHandler(new ClickHandler()
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    //                getPresenter().onWholeDaySelected();
+                }
 
-        });
+            });
+        }
+        DateValueChanged endChangeHandler = new DateValueChanged()
+        {
+            @Override
+            public void valueChanged(Date newValue)
+            {
+                
+            }
+        };
+        final Date endDate = new Date();
+        // initialize and declarate Panel and Elements for End Time and Date
+        final DateTimeComponent end = new DateTimeComponent(i18n.getString("end_date"), bundleManager, endDate, raplaLocale, endChangeHandler);
 
         // Checkbox reccuring dates
         final FlowPanel repeat = new FlowPanel();
-        final DisclosurePanel cbRepeatType = new DisclosurePanel("Wiederholen");
-        cbRepeatType.setStyleName("dateInfoLineLeft");
-
-        final RadioButton daily = new RadioButton("repeat", "t\u00E4glich");
-        daily.addClickHandler(new RepeatClickHandler());
-        final RadioButton weekly = new RadioButton("repeat", "w\u00F6chentlich");
-        weekly.addClickHandler(new RepeatClickHandler());
-        final RadioButton monthly = new RadioButton("repeat", "monatlich");
-        monthly.addClickHandler(new RepeatClickHandler());
-        final RadioButton year = new RadioButton("repeat", "j\u00E4hrlich");
-        year.addClickHandler(new RepeatClickHandler());
-        final RadioButton noReccuring = new RadioButton("repeat", "keine Wiederholung");
-        noReccuring.addClickHandler(new RepeatClickHandler());
+        {// Repeating possibilities
+            final RadioButton daily = new RadioButton("repeat", i18n.getString("daily"));
+            daily.addClickHandler(new RepeatClickHandler());
+            final RadioButton weekly = new RadioButton("repeat", i18n.getString("weekly"));
+            weekly.addClickHandler(new RepeatClickHandler());
+            final RadioButton monthly = new RadioButton("repeat", i18n.getString("monthly"));
+            monthly.addClickHandler(new RepeatClickHandler());
+            final RadioButton year = new RadioButton("repeat", i18n.getString("yearly"));
+            year.addClickHandler(new RepeatClickHandler());
+            final RadioButton noReccuring = new RadioButton("repeat", i18n.getString("no_repeating"));
+            noReccuring.addClickHandler(new RepeatClickHandler());
+            repeat.add(noReccuring);
+            repeat.add(daily);
+            repeat.add(weekly);
+            repeat.add(monthly);
+            repeat.add(year);
+        }
 
         //Setting for reccuring dates
         final ListBox repeatType = new ListBox();
@@ -130,13 +166,8 @@ public class ResourceDatesView
         final Label repeatText = new Label("Beginn: ");
         repeatText.setStyleName("beschriftung");
 
-        repeat.add(daily);
-        repeat.add(weekly);
-        repeat.add(monthly);
-        repeat.add(year);
-        repeat.add(noReccuring);
 
-        cbRepeatType.add(repeat);
+//        cbRepeatType.add(repeat);
 
         //initializing the disclourePanel for the resources
         final DisclosurePanel addResources = new DisclosurePanel("Ressourcen hinzuf\u00FCgen");
@@ -215,7 +246,7 @@ public class ResourceDatesView
         dateContentWrapper.setStyleName("dateContent");
         dateContentWrapper.add(begin);
         dateContentWrapper.add(end);
-        dateContentWrapper.add(cbRepeatType);
+        dateContentWrapper.add(repeat);
         //        dateContentWrapper.add(addDateWithLabel);
         dateInfos.add(dateContentWrapper);
 

@@ -6,6 +6,7 @@ import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.rapla.client.gwt.components.DateComponent;
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
 
@@ -26,7 +27,7 @@ public class NavigatorView extends FlowPanel
 
     private final DateComponent dateComponent;
 
-    public NavigatorView(final String parentStyle, final NavigatorAction navigatorAction, final RaplaLocale raplaLocale)
+    public NavigatorView(final String parentStyle, final NavigatorAction navigatorAction, final RaplaLocale raplaLocale, BundleManager bundleManager)
     {
         super();
         setStyleName(parentStyle);
@@ -38,7 +39,7 @@ public class NavigatorView extends FlowPanel
             {
                 navigatorAction.selectedDate(newValue);
             }
-        });
+        }, bundleManager);
         this.add(dateComponent);
         final Button today = new Button("today");
         today.setType(ButtonType.PRIMARY);
