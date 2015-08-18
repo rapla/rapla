@@ -18,4 +18,6 @@ public interface BundleManager {
     Collection<String> getKeys(String packageId);
 
     I18nLocaleFormats getFormats();
+
+    Collection<String> getAvailableLanguages();
 }

@@ -56,7 +56,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     {
         super( context);
         textField = new TextField(context, "name");
-        availableLanguages = getRaplaLocale().getAvailableLanguages();
+        availableLanguages = getRaplaLocale().getAvailableLanguages().toArray(new String[0]);
         panel.setLayout( new BorderLayout() );
         panel.add( textField.getComponent(), BorderLayout.CENTER );
         panel.add( button, BorderLayout.EAST );

@@ -30,8 +30,6 @@ import org.rapla.framework.DefaultConfiguration;
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
 
-    String[] availableLanguages;
-
     String COUNTRY = "country";
     String LANGUAGES = "languages";
     String LANGUAGE = "language";
@@ -42,17 +40,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     public RaplaLocaleImpl(BundleManager bundleManager)
     {
          super(bundleManager);
-        availableLanguages = new String[]{
-                "de",
-                "en",
-                "fr",
-                "es",
-                "zh",
-                "cs",
-                "nl",
-                "pl",
-                "pt"
-        };
         importExportTimeZone = TimeZone.getDefault();
         charsetForHtml = "ISO-8859-1";
     }
@@ -67,13 +54,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
 	public void setImportExportTimeZone(TimeZone importExportTimeZone) {
         this.importExportTimeZone = importExportTimeZone;
-    }
-
-    /* (non-Javadoc)
-     * @see org.rapla.common.IRaplaLocale#getAvailableLanguages()
-     */
-    public String[] getAvailableLanguages() {
-        return availableLanguages;
     }
 
     /* (non-Javadoc)

@@ -22,8 +22,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.internal.LanguageChooser;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.UpdateModule;
@@ -39,20 +42,29 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     JTextField calendarName;
     Preferences preferences;
 	private JComboBox cboTimezone;
+    private LanguageChooser languageChooser;
+    private LanguageChooser countryChooser;
 	ICalTimezones timezoneService;
 	private JCheckBox ownReservations;
 	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
-	
+
+    @Override
+    public RaplaResources getI18n()
+    {
+        return (RaplaResources) super.getI18n();
+    }
+
+
     public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService) throws RaplaException {
-        super( context );
+        super(context);
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
         calendarName = new JTextField();
-        addCopyPaste( calendarName);
+        addCopyPaste(calendarName);
         calendarName.setColumns(20);
-        panel.add( new JLabel(getString("custom_applicationame")),"0,0"  );
-        panel.add( calendarName,"2,0");
+        panel.add(new JLabel(getString("custom_applicationame")), "0,0");
+        panel.add(calendarName, "2,0");
         calendarName.setEnabled(true);
     	String[] timeZoneIDs = getTimeZonesFromResource();
 		panel.add(new JLabel(getString("timezone")), "0,2");
@@ -61,17 +73,26 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 		cboTimezone = jComboBox;
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
-		
-		panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,4");
+
+        languageChooser = new LanguageChooser(getLogger(),context);
+        RaplaResources i18n = getI18n();
+        panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
+        panel.add( languageChooser.getComponent(), "2,4");
+
+        countryChooser = new LanguageChooser(getLogger(),context);
+        panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
+        panel.add( countryChooser.getComponent(), "2,6");
+
+        panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,8");
 		ownReservations = new JCheckBox();
-		panel.add(ownReservations, "2,4");
+		panel.add(ownReservations, "2,8");
 		
 		seconds.getNumberField().setBlockStepSize( 60);
 	    seconds.getNumberField().setStepSize( 10);
 	    
-        panel.add( new JLabel(getString("seconds")),"4,6"  );
-        panel.add( seconds,"2,6");
-        panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,6"  );
+        panel.add( new JLabel(getString("seconds")),"4,10"  );
+        panel.add( seconds,"2,10");
+        panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,10"  );
         addCopyPaste( seconds.getNumberField());
     }
 
@@ -93,6 +114,15 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     	try {
     		String timezoneId = preferences.getEntryAsString( ContainerImpl.TIMEZONE,timezoneService.getDefaultTimezone().get());
 			cboTimezone.setSelectedItem(timezoneId);
+
+            String localeId = preferences.getEntryAsString( ContainerImpl.LOCALE,null);
+            if ( localeId != null) {
+                Locale locale = DateTools.getLocale(localeId);
+                languageChooser.setSelectedLanguage(locale.getLanguage());
+            }
+            else {
+                languageChooser.setSelectedLanguage(null);
+            }
 		}
 		catch (RaplaException ex)
 		{
@@ -124,8 +154,17 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
         
     	String timeZoneId = String.valueOf(cboTimezone.getSelectedItem());
     	preferences.putEntry( ContainerImpl.TIMEZONE, timeZoneId);
-   
-    	boolean selected= ownReservations.isSelected(); 
+
+        String lang = languageChooser.getSelectedLanguage();
+        if ( lang == null)
+        {
+            preferences.putEntry( ContainerImpl.LOCALE, null);
+        }
+        else {
+            String localeId = lang;
+            preferences.putEntry( ContainerImpl.LOCALE, localeId);
+        }
+        boolean selected= ownReservations.isSelected();
     	preferences.putEntry( CalendarModel.ONLY_MY_EVENTS_DEFAULT, selected); 
     	
     	int delay = seconds.getNumber().intValue() * 1000;
