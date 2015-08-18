@@ -13,8 +13,9 @@
 package org.rapla.client.internal;
 
 import java.awt.Component;
-import java.awt.event.ActionListener;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
@@ -29,26 +30,33 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.storage.dbrm.RemoteServer;
 
-final public class LanguageChooser implements RaplaWidget
+final public class CountryChooser implements RaplaWidget
 {
     JComboBox jComboBox;
-    String country;
+    String language;
     RaplaContext context;
     Logger logger;
+    Map<String,Collection<String>> countries;
     
-    public LanguageChooser(Logger logger,RaplaContext context) throws RaplaException {
+    public CountryChooser(Logger logger,RaplaContext context) throws RaplaException {
         this.logger = logger;
         this.context = context;
         final I18nBundle i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
         final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
-        country = raplaLocale.getLocale().getCountry();
-        String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
-
-        String[] entries = new String[languages.length + 1];
-        System.arraycopy( languages, 0, entries, 1, languages.length);
+        language = raplaLocale.getLocale().getLanguage();
+        Collection<String> languages = raplaLocale.getAvailableLanguages();
+        final RemoteServer remoteServer = context.lookup( RemoteServer.class );
+        countries = remoteServer.countries(languages);
+        String[] entries = createCountryArray();
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox2 = new JComboBox(entries);
+        final String localeCountry = raplaLocale.getLocale().getCountry();
+        if(localeCountry != null)
+        {
+            jComboBox2.setSelectedItem(localeCountry);
+        }
 		jComboBox = jComboBox2;
         DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
@@ -61,7 +69,7 @@ final public class LanguageChooser implements RaplaWidget
             {
                 if ( value != null)
                 {
-                    value = new Locale( (String) value,country).getDisplayLanguage( raplaLocale.getLocale());
+                    value = new Locale(CountryChooser.this.getLanguage(), (String) value).getDisplayCountry( raplaLocale.getLocale());
                 }
                 else
                 {
@@ -78,6 +86,18 @@ final public class LanguageChooser implements RaplaWidget
         //jComboBox.setSelectedItem( raplaLocale.getLocale().getLanguage());
     }
 
+    protected String getLanguage()
+    {
+        return language != null ? language : "";
+    }
+
+    private String[] createCountryArray()
+    {
+        final Collection<String> countryCodes = countries.get(language);
+        final String[] array = countryCodes.toArray(new String[countryCodes.size()]);
+        return array;
+    }
+
 	@SuppressWarnings("unchecked")
 	private void setRenderer(DefaultListCellRenderer aRenderer) {
 		jComboBox.setRenderer(aRenderer);
@@ -86,33 +106,36 @@ final public class LanguageChooser implements RaplaWidget
     public JComponent getComponent() {
         return jComboBox;
     }
+    
+    public void changeLanguage(String language)
+    {
+        this.language = language;
+        if(language != null && countries.get(language)!=null){
+            jComboBox.setEnabled(true);
+            final String[] countries = createCountryArray();
+            jComboBox.removeAllItems();
+            for (String country : countries)
+            {
+                jComboBox.addItem(country);
+            }
+        }
+        else{
+            jComboBox.setEnabled(false);
+        }
+    }
 
-    public void setSelectedLanguage(String lang) {
-        jComboBox.setSelectedItem(lang);
+    public void setSelectedCountry(String country) {
+        jComboBox.setSelectedItem(country);
     }
     
-    public String getSelectedLanguage()
+    public String getSelectedCountry()
     {
         return (String) jComboBox.getSelectedItem();
     }
-    
-    public void setChangeAction( Action languageChanged )
+
+    public void setChangeAction( Action countryChanged )
     {
-        jComboBox.setAction( languageChanged );
+        jComboBox.setAction( countryChanged );
     }
-    public void addActionListener(ActionListener actionListener)
-    {
-        jComboBox.addActionListener(actionListener);
-    }
+
 }
-
-
-
-
-
-
-
-
-
-
-

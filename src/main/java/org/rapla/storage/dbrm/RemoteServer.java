@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import java.util.Collection;
+import java.util.Map;
+
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
@@ -44,5 +47,8 @@ public interface RemoteServer extends RemoteJsonService {
 	
 	@ResultType(LocalePackage.class)
 	FutureResult<LocalePackage> locale(@WebParam(name="id")String id, @WebParam(name="locale") String locale);
+
+	@ResultType(Map.class)
+    Map<String, Collection<String>> countries(Collection<String> languages);
 		
 }

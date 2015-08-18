@@ -12,9 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Locale;
 
+import javax.swing.Action;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -23,6 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.internal.CountryChooser;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -43,7 +48,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     Preferences preferences;
 	private JComboBox cboTimezone;
     private LanguageChooser languageChooser;
-    private LanguageChooser countryChooser;
+    private CountryChooser countryChooser;
 	ICalTimezones timezoneService;
 	private JCheckBox ownReservations;
 	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
@@ -79,9 +84,17 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
 
-        countryChooser = new LanguageChooser(getLogger(),context);
+        countryChooser = new CountryChooser(getLogger(),context);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
+        languageChooser.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                countryChooser.changeLanguage(languageChooser.getSelectedLanguage());
+            }
+        });
 
         panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,8");
 		ownReservations = new JCheckBox();
@@ -119,6 +132,10 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
             if ( localeId != null) {
                 Locale locale = DateTools.getLocale(localeId);
                 languageChooser.setSelectedLanguage(locale.getLanguage());
+                if(locale.getCountry() != null)
+                {
+                    countryChooser.setSelectedCountry(locale.getCountry());
+                }
             }
             else {
                 languageChooser.setSelectedLanguage(null);
@@ -161,7 +178,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
             preferences.putEntry( ContainerImpl.LOCALE, null);
         }
         else {
-            String localeId = lang;
+            String localeId = lang + "_" + countryChooser.getSelectedCountry();
             preferences.putEntry( ContainerImpl.LOCALE, localeId);
         }
         boolean selected= ownReservations.isSelected();
