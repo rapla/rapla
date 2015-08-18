@@ -1,16 +1,6 @@
 package org.rapla.components.i18n.server;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
-
-import javax.inject.Inject;
-
+import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
@@ -18,10 +8,15 @@ import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaException;
 
+import javax.inject.Inject;
+import java.text.MessageFormat;
+import java.util.*;
+
 public class ServerBundleManager implements BundleManager {
     private final LocaleSelector localeSelector;
     private I18nLocaleFormats formats;
     private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();
+    private Set<String> availableLanguages = new LinkedHashSet<String>();
 
     @Inject
     public ServerBundleManager(LocaleSelector localeSelector) throws RaplaException
@@ -32,6 +27,34 @@ public class ServerBundleManager implements BundleManager {
         final Locale locale = new Locale(selectedLanguage, selectedCountry);
         localeSelector.setLocale( locale );
         this.formats = I18nLocaleLoadUtil.read(locale);
+        availableLanguages = loadAvailableLanguages();
+    }
+
+    public static Set<String> loadAvailableLanguages() {
+        Set<String> availableLanguages = new LinkedHashSet<String>();
+        Locale[] availableLocales = Locale.getAvailableLocales();
+        final String prefix = "/org/rapla/RaplaResources";
+        final String suffix = ".properties";
+        for (Locale aLocale: availableLocales){
+            String localeString = aLocale.toString();
+            final String rb;
+            if(localeString.equalsIgnoreCase("en"))
+            {
+                rb = prefix+suffix;
+            }
+            else
+            {
+                rb= prefix + "_" + localeString +suffix;
+            }
+            if(RaplaResources.class.getResource(rb) != null){
+                availableLanguages.add(aLocale.getLanguage());
+            }
+        }
+        return availableLanguages;
+    }
+
+    public Set<String> getAvailableLanguages() {
+        return availableLanguages;
     }
 
     public Collection<String> getKeys(String packageId)

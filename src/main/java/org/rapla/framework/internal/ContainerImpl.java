@@ -57,6 +57,7 @@ public class ContainerImpl implements Container
 {
     protected RaplaDefaultContext m_context;
     public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
+    public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
     public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
     public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
     

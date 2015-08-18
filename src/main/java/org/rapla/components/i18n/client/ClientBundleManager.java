@@ -33,6 +33,11 @@ public class ClientBundleManager implements BundleManager
     }
 
     @Override
+    public Collection<String> getAvailableLanguages() {
+        return localePackage.getAvailableLanguages();
+    }
+
+    @Override
     public String format(String string, Object[] obj)
     {
         // TODO

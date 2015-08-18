@@ -1,9 +1,6 @@
 package org.rapla.framework;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
+import java.util.*;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
 
@@ -51,7 +48,7 @@ public interface RaplaLocale
 {
 	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<String>("org.rapla.language");
     
-    String[] getAvailableLanguages();
+    Collection<String> getAvailableLanguages();
 
     /** creates a calendar initialized with the Rapla timezone ( that is always GMT+0 for Rapla  )  and the selected locale*/
     @Deprecated

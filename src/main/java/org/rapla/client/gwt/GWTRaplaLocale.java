@@ -23,10 +23,6 @@ public class GWTRaplaLocale extends AbstractRaplaLocale {
 		super(bundleManager);
 	}
 
-	public String[] getAvailableLanguages() {
-		return new String[] {"en"};
-	}
-
 	public Calendar createCalendar() {
 		throw new UnsupportedOperationException("Not supported in gwt. Please call on server");
 	}

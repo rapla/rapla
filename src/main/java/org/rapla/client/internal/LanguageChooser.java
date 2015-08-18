@@ -42,7 +42,7 @@ final public class LanguageChooser implements RaplaWidget
         final I18nBundle i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
         final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         country = raplaLocale.getLocale().getCountry();
-        String[] languages = raplaLocale.getAvailableLanguages();
+        String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
 
         String[] entries = new String[languages.length + 1];
         System.arraycopy( languages, 0, entries, 1, languages.length);
