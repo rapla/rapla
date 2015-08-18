@@ -1,2 +1,3 @@
 org.gwtbootstrap3.GwtBootstrap3Theme
 org.gwtbootstrap3.extras.datepicker.DatePicker
+org.gwtbootstrap3.extras.datetimepicker.DateTimePicker

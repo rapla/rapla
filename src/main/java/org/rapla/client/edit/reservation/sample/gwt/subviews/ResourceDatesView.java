@@ -48,6 +48,7 @@ public class ResourceDatesView
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
         contentPanel = new FlowPanel();
+        contentPanel.setStyleName("resourcesDates");
     }
 
     protected Presenter getPresenter()
@@ -140,6 +141,7 @@ public class ResourceDatesView
 
         // Checkbox reccuring dates
         final FlowPanel repeat = new FlowPanel();
+        repeat.setStyleName("repeating");
         {// Repeating possibilities
             final RadioButton daily = new RadioButton("repeat", i18n.getString("daily"));
             daily.addClickHandler(new RepeatClickHandler());

@@ -30,6 +30,7 @@ public class DateComponent extends SimplePanel implements ValueChangeHandler<Str
     public DateComponent(Date initDate, RaplaLocale locale, final DateValueChanged changeHandler, BundleManager bundleManager)
     {
         super();
+        addStyleName("datePicker");
         this.locale = locale;
         this.changeHandler = changeHandler;
         if (initDate == null)

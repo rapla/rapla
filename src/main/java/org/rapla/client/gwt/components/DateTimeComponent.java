@@ -2,6 +2,8 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
+import org.gwtbootstrap3.extras.datetimepicker.client.ui.DateTimePicker;
+import org.gwtbootstrap3.extras.datetimepicker.client.ui.base.constants.DateTimePickerLanguage;
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaLocale;
@@ -11,35 +13,34 @@ import com.google.gwt.user.client.ui.Label;
 
 public class DateTimeComponent extends FlowPanel
 {
-    private final DateComponent datePicker;
+    private final DateTimePicker dateTimePicker;
 
     public DateTimeComponent(String textLabel, BundleManager bundleManager, Date initDate, RaplaLocale locale, final DateValueChanged changeHandler)
     {
         setStyleName("dateInfoLineComplete");
 
         Label beginText = new Label(textLabel);
-        beginText.setStyleName("label");
+        beginText.setStyleName("textlabel");
         add(beginText);
 
-        datePicker = new DateComponent(initDate, locale, new DateValueChanged()
-        {
-            @Override
-            public void valueChanged(Date newValue)
-            {
-                setDate(newValue);
-                changeHandler.valueChanged(newValue);
-            }
-        }, bundleManager);
-        add(datePicker);
+        final FlowPanel wrapper = new FlowPanel();
+        dateTimePicker = new DateTimePicker();
+        wrapper.add(dateTimePicker);
+        wrapper.addStyleName("timePicker");
+        final DateTimePickerLanguage lang = DateTimePickerLanguage.valueOf(locale.getLocale().getLanguage().toUpperCase());
+        dateTimePicker.setLanguage(lang);
+        dateTimePicker.setFormat(bundleManager.getFormats().getFormatDateShort().toLowerCase() + " HH:ii");
+        dateTimePicker.setValue(initDate);
+        add(wrapper);
 
         final Label beginTimeText = new Label("Uhr");
-        beginTimeText.setStyleName("label");
+        beginTimeText.setStyleName("textlabel");
         add(beginTimeText);
     }
 
     public void setDate(Date date)
     {
-        datePicker.setDate(date);
+        dateTimePicker.setValue(date);
     }
 
 }
