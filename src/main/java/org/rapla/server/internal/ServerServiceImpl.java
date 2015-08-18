@@ -34,6 +34,7 @@ import javax.sql.DataSource;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.AbstractBundle;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -131,6 +132,7 @@ public class ServerServiceImpl extends ContainerImpl
 
     protected CachableStorageOperator operator;
     protected I18nBundle i18n;
+    private final LinkedHashMap<String, Collection<String>> countriesForLanguage = new LinkedHashMap<String, Collection<String>>();
 
     private AuthenticationStore authenticationStore;
     SignedToken accessTokenSigner;
@@ -360,6 +362,26 @@ public class ServerServiceImpl extends ContainerImpl
             catch (RaplaException ex)
             {
                 getLogger().error("Can't initialize configured authentication store. Using default authentication.", ex);
+            }
+        }
+        {
+            final ServerBundleManager bundleManager = (ServerBundleManager) getContext().lookup(BundleManager.class);
+            final Set<String> availableLanguages = bundleManager.getAvailableLanguages();
+            for (String language : availableLanguages)
+            {
+                final LinkedHashSet<String> countries = new LinkedHashSet<String>();
+                countriesForLanguage.put(language, countries);
+                countries.add(language.toUpperCase());
+                final String[] isoCountries = Locale.getISOCountries();
+                for (String country : isoCountries)
+                {
+                    final String propertiesFileName = "/org/rapla/components/i18n/server/locales/format_"+language+"_"+country+".properties";
+                    final URL resource = RaplaResources.class.getResource(propertiesFileName);
+                    if(resource != null)
+                    {
+                        countries.add(country.toUpperCase());
+                    }
+                }   
             }
         }
     }
@@ -746,18 +768,10 @@ public class ServerServiceImpl extends ContainerImpl
                 {
                     for (String language : languages)
                     {
-                        final LinkedHashSet<String> countries = new LinkedHashSet<String>();
-                        result.put(language, countries);
-                        countries.add(language.toUpperCase());
-                        final String[] isoCountries = Locale.getISOCountries();
-                        for (String country : isoCountries)
+                        final Collection<String> countries = countriesForLanguage.get(language);
+                        if(countries != null)
                         {
-                            final String propertiesFileName = "/org/rapla/components/i18n/server/locales/format_"+language+"_"+country+".properties";
-                            final URL resource = RaplaResources.class.getResource(propertiesFileName);
-                            if(resource != null)
-                            {
-                                countries.add(country.toUpperCase());
-                            }
+                            result.put(language, countries);
                         }
                     }
                 }
