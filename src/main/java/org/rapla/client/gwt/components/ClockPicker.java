@@ -47,7 +47,7 @@ public class ClockPicker extends FlowPanel
         final String id = "clockpicker-" + counter;
         counter++;
         input.getElement().setId(id);
-        input.setValue(format.format(initDate));
+        setTime(initDate);
         add(input);
         input.addFocusHandler(new FocusHandler()
         {
@@ -75,6 +75,11 @@ public class ClockPicker extends FlowPanel
         }, ClickEvent.getType());
     }
 
+    public void setTime(final Date time)
+    {
+        input.setValue(format.format(time));
+    }
+
     private void timeChanged()
     {
         final String value = input.getValue();
@@ -91,5 +96,12 @@ public class ClockPicker extends FlowPanel
              }
          }).clockpicker('show');
      }-*/;
+
+    public Date getTime()
+    {
+        final String value = input.getValue();
+        final Date time = format.parse(value);
+        return time;
+    }
 
 }

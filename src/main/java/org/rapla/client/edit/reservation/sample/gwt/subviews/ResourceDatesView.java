@@ -9,6 +9,9 @@ import org.rapla.client.edit.reservation.sample.gwt.subviews.TerminList.DateSele
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.client.gwt.components.DateTimeComponent;
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.DateWithoutTimezone;
+import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
@@ -108,7 +111,10 @@ public class ResourceDatesView
             @Override
             public void valueChanged(Date newValue)
             {
-                
+                final DateWithoutTimezone date = DateTools.toDate(newValue.getTime());
+                final TimeWithoutTimezone time = DateTools.toTime(newValue.getTime());
+                final Date dateTime = DateTools.toDateTime(newValue, newValue);
+                boolean equals =  dateTime.getTime() == newValue.getTime();
             }
         };
         final DateTimeComponent begin = new DateTimeComponent(i18n.getString("start_date"), bundleManager, startDate, raplaLocale, startChangeHandler);
