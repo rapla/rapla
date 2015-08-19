@@ -84,6 +84,14 @@ h1 {
 	float: left;
 }
 
+.raplaClockPicker {
+	width: 110px;
+}
+
+.clockpicker-align-left.popover.bottom > .arrow {
+	left: 25px;
+}
+
 /* TABLE */
 .header.topleft, .header.left {
 	width: 30px;
