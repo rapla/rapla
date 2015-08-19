@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -446,10 +448,29 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
                 return "CLOB";
             }
         }
-		
+        if ( isSQLServer())
+        {
+            final Matcher matcher = Pattern.compile("VARCHAR\\((\\d+)\\)").matcher(type);
+            if ( matcher.find())
+            {
+                final String group = matcher.group(1);
+                if ( Integer.parseInt(group)> 8000)
+                {
+                    return "VARCHAR(8000)";
+                }
+            }
+        }
+        if ( type.equals("TIMESTAMP"))
+        {
+            if (isSQLServer())
+            {
+                return "DATETIME";
+            }
+        }
+
         if ( type.equals("DATETIME"))
         {
-            if ( !isH2() && !isMysql())
+            if ( !isH2() && !isMysql() && !isSQLServer())
             {
                 return "TIMESTAMP";
             }
@@ -531,13 +552,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		StringBuffer buf = new StringBuffer();
 		String colName = col.getName();
 		buf.append(colName);
-		String type = getDatabaseProductType(col.getType());
+		final String origType = col.getType();
+        String type = getDatabaseProductType(origType);
 		buf.append(" " + type);
 		if ( col.isNotNull())
 		{
 			buf.append(" NOT NULL");
 		}
-		else
+		else if ( !isSQLServer())
 		{
 			buf.append(" NULL");
 		}
@@ -567,6 +589,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		boolean result = dbProductName.indexOf("mysql") >=0;
 		return result;
 	}
+
+	protected boolean isSQLServer() {
+        boolean result = dbProductName.toLowerCase().indexOf("microsoft") >=0;
+        return result;
+    }
 	
 	protected boolean isHsqldb() {
 		boolean result = dbProductName.indexOf("hsql") >=0;
