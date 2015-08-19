@@ -16,7 +16,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
@@ -135,7 +134,10 @@ public class ParsedText implements Serializable {
                 buf.append( stringResult);
             }
         }
-        return buf.toString();
+        
+        String string = buf.toString();
+        string = string.replaceAll("\\\\n", "\n");
+        return string;
     }
    
 	Function parseFunctions(ParseContext context,String content)
