@@ -132,7 +132,7 @@ public class ServerServiceImpl extends ContainerImpl
 
     protected CachableStorageOperator operator;
     protected I18nBundle i18n;
-    private final LinkedHashMap<String, Collection<String>> countriesForLanguage = new LinkedHashMap<String, Collection<String>>();
+    private final LinkedHashMap<String, Set<String>> countriesForLanguage = new LinkedHashMap<String, Set<String>>();
 
     private AuthenticationStore authenticationStore;
     SignedToken accessTokenSigner;
@@ -761,21 +761,21 @@ public class ServerServiceImpl extends ContainerImpl
                 }
             }
             @Override
-            public Map<String, Collection<String>> countries(Collection<String> languages)
+            public FutureResult<Map<String, Set<String>>> countries(Set<String> languages)
             {
-                final LinkedHashMap<String, Collection<String>> result = new LinkedHashMap<String, Collection<String>>();
+                final LinkedHashMap<String, Set<String>> result = new LinkedHashMap<String, Set<String>>();
                 if(languages != null)
                 {
                     for (String language : languages)
                     {
-                        final Collection<String> countries = countriesForLanguage.get(language);
+                        final Set<String> countries = countriesForLanguage.get(language);
                         if(countries != null)
                         {
                             result.put(language, countries);
                         }
                     }
                 }
-                return result;
+                return new ResultImpl<Map<String,Set<String>>>(result);
             }
         };
     }

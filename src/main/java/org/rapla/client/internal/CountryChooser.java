@@ -14,8 +14,10 @@ package org.rapla.client.internal;
 
 import java.awt.Component;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
@@ -38,7 +40,7 @@ final public class CountryChooser implements RaplaWidget
     String language;
     RaplaContext context;
     Logger logger;
-    Map<String,Collection<String>> countries;
+    Map<String,Set<String>> countries;
     
     public CountryChooser(Logger logger,RaplaContext context) throws RaplaException {
         this.logger = logger;
@@ -48,7 +50,14 @@ final public class CountryChooser implements RaplaWidget
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         final RemoteServer remoteServer = context.lookup( RemoteServer.class );
-        countries = remoteServer.countries(languages);
+        try
+        {
+            countries = remoteServer.countries(new LinkedHashSet<String>(languages)).get();
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException(e.getMessage(), e);
+        }
         String[] entries = createCountryArray();
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox2 = new JComboBox(entries);
