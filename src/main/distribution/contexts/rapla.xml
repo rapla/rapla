@@ -45,6 +45,16 @@
            <Set name="PortNumber">5432</Set>
        </New>
     -->
+    <!--  sql server	-->
+    <!--
+      <New class="com.microsoft.sqlserver.jdbc.SQLServerDataSource">
+          <Set name="serverName">localhost</Set>
+          <Set name="portNumber">1433</Set>
+          <Set name="databaseName">your_db_name</Set>
+          <Set name="user">db_user</Set>
+          <Set name="password">your_pwd</Set>
+      </New>
+    -->
     </Arg>
   </New>
    
