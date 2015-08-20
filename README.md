@@ -1,4 +1,4 @@
-# rapla
+# Rapla
 
 checkout the rapla website for news on rapla 
 
