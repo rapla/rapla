@@ -3,6 +3,7 @@ package org.rapla.client.gwt.components;
 import java.util.Date;
 
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.I18nLocaleFormats;
 
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
@@ -33,7 +34,8 @@ public class ClockPicker extends FlowPanel
     {
         this.changeListener = changeListener;
         setStyleName("raplaClockPicker input-group clockpicker");
-        final String formatHour = bundleManager.getFormats().getFormatHour();
+        final I18nLocaleFormats formats = bundleManager.getFormats();
+        final String formatHour = formats.getFormatHour();
         format = DateTimeFormat.getFormat(formatHour);
         input.setStyleName("form-control");
         input.addChangeHandler(new ChangeHandler()
@@ -54,7 +56,7 @@ public class ClockPicker extends FlowPanel
             @Override
             public void onFocus(FocusEvent event)
             {
-                showClockPicker(id, ClockPicker.this);
+                showClockPicker(id, formats.isAmPmFormat(), ClockPicker.this);
             }
         });
         final Element span = DOM.createSpan();
@@ -70,7 +72,7 @@ public class ClockPicker extends FlowPanel
             public void onClick(ClickEvent event)
             {
                 event.stopPropagation();
-                showClockPicker(id, ClockPicker.this);
+                showClockPicker(id, formats.isAmPmFormat(), ClockPicker.this);
             }
         }, ClickEvent.getType());
     }
@@ -87,10 +89,11 @@ public class ClockPicker extends FlowPanel
         changeListener.timeChanged(time);
     }
 
-    public native void showClockPicker(final String id, final ClockPicker cp)
+    public native void showClockPicker(final String id, final boolean isAmPmFormat, final ClockPicker cp)
     /*-{
          $wnd.$('#'+id).clockpicker({
              autoclose: true,
+             twelvehour: isAmPmFormat,
              afterDone: function(){
                  cp.@org.rapla.client.gwt.components.ClockPicker::timeChanged()();
              }

@@ -19,7 +19,6 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 import com.google.gwt.dom.client.Node;
@@ -114,9 +113,8 @@ public class ReservationViewImpl extends AbstractView<Presenter> implements Rese
             popup.setAnimationEnabled(true);
             popup.setAnimationType(AnimationType.ROLL_DOWN);
             popups.put(reservation.getId(), popup);
-            final RaplaLocale raplaLocale = getRaplaLocale();
-            infoView = new InfoView(getPresenter(), raplaLocale, i18n, bundleManager);
-            resourcesView = new ResourceDatesView(getPresenter(), i18n, bundleManager, raplaLocale);
+            infoView = new InfoView(getPresenter(), i18n, bundleManager);
+            resourcesView = new ResourceDatesView(getPresenter(), i18n, bundleManager);
             if (selectionHandler != null)
             {
                 selectionHandler.removeHandler();

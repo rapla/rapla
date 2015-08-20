@@ -21,12 +21,12 @@ public class DateComponent extends SimplePanel
 
     private final DatePicker datePicker;
 
-    public DateComponent(Date initDate, RaplaLocale locale, final DateValueChanged changeHandler, BundleManager bundleManager)
+    public DateComponent(Date initDate, final DateValueChanged changeHandler, BundleManager bundleManager)
     {
         super();
         addStyleName("datePicker");
         datePicker = new DatePicker();
-        final DatePickerLanguage lang = DatePickerLanguage.valueOf(locale.getLocale().getLanguage().toUpperCase());
+        final DatePickerLanguage lang = DatePickerLanguage.valueOf(bundleManager.getLocale().getLanguage().toUpperCase());
         datePicker.setLanguage(lang);
         datePicker.setFormat(bundleManager.getFormats().getFormatDateShort().toLowerCase());
         datePicker.setShowTodayButton(true);

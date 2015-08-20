@@ -63,4 +63,13 @@ public class GWTDateUtils
         final Date gwtTime = format.parse(formatTime);
         return gwtTime;
     }
+
+    public static Date raplaToGwtDateTime(Date date)
+    {
+        final String formatDate = SerializableDateTimeFormat.INSTANCE.formatDate(date);
+        final String formatTime = SerializableDateTimeFormat.INSTANCE.formatTime(date);
+        final DateTimeFormat format = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
+        final Date gwtDateTime = format.parse(formatDate + " " + formatTime);
+        return gwtDateTime;
+    }
 }

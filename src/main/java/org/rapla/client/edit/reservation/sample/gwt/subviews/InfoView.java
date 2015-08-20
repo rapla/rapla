@@ -32,7 +32,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaLocale;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -46,12 +45,10 @@ public class InfoView
     private final Presenter presenter;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
-    private RaplaLocale raplaLocale;
 
-    public InfoView(Presenter presenter, RaplaLocale raplaLocale, RaplaResources i18n, BundleManager bundleManager)
+    public InfoView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager)
     {
         this.presenter = presenter;
-        this.raplaLocale = raplaLocale;
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         contentPanel = new FlowPanel();
@@ -146,7 +143,7 @@ public class InfoView
             }
             else if (InputUtils.isAttributeDate(attribute))
             {
-                final DateComponent input = new DateComponent((Date) value, raplaLocale, new DateValueChanged()
+                final DateComponent input = new DateComponent((Date) value, new DateValueChanged()
                 {
                     @Override
                     public void valueChanged(Date newValue)

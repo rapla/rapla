@@ -14,7 +14,6 @@ import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.framework.RaplaLocale;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -42,14 +41,11 @@ public class ResourceDatesView
 
     private final BundleManager bundleManager;
 
-    private final RaplaLocale raplaLocale;
-
-    public ResourceDatesView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
+    public ResourceDatesView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager)
     {
         this.presenter = presenter;
         this.i18n = i18n;
         this.bundleManager = bundleManager;
-        this.raplaLocale = raplaLocale;
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("resourcesDates");
     }
@@ -117,7 +113,7 @@ public class ResourceDatesView
                 boolean equals =  dateTime.getTime() == newValue.getTime();
             }
         };
-        final DateTimeComponent begin = new DateTimeComponent(i18n.getString("start_date"), bundleManager, startDate, raplaLocale, startChangeHandler);
+        final DateTimeComponent begin = new DateTimeComponent(i18n.getString("start_date"), bundleManager, startDate, startChangeHandler);
         {
             //creatin the checkbox for whole day and add a handler
             final CheckBox cbWholeDay = new CheckBox(i18n.getString("all-day"));
@@ -143,7 +139,7 @@ public class ResourceDatesView
         };
         final Date endDate = new Date();
         // initialize and declarate Panel and Elements for End Time and Date
-        final DateTimeComponent end = new DateTimeComponent(i18n.getString("end_date"), bundleManager, endDate, raplaLocale, endChangeHandler);
+        final DateTimeComponent end = new DateTimeComponent(i18n.getString("end_date"), bundleManager, endDate, endChangeHandler);
 
         // Checkbox reccuring dates
         final FlowPanel repeat = new FlowPanel();
