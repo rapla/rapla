@@ -43,10 +43,6 @@ h1 {
 	z-index: 150;
 }
 
-.navigator{
-	width: 200px;	
-}
-
 /* ADD BUTTON for new event */
 .addButton {
 	float: right;
