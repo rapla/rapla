@@ -3,6 +3,8 @@
  */
 package org.rapla.servletpages;
 
+import static org.apache.commons.lang.StringEscapeUtils.escapeXml;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -52,11 +54,10 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		 String title;
 		 final String defaultTitle = getI18n().getString("rapla.title");
 		 try {
-            title= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            title= escapeXml(getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle));
         } catch (RaplaException e) {
             title = defaultTitle; 
         }
-	       
 		out.println(title);
 		out.println("    </title>");
 		out.println("  </head>");

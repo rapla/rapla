@@ -3,6 +3,8 @@
  */
 package org.rapla.servletpages;
 
+import static org.apache.commons.lang.StringEscapeUtils.escapeXml;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -120,11 +122,13 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
         String menuName;
         try
         {
-            menuName= getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            final String unencodedString = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            menuName= escapeXml(unencodedString);
         }
         catch (RaplaException e) {
             menuName = defaultTitle;
         }
+        
 		response.setContentType("application/x-java-jnlp-file;charset=utf-8");
 		out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 		out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
