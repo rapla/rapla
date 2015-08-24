@@ -26,7 +26,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 
@@ -51,7 +50,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     private ClientFacade facade;
 
     @Inject
-    private HTMLRaplaBuilder builderProvider;
+    private HTMLRaplaBuilder builder;
 
     @Inject
     private RaplaLocale raplaLocale;
@@ -131,7 +130,6 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
         model.setEndDate(endDate);
         String weeknumber = i18n.calendarweek(startDate);
         weekView.setWeeknumber(weeknumber);
-        RaplaBuilder builder = builderProvider;
         builder.setNonFilteredEventsVisible(false);
         {
             long time = System.currentTimeMillis();
