@@ -204,6 +204,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
         for (String calendarName : calendarNames)
         {
             final DropDownItem item = new DropDownItem(calendarName, i + "");
+            i++;
             dropDownEntries.add(item);
         }
 
