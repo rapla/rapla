@@ -12,7 +12,6 @@ import org.gwtbootstrap3.client.ui.NavbarCollapse;
 import org.gwtbootstrap3.client.ui.NavbarCollapseButton;
 import org.gwtbootstrap3.client.ui.NavbarHeader;
 import org.gwtbootstrap3.client.ui.NavbarText;
-import org.gwtbootstrap3.client.ui.base.helper.StyleHelper;
 import org.gwtbootstrap3.client.ui.constants.DeviceSize;
 import org.gwtbootstrap3.client.ui.gwt.HTMLPanel;
 import org.gwtbootstrap3.client.ui.html.Div;
@@ -54,11 +53,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
         final Div resources = new Div();
         final Div completeApplication = resources;
         completeApplication.getElement().getStyle().setDisplay(Display.TABLE);
-        {
-            final Div spanDiv = new Div();
-            spanDiv.getElement().getStyle().setDisplay(Display.TABLE_CELL);
-            completeApplication.add(spanDiv);
-        }
         root.add(completeApplication);
         final Locale locale = bundleManager.getLocale();
         // left side resources navigation whenever medium is medium or large size
@@ -66,7 +60,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             final Div resourcesDiv = new Div();
             resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
             final Style style = resourcesDiv.getElement().getStyle();
-            style.setFloat(Float.LEFT);
             style.setWidth(300, Unit.PX);
             style.setOverflow(Overflow.AUTO);
             completeApplication.add(resourcesDiv);
@@ -79,6 +72,11 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                 final TreeItem treeItem = new TreeItem(new HTML(name));
                 resourcesTree.addItem(treeItem);
             }
+        }
+        {// Empty div for span over
+            final Div spanDiv = new Div();
+            spanDiv.getElement().getStyle().setDisplay(Display.TABLE_CELL);
+            completeApplication.add(spanDiv);
         }
         final Div containerDiv = new Div();
         containerDiv.getElement().getStyle().setDisplay(Display.TABLE_CELL);
@@ -123,9 +121,9 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             {// calendar selection
                 headerDiv.add(calendarSelection);
                 calendarSelection.add(new HTML("calendar drop down"));
+                calendarSelection.getElement().getStyle().setMarginTop(20, Unit.PX);
                 final Div dateSelectionDiv = new Div();
                 headerDiv.add(dateSelectionDiv);
-                dateSelectionDiv.setVisibleOn(DeviceSize.SM_MD_LG);
             }
         }
         content.setVisibleOn(DeviceSize.XS_SM_MD_LG);
@@ -156,7 +154,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                 presenter.changeCalendar(calendarNames.get(Integer.parseInt(newValue)));
             }
         }, dropDownEntries, "0");
-        StyleHelper.setVisibleOn(dropDownInputField, DeviceSize.SM_MD_LG);
         calendarSelection.add(dropDownInputField);
     }
 
