@@ -7,14 +7,21 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
+import org.gwtbootstrap3.client.ui.AnchorListItem;
 import org.gwtbootstrap3.client.ui.Navbar;
 import org.gwtbootstrap3.client.ui.NavbarCollapse;
 import org.gwtbootstrap3.client.ui.NavbarCollapseButton;
 import org.gwtbootstrap3.client.ui.NavbarHeader;
+import org.gwtbootstrap3.client.ui.NavbarNav;
 import org.gwtbootstrap3.client.ui.NavbarText;
 import org.gwtbootstrap3.client.ui.constants.DeviceSize;
-import org.gwtbootstrap3.client.ui.gwt.HTMLPanel;
+import org.gwtbootstrap3.client.ui.constants.IconPosition;
+import org.gwtbootstrap3.client.ui.constants.IconType;
+import org.gwtbootstrap3.client.ui.constants.NavbarPosition;
+import org.gwtbootstrap3.client.ui.constants.Pull;
 import org.gwtbootstrap3.client.ui.html.Div;
+import org.gwtbootstrap3.client.ui.html.Text;
+import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.gwt.components.DropDownInputField;
@@ -27,9 +34,7 @@ import org.rapla.framework.RaplaException;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
-import com.google.gwt.dom.client.Style.Float;
 import com.google.gwt.dom.client.Style.Overflow;
-import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
@@ -47,9 +52,66 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     private final Div calendarSelection = new Div();
 
     @Inject
-    public ApplicationViewImpl(ClientFacade facade, BundleManager bundleManager) throws RaplaException
+    public ApplicationViewImpl(ClientFacade facade, BundleManager bundleManager, RaplaResources i18n) throws RaplaException
     {
         final RootPanel root = RootPanel.get();
+        { // menu 
+            final Navbar navbar = new Navbar();
+            final NavbarNav navbarNav = new NavbarNav();
+            final NavbarCollapse menu = new NavbarCollapse();
+            final String collapseableMenuId = "menuCollapse";
+            menu.setId(collapseableMenuId);
+            {
+                final AnchorListItem menuEntry = new AnchorListItem();
+                menuEntry.setText(i18n.getString("modify-preferences"));
+                menuEntry.setIcon(IconType.GEAR);
+                menuEntry.setIconPosition(IconPosition.LEFT);
+                menuEntry.setIconSpin(true);
+                navbarNav.add(menuEntry);
+            }
+            {
+                final AnchorListItem menuEntry = new AnchorListItem();
+                menuEntry.setText("ResourceTree");
+                menuEntry.setIcon(IconType.TREE);
+                menuEntry.setHiddenOn(DeviceSize.MD_LG);
+                navbarNav.add(menuEntry);
+            }
+            {
+                final AnchorListItem menuEntry = new AnchorListItem();
+                menuEntry.setText("Date selection");
+                menuEntry.setIcon(IconType.CALENDAR);
+                menuEntry.setVisibleOn(DeviceSize.XS);
+                navbarNav.add(menuEntry);
+            }
+            {
+                final AnchorListItem menuEntry = new AnchorListItem();
+                menuEntry.setIcon(IconType.CLOSE);
+                menuEntry.setText(i18n.getString("exit"));
+                navbarNav.add(menuEntry);
+            }
+            {
+                final String loginUser = facade.getUser().getName(bundleManager.getLocale());
+                final NavbarText user = new NavbarText();
+                user.setPull(Pull.RIGHT);
+                user.setMarginRight(25);
+                user.add(new Text(loginUser));
+                menu.add(user);
+            }
+            menu.add(navbarNav);
+            final NavbarHeader navbarHeader = new NavbarHeader();
+            final NavbarCollapseButton collapseButton = new NavbarCollapseButton();
+            collapseButton.setDataTarget("#" + collapseableMenuId);
+            navbarHeader.add(collapseButton);
+            navbar.add(navbarHeader);
+            navbar.add(menu);
+            navbar.setPosition(NavbarPosition.FIXED_TOP);
+            root.add(navbar);
+            final Div spacerDiv = new Div();
+            spacerDiv.getElement().getStyle().setWidth(100, Unit.PCT);
+            spacerDiv.getElement().getStyle().setHeight(50, Unit.PX);
+            root.add(spacerDiv);
+        }
+
         final Div resources = new Div();
         final Div completeApplication = resources;
         completeApplication.getElement().getStyle().setDisplay(Display.TABLE);
@@ -86,38 +148,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
         {
             final Div headerDiv = new Div();
             containerDiv.add(headerDiv);
-            { // menu 
-                final Navbar navbar = new Navbar();
-                final NavbarCollapse menu = new NavbarCollapse();
-                final String collapseableMenuId = "menuCollapse";
-                menu.setId(collapseableMenuId);
-                {
-                    final NavbarText profile = new NavbarText();
-                    profile.add(new HTMLPanel("Profil"));
-                    menu.add(profile);
-                }
-                {
-                    final NavbarText profile = new NavbarText();
-                    profile.add(new HTMLPanel("Logout"));
-                    menu.add(profile);
-                }
-                {
-                    final NavbarText profile = new NavbarText();
-                    profile.add(new HTMLPanel("ResourceTree"));
-                    profile.setHiddenOn(DeviceSize.MD_LG);
-                    menu.add(profile);
-                }
-                navbar.getElement().getStyle().setRight(10, Unit.PX);
-                navbar.getElement().getStyle().setPosition(Position.ABSOLUTE);
-                navbar.getElement().getStyle().setFloat(Float.RIGHT);
-                final NavbarHeader navbarHeader = new NavbarHeader();
-                final NavbarCollapseButton collapseButton = new NavbarCollapseButton();
-                collapseButton.setDataTarget("#"+collapseableMenuId);
-                navbarHeader.add(collapseButton);
-                navbar.add(navbarHeader);
-                navbar.add(menu);
-                headerDiv.add(navbar);
-            }
             {// calendar selection
                 headerDiv.add(calendarSelection);
                 calendarSelection.add(new HTML("calendar drop down"));
