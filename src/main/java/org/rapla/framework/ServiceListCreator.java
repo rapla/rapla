@@ -172,9 +172,10 @@ public class ServiceListCreator
             writer.write("  </source>\n");
             writer.write("  <source path='' includes='RaplaResources.java'/>\n");
             writer.write("  <entry-point class='" + Rapla.class.getCanonicalName() + "'/>\n");
-            final String propertyUserAgent = System.getProperty("gwt.compiler.useragent", "").trim();
-            if(!propertyUserAgent.isEmpty())
+            final String productionMode = System.getProperty("gwt.compiler.production", "").trim();
+            if(productionMode.isEmpty() || "false".equalsIgnoreCase(productionMode))
             {
+                String propertyUserAgent = "safari";
                 writer.write("  <set-property name='user.agent' value='"+propertyUserAgent+"' />\n");
             }
             writer.write("  <extend-property name='locale' values='de' />\n");
