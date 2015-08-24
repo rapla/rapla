@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
+import org.gwtbootstrap3.client.ui.constants.DeviceSize;
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.DateComponent;
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.components.i18n.BundleManager;
@@ -12,9 +14,8 @@ import org.rapla.components.util.DateTools;
 import com.google.gwt.dom.client.Style.Float;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
 
-public class NavigatorView extends FlowPanel
+public class NavigatorView extends Div
 {
     public static interface NavigatorAction
     {
@@ -31,6 +32,7 @@ public class NavigatorView extends FlowPanel
     {
         super();
         setStyleName(parentStyle);
+        setVisibleOn(DeviceSize.SM_MD_LG);
         dateComponent = new DateComponent(new Date(), new DateValueChanged()
         {
             @Override
