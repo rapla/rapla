@@ -32,10 +32,14 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -44,7 +48,7 @@ import com.google.gwt.user.client.ui.TreeItem;
 
 public class ApplicationViewImpl implements ApplicationView<IsWidget>
 {
-
+    private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
     private Presenter presenter;
 
     private final Div content = new Div();
@@ -59,11 +63,35 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             final Navbar navbar = new Navbar();
             final NavbarNav navbarNav = new NavbarNav();
             final NavbarCollapse menu = new NavbarCollapse();
+            menu.addDomHandler(new ClickHandler( )
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    Element target = event.getNativeEvent().getEventTarget().cast();
+                    final String action = findAction(target);
+                    Window.alert("Clicked on " + action);
+                }
+
+                private String findAction(Element target)
+                {
+                    final String action = target.getAttribute(MENU_ACTION);
+                    if(action!=null && !action.isEmpty()){
+                        return action;
+                    }
+                    if(target == menu.getElement() )
+                    {
+                        return null;
+                    }
+                    return findAction(target.getParentElement());
+                }
+            }, ClickEvent.getType());
             final String collapseableMenuId = "menuCollapse";
             menu.setId(collapseableMenuId);
             {
                 final AnchorListItem menuEntry = new AnchorListItem();
                 menuEntry.setText(i18n.getString("modify-preferences"));
+                menuEntry.getElement().setAttribute(MENU_ACTION, "preferences");
                 menuEntry.setIcon(IconType.GEAR);
                 menuEntry.setIconPosition(IconPosition.LEFT);
                 menuEntry.setIconSpin(true);
@@ -72,6 +100,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             {
                 final AnchorListItem menuEntry = new AnchorListItem();
                 menuEntry.setText("ResourceTree");
+                menuEntry.getElement().setAttribute(MENU_ACTION, "resources");
                 menuEntry.setIcon(IconType.TREE);
                 menuEntry.setHiddenOn(DeviceSize.MD_LG);
                 navbarNav.add(menuEntry);
@@ -79,12 +108,14 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             {
                 final AnchorListItem menuEntry = new AnchorListItem();
                 menuEntry.setText("Date selection");
+                menuEntry.getElement().setAttribute(MENU_ACTION, "date selection");
                 menuEntry.setIcon(IconType.CALENDAR);
                 menuEntry.setVisibleOn(DeviceSize.XS);
                 navbarNav.add(menuEntry);
             }
             {
                 final AnchorListItem menuEntry = new AnchorListItem();
+                menuEntry.getElement().setAttribute(MENU_ACTION, "exit");
                 menuEntry.setIcon(IconType.CLOSE);
                 menuEntry.setText(i18n.getString("exit"));
                 navbarNav.add(menuEntry);
