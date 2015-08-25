@@ -28,6 +28,7 @@ import org.rapla.client.gwt.components.DropDownInputField;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
 import org.rapla.client.gwt.components.TreeComponent;
+import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
@@ -51,6 +52,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     private final Div content = new Div();
     private final Div drawingContent = new Div();
     private final Div calendarSelection = new Div();
+    private final TreeComponent treeComponent;
 
     @Inject
     public ApplicationViewImpl(ClientFacade facade, BundleManager bundleManager, RaplaResources i18n) throws RaplaException
@@ -153,8 +155,14 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             final Style style = resourcesDiv.getElement().getStyle();
             style.setWidth(300, Unit.PX);
             completeApplication.add(resourcesDiv);
-            final Allocatable[] allocatables = facade.getAllocatables();
-            final TreeComponent treeComponent = new TreeComponent(allocatables, locale);
+            treeComponent = new TreeComponent(locale, new SelectionChangeHandler()
+            {
+                @Override
+                public void selectionChanged(Collection<Allocatable> selected)
+                {
+                    presenter.resourcesSelected(selected);
+                }
+            });
             resourcesDiv.add(treeComponent);
         }
         final Div containerDiv = new Div();
@@ -179,6 +187,12 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     public void setPresenter(Presenter presenter)
     {
         this.presenter = presenter;
+    }
+    
+    @Override
+    public void update(Allocatable[] entries, Collection<Allocatable> selected)
+    {
+        this.treeComponent.updateData(entries, selected);
     }
 
     public void show(List<String> viewNames, final List<String> calendarNames)

@@ -1,6 +1,7 @@
 package org.rapla.client.gwt.components;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -11,24 +12,36 @@ import org.rapla.entities.dynamictype.DynamicType;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
-import com.google.gwt.core.client.JsArrayString;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
-import com.google.gwt.user.client.Window;
 
 public class TreeComponent extends Div
 {
+    public interface SelectionChangeHandler
+    {
+        void selectionChanged(final Collection<Allocatable> selected);
+    }
+    
     private static int counter = 0;
     private Allocatable[] allocatables;
-    public TreeComponent(final Allocatable[] allocatables, Locale locale)
+    private final SelectionChangeHandler selectionChangeHandler;
+    private final String id = "tree-"+(counter++);
+    private final Locale locale;
+    public TreeComponent(Locale locale, SelectionChangeHandler selectionChangeHandler)
     {
-        this.allocatables = allocatables;
-        final String id = "tree-"+counter;
+        this.locale = locale;
+        this.allocatables = null;
+        this.selectionChangeHandler = selectionChangeHandler;
         this.setId(id);
+    }
+    
+    public void updateData(Allocatable[] entries, Collection<Allocatable>selected)
+    {
+        this.allocatables = entries;
         Map<String, JSONArray> dynTypes = new HashMap<String, JSONArray>();
         final JSONArray data = new JSONArray();
         for (int i = 0; i < allocatables.length; i++)
@@ -55,6 +68,12 @@ public class TreeComponent extends Div
             dynTypeArray.set(dynTypeArray.size(), obj);
             obj.put("id", new JSONNumber(i + 1));
             obj.put("text", new JSONString(allocatable.getName(locale)));
+            if(selected.contains(allocatable))
+            {
+                JSONObject state = new JSONObject();
+                state.put("selected", new JSONString(Boolean.TRUE.toString()));
+                obj.put("state", state);
+            }
         }
         // switch the layout after loading 
         Scheduler.get().scheduleFinally(new ScheduledCommand()
@@ -78,7 +97,7 @@ public class TreeComponent extends Div
                 final int selectedPosition = selectedPositions.get(i);
                 selectedAllocatables.add(allocatables[selectedPosition-1]);
             }
-            Window.alert(selectedAllocatables.toString());
+            selectionChangeHandler.selectionChanged(selectedAllocatables);
         }
     }
     
