@@ -14,3 +14,12 @@
 /certificate/
 /target/
 /.settings/
+.idea/
+bin/org/
+bin/se/
+bin/commons-logging.properties
+bin/logback-access.xml
+bin/ical4j.properties
+bin/logback.xml
+bin/test.xconf
+bin/testdefault.xml
