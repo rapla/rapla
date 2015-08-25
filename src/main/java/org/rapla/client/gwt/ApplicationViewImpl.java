@@ -27,6 +27,7 @@ import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.gwt.components.DropDownInputField;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
+import org.rapla.client.gwt.components.TreeComponent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
@@ -43,8 +44,6 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
-import com.google.gwt.user.client.ui.Tree;
-import com.google.gwt.user.client.ui.TreeItem;
 
 public class ApplicationViewImpl implements ApplicationView<IsWidget>
 {
@@ -70,6 +69,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                 {
                     Element target = event.getNativeEvent().getEventTarget().cast();
                     final String action = findAction(target);
+                    menu.hide();
                     Window.alert("Clicked on " + action);
                 }
 
@@ -143,8 +143,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             root.add(spacerDiv);
         }
 
-        final Div resources = new Div();
-        final Div completeApplication = resources;
+        final Div completeApplication = new Div();
         completeApplication.getElement().getStyle().setDisplay(Display.TABLE);
         root.add(completeApplication);
         final Locale locale = bundleManager.getLocale();
@@ -156,15 +155,9 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             style.setWidth(300, Unit.PX);
             style.setOverflow(Overflow.AUTO);
             completeApplication.add(resourcesDiv);
-            final Tree resourcesTree = new Tree();
-            resourcesDiv.add(resourcesTree);
             final Allocatable[] allocatables = facade.getAllocatables();
-            for (Allocatable allocatable : allocatables)
-            {
-                final String name = allocatable.getName(locale);
-                final TreeItem treeItem = new TreeItem(new HTML(name));
-                resourcesTree.addItem(treeItem);
-            }
+            final TreeComponent treeComponent = new TreeComponent(allocatables, locale);
+            resourcesDiv.add(treeComponent);
         }
         {// Empty div for span over
             final Div spanDiv = new Div();
