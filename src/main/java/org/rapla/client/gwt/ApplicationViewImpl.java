@@ -35,8 +35,6 @@ import org.rapla.framework.RaplaException;
 
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
-import com.google.gwt.dom.client.Style.Display;
-import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -62,7 +60,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             final Navbar navbar = new Navbar();
             final NavbarNav navbarNav = new NavbarNav();
             final NavbarCollapse menu = new NavbarCollapse();
-            menu.addDomHandler(new ClickHandler( )
+            menu.addDomHandler(new ClickHandler()
             {
                 @Override
                 public void onClick(ClickEvent event)
@@ -76,10 +74,11 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                 private String findAction(Element target)
                 {
                     final String action = target.getAttribute(MENU_ACTION);
-                    if(action!=null && !action.isEmpty()){
+                    if (action != null && !action.isEmpty())
+                    {
                         return action;
                     }
-                    if(target == menu.getElement() )
+                    if (target == menu.getElement())
                     {
                         return null;
                     }
@@ -144,7 +143,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
         }
 
         final Div completeApplication = new Div();
-        completeApplication.getElement().getStyle().setDisplay(Display.TABLE);
+        completeApplication.getElement().getStyle().setProperty("display", "flex");
         root.add(completeApplication);
         final Locale locale = bundleManager.getLocale();
         // left side resources navigation whenever medium is medium or large size
@@ -153,19 +152,12 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
             final Style style = resourcesDiv.getElement().getStyle();
             style.setWidth(300, Unit.PX);
-            style.setOverflow(Overflow.AUTO);
             completeApplication.add(resourcesDiv);
             final Allocatable[] allocatables = facade.getAllocatables();
             final TreeComponent treeComponent = new TreeComponent(allocatables, locale);
             resourcesDiv.add(treeComponent);
         }
-        {// Empty div for span over
-            final Div spanDiv = new Div();
-            spanDiv.getElement().getStyle().setDisplay(Display.TABLE_CELL);
-            completeApplication.add(spanDiv);
-        }
         final Div containerDiv = new Div();
-        containerDiv.getElement().getStyle().setDisplay(Display.TABLE_CELL);
         containerDiv.getElement().getStyle().setWidth(100, Unit.PCT);
         completeApplication.add(containerDiv);
         // header navigation
