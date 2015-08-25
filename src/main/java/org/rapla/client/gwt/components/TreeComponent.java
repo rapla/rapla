@@ -1,10 +1,13 @@
 package org.rapla.client.gwt.components;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.DynamicType;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
@@ -26,13 +29,32 @@ public class TreeComponent extends Div
         this.allocatables = allocatables;
         final String id = "tree-"+counter;
         this.setId(id);
+        Map<String, JSONArray> dynTypes = new HashMap<String, JSONArray>();
         final JSONArray data = new JSONArray();
         for (int i = 0; i < allocatables.length; i++)
         {
+            final Allocatable allocatable = allocatables[i];
+            final DynamicType type = allocatable.getClassification().getType();
+            final String key = type.getKey();
+            JSONArray dynTypeArray = dynTypes.get(key);
+            if (dynTypeArray == null)
+            {
+                dynTypeArray = new JSONArray();
+                dynTypes.put(key, dynTypeArray);
+                JSONObject dynTypeWrapper = new JSONObject();
+                JSONObject state = new JSONObject();
+                state.put("opened", new JSONString(Boolean.TRUE.toString()));
+                dynTypeWrapper.put("state", state);
+                dynTypeWrapper.put("icon", new JSONString("Rapla/big_folder.png"));
+                dynTypeWrapper.put("text", new JSONString(type.getName(locale)));
+                dynTypeWrapper.put("children", dynTypeArray);
+//                dynTypeWrapper.put("icon", dynTypeArray);
+                data.set(data.size(), dynTypeWrapper);
+            }
             final JSONObject obj = new JSONObject();
-            data.set(i, obj);
-            obj.put("id", new JSONNumber(i+1));
-            obj.put("text", new JSONString(allocatables[i].getName(locale)));
+            dynTypeArray.set(dynTypeArray.size(), obj);
+            obj.put("id", new JSONNumber(i + 1));
+            obj.put("text", new JSONString(allocatable.getName(locale)));
         }
         // switch the layout after loading 
         Scheduler.get().scheduleFinally(new ScheduledCommand()
