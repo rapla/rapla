@@ -5,8 +5,13 @@ import java.util.Locale;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.entities.domain.Allocatable;
 
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
+import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.Window;
 
 public class TreeComponent extends Div
@@ -16,13 +21,22 @@ public class TreeComponent extends Div
     {
         final String id = "tree-"+counter;
         this.setId(id);
+        final JSONArray data = new JSONArray();
+        int i = 0;
+        for (Allocatable allocatable : allocatables)
+        {
+            final JSONObject obj = new JSONObject();
+            data.set(i++, obj);
+            obj.put("id", new JSONString(allocatable.getId()));
+            obj.put("text", new JSONString(allocatable.getName(locale)));
+        }
         // switch the layout after loading 
         Scheduler.get().scheduleFinally(new ScheduledCommand()
         {
             @Override
             public void execute()
             {
-                initJs(id, TreeComponent.this);
+                initJs(id, data.getJavaScriptObject(), TreeComponent.this);
             }
         });
     }
@@ -32,14 +46,12 @@ public class TreeComponent extends Div
         Window.alert("Selected:"+selected);
     }
     
-    public native void initJs(final String id, final TreeComponent tc)/*-{
+    public native void initJs(final String id, final JavaScriptObject data, final TreeComponent tc)/*-{
         $wnd.$('#'+id).jstree({
         'plugins': ["wholerow", "checkbox"],
         'core': {
-            'data' : [
-                {"id" : 1, "text" : "Node 1"},
-                {"id" : 2, "text" : "Node 2"},
-              ],
+            'dataType': 'JSON',
+            'data' : data,
             'themes': {
                 'name': 'proton',
                 'responsive': true
