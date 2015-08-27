@@ -395,6 +395,15 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             
 	        }
 	        
+		} else {
+            for (Appointment app: appointments)
+            {
+                Reservation r = app.getReservation();
+                if (r != null && !RaplaComponent.isTemplate( r ))
+                {
+                    appointmentsWithoutTemplates.add(app);
+                }
+            }
 		}
 		
 		try
