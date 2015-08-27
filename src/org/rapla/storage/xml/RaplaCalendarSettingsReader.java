@@ -111,8 +111,15 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             if ( CalendarModelConfigurationImpl.canReference(raplaType))
             {
                 DynamicType type = getDynamicType( keyref );
-            	idList.add( type.getId());
-            	idTypeList.add( DynamicType.TYPE);
+                if ( type != null)
+                {
+                    idList.add( type.getId());
+                    idTypeList.add( DynamicType.TYPE);
+                }
+                else
+                {
+                    getLogger().error("Can't find type with key " + keyref + " while loading calendar selections " + ( title != null ? "for " + title : ""));
+                }
             }
         }
     }
