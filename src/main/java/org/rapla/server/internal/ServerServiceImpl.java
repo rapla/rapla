@@ -209,6 +209,11 @@ public class ServerServiceImpl extends ContainerImpl
             addContainerProvidedComponentInstance(ServerService.ENV_RAPLAFILE, containerContext.fileDatasource);
             addContainerProvidedComponent(FileOperator.class, FileOperator.class);
         }
+        if ( selectedStorage == null)
+        {
+            addContainerProvidedComponentInstance(ServerService.ENV_RAPLAFILE, "data/data.xml");
+            addContainerProvidedComponent(FileOperator.class, FileOperator.class);
+        }
         if (containerContext.dbDatasource != null)
         {
             addContainerProvidedComponentInstance(DataSource.class, containerContext.dbDatasource);
@@ -224,13 +229,13 @@ public class ServerServiceImpl extends ContainerImpl
         }
         initialize();
         addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
-        if (selectedStorage.equals("rapladb"))
-        {
-            operator = getContext().lookup(DBOperator.class);
-        }
-        else if (selectedStorage.equals("raplafile"))
+        if (selectedStorage == null || "raplafile".equals( selectedStorage ))
         {
             operator = getContext().lookup(FileOperator.class);
+        }
+        else if (selectedStorage.equals("rapladb"))
+        {
+            operator = getContext().lookup(DBOperator.class);
         }
         else
         {
