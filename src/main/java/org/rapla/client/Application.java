@@ -58,7 +58,6 @@ public class Application<W> implements ApplicationView.Presenter
     private void setPlaces(Set<PlacePresenter> placePresenters)
     {
         this.placePresenters = new ArrayList<PlacePresenter>(placePresenters);
-        this.actualPlacePresenter = this.placePresenters.get(0);
     }
 
     public void start()
@@ -67,6 +66,11 @@ public class Application<W> implements ApplicationView.Presenter
         {
             ActivityManager am = activityManager.get();
             am.init();
+            if(actualPlacePresenter == null)
+            {
+                actualPlacePresenter = placePresenters.get(0);
+                mainView.updateContent((W) actualPlacePresenter.provideContent());
+            }
             mainView.setLoggedInUser(facade.getUser().getName(bundleManager.getLocale()));
             mainView.updateMenu();
             // Test for the resources
