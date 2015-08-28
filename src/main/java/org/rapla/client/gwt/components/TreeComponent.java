@@ -18,7 +18,6 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
-import com.google.gwt.user.client.Window;
 
 public class TreeComponent extends Div
 {
@@ -32,6 +31,7 @@ public class TreeComponent extends Div
     private final SelectionChangeHandler selectionChangeHandler;
     private final String id = "tree-"+(counter++);
     private final Locale locale;
+    private boolean updatingData = false;
     public TreeComponent(Locale locale, SelectionChangeHandler selectionChangeHandler)
     {
         this.locale = locale;
@@ -90,6 +90,7 @@ public class TreeComponent extends Div
             @Override
             public void execute()
             {
+                updatingData = true;
                 fillData(id, data.getJavaScriptObject());
             }
         });
@@ -97,6 +98,10 @@ public class TreeComponent extends Div
     
     private void selectionChanged(Object selected)
     {
+        if (updatingData)
+        {
+            return;
+        }
         if (selected instanceof JsArrayInteger)
         {
             JsArrayInteger selectedPositions = ((JsArrayInteger) selected);
@@ -108,6 +113,11 @@ public class TreeComponent extends Div
             }
             selectionChangeHandler.selectionChanged(selectedAllocatables);
         }
+    }
+    
+    private void refreshCompleted()
+    {
+        updatingData = false;
     }
     
     /*
@@ -133,6 +143,9 @@ public class TreeComponent extends Div
         });
         $wnd.$('#'+id).on("changed.jstree", function (e, data) {
             tc.@org.rapla.client.gwt.components.TreeComponent::selectionChanged(Ljava/lang/Object;)(data.selected);
+        });
+        $wnd.$('#'+id).on("refresh.jstree", function (e, data) {
+            tc.@org.rapla.client.gwt.components.TreeComponent::refreshCompleted()();
         });
     }-*/;
 }
