@@ -16,9 +16,11 @@ import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -81,7 +83,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             view.show(viewNames, selectedView.getName(), calendarNames, calendar);
             final Date selectedDate = model.getSelectedDate();
             view.updateDate(selectedDate);
-//            updateView();
+            updateView();
             view.replaceContent(selectedView);
         }
         catch (RaplaException e)
@@ -210,13 +212,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             String id = place.getId();
             String[] split = id.split("/");
             changeCalendar(split[0], false);
-            try
-            {
-                model.load(calendar == i18n.getString("default") ? null : calendar);
-            }
-            catch (RaplaException e)
-            {
-            }
             String viewId = split[1];
             int index = findView(viewId);
             setSelectedViewIndex(index);
