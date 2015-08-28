@@ -88,6 +88,17 @@ h1 {
 	left: 25px;
 }
 
+/* Calendar Place */
+.calendarPlace {
+	display: flex;
+}
+.calendarPlace .resources{
+	width: 300px;
+}
+.calendarPlace .drawingContainer{
+	width: 100%;
+}
+
 /* TABLE */
 .header.topleft, .header.left {
 	width: 30px;

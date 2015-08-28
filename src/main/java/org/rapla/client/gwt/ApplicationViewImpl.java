@@ -1,10 +1,5 @@
 package org.rapla.client.gwt;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-
 import javax.inject.Inject;
 
 import org.gwtbootstrap3.client.ui.AnchorListItem;
@@ -23,45 +18,31 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
-import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.gwt.components.DropDownInputField;
-import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
-import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
-import org.rapla.client.gwt.components.TreeComponent;
-import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class ApplicationViewImpl implements ApplicationView<IsWidget>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
+    private final RaplaResources i18n;
+    private final NavbarCollapse menu = new NavbarCollapse();
+    private final NavbarNav navbarNav = new NavbarNav();
+    private final Div applicationContent = new Div();
     private Presenter presenter;
 
-    private final Div content = new Div();
-    private final Div drawingContent = new Div();
-    private final Div calendarSelection = new Div();
-    private final TreeComponent treeComponent;
-
     @Inject
-    public ApplicationViewImpl(ClientFacade facade, BundleManager bundleManager, RaplaResources i18n) throws RaplaException
+    public ApplicationViewImpl(final RaplaResources i18n) throws RaplaException
     {
+        this.i18n = i18n;
         final RootPanel root = RootPanel.get();
         { // menu 
             final Navbar navbar = new Navbar();
-            final NavbarNav navbarNav = new NavbarNav();
-            final NavbarCollapse menu = new NavbarCollapse();
             menu.addDomHandler(new ClickHandler()
             {
                 @Override
@@ -70,7 +51,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                     Element target = event.getNativeEvent().getEventTarget().cast();
                     final String action = findAction(target);
                     menu.hide();
-                    Window.alert("Clicked on " + action);
                 }
 
                 private String findAction(Element target)
@@ -89,46 +69,6 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             }, ClickEvent.getType());
             final String collapseableMenuId = "menuCollapse";
             menu.setId(collapseableMenuId);
-            {
-                final AnchorListItem menuEntry = new AnchorListItem();
-                menuEntry.setText(i18n.getString("modify-preferences"));
-                menuEntry.getElement().setAttribute(MENU_ACTION, "preferences");
-                menuEntry.setIcon(IconType.GEAR);
-                menuEntry.setIconPosition(IconPosition.LEFT);
-                menuEntry.setIconSpin(true);
-                navbarNav.add(menuEntry);
-            }
-            {
-                final AnchorListItem menuEntry = new AnchorListItem();
-                menuEntry.setText("ResourceTree");
-                menuEntry.getElement().setAttribute(MENU_ACTION, "resources");
-                menuEntry.setIcon(IconType.TREE);
-                menuEntry.setHiddenOn(DeviceSize.MD_LG);
-                navbarNav.add(menuEntry);
-            }
-            {
-                final AnchorListItem menuEntry = new AnchorListItem();
-                menuEntry.setText("Date selection");
-                menuEntry.getElement().setAttribute(MENU_ACTION, "date selection");
-                menuEntry.setIcon(IconType.CALENDAR);
-                menuEntry.setVisibleOn(DeviceSize.XS);
-                navbarNav.add(menuEntry);
-            }
-            {
-                final AnchorListItem menuEntry = new AnchorListItem();
-                menuEntry.getElement().setAttribute(MENU_ACTION, "exit");
-                menuEntry.setIcon(IconType.CLOSE);
-                menuEntry.setText(i18n.getString("exit"));
-                navbarNav.add(menuEntry);
-            }
-            {
-                final String loginUser = facade.getUser().getName(bundleManager.getLocale());
-                final NavbarText user = new NavbarText();
-                user.setPull(Pull.RIGHT);
-                user.setMarginRight(25);
-                user.add(new Text(loginUser));
-                menu.add(user);
-            }
             menu.add(navbarNav);
             final NavbarHeader navbarHeader = new NavbarHeader();
             final NavbarCollapseButton collapseButton = new NavbarCollapseButton();
@@ -143,85 +83,67 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
             spacerDiv.getElement().getStyle().setHeight(50, Unit.PX);
             root.add(spacerDiv);
         }
+        root.add(applicationContent);
+    }
 
-        final Div completeApplication = new Div();
-        completeApplication.getElement().getStyle().setProperty("display", "flex");
-        root.add(completeApplication);
-        final Locale locale = bundleManager.getLocale();
-        // left side resources navigation whenever medium is medium or large size
+    @Override
+    public void setLoggedInUser(final String loggedInUser)
+    {
+        final NavbarText user = new NavbarText();
+        user.setPull(Pull.RIGHT);
+        user.setMarginRight(25);
+        user.add(new Text(loggedInUser));
+        menu.add(user);
+
+    }
+
+    @Override
+    public void updateMenu()
+    {
         {
-            final Div resourcesDiv = new Div();
-            resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
-            final Style style = resourcesDiv.getElement().getStyle();
-            style.setWidth(300, Unit.PX);
-            completeApplication.add(resourcesDiv);
-            treeComponent = new TreeComponent(locale, new SelectionChangeHandler()
-            {
-                @Override
-                public void selectionChanged(Collection<Allocatable> selected)
-                {
-                    presenter.resourcesSelected(selected);
-                }
-            });
-            resourcesDiv.add(treeComponent);
+            final AnchorListItem menuEntry = new AnchorListItem();
+            menuEntry.setText(i18n.getString("modify-preferences"));
+            menuEntry.getElement().setAttribute(MENU_ACTION, "preferences");
+            menuEntry.setIcon(IconType.GEAR);
+            menuEntry.setIconPosition(IconPosition.LEFT);
+            menuEntry.setIconSpin(true);
+            navbarNav.add(menuEntry);
         }
-        final Div containerDiv = new Div();
-        containerDiv.getElement().getStyle().setWidth(100, Unit.PCT);
-        completeApplication.add(containerDiv);
-        // header navigation
         {
-            final Div headerDiv = new Div();
-            containerDiv.add(headerDiv);
-            {// calendar selection
-                headerDiv.add(calendarSelection);
-                calendarSelection.add(new HTML("calendar drop down"));
-                calendarSelection.getElement().getStyle().setMarginTop(20, Unit.PX);
-                final Div dateSelectionDiv = new Div();
-                headerDiv.add(dateSelectionDiv);
-            }
+            final AnchorListItem menuEntry = new AnchorListItem();
+            menuEntry.setText("ResourceTree");
+            menuEntry.getElement().setAttribute(MENU_ACTION, "resources");
+            menuEntry.setIcon(IconType.TREE);
+            menuEntry.setHiddenOn(DeviceSize.MD_LG);
+            navbarNav.add(menuEntry);
         }
-        content.setVisibleOn(DeviceSize.XS_SM_MD_LG);
-        containerDiv.add(drawingContent);
+        {
+            final AnchorListItem menuEntry = new AnchorListItem();
+            menuEntry.setText("Date selection");
+            menuEntry.getElement().setAttribute(MENU_ACTION, "date selection");
+            menuEntry.setIcon(IconType.CALENDAR);
+            menuEntry.setVisibleOn(DeviceSize.XS);
+            navbarNav.add(menuEntry);
+        }
+        {
+            final AnchorListItem menuEntry = new AnchorListItem();
+            menuEntry.getElement().setAttribute(MENU_ACTION, "exit");
+            menuEntry.setIcon(IconType.CLOSE);
+            menuEntry.setText(i18n.getString("exit"));
+            navbarNav.add(menuEntry);
+        }
     }
 
     public void setPresenter(Presenter presenter)
     {
         this.presenter = presenter;
     }
-    
-    @Override
-    public void update(Allocatable[] entries, Collection<Allocatable> selected)
-    {
-        this.treeComponent.updateData(entries, selected);
-    }
-
-    public void show(List<String> viewNames, final List<String> calendarNames)
-    {
-        calendarSelection.clear();
-        Collection<DropDownItem> dropDownEntries = new ArrayList<DropDownItem>();
-        int i = 0;
-        for (String calendarName : calendarNames)
-        {
-            final DropDownItem item = new DropDownItem(calendarName, i + "");
-            i++;
-            dropDownEntries.add(item);
-        }
-
-        DropDownInputField dropDownInputField = new DropDownInputField("calendar", new DropDownValueChanged()
-        {
-            @Override
-            public void valueChanged(String newValue)
-            {
-                presenter.changeCalendar(calendarNames.get(Integer.parseInt(newValue)));
-            }
-        }, dropDownEntries, "0");
-        calendarSelection.add(dropDownInputField);
-    }
 
     @Override
-    public void replaceContent(CalendarPlugin<IsWidget> contentProvider)
+    public void updateContent(IsWidget w)
     {
-        drawingContent.clear();
-        drawingContent.add(contentProvider.provideContent());
+        this.applicationContent.clear();
+        this.applicationContent.add(w);
     }
+
 }

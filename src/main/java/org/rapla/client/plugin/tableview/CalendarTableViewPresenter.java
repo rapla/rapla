@@ -39,6 +39,12 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     public String getName() {
         return "list";
     }
+    
+    @Override
+    public String getId()
+    {
+        return "list";
+    }
 
     @Override
     public W provideContent() {

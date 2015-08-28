@@ -9,4 +9,6 @@ public interface CalendarPlugin<W> {
     W provideContent();
 
     void updateContent() throws RaplaException;
+
+    String getId();
 }

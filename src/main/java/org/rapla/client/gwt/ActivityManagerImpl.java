@@ -34,7 +34,6 @@ public class ActivityManagerImpl extends ActivityManager
 
     private static final String EDIT_PREFIX = "edit=";
     private static final String DELIMITER = ",";
-    private Place place;
     private final List<String> edits = new ArrayList<String>();
     @Inject
     private ClientFacade facade;
@@ -53,6 +52,7 @@ public class ActivityManagerImpl extends ActivityManager
         final String token = History.getToken();
         if (token != null && !token.isEmpty())
         {
+            place = Place.fromString(token);
             if (token.contains(EDIT_PREFIX))
             {
                 String parameters = token.substring(token.indexOf(EDIT_PREFIX) + EDIT_PREFIX.length());
@@ -77,7 +77,7 @@ public class ActivityManagerImpl extends ActivityManager
                     }
                 }
             }
-            createHistroryEntry();
+            updateHistroryEntry();
         }
     }
 
@@ -88,11 +88,11 @@ public class ActivityManagerImpl extends ActivityManager
         if (selectedObject != null && !edits.contains(selectedObject.getId()))
         {
             edits.add(selectedObject.getId());
-            createHistroryEntry();
+            updateHistroryEntry();
         }
     }
 
-    private void createHistroryEntry()
+    protected void updateHistroryEntry()
     {
         final StringBuilder sb = new StringBuilder();
         if (place != null)
@@ -144,36 +144,8 @@ public class ActivityManagerImpl extends ActivityManager
             }
             if (this.edits.remove(eventId))
             {
-                createHistroryEntry();
+                updateHistroryEntry();
             }
-        }
-    }
-
-    private static class Place
-    {
-        private final String name;
-        private final String id;
-
-        public Place(String name, String id)
-        {
-            this.name = name;
-            this.id = id;
-        }
-
-        public String getId()
-        {
-            return id;
-        }
-
-        public String getName()
-        {
-            return name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return new StringBuilder("#").append(name).append("/").append(id).toString();
         }
     }
 

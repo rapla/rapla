@@ -80,6 +80,12 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return "week";
     }
+    
+    @Override
+    public String getId()
+    {
+        return "week";
+    }
 
     @Override
     public W provideContent()
