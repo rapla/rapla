@@ -7,8 +7,6 @@ import javax.inject.Inject;
 
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.gui.menu.gwt.context.ContextCreator;
-import org.rapla.client.gwt.view.NavigatorView;
-import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
 import org.rapla.client.gwt.view.WeekviewGWT;
 import org.rapla.client.gwt.view.WeekviewGWT.Callback;
 import org.rapla.client.plugin.weekview.CalendarWeekView;
@@ -23,18 +21,16 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 
-public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.weekview.CalendarWeekView.Presenter> implements CalendarWeekView<IsWidget>,
-        NavigatorAction, Callback
+public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.weekview.CalendarWeekView.Presenter>
+        implements CalendarWeekView<IsWidget>, Callback
 {
 
     private final WeekviewGWT calendar;
-    private final NavigatorView navigatorView;
     Logger logger;
 
     @Inject
     public CalendarWeekViewImpl(Logger logger, ContextCreator contextCreator, BundleManager bundleManager)
     {
-        navigatorView = new NavigatorView("week", this, bundleManager);
         calendar = new WeekviewGWT("week", logger, this, contextCreator);
         this.logger = logger;
     }
@@ -43,34 +39,14 @@ public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.w
     public IsWidget provideContent()
     {
         FlowPanel container = new FlowPanel();
-        container.add(navigatorView);
         container.add(calendar);
         return container;
     }
 
     @Override
-    public void update(final List<HTMLDaySlot> daylist, final List<RowSlot> timelist, final String weeknumber, final Date selectedDate)
+    public void update(final List<HTMLDaySlot> daylist, final List<RowSlot> timelist, final String weeknumber)
     {
-        navigatorView.setDate(selectedDate);
         calendar.update(daylist, timelist, weeknumber);
-    }
-
-    @Override
-    public void selectedDate(Date selectedDate)
-    {
-        getPresenter().selectDate(selectedDate);
-    }
-
-    @Override
-    public void next()
-    {
-        getPresenter().next();
-    }
-
-    @Override
-    public void previous()
-    {
-        getPresenter().previous();
     }
 
     @Override

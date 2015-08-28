@@ -2,6 +2,7 @@ package org.rapla.client.gwt;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -18,23 +19,27 @@ import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
 import org.rapla.client.gwt.components.TreeComponent;
 import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
+import org.rapla.client.gwt.view.NavigatorView;
+import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
 
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
 
-public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements CalendarPlaceView<IsWidget>
+public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements CalendarPlaceView<IsWidget>, NavigatorAction
 {
     private final TreeComponent treeComponent;
     private final Div completeView = new Div();
     private final Div drawingContent = new Div();
     private final Div calendarSelection = new Div();
+    private final NavigatorView navigatorView;
 
     @Inject
     public CalendarPlaceViewImpl(BundleManager bundleManager)
     {
         completeView.addStyleName("calendarPlace");
+        navigatorView = new NavigatorView("week", this, bundleManager);
         final Locale locale = bundleManager.getLocale();
         // left side resources navigation whenever medium is medium or large size
         {
@@ -67,6 +72,12 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             }
         }
         containerDiv.add(drawingContent);
+    }
+
+    @Override
+    public void updateDate(final Date selectedDate)
+    {
+        navigatorView.setDate(selectedDate);
     }
 
     @Override
@@ -125,6 +136,7 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             }
         }, viewEntries, selectedViewIndex);
         calendarSelection.add(viewDropDown);
+        calendarSelection.add(navigatorView);
     }
 
     @Override
@@ -138,5 +150,23 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
     public IsWidget provideContent()
     {
         return completeView;
+    }
+
+    @Override
+    public void selectedDate(Date selectedDate)
+    {
+        getPresenter().selectDate(selectedDate);
+    }
+
+    @Override
+    public void next()
+    {
+        getPresenter().next();
+    }
+
+    @Override
+    public void previous()
+    {
+        getPresenter().previous();
     }
 }

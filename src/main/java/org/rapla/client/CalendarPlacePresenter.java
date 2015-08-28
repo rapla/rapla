@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,6 +79,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
                 calendar = defaultCalendar;
             }
             view.show(viewNames, selectedView.getName(), calendarNames, calendar);
+            final Date selectedDate = model.getSelectedDate();
+            view.updateDate(selectedDate);
         }
         catch (RaplaException e)
         {
@@ -100,6 +103,34 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         {
             logger.error("error changing to calendar " + newCalendarName, e);
         }
+    }
+
+    @Override
+    public void selectDate(Date newDate)
+    {
+        model.setSelectedDate(newDate);
+        view.updateDate(newDate);
+        updateView();
+    }
+
+    @Override
+    public void next()
+    {
+        final Date selectedDate = model.getSelectedDate();
+        final Date nextDate = selectedView.calcNext(selectedDate);
+        model.setSelectedDate(nextDate);
+        view.updateDate(nextDate);
+        updateView();
+    }
+
+    @Override
+    public void previous()
+    {
+        final Date selectedDate = model.getSelectedDate();
+        final Date nextDate = selectedView.calcPrevious(selectedDate);
+        model.setSelectedDate(nextDate);
+        view.updateDate(nextDate);
+        updateView();
     }
 
     public void updatePlace()

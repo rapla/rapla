@@ -86,7 +86,19 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return "week";
     }
-
+    
+    @Override
+    public Date calcNext(Date currentDate)
+    {
+        return DateTools.addDays(currentDate, 7);
+    }
+    
+    @Override
+    public Date calcPrevious(Date currentDate)
+    {
+        return DateTools.subDays(currentDate, 7);
+    }
+    
     @Override
     public W provideContent()
     {
@@ -127,8 +139,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     @Override
     public void updateContent() throws RaplaException
     {
-        final Date selectedDate = model.getSelectedDate();
-        HTMLWeekViewPresenter weekView = new HTMLWeekViewPresenter(view, logger, selectedDate);
+        HTMLWeekViewPresenter weekView = new HTMLWeekViewPresenter(view, logger);
         configure(weekView);
         Date startDate = weekView.getStartDate();
         Date endDate = weekView.getEndDate();
@@ -196,31 +207,6 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     public int getIncrementSize()
     {
         return Calendar.WEEK_OF_YEAR;
-    }
-
-    @Override
-    public void selectDate(Date newDate)
-    {
-        model.setSelectedDate(newDate);
-        updateInternal();
-    }
-
-    @Override
-    public void next()
-    {
-        final Date selectedDate = model.getSelectedDate();
-        final Date nextDate = DateTools.addDays(selectedDate, 7);
-        model.setSelectedDate(nextDate);
-        updateInternal();
-    }
-
-    @Override
-    public void previous()
-    {
-        final Date selectedDate = model.getSelectedDate();
-        final Date nextDate = DateTools.subDays(selectedDate, 7);
-        model.setSelectedDate(nextDate);
-        updateInternal();
     }
 
     private void updateInternal()

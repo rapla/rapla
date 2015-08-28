@@ -2,12 +2,14 @@ package org.rapla.client.plugin.tableview;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 
 import javax.inject.Inject;
 
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.DetailSelectEvent;
 import org.rapla.client.plugin.tableview.CalendarTableView.Presenter;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -44,6 +46,18 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     public String getId()
     {
         return "list";
+    }
+    
+    @Override
+    public Date calcNext(Date currentDate)
+    {
+        return DateTools.addMonths(currentDate, 1);
+    }
+    
+    @Override
+    public Date calcPrevious(Date currentDate)
+    {
+        return DateTools.addMonths(currentDate, -1);
     }
 
     @Override

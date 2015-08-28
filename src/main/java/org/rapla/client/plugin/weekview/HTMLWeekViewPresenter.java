@@ -31,12 +31,9 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
     String weeknumber;
     Logger logger;
 
-    private final Date selectedDate;
-
-    public HTMLWeekViewPresenter(CalendarWeekView<?> view, Logger logger, Date selectedDate)
+    public HTMLWeekViewPresenter(CalendarWeekView<?> view, Logger logger)
     {
         this.view = view;
-        this.selectedDate = selectedDate;
         this.logger = logger;
     }
 
@@ -224,7 +221,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
         }
         {
             long time = System.currentTimeMillis();
-            view.update(daylist, timelist, weeknumber, selectedDate);
+            view.update(daylist, timelist, weeknumber);
             logger.info("update took  " + (System.currentTimeMillis() - time) + " ms");
         }
 
