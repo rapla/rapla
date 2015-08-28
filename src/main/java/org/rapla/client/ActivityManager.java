@@ -1,15 +1,21 @@
 package org.rapla.client;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import javax.inject.Inject;
 
+import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.event.DetailEndEvent;
 import org.rapla.client.event.DetailEndEvent.DetailEndEventHandler;
 import org.rapla.client.event.DetailSelectEvent;
-import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.DetailSelectEvent.DetailSelectEventHandler;
+import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
+import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 
+import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
 
 public abstract class ActivityManager implements DetailSelectEventHandler, DetailEndEventHandler, PlaceChangedEventHandler
@@ -17,6 +23,7 @@ public abstract class ActivityManager implements DetailSelectEventHandler, Detai
 
     private final Application application;
     protected Place place;
+    protected final Set<Activity> activities = new LinkedHashSet<Activity>();
 
     @Inject
     public ActivityManager(Application application, EventBus eventBus)
@@ -39,18 +46,139 @@ public abstract class ActivityManager implements DetailSelectEventHandler, Detai
     {
         place = event.getNewPlace();
         updateHistroryEntry();
+        application.selectPlace(place);
     }
 
-    public Place getPlace()
+    public final void init() throws RaplaException
     {
-        return place;
+        parsePlaceAndActivities();
+        if (place != null)
+        {
+            application.selectPlace(place);
+        }
+        if (!activities.isEmpty())
+        {
+            application.showActivities(activities);
+        }
     }
 
-    public abstract void init() throws RaplaException;
+    protected abstract void parsePlaceAndActivities() throws RaplaException;
 
-    protected abstract void createActivityOrPlace(DetailSelectEvent event);
+    protected void createActivityOrPlace(DetailSelectEvent event)
+    {
+        final Entity<?> selectedObject = event.getSelectedObject();
+        if (selectedObject != null && activities.add(new Activity("edit", selectedObject.getId())))
+        {
+            updateHistroryEntry();
+        }
+    }
+
+    public void detailsEnded(DetailEndEvent event)
+    {
+        final String token = History.getToken();
+        if (token != null && !token.isEmpty())
+        {
+            String eventId;
+            if (event != null && event.getEntity() != null)
+            {
+                eventId = event.getEntity().getId();
+            }
+            else
+            {
+                eventId = "unknown";
+            }
+            if (this.activities.remove(new Activity("edit", eventId)))
+            {
+                updateHistroryEntry();
+            }
+        }
+    }
 
     protected abstract void updateHistroryEntry();
+
+    private static final String ACTIVITY_SEPARATOR = "=";
+
+    public static class Activity
+    {
+        private final String name;
+        private final String id;
+
+        public Activity(String name, String id)
+        {
+            this.name = name;
+            this.id = id;
+        }
+
+        public String getId()
+        {
+            return id;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name + "=" + id;
+        }
+
+        public static Activity fromString(final String activityString)
+        {
+            if (activityString == null)
+            {
+                return null;
+            }
+            int indexOf = activityString.indexOf(ACTIVITY_SEPARATOR);
+            if (indexOf > 0)
+            {
+                String name = activityString.substring(0, indexOf);
+                String id = activityString.substring(indexOf + 1);
+                return new Activity(name, id);
+            }
+            return null;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Activity other = (Activity) obj;
+            if (id == null)
+            {
+                if (other.id != null)
+                    return false;
+            }
+            else if (!id.equals(other.id))
+                return false;
+            if (name == null)
+            {
+                if (other.name != null)
+                    return false;
+            }
+            else if (!name.equals(other.name))
+                return false;
+            return true;
+        }
+
+    }
 
     private static final String PLACE_SEPARATOR = "/";
 

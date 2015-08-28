@@ -74,9 +74,9 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             Collections.sort(calendarNames);
             final String defaultCalendar = i18n.getString("default");
             calendarNames.add(0, defaultCalendar);
-            if(calendar == null)
+            if (calendar == null)
             {
-                calendar = defaultCalendar;
+                changeCalendar(defaultCalendar, false);
             }
             view.show(viewNames, selectedView.getName(), calendarNames, calendar);
             final Date selectedDate = model.getSelectedDate();
@@ -91,13 +91,23 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     @Override
     public void changeCalendar(String newCalendarName)
     {
+        changeCalendar(newCalendarName, true);
+    }
+
+    public void changeCalendar(String newCalendarName, boolean fireEvent)
+    {
         try
         {
-            calendar = newCalendarName;
-            model.load(newCalendarName == i18n.getString("default") ? null : newCalendarName);
-            updatePlace();
-            updateResourceSelection();
-            updateView();
+            if (!newCalendarName.equals(calendar))
+            {
+                calendar = newCalendarName;
+                model.load(newCalendarName == i18n.getString("default") ? null : newCalendarName);
+                if (fireEvent)
+                {
+                    updatePlace();
+                }
+                updateResourcesTree();
+            }
         }
         catch (Exception e)
         {
@@ -144,7 +154,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 
     private String calcCalId()
     {
-        if(calendar == null){
+        if (calendar == null)
+        {
             return "";
         }
         return calendar;
@@ -152,15 +163,9 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 
     private String calcViewId()
     {
-        if(selectedView == null)
+        if (selectedView == null)
             return "";
         return selectedView.getId();
-    }
-
-    private void updateResourceSelection()
-    {
-        // TODO change
-        updateResourcesTree();
     }
 
     private void updateResourcesTree()
@@ -202,7 +207,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         {
             String id = place.getId();
             String[] split = id.split("/");
-            calendar = split[0];
+            changeCalendar(split[0], false);
             try
             {
                 model.load(calendar == i18n.getString("default") ? null : calendar);
@@ -213,6 +218,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             String viewId = split[1];
             int index = findView(viewId);
             setSelectedViewIndex(index);
+            updateView();
+            view.replaceContent(selectedView);
             return true;
         }
         return false;
@@ -237,8 +244,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         if (index >= 0)
         {
             selectedView = viewPluginPresenter.get(index);
-            updateView();
-            view.replaceContent(selectedView);
         }
     }
 
@@ -271,7 +276,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     public W provideContent()
     {
         init();
-        updateResourcesTree();
         return view.provideContent();
     }
 }

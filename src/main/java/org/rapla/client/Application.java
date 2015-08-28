@@ -1,13 +1,16 @@
 package org.rapla.client;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.event.DetailSelectEvent;
@@ -20,6 +23,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.StorageOperator;
 
 import com.google.web.bindery.event.shared.EventBus;
 
@@ -63,22 +67,9 @@ public class Application<W> implements ApplicationView.Presenter
         {
             ActivityManager am = activityManager.get();
             am.init();
-            Place place = am.getPlace();
-            if(place != null)
-            {
-                for (PlacePresenter placePresenter : placePresenters)
-                {
-                    if(placePresenter.isResposibleFor(place))
-                    {
-                        this.actualPlacePresenter = placePresenter;
-                        break;
-                    }
-                }
-            }
             mainView.setLoggedInUser(facade.getUser().getName(bundleManager.getLocale()));
             mainView.updateMenu();
             // Test for the resources
-            mainView.updateContent((W) actualPlacePresenter.provideContent());
             facade.addModificationListener(new ModificationListener()
             {
 
@@ -118,6 +109,55 @@ public class Application<W> implements ApplicationView.Presenter
         catch (RaplaException e1)
         {
             logger.error(e1.getMessage(), e1);
+        }
+    }
+
+    public void selectPlace(Place place)
+    {
+        if (place != null)
+        {
+            for (PlacePresenter placePresenter : placePresenters)
+            {
+                if (placePresenter.isResposibleFor(place))
+                {
+                    this.actualPlacePresenter = placePresenter;
+                    mainView.updateContent((W) actualPlacePresenter.provideContent());
+                    break;
+                }
+            }
+        }
+    }
+
+    public void showActivities(Set<Activity> activities)
+    {
+        ArrayList<String> eventIdsToEdit = new ArrayList<String>();
+        for (Activity activity : activities)
+        {
+            if (activity.getName().startsWith("edit"))
+            {
+                eventIdsToEdit.add(activity.getId());
+            }
+        }
+        try
+        {
+            final StorageOperator operator = facade.getOperator();
+            final Map<String, Entity> entities = operator.getFromId(eventIdsToEdit, false);
+            final Collection<Entity> values = entities.values();
+            for (Entity entity : values)
+            {
+                if (entity != null)
+                {
+                    detailsRequested(new DetailSelectEvent(entity, null));
+                    if (!eventIdsToEdit.contains(entity.getId()))
+                    {
+                        eventIdsToEdit.add(entity.getId());
+                    }
+                }
+            }
+        }
+        catch (RaplaException e)
+        {
+            logger.error("Error initializing activities: " + activities, e);
         }
     }
 

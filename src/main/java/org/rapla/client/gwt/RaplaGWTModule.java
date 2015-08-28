@@ -65,7 +65,7 @@ public class RaplaGWTModule implements GinModule{
         binder.bind( EventBus.class).to( SimpleEventBus.class).in(Singleton.class);
         
         binder.bind( ApplicationView.class).to(ApplicationViewImpl.class).in(Singleton.class);;
-        binder.bind( ActivityManager.class).to(ActivityManagerImpl.class).in(Singleton.class);
+        binder.bind( ActivityManager.class).to(GwtActivityManagerImpl.class).in(Singleton.class);
         binder.bind( ReservationController.class).to(ReservationControllerGWTImpl.class).in(Singleton.class);
         binder.bind( ReservationEditFactory.class).to(ReservationEditFactoryGWT.class).in(Singleton.class);;
         //binder.bind( CalendarSelectionModel.class).toProvider(provider)(CalendarModelImpl.class).in(Singleton.class);
