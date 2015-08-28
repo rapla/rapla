@@ -81,6 +81,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             view.show(viewNames, selectedView.getName(), calendarNames, calendar);
             final Date selectedDate = model.getSelectedDate();
             view.updateDate(selectedDate);
+//            updateView();
+            view.replaceContent(selectedView);
         }
         catch (RaplaException e)
         {
@@ -218,8 +220,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             String viewId = split[1];
             int index = findView(viewId);
             setSelectedViewIndex(index);
-            updateView();
-            view.replaceContent(selectedView);
             return true;
         }
         return false;
