@@ -18,6 +18,7 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.user.client.Window;
 
 public class TreeComponent extends Div
 {
@@ -37,6 +38,14 @@ public class TreeComponent extends Div
         this.allocatables = null;
         this.selectionChangeHandler = selectionChangeHandler;
         this.setId(id);
+        Scheduler.get().scheduleFinally(new ScheduledCommand()
+        {
+            @Override
+            public void execute()
+            {
+                initJs(id, TreeComponent.this);
+            }
+        });
     }
     
     public void updateData(Allocatable[] entries, Collection<Allocatable>selected)
@@ -75,13 +84,13 @@ public class TreeComponent extends Div
                 obj.put("state", state);
             }
         }
-        // switch the layout after loading 
+        // load data
         Scheduler.get().scheduleFinally(new ScheduledCommand()
         {
             @Override
             public void execute()
             {
-                initJs(id, data.getJavaScriptObject(), TreeComponent.this);
+                fillData(id, data.getJavaScriptObject());
             }
         });
     }
@@ -101,12 +110,21 @@ public class TreeComponent extends Div
         }
     }
     
-    public native void initJs(final String id, final JavaScriptObject data, final TreeComponent tc)/*-{
+    /*
+     * dblclick.jstree
+     */
+    private native void fillData(final String id, final JavaScriptObject newData)/*-{
+        var jstree = $wnd.$('#'+id).jstree(true);
+        jstree.settings.core.data = newData;
+        jstree.deselect_all(true);
+        jstree.refresh(true, true);
+    }-*/;
+    
+    private native void initJs(final String id, final TreeComponent tc)/*-{
         $wnd.$('#'+id).jstree({
         'plugins': ["wholerow", "checkbox"],
         'core': {
             'dataType': 'JSON',
-            'data' : data,
             'themes': {
                 'name': 'proton',
                 'responsive': true
