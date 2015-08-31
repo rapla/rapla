@@ -143,6 +143,13 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
         Iterable<ReferenceInfo> references = super.getReferenceInfo();
+        List<ReferenceInfo> selectedInfo = getSelectedReferences();
+        return new IterableChain<ReferenceInfo>(references, selectedInfo);
+    }
+
+
+    private List<ReferenceInfo> getSelectedReferences()
+    {
         List<ReferenceInfo> selectedInfo = new ArrayList<ReferenceInfo>();
         int size = selected.size();
         for ( int i = 0;i<size;i++)
@@ -172,7 +179,24 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
             }
             
         }
-        return new IterableChain<ReferenceInfo>(references, selectedInfo);
+        return selectedInfo;
+    }
+    
+    @Override
+    public boolean needsChange(DynamicType newType) {
+        final boolean needsChange = super.needsChange(newType);
+        if ( needsChange )
+        {
+            return true;
+        }
+        for (Entity entity:getSelected())
+        {
+            if ( entity.getRaplaType().equals( DynamicType.TYPE) && entity.getId().equals( newType.getId()))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Map<String,String> getOptionMap()

@@ -397,9 +397,16 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 {
 	                appointmentsWithoutTemplates.addAll( sortedAppointments);
                 }
-            
-	        }
-	        
+			}
+		} else {
+			for (Appointment app : appointments)
+			{
+				Reservation r = app.getReservation();
+				if (r != null && !RaplaComponent.isTemplate(r))
+				{
+					appointmentsWithoutTemplates.add(app);
+				}
+			}
 		}
 		
 		try
@@ -2051,7 +2058,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		private static final long	serialVersionUID	= 1L;
 		
 		String						command;
-		
+		public AllocatableAction()
+		{}
 		AllocatableAction(String command)
 		{
 			this.command = command;
@@ -2102,7 +2110,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
  * <code>JCheckboxMenuItem</code> is clicked.
  * 
  * @since Rapla 1.4
- * @see http://forums.oracle.com/forums/thread.jspa?messageID=5724401#5724401
+ * @see "http://forums.oracle.com/forums/thread.jspa?messageID=5724401#5724401"
  */
 	class StayOpenCheckBoxMenuItemUI extends BasicCheckBoxMenuItemUI
 	{
