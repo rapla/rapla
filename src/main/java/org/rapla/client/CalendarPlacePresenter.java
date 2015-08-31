@@ -12,15 +12,17 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.PlaceChangedEvent;
-import org.rapla.entities.EntityNotFoundException;
+import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.event.StopActivityEvent;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -29,9 +31,11 @@ import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
+public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter, ActivityPresenter
 {
     private static final String PLACE_ID = "cal";
+    private static final String DATE_ACTIVITY = "date";
+    
     private final CalendarPlaceView<W> view;
     private final ClientFacade facade;
     private final CalendarOptions calendarOptions;
@@ -122,9 +126,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     @Override
     public void selectDate(Date newDate)
     {
-        model.setSelectedDate(newDate);
-        view.updateDate(newDate);
-        updateView();
+        updateActivity(newDate);
     }
 
     @Override
@@ -132,19 +134,27 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         final Date selectedDate = model.getSelectedDate();
         final Date nextDate = selectedView.calcNext(selectedDate);
-        model.setSelectedDate(nextDate);
-        view.updateDate(nextDate);
-        updateView();
+        updateActivity(nextDate);
     }
-
+    
     @Override
     public void previous()
     {
         final Date selectedDate = model.getSelectedDate();
         final Date nextDate = selectedView.calcPrevious(selectedDate);
-        model.setSelectedDate(nextDate);
-        view.updateDate(nextDate);
-        updateView();
+        updateActivity(nextDate);
+    }
+    
+    private void updateActivity(Date nextDate)
+    {
+        {
+            String date = SerializableDateTimeFormat.INSTANCE.formatDate(model.getSelectedDate());
+            eventBus.fireEvent(new StopActivityEvent(DATE_ACTIVITY, date));
+        }
+        {
+            String date = SerializableDateTimeFormat.INSTANCE.formatDate(nextDate);
+            eventBus.fireEvent(new StartActivityEvent(DATE_ACTIVITY, date));
+        }
     }
 
     public void updatePlace()
@@ -272,5 +282,27 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         init();
         return view.provideContent();
+    }
+
+    @Override
+    public boolean startActivity(Activity activity)
+    {
+        if (DATE_ACTIVITY.equals(activity.getName()))
+        {
+            try
+            {
+                String id = activity.getId();
+                Date nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(id, false);
+                model.setSelectedDate(nextDate);
+                view.updateDate(nextDate);
+                updateView();
+            }
+            catch (Exception e)
+            {
+
+            }
+            return true;
+        }
+        return false;
     }
 }

@@ -5,20 +5,23 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.event.DetailEndEvent;
 import org.rapla.client.event.DetailEndEvent.DetailEndEventHandler;
 import org.rapla.client.event.DetailSelectEvent;
 import org.rapla.client.event.DetailSelectEvent.DetailSelectEventHandler;
 import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
+import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.event.StartActivityEvent.StartActivityEventHandler;
+import org.rapla.client.event.StopActivityEvent;
+import org.rapla.client.event.StopActivityEvent.StopActivityEventHandler;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 
 import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
 
-public abstract class ActivityManager implements DetailSelectEventHandler, DetailEndEventHandler, PlaceChangedEventHandler
+public abstract class ActivityManager implements DetailSelectEventHandler, DetailEndEventHandler, PlaceChangedEventHandler, StartActivityEventHandler, StopActivityEventHandler
 {
 
     private final Application application;
@@ -32,6 +35,8 @@ public abstract class ActivityManager implements DetailSelectEventHandler, Detai
         eventBus.addHandler(DetailSelectEvent.TYPE, this);
         eventBus.addHandler(DetailEndEvent.TYPE, this);
         eventBus.addHandler(PlaceChangedEvent.TYPE, this);
+        eventBus.addHandler(StartActivityEvent.TYPE, this);
+        eventBus.addHandler(StopActivityEvent.TYPE, this);
     }
 
     @Override
@@ -39,6 +44,23 @@ public abstract class ActivityManager implements DetailSelectEventHandler, Detai
     {
         createActivityOrPlace(event);
         application.detailsRequested(event);
+    }
+    
+    @Override
+    public void startActivity(StartActivityEvent event)
+    {
+        Activity activity = new Activity(event.getName(), event.getId());
+        activities.add(activity);
+        updateHistroryEntry();
+        application.startActivity(activity);
+    }
+    
+    @Override
+    public void stopActivity(StopActivityEvent event)
+    {
+        Activity activity = new Activity(event.getName(), event.getId());
+        activities.remove(activity);
+        updateHistroryEntry();
     }
 
     @Override

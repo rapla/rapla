@@ -45,6 +45,7 @@ public class Application<W> implements ApplicationView.Presenter
     private ApplicationView<W> mainView;
     private PlacePresenter actualPlacePresenter;
     private List<PlacePresenter> placePresenters;
+    private Set<ActivityPresenter> activityPresenters;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
@@ -52,6 +53,12 @@ public class Application<W> implements ApplicationView.Presenter
     {
         this.mainView = mainView;
         mainView.setPresenter(this);
+    }
+
+    @Inject
+    private void setActivities(Set<ActivityPresenter> activityPresenters)
+    {
+        this.activityPresenters = activityPresenters;
     }
 
     @Inject
@@ -141,6 +148,10 @@ public class Application<W> implements ApplicationView.Presenter
             {
                 eventIdsToEdit.add(activity.getId());
             }
+            else 
+            {
+                startActivity(activity);
+            }
         }
         try
         {
@@ -162,6 +173,20 @@ public class Application<W> implements ApplicationView.Presenter
         catch (RaplaException e)
         {
             logger.error("Error initializing activities: " + activities, e);
+        }
+    }
+
+    public void startActivity(Activity activity)
+    {
+        if(activity != null)
+        {
+            for (ActivityPresenter activityPresenter : activityPresenters)
+            {
+                if(activityPresenter.startActivity(activity))
+                {
+                    return;
+                }
+            }
         }
     }
 

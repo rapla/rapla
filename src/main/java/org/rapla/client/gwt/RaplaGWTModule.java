@@ -6,18 +6,15 @@ import javax.inject.Singleton;
 
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.client.ActivityManager;
+import org.rapla.client.ActivityPresenter;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.PlacePresenter;
-import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.gui.menu.MenuView;
 import org.rapla.client.gui.menu.gwt.MenuViewImpl;
 import org.rapla.client.gui.menu.gwt.context.ContextCreator;
-import org.rapla.client.plugin.tableview.CalendarTableView;
-import org.rapla.client.plugin.tableview.CalendarTableViewPresenter;
-import org.rapla.client.plugin.tableview.gwt.CalendarListViewImpl;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.client.ClientBundleManager;
 import org.rapla.components.util.CommandScheduler;
@@ -44,7 +41,6 @@ import org.rapla.storage.dbrm.RemoteOperator;
 import com.google.gwt.inject.client.GinModule;
 import com.google.gwt.inject.client.binder.GinBinder;
 import com.google.gwt.inject.client.multibindings.GinMultibinder;
-import com.google.gwt.place.shared.Place;
 import com.google.inject.Provides;
 import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
@@ -75,8 +71,10 @@ public class RaplaGWTModule implements GinModule{
         binder.bind(MenuView.class).to(MenuViewImpl.class).in(Singleton.class);
         binder.bind(CalendarPlaceView.class).to(CalendarPlaceViewImpl.class).in(Singleton.class);
         
-        GinMultibinder<PlacePresenter> uriBinder = GinMultibinder.newSetBinder(binder, PlacePresenter.class);
-        uriBinder.addBinding().to(CalendarPlacePresenter.class);
+        GinMultibinder<PlacePresenter> placeBinder = GinMultibinder.newSetBinder(binder, PlacePresenter.class);
+        placeBinder.addBinding().to(CalendarPlacePresenter.class);
+        GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
+        activityBinder.addBinding().to(CalendarPlacePresenter.class);
 
     }
     
