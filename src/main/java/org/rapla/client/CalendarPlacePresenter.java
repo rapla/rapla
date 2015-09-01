@@ -109,7 +109,9 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter, Act
             if (!newCalendarName.equals(calendar))
             {
                 calendar = newCalendarName;
+                Date selectedDate = model.getSelectedDate();
                 model.load(newCalendarName == i18n.getString("default") ? null : newCalendarName);
+                model.setSelectedDate(selectedDate);
                 if (fireEvent)
                 {
                     updatePlace();
