@@ -3,6 +3,7 @@ package org.rapla.client.gwt.view;
 import java.util.Date;
 
 import org.gwtbootstrap3.client.ui.Button;
+import org.gwtbootstrap3.client.ui.base.helper.StyleHelper;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.gwtbootstrap3.client.ui.constants.DeviceSize;
 import org.gwtbootstrap3.client.ui.html.Div;
@@ -11,7 +12,6 @@ import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 
-import com.google.gwt.dom.client.Style.Float;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 
@@ -42,7 +42,6 @@ public class NavigatorView extends Div
             }
         }, bundleManager);
         this.add(dateComponent);
-        dateComponent.getElement().getStyle().setFloat(Float.LEFT);
         final Button today = new Button("today");
         today.setType(ButtonType.PRIMARY);
         today.addClickHandler(new ClickHandler()
@@ -71,7 +70,6 @@ public class NavigatorView extends Div
             @Override
             public void onClick(ClickEvent event)
             {
-                // callback
                 navigatorAction.next();
             }
         });
