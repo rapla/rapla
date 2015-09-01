@@ -2,18 +2,16 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.extras.datepicker.client.ui.DatePicker;
 import org.gwtbootstrap3.extras.datepicker.client.ui.base.constants.DatePickerLanguage;
+import org.gwtbootstrap3.extras.datepicker.client.ui.base.events.ChangeDateEvent;
+import org.gwtbootstrap3.extras.datepicker.client.ui.base.events.ChangeDateHandler;
 import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
-import org.rapla.framework.RaplaLocale;
 
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.user.client.ui.SimplePanel;
-
-public class DateComponent extends SimplePanel
+public class DateComponent extends Div
 {
     public interface DateValueChanged
     {
@@ -44,16 +42,26 @@ public class DateComponent extends SimplePanel
         datePicker.setShowTodayButton(true);
         datePicker.setForceParse(true);
         add(datePicker);
-        datePicker.addValueChangeHandler(new ValueChangeHandler<Date>()
+        datePicker.addChangeDateHandler(new ChangeDateHandler()
         {
             @Override
-            public void onValueChange(ValueChangeEvent<Date> event)
+            public void onChangeDate(ChangeDateEvent evt)
             {
-                final Date newDate = event.getValue();
+                Date newDate = datePicker.getValue();
                 final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
                 changeHandler.valueChanged(raplaDate);
             }
         });
+//        datePicker.addValueChangeHandler(new ValueChangeHandler<Date>()
+//        {
+//            @Override
+//            public void onValueChange(ValueChangeEvent<Date> event)
+//            {
+//                final Date newDate = event.getValue();
+//                final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
+//                changeHandler.valueChanged(raplaDate);
+//            }
+//        });
         if (initDate != null)
         {
             setDate(initDate);
