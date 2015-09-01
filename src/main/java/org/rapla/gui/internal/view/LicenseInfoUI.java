@@ -11,23 +11,20 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.view;
-import java.awt.Component;
-import java.awt.Dimension;
-
-import javax.swing.JComponent;
-import javax.swing.JScrollPane;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
 import org.rapla.gui.toolkit.RaplaWidget;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import java.awt.*;
 
 final public class LicenseInfoUI
     extends
@@ -39,7 +36,6 @@ final public class LicenseInfoUI
 {
     JScrollPane scrollPane;
     HTMLView license;
-    LocaleSelector localeSelector;
 
     public LicenseInfoUI(RaplaContext context) throws RaplaException  {
         super( context);
@@ -49,8 +45,6 @@ final public class LicenseInfoUI
         scrollPane.setOpaque(true);
         scrollPane.setPreferredSize(new Dimension(450, 100));
         scrollPane.setBorder(null);
-        localeSelector = context.lookup( LocaleSelector.class);
-        localeSelector.addLocaleChangeListener(this);
         setLocale();
     }
 

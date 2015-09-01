@@ -12,12 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.impl;
 
-import edu.emory.mathcs.backport.java.util.Collections;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
@@ -44,8 +43,6 @@ import java.util.*;
  This class looks for a LocaleSelector on the context and registers itself as
  a LocaleChangeListener and switches to the new Locale on a LocaleChangeEvent.
  </p>
- @see TranslationParser
- @see LocaleSelector
  */
 
 public class I18nBundleImpl implements I18nBundle
@@ -98,7 +95,7 @@ public class I18nBundleImpl implements I18nBundle
      * @throws RaplaException when the resource-file is missing or can't be accessed
      or can't be parsed
      */
-    public I18nBundleImpl(  Logger logger, String classname, LocaleSelector localeSelector )
+    public I18nBundleImpl(  Logger logger, String classname, BundleManager localeSelector )
     {
         enableLogging( logger );
         this.className = classname;
@@ -107,7 +104,7 @@ public class I18nBundleImpl implements I18nBundle
             className = className.trim();
         }
         setLocale( localeSelector.getLocale());
-        localeSelector.addLocaleChangeListener(new LocaleChangeListener()
+        ((ServerBundleManager)localeSelector).addLocaleChangeListener(new LocaleChangeListener()
         {
             
             @Override

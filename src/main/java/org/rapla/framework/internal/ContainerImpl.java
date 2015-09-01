@@ -19,9 +19,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
-import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -45,7 +43,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
-import java.nio.channels.IllegalSelectorException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +64,7 @@ public class ContainerImpl implements Container
     Class webserviceAnnotation;
     protected CommandScheduler commandQueue;
     protected final Provider<RemoteServiceCaller> remoteServiceCaller;
-    public static boolean DEVELOPMENT_RESSOLVING = false;
+    //public static boolean DEVELOPMENT_RESSOLVING = false;
     protected I18nBundle i18n;
     protected RaplaLocaleImpl raplaLocale;
 
@@ -124,7 +121,6 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(Logger.class,logger);
         commandQueue = createCommandQueue();
         addContainerProvidedComponentInstance(CommandScheduler.class, commandQueue);
-        addContainerProvidedComponent(LocaleSelector.class, LocaleSelectorImpl.class);
         addContainerProvidedComponent(BundleManager.class, ServerBundleManager.class);
         addContainerProvidedComponent(RaplaLocale.class, RaplaLocaleImpl.class);
         addResourceFile(RaplaResources.class);
@@ -177,10 +173,10 @@ public class ContainerImpl implements Container
     @Deprecated
     public void addResourceFile(TypedComponentRole<I18nBundle> file)
     {
-        LocaleSelector localeSelector;
+        BundleManager localeSelector;
         try
         {
-            localeSelector = getContext().lookup(LocaleSelector.class);
+            localeSelector = getContext().lookup(BundleManager.class);
         }
         catch (RaplaContextException e)
         {

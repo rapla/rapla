@@ -11,14 +11,9 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import org.rapla.components.util.DateTools;
 
-
-
-
+import java.util.*;
 
 /** Some entities (especially dynamic-types and attributes)
     can have multiple names to allow easier reuse of created schemas or
@@ -49,6 +44,16 @@ public class MultiLanguageName implements java.io.Serializable {
     
     public boolean isReadOnly() {
         return this.readOnly;
+    }
+
+    public String getNameFromLocale(Locale locale)
+    {
+        if ( locale == null)
+        {
+            return getName(null);
+        }
+        String language = DateTools.getLang(locale);
+        return getName(language);
     }
 
     public String getName(String language) {

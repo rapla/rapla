@@ -12,14 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.net.URL;
-import java.util.Locale;
-
-import javax.inject.Provider;
-
-import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
@@ -30,13 +23,14 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbrm.RemoteServiceCallerImpl;
+
+import javax.inject.Provider;
+import java.net.URL;
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
 The rapla container has only one instance at runtime. Configuration of the RaplaMainContainer is done in the rapla*.xconf
@@ -63,7 +57,6 @@ The Main Container provides the following Services to all RaplaComponents
   @see I18nBundle
   @see RaplaLocale
   @see AppointmentFormater
-  @see LocaleSelector
  */
 public class RaplaClient extends ContainerImpl
 {

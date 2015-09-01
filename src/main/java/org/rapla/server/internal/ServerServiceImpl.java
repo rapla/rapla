@@ -39,7 +39,7 @@ import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.LocaleTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -106,6 +106,7 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import sun.util.locale.LocaleUtils;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
@@ -743,7 +744,7 @@ public class ServerServiceImpl extends ContainerImpl
                             localeString = raplaLocale.getLocale().toString();
                         }
                     }
-                    Locale locale = DateTools.getLocale(localeString);
+                    Locale locale = LocaleTools.getLocale(localeString);
                     final I18nLocaleFormats formats = I18nLocaleLoadUtil.read(locale);
                     Map<String, Map<String, String>> bundles = new LinkedHashMap<String, Map<String, String>>();
                     for (Class<AbstractBundle> clazz : ServerServiceImpl.this.getResourceBundles()) {
@@ -756,7 +757,9 @@ public class ServerServiceImpl extends ContainerImpl
                             raplaResourceIdMap.put(key, i18n.getString(key, locale));
                         }
                     }
-                    final LocalePackage localePackage = new LocalePackage(formats, bundles, ServerBundleManager.loadAvailableLanguages());
+                    String language = locale.getLanguage();
+                    String country = locale.getCountry();
+                    final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles,ServerBundleManager.loadAvailableLanguages());
                     return new ResultImpl<LocalePackage>(localePackage);
                 }
                 catch (Exception e1)

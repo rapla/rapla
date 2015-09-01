@@ -13,27 +13,6 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
-
-import javax.inject.Provider;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaClient;
 import org.rapla.client.ClientService;
@@ -41,85 +20,49 @@ import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.client.RaplaClientListener;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.UpdateErrorListener;
-import org.rapla.facade.UserModule;
+import org.rapla.facade.*;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.*;
 import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.AnnotationEditExtension;
-import org.rapla.gui.EditController;
-import org.rapla.gui.InfoFactory;
-import org.rapla.gui.MenuFactory;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationController;
-import org.rapla.gui.TreeFactory;
+import org.rapla.gui.*;
 import org.rapla.gui.images.RaplaImages;
-import org.rapla.gui.internal.CalendarOption;
-import org.rapla.gui.internal.MainFrame;
-import org.rapla.gui.internal.MenuFactoryImpl;
-import org.rapla.gui.internal.RaplaDateRenderer;
-import org.rapla.gui.internal.RaplaStartOption;
-import org.rapla.gui.internal.UserOption;
-import org.rapla.gui.internal.WarningsOption;
+import org.rapla.gui.internal.*;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.internal.common.RaplaSwingClipboard;
 import org.rapla.gui.internal.edit.EditControllerImpl;
-import org.rapla.gui.internal.edit.annotation.CategorizationAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ColorAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ConflictCreationAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.EmailAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ExpectedColumnsAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ExpectedRowsAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ExportEventDescriptionAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ExportEventNameAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.LocationAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.ResourceTreeNameAnnotationEdit;
-import org.rapla.gui.internal.edit.annotation.SortingAnnotationEdit;
-import org.rapla.gui.internal.edit.reservation.ConflictReservationCheck;
-import org.rapla.gui.internal.edit.reservation.DefaultReservationCheck;
-import org.rapla.gui.internal.edit.reservation.ReservationControllerSwingImpl;
-import org.rapla.gui.internal.edit.reservation.ReservationEditFactory;
-import org.rapla.gui.internal.edit.reservation.ReservationEditFactoryImpl;
+import org.rapla.gui.internal.edit.annotation.*;
+import org.rapla.gui.internal.edit.reservation.*;
 import org.rapla.gui.internal.view.InfoFactoryImpl;
 import org.rapla.gui.internal.view.LicenseInfoUI;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
-import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.FrameControllerList;
-import org.rapla.gui.toolkit.RaplaFrame;
-import org.rapla.gui.toolkit.RaplaMenu;
-import org.rapla.gui.toolkit.RaplaMenubar;
-import org.rapla.gui.toolkit.RaplaSeparator;
+import org.rapla.gui.toolkit.*;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
-import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
-import org.rapla.storage.dbrm.RestartServer;
-import org.rapla.storage.dbrm.StatusUpdater;
+import org.rapla.storage.dbrm.*;
+
+import javax.inject.Provider;
+import javax.swing.*;
+import javax.swing.Action;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.Semaphore;
 
 /** Implementation of the ClientService.
 */
@@ -489,7 +432,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
             String language = facade.getPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
             if ( language != null)
             {
-                LocaleSelector localeSelector =  getContext().lookup(LocaleSelector.class);
+                ServerBundleManager localeSelector =  (ServerBundleManager)getContext().lookup(BundleManager.class);
                 localeSelector.setLanguage( language );
             }
         }
@@ -641,10 +584,10 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         else
                         {
                             defaultLanguageChoosen = false;
-                            getLogger().debug("Language changing to " + lang );
-                            LocaleSelector localeSelector = context.lookup( LocaleSelector.class );
+                            getLogger().debug("Language changing to " + lang);
+                            ServerBundleManager localeSelector = (ServerBundleManager)context.lookup( BundleManager.class );
                             localeSelector.setLanguage(lang);
-                            getLogger().info("Language changed " + localeSelector.getLanguage() );
+                            getLogger().info("Language changed " + localeSelector.getLocale().getLanguage() );
                         }
                     } catch (Exception ex) {
                         getLogger().error("Can't change language",ex);
@@ -722,9 +665,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         getLogger().error("Error updating data", ex);
     }
 
-    /**
-     * @see org.rapla.facade.UpdateErrorListener#disconnected()
-     */
     public void disconnected(final String message) {
         if ( started )
         {

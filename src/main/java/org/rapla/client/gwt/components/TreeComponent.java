@@ -68,7 +68,8 @@ public class TreeComponent extends Div
                 state.put("opened", new JSONString(Boolean.TRUE.toString()));
                 dynTypeWrapper.put("state", state);
                 dynTypeWrapper.put("icon", new JSONString("Rapla/big_folder.png"));
-                dynTypeWrapper.put("text", new JSONString(type.getName(locale)));
+                String name = type.getName(locale);
+                dynTypeWrapper.put("text", new JSONString(name));
                 dynTypeWrapper.put("children", dynTypeArray);
 //                dynTypeWrapper.put("icon", dynTypeArray);
                 data.set(data.size(), dynTypeWrapper);

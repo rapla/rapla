@@ -47,11 +47,11 @@
 		<!-- <jetty.version>9.3.0.v20150612</jetty.version> -->
 		<jetty.version>9.3.1.v20150714</jetty.version>
 		<maven.install.skip>false</maven.install.skip>
-		<gwt.version>2.7.0</gwt.version>
-		<gwt.plugin.version>2.7.0</gwt.plugin.version>
+		<gwt.version>2.8.0-SNAPSHOT</gwt.version>
+		<gwt.plugin.version>2.8.0-SNAPSHOT</gwt.plugin.version>
 		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
-		<maven.compiler.source>1.7</maven.compiler.source>
-		<maven.compiler.target>1.7</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<gson.version>2.3.1</gson.version>
 		<javax.inject.version>1</javax.inject.version>
@@ -194,6 +194,8 @@
 					<runTarget>Rapla.html</runTarget>
 					<module>org.rapla.Rapla</module>
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
+					<sourceLevel>1.8</sourceLevel>
+					<jsInteropMode>JS</jsInteropMode>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -327,10 +329,6 @@
 								<property name="test_classpath" refid="maven.test.classpath" />
 								<property name="plugin_classpath" refid="maven.plugin.classpath" />
 
-								<echo message="compile classpath: ${compile_classpath}" />
-								<echo message="runtime classpath: ${runtime_classpath}" />
-								<echo message="test classpath:    ${test_classpath}" />
-								<echo message="plugin classpath:  ${plugin_classpath}" />
 								<!-- fork="true" -->
 								<java classname="org.rapla.framework.ServiceListCreator"
 									failonerror="true">
@@ -786,5 +784,29 @@
 		</dependency>
 
 	</dependencies>
-
+	<repositories>
+		<repository>
+			<id>google-snapshots</id>
+			<name>Google Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>sonatype-snapshots</id>
+			<name>sonatype Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>google-snapshots</id>
+			<name>Google Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 </project>

@@ -12,9 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.i18n;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -49,7 +48,7 @@ public class AbstractBundle implements I18nBundle
     public String getLang()
     {
         Locale locale = getLocale();
-        return locale.getLanguage();
+        return DateTools.getLang(locale);
     }
 
     public String getString( String key ) throws MissingResourceException

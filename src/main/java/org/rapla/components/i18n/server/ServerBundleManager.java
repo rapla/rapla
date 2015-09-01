@@ -4,7 +4,9 @@ import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
-import org.rapla.components.xmlbundle.LocaleSelector;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaException;
 
@@ -13,19 +15,22 @@ import java.text.MessageFormat;
 import java.util.*;
 
 public class ServerBundleManager implements BundleManager {
-    private final LocaleSelector localeSelector;
     private I18nLocaleFormats formats;
     private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();
     private Set<String> availableLanguages = new LinkedHashSet<String>();
+    Locale locale;
+    Vector<LocaleChangeListener> localeChangeListeners = new Vector<LocaleChangeListener>();
+
+
 
     @Inject
-    public ServerBundleManager(LocaleSelector localeSelector) throws RaplaException
+    public ServerBundleManager() throws RaplaException
     {
-        this.localeSelector = localeSelector;
         String selectedCountry = Locale.getDefault().getCountry() ;
         String selectedLanguage = Locale.getDefault().getLanguage();
-        final Locale locale = new Locale(selectedLanguage, selectedCountry);
-        localeSelector.setLocale( locale );
+        locale = new Locale(selectedLanguage, selectedCountry);
+        //locale = getDefaultLocale();
+        //localeSelector.setLocale( locale );
         this.formats = I18nLocaleLoadUtil.read(locale);
         availableLanguages = loadAvailableLanguages();
     }
@@ -74,11 +79,6 @@ public class ServerBundleManager implements BundleManager {
     }
 
     @Override
-    public Locale getLocale() {
-        return localeSelector.getLocale();
-    }
-
-    @Override
     public String format(String string, Object[] obj) {
         final MessageFormat messageFormat = new MessageFormat(string);
         final String format = messageFormat.format(obj);
@@ -117,5 +117,64 @@ public class ServerBundleManager implements BundleManager {
             return pack;
         }
     }
+
+
+
+    protected Locale getDefaultLocale()
+    {
+        Locale aDefault = Locale.getDefault();
+        return aDefault;
+    }
+
+    public void addLocaleChangeListener(LocaleChangeListener listener) {
+        localeChangeListeners.add(listener);
+    }
+    public void removeLocaleChangeListener(LocaleChangeListener listener) {
+        localeChangeListeners.remove(listener);
+    }
+
+    public void setLocale(Locale locale) {
+        this.locale = locale;
+        fireLocaleChanged();
+    }
+
+    public Locale getLocale() {
+        return this.locale;
+    }
+
+    public LocaleChangeListener[] getLocaleChangeListeners() {
+        return localeChangeListeners.toArray(new LocaleChangeListener[]{});
+    }
+
+    public void setLanguage(String language) {
+        Locale locale = DateTools.changeLang(language, this.locale);
+        setLocale(locale);
+    }
+
+    public void setCountry(String country) {
+        Locale locale = DateTools.changeCountry(country, this.locale);
+        setLocale(locale);
+    }
+
+    public String getLanguage() {
+        return DateTools.getLang( this.locale);
+    }
+
+    protected void fireLocaleChanged() {
+        if (localeChangeListeners.size() == 0)
+            return;
+        LocaleChangeListener[] listeners = getLocaleChangeListeners();
+        LocaleChangeEvent evt = new LocaleChangeEvent(this,getLocale());
+        for (int i=0;i<listeners.length;i++)
+            listeners[i].localeChanged(evt);
+    }
+
+    /** This Listeners is for the bundles only, it will ensure the bundles are always
+     notified first.
+     */
+    void addLocaleChangeListenerFirst(LocaleChangeListener listener) {
+        localeChangeListeners.add(0,listener);
+    }
+
 
 }

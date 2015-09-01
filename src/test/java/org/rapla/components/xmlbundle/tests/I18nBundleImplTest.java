@@ -11,22 +11,21 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.tests;
-import java.util.Locale;
-
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
-import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
-import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.framework.logger.Logger;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.framework.logger.ConsoleLogger;
+import org.rapla.framework.logger.Logger;
+
+import java.util.Locale;
 
 
 public class I18nBundleImplTest extends AbstractI18nTest {
     I18nBundleImpl i18n;
-    LocaleSelector localeSelector;
+    ServerBundleManager localeSelector;
     Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN);
 
     public I18nBundleImplTest(String name) {
@@ -41,7 +40,7 @@ public class I18nBundleImplTest extends AbstractI18nTest {
 
     private I18nBundleImpl create(String config) throws Exception {
         I18nBundleImpl i18n;
-        i18n = new I18nBundleImpl(new ConsoleLogger(), config, new LocaleSelectorImpl());
+        i18n = new I18nBundleImpl(new ConsoleLogger(), config, new ServerBundleManager());
         return i18n;
     }
 

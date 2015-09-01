@@ -100,7 +100,7 @@ public interface RaplaLocale
     Rapla can't work with timezones but to use the Date api it needs a timezone, so GMT+0 is used, because it doesn't have DaylightSavingTimes which would confuse the conflict detection. This timezone (GMT+0) is only used internaly and never shown in Rapla. Rapla only displays the time e.g. 10:00am without the timezone.
      */
     TimeZone getTimeZone();
-    
+
     Locale getLocale();
 
 	SerializableDateTimeFormat getSerializableFormat();

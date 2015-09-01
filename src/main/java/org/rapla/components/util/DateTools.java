@@ -387,23 +387,6 @@ public abstract class DateTools
        return result;
    }
 
-    public static Locale getLocale(String localeString) {
-        String[] parts = localeString.split("_");
-        if ( parts.length == 0)
-        {
-            throw new IllegalArgumentException("not a valid locale" + localeString);
-        }
-        if ( parts.length == 1)
-        {
-            return new Locale(parts[0]);
-        }
-        else        if ( parts.length <3)
-        {
-            return new Locale(parts[0], parts[1]);
-        }
-        return new Locale(parts[0], parts[1],parts[2]);
-    }
-
 
     public static int getWeekInYearIso(Date date)
     {
@@ -421,7 +404,7 @@ public abstract class DateTools
 
     public static int getWeekInYear(Date date, Locale locale)
     {
-        if(isUsStyle(locale.getCountry()))
+        if(isUsStyle(DateTools.getCountry(locale)))
         {
             return getWeekInYearUs(date);
         }
@@ -501,6 +484,37 @@ public abstract class DateTools
         int newJulienDate = julianDate - day;
         return newJulienDate;
     }
+
+    public static Locale changeCountry(String country, Locale locale) {
+        // FIXME need to implement for gwt
+        return Locale.US;
+    }
+
+    public static Locale changeLang(String lang, Locale locale) {
+        // FIXME need to implement for gwt
+        return Locale.ENGLISH;
+    }
+
+    public static String getLang(Locale locale) {
+        String localeString = locale.toString();
+        String[] parts = localeString.split("_");
+        if (parts.length == 0) {
+            throw new IllegalStateException("Locale split length can't be 0");
+        }
+        return parts[0];
+    }
+
+    public static String getCountry(Locale locale)
+    {
+        String localeString = locale.toString();
+        String[] parts = localeString.split("_");
+        if ( parts.length < 2)
+        {
+            return "";
+        }
+        return parts[1];
+    }
+
 
     public static class DateWithoutTimezone
    {

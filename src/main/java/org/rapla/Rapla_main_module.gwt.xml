@@ -25,6 +25,7 @@
 	<source path='client'>
 		<exclude name='**/swing/**' />
 	</source>
+	<source path='' includes='RaplaResources.java'/>
 	<source path='components/xmlbundle/impl' />
 	<source path='gui' />
 	<source path='gui/toolkit' />
@@ -59,8 +60,10 @@
 	<source path='' includes="ConnectInfo.java" />
 	<source path='' includes="RaplaDefaultResources.java" />
 	<source path='' includes="AppointmentFormaterImpl.java" />
-
 	<inherits name="Gwt_jre"/>
+	<!--
+
+	-->
 <!-- 	<super-source path="../../../gwt-src/jre"/> -->
 	<!-- Specify the paths for translatable code -->
 	<inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/>

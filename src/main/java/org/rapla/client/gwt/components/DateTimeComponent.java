@@ -1,9 +1,7 @@
 package org.rapla.client.gwt.components;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.Label;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.DateTimePicker;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.base.constants.DateTimePickerLanguage;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.base.constants.DateTimePickerView;
@@ -13,10 +11,11 @@ import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
-import org.rapla.framework.RaplaLocale;
+import org.rapla.components.util.DateTools;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Label;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DateTimeComponent extends FlowPanel
 {
@@ -46,8 +45,21 @@ public class DateTimeComponent extends FlowPanel
         datePicker = new DateTimePicker();
         wrapper.add(datePicker);
         wrapper.addStyleName("timePicker");
-        final DateTimePickerLanguage lang = DateTimePickerLanguage.valueOf(bundleManager.getLocale().getLanguage().toUpperCase());
-        datePicker.setLanguage(lang);
+
+        final String language = DateTools.getLang(bundleManager.getLocale());
+        DateTimePickerLanguage lang = null;
+        for (DateTimePickerLanguage l : DateTimePickerLanguage.values())
+        {
+            if (l.name().equalsIgnoreCase(language))
+            {
+                lang = l;
+            }
+        }
+        if ( lang != null)
+        {
+            datePicker.setLanguage(lang);
+        }
+
         final I18nLocaleFormats formats = bundleManager.getFormats();
         final String format = formats.getFormatDateShort();
         final String convertedFormat = convertFormat(format);

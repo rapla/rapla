@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.gwt.core.client.Scheduler;
+import org.rapla.client.gwt.test.Document;
+import org.rapla.client.gwt.test.Event;
+import org.rapla.client.gwt.test.HTMLElement;
 import org.rapla.framework.RaplaException;
 import org.rapla.rest.gwtjsonrpc.client.ExceptionDeserializer;
 import org.rapla.rest.gwtjsonrpc.client.impl.AbstractJsonProxy;
@@ -34,6 +38,8 @@ public class Rapla implements EntryPoint {
     public void onModuleLoad() {
         setProxy();
         RootPanel.get("raplaPopup").setVisible( false);
+
+
         startApplication();
     }
     
@@ -76,11 +82,33 @@ public class Rapla implements EntryPoint {
         LoginTokens token = getValidToken();
         if (token != null)
         {
+//            final Document doc = Document.Util.getDocument();
+//            final HTMLElement titleBar = doc.getElementById("title");
+//            titleBar.setInnerHTML("Hallo Rapla");
+//            final HTMLElement button = doc.getElementById("send");
+//            button.setInnerHTML("Los!");
+//            logger.info("Hallo welt");
+            //;
+            //final MyEventListener func = new MyEventListener(titleBar);
+            //button.setOnclick(func);
+//            button.addEventListener("click", (Event e) -> {
+//                        HTMLElement name = doc.getElementById("name");
+//                        String val = name.getValue();
+//                        titleBar.setInnerText("Hallo " + val);
+//                    }, true
+            //            );
             AbstractJsonProxy.setAuthThoken(token.getAccessToken());
-            final MainInjector injector = GWT.create(MainInjector.class);
-            Bootstrap bootstrap = injector.getBootstrap();
-            bootstrap.load();
-        } 
+            Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
+            {
+                @Override public boolean execute()
+                {
+                    final MainInjector injector = GWT.create(MainInjector.class);
+                    Bootstrap bootstrap = injector.getBootstrap();
+                    bootstrap.load();
+                    return false;
+                }
+            }, 1000);
+        }
         else
         {
             Window.Location.replace(GWT.getModuleBaseURL()+"../rapla?page=auth");

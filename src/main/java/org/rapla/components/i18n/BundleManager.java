@@ -1,5 +1,7 @@
 package org.rapla.components.i18n;
 
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+
 import java.util.Collection;
 import java.util.Locale;
 
@@ -20,4 +22,6 @@ public interface BundleManager {
     I18nLocaleFormats getFormats();
 
     Collection<String> getAvailableLanguages();
+
+
 }

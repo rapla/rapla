@@ -59,10 +59,10 @@ public class MainServlet extends HttpServlet {
     	{
     		startupMode = jndi.lookupEnvString("rapla_startup_mode", false);
     		env_development = (Boolean) jndi.lookupEnvVariable( "rapla_development", false);
-    		if ( env_development != null && env_development)
-    		{
-                 ContainerImpl.DEVELOPMENT_RESSOLVING = true;
-    		}
+//    		if ( env_development != null && env_development)
+//    		{
+//                 ContainerImpl.DEVELOPMENT_RESSOLVING = true;
+//    		}
     	}
     	else
     	{

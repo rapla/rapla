@@ -12,26 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
-import java.util.List;
-import java.util.Locale;
-
-import javax.swing.Action;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.CountryChooser;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.UpdateModule;
@@ -41,6 +27,12 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.plugin.export2ical.ICalTimezones;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.Locale;
 
 public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     JPanel panel = new JPanel();
@@ -130,7 +122,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 
             String localeId = preferences.getEntryAsString( ContainerImpl.LOCALE,null);
             if ( localeId != null) {
-                Locale locale = DateTools.getLocale(localeId);
+                Locale locale = LocaleTools.getLocale(localeId);
                 languageChooser.setSelectedLanguage(locale.getLanguage());
                 if(locale.getCountry() != null)
                 {

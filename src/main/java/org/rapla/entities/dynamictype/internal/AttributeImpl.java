@@ -120,8 +120,9 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         name.setReadOnly( );
     }
 
-    public String getName(Locale locale) {
-        return name.getName(locale.getLanguage());
+    public String getName(Locale locale)
+    {
+        return name.getNameFromLocale(locale);
     }
 
     public String getKey() {
@@ -703,7 +704,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		 {
 			 locale = Locale.getDefault();
 		 }
-		 String language = locale.getLanguage();
+		 String language = DateTools.getLang(locale);
 		 if ( (Boolean) value)
 		 {
 			return TRUE_TRANSLATION.getName( language);

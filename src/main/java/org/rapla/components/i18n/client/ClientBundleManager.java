@@ -4,31 +4,46 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 
+import com.google.gwt.core.client.GWT;
 import org.gwtbootstrap3.client.ui.form.validator.MessageFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.components.xmlbundle.LocaleSelector;
+import org.rapla.rest.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.inject.Inject;
 
 public class ClientBundleManager implements BundleManager
 {
-    private final LocaleSelector selector;
     LocalePackage localePackage;
+    Locale locale;
 
     @Inject
-    protected ClientBundleManager(LocaleSelector selector, RemoteServer remoteServer)
+    protected ClientBundleManager( RemoteServer remoteServer)
     {
-        this.selector = selector;
         try
         {
-            localePackage = remoteServer.locale("123", null).get();
+            String id = "123";
+            String localeParam = null;
+            final FutureResult<LocalePackage> locale1 = remoteServer.locale(id, localeParam);
+            localePackage = locale1.get();
+            String language = localePackage.getLanguage();
+            String country = localePackage.getCountry();
+
+            locale = Locale.getDefault();
+            StringBuilder sb = new StringBuilder(language);
+            if(country != null && !country.isEmpty())
+            {
+                sb.append("_");
+                sb.append(country);
+            }
+            String localeString = sb.toString();
+            change(locale, localeString);
         }
         catch (Exception e)
         {
-            throw new IllegalStateException("Could not load language pack");
+            throw new IllegalStateException("Could not load language pack",e);
         }
     }
 
@@ -65,7 +80,7 @@ public class ClientBundleManager implements BundleManager
     @Override
     public Locale getLocale()
     {
-        return selector.getLocale();
+        return locale;
     }
 
     @Override
@@ -79,4 +94,23 @@ public class ClientBundleManager implements BundleManager
     {
         return localePackage.getFormats();
     }
+
+    private native void change(final Locale locale,final String id)/*-{
+        var res = [];
+        for(var m in locale) {
+            if(typeof locale[m] == "function") {
+                res.push(m.toString());
+                console.log("Func " + m);
+            }
+            else
+            {
+                console.log("Attr " + m);
+            }
+        }
+
+        locale[res[1]]=function(){
+            return id;
+        };
+    }-*/ ;
+
 }

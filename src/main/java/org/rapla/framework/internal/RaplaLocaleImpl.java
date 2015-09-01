@@ -11,6 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
+
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.DateTools;
+
+import javax.inject.Inject;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -18,17 +23,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import javax.inject.Inject;
-
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.components.xmlbundle.impl.LocaleSelectorImpl;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
-	
 
     String COUNTRY = "country";
     String LANGUAGES = "languages";
@@ -61,6 +56,10 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
      */
     public Calendar createCalendar() {
         return Calendar.getInstance(getTimeZone(), getLocale());
+    }
+
+    public TimeZone getTimeZone() {
+        return DateTools.getTimeZone();
     }
 
 

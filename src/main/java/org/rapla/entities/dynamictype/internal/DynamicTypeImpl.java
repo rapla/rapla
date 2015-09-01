@@ -25,6 +25,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
@@ -222,13 +223,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         name.setReadOnly( );
     }
 
-    public String getName(Locale locale) {
-    	if ( locale == null)
-    	{
-    		return name.getName( null);
-    	}
-        String language = locale.getLanguage();
-		return name.getName(language);
+    public String getName(Locale locale)
+    {
+        return name.getNameFromLocale(locale);
     }
 
     public String getAnnotation(String key) {

@@ -6,6 +6,7 @@ import org.gwtbootstrap3.extras.datepicker.client.ui.DatePicker;
 import org.gwtbootstrap3.extras.datepicker.client.ui.base.constants.DatePickerLanguage;
 import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
 
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
@@ -26,8 +27,19 @@ public class DateComponent extends SimplePanel
         super();
         addStyleName("datePicker");
         datePicker = new DatePicker();
-        final DatePickerLanguage lang = DatePickerLanguage.valueOf(bundleManager.getLocale().getLanguage().toUpperCase());
-        datePicker.setLanguage(lang);
+        final String language = DateTools.getLang(bundleManager.getLocale());
+        DatePickerLanguage lang = null;
+        for (DatePickerLanguage l : DatePickerLanguage.values())
+        {
+            if (l.name().equalsIgnoreCase(language))
+            {
+                lang = l;
+            }
+        }
+        if ( lang != null)
+        {
+            datePicker.setLanguage(lang);
+        }
         datePicker.setFormat(bundleManager.getFormats().getFormatDateShort().toLowerCase());
         datePicker.setShowTodayButton(true);
         datePicker.setForceParse(true);

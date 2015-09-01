@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -204,12 +205,9 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         name.setReadOnly( );
     }
 
-    public String getName(Locale locale) {
-    	if ( locale == null)
-    	{
-    		locale = Locale.getDefault();
-    	}
-        return name.getName(locale.getLanguage());
+    public String getName(Locale locale)
+    {
+        return name.getNameFromLocale(locale);
     }
 
     public String getKey() {

@@ -111,7 +111,7 @@ public class ServiceListCreator
         final String gwtDestFile = destFile + "-gwt";
         System.out.println("generating " + gwtDestFile);
         createPluginList(gwtDestFile, topDir, gwtPluginSelectorStrategy);
-        createGwtXml(topDir, gwtDestFile);
+      //  createGwtXml(topDir, gwtDestFile);
     }
 
     private static void createGwtXml(File topDir, String gwtDestFile) throws IOException, ClassNotFoundException

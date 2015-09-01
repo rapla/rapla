@@ -13,7 +13,6 @@
 package org.rapla;
 
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
@@ -33,8 +32,7 @@ The Main Container provides the following Services to all RaplaComponents
   @see I18nBundle
   @see RaplaLocale
   @see AppointmentFormater
-  @see LocaleSelector
-  
+
   @deprecated use RaplaClient instead
  */
 @Deprecated

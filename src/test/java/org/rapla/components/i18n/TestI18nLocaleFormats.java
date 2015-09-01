@@ -6,7 +6,7 @@ import java.util.Locale;
 import org.junit.Assert;
 import org.junit.Test;
 import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.LocaleTools;
 
 public class TestI18nLocaleFormats
 {
@@ -29,7 +29,7 @@ public class TestI18nLocaleFormats
             final String name = file.getName();
             if (name.endsWith(suffix))
             {
-                final Locale localeString = DateTools.getLocale(name.substring(0, name.length() - suffix.length()));
+                final Locale localeString = LocaleTools.getLocale(name.substring(0, name.length() - suffix.length()));
                 try
                 {
                     final I18nLocaleFormats format = I18nLocaleLoadUtil.read(localeString);

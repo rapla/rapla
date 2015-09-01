@@ -12,13 +12,21 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Graphics;
-import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.MediaTracker;
-import java.awt.Toolkit;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.toolkit.RaplaFrame;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
@@ -26,27 +34,6 @@ import java.awt.event.FocusEvent;
 import java.awt.image.ImageObserver;
 import java.beans.PropertyVetoException;
 import java.net.URL;
-
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.components.xmlbundle.LocaleSelector;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.RaplaFrame;
 
 public final class LoginDialog extends RaplaFrame implements LocaleChangeListener
 {
@@ -68,7 +55,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 	ImageObserver				observer;
 	Image						image;
 	JPanel						canvas;
-	protected LocaleSelector	localeSelector;
+	protected ServerBundleManager localeSelector;
     StartupEnvironment env;
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     RaplaGUIComponent guiComponent;
@@ -79,7 +66,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		this.guiComponent = new RaplaGUIComponent(context);
 		env =  context.lookup( StartupEnvironment.class );
 		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-		localeSelector = context.lookup(LocaleSelector.class);
+		localeSelector = (ServerBundleManager)context.lookup(BundleManager.class);
 		localeSelector.addLocaleChangeListener(this);
 	}
 	

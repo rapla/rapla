@@ -37,10 +37,11 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.LayoutFocusTraversalPolicy;
 
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.components.xmlbundle.LocaleSelector;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -67,7 +68,7 @@ public class DialogUI extends JDialog
     private int selectedIndex = -1;
     private FrameControllerList frameList = null;
     protected boolean packFrame = true;
-    private LocaleSelector localeSelector;
+    private ServerBundleManager localeSelector;
     private I18nBundle i18n;
 
     private RaplaContext context = null;
@@ -268,7 +269,7 @@ public class DialogUI extends JDialog
     			getButton(0).setText(i18n.getString("ok"));
     		}
     	}
-    	localeSelector = context.lookup( LocaleSelector.class);
+    	localeSelector =(ServerBundleManager) context.lookup( BundleManager.class);
     	localeSelector.addLocaleChangeListener(this);
     	frameList =  context.lookup(FrameControllerList.class);
     	frameList.add(this);
