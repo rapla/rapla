@@ -36,8 +36,8 @@ public class HTTPConnector {
         {
             conn.setRequestProperty("Authorization", "Bearer "  + authenticationToken);
         }
-        conn.setReadTimeout(20000); //set timeout to 20 seconds
-        conn.setConnectTimeout(15000); //set connect timeout to 15 seconds
+        conn.setReadTimeout(60000); //set timeout to 60 seconds
+        conn.setConnectTimeout(50000); //set connect timeout to 50 seconds
         conn.setDoOutput(true);
         conn.connect();
         

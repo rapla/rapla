@@ -12,32 +12,13 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.framework;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
-
+import com.google.gwt.inject.client.GinModule;
 import org.rapla.client.gwt.Rapla;
 import org.rapla.framework.logger.Logger;
 
-import com.google.gwt.inject.client.GinModule;
-
-import edu.emory.mathcs.backport.java.util.Arrays;
-import org.rapla.plugin.weekview.WeekViewPlugin;
+import java.io.*;
+import java.net.URL;
+import java.util.*;
 
 /** Helper Class for automated creation of the rapla-plugin.list in the
  * META-INF directory. Can be used in the build environment.
