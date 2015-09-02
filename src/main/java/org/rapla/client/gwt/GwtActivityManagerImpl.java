@@ -69,6 +69,11 @@ public class GwtActivityManagerImpl extends ActivityManager
             }
             updateHistroryEntry();
         }
+        else
+        {
+            place = null;
+            activities.clear();
+        }
     }
 
     protected void updateHistroryEntry()

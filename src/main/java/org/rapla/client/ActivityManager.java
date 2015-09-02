@@ -78,10 +78,7 @@ public abstract class ActivityManager
     public final void init() throws RaplaException
     {
         parsePlaceAndActivities();
-        if (place != null)
-        {
-            application.selectPlace(place);
-        }
+        application.selectPlace(place);
         if (!activities.isEmpty())
         {
             application.showActivities(activities);

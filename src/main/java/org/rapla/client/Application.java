@@ -77,11 +77,6 @@ public class Application<W> implements ApplicationView.Presenter
         {
             ActivityManager am = activityManager.get();
             am.init();
-            if(actualPlacePresenter == null)
-            {
-                actualPlacePresenter = placePresenters.get(0);
-                mainView.updateContent((W) actualPlacePresenter.provideContent());
-            }
             mainView.setLoggedInUser(facade.getUser().getName(bundleManager.getLocale()));
             mainView.updateMenu();
             // Test for the resources
@@ -140,6 +135,11 @@ public class Application<W> implements ApplicationView.Presenter
                     break;
                 }
             }
+        }
+        else
+        {
+            actualPlacePresenter = placePresenters.get(0);
+            mainView.updateContent((W) actualPlacePresenter.provideContent());
         }
     }
 
