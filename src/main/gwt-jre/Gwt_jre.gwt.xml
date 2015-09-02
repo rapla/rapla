@@ -9,5 +9,5 @@
   
   <super-source path='jre'/>
   <!-- Specify the paths for translatable code                    -->
-<!--   <inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/> -->
+<!--   <inherits name='org.rapla.gwtjsonrpc.GWTJSONRPC'/> -->
 </module>

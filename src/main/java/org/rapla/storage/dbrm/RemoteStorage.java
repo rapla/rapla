@@ -23,10 +23,10 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
-import org.rapla.rest.gwtjsonrpc.common.ResultType;
-import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.common.ResultType;
+import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
 @WebService
 public interface RemoteStorage extends RemoteJsonService {

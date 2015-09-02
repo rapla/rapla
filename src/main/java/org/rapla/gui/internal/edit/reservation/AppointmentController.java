@@ -82,7 +82,7 @@ import org.rapla.gui.toolkit.MonthChooser;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaWidget;
 import org.rapla.gui.toolkit.WeekdayChooser;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent

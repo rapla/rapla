@@ -25,7 +25,7 @@ import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
-import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
+import org.rapla.gwtjsonrpc.server.JsonServlet;
 
 /**
  * Utility function to compute and verify XSRF tokens.

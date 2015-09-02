@@ -25,8 +25,8 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
-import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.server.JsonServlet;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
@@ -51,7 +51,18 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 		this.serverContainer = serverContainer;
 		Class class1 = getServiceObject().getClass();
 		Collection<String> publicMethodNames = getPublicMethods(class1);
-		servlet = new JsonServlet(logger, class1);
+		try
+		{
+			servlet = new RaplaJsonServlet(logger, class1);
+		}
+		catch ( RaplaException ex)
+		{
+			throw ex;
+		}
+		catch ( Exception ex)
+		{
+			throw new RaplaException(ex);
+		}
 		if (publicMethodNames.contains("get")) {
 			getMethod = "get";
 		}

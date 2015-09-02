@@ -60,11 +60,32 @@
 	<source path='' includes="ConnectInfo.java" />
 	<source path='' includes="RaplaDefaultResources.java" />
 	<source path='' includes="AppointmentFormaterImpl.java" />
+	<source path='client/gwt' includes='**.java' />
+	<!--
+	<source path='client/gwt' includes="MainInjector.java"/>
+	<source path='client/gwt' includes="Bootstrap.java"/>
+-->
 	<inherits name="Gwt_jre"/>
+	<inherits name='com.google.gwt.user.User'/>
+	<inherits name='com.google.gwt.logging.Logging'/>
+	<inherits name='com.google.gwt.xml.XML' />
+	<inherits name='com.google.gwt.http.HTTP'/>
+	<inherits name='com.google.gwt.i18n.CldrLocales' />
+	<inherits name='com.google.gwt.i18n.I18N' />
+	<inherits name='com.google.gwt.user.theme.clean.Clean'/>
+	<inherits name='com.google.gwt.inject.Inject'/>
+	<inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>
+	<inherits name='org.gwtbootstrap3.extras.datetimepicker.DateTimePicker'/>
+	<inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>
 	<!--
 
 	-->
 <!-- 	<super-source path="../../../gwt-src/jre"/> -->
 	<!-- Specify the paths for translatable code -->
-	<inherits name='org.rapla.rest.gwtjsonrpc.GWTJSONRPC'/>
+	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
+
+	<define-configuration-property name='extra.ginModules' is-multi-valued='true' />
+	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.plugin.weekview.gwt.WeekViewPlugin' />
+	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.plugin.tableview.gwt.ListViewPlugin' />
+	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.edit.reservation.sample.gwt.ReservationEditPlugin' />
 </module>

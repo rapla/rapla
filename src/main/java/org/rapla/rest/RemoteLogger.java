@@ -3,10 +3,10 @@ package org.rapla.rest;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
-import org.rapla.rest.gwtjsonrpc.common.ResultType;
-import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.common.ResultType;
+import org.rapla.gwtjsonrpc.common.VoidResult;
 
 @WebService
 public interface RemoteLogger extends RemoteJsonService

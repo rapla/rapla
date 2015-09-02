@@ -9,13 +9,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
-import org.rapla.rest.gwtjsonrpc.server.JsonServlet;
-import org.rapla.rest.gwtjsonrpc.server.RPCServletUtils;
+import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
+import org.rapla.gwtjsonrpc.server.JsonServlet;
+import org.rapla.gwtjsonrpc.server.RPCServletUtils;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
@@ -66,7 +67,7 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
                 }
                 Class<?> interfaceClass =  Class.forName(interfaceName, true,RaplaAPIPage.class.getClassLoader());
                 // Test if service is found
-                servlet = new JsonServlet(getLogger(), interfaceClass);
+                servlet = new RaplaJsonServlet(getLogger(), interfaceClass);
             }
             catch (Exception ex)
             {
@@ -121,7 +122,7 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
         return serviceAndMethodName;
     }
 
-    protected String serializeException(String id, Exception ex) 
+    protected String serializeException(String id, Exception ex)
     {
         final JsonObject r = new JsonObject();
         String versionName = "jsonrpc";
@@ -130,12 +131,18 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
         if (id != null) {
           r.add("id", new JsonPrimitive(id));
         }
-        GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder();
-        final JsonObject error = JsonServlet.getError(versionName, code, ex, gb);
+        Class[] nonPrimitiveClasses = getNonPrimitiveClasses();
+        GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder(nonPrimitiveClasses);
+        final JsonObject error = JsonServlet.getError(versionName, code, ex, null, gb);
         r.add("error", error);
-        GsonBuilder builder = JSONParserWrapper.defaultGsonBuilder();
-        String out = builder.create().toJson( r);
+        GsonBuilder builder = JSONParserWrapper.defaultGsonBuilder(nonPrimitiveClasses);
+        String out = builder.create().toJson(r);
         return out;
+    }
+
+    private Class[] getNonPrimitiveClasses()
+    {
+        return new Class[] {RaplaMapImpl.class};
     }
 
     

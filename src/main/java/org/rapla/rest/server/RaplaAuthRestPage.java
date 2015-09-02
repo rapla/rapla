@@ -21,7 +21,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;

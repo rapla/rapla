@@ -4,12 +4,11 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 
-import com.google.gwt.core.client.GWT;
 import org.gwtbootstrap3.client.ui.form.validator.MessageFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.inject.Inject;

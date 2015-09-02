@@ -26,7 +26,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 /** Methods for quering the various entities of the backend
 */
 

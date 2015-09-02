@@ -12,9 +12,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.gwtjsonrpc.common.AsyncCallback;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 
 import com.google.gwt.user.client.Window;

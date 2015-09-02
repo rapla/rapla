@@ -62,9 +62,9 @@ public class RaplaGwtModule implements GinModule{
         binder.bind(CalendarPlaceView.class).to(CalendarPlaceViewImpl.class).in(Singleton.class);
         
         GinMultibinder<PlacePresenter> placeBinder = GinMultibinder.newSetBinder(binder, PlacePresenter.class);
-        placeBinder.addBinding().to(CalendarPlacePresenter.class);
+        placeBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
         GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
-        activityBinder.addBinding().to(CalendarPlacePresenter.class);
+        activityBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
 
     }
     

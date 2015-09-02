@@ -4,9 +4,9 @@ import java.util.List;
 
 import javax.jws.WebService;
 
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
-import org.rapla.rest.gwtjsonrpc.common.ResultType;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.common.ResultType;
 
 @WebService
 public interface ICalTimezones extends RemoteJsonService

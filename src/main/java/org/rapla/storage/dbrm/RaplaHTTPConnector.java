@@ -1,42 +1,25 @@
 package org.rapla.storage.dbrm;
 
+import com.google.gson.*;
+import org.jetbrains.annotations.NotNull;
+import org.rapla.components.util.Command;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.common.*;
+import org.rapla.rest.client.HTTPJsonConnector;
+
 import java.io.FileNotFoundException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.entities.DependencyException;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.rest.client.HTTPJsonConnector;
-import org.rapla.rest.gwtjsonrpc.common.AsyncCallback;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.JSONParserWrapper;
-import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.rest.gwtjsonrpc.common.ResultType;
-import org.rapla.storage.RaplaNewVersionException;
-import org.rapla.storage.RaplaSecurityException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 public class RaplaHTTPConnector extends HTTPJsonConnector 
 {
@@ -53,7 +36,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
     
     private JsonArray serializeArguments(Class<?>[] parameterTypes, Object[] args) 
 	{	
-		final GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping();
+		final GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder(getNonPrimitiveClasses()).disableHtmlEscaping();
 		JsonArray params = new JsonArray();
 		Gson serializer = gb.disableHtmlEscaping().create();
 		for ( int i=0;i< parameterTypes.length;i++)
@@ -65,8 +48,14 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 		}
 		return params;
 	}
+
+    private Class[] getNonPrimitiveClasses()
+    {
+        return new Class[] {RaplaMapImpl.class};
+    }
+
     private Gson createJsonMapper() {
-        Gson gson = JSONParserWrapper.defaultGsonBuilder().disableHtmlEscaping().create();
+        Gson gson = JSONParserWrapper.defaultGsonBuilder(getNonPrimitiveClasses()).disableHtmlEscaping().create();
         return gson;
     }
 

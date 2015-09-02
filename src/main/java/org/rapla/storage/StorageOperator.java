@@ -41,7 +41,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 
 public interface StorageOperator extends EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;

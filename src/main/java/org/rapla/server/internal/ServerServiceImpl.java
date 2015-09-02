@@ -62,9 +62,9 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.rest.RemoteLogger;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.ResultImpl;
+import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.rest.server.RaplaAPIPage;
 import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.rest.server.RaplaDynamicTypesRestPage;
@@ -106,7 +106,6 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
-import sun.util.locale.LocaleUtils;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:

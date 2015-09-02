@@ -6,9 +6,9 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.RemoteLogger;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
-import org.rapla.rest.gwtjsonrpc.common.ResultImpl;
-import org.rapla.rest.gwtjsonrpc.common.VoidResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.ResultImpl;
+import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 

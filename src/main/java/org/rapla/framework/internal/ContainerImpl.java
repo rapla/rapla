@@ -29,7 +29,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 import javax.inject.Inject;

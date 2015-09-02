@@ -3,7 +3,7 @@ package org.rapla.plugin.urlencryption;
 import javax.jws.WebService;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.gwtjsonrpc.common.RemoteJsonService;
+import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 
 /**
  * This Interface is used to provide the encryption functionality to the RAPLA Clients.

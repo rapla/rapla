@@ -15,7 +15,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.gwtjsonrpc.common.FutureResult;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.dbrm.StatusUpdater.Status;
 
 public class RemoteServiceCallerImpl implements RemoteServiceCaller
