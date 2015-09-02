@@ -74,9 +74,8 @@ public class RaplaGwtModule implements GinModule{
         GinMultibinder<PlacePresenter> placeBinder = GinMultibinder.newSetBinder(binder, PlacePresenter.class);
         placeBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
         placeBinder.addBinding().to(ResourceSelectionPlace.class).in(Singleton.class);
-        GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
-        activityBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
 
+        GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
     }
     
     @Provides
