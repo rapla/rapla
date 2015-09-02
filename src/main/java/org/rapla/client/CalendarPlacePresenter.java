@@ -234,7 +234,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
                 try
                 {
                     nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
-                    updateSelectedDate(nextDate);
+                    model.setSelectedDate(nextDate);
+                    view.updateDate(nextDate);
                 }
                 catch (ParseDateException e)
                 {
