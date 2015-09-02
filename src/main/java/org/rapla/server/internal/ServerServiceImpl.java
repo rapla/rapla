@@ -106,7 +106,6 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
-import sun.util.locale.LocaleUtils;
 
 /** Default implementation of StorageService.
  * <p>Sample configuration 1:
