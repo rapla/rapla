@@ -14,6 +14,7 @@ import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.event.DetailSelectEvent;
+import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Reservation;
@@ -47,11 +48,14 @@ public class Application<W> implements ApplicationView.Presenter
     private List<PlacePresenter> placePresenters;
     private Set<ActivityPresenter> activityPresenters;
 
+    private final EventBus eventBus;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public Application(ApplicationView mainView, EventBus eventBus)
     {
         this.mainView = mainView;
+        this.eventBus = eventBus;
         mainView.setPresenter(this);
     }
 
@@ -73,11 +77,6 @@ public class Application<W> implements ApplicationView.Presenter
         {
             ActivityManager am = activityManager.get();
             am.init();
-            if(actualPlacePresenter == null)
-            {
-                actualPlacePresenter = placePresenters.get(0);
-                mainView.updateContent((W) actualPlacePresenter.provideContent());
-            }
             mainView.setLoggedInUser(facade.getUser().getName(bundleManager.getLocale()));
             mainView.updateMenu();
             // Test for the resources
@@ -137,6 +136,11 @@ public class Application<W> implements ApplicationView.Presenter
                 }
             }
         }
+        else
+        {
+            actualPlacePresenter = placePresenters.get(0);
+            mainView.updateContent((W) actualPlacePresenter.provideContent());
+        }
     }
 
     public void showActivities(Set<Activity> activities)
@@ -173,6 +177,15 @@ public class Application<W> implements ApplicationView.Presenter
         catch (RaplaException e)
         {
             logger.error("Error initializing activities: " + activities, e);
+        }
+    }
+    
+    @Override
+    public void menuClicked(String action)
+    {
+        if("resources".equals(action))
+        {
+            eventBus.fireEvent(new PlaceChangedEvent(new Place(ResourceSelectionPlace.PLACE_NAME, null)));
         }
     }
 

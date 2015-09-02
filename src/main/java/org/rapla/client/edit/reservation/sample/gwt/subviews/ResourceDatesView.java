@@ -4,6 +4,7 @@ import java.util.Date;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
+import org.rapla.client.edit.reservation.sample.gwt.ReservationViewImpl.ReservationViewPart;
 import org.rapla.client.edit.reservation.sample.gwt.gfx.ImageImport;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.TerminList.DateSelected;
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
@@ -15,6 +16,7 @@ import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.Button;
@@ -30,24 +32,29 @@ import com.google.gwt.user.client.ui.SuggestBox;
 import com.google.gwt.user.client.ui.Tree;
 import com.google.gwt.user.client.ui.Widget;
 
-public class ResourceDatesView
+public class ResourceDatesView implements ReservationViewPart
 {
 
     private FlowPanel contentPanel;
 
-    private final Presenter presenter;
+    private Presenter presenter;
 
     private final RaplaResources i18n;
 
     private final BundleManager bundleManager;
 
-    public ResourceDatesView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager)
+    public ResourceDatesView(RaplaResources i18n, BundleManager bundleManager)
     {
-        this.presenter = presenter;
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("resourcesDates");
+    }
+    
+    @Override
+    public void setPresenter(Presenter presenter)
+    {
+        this.presenter = presenter;
     }
 
     protected Presenter getPresenter()
@@ -55,11 +62,13 @@ public class ResourceDatesView
         return presenter;
     }
 
+    @Override
     public Widget provideContent()
     {
         return contentPanel;
     }
 
+    @Override
     public void createContent(final Reservation reservation)
     {
         contentPanel.clear();
@@ -307,5 +316,4 @@ public class ResourceDatesView
     {
         createContent(reservation);
     }
-
 }

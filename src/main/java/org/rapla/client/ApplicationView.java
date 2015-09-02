@@ -5,7 +5,7 @@ public interface ApplicationView<W>
 
     interface Presenter
     {
-        // TODO Menu click...
+        void menuClicked(String action);
     }
 
     void setPresenter(Presenter presenter);

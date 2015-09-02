@@ -1,11 +1,13 @@
 package org.rapla.client.edit.reservation.sample.gwt;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.gwtbootstrap3.client.ui.AnchorListItem;
+import org.gwtbootstrap3.client.ui.NavTabs;
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationView;
@@ -16,59 +18,138 @@ import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
 import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.logger.Logger;
 
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.LIElement;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.dom.client.NodeList;
-import com.google.gwt.event.logical.shared.SelectionEvent;
-import com.google.gwt.event.logical.shared.SelectionHandler;
-import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
-import com.google.gwt.user.client.ui.TabBar;
+import com.google.gwt.user.client.ui.Widget;
 
-public class ReservationViewImpl extends AbstractView<Presenter> implements ReservationView<IsWidget>
+public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
 {
 
-    @Inject
-    private RaplaResources i18n;
-    @Inject
-    private BundleManager bundleManager;
-    
+    private final RaplaResources i18n;
+    private final BundleManager bundleManager;
+
     private final Logger logger;
 
-    private final FlowPanel content = new FlowPanel();
-    private final FlowPanel tabBarPanel;
+    private final Div content = new Div();
     private final ButtonsBar buttonsPanel;
-    private final TabBar bar;
-    private HandlerRegistration selectionHandler;
+//    private final NavPills bar = new NavPills();
+    private final NavTabs bar = new NavTabs();
     private Reservation actuallShownReservation = null;
-    private InfoView infoView;
-    private ResourceDatesView resourcesView;
+    private PopupPanel popup;
+    final ArrayList<Dual> navEntries = new ArrayList<Dual>();
 
-    private Map<String, PopupPanel> popups = new HashMap<String, PopupPanel>();
+    private static class Dual
+    {
+        private final AnchorListItem menuItem;
+        private final ReservationViewPart view;
+
+        public Dual(AnchorListItem menuItem, ReservationViewPart view)
+        {
+            this.menuItem = menuItem;
+            this.view = view;
+        }
+
+        public AnchorListItem getMenuItem()
+        {
+            return menuItem;
+        }
+
+        public ReservationViewPart getView()
+        {
+            return view;
+        }
+    }
+
+    public interface ReservationViewPart
+    {
+
+        void setPresenter(Presenter presenter);
+
+        Widget provideContent();
+
+        void createContent(Reservation reservation);
+
+    }
 
     @Inject
-    public ReservationViewImpl(Logger logger)
+    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager  bundleManager)
     {
         super();
+        this.i18n = i18n;
         this.logger = logger;
+        this.bundleManager = bundleManager;
         content.setStyleName("content");
-        tabBarPanel = new FlowPanel();
-        tabBarPanel.setStyleName("tabbarWrapper");
-        bar = new TabBar();
-        bar.addStyleName("tabbar");
-        bar.addTab("Veranstaltungsinformationen");
-        bar.addTab("Termine und Ressourcen");
-        bar.addTab("Rechte");
-        tabBarPanel.add(bar);
+        navEntries.add(new Dual(new AnchorListItem("Veranstaltungsinformationen"), new InfoView(i18n, bundleManager)));
+        navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager)));
+        navEntries.add(new Dual(new AnchorListItem("Rechte"), null));
+        for (Dual dual : navEntries)
+        {
+            AnchorListItem menuItem = dual.getMenuItem();
+            bar.add(menuItem);
+        }
         buttonsPanel = new ButtonsBar();
-        bar.selectTab(0);
+        bar.addDomHandler(new ClickHandler()
+        {
+            @Override
+            public void onClick(ClickEvent event)
+            {
+                Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
+                while (relativeElement != null && !(LIElement.is(relativeElement)))
+                {
+                    relativeElement = relativeElement.getParentElement();
+                }
+                if (relativeElement == null)
+                {
+                    return;
+                }
+                content.clear();
+                activate(relativeElement);
+            }
+
+        }, ClickEvent.getType());
+    }
+
+    private void activate(Element relativeElement)
+    {
+        for (Dual navEntry : navEntries)
+        {
+            AnchorListItem menuItem = navEntry.getMenuItem();
+            Element element = menuItem.getElement();
+            if (relativeElement == element)
+            {
+                menuItem.setActive(true);
+                menuItem.setEnabled(false);
+                ReservationViewPart view = navEntry.getView();
+                if(view != null)
+                {
+                    view.createContent(actuallShownReservation);
+                    content.add(view.provideContent());
+                }
+                else
+                {
+                    showWarning("Warning", "No content defined");
+                }
+                NodeList<Node> childNodes = content.getElement().getChildNodes();
+                InputUtils.focusOnFirstInput(childNodes);
+            }
+            else
+            {
+                menuItem.setActive(false);
+                menuItem.setEnabled(true);
+            }
+        }
     }
 
     @Override
@@ -76,6 +157,14 @@ public class ReservationViewImpl extends AbstractView<Presenter> implements Rese
     {
         super.setPresenter(presenter);
         buttonsPanel.setPresenter(presenter);
+        for (Dual navEntry : navEntries)
+        {
+            ReservationViewPart view = navEntry.getView();
+            if(view != null)
+            {
+                view.setPresenter(presenter);
+            }
+        }
     }
 
     @Override
@@ -84,83 +173,22 @@ public class ReservationViewImpl extends AbstractView<Presenter> implements Rese
         RaplaPopups.showWarning(title, warning);
     }
 
-    public void show(final Reservation reservation, final User user)
+    @Override
+    public void show(final Reservation reservation)
     {
-        if (actuallShownReservation != null && actuallShownReservation.getId().equals(reservation.getId()))
-        {
-            // update existing
-            final int selectedTab = bar.getSelectedTab();
-            if (selectedTab == 0)
-            {
-                infoView.update(reservation);
-            }
-            else if (selectedTab == 1)
-            {
-                resourcesView.update(reservation);
-            }
-        }
-        else
-        {
-            // kill the old one
-            if (actuallShownReservation != null)
-            {
-                getPresenter().onCancelButtonClicked(actuallShownReservation);
-            }
-            actuallShownReservation = reservation;
-            buttonsPanel.setReservation(reservation);
-            // create new one
-            final PopupPanel popup = RaplaPopups.createNewPopupPanel();
-            popup.setAnimationEnabled(true);
-            popup.setAnimationType(AnimationType.ROLL_DOWN);
-            popups.put(reservation.getId(), popup);
-            infoView = new InfoView(getPresenter(), i18n, bundleManager);
-            resourcesView = new ResourceDatesView(getPresenter(), i18n, bundleManager);
-            if (selectionHandler != null)
-            {
-                selectionHandler.removeHandler();
-            }
-            selectionHandler = bar.addSelectionHandler(new SelectionHandler<Integer>()
-            {
-                public void onSelection(SelectionEvent<Integer> event)
-                {
-                    final Integer index = event.getSelectedItem();
-                    for (int i = 0; i < bar.getTabCount(); i++)
-                    {
-                        bar.setTabEnabled(i, true);
-                    }
-                    bar.setTabEnabled(index, false);
-                    content.clear();
-                    infoView.clearContent();
-                    resourcesView.clearContent();
-                    if (index == 0)
-                    {
-                        infoView.createContent(reservation);
-                        content.add(infoView.provideContent());
-                        final NodeList<Node> childNodes = content.getElement().getChildNodes();
-                        InputUtils.focusOnFirstInput(childNodes);
-                    }
-                    else if (index == 1)
-                    {
-                        resourcesView.createContent(reservation);
-                        content.add(resourcesView.provideContent());
-                    }
-                    else
-                    {
-                        RaplaPopups.showWarning("Navigation error", "Unknown View at index " + index);
-                    }
-                }
-            });
-            bar.selectTab(0);
-            final FlowPanel layout = new FlowPanel();
-            layout.add(buttonsPanel);
-            layout.add(tabBarPanel);
-            layout.add(content);
-            popup.add(layout);
-            popup.center();
-            // find first input and focus on element
-            final NodeList<Node> childNodes = content.getElement().getChildNodes();
-            InputUtils.focusOnFirstInput(childNodes);
-        }
+        actuallShownReservation = reservation;
+        buttonsPanel.setReservation(reservation);
+        // create new one
+        popup = RaplaPopups.createNewPopupPanel();
+        popup.setAnimationEnabled(true);
+        popup.setAnimationType(AnimationType.ROLL_DOWN);
+        final Div layout = new Div();
+        layout.add(buttonsPanel);
+        layout.add(bar);
+        layout.add(content);
+        popup.add(layout);
+        popup.center();
+        activate(navEntries.get(0).getMenuItem().getElement());
     }
 
     public void mapFromReservation(Reservation event)
@@ -179,13 +207,6 @@ public class ReservationViewImpl extends AbstractView<Presenter> implements Rese
     public void hide(final Reservation reservation)
     {
         actuallShownReservation = null;
-        bar.selectTab(0, false);
-        resourcesView = null;
-        infoView = null;
-        final PopupPanel popup = popups.get(reservation.getId());
-        if (popup != null)
-        {
-            popup.hide();
-        }
+        popup.hide();
     }
 }

@@ -8,18 +8,40 @@ import javax.inject.Singleton;
 import org.rapla.client.ActivityManager;
 import org.rapla.client.Application;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 public class GwtActivityManagerImpl extends ActivityManager
 {
+    private boolean changeByBrowser = true;
 
     @Inject
-    public GwtActivityManagerImpl(Application application, EventBus eventBus)
+    public GwtActivityManagerImpl(Application application, EventBus eventBus, Logger logger)
     {
-        super(application, eventBus);
+        super(application, eventBus, logger);
+        History.addValueChangeHandler(new ValueChangeHandler<String>()
+        {
+            @Override
+            public void onValueChange(ValueChangeEvent<String> event)
+            {
+                if (changeByBrowser)
+                {
+                    try
+                    {
+                        GwtActivityManagerImpl.this.init();
+                    }
+                    catch (RaplaException e)
+                    {
+                        logger.error("Error updating history change: " + e.getMessage(), e);
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -47,6 +69,11 @@ public class GwtActivityManagerImpl extends ActivityManager
             }
             updateHistroryEntry();
         }
+        else
+        {
+            place = null;
+            activities.clear();
+        }
     }
 
     protected void updateHistroryEntry()
@@ -69,7 +96,15 @@ public class GwtActivityManagerImpl extends ActivityManager
                 }
             }
         }
-        History.newItem(sb.toString());
+        try
+        {
+            changeByBrowser = false;
+            History.newItem(sb.toString());
+        }
+        finally
+        {
+            changeByBrowser = true;
+        }
     }
 
 }

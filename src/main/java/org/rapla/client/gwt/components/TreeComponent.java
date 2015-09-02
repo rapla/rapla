@@ -32,20 +32,13 @@ public class TreeComponent extends Div
     private final String id = "tree-"+(counter++);
     private final Locale locale;
     private boolean updatingData = false;
+    private boolean initNeeded = true;
     public TreeComponent(Locale locale, SelectionChangeHandler selectionChangeHandler)
     {
         this.locale = locale;
         this.allocatables = null;
         this.selectionChangeHandler = selectionChangeHandler;
         this.setId(id);
-        Scheduler.get().scheduleFinally(new ScheduledCommand()
-        {
-            @Override
-            public void execute()
-            {
-                initJs(id, TreeComponent.this);
-            }
-        });
     }
     
     public void updateData(Allocatable[] entries, Collection<Allocatable>selected)
@@ -84,6 +77,18 @@ public class TreeComponent extends Div
                 state.put("selected", new JSONString(Boolean.TRUE.toString()));
                 obj.put("state", state);
             }
+        }
+        if(initNeeded)
+        {
+            initNeeded = false;
+            Scheduler.get().scheduleFinally(new ScheduledCommand()
+            {
+                @Override
+                public void execute()
+                {
+                    initJs(id, TreeComponent.this);
+                }
+            });
         }
         // load data
         Scheduler.get().scheduleFinally(new ScheduledCommand()

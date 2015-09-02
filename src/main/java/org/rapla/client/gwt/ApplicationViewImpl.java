@@ -51,6 +51,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
                     Element target = event.getNativeEvent().getEventTarget().cast();
                     final String action = findAction(target);
                     menu.hide();
+                    presenter.menuClicked(action);
                 }
 
                 private String findAction(Element target)

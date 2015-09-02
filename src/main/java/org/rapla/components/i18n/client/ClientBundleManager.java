@@ -99,11 +99,11 @@ public class ClientBundleManager implements BundleManager
         for(var m in locale) {
             if(typeof locale[m] == "function") {
                 res.push(m.toString());
-                console.log("Func " + m);
-            }
-            else
-            {
-                console.log("Attr " + m);
+//                console.log("Func " + m);
+//            }
+//            else
+//            {
+//                console.log("Attr " + m);
             }
         }
 
