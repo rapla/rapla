@@ -18,6 +18,7 @@ import com.google.web.bindery.event.shared.EventBus;
 @Singleton
 public class GwtActivityManagerImpl extends ActivityManager
 {
+    private boolean changeByBrowser = true;
 
     @Inject
     public GwtActivityManagerImpl(Application application, EventBus eventBus, Logger logger)
@@ -28,13 +29,16 @@ public class GwtActivityManagerImpl extends ActivityManager
             @Override
             public void onValueChange(ValueChangeEvent<String> event)
             {
-                try
+                if (changeByBrowser)
                 {
-                    GwtActivityManagerImpl.this.init();
-                }
-                catch (RaplaException e)
-                {
-                    logger.error("Error updating history change: " + e.getMessage(), e);
+                    try
+                    {
+                        GwtActivityManagerImpl.this.init();
+                    }
+                    catch (RaplaException e)
+                    {
+                        logger.error("Error updating history change: " + e.getMessage(), e);
+                    }
                 }
             }
         });
@@ -87,7 +91,15 @@ public class GwtActivityManagerImpl extends ActivityManager
                 }
             }
         }
-        History.newItem(sb.toString());
+        try
+        {
+            changeByBrowser = false;
+            History.newItem(sb.toString());
+        }
+        finally
+        {
+            changeByBrowser = true;
+        }
     }
 
 }
