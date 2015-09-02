@@ -57,8 +57,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         {
             tempReservation = facade.edit(event);
             this.isNew = isNew;
-            User user = facade.getUser();
-            view.show(event, user);
+            view.show(event);
             this.event = event;
         }
         catch (RaplaException e)
@@ -121,15 +120,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         else
         {
             view.showWarning("Not allowed!", "Editing value for " + attribute.getName(raplaLocale.getLocale()));
-            try
-            {
-                final User user = facade.getUser();
-                view.show(tempReservation, user);
-            }
-            catch (RaplaException e)
-            {
-                logger.error(e.getMessage(), e);
-            }
+            view.show(tempReservation);
         }
     }
 
@@ -152,15 +143,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         {
             final Classification newClassification = newDynamicType.newClassification();
             tempReservation.setClassification(newClassification);
-            try
-            {
-                User user = facade.getUser();
-                view.show(tempReservation, user);
-            }
-            catch (RaplaException e)
-            {
-                logger.error(e.getMessage(), e);
-            }
+            view.show(tempReservation);
         }
     }
 

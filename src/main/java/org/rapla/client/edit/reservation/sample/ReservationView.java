@@ -27,7 +27,7 @@ public interface ReservationView<W> extends View<Presenter> {
         void changeClassification(Reservation reservation, DynamicType newDynamicType);
 	}
 
-	void show(Reservation event, User user);
+	void show(Reservation event);
 
 	void hide(Reservation reservation);
 

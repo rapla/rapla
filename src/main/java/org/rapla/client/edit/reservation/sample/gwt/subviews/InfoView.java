@@ -13,6 +13,7 @@ import org.gwtbootstrap3.client.ui.Row;
 import org.gwtbootstrap3.client.ui.constants.ColumnSize;
 import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
+import org.rapla.client.edit.reservation.sample.gwt.ReservationViewImpl.ReservationViewPart;
 import org.rapla.client.gwt.components.BooleanInputField;
 import org.rapla.client.gwt.components.BooleanInputField.BooleanValueChange;
 import org.rapla.client.gwt.components.DateComponent;
@@ -33,26 +34,32 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Widget;
 
-public class InfoView
+public class InfoView implements ReservationViewPart
 {
     private static final int MAX_COLUMNS_PER_ROW = 2;
     private static final String COLUMN_SIZE = ColumnSize.MD_6 + " " + ColumnSize.LG_6 + " " + ColumnSize.SM_6 + " " + ColumnSize.XS_6;
 
     private final FlowPanel contentPanel;
-    private final Presenter presenter;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
+    private Presenter presenter;
 
-    public InfoView(Presenter presenter, RaplaResources i18n, BundleManager bundleManager)
+    public InfoView(RaplaResources i18n, BundleManager bundleManager)
     {
-        this.presenter = presenter;
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("appointmentInfo");
+    }
+    
+    @Override
+    public void setPresenter(Presenter presenter)
+    {
+        this.presenter = presenter;
     }
 
     private Presenter getPresenter()
@@ -60,11 +67,13 @@ public class InfoView
         return presenter;
     }
 
+    @Override
     public Widget provideContent()
     {
         return contentPanel;
     }
-
+    
+    @Override
     public void createContent(final Reservation reservation)
     {
         contentPanel.clear();

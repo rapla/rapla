@@ -26,9 +26,8 @@ public class RaplaPopups
 
     public static PopupPanel createNewPopupPanel()
     {
-        final WindowBox raplaPopup = new WindowBox(false, false);
-        raplaPopup.setResizable(true);
-        raplaPopup.setAutoHideOnHistoryEventsEnabled(false);
+        final PopupPanel raplaPopup = new PopupPanel(false, false);
+        raplaPopup.setAutoHideOnHistoryEventsEnabled(true);
         raplaPopup.addStyleName("raplaPopup");
         return raplaPopup;
     }

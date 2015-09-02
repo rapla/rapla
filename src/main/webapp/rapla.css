@@ -189,14 +189,6 @@ h1 {
 .mainButtonsBar{
 	min-width: 300px;
 }
-.tabbar {
-	width: 100%;
-	height: 35px;
-}
-
-.tabbarWrapper {
-	clear: both;
-}
 
 .cancelButton, .deleteButton, .saveButton, .redoButton, .undoButton {
 	float: left;
@@ -213,6 +205,10 @@ h1 {
 	margin-right: 4px;
 	margin-top: 6px;
 	margin-bottom: 4px;
+}
+
+.popupContent .nav {
+	clear: left;
 }
 
 /* INFO VIEW */

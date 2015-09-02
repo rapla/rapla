@@ -1,15 +1,15 @@
 package org.rapla.client.edit.reservation.sample.gwt.subviews;
 
+import org.gwtbootstrap3.client.ui.Image;
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.gfx.ImageImport;
 import org.rapla.entities.domain.Reservation;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Image;
 
-public class ButtonsBar extends FlowPanel
+public class ButtonsBar extends Div
 {
     private Presenter presenter;
     private Reservation reservation;
