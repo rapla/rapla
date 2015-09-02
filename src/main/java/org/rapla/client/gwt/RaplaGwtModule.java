@@ -1,13 +1,18 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.inject.client.GinModule;
-import com.google.gwt.inject.client.binder.GinBinder;
-import com.google.gwt.inject.client.multibindings.GinMultibinder;
-import com.google.inject.Provides;
-import com.google.web.bindery.event.shared.EventBus;
-import com.google.web.bindery.event.shared.SimpleEventBus;
+import java.util.Locale;
+
+import javax.inject.Singleton;
+
 import org.rapla.AppointmentFormaterImpl;
-import org.rapla.client.*;
+import org.rapla.client.ActivityManager;
+import org.rapla.client.ActivityPresenter;
+import org.rapla.client.ApplicationView;
+import org.rapla.client.CalendarPlacePresenter;
+import org.rapla.client.CalendarPlaceView;
+import org.rapla.client.PlacePresenter;
+import org.rapla.client.ResourceSelectionPlace;
+import org.rapla.client.ResourceSelectionView;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.gui.menu.MenuView;
 import org.rapla.client.gui.menu.gwt.MenuViewImpl;
@@ -33,8 +38,12 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 
-import javax.inject.Singleton;
-import java.util.Locale;
+import com.google.gwt.inject.client.GinModule;
+import com.google.gwt.inject.client.binder.GinBinder;
+import com.google.gwt.inject.client.multibindings.GinMultibinder;
+import com.google.inject.Provides;
+import com.google.web.bindery.event.shared.EventBus;
+import com.google.web.bindery.event.shared.SimpleEventBus;
 
 public class RaplaGwtModule implements GinModule{
     @Override
@@ -60,9 +69,11 @@ public class RaplaGwtModule implements GinModule{
         binder.bind(MenuPresenter.class).in(Singleton.class);
         binder.bind(MenuView.class).to(MenuViewImpl.class).in(Singleton.class);
         binder.bind(CalendarPlaceView.class).to(CalendarPlaceViewImpl.class).in(Singleton.class);
+        binder.bind(ResourceSelectionView.class).to(ResourceSelectionViewImpl.class).in(Singleton.class);
         
         GinMultibinder<PlacePresenter> placeBinder = GinMultibinder.newSetBinder(binder, PlacePresenter.class);
         placeBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
+        placeBinder.addBinding().to(ResourceSelectionPlace.class).in(Singleton.class);
         GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
         activityBinder.addBinding().to(CalendarPlacePresenter.class).in(Singleton.class);
 
