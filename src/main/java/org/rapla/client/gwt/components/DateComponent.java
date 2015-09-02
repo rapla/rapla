@@ -19,6 +19,7 @@ public class DateComponent extends Div
     }
 
     private final DatePicker datePicker;
+    private boolean updateInProgress = false;
 
     public DateComponent(Date initDate, final DateValueChanged changeHandler, BundleManager bundleManager)
     {
@@ -42,26 +43,20 @@ public class DateComponent extends Div
         datePicker.setShowTodayButton(true);
         datePicker.setForceParse(true);
         add(datePicker);
+        datePicker.setAutoClose(true);
         datePicker.addChangeDateHandler(new ChangeDateHandler()
         {
             @Override
             public void onChangeDate(ChangeDateEvent evt)
             {
-                Date newDate = datePicker.getValue();
-                final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
-                changeHandler.valueChanged(raplaDate);
+                if(!updateInProgress)
+                {
+                    Date newDate = datePicker.getValue();
+                    final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
+                    changeHandler.valueChanged(raplaDate);
+                }
             }
         });
-//        datePicker.addValueChangeHandler(new ValueChangeHandler<Date>()
-//        {
-//            @Override
-//            public void onValueChange(ValueChangeEvent<Date> event)
-//            {
-//                final Date newDate = event.getValue();
-//                final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
-//                changeHandler.valueChanged(raplaDate);
-//            }
-//        });
         if (initDate != null)
         {
             setDate(initDate);
@@ -70,7 +65,14 @@ public class DateComponent extends Div
 
     public void setDate(Date date)
     {
-        final Date gwtDate = GWTDateUtils.raplaToGwtDate(date);
-        datePicker.setValue(gwtDate, false);
+        try
+        {
+            updateInProgress = true;
+            final Date gwtDate = GWTDateUtils.raplaToGwtDate(date);
+            datePicker.setValue(gwtDate, false);
+        }
+        finally {
+            updateInProgress  =false;
+        }
     }
 }
