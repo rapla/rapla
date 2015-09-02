@@ -295,9 +295,12 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter, Act
             {
                 String id = activity.getId();
                 Date nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(id, false);
-                model.setSelectedDate(nextDate);
-                view.updateDate(nextDate);
-                updateView();
+                if(!model.getSelectedDate().equals(nextDate))
+                {
+                    model.setSelectedDate(nextDate);
+                    view.updateDate(nextDate);
+                    updateView();
+                }
             }
             catch (Exception e)
             {
