@@ -1,12 +1,11 @@
 package org.rapla.client.gui.menu.gwt.context;
 
-import org.rapla.client.gui.menu.data.Point;
-import org.rapla.client.gwt.GWTPopupContext;
-import org.rapla.gui.PopupContext;
-
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.user.client.Window;
+import org.rapla.client.gui.menu.data.Point;
+import org.rapla.client.gwt.GwtPopupContext;
+import org.rapla.gui.PopupContext;
 
 public class ContextCreator
 {
@@ -20,6 +19,6 @@ public class ContextCreator
         final int x = clientX + scrollLeft;
         final int y = clientY + scrollTop;
         final Point point = new Point(x, y);
-        return new GWTPopupContext(point);
+        return new GwtPopupContext(point);
     }
 }
