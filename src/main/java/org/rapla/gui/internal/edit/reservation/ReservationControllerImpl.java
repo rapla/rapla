@@ -479,7 +479,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             int number = repeating.getNumber();
             if ( number>=1)
             {
-                if (repeating.getExceptions().length >= number-1)
+                final int length = repeating.getExceptions().length + exceptions.size();
+                if (length >= number-1)
                 {
                     Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
                     appointment.createBlocks(appointment.getStart(), appointment.getMaxEnd(), blocks);
