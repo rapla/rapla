@@ -458,16 +458,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	int queryCounter = 0;
 	private Collection<Reservation> getVisibleReservations(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters)
 			throws RaplaException {
+        Map<String, String> annotationQuery = new LinkedHashMap<String,String>();
 		if ( templateId != null)
 		{
-		    
-			Allocatable template = getTemplate();
-			if ( template == null)
-			{
-			    throw new RaplaException("Template for id " + templateId + " not found!");
-			}
-            Collection<Reservation> reservations = getTemplateReservations( template);
-			return reservations;
+            annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
 		}
 		List<Allocatable> allocList;
 		if (allocatables != null)
@@ -482,7 +476,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		{
 			allocList = Collections.emptyList();
 		}
-		Collection<Reservation> reservations =operator.getReservations(user,allocList, start, end, reservationFilters,null);
+        Collection<Reservation> reservations =operator.getReservations(user,allocList, start, end, reservationFilters,annotationQuery);
 		// Category can_see = getUserGroupsCategory().getCategory(
 		// Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
 		if (getLogger().isDebugEnabled())
