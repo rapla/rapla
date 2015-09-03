@@ -510,6 +510,13 @@
                 this.container.find('input[name="daterangepicker_end"]').addClass('active');
                 this.container.find('input[name="daterangepicker_start"]').removeClass('active');
             }
+            if (!this.timePicker) {
+                this.startDate = this.startDate.startOf('day');
+                this.endDate = this.endDate.endOf('day');
+                this.container.find('.calendar-time').hide();
+            }else{
+                this.container.find('.calendar-time').show();
+            }
             this.updateMonthsInView();
             this.updateCalendars();
             this.updateFormInputs();

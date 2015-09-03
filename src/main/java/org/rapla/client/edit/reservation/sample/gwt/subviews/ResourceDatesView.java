@@ -1,5 +1,6 @@
 package org.rapla.client.edit.reservation.sample.gwt.subviews;
 
+import org.gwtbootstrap3.client.ui.CheckBox;
 import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.ReservationViewImpl.ReservationViewPart;
@@ -7,6 +8,8 @@ import org.rapla.client.gwt.components.DateRangeComponent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Reservation;
 
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -52,9 +55,23 @@ public class ResourceDatesView implements ReservationViewPart
     public void createContent(final Reservation reservation)
     {
         contentPanel.clear();
-        DateRangeComponent drp = new DateRangeComponent();
+        final DateRangeComponent drp = new DateRangeComponent();
         contentPanel.add(drp);
-//
+        drp.setWithTime(true);
+        final CheckBox checkBox = new CheckBox();
+        checkBox.setHTML("all day");
+        contentPanel.add(checkBox);
+        checkBox.addChangeHandler(new ChangeHandler()
+        {
+            
+            @Override
+            public void onChange(ChangeEvent event)
+            {
+                Boolean value = checkBox.getValue();
+                drp.setWithTime(!value);
+            }
+        });
+
 //        final FlowPanel buttonBar = new FlowPanel();
 //        buttonBar.setStyleName("datesButtonBar");
 //

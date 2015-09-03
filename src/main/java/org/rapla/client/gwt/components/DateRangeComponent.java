@@ -11,6 +11,8 @@ import com.google.gwt.core.client.js.JsType;
 
 public class DateRangeComponent extends Input
 {
+    private DateRangePicker datePicker = null;
+    private boolean withTime;
 
     @JsType(prototype = "jQuery")
     public interface DateRangePickerJquery extends JQueryElement
@@ -56,11 +58,11 @@ public class DateRangeComponent extends Input
         @JsProperty
         Locale getLocale();
 
-        void controlChanged();
-
         void setStartDate(Date start);
-
+        
         void setEndDate(Date end);
+        
+        void updateView();
     }
 
     @JsType
@@ -84,12 +86,42 @@ public class DateRangeComponent extends Input
         super.onAttach();
         DateRangePickerJquery jqdp = (DateRangePickerJquery) JQueryElement.Static.$(getElement());
         DateRangePickerElement ele = jqdp.daterangepicker();
-        DateRangePicker datePicker = ele.data("daterangepicker");
+        datePicker = ele.data("daterangepicker");
+        reconfigure();
+    }
+
+    public void setWithTime(boolean withTime)
+    {
+        this.withTime = withTime;
+        if(datePicker != null)
+        {
+            reconfigure();
+        }
+    }
+
+    private void reconfigure()
+    {
         datePicker.setShowWeekNumbers(true);
-        datePicker.setAutoApply(true);
-        datePicker.setTimePicker(true);
+        datePicker.setAutoApply(false);
+        datePicker.setTimePicker(withTime);
         datePicker.setTimePickerIncrement(30);
-        datePicker.getLocale().setFormat("MM/DD/YYYY h:mm A");
-        datePicker.controlChanged();
+        String format = getFormat(withTime);
+        updateTime(format);
+        datePicker.getLocale().setFormat(format);
+        datePicker.updateView();
+        
+    }
+
+    public String getFormat(boolean withTime)
+    {
+        return withTime ? "MM/DD/YYYY h:mm A" : "MM/DD/YYYY";
+    }
+
+    private void updateTime(String format)
+    {
+        // TODO
+//        String value = getValue();
+//        String[] dates = value.split("-");
+//        String oldFormat = getFormat(!withTime);
     }
 }
