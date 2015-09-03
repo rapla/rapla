@@ -16,6 +16,7 @@ import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -32,7 +33,7 @@ import com.google.web.bindery.event.shared.EventBus;
 public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 {
     private static final String PLACE_ID = "cal";
-    private static final String DATE_ACTIVITY = "date";
+    private static final String TODAY_DATE = "today";
 
     private final CalendarPlaceView<W> view;
     private final ClientFacade facade;
@@ -167,7 +168,8 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     private String calcDate()
     {
         final Date date = model.getSelectedDate();
-        final String dateString = date != null ? SerializableDateTimeFormat.INSTANCE.formatDate(date) : null;
+        Date today = facade.today();
+        final String dateString = date != null ? (DateTools.isSameDay(date, today) ? TODAY_DATE : SerializableDateTimeFormat.INSTANCE.formatDate(date)) : null;
         return dateString;
     }
 
@@ -231,15 +233,22 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             {
                 String date = split[1];
                 Date nextDate;
-                try
+                if(TODAY_DATE.equalsIgnoreCase(date))
                 {
-                    nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
-                    model.setSelectedDate(nextDate);
-                    view.updateDate(nextDate);
+                    model.setSelectedDate(facade.today());
                 }
-                catch (ParseDateException e)
+                else
                 {
-                    logger.error("Error loading date from place: " + e.getMessage(), e);
+                    try
+                    {
+                        nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
+                        model.setSelectedDate(nextDate);
+                        view.updateDate(nextDate);
+                    }
+                    catch (ParseDateException e)
+                    {
+                        logger.error("Error loading date from place: " + e.getMessage(), e);
+                    }
                 }
                 if (split.length > 2)
                 {
