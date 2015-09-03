@@ -2,6 +2,7 @@ package org.rapla.client;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -143,43 +144,6 @@ public class Application<W> implements ApplicationView.Presenter
         }
     }
 
-    public void showActivities(Set<Activity> activities)
-    {
-        ArrayList<String> eventIdsToEdit = new ArrayList<String>();
-        for (Activity activity : activities)
-        {
-            if (activity.getName().startsWith("edit"))
-            {
-                eventIdsToEdit.add(activity.getId());
-            }
-            else 
-            {
-                startActivity(activity);
-            }
-        }
-        try
-        {
-            final StorageOperator operator = facade.getOperator();
-            final Map<String, Entity> entities = operator.getFromId(eventIdsToEdit, false);
-            final Collection<Entity> values = entities.values();
-            for (Entity entity : values)
-            {
-                if (entity != null)
-                {
-                    detailsRequested(new DetailSelectEvent(entity, null));
-                    if (!eventIdsToEdit.contains(entity.getId()))
-                    {
-                        eventIdsToEdit.add(entity.getId());
-                    }
-                }
-            }
-        }
-        catch (RaplaException e)
-        {
-            logger.error("Error initializing activities: " + activities, e);
-        }
-    }
-    
     @Override
     public void menuClicked(String action)
     {
@@ -189,18 +153,43 @@ public class Application<W> implements ApplicationView.Presenter
         }
     }
 
-    public void startActivity(Activity activity)
+    public boolean startActivity(Activity activity)
     {
         if(activity != null)
         {
-            for (ActivityPresenter activityPresenter : activityPresenters)
+            if (activity.getName().startsWith("edit"))
             {
-                if(activityPresenter.startActivity(activity))
+                try
                 {
-                    return;
+                    final StorageOperator operator = facade.getOperator();
+                    final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getId()), false);
+                    final Collection<Entity> values = entities.values();
+                    for (Entity entity : values)
+                    {
+                        if (entity != null)
+                        {
+                            detailsRequested(new DetailSelectEvent(entity, null));
+                            return true;
+                        }
+                    }
+                }
+                catch (RaplaException e)
+                {
+                    logger.error("Error initializing activity: " + activity, e);
+                }
+            }
+            else 
+            {
+                for (ActivityPresenter activityPresenter : activityPresenters)
+                {
+                    if(activityPresenter.startActivity(activity))
+                    {
+                        return true;
+                    }
                 }
             }
         }
+        return false;
     }
 
     //    @Override

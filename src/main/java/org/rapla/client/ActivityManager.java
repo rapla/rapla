@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -81,7 +82,19 @@ public abstract class ActivityManager
         application.selectPlace(place);
         if (!activities.isEmpty())
         {
-            application.showActivities(activities);
+            ArrayList<Activity> toRemove = new ArrayList<Activity>();
+            for (Activity activity : activities)
+            {
+                if(!application.startActivity(activity))
+                {
+                    toRemove.add(activity);
+                }
+            }
+            if(!toRemove.isEmpty())
+            {
+                activities.removeAll(toRemove);
+                updateHistroryEntry();
+            }
         }
     }
 
