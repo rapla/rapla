@@ -6,13 +6,15 @@ import java.util.Locale;
 import javax.inject.Inject;
 
 import org.gwtbootstrap3.client.ui.AnchorListItem;
+import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.NavTabs;
+import org.gwtbootstrap3.client.ui.constants.IconSize;
+import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationView;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
-import org.rapla.client.edit.reservation.sample.gwt.subviews.ButtonsBar;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
 import org.rapla.client.gwt.components.InputUtils;
@@ -43,8 +45,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     private final Logger logger;
 
     private final Div content = new Div();
-    private final ButtonsBar buttonsPanel;
-//    private final NavPills bar = new NavPills();
+    private final Div buttons = new Div();
     private final NavTabs bar = new NavTabs();
     private Reservation actuallShownReservation = null;
     private PopupPanel popup;
@@ -99,7 +100,42 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
             AnchorListItem menuItem = dual.getMenuItem();
             bar.add(menuItem);
         }
-        buttonsPanel = new ButtonsBar();
+        {
+            IconType type = IconType.SAVE;
+            ClickHandler handler = new ClickHandler()
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    getPresenter().onSaveButtonClicked(actuallShownReservation);
+                }
+            };
+            createIcon(type, handler, "Save");
+        }
+        {
+            IconType type = IconType.REMOVE;
+            ClickHandler handler = new ClickHandler()
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    getPresenter().onCancelButtonClicked(actuallShownReservation);
+                }
+            };
+            createIcon(type, handler, "Cancel");
+        }
+        {
+            IconType type = IconType.TRASH;
+            ClickHandler handler = new ClickHandler()
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    getPresenter().onDeleteButtonClicked(actuallShownReservation);
+                }
+            };
+            createIcon(type, handler, "Delete");
+        }
         bar.addDomHandler(new ClickHandler()
         {
             @Override
@@ -119,6 +155,15 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
             }
 
         }, ClickEvent.getType());
+    }
+
+    public void createIcon(IconType type, ClickHandler handler, String text)
+    {
+        Button button = new Button(text);
+        button.setIcon(type);
+        button.setIconSize(IconSize.TIMES2);
+        button.addClickHandler(handler);
+        buttons.add(button);
     }
 
     private void activate(Element relativeElement)
@@ -156,7 +201,6 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     public void setPresenter(org.rapla.client.edit.reservation.sample.ReservationView.Presenter presenter)
     {
         super.setPresenter(presenter);
-        buttonsPanel.setPresenter(presenter);
         for (Dual navEntry : navEntries)
         {
             ReservationViewPart view = navEntry.getView();
@@ -177,13 +221,12 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     public void show(final Reservation reservation)
     {
         actuallShownReservation = reservation;
-        buttonsPanel.setReservation(reservation);
         // create new one
         popup = RaplaPopups.createNewPopupPanel();
         popup.setAnimationEnabled(true);
         popup.setAnimationType(AnimationType.ROLL_DOWN);
         final Div layout = new Div();
-        layout.add(buttonsPanel);
+        layout.add(buttons);
         layout.add(bar);
         layout.add(content);
         popup.add(layout);
