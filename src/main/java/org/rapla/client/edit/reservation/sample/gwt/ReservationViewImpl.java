@@ -220,6 +220,10 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     @Override
     public void show(final Reservation reservation)
     {
+        if(actuallShownReservation != null)
+        {
+            getPresenter().onCancelButtonClicked(actuallShownReservation);
+        }
         actuallShownReservation = reservation;
         // create new one
         popup = RaplaPopups.createNewPopupPanel();
