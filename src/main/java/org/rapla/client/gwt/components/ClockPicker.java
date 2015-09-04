@@ -2,9 +2,15 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
+import org.rapla.client.gwt.components.util.JQueryElement;
+import org.rapla.client.gwt.components.util.JS;
+import org.rapla.client.gwt.test.EventListener;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
+import com.google.gwt.core.client.js.JsFunction;
+import com.google.gwt.core.client.js.JsProperty;
+import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -25,14 +31,66 @@ public class ClockPicker extends FlowPanel
         void timeChanged(final Date newDate);
     }
 
-    private static int counter = 0;
+    @JsType(prototype = "jQuery")
+    public interface ClockPickerJquery extends JQueryElement
+    {
+        ClockPickerElement clockpicker(ClockPickerOptions options);
+
+    }
+
+    @JsType(prototype = "jQuery")
+    public interface ClockPickerElement extends JQueryElement
+    {
+        /*
+         * clockpicker is the key
+         */
+        ClockPickerI data(String key);
+    }
+
+    @JsType
+    public interface ClockPickerI extends JQueryElement
+    {
+
+        void clockpicker(String action);
+    }
+    
+    @JsFunction
+    public interface Callback{
+        void handleAction();
+    }
+
+    @JsType
+    public interface ClockPickerOptions
+    {
+        @JsProperty
+        void setAutoclose(Boolean autoclose);
+
+        @JsProperty
+        Boolean getAutoclose();
+
+        @JsProperty
+        void setTwelvehour(Boolean twelvehour);
+
+        @JsProperty
+        Boolean getTwelvehour();
+
+        @JsProperty
+        void setAfterDone(Callback listener);
+
+        @JsProperty
+        Callback getAfterDone();
+    }
+
+    private ClockPickerI clockPicker;
     private final TimeChangeListener changeListener;
     private final DateTimeFormat format;
     private final TextBox input = new TextBox();
+    private final boolean amPmFormat;
 
     public ClockPicker(final Date initDate, final TimeChangeListener changeListener, final BundleManager bundleManager)
     {
         this.changeListener = changeListener;
+        amPmFormat = bundleManager.getFormats().isAmPmFormat();
         setStyleName("raplaClockPicker input-group clockpicker");
         final I18nLocaleFormats formats = bundleManager.getFormats();
         final String formatHour = formats.getFormatHour();
@@ -46,9 +104,6 @@ public class ClockPicker extends FlowPanel
                 timeChanged();
             }
         });
-        final String id = "clockpicker-" + counter;
-        counter++;
-        input.getElement().setId(id);
         setTime(initDate);
         add(input);
         input.addFocusHandler(new FocusHandler()
@@ -56,7 +111,7 @@ public class ClockPicker extends FlowPanel
             @Override
             public void onFocus(FocusEvent event)
             {
-                showClockPicker(id, formats.isAmPmFormat(), ClockPicker.this);
+                clockPicker.clockpicker("show");
             }
         });
         final Element span = DOM.createSpan();
@@ -72,7 +127,7 @@ public class ClockPicker extends FlowPanel
             public void onClick(ClickEvent event)
             {
                 event.stopPropagation();
-                showClockPicker(id, formats.isAmPmFormat(), ClockPicker.this);
+                clockPicker.clockpicker("show");
             }
         }, ClickEvent.getType());
     }
@@ -82,23 +137,33 @@ public class ClockPicker extends FlowPanel
         input.setValue(format.format(time));
     }
 
+    @Override
+    protected void onAttach()
+    {
+        super.onAttach();
+        ClockPickerJquery jqe = (ClockPickerJquery) JQueryElement.Static.$(input.getElement());
+        ClockPickerOptions options = JS.createObject();
+        options.setAutoclose(true);
+        options.setTwelvehour(amPmFormat);
+        options.setAfterDone(new Callback()
+        {
+            @Override
+            public void handleAction()
+            {
+                timeChanged();
+            }
+        });
+        ClockPickerElement clockPickerElement = jqe.clockpicker(options);
+        clockPicker = clockPickerElement.data("clockpicker");
+        clockPicker.clockpicker("show");
+    }
+
     private void timeChanged()
     {
         final String value = input.getValue();
         final Date time = format.parse(value);
         changeListener.timeChanged(time);
     }
-
-    public native void showClockPicker(final String id, final boolean isAmPmFormat, final ClockPicker cp)
-    /*-{
-         $wnd.$('#'+id).clockpicker({
-             autoclose: true,
-             twelvehour: isAmPmFormat,
-             afterDone: function(){
-                 cp.@org.rapla.client.gwt.components.ClockPicker::timeChanged()();
-             }
-         }).clockpicker('show');
-     }-*/;
 
     public Date getTime()
     {
