@@ -208,18 +208,4 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return Calendar.WEEK_OF_YEAR;
     }
-
-    private void updateInternal()
-    {
-        try
-        {
-            long time = System.currentTimeMillis();
-            updateContent();
-            logger.info("update interval  " + (System.currentTimeMillis() - time) + " ms");
-        }
-        catch (RaplaException e)
-        {
-            logger.error(e.getMessage(), e);
-        }
-    }
 }
