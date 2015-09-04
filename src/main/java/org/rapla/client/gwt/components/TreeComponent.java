@@ -7,6 +7,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.gwtbootstrap3.client.ui.html.Div;
+import org.rapla.client.gwt.components.util.JQueryElement;
+import org.rapla.client.gwt.components.util.JS;
+import org.rapla.client.gwt.test.Event;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.DynamicType;
 
@@ -14,6 +17,9 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
+import com.google.gwt.core.client.js.JsFunction;
+import com.google.gwt.core.client.js.JsProperty;
+import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
@@ -21,27 +27,126 @@ import com.google.gwt.json.client.JSONString;
 
 public class TreeComponent extends Div
 {
+    /**
+     * Interface for callback after selection changed in tree
+     */
     public interface SelectionChangeHandler
     {
         void selectionChanged(final Collection<Allocatable> selected);
     }
-    
-    private static int counter = 0;
+
+    @JsType(prototype = "jQuery")
+    public interface JsTreeJquery extends JQueryElement
+    {
+        JsTreeElement jstree(JsTreeOptions options);
+
+    }
+
+    @JsType(prototype = "jQuery")
+    public interface JsTreeElement extends JQueryElement
+    {
+        JsTree data(String key);
+    }
+
+    @JsType(prototype = "DateRangePicker")
+    public interface JsTree extends JQueryElement
+    {
+        void deselect_all(boolean supressEvent);
+
+        void refresh(boolean skipLoading, boolean forgetState);
+
+        void on(String event, JsTreeEventListener eventListener);
+
+        @JsProperty
+        JsTreeSettings getSettings();
+    }
+
+    @JsType
+    public interface JsTreeSettings
+    {
+
+        @JsProperty
+        JsTreeCore getCore();
+
+        @JsProperty
+        void setCore(JsTreeCore core);
+
+    }
+
+    @JsType
+    public interface JsTreeOptions
+    {
+        @JsProperty
+        void setPlugins(JavaScriptObject javaScriptObject);
+
+        @JsProperty
+        JavaScriptObject getPlugins();
+
+        @JsProperty
+        void setCore(JsTreeCore core);
+
+        @JsProperty
+        JsTreeCore getCore();
+    }
+
+    @JsType
+    public interface JsTreeCore
+    {
+        @JsProperty
+        void setDataType(String dataType);
+
+        @JsProperty
+        String getDataType();
+
+        @JsProperty
+        void setData(JavaScriptObject data);
+
+        @JsProperty
+        JavaScriptObject getData();
+
+        @JsProperty
+        void setThemes(JsTreeThemes themes);
+
+        @JsProperty
+        JsTreeThemes getThemes();
+    }
+
+    @JsType
+    public interface JsTreeThemes
+    {
+        @JsProperty
+        void setName(String name);
+
+        @JsProperty
+        String getName();
+
+        @JsProperty
+        void setResponsive(Boolean resposive);
+
+        @JsProperty
+        Boolean getResponsive();
+    }
+
+    @JsFunction
+    public interface JsTreeEventListener
+    {
+        void handle(Event e, Object data);
+    }
+
     private Allocatable[] allocatables;
     private final SelectionChangeHandler selectionChangeHandler;
-    private final String id = "tree-"+(counter++);
     private final Locale locale;
     private boolean updatingData = false;
-    private boolean initNeeded = true;
+    private JsTree jstree = null;
+
     public TreeComponent(Locale locale, SelectionChangeHandler selectionChangeHandler)
     {
         this.locale = locale;
         this.allocatables = null;
         this.selectionChangeHandler = selectionChangeHandler;
-        this.setId(id);
     }
-    
-    public void updateData(Allocatable[] entries, Collection<Allocatable>selected)
+
+    public void updateData(Allocatable[] entries, Collection<Allocatable> selected)
     {
         this.allocatables = entries;
         Map<String, JSONArray> dynTypes = new HashMap<String, JSONArray>();
@@ -64,29 +169,28 @@ public class TreeComponent extends Div
                 String name = type.getName(locale);
                 dynTypeWrapper.put("text", new JSONString(name));
                 dynTypeWrapper.put("children", dynTypeArray);
-//                dynTypeWrapper.put("icon", dynTypeArray);
+                //                dynTypeWrapper.put("icon", dynTypeArray);
                 data.set(data.size(), dynTypeWrapper);
             }
             final JSONObject obj = new JSONObject();
             dynTypeArray.set(dynTypeArray.size(), obj);
             obj.put("id", new JSONNumber(i + 1));
             obj.put("text", new JSONString(allocatable.getName(locale)));
-            if(selected.contains(allocatable))
+            if (selected.contains(allocatable))
             {
                 JSONObject state = new JSONObject();
                 state.put("selected", new JSONString(Boolean.TRUE.toString()));
                 obj.put("state", state);
             }
         }
-        if(initNeeded)
+        if (jstree == null)
         {
-            initNeeded = false;
             Scheduler.get().scheduleFinally(new ScheduledCommand()
             {
                 @Override
                 public void execute()
                 {
-                    initJs(id, TreeComponent.this);
+                    initTree();
                 }
             });
         }
@@ -97,11 +201,13 @@ public class TreeComponent extends Div
             public void execute()
             {
                 updatingData = true;
-                fillData(id, data.getJavaScriptObject());
+                jstree.getSettings().getCore().setData(data.getJavaScriptObject());
+                jstree.deselect_all(true);
+                jstree.refresh(true, true);
             }
         });
     }
-    
+
     private void selectionChanged(Object selected)
     {
         if (updatingData)
@@ -115,43 +221,50 @@ public class TreeComponent extends Div
             for (int i = 0; i < selectedPositions.length(); i++)
             {
                 final int selectedPosition = selectedPositions.get(i);
-                selectedAllocatables.add(allocatables[selectedPosition-1]);
+                selectedAllocatables.add(allocatables[selectedPosition - 1]);
             }
             selectionChangeHandler.selectionChanged(selectedAllocatables);
         }
     }
-    
+
     private void refreshCompleted()
     {
         updatingData = false;
     }
-    
-    /*
-     * dblclick.jstree
-     */
-    private native void fillData(final String id, final JavaScriptObject newData)/*-{
-        var jstree = $wnd.$('#'+id).jstree(true);
-        jstree.settings.core.data = newData;
-        jstree.deselect_all(true);
-        jstree.refresh(true, true);
-    }-*/;
-    
-    private native void initJs(final String id, final TreeComponent tc)/*-{
-        $wnd.$('#'+id).jstree({
-        'plugins': ["wholerow", "checkbox"],
-        'core': {
-            'dataType': 'JSON',
-            'themes': {
-                'name': 'proton',
-                'responsive': true
-                }
-            }
-        });
-        $wnd.$('#'+id).on("changed.jstree", function (e, data) {
-            tc.@org.rapla.client.gwt.components.TreeComponent::selectionChanged(Ljava/lang/Object;)(data.selected);
-        });
-        $wnd.$('#'+id).on("refresh.jstree", function (e, data) {
-            tc.@org.rapla.client.gwt.components.TreeComponent::refreshCompleted()();
-        });
-    }-*/;
+
+    private void initTree()
+    {
+        JsTreeOptions options = JS.createObject();
+        // JSONArray ist doof... aber ohne geht nicht, wegen zusätzlicher Infos an dem Objekt...
+        JSONArray plugins = new JSONArray();
+        plugins.set(0, new JSONString("wholerow"));
+        plugins.set(1, new JSONString("checkbox"));
+        options.setPlugins(plugins.getJavaScriptObject());
+        options.setCore(JS.createObject());
+        JsTreeCore core = options.getCore();
+        core.setDataType("JSON");
+        core.setThemes(JS.createObject());
+        JsTreeThemes themes = core.getThemes();
+        themes.setName("proton");
+        themes.setResponsive(true);
+        JsTreeJquery jsTreeJquery = (JsTreeJquery) JQueryElement.Static.$(getElement());
+        JsTreeElement jstreeElement = jsTreeJquery.jstree(options);
+        jstree = jstreeElement.data("jstree");
+//        jstree.on("changed.jstree", new JsTreeEventListener()
+//        {
+//            @Override
+//            public void handle(Event e, Object data)
+//            {
+//                selectionChanged(data);
+//            }
+//        });
+//        jstree.on("refresh.jstree", new JsTreeEventListener()
+//        {
+//            @Override
+//            public void handle(Event e, Object data)
+//            {
+//                refreshCompleted();
+//            }
+//        });
+    }
 }
