@@ -53,7 +53,7 @@ public class DateRangeComponent extends Input
         void setTimePickerIncrement(int timePickerIncrement);
 
         @JsProperty
-        int isTimePickerIncrement();
+        int getTimePickerIncrement();
 
         @JsProperty
         Locale getLocale();
