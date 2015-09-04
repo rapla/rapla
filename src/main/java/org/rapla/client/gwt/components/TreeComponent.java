@@ -50,7 +50,7 @@ public class TreeComponent extends Div
         void on(String event, JsTreeEventListener eventListener);
     }
 
-    @JsType(prototype = "DateRangePicker")
+    @JsType
     public interface JsTree extends JQueryElement
     {
         void deselect_all(boolean supressEvent);
