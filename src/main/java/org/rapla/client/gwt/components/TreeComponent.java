@@ -39,15 +39,14 @@ public class TreeComponent extends Div
     public interface JsTreeJquery extends JQueryElement
     {
         JsTreeElement jstree(JsTreeOptions options);
-
+        
+        void on(String event, JsTreeEventListener eventListener);
     }
 
     @JsType(prototype = "jQuery")
     public interface JsTreeElement extends JQueryElement
     {
         JsTree data(String key);
-        
-        void on(String event, JsTreeEventListener eventListener);
     }
 
     @JsType
@@ -126,7 +125,17 @@ public class TreeComponent extends Div
         @JsProperty
         Boolean getResponsive();
     }
-
+    
+    @JsType
+    public interface JsTreeDataChange
+    {
+        @JsProperty
+        void setSelected(JsArrayInteger selected);
+        
+        @JsProperty
+        JsArrayInteger getSelected();
+    }
+    
     @JsFunction
     public interface JsTreeEventListener
     {
@@ -208,23 +217,20 @@ public class TreeComponent extends Div
         });
     }
 
-    private void selectionChanged(Object selected)
+    private void selectionChanged(JsArrayInteger selected)
     {
         if (updatingData)
         {
             return;
         }
-        if (selected instanceof JsArrayInteger)
+        JsArrayInteger selectedPositions = ((JsArrayInteger) selected);
+        final ArrayList<Allocatable> selectedAllocatables = new ArrayList<Allocatable>();
+        for (int i = 0; i < selectedPositions.length(); i++)
         {
-            JsArrayInteger selectedPositions = ((JsArrayInteger) selected);
-            final ArrayList<Allocatable> selectedAllocatables = new ArrayList<Allocatable>();
-            for (int i = 0; i < selectedPositions.length(); i++)
-            {
-                final int selectedPosition = selectedPositions.get(i);
-                selectedAllocatables.add(allocatables[selectedPosition - 1]);
-            }
-            selectionChangeHandler.selectionChanged(selectedAllocatables);
+            final int selectedPosition = selectedPositions.get(i);
+            selectedAllocatables.add(allocatables[selectedPosition - 1]);
         }
+        selectionChangeHandler.selectionChanged(selectedAllocatables);
     }
 
     private void refreshCompleted()
@@ -250,15 +256,16 @@ public class TreeComponent extends Div
         JsTreeJquery jsTreeJquery = (JsTreeJquery) JQueryElement.Static.$(getElement());
         JsTreeElement jstreeElement = jsTreeJquery.jstree(options);
         jstree = jstreeElement.data("jstree");
-        jstreeElement.on("changed.jstree", new JsTreeEventListener()
+        jsTreeJquery.on("changed.jstree", new JsTreeEventListener()
         {
             @Override
             public void handle(Event e, Object data)
             {
-                selectionChanged(data);
+                JsArrayInteger selected = ((JsTreeDataChange)data).getSelected();
+                selectionChanged(selected);
             }
         });
-        jstreeElement.on("refresh.jstree", new JsTreeEventListener()
+        jsTreeJquery.on("refresh.jstree", new JsTreeEventListener()
         {
             @Override
             public void handle(Event e, Object data)
