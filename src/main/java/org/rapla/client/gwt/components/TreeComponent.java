@@ -46,6 +46,8 @@ public class TreeComponent extends Div
     public interface JsTreeElement extends JQueryElement
     {
         JsTree data(String key);
+        
+        void on(String event, JsTreeEventListener eventListener);
     }
 
     @JsType(prototype = "DateRangePicker")
@@ -54,8 +56,6 @@ public class TreeComponent extends Div
         void deselect_all(boolean supressEvent);
 
         void refresh(boolean skipLoading, boolean forgetState);
-
-        void on(String event, JsTreeEventListener eventListener);
 
         @JsProperty
         JsTreeSettings getSettings();
@@ -250,21 +250,21 @@ public class TreeComponent extends Div
         JsTreeJquery jsTreeJquery = (JsTreeJquery) JQueryElement.Static.$(getElement());
         JsTreeElement jstreeElement = jsTreeJquery.jstree(options);
         jstree = jstreeElement.data("jstree");
-//        jstree.on("changed.jstree", new JsTreeEventListener()
-//        {
-//            @Override
-//            public void handle(Event e, Object data)
-//            {
-//                selectionChanged(data);
-//            }
-//        });
-//        jstree.on("refresh.jstree", new JsTreeEventListener()
-//        {
-//            @Override
-//            public void handle(Event e, Object data)
-//            {
-//                refreshCompleted();
-//            }
-//        });
+        jstreeElement.on("changed.jstree", new JsTreeEventListener()
+        {
+            @Override
+            public void handle(Event e, Object data)
+            {
+                selectionChanged(data);
+            }
+        });
+        jstreeElement.on("refresh.jstree", new JsTreeEventListener()
+        {
+            @Override
+            public void handle(Event e, Object data)
+            {
+                refreshCompleted();
+            }
+        });
     }
 }
