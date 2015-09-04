@@ -62,6 +62,7 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
 
     @Override
     public W provideContent() {
+        updateContent();
         return view.provideContent();
     }
     
@@ -81,8 +82,7 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
 //        User user = null;
 
         try {
-            Reservation[] reservations;
-            reservations = model.getReservations();
+            Reservation[] reservations = model.getReservations();
             Collection<Reservation> result = Arrays.asList( reservations);
             logger.info(result.size() + " Reservations loaded.");
             view.update(result);                
