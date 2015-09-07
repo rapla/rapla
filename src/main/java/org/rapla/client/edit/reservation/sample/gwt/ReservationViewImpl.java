@@ -155,7 +155,6 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
                 {
                     return;
                 }
-                content.clear();
                 activate(relativeElement);
             }
 
@@ -173,6 +172,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
 
     private void activate(Element relativeElement)
     {
+        content.clear();
         for (Dual navEntry : navEntries)
         {
             AnchorListItem menuItem = navEntry.getMenuItem();
