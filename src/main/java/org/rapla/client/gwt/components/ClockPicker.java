@@ -20,7 +20,6 @@ import com.google.gwt.event.dom.client.FocusHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Element;
-import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.TextBox;
 
 public class ClockPicker extends Div
@@ -34,7 +33,7 @@ public class ClockPicker extends Div
     public interface ClockPickerJquery extends JQueryElement
     {
         ClockPickerElement clockpicker(ClockPickerOptions options);
-
+        void remove();
     }
 
     @JsType(prototype = "jQuery")
@@ -119,8 +118,7 @@ public class ClockPicker extends Div
         final Element innerSpan = DOM.createSpan();
         innerSpan.setClassName("glyphicon glyphicon-time");
         span.appendChild(innerSpan);
-        DOM.sinkEvents(span, Event.ONCLICK | Event.ONTOUCHEND);
-        addHandler(new ClickHandler()
+        addDomHandler(new ClickHandler()
         {
             @Override
             public void onClick(ClickEvent event)
@@ -154,7 +152,6 @@ public class ClockPicker extends Div
         });
         ClockPickerElement clockPickerElement = jqe.clockpicker(options);
         clockPicker = clockPickerElement.data("clockpicker");
-        clockPicker.clockpicker("show");
     }
 
     private void timeChanged()
