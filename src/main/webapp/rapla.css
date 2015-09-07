@@ -208,6 +208,10 @@ h1 {
 	margin-bottom: 4px;
 }
 
+.gwt-DialogBox .dialogTop .Caption {
+	cursor: move;
+}
+
 .popupContent .nav {
 	clear: left;
 }
