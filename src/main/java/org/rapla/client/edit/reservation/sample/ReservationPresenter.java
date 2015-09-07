@@ -207,4 +207,13 @@ public class ReservationPresenter implements ReservationController, Presenter
         selectedAppointment = newSelectedAppointment;
         view.updateAppointments(allAppointments, newSelectedAppointment);
     }
+    
+    @Override
+    public void timeChanged(Date startDate, Date endDate)
+    {
+        if(selectedAppointment != null)
+        {
+            selectedAppointment.move(startDate, endDate);
+        }
+    }
 }

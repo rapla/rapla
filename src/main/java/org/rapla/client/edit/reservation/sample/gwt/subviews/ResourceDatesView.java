@@ -19,6 +19,7 @@ import org.rapla.client.gwt.components.CheckBoxComponent.CheckBoxChangeListener;
 import org.rapla.client.gwt.components.ClockPicker;
 import org.rapla.client.gwt.components.ClockPicker.TimeChangeListener;
 import org.rapla.client.gwt.components.DateRangeComponent;
+import org.rapla.client.gwt.components.DateRangeComponent.DateRangeChangeListener;
 import org.rapla.client.gwt.components.DropDownInputField;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
@@ -57,7 +58,14 @@ public class ResourceDatesView implements ReservationViewPart
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
-        drp = new DateRangeComponent(bundleManager);
+        drp = new DateRangeComponent(bundleManager, new DateRangeChangeListener()
+        {
+            @Override
+            public void dateRangeChanged(Date startDate, Date endDate)
+            {
+                getPresenter().timeChanged(startDate, endDate);
+            }
+        });
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("resourcesDates");
         Container container = new Container();

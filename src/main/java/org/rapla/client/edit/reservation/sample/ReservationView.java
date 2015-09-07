@@ -1,6 +1,7 @@
 package org.rapla.client.edit.reservation.sample;
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.rapla.client.base.View;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
@@ -31,6 +32,8 @@ public interface ReservationView<W> extends View<Presenter> {
         void deleteDateClicked();
 
         void selectedAppointment(Appointment selectedAppointment);
+
+        void timeChanged(Date startDate, Date endDate);
 	}
 
 	void show(Reservation event);
