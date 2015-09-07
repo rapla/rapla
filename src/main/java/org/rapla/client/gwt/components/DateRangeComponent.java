@@ -178,25 +178,20 @@ public class DateRangeComponent extends Input
             }
         });
         datePicker = ele.data("daterangepicker");
-        reconfigure();
     }
 
     public void setWithTime(boolean withTime)
     {
+        boolean oldWithTime = this.withTime;
         this.withTime = withTime;
-        if (datePicker != null)
+        if (datePicker != null && oldWithTime != this.withTime)
         {
-            reconfigure();
+            datePicker.setTimePicker(this.withTime);
+            String format = getFormat(this.withTime);
+            updateTime(format);
+            datePicker.getLocale().setFormat(format);
+            datePicker.updateView();
         }
-    }
-
-    private void reconfigure()
-    {
-        datePicker.setTimePicker(withTime);
-        String format = getFormat(withTime);
-        updateTime(format);
-        datePicker.getLocale().setFormat(format);
-        datePicker.updateView();
     }
 
     private String convertToJsFormat(String format)
@@ -227,8 +222,9 @@ public class DateRangeComponent extends Input
         //        String oldFormat = getFormat(!withTime);
     }
 
-    public void updateStartEnd(Date start, Date end)
+    public void updateStartEnd(Date start, Date end, boolean holeDay)
     {
+        setWithTime(!holeDay);
         start = GWTDateUtils.raplaToGwtDateTime(start);
         end = GWTDateUtils.raplaToGwtDateTime(end);
         DateTimeFormat format = getDateTimeFormat();

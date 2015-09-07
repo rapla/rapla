@@ -34,6 +34,8 @@ public interface ReservationView<W> extends View<Presenter> {
         void selectedAppointment(Appointment selectedAppointment);
 
         void timeChanged(Date startDate, Date endDate);
+
+        void allDayEvent(boolean selected);
 	}
 
 	void show(Reservation event);

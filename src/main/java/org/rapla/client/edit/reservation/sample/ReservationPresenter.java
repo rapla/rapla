@@ -216,4 +216,15 @@ public class ReservationPresenter implements ReservationController, Presenter
             selectedAppointment.move(startDate, endDate);
         }
     }
+
+    @Override
+    public void allDayEvent(boolean wholeDays)
+    {
+        if(selectedAppointment != null)
+        {
+            selectedAppointment.setWholeDays(wholeDays);
+            Appointment[] allAppointments = tempReservation.getAppointments();
+            view.updateAppointments(allAppointments, selectedAppointment);
+        }
+    }
 }

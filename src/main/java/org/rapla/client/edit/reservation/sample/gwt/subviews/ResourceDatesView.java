@@ -49,7 +49,7 @@ public class ResourceDatesView implements ReservationViewPart
 
     // internal components
     private final DropDownInputField datesSelection;
-    private final CheckBoxComponent checkBox;
+    private final CheckBoxComponent allDayCheckBox;
     private final DateRangeComponent drp;
     private Reservation actualReservation;
 
@@ -102,12 +102,12 @@ public class ResourceDatesView implements ReservationViewPart
                 // Update
             }
         }, values);
-        checkBox = new CheckBoxComponent("all day", new CheckBoxChangeListener()
+        allDayCheckBox = new CheckBoxComponent("all day", new CheckBoxChangeListener()
         {
             @Override
             public void changed(boolean selected)
             {
-                drp.setWithTime(!selected);
+                getPresenter().allDayEvent(selected);
             }
         });
         drp.setWithTime(true);
@@ -120,7 +120,7 @@ public class ResourceDatesView implements ReservationViewPart
         column2.add(drp);
         row1.add(column2);
         Column column3 = new Column(COLUMN_SIZE);
-        column3.add(checkBox);
+        column3.add(allDayCheckBox);
         row1.add(column3);
         contentPanel.add(container);
         // Just for testing
@@ -161,9 +161,9 @@ public class ResourceDatesView implements ReservationViewPart
             values.add(new DropDownItem(formatDate(appointment), i + "", appointment == selectedAppointment));
         }
         datesSelection.changeSelection(values);
-        Date start = selectedAppointment != null ? selectedAppointment.getStart() : null;
-        Date end = selectedAppointment != null ? selectedAppointment.getEnd() : null;
-        drp.updateStartEnd(start, end);
+        updateDateRangeComponent(selectedAppointment);
+        boolean isAllDay = selectedAppointment != null ? selectedAppointment.isWholeDaysSet() : false;
+        allDayCheckBox.setValue(isAllDay, false);
     }
 
     @Override
@@ -182,9 +182,15 @@ public class ResourceDatesView implements ReservationViewPart
         }
         datesSelection.changeSelection(values);
         Appointment selectedAppointment = appointments.length > 0 ? appointments[0] : null;
+        updateDateRangeComponent(selectedAppointment);
+    }
+
+    private void updateDateRangeComponent(Appointment selectedAppointment)
+    {
         Date start = selectedAppointment != null ? selectedAppointment.getStart() : null;
         Date end = selectedAppointment != null ? selectedAppointment.getEnd() : null;
-        drp.updateStartEnd(start, end);
+        boolean holeDay = selectedAppointment != null ? selectedAppointment.isWholeDaysSet() : false;
+        drp.updateStartEnd(start, end, holeDay);
     }
 
     private Button createButton(String text, IconType icon, ClickHandler clickHandler)
