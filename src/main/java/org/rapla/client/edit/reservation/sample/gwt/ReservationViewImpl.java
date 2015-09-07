@@ -21,7 +21,9 @@ import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 import com.google.gwt.dom.client.Element;
@@ -49,7 +51,8 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     private final NavTabs bar = new NavTabs();
     private Reservation actuallShownReservation = null;
     private PopupPanel popup;
-    final ArrayList<Dual> navEntries = new ArrayList<Dual>();
+    private ReservationViewPart selectedView;
+    private final ArrayList<Dual> navEntries = new ArrayList<Dual>();
 
     private static class Dual
     {
@@ -81,11 +84,13 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         Widget provideContent();
 
         void createContent(Reservation reservation);
+        
+        void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment);
 
     }
 
     @Inject
-    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager  bundleManager)
+    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager  bundleManager, RaplaLocale raplaLocale)
     {
         super();
         this.i18n = i18n;
@@ -93,7 +98,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         this.bundleManager = bundleManager;
         content.setStyleName("content");
         navEntries.add(new Dual(new AnchorListItem("Veranstaltungsinformationen"), new InfoView(i18n, bundleManager)));
-        navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager)));
+        navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager, raplaLocale)));
         navEntries.add(new Dual(new AnchorListItem("Rechte"), null));
         for (Dual dual : navEntries)
         {
@@ -176,11 +181,11 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
             {
                 menuItem.setActive(true);
                 menuItem.setEnabled(false);
-                ReservationViewPart view = navEntry.getView();
-                if(view != null)
+                selectedView = navEntry.getView();
+                if(selectedView != null)
                 {
-                    view.createContent(actuallShownReservation);
-                    content.add(view.provideContent());
+                    selectedView.createContent(actuallShownReservation);
+                    content.add(selectedView.provideContent());
                 }
                 else
                 {
@@ -210,6 +215,15 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
             }
         }
     }
+    
+    @Override
+    public void updateAppointments(Appointment[] allAppointments, Appointment newSelectedAppointment)
+    {
+        if(selectedView != null)
+        {
+            selectedView.updateAppointments(allAppointments, newSelectedAppointment);
+        }
+    }
 
     @Override
     public void showWarning(String title, String warning)
@@ -220,7 +234,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     @Override
     public void show(final Reservation reservation)
     {
-        if(actuallShownReservation != null)
+        if(actuallShownReservation != null && !actuallShownReservation.getId().equals(reservation.getId()))
         {
             getPresenter().onCancelButtonClicked(actuallShownReservation);
         }

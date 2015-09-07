@@ -1,19 +1,18 @@
 package org.rapla.client.gwt.components;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.gwtbootstrap3.client.ui.InputGroup;
 import org.gwtbootstrap3.client.ui.InputGroupAddon;
+import org.gwtbootstrap3.client.ui.ListBox;
 import org.gwtbootstrap3.client.ui.constants.Styles;
+import org.gwtbootstrap3.client.ui.html.Div;
 
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.ListBox;
 
-public class DropDownInputField extends FlowPanel
+public class DropDownInputField extends Div
 {
     public interface DropDownValueChanged
     {
@@ -24,11 +23,19 @@ public class DropDownInputField extends FlowPanel
     {
         private final String name;
         private final String id;
+        private final boolean selected;
 
-        public DropDownItem(String name, String id)
+        public DropDownItem(String name, String id, boolean selected)
         {
+            super();
             this.name = name;
             this.id = id;
+            this.selected = selected;
+        }
+
+        public boolean isSelected()
+        {
+            return selected;
         }
 
         public String getName()
@@ -43,13 +50,14 @@ public class DropDownInputField extends FlowPanel
 
     }
 
-    public DropDownInputField(final String label, final DropDownValueChanged changeHandler, Collection<DropDownItem> values, String selectedId)
+    private final ListBox dropDown = new ListBox();
+
+    public DropDownInputField(final String label, final DropDownValueChanged changeHandler, Collection<DropDownItem> values)
     {
-        this(label, changeHandler, values, false, selectedId);
+        this(label, changeHandler, values, false);
     }
 
-    public DropDownInputField(final String label, final DropDownValueChanged changeHandler, Collection<DropDownItem> values, boolean multiSelect,
-            final String... selectedId)
+    public DropDownInputField(final String label, final DropDownValueChanged changeHandler, Collection<DropDownItem> values, boolean multiSelect)
     {
         super();
         setStyleName("dropDownInput inputWrapper");
@@ -57,51 +65,57 @@ public class DropDownInputField extends FlowPanel
         final InputGroupAddon addon = new InputGroupAddon();
         inputGroup.add(addon);
         addon.setText(label);
-        final ListBox dropDown = new ListBox();
         dropDown.setStyleName(Styles.FORM_CONTROL);
         dropDown.setMultipleSelect(multiSelect);
-        int index[] = new int[selectedId.length];
-        int currentIndex = 0;
-        String[] sorted = filterAndSort(selectedId);
+        ArrayList<Integer> selectedIndexes = new ArrayList<Integer>();
+        int index = 0;
         for (DropDownItem dropDownItem : values)
         {
             final String id = dropDownItem.getId();
             dropDown.addItem(dropDownItem.getName(), id);
-            final int foundIndex = Arrays.binarySearch(sorted, id);
-            index[foundIndex] = currentIndex;
-            currentIndex++;
-        }
-        for (int ind : index)
-        {
-            dropDown.setSelectedIndex(ind);
+            if(dropDownItem.isSelected())
+            {
+                selectedIndexes.add(index);
+            }
+            index++;
         }
         dropDown.addChangeHandler(new ChangeHandler()
         {
             @Override
             public void onChange(ChangeEvent event)
             {
-                changeHandler.valueChanged(dropDown.getSelectedValue());
+                String selected = dropDown.getSelectedValue();
+                changeHandler.valueChanged(selected);
             }
         });
+        for (Integer selectedIndex : selectedIndexes)
+        {
+            dropDown.setSelectedIndex(selectedIndex);
+        }
         inputGroup.add(dropDown);
         add(inputGroup);
     }
 
-    private String[] filterAndSort(String[] selectedId)
+    public void changeSelection(Collection<DropDownItem> values)
     {
-        if (selectedId == null)
+        dropDown.clear();
+        ArrayList<Integer> selectedIndexes = new ArrayList<Integer>();
+        int index = 0;
+        for (DropDownItem dropDownItem : values)
         {
-            return new String[0];
-        }
-        final ArrayList<String> result = new ArrayList<String>(selectedId.length);
-        for (String string : selectedId)
-        {
-            if (string != null)
+            final String id = dropDownItem.getId();
+            dropDown.addItem(dropDownItem.getName(), id);
+            if(dropDownItem.isSelected())
             {
-                result.add(string);
+                selectedIndexes.add(index);
             }
+            index++;
         }
-        return result.toArray(new String[result.size()]);
+        for (Integer selectedIndex : selectedIndexes)
+        {
+            dropDown.setSelectedIndex(selectedIndex);
+        }
+
     }
 
 }

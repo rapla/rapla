@@ -2,9 +2,9 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.util.JQueryElement;
 import org.rapla.client.gwt.components.util.JS;
-import org.rapla.client.gwt.test.EventListener;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
@@ -21,10 +21,9 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.TextBox;
 
-public class ClockPicker extends FlowPanel
+public class ClockPicker extends Div
 {
     public interface TimeChangeListener
     {

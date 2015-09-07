@@ -93,14 +93,10 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
         // Calendars
         Collection<DropDownItem> calendarEntries = new ArrayList<DropDownItem>();
         int i = 0;
-        String selectedCalendarIndex = "0";
         for (String calendarName : calendarNames)
         {
-            if (calendarName.equals(selectedCalendar))
-            {
-                selectedCalendarIndex = i + "";
-            }
-            final DropDownItem item = new DropDownItem(calendarName, i + "");
+            boolean selected = calendarName.equals(selectedCalendar);
+            final DropDownItem item = new DropDownItem(calendarName, i + "", selected);
             i++;
             calendarEntries.add(item);
         }
@@ -111,19 +107,15 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             {
                 getPresenter().changeCalendar(calendarNames.get(Integer.parseInt(newValue)));
             }
-        }, calendarEntries, selectedCalendarIndex);
+        }, calendarEntries);
         calendarSelection.add(calendarDropDown);
         // Views
-        String selectedViewIndex = "0";
         Collection<DropDownItem> viewEntries = new ArrayList<DropDownItem>();
         i = 0;
         for (String viewName : viewNames)
         {
-            if (viewName.equals(selectedView))
-            {
-                selectedViewIndex = i + "";
-            }
-            final DropDownItem item = new DropDownItem(viewName, i + "");
+            boolean selected = viewName.equals(selectedView);
+            final DropDownItem item = new DropDownItem(viewName, i + "", selected);
             i++;
             viewEntries.add(item);
         }
@@ -134,7 +126,7 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             {
                 getPresenter().changeView(viewNames.get(Integer.parseInt(newValue)));
             }
-        }, viewEntries, selectedViewIndex);
+        }, viewEntries);
         calendarSelection.add(viewDropDown);
         calendarSelection.add(navigatorView);
     }

@@ -39,7 +39,8 @@ h1 {
 	overflow: auto;
 }
 
-.gwt-PopupPanel {
+.gwt-PopupPanel,
+.gwt-DialogBox {
 	z-index: 150;
 }
 

@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.rapla.client.base.View;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
-import org.rapla.entities.User;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -25,6 +25,12 @@ public interface ReservationView<W> extends View<Presenter> {
         Collection<DynamicType> getChangeableReservationDynamicTypes();
 
         void changeClassification(Reservation reservation, DynamicType newDynamicType);
+
+        void newDateClicked();
+
+        void deleteDateClicked();
+
+        void selectedAppointment(Appointment selectedAppointment);
 	}
 
 	void show(Reservation event);
@@ -32,4 +38,6 @@ public interface ReservationView<W> extends View<Presenter> {
 	void hide(Reservation reservation);
 
     void showWarning(String string, String string2);
+
+    void updateAppointments(Appointment[] allAppointments, Appointment newSelectedAppointment);
 }

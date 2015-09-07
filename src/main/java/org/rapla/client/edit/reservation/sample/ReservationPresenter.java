@@ -2,6 +2,7 @@ package org.rapla.client.edit.reservation.sample;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 
 import javax.inject.Inject;
 
@@ -9,6 +10,7 @@ import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.DetailEndEvent;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -47,8 +49,8 @@ public class ReservationPresenter implements ReservationController, Presenter
         view.setPresenter(this);
     }
 
-    Reservation event;
     boolean isNew;
+    private Appointment selectedAppointment;
 
     @Override
     public void edit(final Reservation event, boolean isNew)
@@ -56,9 +58,9 @@ public class ReservationPresenter implements ReservationController, Presenter
         try
         {
             tempReservation = facade.edit(event);
+            selectedAppointment = tempReservation.getAppointments().length > 0 ? tempReservation.getAppointments()[0] : null;
             this.isNew = isNew;
-            view.show(event);
-            this.event = event;
+            view.show(tempReservation);
         }
         catch (RaplaException e)
         {
@@ -105,7 +107,7 @@ public class ReservationPresenter implements ReservationController, Presenter
 
     private void fireEventAndCloseView(final Reservation reservation)
     {
-        eventBus.fireEvent(new DetailEndEvent(event));
+        eventBus.fireEvent(new DetailEndEvent(reservation));
         view.hide(reservation);
     }
 
@@ -129,7 +131,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         // TODO future
         return true;
     }
-    
+
     @Override
     public boolean isDeleteButtonEnabled(final Reservation reservation)
     {
@@ -168,5 +170,41 @@ public class ReservationPresenter implements ReservationController, Presenter
             logger.warn(e.getMessage(), e);
         }
         return creatableTypes;
+    }
+
+    @Override
+    public void newDateClicked()
+    {
+        Date startDate = new Date();
+        Date endDate = new Date();
+        try
+        {
+            Appointment newAppointment = facade.newAppointment(startDate, endDate);
+            this.tempReservation.addAppointment(newAppointment);
+            Appointment[] allAppointments = tempReservation.getAppointments();
+            view.updateAppointments(allAppointments, newAppointment);
+        }
+        catch (RaplaException e)
+        {
+            logger.error("Error creating new appointment: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void selectedAppointment(Appointment selectedAppointment)
+    {
+        this.selectedAppointment = selectedAppointment;
+        Appointment[] allAppointments = tempReservation.getAppointments();
+        view.updateAppointments(allAppointments, selectedAppointment);
+    }
+
+    @Override
+    public void deleteDateClicked()
+    {
+        tempReservation.removeAppointment(selectedAppointment);
+        Appointment[] allAppointments = tempReservation.getAppointments();
+        Appointment newSelectedAppointment = allAppointments.length > 0 ? allAppointments[0] : null;
+        selectedAppointment = newSelectedAppointment;
+        view.updateAppointments(allAppointments, newSelectedAppointment);
     }
 }

@@ -103,12 +103,13 @@ public class InputUtils
         }
     }
 
-    public static Collection<DropDownItem> createDropDownItems(Map<String, Category> idToCategory, Locale locale)
+    public static Collection<DropDownItem> createDropDownItems(Map<String, Category> idToCategory, Locale locale, Collection<Object> categories)
     {
         Collection<DropDownItem> result = new ArrayList<DropDownItem>();
         for (Entry<String, Category> entry : idToCategory.entrySet())
         {
-            result.add(new DropDownItem(entry.getValue().getName(locale), entry.getKey()));
+            boolean selected = categories.contains(entry.getValue());
+            result.add(new DropDownItem(entry.getValue().getName(locale), entry.getKey(), selected));
         }
         return result;
     }

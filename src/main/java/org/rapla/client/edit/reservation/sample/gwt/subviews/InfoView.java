@@ -28,20 +28,20 @@ import org.rapla.client.gwt.components.TextInputField;
 import org.rapla.client.gwt.components.TextInputField.TextValueChanged;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.Category;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 public class InfoView implements ReservationViewPart
 {
     private static final int MAX_COLUMNS_PER_ROW = 2;
-    private static final String COLUMN_SIZE = ColumnSize.MD_6 + " " + ColumnSize.LG_6 + " " + ColumnSize.SM_6 + " " + ColumnSize.XS_6;
+    private static final String COLUMN_SIZE = ColumnSize.MD_6 + " " + ColumnSize.LG_6 + " " + ColumnSize.SM_12 + " " + ColumnSize.XS_12;
 
     private final FlowPanel contentPanel;
     private final RaplaResources i18n;
@@ -79,7 +79,6 @@ public class InfoView implements ReservationViewPart
         contentPanel.clear();
         final Container container = new Container();
         contentPanel.add(container);
-        container.setFluid(true);
         final Locale locale = i18n.getLocale();
         int actualColumnsPerRow = 0;
         Row row = new Row();
@@ -89,10 +88,10 @@ public class InfoView implements ReservationViewPart
             final Collection<DynamicType> dynamicTypes = getPresenter().getChangeableReservationDynamicTypes();
             final Map<String, DynamicType> idToDynamicType = new HashMap<String, DynamicType>();
             final Collection<DropDownItem> values = new ArrayList<DropDownInputField.DropDownItem>(dynamicTypes.size());
-            String selectedId = classification.getType().getId();
             for (final DynamicType dynamicType : dynamicTypes)
             {
-                values.add(new DropDownItem(dynamicType.getName(locale), dynamicType.getId()));
+                boolean selected = dynamicType.getId().equals(classification.getType().getId());
+                values.add(new DropDownItem(dynamicType.getName(locale), dynamicType.getId(), selected));
                 idToDynamicType.put(dynamicType.getId(), dynamicType);
             }
             final DropDownInputField input = new DropDownInputField(i18n.getString("reservation_type"), new DropDownValueChanged()
@@ -103,7 +102,7 @@ public class InfoView implements ReservationViewPart
                     DynamicType newDynamicType = idToDynamicType.get(newValue);
                     getPresenter().changeClassification(reservation, newDynamicType);
                 }
-            }, values, selectedId);
+            }, values);
             final Column column = new Column(COLUMN_SIZE);
             column.add(input);
             row.add(column);
@@ -185,15 +184,8 @@ public class InfoView implements ReservationViewPart
                 Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
                 final Map<String, Category> idToCategory = InputUtils.createIdMap(rootCategory);
-                final Collection<DropDownItem> values = InputUtils.createDropDownItems(idToCategory, locale);
                 final Collection<Object> categories = classification.getValues(attribute);
-                final String[] selectedIds = new String[categories.size()];
-                int i = 0;
-                for (Object cat : categories)
-                {
-                    selectedIds[i] = ((Category) cat).getId();
-                    i++;
-                }
+                final Collection<DropDownItem> values = InputUtils.createDropDownItems(idToCategory, locale, categories);
                 final DropDownInputField input = new DropDownInputField(attributeName, new DropDownValueChanged()
                 {
                     @Override
@@ -202,7 +194,7 @@ public class InfoView implements ReservationViewPart
                         final Category newCategory = idToCategory.get(newValue);
                         getPresenter().changeAttribute(reservation, attribute, newCategory);
                     }
-                }, values, multipleSelectionPossible, selectedIds);
+                }, values, multipleSelectionPossible);
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);
@@ -223,5 +215,11 @@ public class InfoView implements ReservationViewPart
     public void update(Reservation reservation)
     {
         createContent(reservation);
+    }
+
+    @Override
+    public void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment)
+    {
+        // nothing to do as no appointment specific informations are shown here
     }
 }
