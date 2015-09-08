@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.gwtbootstrap3.client.ui.Input;
 import org.gwtbootstrap3.client.ui.constants.InputType;
+import org.rapla.RaplaResources;
 import org.rapla.client.gwt.components.util.Function;
 import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.client.gwt.components.util.JQueryElement;
@@ -14,11 +15,14 @@ import org.rapla.client.gwt.components.util.JqEvent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.js.JsProperty;
 import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONString;
 
 public class DateRangeComponent extends Input
 {
@@ -107,6 +111,36 @@ public class DateRangeComponent extends Input
 
         @JsProperty
         String getFormat();
+
+        @JsProperty
+        void setFirstDay(int firstDay);
+
+        @JsProperty
+        int getFirstDay();
+
+        @JsProperty
+        void setDaysOfWeek(JavaScriptObject daysOfWeek);
+
+        @JsProperty
+        JavaScriptObject getDaysOfWeek();
+
+        @JsProperty
+        void setMonthNames(JavaScriptObject monthNames);
+
+        @JsProperty
+        JavaScriptObject getMonthNames();
+
+        @JsProperty
+        void setApplyLabel(String applyLabel);
+
+        @JsProperty
+        String getApplyLabel();
+
+        @JsProperty
+        void setCancelLabel(String cancelLabel);
+
+        @JsProperty
+        String getCancelLabel();
     }
 
     private static final Map<Character, Character> DATE_TIME_FORMAT_MAP = new HashMap<Character, Character>();
@@ -122,12 +156,14 @@ public class DateRangeComponent extends Input
     private boolean withTime;
     private final BundleManager bundleManager;
     private final DateRangeChangeListener changeListener;
+    private final RaplaResources i18n;
 
-    public DateRangeComponent(BundleManager bundleManager, DateRangeChangeListener changeListener)
+    public DateRangeComponent(BundleManager bundleManager, RaplaResources i18n, DateRangeChangeListener changeListener)
     {
         super(InputType.TEXT);
         this.bundleManager = bundleManager;
         this.changeListener = changeListener;
+        this.i18n = i18n;
         addStyleName("inputWrapper");
         addValueChangeHandler(new ValueChangeHandler<String>()
         {
@@ -161,11 +197,18 @@ public class DateRangeComponent extends Input
         DateRangeOptions options = JS.createObject();
         options.setShowWeekNumbers(true);
         options.setAutoApply(false);
+        I18nLocaleFormats formats = bundleManager.getFormats();
         options.setTimePicker(withTime);
-        options.setTimePicker24Hour(!bundleManager.getFormats().isAmPmFormat());
+        options.setTimePicker24Hour(!formats.isAmPmFormat());
         options.setTimePickerIncrement(5);
         options.setLocale(JS.createObject());
-        options.getLocale().setFormat(getFormat(withTime));
+        Locale locale = options.getLocale();
+        locale.setFirstDay(1);
+        locale.setApplyLabel(i18n.getString("apply"));
+        locale.setCancelLabel(i18n.getString("cancel"));
+        locale.setMonthNames(createJavaScriptArray(formats.getMonths()));
+        locale.setDaysOfWeek(createJavaScriptArray(formats.getShortWeekdays()));
+        locale.setFormat(getFormat(withTime));
         DateRangePickerJquery jqdp = (DateRangePickerJquery) JQueryElement.Static.$(getElement());
         DateRangePickerElement ele = jqdp.daterangepicker(options);
         ele.on("apply.daterangepicker", new Function()
@@ -178,6 +221,24 @@ public class DateRangeComponent extends Input
             }
         });
         datePicker = ele.data("daterangepicker");
+    }
+
+    private JavaScriptObject createJavaScriptArray(String[] strings)
+    {
+        final JSONArray jsonArray = new JSONArray();
+        if (strings != null)
+        {
+            int index = 0;
+            for (String string : strings)
+            {
+                if (string != null)
+                {
+                    jsonArray.set(index, new JSONString(string));
+                    index++;
+                }
+            }
+        }
+        return jsonArray.getJavaScriptObject();
     }
 
     public void setWithTime(boolean withTime)

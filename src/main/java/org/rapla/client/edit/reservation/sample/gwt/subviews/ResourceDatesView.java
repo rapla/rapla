@@ -58,7 +58,7 @@ public class ResourceDatesView implements ReservationViewPart
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
-        drp = new DateRangeComponent(bundleManager, new DateRangeChangeListener()
+        drp = new DateRangeComponent(bundleManager, i18n, new DateRangeChangeListener()
         {
             @Override
             public void dateRangeChanged(Date startDate, Date endDate)
