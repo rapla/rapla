@@ -14,6 +14,9 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.ReservationViewImpl.ReservationViewPart;
+import org.rapla.client.gwt.components.ButtonGroupComponent;
+import org.rapla.client.gwt.components.ButtonGroupComponent.ButtonGroupEntry;
+import org.rapla.client.gwt.components.ButtonGroupComponent.ButtonGroupSelectionChangeListener;
 import org.rapla.client.gwt.components.CheckBoxComponent;
 import org.rapla.client.gwt.components.CheckBoxComponent.CheckBoxChangeListener;
 import org.rapla.client.gwt.components.ClockPicker;
@@ -25,6 +28,8 @@ import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
 
@@ -35,15 +40,15 @@ import com.google.gwt.user.client.ui.Widget;
 
 public class ResourceDatesView implements ReservationViewPart
 {
-    private static final String COLUMN_SIZE = ColumnSize.MD_4 + "," + ColumnSize.LG_4 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
+    private static final String NO_REPEATING_ID = "no_repeating";
+    private static final String COLUMN_2_SIZE = ColumnSize.MD_6 + "," + ColumnSize.LG_6 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
+    private static final String COLUMN_3_SIZE = ColumnSize.MD_4 + "," + ColumnSize.LG_4 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
+
+    private static final String COLUMN_FULL_SIZE = ColumnSize.MD_12 + "," + ColumnSize.LG_12 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
 
     private FlowPanel contentPanel;
 
     private Presenter presenter;
-
-    private final RaplaResources i18n;
-
-    private final BundleManager bundleManager;
 
     private final RaplaLocale raplaLocale;
 
@@ -51,12 +56,11 @@ public class ResourceDatesView implements ReservationViewPart
     private final DropDownInputField datesSelection;
     private final CheckBoxComponent allDayCheckBox;
     private final DateRangeComponent drp;
+    private final ButtonGroupComponent repeatingSelection;
     private Reservation actualReservation;
 
     public ResourceDatesView(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
     {
-        this.i18n = i18n;
-        this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
         drp = new DateRangeComponent(bundleManager, i18n, new DateRangeChangeListener()
         {
@@ -111,17 +115,53 @@ public class ResourceDatesView implements ReservationViewPart
             }
         });
         drp.setWithTime(true);
-        final Row row1 = new Row();
-        container.add(row1);
-        Column column1 = new Column(COLUMN_SIZE);
-        column1.add(datesSelection);
-        row1.add(column1);
-        Column column2 = new Column(COLUMN_SIZE);
-        column2.add(drp);
-        row1.add(column2);
-        Column column3 = new Column(COLUMN_SIZE);
-        column3.add(allDayCheckBox);
-        row1.add(column3);
+        {
+            final Row row1 = new Row();
+            container.add(row1);
+            Column column1 = new Column(ColumnSize.LG_3, ColumnSize.MD_3, ColumnSize.SM_12, ColumnSize.XS_12);
+            column1.add(datesSelection);
+            row1.add(column1);
+            Column column2 = new Column(ColumnSize.LG_9, ColumnSize.MD_9, ColumnSize.SM_12, ColumnSize.XS_12);
+            row1.add(column2);
+            final ButtonGroupEntry[] labels = new ButtonGroupEntry[6];
+            labels[0] = new ButtonGroupEntry(i18n.getString(NO_REPEATING_ID), NO_REPEATING_ID);
+            labels[1] = new ButtonGroupEntry(i18n.getString(RepeatingType.WEEKLY.toString()), RepeatingType.WEEKLY.name());
+            labels[2] = new ButtonGroupEntry(i18n.getString(RepeatingType.DAILY.toString()), RepeatingType.DAILY.name());
+            labels[3] = new ButtonGroupEntry(i18n.getString(RepeatingType.MONTHLY.toString()), RepeatingType.MONTHLY.name());
+            labels[4] = new ButtonGroupEntry(i18n.getString(RepeatingType.YEARLY.toString()), RepeatingType.YEARLY.name());
+            labels[5] = new ButtonGroupEntry(i18n.getString("appointment.convert"), "convert");
+            repeatingSelection = new ButtonGroupComponent(labels, "repeating", new ButtonGroupSelectionChangeListener()
+            {
+                @Override
+                public void selectionChanged(String id)
+                {
+                    if (NO_REPEATING_ID.equals(id))
+                    {
+                        getPresenter().repeating(null);
+                    }
+                    else if ("convert".equals(id))
+                    {
+                        getPresenter().convertAppointment();
+                    }
+                    else
+                    {
+                        RepeatingType repeating = RepeatingType.valueOf(id);
+                        getPresenter().repeating(repeating);
+                    }
+                }
+            });
+            column2.add(repeatingSelection);
+        }
+        {
+            Row row2 = new Row();
+            Column column1 = new Column(COLUMN_2_SIZE);
+            column1.add(drp);
+            row2.add(column1);
+            Column column2 = new Column(COLUMN_2_SIZE);
+            column2.add(allDayCheckBox);
+            row2.add(column2);
+            container.add(row2);
+        }
         contentPanel.add(container);
         // Just for testing
         contentPanel.add(new ClockPicker(new Date(), new TimeChangeListener()
@@ -159,6 +199,16 @@ public class ResourceDatesView implements ReservationViewPart
         {
             Appointment appointment = allAppointments[i];
             values.add(new DropDownItem(formatDate(appointment), i + "", appointment == selectedAppointment));
+        }
+        Repeating repeating = selectedAppointment.getRepeating();
+        if (selectedAppointment.isRepeatingEnabled() && repeating != null)
+        {
+            RepeatingType type = repeating.getType();
+            repeatingSelection.setSelected(type.name());
+        }
+        else
+        {
+            repeatingSelection.setSelected(NO_REPEATING_ID);
         }
         datesSelection.changeSelection(values);
         updateDateRangeComponent(selectedAppointment);

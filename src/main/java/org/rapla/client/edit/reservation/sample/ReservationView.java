@@ -6,6 +6,7 @@ import java.util.Date;
 import org.rapla.client.base.View;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -36,6 +37,10 @@ public interface ReservationView<W> extends View<Presenter> {
         void timeChanged(Date startDate, Date endDate);
 
         void allDayEvent(boolean selected);
+
+        void repeating(RepeatingType repeating);
+
+        void convertAppointment();
 	}
 
 	void show(Reservation event);

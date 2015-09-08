@@ -12,6 +12,7 @@ import org.rapla.client.event.DetailEndEvent;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -182,6 +183,7 @@ public class ReservationPresenter implements ReservationController, Presenter
             Appointment newAppointment = facade.newAppointment(startDate, endDate);
             this.tempReservation.addAppointment(newAppointment);
             Appointment[] allAppointments = tempReservation.getAppointments();
+            selectedAppointment = newAppointment;
             view.updateAppointments(allAppointments, newAppointment);
         }
         catch (RaplaException e)
@@ -225,6 +227,25 @@ public class ReservationPresenter implements ReservationController, Presenter
             selectedAppointment.setWholeDays(wholeDays);
             Appointment[] allAppointments = tempReservation.getAppointments();
             view.updateAppointments(allAppointments, selectedAppointment);
+        }
+    }
+
+    @Override
+    public void repeating(RepeatingType repeating)
+    {
+        if(selectedAppointment != null)
+        {
+            selectedAppointment.setRepeatingEnabled(repeating != null);
+            selectedAppointment.getRepeating().setType(repeating);
+        }
+    }
+
+    @Override
+    public void convertAppointment()
+    {
+        if(selectedAppointment != null)
+        {
+            // TODO implement me
         }
     }
 }
