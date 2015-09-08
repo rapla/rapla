@@ -24,6 +24,7 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.user.client.Window;
 
 public class TreeComponent extends Div
 {
@@ -39,7 +40,7 @@ public class TreeComponent extends Div
     public interface JsTreeJquery extends JQueryElement
     {
         JsTreeElement jstree(JsTreeOptions options);
-        
+
         void on(String event, JsTreeEventListener eventListener);
     }
 
@@ -58,6 +59,8 @@ public class TreeComponent extends Div
 
         @JsProperty
         JsTreeSettings getSettings();
+
+        void show_contextmenu(JsTreeContextMenu menuFunction);
     }
 
     @JsType
@@ -86,6 +89,13 @@ public class TreeComponent extends Div
 
         @JsProperty
         JsTreeCore getCore();
+
+        @JsProperty
+        void setContextmenu(JsTreeContextMenu core);
+
+        @JsProperty
+        JsTreeContextMenu getContextmenu();
+
     }
 
     @JsType
@@ -108,6 +118,12 @@ public class TreeComponent extends Div
 
         @JsProperty
         JsTreeThemes getThemes();
+
+        @JsProperty
+        void setCheck_callback(boolean themes);
+
+        @JsProperty
+        boolean isCheck_callback();
     }
 
     @JsType
@@ -125,17 +141,17 @@ public class TreeComponent extends Div
         @JsProperty
         Boolean getResponsive();
     }
-    
+
     @JsType
     public interface JsTreeDataChange
     {
         @JsProperty
         void setSelected(JsArrayInteger selected);
-        
+
         @JsProperty
         JsArrayInteger getSelected();
     }
-    
+
     @JsFunction
     public interface JsTreeEventListener
     {
@@ -217,6 +233,22 @@ public class TreeComponent extends Div
         });
     }
 
+    @JsType
+    public interface JsTreeContextMenu
+    {
+        @JsProperty
+        void setItems(JsTreeContextMenuFunction function);
+
+        @JsProperty
+        void setSelect_node(boolean select_node);
+    }
+
+    @JsFunction
+    public interface JsTreeContextMenuFunction
+    {
+        void show(Object node, Object e);
+    }
+
     private void selectionChanged(JsArrayInteger selected)
     {
         if (updatingData)
@@ -245,11 +277,23 @@ public class TreeComponent extends Div
         JSONArray plugins = new JSONArray();
         plugins.set(0, new JSONString("wholerow"));
         plugins.set(1, new JSONString("checkbox"));
+        plugins.set(2, new JSONString("contextmenu"));
         options.setPlugins(plugins.getJavaScriptObject());
         options.setCore(JS.createObject());
+        options.setContextmenu(JS.createObject());
+        options.getContextmenu().setItems(new JsTreeContextMenuFunction()
+        {
+            @Override
+            public void show(Object node, Object e)
+            {
+                Window.alert("Context menu, I am coming: " + node + ", " + e);
+            }
+        });
+        options.getContextmenu().setSelect_node(false);
         JsTreeCore core = options.getCore();
         core.setDataType("JSON");
         core.setThemes(JS.createObject());
+        core.setCheck_callback(true);
         JsTreeThemes themes = core.getThemes();
         themes.setName("proton");
         themes.setResponsive(true);
@@ -261,7 +305,7 @@ public class TreeComponent extends Div
             @Override
             public void handle(Event e, Object data)
             {
-                JsArrayInteger selected = ((JsTreeDataChange)data).getSelected();
+                JsArrayInteger selected = ((JsTreeDataChange) data).getSelected();
                 selectionChanged(selected);
             }
         });
