@@ -34,7 +34,9 @@ public class I18nLocaleLoadUtil
             String formatTime = bundle.getString("formatTime");
             String[] weekdays = parseArray(bundle.getString("weekdays"));
             String[] months = parseArray(bundle.getString("months"));
-            formats = new I18nLocaleFormats(isAmPm, amPm, formatDateShort, formatDateLong, weekdays, months, formatHour, formatMonthYear, formatTime);
+            String[] shortWeekdays = parseArray(bundle.getString("shortWeekdays"));
+            String[] shortMonths = parseArray(bundle.getString("shortMonths"));
+            formats = new I18nLocaleFormats(isAmPm, amPm, formatDateShort, formatDateLong, weekdays, shortWeekdays, months, shortMonths, formatHour, formatMonthYear, formatTime);
             cache.put(localeId, formats);
             return formats;
         }
