@@ -13,6 +13,7 @@ import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.PlacePresenter;
 import org.rapla.client.ResourceSelectionPlace;
 import org.rapla.client.ResourceSelectionView;
+import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.gui.menu.MenuView;
 import org.rapla.client.gui.menu.gwt.MenuViewImpl;
@@ -76,6 +77,7 @@ public class RaplaGwtModule implements GinModule{
         placeBinder.addBinding().to(ResourceSelectionPlace.class).in(Singleton.class);
 
         GinMultibinder<ActivityPresenter> activityBinder = GinMultibinder.newSetBinder(binder, ActivityPresenter.class);
+        activityBinder.addBinding().to(ReservationPresenter.class).in(Singleton.class);
     }
     
     @Provides

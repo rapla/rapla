@@ -10,12 +10,14 @@ import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.event.DetailSelectEvent;
+import org.rapla.client.edit.reservation.sample.ReservationPresenter;
+import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.gui.menu.MenuPresenter;
 import org.rapla.client.plugin.weekview.CalendarWeekView.Presenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -110,7 +112,8 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         final AppointmentBlock appointmentBlock = block.getAppointmentBlock();
         final Appointment appointment = appointmentBlock.getAppointment();
-        eventBus.fireEvent(new DetailSelectEvent(appointment.getReservation(), context));
+        final Reservation reservation = appointment.getReservation();
+        eventBus.fireEvent(new StartActivityEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId()));
     }
 
     @Override

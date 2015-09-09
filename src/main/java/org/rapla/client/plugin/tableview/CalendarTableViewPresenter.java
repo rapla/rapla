@@ -7,7 +7,8 @@ import java.util.Date;
 import javax.inject.Inject;
 
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.event.DetailSelectEvent;
+import org.rapla.client.edit.reservation.sample.ReservationPresenter;
+import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.plugin.tableview.CalendarTableView.Presenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
@@ -68,8 +69,8 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     
     @Override
     public void selectReservation(Reservation selectedObject){
-        DetailSelectEvent event2 = new DetailSelectEvent(selectedObject, null);
-        eventBus.fireEvent(event2);
+        final StartActivityEvent activity = new StartActivityEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId());
+        eventBus.fireEvent(activity);
         logger.info("selection changed");
 
     }

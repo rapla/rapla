@@ -2,15 +2,19 @@ package org.rapla.client.edit.reservation.sample;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.rapla.client.ActivityManager.Activity;
+import org.rapla.client.ActivityPresenter;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
-import org.rapla.client.event.DetailEndEvent;
+import org.rapla.client.event.StopActivityEvent;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.PermissionContainer;
@@ -24,10 +28,11 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.StorageOperator;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public class ReservationPresenter implements ReservationController, Presenter
+public class ReservationPresenter implements ReservationController, Presenter, ActivityPresenter
 {
 
     private static class ReservationInfo
@@ -36,6 +41,8 @@ public class ReservationPresenter implements ReservationController, Presenter
         private Appointment selectedAppointment;
         private Reservation editReservation;
     }
+
+    public static final String EDIT_ACTIVITY_ID = "edit";
 
     private final Map<String, ReservationInfo> reservationMap = new LinkedHashMap<String, ReservationInfo>();
 
@@ -120,11 +127,11 @@ public class ReservationPresenter implements ReservationController, Presenter
 
     private void fireEventAndCloseView(final Reservation reservation)
     {
-        eventBus.fireEvent(new DetailEndEvent(reservation));
+        eventBus.fireEvent(new StopActivityEvent(EDIT_ACTIVITY_ID, reservation.getId()));
         reservationMap.remove(reservation.getId());
         view.hide(reservation);
     }
-
+    
     @Override
     public void changeAttribute(Reservation reservation, Attribute attribute, Object newValue)
     {
@@ -273,5 +280,32 @@ public class ReservationPresenter implements ReservationController, Presenter
     public void convertAppointment(Reservation reservation)
     {
         // TODO implement me
+    }
+
+    @Override
+    public boolean startActivity(Activity activity)
+    {
+        if(EDIT_ACTIVITY_ID.equals(activity.getName()))
+        {
+            try
+            {
+                final StorageOperator operator = facade.getOperator();
+                final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getId()), false);
+                final Collection<Entity> values = entities.values();
+                for (Entity entity : values)
+                {
+                    if (entity != null && entity instanceof Reservation)
+                    {
+                        edit((Reservation)entity, false);
+                        return true;
+                    }
+                }
+            }
+            catch (RaplaException e)
+            {
+                logger.error("Error initializing activity: " + activity, e);
+            }
+        }
+        return false;
     }
 }
