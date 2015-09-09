@@ -36,7 +36,7 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 
 import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.user.client.ui.IsWidget;
 
 public class InfoView implements ReservationViewPart
 {
@@ -46,29 +46,24 @@ public class InfoView implements ReservationViewPart
     private final FlowPanel contentPanel;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
-    private Presenter presenter;
+    private final Presenter presenter;
 
-    public InfoView(RaplaResources i18n, BundleManager bundleManager)
+    public InfoView(RaplaResources i18n, BundleManager bundleManager, Presenter presenter)
     {
         this.i18n = i18n;
         this.bundleManager = bundleManager;
+        this.presenter = presenter;
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("appointmentInfo");
     }
     
-    @Override
-    public void setPresenter(Presenter presenter)
-    {
-        this.presenter = presenter;
-    }
-
     private Presenter getPresenter()
     {
         return presenter;
     }
 
     @Override
-    public Widget provideContent()
+    public IsWidget provideContent()
     {
         return contentPanel;
     }

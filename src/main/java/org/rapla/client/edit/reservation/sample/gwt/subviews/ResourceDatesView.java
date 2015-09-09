@@ -36,19 +36,16 @@ import org.rapla.framework.RaplaLocale;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.user.client.ui.IsWidget;
 
 public class ResourceDatesView implements ReservationViewPart
 {
     private static final String NO_REPEATING_ID = "no_repeating";
     private static final String COLUMN_2_SIZE = ColumnSize.MD_6 + "," + ColumnSize.LG_6 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
-    private static final String COLUMN_3_SIZE = ColumnSize.MD_4 + "," + ColumnSize.LG_4 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
 
-    private static final String COLUMN_FULL_SIZE = ColumnSize.MD_12 + "," + ColumnSize.LG_12 + "," + ColumnSize.SM_12 + "," + ColumnSize.XS_12;
+    private final Div contentPanel;
 
-    private FlowPanel contentPanel;
-
-    private Presenter presenter;
+    private final Presenter presenter;
 
     private final RaplaLocale raplaLocale;
 
@@ -58,19 +55,21 @@ public class ResourceDatesView implements ReservationViewPart
     private final DateRangeComponent drp;
     private final ButtonGroupComponent repeatingSelection;
     private Reservation actualReservation;
+    private Appointment[] allAppointments;
 
-    public ResourceDatesView(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
+    public ResourceDatesView(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale, Presenter presenter)
     {
+        this.presenter = presenter;
         this.raplaLocale = raplaLocale;
         drp = new DateRangeComponent(bundleManager, i18n, new DateRangeChangeListener()
         {
             @Override
             public void dateRangeChanged(Date startDate, Date endDate)
             {
-                getPresenter().timeChanged(startDate, endDate);
+                getPresenter().timeChanged(actualReservation, startDate, endDate);
             }
         });
-        contentPanel = new FlowPanel();
+        contentPanel = new Div();
         contentPanel.setStyleName("resourcesDates");
         Container container = new Container();
         Row datesRow = new Row();
@@ -80,7 +79,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void onClick(ClickEvent event)
             {
-                getPresenter().deleteDateClicked();
+                getPresenter().deleteDateClicked(actualReservation);
             }
         }));
         datesButtons.add(createButton(i18n.getString("new"), IconType.PLUS_CIRCLE, new ClickHandler()
@@ -88,7 +87,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void onClick(ClickEvent event)
             {
-                getPresenter().newDateClicked();
+                getPresenter().newDateClicked(actualReservation);
             }
         }));
         datesRow.add(datesButtons);
@@ -100,9 +99,8 @@ public class ResourceDatesView implements ReservationViewPart
             public void valueChanged(String newValue)
             {
                 int index = Integer.parseInt(newValue);
-                Appointment[] appointments = actualReservation.getAppointments();
-                Appointment selectedAppointment = appointments[index];
-                getPresenter().selectedAppointment(selectedAppointment);
+                Appointment selectedAppointment = allAppointments[index];
+                getPresenter().selectAppointment(actualReservation, selectedAppointment);
                 // Update
             }
         }, values);
@@ -111,7 +109,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void changed(boolean selected)
             {
-                getPresenter().allDayEvent(selected);
+                getPresenter().allDayEvent(actualReservation, selected);
             }
         });
         drp.setWithTime(true);
@@ -137,16 +135,16 @@ public class ResourceDatesView implements ReservationViewPart
                 {
                     if (NO_REPEATING_ID.equals(id))
                     {
-                        getPresenter().repeating(null);
+                        getPresenter().repeating(actualReservation, null);
                     }
                     else if ("convert".equals(id))
                     {
-                        getPresenter().convertAppointment();
+                        getPresenter().convertAppointment(actualReservation);
                     }
                     else
                     {
                         RepeatingType repeating = RepeatingType.valueOf(id);
-                        getPresenter().repeating(repeating);
+                        getPresenter().repeating(actualReservation, repeating);
                     }
                 }
             });
@@ -174,19 +172,13 @@ public class ResourceDatesView implements ReservationViewPart
 
     }
 
-    @Override
-    public void setPresenter(Presenter presenter)
-    {
-        this.presenter = presenter;
-    }
-
     protected Presenter getPresenter()
     {
         return presenter;
     }
 
     @Override
-    public Widget provideContent()
+    public IsWidget provideContent()
     {
         return contentPanel;
     }
@@ -194,6 +186,7 @@ public class ResourceDatesView implements ReservationViewPart
     @Override
     public void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment)
     {
+        this.allAppointments = allAppointments;
         Collection<DropDownItem> values = new ArrayList<DropDownItem>();
         for (int i = 0; i < allAppointments.length; i++)
         {

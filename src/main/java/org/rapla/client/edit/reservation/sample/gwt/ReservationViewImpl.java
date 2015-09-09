@@ -1,7 +1,8 @@
 package org.rapla.client.edit.reservation.sample.gwt;
 
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -20,7 +21,6 @@ import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
 import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
@@ -36,25 +36,11 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
-import com.google.gwt.user.client.ui.Widget;
 
 public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
 {
 
-    private final RaplaResources i18n;
-    private final BundleManager bundleManager;
-
-    private final Logger logger;
-
-    private final Div content = new Div();
-    private final Div buttons = new Div();
-    private final NavTabs bar = new NavTabs();
-    private Reservation actuallShownReservation = null;
-    private PopupPanel popup;
-    private ReservationViewPart selectedView;
-    private final ArrayList<Dual> navEntries = new ArrayList<Dual>();
-
-    private static class Dual
+    public static class Dual
     {
         private final AnchorListItem menuItem;
         private final ReservationViewPart view;
@@ -76,152 +62,185 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         }
     }
 
-    public interface ReservationViewPart
+    public static class ContentWrapper
     {
+        private final ArrayList<Dual> navEntries = new ArrayList<Dual>();
+        private final Div content = new Div();
+        private final Div buttons = new Div();
+        private final NavTabs bar = new NavTabs();
+        private PopupPanel popup;
+        private ReservationViewPart selectedView;
+        private final Reservation reservation;
 
-        void setPresenter(Presenter presenter);
+        public ContentWrapper(final Presenter presenter, final RaplaResources i18n, final BundleManager bundleManager, final RaplaLocale raplaLocale,
+                Reservation reservation)
+        {
+            this.reservation = reservation;
+            navEntries.add(new Dual(new AnchorListItem("Veranstaltungsinformationen"), new InfoView(i18n, bundleManager, presenter)));
+            navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager, raplaLocale, presenter)));
+            navEntries.add(new Dual(new AnchorListItem("Rechte"), null));
+            content.setStyleName("content");
+            for (Dual dual : navEntries)
+            {
+                AnchorListItem menuItem = dual.getMenuItem();
+                bar.add(menuItem);
+            }
+            {
+                IconType type = IconType.SAVE;
+                ClickHandler handler = new ClickHandler()
+                {
+                    @Override
+                    public void onClick(ClickEvent event)
+                    {
+                        presenter.onSaveButtonClicked(reservation);
+                    }
+                };
+                createIcon(type, handler, "Save");
+            }
+            {
+                IconType type = IconType.REMOVE;
+                ClickHandler handler = new ClickHandler()
+                {
+                    @Override
+                    public void onClick(ClickEvent event)
+                    {
+                        presenter.onCancelButtonClicked(reservation);
+                    }
+                };
+                createIcon(type, handler, "Cancel");
+            }
+            {
+                IconType type = IconType.TRASH;
+                ClickHandler handler = new ClickHandler()
+                {
+                    @Override
+                    public void onClick(ClickEvent event)
+                    {
+                        presenter.onDeleteButtonClicked(reservation);
+                    }
+                };
+                createIcon(type, handler, "Delete");
+            }
+            bar.addDomHandler(new ClickHandler()
+            {
+                @Override
+                public void onClick(ClickEvent event)
+                {
+                    Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
+                    while (relativeElement != null && !(LIElement.is(relativeElement)))
+                    {
+                        relativeElement = relativeElement.getParentElement();
+                    }
+                    if (relativeElement == null)
+                    {
+                        return;
+                    }
+                    activate(relativeElement);
+                }
 
-        Widget provideContent();
+            }, ClickEvent.getType());
+            popup = RaplaPopups.createNewPopupPanel();
+            popup.setAnimationEnabled(true);
+            popup.setAnimationType(AnimationType.ROLL_DOWN);
+            final Div layout = new Div();
+            layout.add(buttons);
+            layout.add(bar);
+            layout.add(content);
+            popup.add(layout);
+            popup.center();
+            activate(navEntries.get(0).getMenuItem().getElement());
+        }
 
-        void createContent(Reservation reservation);
-        
-        void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment);
+        private void createIcon(IconType type, ClickHandler handler, String text)
+        {
+            Button button = new Button(text);
+            button.setIcon(type);
+            button.setIconSize(IconSize.TIMES2);
+            button.addClickHandler(handler);
+            buttons.add(button);
+        }
+
+        private void activate(Element relativeElement)
+        {
+            content.clear();
+            for (Dual navEntry : navEntries)
+            {
+                AnchorListItem menuItem = navEntry.getMenuItem();
+                Element element = menuItem.getElement();
+                if (relativeElement == element)
+                {
+                    menuItem.setActive(true);
+                    menuItem.setEnabled(false);
+                    selectedView = navEntry.getView();
+                    if (selectedView != null)
+                    {
+                        selectedView.createContent(reservation);
+                        content.add(selectedView.provideContent());
+                    }
+                    else
+                    {
+                        RaplaPopups.showWarning("Warning", "No content defined");
+                    }
+                    NodeList<Node> childNodes = content.getElement().getChildNodes();
+                    InputUtils.focusOnFirstInput(childNodes);
+                }
+                else
+                {
+                    menuItem.setActive(false);
+                    menuItem.setEnabled(true);
+                }
+            }
+        }
+
+        public void updateAppointments(Appointment[] allAppointments, Appointment newSelectedAppointment)
+        {
+            if (selectedView != null)
+            {
+                selectedView.updateAppointments(allAppointments, newSelectedAppointment);
+            }
+        }
+
+        public void hide()
+        {
+            popup.hide();
+            popup.removeFromParent();
+        }
 
     }
 
+    public interface ReservationViewPart
+    {
+
+        IsWidget provideContent();
+
+        void createContent(Reservation reservation);
+
+        void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment);
+    }
+
+    private final Map<String, ContentWrapper> openedPopups = new HashMap<String, ContentWrapper>();
+    private final RaplaLocale raplaLocale;
+    private final RaplaResources i18n;
+    private final BundleManager bundleManager;
+    private final Logger logger;
+
     @Inject
-    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager  bundleManager, RaplaLocale raplaLocale)
+    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
     {
         super();
         this.i18n = i18n;
         this.logger = logger;
         this.bundleManager = bundleManager;
-        content.setStyleName("content");
-        navEntries.add(new Dual(new AnchorListItem("Veranstaltungsinformationen"), new InfoView(i18n, bundleManager)));
-        navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager, raplaLocale)));
-        navEntries.add(new Dual(new AnchorListItem("Rechte"), null));
-        for (Dual dual : navEntries)
-        {
-            AnchorListItem menuItem = dual.getMenuItem();
-            bar.add(menuItem);
-        }
-        {
-            IconType type = IconType.SAVE;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onSaveButtonClicked(actuallShownReservation);
-                }
-            };
-            createIcon(type, handler, "Save");
-        }
-        {
-            IconType type = IconType.REMOVE;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onCancelButtonClicked(actuallShownReservation);
-                }
-            };
-            createIcon(type, handler, "Cancel");
-        }
-        {
-            IconType type = IconType.TRASH;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onDeleteButtonClicked(actuallShownReservation);
-                }
-            };
-            createIcon(type, handler, "Delete");
-        }
-        bar.addDomHandler(new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
-            {
-                Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
-                while (relativeElement != null && !(LIElement.is(relativeElement)))
-                {
-                    relativeElement = relativeElement.getParentElement();
-                }
-                if (relativeElement == null)
-                {
-                    return;
-                }
-                activate(relativeElement);
-            }
-
-        }, ClickEvent.getType());
-    }
-
-    public void createIcon(IconType type, ClickHandler handler, String text)
-    {
-        Button button = new Button(text);
-        button.setIcon(type);
-        button.setIconSize(IconSize.TIMES2);
-        button.addClickHandler(handler);
-        buttons.add(button);
-    }
-
-    private void activate(Element relativeElement)
-    {
-        content.clear();
-        for (Dual navEntry : navEntries)
-        {
-            AnchorListItem menuItem = navEntry.getMenuItem();
-            Element element = menuItem.getElement();
-            if (relativeElement == element)
-            {
-                menuItem.setActive(true);
-                menuItem.setEnabled(false);
-                selectedView = navEntry.getView();
-                if(selectedView != null)
-                {
-                    selectedView.createContent(actuallShownReservation);
-                    content.add(selectedView.provideContent());
-                }
-                else
-                {
-                    showWarning("Warning", "No content defined");
-                }
-                NodeList<Node> childNodes = content.getElement().getChildNodes();
-                InputUtils.focusOnFirstInput(childNodes);
-            }
-            else
-            {
-                menuItem.setActive(false);
-                menuItem.setEnabled(true);
-            }
-        }
+        this.raplaLocale = raplaLocale;
     }
 
     @Override
-    public void setPresenter(org.rapla.client.edit.reservation.sample.ReservationView.Presenter presenter)
+    public void updateAppointments(Reservation reservation, Appointment[] allAppointments, Appointment newSelectedAppointment)
     {
-        super.setPresenter(presenter);
-        for (Dual navEntry : navEntries)
+        final ContentWrapper contentWrapper = openedPopups.get(reservation.getId());
+        if (contentWrapper != null)
         {
-            ReservationViewPart view = navEntry.getView();
-            if(view != null)
-            {
-                view.setPresenter(presenter);
-            }
-        }
-    }
-    
-    @Override
-    public void updateAppointments(Appointment[] allAppointments, Appointment newSelectedAppointment)
-    {
-        if(selectedView != null)
-        {
-            selectedView.updateAppointments(allAppointments, newSelectedAppointment);
+            contentWrapper.updateAppointments(allAppointments, newSelectedAppointment);
         }
     }
 
@@ -234,40 +253,24 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     @Override
     public void show(final Reservation reservation)
     {
-        if(actuallShownReservation != null && !actuallShownReservation.getId().equals(reservation.getId()))
         {
-            getPresenter().onCancelButtonClicked(actuallShownReservation);
-        }
-        actuallShownReservation = reservation;
-        // create new one
-        popup = RaplaPopups.createNewPopupPanel();
-        popup.setAnimationEnabled(true);
-        popup.setAnimationType(AnimationType.ROLL_DOWN);
-        final Div layout = new Div();
-        layout.add(buttons);
-        layout.add(bar);
-        layout.add(content);
-        popup.add(layout);
-        popup.center();
-        activate(navEntries.get(0).getMenuItem().getElement());
-    }
-
-    public void mapFromReservation(Reservation event)
-    {
-        Locale locale = getRaplaLocale().getLocale();
-        Allocatable[] resources = event.getAllocatables();
-        {
-            StringBuilder builder = new StringBuilder();
-            for (Allocatable res : resources)
+            // Already showing... so complete update is expected...
+            final ContentWrapper openedPopup = openedPopups.remove(reservation.getId());
+            if(openedPopup != null)
             {
-                builder.append(res.getName(locale));
+                openedPopup.hide();
             }
         }
+        final ContentWrapper value = new ContentWrapper(getPresenter(), i18n, bundleManager, raplaLocale, reservation);
+        openedPopups.put(reservation.getId(), value);
     }
 
     public void hide(final Reservation reservation)
     {
-        actuallShownReservation = null;
-        popup.hide();
+        final ContentWrapper contentWrapper = openedPopups.remove(reservation.getId());
+        if (contentWrapper != null)
+        {
+            contentWrapper.hide();
+        }
     }
 }

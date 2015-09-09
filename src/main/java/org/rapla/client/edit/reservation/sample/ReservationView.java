@@ -28,19 +28,19 @@ public interface ReservationView<W> extends View<Presenter> {
 
         void changeClassification(Reservation reservation, DynamicType newDynamicType);
 
-        void newDateClicked();
+        void newDateClicked(Reservation reservation);
 
-        void deleteDateClicked();
+        void deleteDateClicked(Reservation reservation);
 
-        void selectedAppointment(Appointment selectedAppointment);
+        void selectAppointment(Reservation reservation, Appointment selectedAppointment);
 
-        void timeChanged(Date startDate, Date endDate);
+        void timeChanged(Reservation reservation, Date startDate, Date endDate);
 
-        void allDayEvent(boolean selected);
+        void allDayEvent(Reservation reservation, boolean selected);
 
-        void repeating(RepeatingType repeating);
+        void repeating(Reservation reservation, RepeatingType repeating);
 
-        void convertAppointment();
+        void convertAppointment(Reservation reservation);
 	}
 
 	void show(Reservation event);
@@ -49,5 +49,5 @@ public interface ReservationView<W> extends View<Presenter> {
 
     void showWarning(String string, String string2);
 
-    void updateAppointments(Appointment[] allAppointments, Appointment newSelectedAppointment);
+    void updateAppointments(Reservation reservation, Appointment[] allAppointments, Appointment newSelectedAppointment);
 }
