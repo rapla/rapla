@@ -60,6 +60,8 @@ public class DateRangeComponent extends Input
         void setEndDate(Date end);
 
         void updateView();
+        
+        void remove();
     }
 
     @JsType
@@ -222,6 +224,14 @@ public class DateRangeComponent extends Input
         });
         datePicker = ele.data("daterangepicker");
     }
+    
+    @Override
+    protected void onDetach()
+    {
+        super.onDetach();
+        datePicker.remove();
+        datePicker = null;
+    }
 
     private JavaScriptObject createJavaScriptArray(String[] strings)
     {
@@ -249,7 +259,6 @@ public class DateRangeComponent extends Input
         {
             datePicker.setTimePicker(this.withTime);
             String format = getFormat(this.withTime);
-            updateTime(format);
             datePicker.getLocale().setFormat(format);
             datePicker.updateView();
         }
@@ -273,14 +282,6 @@ public class DateRangeComponent extends Input
         final String formatPattern = getFormatPattern(withTime);
         String jsFormat = convertToJsFormat(formatPattern);
         return jsFormat;
-    }
-
-    private void updateTime(String format)
-    {
-        // TODO
-        //        String value = getValue();
-        //        String[] dates = value.split("-");
-        //        String oldFormat = getFormat(!withTime);
     }
 
     public void updateStartEnd(Date start, Date end, boolean holeDay)
