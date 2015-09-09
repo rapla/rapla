@@ -82,8 +82,10 @@ public interface RaplaClientExtensionPoints
        @see AppointmentStatusFactory 
      * */
     Class<AppointmentStatusFactory> APPOINTMENT_STATUS = AppointmentStatusFactory.class;
-    
-   
+
+    String  ADMIN_MENU_EXTENSION_POINT_1 = "org.rapla.gui.AdminMenuInsert";
+    String  WRONG_EXTENSION_POINT_1 = "org.rapla.UserOptions";
+
     /** add your own submenus to the admin menu. 
      */
     TypedComponentRole<IdentifiableMenuEntry>  ADMIN_MENU_EXTENSION_POINT = new TypedComponentRole<IdentifiableMenuEntry>("org.rapla.gui.AdminMenuInsert");

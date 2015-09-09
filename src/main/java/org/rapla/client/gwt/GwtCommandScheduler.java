@@ -1,18 +1,18 @@
 package org.rapla.client.gwt;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.RepeatingCommand;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
+import javax.inject.Inject;
 
-@Singleton
+@DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
 final class GwtCommandScheduler implements CommandScheduler
 {
     private final Logger gwtLogger;

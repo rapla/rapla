@@ -95,8 +95,7 @@
 				<excludes>
 					<exclude>**/*.xml</exclude>
 					<exclude>**/*.txt</exclude>
-					<exclude>**
-					/*.properties</exclude>
+					<exclude>**/*.properties</exclude>
 				</excludes>
 			</resource>
 			<resource>
@@ -119,15 +118,75 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>com.mysema.maven</groupId>
+				<artifactId>apt-maven-plugin</artifactId>
+				<version>1.1.3</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>process</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target/generated-sources/java</outputDirectory>
+							<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.rapla</groupId>
+						<artifactId>gwtjsonrpc</artifactId>
+						<version>${gwtjsonrpc.version}</version>
+						<scope>compile</scope>
+						<optional>true</optional>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<!--
+			<plugin>
+				<groupId>org.bsc.maven</groupId>
+				<artifactId>maven-processor-plugin</artifactId>
+				<version>2.2.4</version>
+				<executions>
+					<execution>
+						<id>process</id>
+						<goals>
+							<goal>process</goal>
+						</goals>
+						<phase>generate-sources</phase>
+						<configuration>
+							<processors>
+								<processor>org.rapla.gwtjsonrpc.annotations.ServiceListProcessor</processor>
+							</processors>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+-->
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
-					<!-- <compilerId>eclipse</compilerId> -->
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
+					<!--
+<annotationProcessors>
+    <annotationProcessor>org.rapla.gwtjsonrpc.annotations.ServiceListProcessor</annotationProcessor>
+</annotationProcessors>
+<forceJavacCompilerUse>true</forceJavacCompilerUse>
+-->
 				</configuration>
-				<!-- <dependencies> <dependency> <groupId>org.codehaus.plexus</groupId> 
+				<dependencies>
+					<dependency>
+						<groupId>org.rapla</groupId>
+						<artifactId>gwtjsonrpc</artifactId>
+						<version>${gwtjsonrpc.version}</version>
+						<scope>compile</scope>
+						<optional>true</optional>
+					</dependency>
+				</dependencies>
+
+
+				<!-- <dependencies> <dependency> <groupId>org.codehaus.plexus</groupId>
 					<artifactId>plexus-compiler-eclipse</artifactId> <version>2.5</version> </dependency> 
 					</dependencies> -->
 			</plugin>
@@ -197,6 +256,8 @@
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
 					<sourceLevel>1.8</sourceLevel>
 					<jsInteropMode>JS</jsInteropMode>
+					<logLevel>INFO</logLevel>
+					<detail>false</detail>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -288,34 +349,51 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!--
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>create-async-rest-services</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<properties>
+								<restResourcesPath>
+									${basedir}/src/main/java/org/rapla
+								</restResourcesPath>
+								<restAsyncResourcesPath>
+									${basedir}/src/gen/java/org/rapla
+								</restAsyncResourcesPath>
+								<restAsyncResourcesPackage>
+									net.javaforge.gwt.rest.client.remote.rest
+								</restAsyncResourcesPackage>
+								<restURLBase>rest</restURLBase>
+								<importsRegexp>
+									net\.javaforge\..*|java\..*|javax\.ws\.rs.*
+								</importsRegexp>
+							</properties>
+							<classpath>
+								<element>
+									<groupId>com.google.code.javaparser</groupId>
+									<artifactId>javaparser</artifactId>
+									<version>1.0.11</version>
+								</element>
+							</classpath>
+							<source>${basedir}/src/main/groovy/servicelistcreator.groovy</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			-->
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
-				<!-- <dependencies> <dependency> <groupId>org.eclipse.jetty</groupId> 
-					<artifactId>jetty-server</artifactId> <version>${jetty.version}</version> 
-					<exclusions> <exclusion> <artifactId>javax.servlet</artifactId> <groupId>org.eclipse.jetty.orbit</groupId> 
-					</exclusion> </exclusions> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
-					<artifactId>jetty-webapp</artifactId> <version>${jetty.version}</version> 
-					</dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-jndi</artifactId> 
-					<version>${jetty.version}</version> <exclusions> <exclusion> <artifactId>javax.mail.glassfish</artifactId> 
-					<groupId>org.eclipse.jetty.orbit</groupId> </exclusion> </exclusions> </dependency> 
-					<dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-plus</artifactId> 
-					<version>${jetty.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
-					<artifactId>jetty-deploy</artifactId> <version>${jetty.version}</version> 
-					</dependency> </dependencies> -->
 				<executions>
-					<!-- <execution> <id>jetty-run</id> <goals> <goal>run</goal> </goals> 
-						<phase>compile-test</phase> <configuration> <target> <echo>starting</echo> 
-						<property name="compile_classpath" refid="maven.compile.classpath" /> <property 
-						name="runtime_classpath" refid="maven.runtime.classpath" /> <property name="test_classpath" 
-						refid="maven.test.classpath" /> <property name="plugin_classpath" refid="maven.plugin.classpath" 
-						/> <echo message="compile classpath: ${compile_classpath}" /> <echo message="runtime 
-						classpath: ${runtime_classpath}" /> <echo message="test classpath: ${test_classpath}" 
-						/> <echo message="plugin classpath: ${plugin_classpath}" /> <java classname="org.rapla.bootstrap.RaplaServerLoader" 
-						fork="false" failonerror="true"> <classpath refid="maven.test.classpath" 
-						/> <classpath refid="maven.compile.classpath" /> <classpath refid="maven.plugin.classpath" 
-						/> <classpath> <pathelement location="src/main/java"/> </classpath> <sysproperty 
-						key="jetty.home" value="src/test" /> </java> </target> </configuration> </execution> -->
 					<execution>
 						<id>PluginList</id>
 						<phase>compile</phase>
@@ -467,10 +545,28 @@
 				<version>2.4</version>
 				<executions>
 					<execution>
-						<phase>compile</phase>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.9.1</version>
+				<executions>
+					<execution>
+						<id>add-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${basedir}/src/gen/java</source>
+							</sources>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -785,6 +881,13 @@
 			</exclusions>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.google.code.javaparser</groupId>
+			<artifactId>javaparser</artifactId>
+			<version>1.0.11</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-plus</artifactId>

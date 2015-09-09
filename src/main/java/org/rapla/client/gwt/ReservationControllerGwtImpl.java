@@ -9,15 +9,19 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.EventCheck;
 import org.rapla.gui.PopupContext;
+import org.rapla.gui.ReservationController;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.internal.edit.reservation.ReservationControllerImpl;
 import org.rapla.gui.internal.edit.reservation.ReservationEditFactory;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+@DefaultImplementation(of= ReservationController.class, context = InjectionContext.gwt)
 public class ReservationControllerGwtImpl extends ReservationControllerImpl
 {
 

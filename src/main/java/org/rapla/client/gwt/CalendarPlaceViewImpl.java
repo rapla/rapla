@@ -26,7 +26,10 @@ import org.rapla.entities.domain.Allocatable;
 
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of= CalendarPlaceView.class, context = InjectionContext.gwt)
 public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements CalendarPlaceView<IsWidget>, NavigatorAction
 {
     private final TreeComponent treeComponent;

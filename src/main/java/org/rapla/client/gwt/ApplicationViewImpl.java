@@ -26,7 +26,10 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class ApplicationViewImpl implements ApplicationView<IsWidget>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";

@@ -7,6 +7,9 @@ import org.rapla.client.gui.menu.data.Point;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.gui.PopupContext;
 
+import javax.inject.Singleton;
+
+@Singleton
 public class ContextCreator
 {
     public PopupContext createContext(DomEvent<?> event)

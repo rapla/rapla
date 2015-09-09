@@ -29,7 +29,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.inject.Extension;
 
+@Extension(provides=PlacePresenter.class)
 public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 {
     private static final String PLACE_ID = "cal";
@@ -67,7 +69,10 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             List<String> viewNames = new ArrayList<String>();
             for (CalendarPlugin plugin : viewPluginPresenter)
             {
-                viewNames.add(plugin.getName());
+                if (plugin.isEnabled())
+                {
+                    viewNames.add(plugin.getName());
+                }
             }
             List<String> calendarNames = new ArrayList<String>();
             final Preferences preferences = facade.getPreferences();

@@ -16,11 +16,14 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 
+@DefaultImplementation( of = CalendarWeekView.class, context = InjectionContext.gwt)
 public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.weekview.CalendarWeekView.Presenter>
         implements CalendarWeekView<IsWidget>, Callback
 {

@@ -1,7 +1,10 @@
 package org.rapla.client;
 
 import org.rapla.client.ActivityManager.Place;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
+@ExtensionPoint(context={ InjectionContext.gwt})
 public interface PlacePresenter
 {
     /**

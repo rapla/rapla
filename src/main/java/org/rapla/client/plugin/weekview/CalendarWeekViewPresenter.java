@@ -1,13 +1,6 @@
 package org.rapla.client.plugin.weekview;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
@@ -27,16 +20,20 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
-@Singleton
+@Extension(provides = CalendarPlugin.class)
 public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W>
 {
-
     private CalendarWeekView<W> view;
     @Inject
     ReservationController reservationController;
@@ -88,7 +85,13 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return "week";
     }
-    
+
+    @Override public boolean isEnabled()
+    {
+        //Boolean result =  facade.getSystemPreferences().getEntryAsBoolean(ENABLED, DEFAULT_ENABLED);
+        return true;
+    }
+
     @Override
     public Date calcNext(Date currentDate)
     {

@@ -18,7 +18,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.inject.Extension;
 
+@Extension(provides = CalendarPlugin.class)
 public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin {
 
     private CalendarTableView<W> view;
@@ -36,6 +38,11 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     public CalendarTableViewPresenter(CalendarTableView view) {
         this.view = view;
         this.view.setPresenter(this);
+    }
+
+    @Override public boolean isEnabled()
+    {
+        return true;
     }
 
     @Override

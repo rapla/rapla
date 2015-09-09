@@ -1,11 +1,12 @@
 package org.rapla.client.base;
 
+import org.rapla.framework.RaplaException;
+import org.rapla.inject.ExtensionPoint;
+
 import java.util.Date;
 
-import org.rapla.framework.RaplaException;
-
-public interface CalendarPlugin<W> {
-
+@ExtensionPoint
+public interface CalendarPlugin<W>  {
     String getName();
 
     W provideContent();
@@ -13,6 +14,8 @@ public interface CalendarPlugin<W> {
     void updateContent() throws RaplaException;
 
     String getId();
+
+    boolean isEnabled();
     
     Date calcNext(Date currentDate);
     

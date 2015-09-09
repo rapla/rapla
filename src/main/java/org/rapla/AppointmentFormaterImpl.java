@@ -11,12 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -28,9 +22,15 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+
+import javax.inject.Inject;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 /** default implementation of appointment formater */
-@Singleton
+@DefaultImplementation(of = AppointmentFormater.class)
 public class AppointmentFormaterImpl
     implements
     AppointmentFormater

@@ -12,7 +12,9 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 
+@Extension(provides = PlacePresenter.class)
 public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
 {
     public static final String PLACE_NAME = "ResSel";

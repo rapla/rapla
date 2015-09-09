@@ -12,6 +12,7 @@ import org.rapla.gwtjsonrpc.client.impl.EntryPointFactory;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
+import javax.inject.Provider;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +23,13 @@ import java.util.logging.Logger;
 public class RaplaGwtStarter
 {
     public static final String LOGIN_COOKIE = "raplaLoginToken";
+
+    Provider<Bootstrap> bootstrapProvider;
+
+    public RaplaGwtStarter(Provider<Bootstrap> bootstrapProvider)
+    {
+        this.bootstrapProvider = bootstrapProvider;
+    }
 
     private void setProxy()
     {
@@ -92,8 +100,7 @@ public class RaplaGwtStarter
             {
                 @Override public boolean execute()
                 {
-                    final MainInjector injector = GWT.create(MainInjector.class);
-                    Bootstrap bootstrap = injector.getBootstrap();
+                    Bootstrap bootstrap = bootstrapProvider.get();
                     bootstrap.load();
                     return false;
                 }

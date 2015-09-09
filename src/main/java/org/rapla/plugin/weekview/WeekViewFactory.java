@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview;
 
-import javax.swing.Icon;
-
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -21,7 +19,11 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
+import org.rapla.inject.Extension;
 
+import javax.swing.*;
+
+@Extension(provides = SwingViewFactory.class)
 public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
     public WeekViewFactory( RaplaContext context ) 

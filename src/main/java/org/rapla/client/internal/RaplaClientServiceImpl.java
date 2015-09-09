@@ -356,7 +356,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
         addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
 
-        // start client extensions
+        // start client provides
         lookupServicesFor(RaplaClientExtensionPoints.CLIENT_EXTENSION);
 
         // Add daterender if not provided by the plugins

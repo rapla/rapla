@@ -93,6 +93,7 @@ import org.rapla.gwtjsonrpc.common.AsyncCallback;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.ResultImpl;
 import org.rapla.gwtjsonrpc.common.VoidResult;
+import org.rapla.inject.DefaultImplementation;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
@@ -117,6 +118,7 @@ import org.rapla.storage.UpdateResult;
  * </p>
  */
 @Singleton
+@DefaultImplementation(of = ClientFacade.class)
 public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;

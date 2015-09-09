@@ -12,9 +12,12 @@ import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.gwt.components.MenuPopup;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.PopupContext;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import java.util.List;
 
+@DefaultImplementation(of =MenuView.class, context = InjectionContext.gwt)
 public class MenuViewImpl extends AbstractView<org.rapla.client.gui.menu.MenuView.Presenter> implements MenuView<IsWidget>
 {
 

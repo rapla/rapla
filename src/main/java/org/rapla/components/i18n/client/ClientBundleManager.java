@@ -9,10 +9,13 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.dbrm.RemoteServer;
 
 import com.google.inject.Inject;
 
+@DefaultImplementation(of=BundleManager.class,context= InjectionContext.gwt)
 public class ClientBundleManager implements BundleManager
 {
     LocalePackage localePackage;

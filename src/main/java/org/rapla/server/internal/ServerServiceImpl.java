@@ -355,7 +355,7 @@ public class ServerServiceImpl extends ContainerImpl
         User user = getFirstAdmin(operator);
         adminSession.setUser(user);
         initializePlugins(preferences, ServerServiceContainer.class);
-        // start server extensions
+        // start server provides
         lookupServicesFor(RaplaServerExtensionPoints.SERVER_EXTENSION);
         if (context.has(AuthenticationStore.class))
         {

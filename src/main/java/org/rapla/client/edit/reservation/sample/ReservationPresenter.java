@@ -28,10 +28,12 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.storage.StorageOperator;
 
 import com.google.web.bindery.event.shared.EventBus;
 
+@Extension(provides = ActivityPresenter.class)
 public class ReservationPresenter implements ReservationController, Presenter, ActivityPresenter
 {
 

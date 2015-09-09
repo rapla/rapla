@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.gui.menu.MenuView.Presenter;
@@ -36,8 +37,10 @@ import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.internal.common.RaplaClipboard;
+import org.rapla.inject.DefaultImplementation;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 
+@Singleton
 public class MenuPresenter extends RaplaComponent implements Presenter
 {
     protected boolean keepTime = false;

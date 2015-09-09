@@ -19,8 +19,10 @@ import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
-@Singleton
+@DefaultImplementation(of=ActivityManager.class, context = InjectionContext.gwt)
 public class GwtActivityManagerImpl extends ActivityManager
 {
     @Inject

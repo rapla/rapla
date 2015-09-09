@@ -12,9 +12,12 @@ public class WeekViewPlugin implements GinModule {
 
     @Override
     public void configure(GinBinder binder) {
-        GinMultibinder<CalendarPlugin> uriBinder = GinMultibinder.newSetBinder(binder, CalendarPlugin.class);
-        uriBinder.addBinding().to(CalendarWeekViewPresenter.class);
-        binder.bind(CalendarWeekView.class).to(CalendarWeekViewImpl.class);
+        // WeekviewPlugin
+        {
+            GinMultibinder<CalendarPlugin> uriBinder = GinMultibinder.newSetBinder(binder, CalendarPlugin.class);
+            uriBinder.addBinding().to(CalendarWeekViewPresenter.class);
+            binder.bind(CalendarWeekView.class).to(CalendarWeekViewImpl.class);
+        }
     }
 
 }
