@@ -1,6 +1,11 @@
 package org.rapla.client.gwt;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,12 +59,15 @@ public class GwtActivityManagerImpl extends ActivityManager
             final String activitiesString = activitiesStartIndex >= 0 ? token.substring(activitiesStartIndex + 1) : null;
             if (activitiesString != null)
             {
-                String[] activitiesAsString = activitiesString.split("&");
-                for (String activityAsString : activitiesAsString)
+                String[] activitiesAsStringList = activitiesString.split("&");
+                for (String activityListAsString : activitiesAsStringList)
                 {
-                    Activity activity = Activity.fromString(activityAsString);
-                    if (activity != null)
+                    final String[] split = activityListAsString.split("=");
+                    final String name = split[0];
+                    final String[] activitiyIds = split[1].split(",");
+                    for (String activityId : activitiyIds)
                     {
+                        final Activity activity = new Activity(name, activityId);
                         activities.add(activity);
                     }
                 }
@@ -76,16 +84,36 @@ public class GwtActivityManagerImpl extends ActivityManager
         }
         if (!activities.isEmpty())
         {
+            Map<String, List<Activity>> activitiesMap = new LinkedHashMap<String, List<Activity>>();
             sb.append("?");
             for (Iterator<Activity> iterator = activities.iterator(); iterator.hasNext();)
             {
                 final Activity activity = iterator.next();
-                sb.append(activity.toString());
-                if (iterator.hasNext())
+                List<Activity> activitiesList = activitiesMap.get(activity.getName());
+                if(activitiesList == null)
                 {
-                    sb.append("&");
+                    activitiesList = new ArrayList<Activity>();
+                    activitiesMap.put(activity.getName(), activitiesList);
                 }
+                activitiesList.add(activity);
             }
+            for (Entry<String, List<Activity>> entries : activitiesMap.entrySet())
+            {
+                final String name = entries.getKey();
+                sb.append(name);
+                sb.append("=");
+                final List<Activity> activitiesList = entries.getValue();
+                for (Activity activity : activitiesList)
+                {
+                    sb.append(activity.getId());
+                    sb.append(",");
+                }
+                // delete last ','
+                sb.deleteCharAt(sb.length()-1);
+                sb.append("&");
+            }
+            // delete last &
+            sb.deleteCharAt(sb.length()-1);
         }
         History.newItem(sb.toString(), false);
     }
