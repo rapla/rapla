@@ -2,6 +2,8 @@ package org.rapla.client.gwt.components;
 
 import java.util.Date;
 
+import org.gwtbootstrap3.client.ui.InputGroupAddon;
+import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.util.JQueryElement;
 import org.rapla.client.gwt.components.util.JS;
@@ -15,11 +17,7 @@ import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.dom.client.FocusEvent;
-import com.google.gwt.event.dom.client.FocusHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.ui.TextBox;
 
 public class ClockPicker extends Div
@@ -33,6 +31,7 @@ public class ClockPicker extends Div
     public interface ClockPickerJquery extends JQueryElement
     {
         ClockPickerElement clockpicker(ClockPickerOptions options);
+
         void remove();
     }
 
@@ -48,12 +47,12 @@ public class ClockPicker extends Div
     @JsType
     public interface ClockPickerI extends JQueryElement
     {
-
-        void clockpicker(String action);
+        void show();
     }
-    
+
     @JsFunction
-    public interface Callback{
+    public interface Callback
+    {
         void handleAction();
     }
 
@@ -104,29 +103,18 @@ public class ClockPicker extends Div
         });
         setTime(initDate);
         add(input);
-        input.addFocusHandler(new FocusHandler()
-        {
-            @Override
-            public void onFocus(FocusEvent event)
-            {
-                clockPicker.clockpicker("show");
-            }
-        });
-        final Element span = DOM.createSpan();
-        span.setClassName("input-group-addon");
-        getElement().appendChild(span);
-        final Element innerSpan = DOM.createSpan();
-        innerSpan.setClassName("glyphicon glyphicon-time");
-        span.appendChild(innerSpan);
-        addDomHandler(new ClickHandler()
+        final InputGroupAddon addon = new InputGroupAddon();
+        addon.setIcon(IconType.CLOCK_O);
+        addon.addDomHandler(new ClickHandler()
         {
             @Override
             public void onClick(ClickEvent event)
             {
+                clockPicker.show();
                 event.stopPropagation();
-                clockPicker.clockpicker("show");
             }
         }, ClickEvent.getType());
+        add(addon);
     }
 
     public void setTime(final Date time)
