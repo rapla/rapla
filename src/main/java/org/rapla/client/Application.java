@@ -140,6 +140,7 @@ public class Application<W> implements ApplicationView.Presenter
         else
         {
             actualPlacePresenter = placePresenters.get(0);
+            actualPlacePresenter.resetPlace();
             mainView.updateContent((W) actualPlacePresenter.provideContent());
         }
     }

@@ -18,8 +18,6 @@ import com.google.web.bindery.event.shared.EventBus;
 @Singleton
 public class GwtActivityManagerImpl extends ActivityManager
 {
-    private boolean changeByBrowser = true;
-
     @Inject
     public GwtActivityManagerImpl(Application application, EventBus eventBus, Logger logger)
     {
@@ -29,16 +27,13 @@ public class GwtActivityManagerImpl extends ActivityManager
             @Override
             public void onValueChange(ValueChangeEvent<String> event)
             {
-                if (changeByBrowser)
+                try
                 {
-                    try
-                    {
-                        GwtActivityManagerImpl.this.init();
-                    }
-                    catch (RaplaException e)
-                    {
-                        logger.error("Error updating history change: " + e.getMessage(), e);
-                    }
+                    GwtActivityManagerImpl.this.init();
+                }
+                catch (RaplaException e)
+                {
+                    logger.error("Error updating history change: " + e.getMessage(), e);
                 }
             }
         });
@@ -50,6 +45,8 @@ public class GwtActivityManagerImpl extends ActivityManager
         // theory, this class is loaded on startup, so check the url and fire
         // events
         final String token = History.getToken();
+        activities.clear();
+        place = null;
         if (token != null && !token.isEmpty())
         {
             place = Place.fromString(token);
@@ -67,12 +64,6 @@ public class GwtActivityManagerImpl extends ActivityManager
                     }
                 }
             }
-            updateHistroryEntry();
-        }
-        else
-        {
-            place = null;
-            activities.clear();
         }
     }
 
@@ -96,15 +87,7 @@ public class GwtActivityManagerImpl extends ActivityManager
                 }
             }
         }
-        try
-        {
-            changeByBrowser = false;
-            History.newItem(sb.toString());
-        }
-        finally
-        {
-            changeByBrowser = true;
-        }
+        History.newItem(sb.toString(), false);
     }
 
 }

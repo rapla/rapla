@@ -10,4 +10,6 @@ public interface PlacePresenter
 
     boolean isResposibleFor(Place place);
 
+    void resetPlace();
+
 }

@@ -62,6 +62,11 @@ public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
     }
 
     @Override
+    public void resetPlace()
+    {
+    }
+    
+    @Override
     public boolean isResposibleFor(Place place)
     {
         if (PLACE_NAME.equals(place.getName()))

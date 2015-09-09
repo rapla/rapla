@@ -222,6 +222,12 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     }
 
     @Override
+    public void resetPlace()
+    {
+        selectedView = viewPluginPresenter.get(0);
+    }
+    
+    @Override
     public boolean isResposibleFor(Place place)
     {
         if (PLACE_ID.equals(place.getName()))
@@ -252,7 +258,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
                 }
                 if (split.length > 2)
                 {
-                    String viewId = split[1];
+                    String viewId = split[2];
                     int index = findView(viewId);
                     setSelectedViewIndex(index);
                 }
