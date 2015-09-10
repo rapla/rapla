@@ -163,6 +163,7 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<!--
 			-->
 			<!--
@@ -179,10 +180,6 @@
     <annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 </annotationProcessors>
 					-->
-					<!--
-                                        -->
-					<!--
--->
 					<!--
 					<compilerArgument>-proc:none</compilerArgument>
 <forceJavacCompilerUse>true</forceJavacCompilerUse>

@@ -33,8 +33,8 @@ public class Application<W> implements ApplicationView.Presenter
     BundleManager bundleManager;
     @Inject
     ClientFacade facade;
-    @Inject
-    private Provider<ReservationController> controller;
+//    @Inject
+//    private Provider<ReservationController> controller;
     @Inject
     private Provider<ActivityManager> activityManager;
     private ApplicationView<W> mainView;

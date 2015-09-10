@@ -3,8 +3,7 @@ package org.rapla.storage.dbrm;
 import org.rapla.ConnectInfo;
 import org.rapla.inject.DefaultImplementation;
 
-@DefaultImplementation(of=RemoteConnectionInfo.class)
-public class RemoteConnectionInfo 
+public class RemoteConnectionInfo
 {
     String accessToken;
     String serverURL;

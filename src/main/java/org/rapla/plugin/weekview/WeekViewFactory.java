@@ -21,12 +21,13 @@ import org.rapla.gui.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
 import javax.swing.*;
 
-@Extension(provides = SwingViewFactory.class)
+//@Extension(provides = SwingViewFactory.class)
 public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
-    public WeekViewFactory( RaplaContext context ) 
+    public WeekViewFactory( RaplaContext context )
     {
         super( context );
     }
