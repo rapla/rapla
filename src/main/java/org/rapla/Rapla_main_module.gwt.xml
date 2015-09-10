@@ -85,10 +85,7 @@
 	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
 
 	<define-configuration-property name='extra.ginModules' is-multi-valued='true' />
-	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.gwt.RaplaGwtModuleOld' />
+	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.gwt.RaplaGwtModule' />
 	<!--
-	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.plugin.weekview.gwt.WeekViewPlugin' />
-	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.plugin.tableview.gwt.ListViewPlugin' />
-	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.edit.reservation.sample.gwt.ReservationEditPlugin' />
 	-->
 </module>

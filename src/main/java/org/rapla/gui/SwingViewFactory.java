@@ -21,8 +21,9 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
-@ExtensionPoint
+@ExtensionPoint(context = InjectionContext.swing)
 public interface SwingViewFactory
 {
     public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");

@@ -36,7 +36,10 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of = ReservationView.class,context = InjectionContext.gwt)
 public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
 {
 

@@ -15,12 +15,18 @@ import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.SelectionChangeEvent;
 import com.google.gwt.view.client.SelectionChangeEvent.Handler;
 import com.google.gwt.view.client.SingleSelectionModel;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
+
+@DefaultImplementation(of = CalendarTableView.class,context = InjectionContext.gwt)
 public class CalendarListViewImpl extends AbstractView<org.rapla.client.plugin.tableview.CalendarTableView.Presenter> implements CalendarTableView<IsWidget> {
 
     final ListDataProvider<Reservation> data = new ListDataProvider<>();
     final CellList<Reservation> list = new CellList<Reservation>(new ReservationCell());
 
+    @Inject
     public CalendarListViewImpl() {
         list.setStyleName("RaplaListDrawerList");
         data.addDataDisplay(list);

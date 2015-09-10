@@ -117,6 +117,7 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
+			<!--
 			<plugin>
 				<groupId>com.mysema.maven</groupId>
 				<artifactId>apt-maven-plugin</artifactId>
@@ -142,36 +143,48 @@
 					</dependency>
 				</dependencies>
 			</plugin>
-			<!--
+			-->
 			<plugin>
 				<groupId>org.bsc.maven</groupId>
 				<artifactId>maven-processor-plugin</artifactId>
 				<version>2.2.4</version>
 				<executions>
 					<execution>
-						<id>process</id>
+						<id>process1</id>
 						<goals>
 							<goal>process</goal>
 						</goals>
 						<phase>generate-sources</phase>
 						<configuration>
 							<processors>
-								<processor>org.rapla.gwtjsonrpc.annotations.ServiceListProcessor</processor>
+								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
 							</processors>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
--->
+			<!--
+			-->
+			<!--
+						-->
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
+					<proc>none</proc>
 					<!--
 <annotationProcessors>
-    <annotationProcessor>org.rapla.gwtjsonrpc.annotations.ServiceListProcessor</annotationProcessor>
+    <annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 </annotationProcessors>
+					-->
+					<!--
+                                        -->
+					<!--
+-->
+					<!--
+					<compilerArgument>-proc:none</compilerArgument>
 <forceJavacCompilerUse>true</forceJavacCompilerUse>
 -->
 				</configuration>
@@ -394,6 +407,7 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
 				<executions>
+					<!--
 					<execution>
 						<id>PluginList</id>
 						<phase>compile</phase>
@@ -408,7 +422,6 @@
 								<property name="test_classpath" refid="maven.test.classpath" />
 								<property name="plugin_classpath" refid="maven.plugin.classpath" />
 
-								<!-- fork="true" -->
 								<java classname="org.rapla.framework.ServiceListCreator"
 									failonerror="true">
 									<classpath refid="maven.test.classpath" />
@@ -420,6 +433,7 @@
 							</target>
 						</configuration>
 					</execution>
+					-->
 
 					<execution>
 						<id>loadbuildproperties</id>
@@ -551,6 +565,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!--
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -570,6 +585,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			-->
 		</plugins>
 		<!-- <pluginManagement> <plugins> <plugin> <groupId>org.eclipse.m2e</groupId> 
 			<artifactId>lifecycle-mapping</artifactId> <version>1.0.0</version> <configuration> 
