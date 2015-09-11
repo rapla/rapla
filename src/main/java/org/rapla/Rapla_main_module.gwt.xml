@@ -83,9 +83,6 @@
 <!-- 	<super-source path="../../../gwt-src/jre"/> -->
 	<!-- Specify the paths for translatable code -->
 	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
+	<inherits name='org.rapla.inject.inject'/>
 
-	<define-configuration-property name='extra.ginModules' is-multi-valued='true' />
-	<extend-configuration-property name='extra.ginModules' value='org.rapla.client.gwt.RaplaGwtModule' />
-	<!--
-	-->
 </module>
