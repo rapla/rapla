@@ -53,7 +53,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<gwtjsonrpc.version>1.0-RC1</gwtjsonrpc.version>
+		<gwtjsonrpc.version>1.0-RC2</gwtjsonrpc.version>
 		<gson.version>2.3.1</gson.version>
 		<javax.inject.version>1</javax.inject.version>
 		<supercsv.version>2.0.1</supercsv.version>
