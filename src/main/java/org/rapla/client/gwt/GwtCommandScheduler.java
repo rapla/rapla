@@ -13,7 +13,7 @@ import org.rapla.inject.InjectionContext;
 import javax.inject.Inject;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
-final class GwtCommandScheduler implements CommandScheduler
+public final class GwtCommandScheduler implements CommandScheduler
 {
     private final Logger gwtLogger;
 

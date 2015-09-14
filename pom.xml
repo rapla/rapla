@@ -266,7 +266,8 @@
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
 					<sourceLevel>1.8</sourceLevel>
 					<jsInteropMode>JS</jsInteropMode>
-					<logLevel>INFO</logLevel>
+					<detail>false</detail>
+					<generateDirectory>${basedir}/target/generated-gwt</generateDirectory>
 					<detail>false</detail>
 				</configuration>
 			</plugin>
@@ -747,13 +748,13 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- GWT -->
-		<!--
 		<dependency>
 			<groupId>com.google.gwt</groupId>
 			<artifactId>gwt-dev</artifactId>
 			<version>${gwt.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<!--
 		-->
 		<dependency>
 			<groupId>com.google.gwt</groupId>

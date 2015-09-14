@@ -12,26 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.internal.JettyDevelopment;
@@ -42,6 +25,21 @@ import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 public class MainServlet extends HttpServlet {
     
     private static final long serialVersionUID = 1L;
@@ -54,7 +52,7 @@ public class MainServlet extends HttpServlet {
     	logger.info("Init RaplaServlet");
     	String startupMode;
         Boolean env_development;
-        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters());
+		RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters());
     	if ( jndi.hasContext())
     	{
     		startupMode = jndi.lookupEnvString("rapla_startup_mode", false);

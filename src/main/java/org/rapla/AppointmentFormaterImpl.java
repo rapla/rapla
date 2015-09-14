@@ -25,12 +25,14 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
 /** default implementation of appointment formater */
 @DefaultImplementation(of = AppointmentFormater.class)
+@Singleton
 public class AppointmentFormaterImpl
     implements
     AppointmentFormater
