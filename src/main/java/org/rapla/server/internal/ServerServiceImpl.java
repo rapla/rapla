@@ -433,7 +433,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory, Configuration configuration)
     {
-        addContainerProvidedComponent(REMOTE_METHOD_FACTORY, factory, configuration);
+        addContainerProvidedComponent(REMOTE_METHOD_FACTORY, factory, role.getCanonicalName(),configuration);
     }
 
     @Override
@@ -457,7 +457,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     {
 
         String lowerCase = pagename.toLowerCase();
-        addContainerProvidedComponent(SERVLET_PAGE_EXTENSION, pageClass);
+        addContainerProvidedComponent(SERVLET_PAGE_EXTENSION, pageClass, lowerCase, null);
     }
 
 
