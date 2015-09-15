@@ -117,33 +117,6 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
-			<!--
-			<plugin>
-				<groupId>com.mysema.maven</groupId>
-				<artifactId>apt-maven-plugin</artifactId>
-				<version>1.1.3</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>process</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>target/generated-sources/java</outputDirectory>
-							<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
-						</configuration>
-					</execution>
-				</executions>
-				<dependencies>
-					<dependency>
-						<groupId>org.rapla</groupId>
-						<artifactId>gwtjsonrpc</artifactId>
-						<version>${gwtjsonrpc.version}</version>
-						<scope>compile</scope>
-						<optional>true</optional>
-					</dependency>
-				</dependencies>
-			</plugin>
-			-->
 			<plugin>
 				<groupId>org.bsc.maven</groupId>
 				<artifactId>maven-processor-plugin</artifactId>
@@ -163,42 +136,13 @@
 					</execution>
 				</executions>
 			</plugin>
-
-			<!--
-			-->
-			<!--
-						-->
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
 					<proc>none</proc>
-					<!--
-<annotationProcessors>
-    <annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
-</annotationProcessors>
-					-->
-					<!--
-					<compilerArgument>-proc:none</compilerArgument>
-<forceJavacCompilerUse>true</forceJavacCompilerUse>
--->
 				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.rapla</groupId>
-						<artifactId>gwtjsonrpc</artifactId>
-						<version>${gwtjsonrpc.version}</version>
-						<scope>compile</scope>
-						<optional>true</optional>
-					</dependency>
-				</dependencies>
-
-
-				<!-- <dependencies> <dependency> <groupId>org.codehaus.plexus</groupId>
-					<artifactId>plexus-compiler-eclipse</artifactId> <version>2.5</version> </dependency> 
-					</dependencies> -->
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -360,47 +304,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--
-			<plugin>
-				<groupId>org.codehaus.gmaven</groupId>
-				<artifactId>gmaven-plugin</artifactId>
-				<version>1.4</version>
-				<executions>
-					<execution>
-						<id>create-async-rest-services</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>execute</goal>
-						</goals>
-						<configuration>
-							<properties>
-								<restResourcesPath>
-									${basedir}/src/main/java/org/rapla
-								</restResourcesPath>
-								<restAsyncResourcesPath>
-									${basedir}/src/gen/java/org/rapla
-								</restAsyncResourcesPath>
-								<restAsyncResourcesPackage>
-									net.javaforge.gwt.rest.client.remote.rest
-								</restAsyncResourcesPackage>
-								<restURLBase>rest</restURLBase>
-								<importsRegexp>
-									net\.javaforge\..*|java\..*|javax\.ws\.rs.*
-								</importsRegexp>
-							</properties>
-							<classpath>
-								<element>
-									<groupId>com.google.code.javaparser</groupId>
-									<artifactId>javaparser</artifactId>
-									<version>1.0.11</version>
-								</element>
-							</classpath>
-							<source>${basedir}/src/main/groovy/servicelistcreator.groovy</source>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			-->
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
@@ -563,36 +466,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.9.1</version>
-				<executions>
-					<execution>
-						<id>add-source</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-								<source>${basedir}/src/gen/java</source>
-							</sources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			-->
 		</plugins>
-		<!-- <pluginManagement> <plugins> <plugin> <groupId>org.eclipse.m2e</groupId> 
-			<artifactId>lifecycle-mapping</artifactId> <version>1.0.0</version> <configuration> 
-			<lifecycleMappingMetadata> <pluginExecutions> <pluginExecution> <pluginExecutionFilter> 
-			<groupId>org.codehaus.mojo</groupId> <artifactId>exec-maven-plugin</artifactId> 
-			<versionRange>[1.0.0,)</versionRange> <goals> <goal>java</goal> </goals> 
-			</pluginExecutionFilter> <action> <execute> <runOnIncremental>true</runOnIncremental> 
-			</execute> </action> </pluginExecution> </pluginExecutions> </lifecycleMappingMetadata> 
-			</configuration> </plugin> </plugins> </pluginManagement> -->
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -893,12 +767,6 @@
 					<groupId>org.eclipse.jetty.orbit</groupId>
 				</exclusion>
 			</exclusions>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.javaparser</groupId>
-			<artifactId>javaparser</artifactId>
-			<version>1.0.11</version>
 			<scope>provided</scope>
 		</dependency>
 
