@@ -50,4 +50,8 @@ public class RaplaICalTimezones extends RaplaComponent implements ICalTimezones,
 		return new ResultImpl<String>(id);
 	}
 
+	@Override public Class<ICalTimezones> getInterfaceClass()
+	{
+		return ICalTimezones.class;
+	}
 }

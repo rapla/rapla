@@ -23,6 +23,7 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
@@ -31,6 +32,9 @@ import org.rapla.storage.dbrm.RemoteServiceCallerImpl;
 
 import javax.inject.Provider;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
+
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
 The rapla container has only one instance at runtime. Configuration of the RaplaMainContainer is done in the rapla*.xconf
@@ -82,6 +86,11 @@ public class RaplaClient extends ContainerImpl
             }
         });
     }
+
+    protected Collection<InjectionContext> getSupportedContexts()
+    {
+        return Arrays.asList(InjectionContext.client);
+    }
     
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
@@ -89,13 +98,12 @@ public class RaplaClient extends ContainerImpl
     }
     
     protected RaplaClient(StartupEnvironment env,  Provider<RemoteServiceCaller> caller) throws Exception{
-        super( env.getBootstrapLogger() , caller);
-        addContainerProvidedComponentInstance( StartupEnvironment.class, env);
+        super(env.getBootstrapLogger(), caller);
+        addContainerProvidedComponentInstance(StartupEnvironment.class, env);
+        loadFromServiceList();
         URL downloadURL = env.getDownloadURL();
-        remoteConnectionInfo.setServerURL( downloadURL.toURI().toString());
-     	addContainerProvidedComponentInstance( RemoteConnectionInfo.class, remoteConnectionInfo);
-        addContainerProvidedComponent( StorageOperator.class, RemoteOperator.class);
-        addContainerProvidedComponent( ClientFacade.class, FacadeImpl.class);
+        remoteConnectionInfo.setServerURL(downloadURL.toURI().toString());
+     	addContainerProvidedComponentInstance(RemoteConnectionInfo.class, remoteConnectionInfo);
         if ( caller instanceof SimpleProvider )
         {
             SimpleProvider<RemoteServiceCaller> simpleProvider = (SimpleProvider<RemoteServiceCaller>) caller;

@@ -30,7 +30,6 @@ public interface ServerServiceContainer extends Container
     *@see org.rapla.server.servletpages.RaplaPageGenerator
      */
     <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass);
-    <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass, Configuration config);
     /** @return null when the server doesn't have the webpage  */
 	RaplaPageGenerator getWebpage(String page);
 	

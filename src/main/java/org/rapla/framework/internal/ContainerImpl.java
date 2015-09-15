@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import org.rapla.inject.*;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.AbstractBundle;
@@ -36,6 +37,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -212,7 +215,7 @@ public class ContainerImpl implements Container
     }
 
     public <T, I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass, Configuration config) {
-        addContainerProvidedComponent( roleInterface, implementingClass, null, config);
+        addContainerProvidedComponent(roleInterface, implementingClass, null, config);
     }
     
     public <T, I extends T> void addContainerProvidedComponentInstance(TypedComponentRole<T> roleInterface, I implementingInstance) {
@@ -238,16 +241,16 @@ public class ContainerImpl implements Container
     }
     
     protected <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass, String hint, Configuration config) {
-        addContainerProvidedComponent( roleInterface.getName(), implementingClass.getName(), hint, config);
+        addContainerProvidedComponent(roleInterface.getName(), implementingClass.getName(), hint, config);
     }
 
     private <T, I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass, String hint, Configuration config)
     {
-        addContainerProvidedComponent( roleInterface.getId(), implementingClass.getName(), hint, config);
+        addContainerProvidedComponent(roleInterface.getId(), implementingClass.getName(), hint, config);
     }
 
     synchronized private void addContainerProvidedComponent(String role,String classname, String hint,Configuration config) {
-        addContainerProvidedComponent( new String[] {role}, classname, hint, config);
+        addContainerProvidedComponent(new String[] { role }, classname, hint, config);
     }
 
     synchronized private void addContainerProvidedComponentInstance(String role,Object componentInstance,String hint) {
@@ -306,7 +309,7 @@ public class ContainerImpl implements Container
         if ( entry == null)
             entry = new RoleEntry(roleName);
         entry.put( hint , handler);
-        m_roleMap.put( roleName, entry);
+        m_roleMap.put(roleName, entry);
     }
 
     ComponentHandler getHandler( String role) {
@@ -686,6 +689,188 @@ public class ContainerImpl implements Container
     	CommandScheduler commandQueue = new DefaultScheduler(getLogger(),6);
 		return commandQueue;
 	}
+
+
+    protected void loadFromServiceList() throws Exception
+    {
+        String folder = org.rapla.inject.generator.AnnotationInjectionProcessor.GWT_MODULE_LIST;
+
+        Set<String> interfaces = new LinkedHashSet<String>();
+        final Collection<URL> resources = find(folder);
+        for (URL url : resources)
+        {
+            final InputStream modules = url.openStream();
+            final BufferedReader br = new BufferedReader(new InputStreamReader(modules, "UTF-8"));
+            String module = null;
+            while ((module = br.readLine()) != null)
+            {
+                interfaces.add(module);
+            }
+            br.close();
+        }
+        for ( String module :interfaces)
+        {
+            Class<?> interfaceClass;
+            try
+            {
+                interfaceClass = Class.forName(module);
+            }
+            catch (ClassNotFoundException e1)
+            {
+                logger.warn("Found interfaceName definition but no class for " + module);
+                return;
+            }
+            addImplementations(interfaceClass);
+        }
+    }
+
+    private Collection<URL> find(String fileWithfolder) throws IOException
+    {
+
+        List<URL> result = new ArrayList<URL>();
+        Enumeration<URL> resources = this.getClass().getClassLoader().getResources(fileWithfolder);
+        while (resources.hasMoreElements())
+        {
+            result.add(resources.nextElement());
+        }
+        return result;
+    }
+
+
+    private boolean isProviding( org.rapla.inject.Extension[] clazzAnnot, Class interfaceClass)
+    {
+        for ( Extension ext:clazzAnnot)
+        {
+            final Class provides = ext.provides();
+            if (provides.equals( interfaceClass))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected Collection<InjectionContext> getSupportedContexts()
+    {
+        return Collections.emptyList();
+    }
+
+    private boolean isRelevant(InjectionContext... context)
+    {
+        final List<InjectionContext> c2 = Arrays.asList(context);
+        Collection<InjectionContext> supportedContexts = getSupportedContexts();
+        return !Collections.disjoint(c2, supportedContexts) || c2.size() == 0;
+    }
+
+    private boolean isImplementing( Class interfaceClass, DefaultImplementation... clazzAnnot)
+    {
+        for ( DefaultImplementation ext:clazzAnnot)
+        {
+            final Class provides = ext.of();
+            final InjectionContext[] context = ext.context();
+            if (provides.equals( interfaceClass) && isRelevant(context))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private <T> void addImplementations(Class<T> interfaceClass) throws IOException
+    {
+        Collection<InjectionContext> supportedContexts = getSupportedContexts();
+
+        final ExtensionPoint extensionPointAnnotation = interfaceClass.getAnnotation(ExtensionPoint.class);
+        final boolean isExtensionPoint = extensionPointAnnotation != null;
+        if (isExtensionPoint)
+        {
+            final InjectionContext[] context = extensionPointAnnotation.context();
+            if (!isRelevant(context))
+            {
+                return;
+            }
+        }
+
+        final String folder = "META-INF/services/";
+        boolean foundExtension = false;
+        boolean foundDefaultImpl = false;
+        // load all implementations or extensions from service list file
+        Set<String> implemantations = new LinkedHashSet<String>();
+        final String interfaceName = interfaceClass.getCanonicalName();
+        final Collection<URL> resources = find(folder + interfaceName);
+        for (URL url : resources)
+        {
+            //final URL def = moduleDefinition.nextElement();
+            final InputStream in = url.openStream();
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+            String implementationClassName = null;
+            boolean implOrExtensionFound = false;
+            while ((implementationClassName = reader.readLine()) != null)
+            {
+                try
+                {
+                    if ( implemantations.contains( implementationClassName))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        implemantations.add( implementationClassName );
+                    }
+                    // load class for implementation or extension
+                    final Class<T> clazz = (Class<T>)Class.forName(implementationClassName);
+                    final Extension[] extensions = clazz.getAnnotationsByType(Extension.class);
+                    final boolean providing = isProviding(extensions, interfaceClass);
+                    if (providing )
+                    {
+                        foundExtension = true;
+                        addContainerProvidedComponent( interfaceClass, clazz);
+                    }
+                    else
+                    {
+                        if ( isExtensionPoint)
+                        {
+                            logger.warn(clazz + " provides no extension for " + interfaceName + " but is in the service list of " + interfaceName
+                                    + ". You may need run a clean build.");
+                        }
+                    }
+
+                    final DefaultImplementation[] defaultImplementations = clazz.getAnnotationsByType(DefaultImplementation.class);
+                    final boolean implementing = isImplementing( interfaceClass, defaultImplementations);
+                    if ( implementing)
+                    {
+                        addContainerProvidedComponent(interfaceClass, clazz,  (Configuration)null);
+                        foundDefaultImpl = true;
+                        // not necessary in current impl
+                        //src.println("binder.bind(" + interfaceName + ".class).to(" + implementationClassName + ".class).in(Singleton.class);");
+                    }
+
+                }
+                catch (ClassNotFoundException e)
+                {
+                    logger.warn("Error loading implementationClassName (" + implementationClassName + ") for " + interfaceName, e);
+                }
+
+            }
+            reader.close();
+        }
+
+        if (isExtensionPoint)
+        {
+            if (!foundExtension)
+            {
+                // not necessary to create a default Binding
+            }
+        } else {
+            if (!foundDefaultImpl)
+            {
+                logger.warn(
+                        "No DefaultImplemenation found for " + interfaceName + " Interface will not be available in the supported Contexts " + supportedContexts
+                                + " ");
+            }
+        }
+    }
 
     protected void initialize() throws Exception {
         //Logger logger = getLogger();

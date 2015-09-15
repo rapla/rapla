@@ -24,7 +24,7 @@ import org.rapla.inject.Extension;
 import javax.inject.Inject;
 import javax.swing.*;
 
-//@Extension(provides = SwingViewFactory.class)
+@Extension(provides = SwingViewFactory.class,id =WeekViewFactory.WEEK_VIEW)
 public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
     public WeekViewFactory( RaplaContext context )

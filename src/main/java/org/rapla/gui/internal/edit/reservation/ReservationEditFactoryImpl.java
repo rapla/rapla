@@ -5,7 +5,10 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.ReservationEdit;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of= ReservationEditFactory.class,context = InjectionContext.swing)
 public class ReservationEditFactoryImpl implements ReservationEditFactory
 {
     RaplaContext context;

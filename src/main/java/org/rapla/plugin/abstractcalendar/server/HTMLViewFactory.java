@@ -17,8 +17,11 @@ package org.rapla.plugin.abstractcalendar.server;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
+@ExtensionPoint(context = InjectionContext.server,id ="htmlexport")
 public interface HTMLViewFactory
 {
     public RaplaPageGenerator createHTMLView(RaplaContext context, CalendarModel model) throws RaplaException;

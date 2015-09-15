@@ -1,11 +1,14 @@
 package org.rapla.server.internal;
 
+import org.rapla.components.util.DateTools;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.server.TimeZoneConverter;
+
 import java.util.Date;
 import java.util.TimeZone;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.server.TimeZoneConverter;
-
+@DefaultImplementation(of=TimeZoneConverter.class,context = InjectionContext.server)
 public class TimeZoneConverterImpl implements TimeZoneConverter
 {
     TimeZone zone;

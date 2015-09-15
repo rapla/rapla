@@ -31,4 +31,9 @@ public class ArchiverServiceFactory extends RaplaComponent implements RemoteMeth
 		};
 	}
 
+	@Override public Class<ArchiverService> getInterfaceClass()
+	{
+		return ArchiverService.class;
+	}
+
 }

@@ -21,7 +21,11 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
+import org.rapla.inject.Extension;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
+@Extension(provides = SwingViewFactory.class,id = DayViewFactory.DAY_VIEW)
 public class DayViewFactory extends RaplaComponent implements SwingViewFactory
 {
     public DayViewFactory( RaplaContext context ) 

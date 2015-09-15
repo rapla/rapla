@@ -21,6 +21,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.inject.Named;
 
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
@@ -32,6 +33,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.server.RaplaServerExtensionPoints;
@@ -53,6 +55,7 @@ import org.rapla.server.servletpages.RaplaPageGenerator;
  * &year=<year>:  int-value of the year
  * &today:  will set the view to the current day. Ignores day, month and year
  */
+@Extension(provides = RaplaPageGenerator.class,id="calendar")
 public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGenerator
 {
 	 private Map<String,HTMLViewFactory> factoryMap = new HashMap<String, HTMLViewFactory>();

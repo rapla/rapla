@@ -48,6 +48,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.ResultImpl;
@@ -63,6 +64,11 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 
 	public RaplaICalImport( RaplaContext context) throws RaplaContextException{
 		this( context, context.lookup(TimeZoneConverter.class).getImportExportTimeZone());
+	}
+
+	@Override public Class<ICalImport> getInterfaceClass()
+	{
+		return ICalImport.class;
 	}
 	
     public RaplaICalImport( RaplaContext context, TimeZone timeZone) throws RaplaContextException{

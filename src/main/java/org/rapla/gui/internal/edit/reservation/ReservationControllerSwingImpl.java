@@ -16,15 +16,15 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.EventCheck;
-import org.rapla.gui.InfoFactory;
-import org.rapla.gui.PopupContext;
-import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.*;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.common.RaplaClipboard;
 import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of= ReservationController.class,context = InjectionContext.swing)
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
     Container container;

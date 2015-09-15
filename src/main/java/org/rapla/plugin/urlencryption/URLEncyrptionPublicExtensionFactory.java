@@ -24,7 +24,9 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.gui.PublishExtension;
 import org.rapla.gui.PublishExtensionFactory;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.inject.Extension;
 
+@Extension(provides=PublishExtensionFactory.class,id="urlencryption")
 public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
 {
 

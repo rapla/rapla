@@ -49,6 +49,7 @@ import org.rapla.gui.internal.view.InfoFactoryImpl;
 import org.rapla.gui.internal.view.LicenseInfoUI;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.*;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.*;
@@ -115,6 +116,11 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         lookAndFeelSet = true;
     }
 
+    protected Collection<InjectionContext> getSupportedContexts()
+    {
+        return Arrays.asList(new InjectionContext[]{InjectionContext.client, InjectionContext.swing});
+    }
+
     @Override
     protected void initialize() throws Exception {
         super.initialize();
@@ -152,11 +158,11 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponent( MenuFactory.class, MenuFactoryImpl.class );
         addContainerProvidedComponent( InfoFactory.class, InfoFactoryImpl.class );
         addContainerProvidedComponent( EditController.class, EditControllerImpl.class );
-        addContainerProvidedComponent( ReservationEditFactory.class, ReservationEditFactoryImpl.class );
-        addContainerProvidedComponent( ReservationController.class, ReservationControllerSwingImpl.class );
+
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION ,UserOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , CalendarOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , WarningsOption.class);
+
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class );
         addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class );
 

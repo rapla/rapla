@@ -37,16 +37,23 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
+import org.rapla.server.servletpages.RaplaPageExtenstion;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
 
-public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtenstion.class,id="calendar")
+public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageExtenstion
 {
     public CalendarListPageGenerator( RaplaContext context ) 
     {
         super( context );
-        setChildBundleName( AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE );
+    }
+
+    public String getWeb()
+    {
+        return "calendarlist";
     }
 
     public void generatePage( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response )
@@ -153,6 +160,8 @@ public class CalendarListPageGenerator extends RaplaComponent implements RaplaPa
         }
         return title;
     }
+
+
 
     class TitleComparator implements Comparator<String> {
 

@@ -33,7 +33,7 @@ import org.rapla.storage.StorageOperator;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(provides = ActivityPresenter.class)
+@Extension(provides = ActivityPresenter.class,id=ReservationPresenter.EDIT_ACTIVITY_ID)
 public class ReservationPresenter implements ReservationController, Presenter, ActivityPresenter
 {
 
