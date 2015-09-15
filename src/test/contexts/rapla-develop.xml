@@ -30,7 +30,6 @@ detected.
     <Arg></Arg>
 	<Arg>raplafile</Arg>
 	<Arg type="java.lang.String">data/data.xml</Arg>
-<!-- 	<Arg type="java.lang.String"><SystemProperty name="jetty.home" default="." />/data/wochenplan.xml</Arg> -->
 	<Arg type="boolean">true</Arg>
   </New>
   <New id="rapladevelop" class="org.eclipse.jetty.plus.jndi.EnvEntry">
