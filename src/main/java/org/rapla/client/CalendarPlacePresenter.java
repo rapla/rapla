@@ -31,10 +31,10 @@ import org.rapla.framework.logger.Logger;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.inject.Extension;
 
-@Extension(provides=PlacePresenter.class)
+@Extension(provides=PlacePresenter.class,id=CalendarPlacePresenter.PLACE_ID)
 public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 {
-    private static final String PLACE_ID = "cal";
+    public static final String PLACE_ID = "cal";
     private static final String TODAY_DATE = "today";
 
     private final CalendarPlaceView<W> view;

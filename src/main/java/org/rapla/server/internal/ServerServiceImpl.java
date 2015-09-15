@@ -15,18 +15,7 @@ package org.rapla.server.internal;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import java.util.*;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -60,6 +49,7 @@ import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.rest.RemoteLogger;
 import org.rapla.gwtjsonrpc.common.FutureResult;
@@ -122,8 +112,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
  @see ServerService
  */
 
-public class ServerServiceImpl extends ContainerImpl
-        implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService, RemoteMethodFactory<RemoteServer>
+public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService, RemoteMethodFactory<RemoteServer>
 {
 
     @SuppressWarnings("rawtypes")
@@ -227,8 +216,9 @@ public class ServerServiceImpl extends ContainerImpl
         {
             addContainerProvidedComponentInstance(ServerService.ENV_RAPLAMAIL, containerContext.mailSession);
         }
+        loadFromServiceList();
         initialize();
-        addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
+        //addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
         if (selectedStorage == null || "raplafile".equals( selectedStorage ))
         {
             operator = getContext().lookup(FileOperator.class);
@@ -242,7 +232,7 @@ public class ServerServiceImpl extends ContainerImpl
             throw new RaplaException("Unknown datasource " + selectedStorage);
         }
         addContainerProvidedComponentInstance(StorageOperator.class, operator);
-        addContainerProvidedComponent(ClientFacade.class, FacadeImpl.class);
+        //addContainerProvidedComponent(ClientFacade.class, FacadeImpl.class);
         RaplaContext context = getContext();
 
         addContainerProvidedComponentInstance(ServerService.class, this);
@@ -391,6 +381,11 @@ public class ServerServiceImpl extends ContainerImpl
         }
     }
 
+    protected Collection<InjectionContext> getSupportedContexts()
+    {
+        return Arrays.asList(InjectionContext.server);
+    }
+
     public void setPasswordCheckDisabled(boolean passwordCheckDisabled)
     {
         this.passwordCheckDisabled = passwordCheckDisabled;
@@ -438,7 +433,7 @@ public class ServerServiceImpl extends ContainerImpl
 
     public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory, Configuration configuration)
     {
-        addContainerProvidedComponent(REMOTE_METHOD_FACTORY, factory, role.getName(), configuration);
+        addContainerProvidedComponent(REMOTE_METHOD_FACTORY, factory, configuration);
     }
 
     @Override
@@ -460,14 +455,12 @@ public class ServerServiceImpl extends ContainerImpl
 
     public <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass)
     {
-        addWebpage(pagename, pageClass, null);
+
+        String lowerCase = pagename.toLowerCase();
+        addContainerProvidedComponent(SERVLET_PAGE_EXTENSION, pageClass);
     }
 
-    public <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass, Configuration configuration)
-    {
-        String lowerCase = pagename.toLowerCase();
-        addContainerProvidedComponent(SERVLET_PAGE_EXTENSION, pageClass, lowerCase, configuration);
-    }
+
 
     public RaplaPageGenerator getWebpage(String page)
     {
@@ -554,6 +547,12 @@ public class ServerServiceImpl extends ContainerImpl
         }
     }
 
+    @Override public Class<RemoteServer> getInterfaceClass()
+    {
+        return RemoteServer.class;
+    }
+
+    @Override
     public RemoteServer createService(final RemoteSession session) {
         return new RemoteServer() {
             
@@ -725,7 +724,9 @@ public class ServerServiceImpl extends ContainerImpl
             @Override
             public FutureResult<LocalePackage> locale(String id, String localeString)
             {
+
                 try {
+                    RaplaLocale raplaLocale = (RaplaLocaleImpl)getContext().lookup(RaplaLocale.class);
                     if (localeString == null)
                     {
                         final User validUser = getValidUser(session);

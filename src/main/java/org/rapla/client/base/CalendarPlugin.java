@@ -2,10 +2,11 @@ package org.rapla.client.base;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
 import java.util.Date;
 
-@ExtensionPoint
+@ExtensionPoint(context = InjectionContext.gwt, id="calendar")
 public interface CalendarPlugin<W>  {
     String getName();
 

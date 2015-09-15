@@ -28,10 +28,14 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.rapla.server.servletpages.RaplaPageGenerator;
+
+import javax.inject.Named;
 
 public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 {

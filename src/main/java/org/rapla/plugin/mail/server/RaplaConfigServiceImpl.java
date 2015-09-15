@@ -35,7 +35,12 @@ public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMeth
 		super( context );
 		keyStore = context.lookup( RaplaKeyStorage.class);
 	}
-        
+
+	@Override public Class<MailConfigService> getInterfaceClass()
+	{
+		return MailConfigService.class;
+	}
+
 	public MailConfigService createService(final RemoteSession remoteSession) {
 		return new MailConfigService()
 		{
@@ -119,8 +124,11 @@ public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMeth
 //			}
 			
 		};
-				
+
+
 	}
+
+
 
 
 		

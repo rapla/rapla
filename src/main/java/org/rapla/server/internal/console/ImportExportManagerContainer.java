@@ -7,6 +7,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.InjectionContext;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
@@ -16,6 +17,9 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 public class ImportExportManagerContainer extends ContainerImpl{
 
@@ -57,6 +61,11 @@ public class ImportExportManagerContainer extends ContainerImpl{
     public void doExport() throws RaplaException
     {
         getContext().lookup( ImportExportManager.class).doExport();
+    }
+
+    protected Collection<InjectionContext> getSupportedContexts()
+    {
+        return Arrays.asList(InjectionContext.server);
     }
 
     public void dispose() {

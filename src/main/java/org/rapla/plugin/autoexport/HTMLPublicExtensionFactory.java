@@ -8,7 +8,9 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.PublishExtension;
 import org.rapla.gui.PublishExtensionFactory;
+import org.rapla.inject.Extension;
 
+@Extension(provides=PublishExtensionFactory.class,id="html")
 public class HTMLPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
 {
 	public HTMLPublicExtensionFactory(RaplaContext context) {

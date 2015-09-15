@@ -4,10 +4,14 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.Date;
 
+@Extension(provides = I18nBundle.class, id = RaplaResources.ID)
 public class RaplaResources extends AbstractBundle {
     public static final String ID = "org.rapla.RaplaResources";
     @Inject

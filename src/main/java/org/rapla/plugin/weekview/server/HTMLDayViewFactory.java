@@ -15,9 +15,12 @@ package org.rapla.plugin.weekview.server;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
+
+@Extension(provides = HTMLViewFactory.class,id = HTMLDayViewFactory.DAY_VIEW)
 public class HTMLDayViewFactory extends RaplaComponent implements HTMLViewFactory
 {
     public HTMLDayViewFactory( RaplaContext context ) 

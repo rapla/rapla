@@ -9,11 +9,14 @@ import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import java.text.MessageFormat;
 import java.util.*;
 
+@DefaultImplementation(of=BundleManager.class,context = { InjectionContext.server, InjectionContext.swing})
 public class ServerBundleManager implements BundleManager {
     private I18nLocaleFormats formats;
     private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();

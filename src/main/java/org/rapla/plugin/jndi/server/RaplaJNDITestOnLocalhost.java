@@ -28,12 +28,16 @@ import org.rapla.storage.RaplaSecurityException;
 
 public class RaplaJNDITestOnLocalhost extends RaplaComponent implements RemoteMethodFactory<JNDIConfig>
 {
-        public RaplaJNDITestOnLocalhost( RaplaContext context)  {
+    public RaplaJNDITestOnLocalhost( RaplaContext context)  {
             super( context );
         }
-        
 
-		public JNDIConfig createService(final RemoteSession remoteSession) {
+    @Override public Class<JNDIConfig> getInterfaceClass()
+    {
+        return JNDIConfig.class;
+    }
+
+    public JNDIConfig createService(final RemoteSession remoteSession) {
 			return new JNDIConfig() {
                 
                 @Override

@@ -20,9 +20,10 @@ import org.rapla.framework.logger.Logger;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.inject.Extension;
 
-@Extension(provides = CalendarPlugin.class)
+@Extension(provides = CalendarPlugin.class,id =CalendarTableViewPresenter.TABLE_VIEW)
 public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin {
 
+    public static final String TABLE_VIEW = "table";
     private CalendarTableView<W> view;
     @Inject
     private Logger logger;

@@ -49,8 +49,12 @@ public class RaplaMailToUserOnLocalhost extends RaplaComponent implements MailTo
             getLogger().getChildLogger("mail").info("Email send to user " + userName);
         }
 
+    @Override public Class<MailToUserInterface> getInterfaceClass()
+    {
+        return MailToUserInterface.class;
+    }
 
-        public MailToUserInterface createService(RemoteSession remoteSession) {
+    public MailToUserInterface createService(RemoteSession remoteSession) {
             return this;
         }
 

@@ -23,7 +23,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
-@ExtensionPoint(context = InjectionContext.swing)
+@ExtensionPoint(context = InjectionContext.swing, id="week")
 public interface SwingViewFactory
 {
     public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");

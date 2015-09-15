@@ -153,4 +153,9 @@ public class UrlEncryptionService extends RaplaComponent implements UrlEncryptio
     {
         return this;
     }
+
+    @Override public Class<UrlEncryption> getInterfaceClass()
+    {
+        return UrlEncryption.class;
+    }
 }

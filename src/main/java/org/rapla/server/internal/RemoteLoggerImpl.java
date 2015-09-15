@@ -39,4 +39,8 @@ public class RemoteLoggerImpl implements RemoteMethodFactory<RemoteLogger> {
         };
     }
 
+    @Override public Class<RemoteLogger> getInterfaceClass()
+    {
+        return RemoteLogger.class;
+    }
 }

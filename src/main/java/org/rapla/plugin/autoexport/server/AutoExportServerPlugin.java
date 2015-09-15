@@ -15,24 +15,20 @@ package org.rapla.plugin.autoexport.server;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.ServerServiceContainer;
 
 public class AutoExportServerPlugin implements PluginDescriptor<ServerServiceContainer>
 {
     public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException {
-        container.addResourceFile(AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE );
-    	if ( !config.getAttributeAsBoolean("enabled", AutoExportPlugin.ENABLE_BY_DEFAULT) )
-        	return;
 
-        container.addWebpage(AutoExportPlugin.CALENDAR_GENERATOR,CalendarPageGenerator.class);
+        //container.addWebpage(AutoExportPlugin.CALENDAR_GENERATOR,CalendarPageGenerator.class);
         //RaplaResourcePageGenerator resourcePageGenerator = container.getContext().lookup(RaplaResourcePageGenerator.class);
         // registers the standard calendar files
         
         //resourcePageGenerator.registerResource( "calendar.css", "text/css", this.getClass().getResource("/org/rapla/plugin/autoexport/server/calendar.css"));
         // look if we should add a menu entry of exported lists
-        if (config.getAttributeAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false))
+        //if (config.getAttributeAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false))
         {
         	container.addWebpage("calendarlist",CalendarListPageGenerator.class);
         	container.addContainerProvidedComponent( RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, ExportMenuEntry.class);

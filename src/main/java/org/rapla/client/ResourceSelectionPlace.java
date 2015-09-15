@@ -14,7 +14,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-@Extension(provides = PlacePresenter.class)
+@Extension(provides = PlacePresenter.class,id=ResourceSelectionPlace.PLACE_NAME)
 public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
 {
     public static final String PLACE_NAME = "ResSel";

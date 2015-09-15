@@ -28,20 +28,26 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 
+@Extension(provides = RemoteMethodFactory.class,id=RaplaICalExport.ID)
 public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
 {
-    
+    public static final String ID = "org.rapla.plugin.export2ical";
     public RaplaICalExport( RaplaContext context) {
         super( context );
     }
 
-    
-    public void export(String[] appointmentIds, OutputStream out ) throws RaplaException, IOException 
+    @Override public Class<ICalExport> getInterfaceClass()
+    {
+        return ICalExport.class;
+    }
+
+    public void export(String[] appointmentIds, OutputStream out ) throws RaplaException, IOException
     {
         TimeZone timeZone = getContext().lookup( TimeZoneConverter.class).getImportExportTimeZone();
         

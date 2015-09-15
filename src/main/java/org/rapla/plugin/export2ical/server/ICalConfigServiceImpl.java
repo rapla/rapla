@@ -20,7 +20,12 @@ public class ICalConfigServiceImpl implements RemoteMethodFactory<ICalConfigServ
     {
         this.facade = facade;
     }
-    
+
+    @Override public Class<ICalConfigService> getInterfaceClass()
+    {
+        return ICalConfigService.class;
+    }
+
     @Override
     public ICalConfigService createService(final RemoteSession remoteSession) throws RaplaContextException {
         return new ICalConfigService() {

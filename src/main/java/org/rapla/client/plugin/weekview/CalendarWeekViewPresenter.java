@@ -31,9 +31,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-@Extension(provides = CalendarPlugin.class)
+@Extension(provides = CalendarPlugin.class,id=CalendarWeekViewPresenter.WEEK_VIEW)
 public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W>
 {
+    public static final String WEEK_VIEW = "week";
+
     private CalendarWeekView<W> view;
     @Inject
     ReservationController reservationController;
