@@ -33,7 +33,7 @@ import org.rapla.storage.StorageOperator;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(provides = ActivityPresenter.class,id=ReservationPresenter.EDIT_ACTIVITY_ID)
+@Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
 public class ReservationPresenter implements ReservationController, Presenter, ActivityPresenter
 {
 
@@ -133,7 +133,7 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         reservationMap.remove(reservation.getId());
         view.hide(reservation);
     }
-    
+
     @Override
     public void changeAttribute(Reservation reservation, Attribute attribute, Object newValue)
     {
@@ -287,26 +287,23 @@ public class ReservationPresenter implements ReservationController, Presenter, A
     @Override
     public boolean startActivity(Activity activity)
     {
-        if(EDIT_ACTIVITY_ID.equals(activity.getName()))
+        try
         {
-            try
+            final StorageOperator operator = facade.getOperator();
+            final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getInfo()), false);
+            final Collection<Entity> values = entities.values();
+            for (Entity entity : values)
             {
-                final StorageOperator operator = facade.getOperator();
-                final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getId()), false);
-                final Collection<Entity> values = entities.values();
-                for (Entity entity : values)
+                if (entity != null && entity instanceof Reservation)
                 {
-                    if (entity != null && entity instanceof Reservation)
-                    {
-                        edit((Reservation)entity, false);
-                        return true;
-                    }
+                    edit((Reservation) entity, false);
+                    return true;
                 }
             }
-            catch (RaplaException e)
-            {
-                logger.error("Error initializing activity: " + activity, e);
-            }
+        }
+        catch (RaplaException e)
+        {
+            logger.error("Error initializing activity: " + activity, e);
         }
         return false;
     }

@@ -5,9 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.inject.Inject;
 
@@ -22,16 +23,15 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.inject.Extension;
 
-@Extension(provides=PlacePresenter.class,id=CalendarPlacePresenter.PLACE_ID)
+import com.google.web.bindery.event.shared.EventBus;
+
+@Extension(provides = PlacePresenter.class, id = CalendarPlacePresenter.PLACE_ID)
 public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 {
     public static final String PLACE_ID = "cal";
@@ -39,23 +39,22 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 
     private final CalendarPlaceView<W> view;
     private final ClientFacade facade;
-    private final CalendarOptions calendarOptions;
     private final CalendarSelectionModel model;
     private final EventBus eventBus;
     private final RaplaResources i18n;
-    private List<CalendarPlugin> viewPluginPresenter;
-    private CalendarPlugin selectedView;
+    private Map<String, CalendarPlugin<W>> viewPluginPresenter;
+    private CalendarPlugin<W> selectedView;
     private Logger logger;
     private String calendar;
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
-    public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade facade, final RaplaResources i18n, final CalendarOptions calendarOptions,
-            final CalendarSelectionModel model, final Logger logger, final EventBus eventBus)
+    public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
+            final Logger logger, final EventBus eventBus)
     {
         this.view = view;
         this.facade = facade;
         this.i18n = i18n;
-        this.calendarOptions = calendarOptions;
         this.model = model;
         this.logger = logger;
         this.eventBus = eventBus;
@@ -67,7 +66,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         try
         {
             List<String> viewNames = new ArrayList<String>();
-            for (CalendarPlugin plugin : viewPluginPresenter)
+            for (CalendarPlugin<W> plugin : viewPluginPresenter.values())
             {
                 if (plugin.isEnabled())
                 {
@@ -163,9 +162,9 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
 
     public void updatePlace()
     {
-        String name = PLACE_ID;
-        String id = calcCalId() + "/" + calcDate() + "/" + calcViewId();
-        Place place = new Place(name, id);
+        String id = PLACE_ID;
+        String info = calcCalId() + "/" + calcDate() + "/" + calcViewId();
+        Place place = new Place(id, info);
         PlaceChangedEvent event = new PlaceChangedEvent(place);
         eventBus.fireEvent(event);
     }
@@ -191,7 +190,14 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         if (selectedView == null)
             return "";
-        return selectedView.getId();
+        for (Entry<String, CalendarPlugin<W>> entry : viewPluginPresenter.entrySet())
+        {
+            if (entry.getValue() == selectedView)
+            {
+                return entry.getKey();
+            }
+        }
+        return "";
     }
 
     private void updateResourcesTree()
@@ -216,97 +222,79 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         updateView();
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
-    public void setViews(Set<CalendarPlugin> views)
+    public void setViews(Map<String, CalendarPlugin> views)
     {
-        this.viewPluginPresenter = new ArrayList<CalendarPlugin>(views);
+        viewPluginPresenter = new LinkedHashMap<String, CalendarPlugin<W>>();
+        for (Entry<String, CalendarPlugin> entry : views.entrySet())
+        {
+            viewPluginPresenter.put(entry.getKey(), entry.getValue());
+        }
         if (views.size() > 0)
         {
-            setSelectedViewIndex(0);
+            selectView(null);
         }
     }
 
     @Override
     public void resetPlace()
     {
-        selectedView = viewPluginPresenter.get(0);
+        selectedView = viewPluginPresenter.values().iterator().next();
     }
-    
+
     @Override
-    public boolean isResposibleFor(Place place)
+    public void initForPlace(Place place)
     {
-        if (PLACE_ID.equals(place.getName()))
+        String id = place.getInfo();
+        String[] split = id.split("/");
+        changeCalendar(split[0], false);
+        if (split.length > 1)
         {
-            String id = place.getId();
-            String[] split = id.split("/");
-            changeCalendar(split[0], false);
-            if (split.length > 1)
+            String date = split[1];
+            Date nextDate;
+            if (TODAY_DATE.equalsIgnoreCase(date))
             {
-                String date = split[1];
-                Date nextDate;
-                if(TODAY_DATE.equalsIgnoreCase(date))
+                model.setSelectedDate(facade.today());
+            }
+            else
+            {
+                try
                 {
-                    model.setSelectedDate(facade.today());
+                    nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
+                    model.setSelectedDate(nextDate);
+                    view.updateDate(nextDate);
                 }
-                else
+                catch (ParseDateException e)
                 {
-                    try
-                    {
-                        nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
-                        model.setSelectedDate(nextDate);
-                        view.updateDate(nextDate);
-                    }
-                    catch (ParseDateException e)
-                    {
-                        logger.error("Error loading date from place: " + e.getMessage(), e);
-                    }
-                }
-                if (split.length > 2)
-                {
-                    String viewId = split[2];
-                    int index = findView(viewId);
-                    setSelectedViewIndex(index);
+                    logger.error("Error loading date from place: " + e.getMessage(), e);
                 }
             }
-            return true;
-        }
-        return false;
-    }
-
-    private int findView(String viewId)
-    {
-        int i = 0;
-        for (CalendarPlugin calendarPlugin : viewPluginPresenter)
-        {
-            if (calendarPlugin.getId().equals(viewId))
+            if (split.length > 2)
             {
-                return i;
+                String viewId = split[2];
+                selectView(viewId);
             }
-            i++;
         }
-        return -1;
     }
 
-    private void setSelectedViewIndex(int index)
+    private void selectView(String viewId)
     {
-        if (index >= 0)
+        if (viewId != null)
         {
-            selectedView = viewPluginPresenter.get(index);
+            selectedView = viewPluginPresenter.get(viewId);
+        }
+        if (selectedView == null)
+        {
+            selectedView = viewPluginPresenter.values().iterator().next();
         }
     }
 
     @Override
     public void changeView(String view)
     {
-        for (int i = 0; i < viewPluginPresenter.size(); i++)
-        {
-            if (viewPluginPresenter.get(i).getName().equals(view))
-            {
-                setSelectedViewIndex(i);
-                updatePlace();
-                return;
-            }
-        }
+        selectView(view);
+        updatePlace();
     }
 
     public void updateView()

@@ -14,10 +14,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-@Extension(provides = PlacePresenter.class,id=ResourceSelectionPlace.PLACE_NAME)
+@Extension(provides = PlacePresenter.class, id = ResourceSelectionPlace.PLACE_ID)
 public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
 {
-    public static final String PLACE_NAME = "ResSel";
+    public static final String PLACE_ID = "ResSel";
     private final ResourceSelectionView<W> view;
     private final CalendarSelectionModel model;
     private final ClientFacade facade;
@@ -56,7 +56,7 @@ public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
             logger.error("Error updating resources selection: " + e.getMessage(), e);
         }
     }
-    
+
     @Override
     public void selectionChanged(Collection<Allocatable> selected)
     {
@@ -67,15 +67,10 @@ public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
     public void resetPlace()
     {
     }
-    
-    @Override
-    public boolean isResposibleFor(Place place)
-    {
-        if (PLACE_NAME.equals(place.getName()))
-        {
-            return true;
-        }
-        return false;
-    }
 
+    @Override
+    public void initForPlace(Place place)
+    {
+
+    }
 }

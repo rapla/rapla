@@ -8,19 +8,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.rapla.client.ActivityManager;
 import org.rapla.client.Application;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of=ActivityManager.class, context = InjectionContext.gwt)
 public class GwtActivityManagerImpl extends ActivityManager
@@ -65,11 +64,11 @@ public class GwtActivityManagerImpl extends ActivityManager
                 for (String activityListAsString : activitiesAsStringList)
                 {
                     final String[] split = activityListAsString.split("=");
-                    final String name = split[0];
+                    final String id = split[0];
                     final String[] activitiyIds = split[1].split(",");
-                    for (String activityId : activitiyIds)
+                    for (String info : activitiyIds)
                     {
-                        final Activity activity = new Activity(name, activityId);
+                        final Activity activity = new Activity(id, info);
                         activities.add(activity);
                     }
                 }
@@ -91,11 +90,11 @@ public class GwtActivityManagerImpl extends ActivityManager
             for (Iterator<Activity> iterator = activities.iterator(); iterator.hasNext();)
             {
                 final Activity activity = iterator.next();
-                List<Activity> activitiesList = activitiesMap.get(activity.getName());
+                List<Activity> activitiesList = activitiesMap.get(activity.getId());
                 if(activitiesList == null)
                 {
                     activitiesList = new ArrayList<Activity>();
-                    activitiesMap.put(activity.getName(), activitiesList);
+                    activitiesMap.put(activity.getId(), activitiesList);
                 }
                 activitiesList.add(activity);
             }
@@ -107,7 +106,7 @@ public class GwtActivityManagerImpl extends ActivityManager
                 final List<Activity> activitiesList = entries.getValue();
                 for (Activity activity : activitiesList)
                 {
-                    sb.append(activity.getId());
+                    sb.append(activity.getInfo());
                     sb.append(",");
                 }
                 // delete last ','

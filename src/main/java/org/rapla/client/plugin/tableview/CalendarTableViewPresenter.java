@@ -16,12 +16,13 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.inject.Extension;
 
-@Extension(provides = CalendarPlugin.class,id =CalendarTableViewPresenter.TABLE_VIEW)
-public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin {
+import com.google.web.bindery.event.shared.EventBus;
+
+@Extension(provides = CalendarPlugin.class, id = CalendarTableViewPresenter.TABLE_VIEW)
+public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<W>
+{
 
     public static final String TABLE_VIEW = "table";
     private CalendarTableView<W> view;
@@ -31,38 +32,36 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     private ClientFacade facade;
     @Inject
     private EventBus eventBus;
-    
+
     @Inject
     private CalendarSelectionModel model;
 
+    @SuppressWarnings("unchecked")
     @Inject
-    public CalendarTableViewPresenter(CalendarTableView view) {
+    public CalendarTableViewPresenter(@SuppressWarnings("rawtypes") CalendarTableView view)
+    {
         this.view = view;
         this.view.setPresenter(this);
     }
 
-    @Override public boolean isEnabled()
+    @Override
+    public boolean isEnabled()
     {
         return true;
     }
 
     @Override
-    public String getName() {
-        return "list";
-    }
-    
-    @Override
-    public String getId()
+    public String getName()
     {
         return "list";
     }
-    
+
     @Override
     public Date calcNext(Date currentDate)
     {
         return DateTools.addMonths(currentDate, 1);
     }
-    
+
     @Override
     public Date calcPrevious(Date currentDate)
     {
@@ -70,13 +69,15 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     }
 
     @Override
-    public W provideContent() {
+    public W provideContent()
+    {
         updateContent();
         return view.provideContent();
     }
-    
+
     @Override
-    public void selectReservation(Reservation selectedObject){
+    public void selectReservation(Reservation selectedObject)
+    {
         final StartActivityEvent activity = new StartActivityEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId());
         eventBus.fireEvent(activity);
         logger.info("selection changed");
@@ -84,35 +85,39 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin 
     }
 
     @Override
-    public void updateContent() {
-//        Allocatable[] allocatables = null;
-//        Date start = null;
-//        Date end = null;
-//        User user = null;
+    public void updateContent()
+    {
+        //        Allocatable[] allocatables = null;
+        //        Date start = null;
+        //        Date end = null;
+        //        User user = null;
 
-        try {
+        try
+        {
             Reservation[] reservations = model.getReservations();
-            Collection<Reservation> result = Arrays.asList( reservations);
+            Collection<Reservation> result = Arrays.asList(reservations);
             logger.info(result.size() + " Reservations loaded.");
-            view.update(result);                
-        } catch (RaplaException e) {
+            view.update(result);
+        }
+        catch (RaplaException e)
+        {
             logger.error(e.getMessage(), e);
         }
-        
-//        ClassificationFilter[] reservationFilters = null;
-//        FutureResult<Collection<Reservation>> reservationsAsync = facade.getReservationsAsync(user, allocatables, start, end, reservationFilters);
-//        reservationsAsync.get( new AsyncCallback<Collection<Reservation>>() {
-//            
-//            @Override
-//            public void onSuccess(Collection<Reservation> result) {
-//                logger.info(result.size() + " Reservations loaded.");
-//                view.update(result);                }
-//            
-//            @Override
-//            public void onFailure(Throwable e) {
-//                logger.error(e.getMessage(), e.getCause());
-//            }
-//        });
+
+        //        ClassificationFilter[] reservationFilters = null;
+        //        FutureResult<Collection<Reservation>> reservationsAsync = facade.getReservationsAsync(user, allocatables, start, end, reservationFilters);
+        //        reservationsAsync.get( new AsyncCallback<Collection<Reservation>>() {
+        //            
+        //            @Override
+        //            public void onSuccess(Collection<Reservation> result) {
+        //                logger.info(result.size() + " Reservations loaded.");
+        //                view.update(result);                }
+        //            
+        //            @Override
+        //            public void onFailure(Throwable e) {
+        //                logger.error(e.getMessage(), e.getCause());
+        //            }
+        //        });
 
     }
 

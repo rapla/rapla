@@ -14,8 +14,6 @@ public interface CalendarPlugin<W>  {
 
     void updateContent() throws RaplaException;
 
-    String getId();
-
     boolean isEnabled();
     
     Date calcNext(Date currentDate);

@@ -1,8 +1,6 @@
 package org.rapla.client;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -10,7 +8,6 @@ import javax.inject.Singleton;
 
 import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
-import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.facade.ClientFacade;
@@ -33,14 +30,14 @@ public class Application<W> implements ApplicationView.Presenter
     BundleManager bundleManager;
     @Inject
     ClientFacade facade;
-//    @Inject
-//    private Provider<ReservationController> controller;
+    //    @Inject
+    //    private Provider<ReservationController> controller;
     @Inject
     private Provider<ActivityManager> activityManager;
     private ApplicationView<W> mainView;
     private PlacePresenter actualPlacePresenter;
-    private List<PlacePresenter> placePresenters;
-    private Set<ActivityPresenter> activityPresenters;
+    private Map<String, PlacePresenter> placePresenters;
+    private Map<String, ActivityPresenter> activityPresenters;
 
     private final EventBus eventBus;
 
@@ -54,15 +51,15 @@ public class Application<W> implements ApplicationView.Presenter
     }
 
     @Inject
-    private void setActivities(Set<ActivityPresenter> activityPresenters)
+    private void setActivities(Map<String, ActivityPresenter> activityPresenters)
     {
         this.activityPresenters = activityPresenters;
     }
 
     @Inject
-    private void setPlaces(Set<PlacePresenter> placePresenters)
+    private void setPlaces(Map<String, PlacePresenter> placePresenters)
     {
-        this.placePresenters = new ArrayList<PlacePresenter>(placePresenters);
+        this.placePresenters = placePresenters;
     }
 
     public void start()
@@ -93,21 +90,16 @@ public class Application<W> implements ApplicationView.Presenter
 
     public void selectPlace(Place place)
     {
-        if (place != null)
+        if (place != null && placePresenters.containsKey(place.getId()))
         {
-            for (PlacePresenter placePresenter : placePresenters)
-            {
-                if (placePresenter.isResposibleFor(place))
-                {
-                    this.actualPlacePresenter = placePresenter;
-                    mainView.updateContent((W) actualPlacePresenter.provideContent());
-                    break;
-                }
-            }
+            final String placeId = place.getId();
+            actualPlacePresenter = placePresenters.get(placeId);
+            actualPlacePresenter.initForPlace(place);
+            mainView.updateContent((W) actualPlacePresenter.provideContent());
         }
         else
         {
-            actualPlacePresenter = placePresenters.get(0);
+            actualPlacePresenter = placePresenters.values().iterator().next();
             actualPlacePresenter.resetPlace();
             mainView.updateContent((W) actualPlacePresenter.provideContent());
         }
@@ -118,20 +110,18 @@ public class Application<W> implements ApplicationView.Presenter
     {
         if ("resources".equals(action))
         {
-            eventBus.fireEvent(new PlaceChangedEvent(new Place(ResourceSelectionPlace.PLACE_NAME, null)));
+            eventBus.fireEvent(new PlaceChangedEvent(new Place(ResourceSelectionPlace.PLACE_ID, null)));
         }
     }
 
     public boolean startActivity(Activity activity)
     {
-        if (activity != null)
+        if (activity != null && activityPresenters.containsKey(activity.getId()))
         {
-            for (ActivityPresenter activityPresenter : activityPresenters)
+            final ActivityPresenter activityPresenter = activityPresenters.get(activity.getId());
+            if (activityPresenter.startActivity(activity))
             {
-                if (activityPresenter.startActivity(activity))
-                {
-                    return true;
-                }
+                return true;
             }
         }
         return false;

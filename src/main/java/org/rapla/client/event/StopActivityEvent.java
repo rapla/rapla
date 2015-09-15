@@ -12,22 +12,22 @@ public class StopActivityEvent extends Event<StopActivityEventHandler>
     }
 
     public static final Type<StopActivityEventHandler> TYPE = new Type<StopActivityEvent.StopActivityEventHandler>();
-    
-    private final String name;
-    
+
+    private final String info;
+
     private final String id;
-    
-    public StopActivityEvent(String name, String id)
+
+    public StopActivityEvent(String id, String info)
     {
-        this.name = name;
+        this.info = info;
         this.id = id;
     }
-    
-    public String getName()
+
+    public String getInfo()
     {
-        return name;
+        return info;
     }
-    
+
     public String getId()
     {
         return id;

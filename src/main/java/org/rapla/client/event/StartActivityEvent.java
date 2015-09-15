@@ -12,22 +12,22 @@ public class StartActivityEvent extends Event<StartActivityEventHandler>
     }
 
     public static final Type<StartActivityEventHandler> TYPE = new Type<StartActivityEvent.StartActivityEventHandler>();
-    
-    private final String name;
-    
+
+    private final String info;
+
     private final String id;
-    
-    public StartActivityEvent(String name, String id)
+
+    public StartActivityEvent(String id, String info)
     {
-        this.name = name;
+        this.info = info;
         this.id = id;
     }
-    
-    public String getName()
+
+    public String getInfo()
     {
-        return name;
+        return info;
     }
-    
+
     public String getId()
     {
         return id;

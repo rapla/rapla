@@ -17,8 +17,7 @@ import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public abstract class ActivityManager
-        implements PlaceChangedEventHandler, StartActivityEventHandler, StopActivityEventHandler
+public abstract class ActivityManager implements PlaceChangedEventHandler, StartActivityEventHandler, StopActivityEventHandler
 {
 
     private final Application<?> application;
@@ -39,7 +38,7 @@ public abstract class ActivityManager
     @Override
     public void startActivity(StartActivityEvent event)
     {
-        Activity activity = new Activity(event.getName(), event.getId());
+        Activity activity = new Activity(event.getId(), event.getInfo());
         activities.add(activity);
         updateHistroryEntry();
         application.startActivity(activity);
@@ -48,7 +47,7 @@ public abstract class ActivityManager
     @Override
     public void stopActivity(StopActivityEvent event)
     {
-        Activity activity = new Activity(event.getName(), event.getId());
+        Activity activity = new Activity(event.getId(), event.getInfo());
         activities.remove(activity);
         updateHistroryEntry();
     }
@@ -70,12 +69,12 @@ public abstract class ActivityManager
             ArrayList<Activity> toRemove = new ArrayList<Activity>();
             for (Activity activity : activities)
             {
-                if(!application.startActivity(activity))
+                if (!application.startActivity(activity))
                 {
                     toRemove.add(activity);
                 }
             }
-            if(!toRemove.isEmpty())
+            if (!toRemove.isEmpty())
             {
                 activities.removeAll(toRemove);
                 updateHistroryEntry();
@@ -91,13 +90,13 @@ public abstract class ActivityManager
 
     public static class Activity
     {
-        private final String name;
+        private final String info;
         private final String id;
 
-        public Activity(String name, String id)
+        public Activity(String id, String info)
         {
-            this.name = name;
             this.id = id;
+            this.info = info;
         }
 
         public String getId()
@@ -105,15 +104,15 @@ public abstract class ActivityManager
             return id;
         }
 
-        public String getName()
+        public String getInfo()
         {
-            return name;
+            return info;
         }
 
         @Override
         public String toString()
         {
-            return name + "=" + id;
+            return id + "=" + info;
         }
 
         public static Activity fromString(final String activityString)
@@ -125,9 +124,9 @@ public abstract class ActivityManager
             int indexOf = activityString.indexOf(ACTIVITY_SEPARATOR);
             if (indexOf > 0)
             {
-                String name = activityString.substring(0, indexOf);
-                String id = activityString.substring(indexOf + 1);
-                return new Activity(name, id);
+                String id = activityString.substring(0, indexOf);
+                String info = activityString.substring(indexOf + 1);
+                return new Activity(id, info);
             }
             return null;
         }
@@ -138,7 +137,7 @@ public abstract class ActivityManager
             final int prime = 31;
             int result = 1;
             result = prime * result + ((id == null) ? 0 : id.hashCode());
-            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + ((info == null) ? 0 : info.hashCode());
             return result;
         }
 
@@ -159,12 +158,12 @@ public abstract class ActivityManager
             }
             else if (!id.equals(other.id))
                 return false;
-            if (name == null)
+            if (info == null)
             {
-                if (other.name != null)
+                if (other.info != null)
                     return false;
             }
-            else if (!name.equals(other.name))
+            else if (!info.equals(other.info))
                 return false;
             return true;
         }
@@ -175,13 +174,13 @@ public abstract class ActivityManager
 
     public static class Place
     {
-        private final String name;
         private final String id;
+        private final String info;
 
-        public Place(String name, String id)
+        public Place(String id, String info)
         {
-            this.name = name;
             this.id = id;
+            this.info = info;
         }
 
         public String getId()
@@ -189,19 +188,19 @@ public abstract class ActivityManager
             return id;
         }
 
-        public String getName()
+        public String getInfo()
         {
-            return name;
+            return info;
         }
 
         @Override
         public String toString()
         {
-            StringBuilder sb = new StringBuilder(name);
-            if (id != null)
+            StringBuilder sb = new StringBuilder(id);
+            if (info != null)
             {
                 sb.append(PLACE_SEPARATOR);
-                sb.append(id);
+                sb.append(info);
             }
             return sb.toString();
         }
@@ -223,19 +222,19 @@ public abstract class ActivityManager
                 substring = substring.substring(0, paramsIndex);
             }
             int separator = substring.indexOf(PLACE_SEPARATOR);
-            final String name;
+            final String info;
             final String id;
             if (separator >= 0)
             {
-                name = substring.substring(0, separator);
-                id = substring.substring(separator + 1);
+                id = substring.substring(0, separator);
+                info = substring.substring(separator + 1);
             }
             else
             {
-                name = substring;
-                id = null;
+                id = substring;
+                info = null;
             }
-            return new Place(name, id);
+            return new Place(id, info);
         }
     }
 

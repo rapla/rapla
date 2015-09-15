@@ -1,6 +1,12 @@
 package org.rapla.client.plugin.weekview;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
@@ -25,13 +31,9 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 
-import javax.inject.Inject;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(provides = CalendarPlugin.class,id=CalendarWeekViewPresenter.WEEK_VIEW)
+@Extension(provides = CalendarPlugin.class, id = CalendarWeekViewPresenter.WEEK_VIEW)
 public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W>
 {
     public static final String WEEK_VIEW = "week";
@@ -58,16 +60,15 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
 
     @Inject
     private RaplaResources i18n;
-    
+
     @Inject
     private MenuPresenter presenter;
 
-//    @Inject
-//    private MenuFactory menuFactory;
-//    @Inject
-//    private MenuView menuView;
+    //    @Inject
+    //    private MenuFactory menuFactory;
+    //    @Inject
+    //    private MenuView menuView;
 
-    
     @SuppressWarnings("unchecked")
     @Inject
     public CalendarWeekViewPresenter(CalendarWeekView view)
@@ -81,14 +82,9 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return "week";
     }
-    
-    @Override
-    public String getId()
-    {
-        return "week";
-    }
 
-    @Override public boolean isEnabled()
+    @Override
+    public boolean isEnabled()
     {
         //Boolean result =  facade.getSystemPreferences().getEntryAsBoolean(ENABLED, DEFAULT_ENABLED);
         return true;
@@ -99,13 +95,13 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         return DateTools.addDays(currentDate, 7);
     }
-    
+
     @Override
     public Date calcPrevious(Date currentDate)
     {
         return DateTools.subDays(currentDate, 7);
     }
-    
+
     @Override
     public W provideContent()
     {
@@ -129,9 +125,10 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
         boolean keepTime = false;
         reservationController.moveAppointment(appointmentBlock, newStart, context, keepTime);
     }
-    
+
     @Override
-    public void newReservation(final HTMLDaySlot daySlot, final Integer fromMinuteOfDay, final Integer tillMinuteOfDay, PopupContext context) throws RaplaException
+    public void newReservation(final HTMLDaySlot daySlot, final Integer fromMinuteOfDay, final Integer tillMinuteOfDay, PopupContext context)
+            throws RaplaException
     {
         presenter.selectionPopup(context);
     }
