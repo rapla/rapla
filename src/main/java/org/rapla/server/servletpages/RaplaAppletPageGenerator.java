@@ -3,6 +3,8 @@
  */
 package org.rapla.server.servletpages;
 
+import org.rapla.inject.Extension;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -11,8 +13,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class RaplaAppletPageGenerator implements RaplaPageGenerator{
-
+@Extension(provides = RaplaPageExtension.class,id="raplaapplet")
+public class RaplaAppletPageGenerator implements RaplaPageExtension {
 
     private String getLibsApplet(ServletContext context) throws java.io.IOException {
         StringBuffer buf = new StringBuffer();

@@ -93,7 +93,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 {
     private boolean bSessionActive = false;
     String userId;
-	RemoteServer remoteServer;
+	RemoteAuthentificationService remoteAuthentificationService;
 	RemoteStorage remoteStorage;
 	protected CommandScheduler commandQueue;
 	
@@ -103,21 +103,22 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     ConnectInfo connectInfo;
     RemoteConnectionInfo connectionInfo;
 	
-    public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteServer remoteServer, RemoteStorage remoteStorage) throws RaplaContextException 
+    public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage) throws RaplaContextException
     {
-        this( logger, context.lookup( RaplaResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),remoteServer, remoteStorage, new RemoteConnectionInfo());
+        this( logger, context.lookup( RaplaResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),
+                remoteAuthentificationService, remoteStorage, new RemoteConnectionInfo());
     }
     
     @Inject
-    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteServer remoteServer, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
+    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
         super(  logger, i18n,locale );
-        this.remoteServer = remoteServer;
+        this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
     	commandQueue = scheduler;
     	this.connectionInfo = connectionInfo;
 //    	this.connectionInfo = new RemoteConnectionInfo();
 //    	remoteStorage.setConnectInfo( connectionInfo );
-//    	remoteServer.setConnectInfo( connectionInfo );
+//    	remoteAuthentificationService.setConnectInfo( connectionInfo );
 //    	if ( config != null)
 //    	{
 //    	    String serverConfig  = config.getChild("server").getValue("${downloadServer}");
@@ -239,7 +240,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         String connectAs = this.connectInfo.getConnectAs();
         String password = new String( this.connectInfo.getPassword());
         String username = this.connectInfo.getUsername();
-        RemoteServer serv1 = getRemoteServer();
+        RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
         LoginTokens loginToken = serv1.login(username,password, connectAs).get();
         String accessToken = loginToken.getAccessToken();
         if ( accessToken != null)
@@ -478,7 +479,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
         if ( wasConnected)
         {
-            RemoteServer serv1 = getRemoteServer();
+            RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
             try 
             {
             	serv1.logout().get();
@@ -697,8 +698,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		return remoteStorage;
 	}
 	
-	private RemoteServer getRemoteServer()  {
-		return remoteServer;
+	private RemoteAuthentificationService getRemoteAuthentificationService()  {
+		return remoteAuthentificationService;
 	}
 
     public boolean canChangePassword() throws RaplaException  {

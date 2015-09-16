@@ -256,4 +256,8 @@ public class I18nBundleImpl implements I18nBundle
 		}
 	}
 
+    @Override public String getPackageId()
+    {
+        return className;
+    }
 }

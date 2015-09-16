@@ -1,7 +1,6 @@
 package org.rapla.storage.dbrm;
 
 import com.google.gson.*;
-import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
@@ -9,6 +8,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.common.*;
 import org.rapla.rest.client.HTTPJsonConnector;
+import org.rapla.storage.RemoteLocaleService;
 
 import java.io.FileNotFoundException;
 import java.lang.reflect.Method;
@@ -428,7 +428,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
 
     ReconnectInfo reconnectInfo;
     
-    public void setReAuthentication(Class<RemoteServer> service, Method method, Object[] args) {
+    public void setReAuthentication(Class<RemoteAuthentificationService> service, Method method, Object[] args) {
         reconnectInfo = new ReconnectInfo();
         reconnectInfo.service = service;
         reconnectInfo.method = method;

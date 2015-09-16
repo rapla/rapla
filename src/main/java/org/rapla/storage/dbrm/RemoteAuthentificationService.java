@@ -19,13 +19,15 @@ import javax.jws.WebParam;
 import javax.jws.WebService;
 
 import org.rapla.components.i18n.LocalePackage;
+import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.gwtjsonrpc.common.ResultType;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 
-@WebService
-public interface RemoteServer extends RemoteJsonService {
+@RemoteJsonMethod
+public interface RemoteAuthentificationService extends RemoteJsonService
+{
 	@ResultType(LoginTokens.class)
 	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
 	
@@ -44,11 +46,5 @@ public interface RemoteServer extends RemoteJsonService {
 	
 	@ResultType(LoginTokens.class)
     FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
-	
-	@ResultType(LocalePackage.class)
-	FutureResult<LocalePackage> locale(@WebParam(name="id")String id, @WebParam(name="locale") String locale);
 
-	@ResultType(Map.class)
-	FutureResult<Map<String, Set<String>>> countries(Set<String> languages);
-		
 }

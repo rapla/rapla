@@ -7,6 +7,7 @@ import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -15,7 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class RaplaStatusPageGenerator implements RaplaPageGenerator{
+@Extension(provides = RaplaPageExtension.class,id="server")
+public class RaplaStatusPageGenerator implements RaplaPageExtension {
     RaplaResources m_i18n;
     @Inject
     public RaplaStatusPageGenerator(RaplaResources i18n) throws RaplaContextException {

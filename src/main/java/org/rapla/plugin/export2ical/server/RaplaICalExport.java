@@ -34,10 +34,11 @@ import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 
-@Extension(provides = RemoteMethodFactory.class,id=RaplaICalExport.ID)
+//
+//@Webservice(path="ical",impl=ICalExport.class)
+@Extension(provides = RemoteMethodFactory.class,id= "ical")
 public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
 {
-    public static final String ID = "org.rapla.plugin.export2ical";
     public RaplaICalExport( RaplaContext context) {
         super( context );
     }

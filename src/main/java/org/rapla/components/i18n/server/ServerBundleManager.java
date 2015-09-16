@@ -1,9 +1,9 @@
 package org.rapla.components.i18n.server;
 
 import org.rapla.RaplaResources;
+import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
-import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
@@ -11,8 +11,10 @@ import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.server.internal.ServerServiceImpl;
 
 import javax.inject.Inject;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -20,11 +22,11 @@ import java.util.*;
 public class ServerBundleManager implements BundleManager {
     private I18nLocaleFormats formats;
     private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();
-    private Set<String> availableLanguages = new LinkedHashSet<String>();
+    private final Set<String> availableLanguages;
     Locale locale;
     Vector<LocaleChangeListener> localeChangeListeners = new Vector<LocaleChangeListener>();
-
-
+    final Map<String, Set<String>> countriesForLanguage;
+    private Map<String, Map<String, String>> bundles;
 
     @Inject
     public ServerBundleManager() throws RaplaException
@@ -34,11 +36,54 @@ public class ServerBundleManager implements BundleManager {
         locale = new Locale(selectedLanguage, selectedCountry);
         //locale = getDefaultLocale();
         //localeSelector.setLocale( locale );
-        this.formats = I18nLocaleLoadUtil.read(locale);
-        availableLanguages = loadAvailableLanguages();
+        this.formats = getFormats(locale);
+        this.availableLanguages = loadAvailableLanguages();
+        this.countriesForLanguage = loadAvailableCountries();
+
     }
 
-    public static Set<String> loadAvailableLanguages() {
+    public Map<String, Set<String>> getCountriesForLanguage(Set<String> languages)
+    {
+        final LinkedHashMap<String, Set<String>> result = new LinkedHashMap<String, Set<String>>();
+        if (languages != null)
+        {
+            for (String language : languages)
+            {
+                final Set<String> countries = countriesForLanguage.get(language);
+                if (countries != null)
+                {
+                    result.put(language, countries);
+                }
+            }
+        }
+        return result;
+    }
+
+    private Map<String, Set<String>> loadAvailableCountries()
+    {
+        LinkedHashMap<String, Set<String>> countriesForLanguage= new LinkedHashMap<String, Set<String>>();
+        {
+            for (String language : availableLanguages)
+            {
+                final LinkedHashSet<String> countries = new LinkedHashSet<String>();
+                countries.add(language.toUpperCase());
+                final String[] isoCountries = Locale.getISOCountries();
+                for (String country : isoCountries)
+                {
+                    final String propertiesFileName = "/org/rapla/components/i18n/server/locales/format_"+language+"_"+country+".properties";
+                    final URL resource = RaplaResources.class.getResource(propertiesFileName);
+                    if(resource != null)
+                    {
+                        countries.add(country.toUpperCase());
+                    }
+                }
+                countriesForLanguage.put(language, Collections.unmodifiableSet(countries));
+            }
+        }
+        return Collections.unmodifiableMap(countriesForLanguage);
+    }
+
+    private Set<String> loadAvailableLanguages() {
         Set<String> availableLanguages = new LinkedHashSet<String>();
         Locale[] availableLocales = Locale.getAvailableLocales();
         final String prefix = "/org/rapla/RaplaResources";
@@ -58,7 +103,7 @@ public class ServerBundleManager implements BundleManager {
                 availableLanguages.add(aLocale.getLanguage());
             }
         }
-        return availableLanguages;
+        return Collections.unmodifiableSet(availableLanguages);
     }
 
     public Set<String> getAvailableLanguages() {
@@ -97,7 +142,7 @@ public class ServerBundleManager implements BundleManager {
     @Override
     public String getString(String packageId, String key) {
         Locale locale = getLocale();
-        return getString(packageId,key, locale);
+        return getString(packageId, key, locale);
     }
 
     protected ResourceBundle loadLocale(String packageId,Locale locale)  throws MissingResourceException {
@@ -179,5 +224,46 @@ public class ServerBundleManager implements BundleManager {
         localeChangeListeners.add(0,listener);
     }
 
+    private  final Map<Locale, I18nLocaleFormats> cache = new HashMap<Locale, I18nLocaleFormats>();
 
+    public  I18nLocaleFormats getFormats(Locale localeId)
+    {
+        I18nLocaleFormats formats = cache.get(localeId);
+        if (formats != null)
+            return formats;
+        synchronized (cache)
+        {
+            formats = cache.get(localeId);
+            if (formats != null)
+                return formats;
+            final String className = getClass().getPackage().getName() + ".locales.format";
+            final ResourceBundle bundle = ResourceBundleLoader.loadResourceBundle(className, localeId);
+            String amPm = bundle.getString("amPm");
+            boolean isAmPm = Boolean.parseBoolean(bundle.getString("isAmPm"));
+            String formatDateShort = bundle.getString("formatDateShort");
+            String formatDateLong = bundle.getString("formatDateLong");
+            String formatHour = bundle.getString("formatHour");
+            String formatMonthYear = bundle.getString("formatMonthYear");
+            String formatTime = bundle.getString("formatTime");
+            String[] weekdays = parseArray(bundle.getString("weekdays"));
+            String[] months = parseArray(bundle.getString("months"));
+            String[] shortWeekdays = parseArray(bundle.getString("shortWeekdays"));
+            String[] shortMonths = parseArray(bundle.getString("shortMonths"));
+            formats = new I18nLocaleFormats(isAmPm, amPm, formatDateShort, formatDateLong, weekdays, shortWeekdays, months, shortMonths, formatHour, formatMonthYear, formatTime);
+            cache.put(localeId, formats);
+            return formats;
+        }
+    }
+
+    private static String[] parseArray(String property)
+    {
+        if (property == null)
+            return null;
+        final String[] result = property.substring(1, property.length() - 1).split(",");
+        for (int i = 0; i < result.length; i++)
+        {
+            result[i] = result[i].trim();
+        }
+        return result;
+    }
 }

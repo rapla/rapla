@@ -1,15 +1,17 @@
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import org.rapla.inject.Extension;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 
-public class RaplaStorePage implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtension.class,id="store")
+public class RaplaStorePage implements RaplaPageExtension
 {
 
     public void generatePage(

@@ -23,6 +23,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -31,7 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /** default implementation of appointment formater */
-@DefaultImplementation(of = AppointmentFormater.class)
+@DefaultImplementation(of = AppointmentFormater.class, context = InjectionContext.all)
 @Singleton
 public class AppointmentFormaterImpl
     implements

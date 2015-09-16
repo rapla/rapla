@@ -62,6 +62,11 @@ public class CompoundI18n implements I18nBundle {
     	}
     }
 
+    public String getPackageId()
+    {
+        return inner.getPackageId();
+    }
+
     public String getLang() {
         return inner.getLang();
     }

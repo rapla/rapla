@@ -24,7 +24,7 @@ import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.RemoteStorageImpl;
+import org.rapla.server.internal.UpdateDataManagerImpl;
 
 /** Provides the MailToUserInterface and the MailInterface for sending mails.
  * The MailInterface can only be used on a machine that can connect to the mailserver.
@@ -88,7 +88,7 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
         TypedComponentRole<RaplaConfiguration> newConfKey = MailPlugin.MAILSERVER_CONFIG;
         if ( config.getChildren().length > 0)
         {
-            RemoteStorageImpl.convertToNewPluginConfig(context, className, newConfKey);
+            UpdateDataManagerImpl.convertToNewPluginConfig(context, className, newConfKey);
         }
     }
     

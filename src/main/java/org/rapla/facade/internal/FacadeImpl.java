@@ -94,6 +94,7 @@ import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.ResultImpl;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
@@ -118,7 +119,7 @@ import org.rapla.storage.UpdateResult;
  * </p>
  */
 @Singleton
-@DefaultImplementation(of = ClientFacade.class)
+@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.all)
 public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;
@@ -885,7 +886,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    return operator.resolve( workingUserId, User.class);
 	}
 
-	/** unlike getUser this can be null if working user not set*/
+	/** unlike getUserFromRequest this can be null if working user not set*/
     private User getWorkingUser() throws EntityNotFoundException {
         if ( workingUserId == null)
         {

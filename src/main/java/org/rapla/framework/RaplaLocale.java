@@ -2,6 +2,7 @@ package org.rapla.framework;
 
 import java.util.*;
 
+import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
 
@@ -57,6 +58,8 @@ public interface RaplaLocale
     String formatTime( Date date );
     
     Date fromUTCTimestamp(Date timestamp);
+
+    I18nLocaleFormats getFormats();
 
     /** sets time to 0:00:00 or 24:00:00 */
     Date toDate( Date date, boolean fillDate );

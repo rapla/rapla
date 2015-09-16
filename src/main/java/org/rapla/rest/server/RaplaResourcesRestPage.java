@@ -21,12 +21,14 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
-@WebService
-public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPageGenerator {
+@Extension(provides = RaplaPageExtension.class,id="resources")
+public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPageExtension{
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON });

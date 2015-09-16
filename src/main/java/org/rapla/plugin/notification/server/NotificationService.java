@@ -221,9 +221,9 @@ public class NotificationService extends RaplaComponent
                 printAppointment (buf, event.getNewAppointment() );
             }
             /*
-            if ( event.getUser() != null) {
+            if ( event.getUserFromRequest() != null) {
                 buf.append("\n");
-                buf.append( getI18n().format("modified_by", event.getUser().getUsername() ) );
+                buf.append( getI18n().format("modified_by", event.getUserFromRequest().getUsername() ) );
             }
             */
             Reservation newReservation = event.getNewReservation();

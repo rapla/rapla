@@ -1,39 +1,39 @@
 package org.rapla.rest.server;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
+import org.rapla.gwtjsonrpc.server.JsonServlet;
+import org.rapla.gwtjsonrpc.server.RPCServletUtils;
+import org.rapla.inject.Extension;
+import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.storage.RaplaSecurityException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
-import org.rapla.gwtjsonrpc.server.JsonServlet;
-import org.rapla.gwtjsonrpc.server.RPCServletUtils;
-import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.servletpages.RaplaPageGenerator;
-import org.rapla.storage.RaplaSecurityException;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 
-public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
+
+@Extension(provides = RaplaPageExtension.class,id="json")
+public class RaplaAPIPage implements RaplaPageExtension
 {
-
     final ServerServiceContainer serverContainer;
-    
-    public RaplaAPIPage(RaplaContext context) throws RaplaContextException {
-        super(context);
-        serverContainer = context.lookup(ServerServiceContainer.class);
+    Logger logger;
+
+    public RaplaAPIPage(Logger logger,ServerServiceContainer serverContainer ) throws RaplaContextException {
+        this.logger = logger;
+        this.serverContainer = serverContainer;
     }
     
     Map<String,JsonServlet> servletMap = new HashMap<String, JsonServlet>();
@@ -67,7 +67,7 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
                 }
                 Class<?> interfaceClass =  Class.forName(interfaceName, true,RaplaAPIPage.class.getClassLoader());
                 // Test if service is found
-                servlet = new RaplaJsonServlet(getLogger(), interfaceClass);
+                servlet = new RaplaJsonServlet(logger, interfaceClass);
             }
             catch (Exception ex)
             {
@@ -89,7 +89,7 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
         }
         catch (RaplaException ex)
         {
-            getLogger().error(ex.getMessage(), ex);
+            logger.error(ex.getMessage(), ex);
             String out = serializeException(id, ex);
             RPCServletUtils.writeResponse(servletContext, response,  out, false);
             return;
@@ -107,7 +107,7 @@ public class RaplaAPIPage extends RaplaComponent implements RaplaPageGenerator
         }
         catch (RaplaException ex)
         {
-            getLogger().error(ex.getMessage(), ex);
+            logger.error(ex.getMessage(), ex);
             servlet.serviceError(request, response, servletContext, ex);
             return;
         }

@@ -12,10 +12,7 @@ import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.RaplaJNDIContext;
-import org.rapla.server.internal.RemoteSessionImpl;
-import org.rapla.server.internal.ServerServiceImpl;
-import org.rapla.server.internal.ServerStarter;
+import org.rapla.server.internal.*;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 public class StandaloneStarter extends GUIStarter
@@ -73,15 +70,14 @@ public class StandaloneStarter extends GUIStarter
     }
 
     private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceImpl server) throws RaplaException, Exception {
-        final RemoteSessionImpl standaloneSession = new RemoteSessionImpl(logger);
-        server.setPasswordCheckDisabled(true);
+        RemoteAuthentificationServiceImpl.setPasswordCheckDisabled(true);
         String reconnectUser = connectInfo.getConnectAs() != null ? connectInfo.getConnectAs() : connectInfo.getUsername();
         User user = server.getOperator().getUser(reconnectUser);
         if (user == null)
         {
             throw new RaplaException("Can't find user with username " + reconnectUser);
         }
-        standaloneSession.setUser( user);
+        final RemoteSessionImpl standaloneSession = new RemoteSessionImpl(logger, user);
         SimpleProvider<RemoteServiceCaller> provider = new SimpleProvider<RemoteServiceCaller>();
         provider.setValue( new RemoteServiceCaller() {
             @Override

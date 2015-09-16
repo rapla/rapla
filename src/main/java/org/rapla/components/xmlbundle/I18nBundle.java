@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle;
 
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
+
 import java.util.Collection;
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -27,6 +30,7 @@ Example Usage:
 </pre>
 */
 
+@ExtensionPoint(id="i18n",context = InjectionContext.all)
 public interface I18nBundle {
     /** same as
         <code>
@@ -52,4 +56,6 @@ public interface I18nBundle {
 
     /** @return the selected Locale. */
     Locale getLocale();
+
+    String getPackageId();
 }

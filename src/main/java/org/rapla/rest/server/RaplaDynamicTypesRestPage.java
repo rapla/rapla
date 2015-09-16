@@ -13,13 +13,14 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
-@WebService
-public class RaplaDynamicTypesRestPage extends AbstractRestPage implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtension.class,id="dynamictypes")
+public class RaplaDynamicTypesRestPage extends AbstractRestPage implements RaplaPageExtension
 {
-    
 	@Inject
     public RaplaDynamicTypesRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger) throws RaplaException {
 		super(facade, serverContainer, logger, true);

@@ -22,9 +22,10 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
-@DefaultImplementation(of = CalendarOptions.class)
+@DefaultImplementation(of = CalendarOptions.class, context = InjectionContext.all)
 public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<RaplaConfiguration>("org.rapla.calendarview");
     public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<Boolean>("org.rapla.conflict.showWarning");
