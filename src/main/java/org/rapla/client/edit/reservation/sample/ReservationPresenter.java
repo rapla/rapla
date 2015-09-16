@@ -247,7 +247,6 @@ public class ReservationPresenter implements ReservationController, Presenter, A
     public void timeChanged(Reservation reservation, Date startDate, Date endDate)
     {
         final ReservationInfo ri = reservationMap.get(reservation.getId());
-        final Reservation tempReservation = ri.editReservation;
         if (ri.selectedAppointment != null)
         {
             ri.selectedAppointment.move(startDate, endDate);
@@ -285,6 +284,7 @@ public class ReservationPresenter implements ReservationController, Presenter, A
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public boolean startActivity(Activity activity)
     {
         try

@@ -24,7 +24,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.LIElement;
@@ -36,10 +37,8 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-@DefaultImplementation(of = ReservationView.class,context = InjectionContext.gwt)
+@DefaultImplementation(of = ReservationView.class, context = InjectionContext.gwt)
 public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
 {
 
@@ -208,7 +207,6 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
             popup.hide();
             popup.removeFromParent();
         }
-
     }
 
     public interface ReservationViewPart
@@ -225,14 +223,12 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
-    private final Logger logger;
 
     @Inject
-    public ReservationViewImpl(Logger logger, RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
+    public ReservationViewImpl(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
     {
         super();
         this.i18n = i18n;
-        this.logger = logger;
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
     }
@@ -259,7 +255,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         {
             // Already showing... so complete update is expected...
             final ContentWrapper openedPopup = openedPopups.remove(reservation.getId());
-            if(openedPopup != null)
+            if (openedPopup != null)
             {
                 openedPopup.hide();
             }

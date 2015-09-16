@@ -13,7 +13,6 @@ import org.rapla.client.plugin.tableview.CalendarTableView.Presenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -25,14 +24,11 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<
 {
 
     public static final String TABLE_VIEW = "table";
-    private CalendarTableView<W> view;
+    private final CalendarTableView<W> view;
     @Inject
     private Logger logger;
     @Inject
-    private ClientFacade facade;
-    @Inject
     private EventBus eventBus;
-
     @Inject
     private CalendarSelectionModel model;
 
@@ -87,11 +83,6 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<
     @Override
     public void updateContent()
     {
-        //        Allocatable[] allocatables = null;
-        //        Date start = null;
-        //        Date end = null;
-        //        User user = null;
-
         try
         {
             Reservation[] reservations = model.getReservations();
@@ -103,22 +94,5 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<
         {
             logger.error(e.getMessage(), e);
         }
-
-        //        ClassificationFilter[] reservationFilters = null;
-        //        FutureResult<Collection<Reservation>> reservationsAsync = facade.getReservationsAsync(user, allocatables, start, end, reservationFilters);
-        //        reservationsAsync.get( new AsyncCallback<Collection<Reservation>>() {
-        //            
-        //            @Override
-        //            public void onSuccess(Collection<Reservation> result) {
-        //                logger.info(result.size() + " Reservations loaded.");
-        //                view.update(result);                }
-        //            
-        //            @Override
-        //            public void onFailure(Throwable e) {
-        //                logger.error(e.getMessage(), e.getCause());
-        //            }
-        //        });
-
     }
-
 }
