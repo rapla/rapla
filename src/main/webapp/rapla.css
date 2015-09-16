@@ -13,17 +13,12 @@ h1 {
 	font-size: 16pt;
 }
 
-.dialogVPanel {
-	margin: 5px;
-}
-
 .serverResponseLabelError {
 	color: red;
 }
 
-/** Set ids using widget.getElement().setId("idOfElement") */
-#closeButton {
-	margin: 15px 6px 6px;
+.table-selectable tbody {
+	cursor: pointer;
 }
 
 #raplaPopup {
@@ -42,20 +37,6 @@ h1 {
 .gwt-PopupPanel,
 .gwt-DialogBox {
 	z-index: 150;
-}
-
-/* ADD BUTTON for new event */
-.addButton {
-	float: right;
-	width: 28px;
-	background-color: rgb(153, 184, 252);
-	border-radius: 50px;
-	color: white;
-	cursor: pointer;
-	height: 28px;
-	text-align: center;
-	margin-right: 50px;
-	font-size: 20px;
 }
 
 /* INPUT FIELDS */
