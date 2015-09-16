@@ -34,6 +34,7 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, RemoteSession session, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList)
     {
         // bad
+        this.resourceBundleList = resourceBundleList;
         this.bundleManager = (ServerBundleManager) bundleManager;
         this.raplaLocale = raplaLocale;
         this.operator = operator;

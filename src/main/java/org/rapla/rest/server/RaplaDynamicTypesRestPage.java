@@ -13,12 +13,14 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
 @Extension(provides = RaplaPageExtension.class,id="dynamictypes")
+@RemoteJsonMethod
 public class RaplaDynamicTypesRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 	@Inject

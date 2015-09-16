@@ -123,9 +123,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             @Override
             public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
             {
-                @SuppressWarnings({ "unchecked", "deprecation" })
-                RemoteMethodFactory<T> factory = lookup(REMOTE_METHOD_FACTORY, a.getName());
-                T service = factory.createService(adminSession);
+                RemoteSession remoteSession = adminSession;
+                T service = getInstance(a, remoteSession);
                 return service;
             }
         });
@@ -351,13 +350,9 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     @Override
     public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
     {
-        String interfaceName = role.getName();
-        @SuppressWarnings({ "deprecation", "unchecked" })
         RemoteSession remoteSession = getRemoteSession(request);
         T service = getInstance(role, remoteSession);
         return service;
-//        RemoteMethodFactory<T> factory = lookup(REMOTE_METHOD_FACTORY, interfaceName);
-    //    return factory.createService(remoteSession);
     }
 
     @Override

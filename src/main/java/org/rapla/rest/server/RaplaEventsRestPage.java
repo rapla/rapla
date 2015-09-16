@@ -25,6 +25,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
@@ -33,6 +34,7 @@ import org.rapla.storage.RaplaSecurityException;
 
 
 @Extension(provides = RaplaPageExtension.class,id="events")
+@RemoteJsonMethod
 public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 
@@ -43,7 +45,7 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageEx
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
 
-    
+
     public List<ReservationImpl> list(@WebParam(name="user") User user, @WebParam(name="start")Date start, @WebParam(name="end")Date end, @WebParam(name="resources") List<String> resources, @WebParam(name="eventTypes") List<String> eventTypes,@WebParam(name="attributeFilter") Map<String,String> simpleFilter ) throws Exception
     {
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
