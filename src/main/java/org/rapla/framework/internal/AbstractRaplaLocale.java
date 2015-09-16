@@ -35,7 +35,8 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         return buf.toString();
     }
 
-    private I18nLocaleFormats getFormats() {
+    @Override
+    public I18nLocaleFormats getFormats() {
         return bundleManager.getFormats();
     }
 

@@ -605,7 +605,7 @@ class ConflictFinder {
     		}
 			Set<Conflict> conflictListAfter = calculateConflicts( allocatable , today);
 			conflictMap.put( allocatable, conflictListAfter);
-			//User user = evt.getUser();
+			//User user = evt.getUserFromRequest();
 		
 			for ( Conflict conflict: conflictListBefore)
 			{

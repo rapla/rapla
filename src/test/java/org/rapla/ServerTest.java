@@ -235,7 +235,7 @@ public class ServerTest extends ServletTestBase {
 			Allocatable rAfter = facade2.getAllocatables(filter.toArray())[0];
 			assertEquals(2, rAfter.getClassification().getAttributes().length);
 		}
-		// facade2.getUser("test-user");
+		// facade2.getUserFromRequest("test-user");
 		// Wait for the update
 		facade2.refresh();
 		facade2.logout();

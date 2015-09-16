@@ -48,7 +48,7 @@ public interface ModificationModule {
      * This is a convenience method for testing.
      */
     Reservation newReservation() throws RaplaException;
-    /** Shortcut for newReservation(classification,getUser()*/
+    /** Shortcut for newReservation(classification,getUserFromRequest()*/
     Reservation newReservation(Classification classification) throws RaplaException;
     /** Creates a new reservation from the classifcation object and with the passed user as its owner 
      * You can create a new classification from a {@link DynamicType} with newClassification method.
@@ -72,7 +72,7 @@ public interface ModificationModule {
      * @see DynamicType#newClassification()*/
     Allocatable newAllocatable( Classification classification, User user) throws RaplaException;
     
-    /** Shortcut for newAllocatble(classification,getUser()*/
+    /** Shortcut for newAllocatble(classification,getUserFromRequest()*/
     Allocatable newAllocatable( Classification classification) throws RaplaException;
     
     Allocatable newPeriod() throws RaplaException;

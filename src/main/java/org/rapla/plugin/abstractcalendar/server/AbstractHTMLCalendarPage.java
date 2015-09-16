@@ -105,7 +105,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
     }
 
     public String getTitle() {
-        return model.getNonEmptyTitle();
+        return Tools.createXssSafeString(model.getNonEmptyTitle());
     }
 
     public int getDay( Date date) {

@@ -9,6 +9,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gwtjsonrpc.client.ExceptionDeserializer;
 import org.rapla.gwtjsonrpc.client.impl.AbstractJsonProxy;
 import org.rapla.gwtjsonrpc.client.impl.EntryPointFactory;
+import org.rapla.server.RemoteMethodFactory;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
@@ -35,10 +36,9 @@ public class RaplaGwtStarter
     {
         AbstractJsonProxy.setServiceEntryPointFactory(new EntryPointFactory()
         {
-            @Override public String getEntryPoint(Class serviceClass)
+            @Override public String getEntryPoint(String interfaceName, String relativePath)
             {
-                String name = serviceClass.getName().replaceAll("_JsonProxy", "");
-                String url = GWT.getModuleBaseURL() + "../rapla/json/" + name;
+                String url = GWT.getModuleBaseURL() + "../rapla/json/" + (relativePath != null  ? relativePath : interfaceName);
                 return url;
             }
         });

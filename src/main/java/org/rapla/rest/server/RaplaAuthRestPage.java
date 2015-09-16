@@ -22,32 +22,34 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
-@WebService
-public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtension.class,id="auth")
+public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 
-    private RemoteServer remoteServer;
+    private RemoteAuthentificationService remoteAuthentificationService;
     private I18nBundle i18n;
 
     @Inject
-    public RaplaAuthRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, RemoteServer remoteServer,
+    public RaplaAuthRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, RemoteAuthentificationService remoteAuthentificationService,
             @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n) throws RaplaException
     {
         super(facade, serverContainer, logger, false);
-        this.remoteServer = remoteServer;
+        this.remoteAuthentificationService = remoteAuthentificationService;
         this.i18n = i18n;
     }
 
     public LoginTokens create(@WebParam(name = "credentials") LoginCredentials credentials) throws Exception
     {
-        final FutureResult<LoginTokens> result = remoteServer.auth(credentials);
+        final FutureResult<LoginTokens> result = remoteAuthentificationService.auth(credentials);
         final LoginTokens loginTokens = result.get();
         if (loginTokens.isValid())
         {

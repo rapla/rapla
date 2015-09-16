@@ -25,13 +25,15 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
 
-@WebService
-public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtension.class,id="events")
+public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 
 	@Inject

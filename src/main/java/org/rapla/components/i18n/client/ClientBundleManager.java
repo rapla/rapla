@@ -11,7 +11,7 @@ import org.rapla.components.i18n.LocalePackage;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.RemoteLocaleService;
 
 import com.google.inject.Inject;
 
@@ -22,13 +22,13 @@ public class ClientBundleManager implements BundleManager
     Locale locale;
 
     @Inject
-    protected ClientBundleManager( RemoteServer remoteServer)
+    protected ClientBundleManager( RemoteLocaleService remoteLocaleService)
     {
         try
         {
             String id = "123";
             String localeParam = null;
-            final FutureResult<LocalePackage> locale1 = remoteServer.locale(id, localeParam);
+            final FutureResult<LocalePackage> locale1 = remoteLocaleService.locale(id, localeParam);
             localePackage = locale1.get();
             String language = localePackage.getLanguage();
             String country = localePackage.getCountry();

@@ -32,7 +32,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.toolkit.RaplaWidget;
-import org.rapla.storage.dbrm.RemoteServer;
+import org.rapla.storage.RemoteLocaleService;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 final public class CountryChooser implements RaplaWidget
 {
@@ -49,10 +50,10 @@ final public class CountryChooser implements RaplaWidget
         final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
-        final RemoteServer remoteServer = context.lookup( RemoteServer.class );
+        final RemoteLocaleService remoteLocaleService = context.lookup( RemoteLocaleService.class );
         try
         {
-            countries = remoteServer.countries(new LinkedHashSet<String>(languages)).get();
+            countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages)).get();
         }
         catch (Exception e)
         {

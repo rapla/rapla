@@ -240,7 +240,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 //            if (category == null) {
 //                return true;
 //            }
-//            User user = getUser();
+//            User user = getUserFromRequest();
 //            return user.isAdmin() || user.belongsTo(category);
 //        } catch (RaplaException ex) {
 //            return false;

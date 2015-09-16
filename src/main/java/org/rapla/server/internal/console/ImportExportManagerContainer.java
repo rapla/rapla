@@ -2,7 +2,6 @@ package org.rapla.server.internal.console;
 
 import javax.sql.DataSource;
 
-import org.rapla.components.i18n.server.locales.I18nLocaleLoadUtil;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;

@@ -13,9 +13,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.ConsoleLogger;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteServer;
 import org.rapla.storage.dbrm.RemoteStorage;
 
 public class CommunicatorTest extends ServletTestBase
@@ -123,12 +123,12 @@ public class CommunicatorTest extends ServletTestBase
         connectionInfo.setServerURL("http://localhost:8052/");
         for ( int i=0;i<clientNum;i++)
         {
-			RemoteServer remoteServer = context.lookup( RemoteServer.class);
+			RemoteAuthentificationService remoteAuthentificationService = context.lookup( RemoteAuthentificationService.class);
 			RemoteStorage remoteStorage = context.lookup( RemoteStorage.class);
 			ConsoleLogger logger = new ConsoleLogger();
 			RaplaResources i18n = context.lookup(RaplaResources.class);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);
-            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteServer, remoteStorage, connectionInfo );
+            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteAuthentificationService, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

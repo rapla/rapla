@@ -37,7 +37,7 @@ public class ReservationWriter extends ClassifiableWriter {
         printTimestamp(r);
         closeTag();
         printAnnotations( r, false);
-        //      System.out.println(((Entity)r).getId() + " Name: " + r.getName() +" User: " + r.getUser());
+        //      System.out.println(((Entity)r).getId() + " Name: " + r.getName() +" User: " + r.getUserFromRequest());
         printClassification(r.getClassification());
         {
             Appointment[] appointments = r.getAppointments();

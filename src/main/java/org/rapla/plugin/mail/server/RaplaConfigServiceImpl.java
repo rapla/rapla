@@ -91,7 +91,7 @@ public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMeth
 			
 //			@Override
 //			public LoginInfo getLoginInfo() throws RaplaException {
-//				User user = remoteSession.getUser();
+//				User user = remoteSession.getUserFromRequest();
 //				if ( user == null || !user.isAdmin())
 //				{
 //					throw new RaplaSecurityException("Only admins can get mailserver login info");
@@ -108,7 +108,7 @@ public class RaplaConfigServiceImpl extends RaplaComponent implements RemoteMeth
 //
 //			@Override
 //			public void setLogin(String username, String password) throws RaplaException {
-//				User user = remoteSession.getUser();
+//				User user = remoteSession.getUserFromRequest();
 //				if ( user == null || !user.isAdmin())
 //				{
 //					throw new RaplaSecurityException("Only admins can set mailserver login info");

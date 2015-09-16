@@ -98,8 +98,8 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
         ConnectInfo connectInfo = connectionInfo.getConnectInfo();
         if ( connectInfo !=null)
         {
-            Method method = RemoteServer.class.getMethod("login", String.class, String.class,String.class);
-            connector.setReAuthentication(RemoteServer.class, method, new Object[] {connectInfo.getUsername(), new String(connectInfo.getPassword()), connectInfo.getConnectAs()});
+            Method method = RemoteAuthentificationService.class.getMethod("login", String.class, String.class,String.class);
+            connector.setReAuthentication(RemoteAuthentificationService.class, method, new Object[] {connectInfo.getUsername(), new String(connectInfo.getPassword()), connectInfo.getConnectAs()});
         }
         FutureResult result =connector.call(service, methodName, args, connectionInfo);
         return result;

@@ -22,7 +22,7 @@ import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.RemoteStorageImpl;
+import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer> {
     
@@ -42,7 +42,7 @@ public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer
         TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;
         if ( config.getAttributeNames().length > 2)
         {
-            RemoteStorageImpl.convertToNewPluginConfig(context, className, newConfKey);
+            UpdateDataManagerImpl.convertToNewPluginConfig(context, className, newConfKey);
         }
     }
     

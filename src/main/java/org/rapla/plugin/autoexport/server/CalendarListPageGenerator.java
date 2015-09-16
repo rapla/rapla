@@ -39,12 +39,10 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.server.servletpages.RaplaPageExtenstion;
-import org.rapla.server.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageExtension;
 
-
-@Extension(provides = RaplaPageExtenstion.class,id="calendar")
-public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageExtenstion
+@Extension(provides = RaplaPageExtension.class,id="calendar")
+public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageExtension
 {
     public CalendarListPageGenerator( RaplaContext context ) 
     {

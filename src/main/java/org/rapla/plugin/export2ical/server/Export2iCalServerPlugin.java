@@ -11,8 +11,7 @@ import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.RemoteStorageImpl;
-
+import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class Export2iCalServerPlugin implements PluginDescriptor<ServerServiceContainer> {
 
@@ -35,7 +34,7 @@ public class Export2iCalServerPlugin implements PluginDescriptor<ServerServiceCo
 	      TypedComponentRole<RaplaConfiguration> newConfKey = Export2iCalPlugin.ICAL_CONFIG;
 	      if ( config.getChildren().length > 0)
 	      {
-	          RemoteStorageImpl.convertToNewPluginConfig(context, className, newConfKey);
+	          UpdateDataManagerImpl.convertToNewPluginConfig(context, className, newConfKey);
 	      }
 	 }
 }

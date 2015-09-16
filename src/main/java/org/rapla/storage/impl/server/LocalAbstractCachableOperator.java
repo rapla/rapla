@@ -2051,7 +2051,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 					String message = i18n.format("error.no_entry_for", getString("username"));
 					throw new RaplaException(message);
 				}
-				// FIXME Replace with store.getUser for the rare case that two users with the same username are stored in one operation
+				// FIXME Replace with store.getUserFromRequest for the rare case that two users with the same username are stored in one operation
 				entity2 = cache.getUser(name);
 				if (entity2 != null && !entity2.equals(entity))
 					throwNotUnique(name);

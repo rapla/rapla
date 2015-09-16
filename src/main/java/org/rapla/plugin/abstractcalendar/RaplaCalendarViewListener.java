@@ -93,7 +93,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 		   
 	        if (canCreateReservation())
 	        {
-//	        	 User user = getUser();
+//	        	 User user = getUserFromRequest();
 //	 	        Date today = getQuery().today();
 //	 	        boolean canAllocate = false;
 //	 	        Collection<Allocatable> selectedAllocatables = getMarkedAllocatables();

@@ -16,8 +16,9 @@ public class RemoteSessionImpl implements RemoteSession {
     Logger logger;
    // private String accessToken;
     
-    public RemoteSessionImpl(Logger logger) {
+    public RemoteSessionImpl(Logger logger, User user) {
         this.logger = logger;
+        this.user = user;
     }
 
     public Logger getLogger() {
@@ -35,11 +36,6 @@ public class RemoteSessionImpl implements RemoteSession {
         return user != null;
     }
 
-    public void setUser( User user)
-    {
-        this.user = user;
-    }
-    
 //    public void setAccessToken( String token)
 //    {
 //        this.accessToken = token;
@@ -51,7 +47,7 @@ public class RemoteSessionImpl implements RemoteSession {
 //    }
 
     public void logout() {
-    	this.setUser( null);
+    	user = null;
     }
 
 
