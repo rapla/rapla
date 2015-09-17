@@ -63,7 +63,7 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
 
         });
         completeView.addStyleName("calendarPlace");
-        navigatorView = new NavigatorView("week", this, bundleManager);
+        navigatorView = new NavigatorView(this, bundleManager);
         final Locale locale = bundleManager.getLocale();
         // left side resources navigation whenever medium is medium or large size
         {
@@ -91,8 +91,6 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             {// calendar selection
                 headerDiv.add(calendarSelection);
                 calendarSelection.add(new HTML("calendar drop down"));
-                final Div dateSelectionDiv = new Div();
-                headerDiv.add(dateSelectionDiv);
             }
         }
         containerDiv.add(drawingContent);

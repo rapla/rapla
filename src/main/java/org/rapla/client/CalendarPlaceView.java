@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import org.rapla.client.base.CalendarPlugin;
 import org.rapla.entities.domain.Allocatable;
 
 public interface CalendarPlaceView<W>
