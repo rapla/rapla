@@ -13,7 +13,6 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.AbstractView;
-import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.gwt.components.DropDownInputField;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
 import org.rapla.client.gwt.components.DropDownInputField.DropDownValueChanged;
@@ -23,17 +22,29 @@ import org.rapla.client.gwt.view.NavigatorView;
 import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
-
-import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.IsWidget;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-@DefaultImplementation(of= CalendarPlaceView.class, context = InjectionContext.gwt)
+import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.logical.shared.ResizeEvent;
+import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.IsWidget;
+
+@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
 public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements CalendarPlaceView<IsWidget>, NavigatorAction
 {
+    private static final int OFFSET_NAVIGATION = 50;
     private final TreeComponent treeComponent;
-    private final Div completeView = new Div();
+    private final Div completeView = new Div()
+    {
+        protected void onAttach()
+        {
+            super.onAttach();
+            updateHeights(Window.getClientHeight());
+        };
+    };
     private final Div drawingContent = new Div();
     private final Div calendarSelection = new Div();
     private final NavigatorView navigatorView;
@@ -41,6 +52,16 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
     @Inject
     public CalendarPlaceViewImpl(BundleManager bundleManager)
     {
+        Window.addResizeHandler(new ResizeHandler()
+        {
+            @Override
+            public void onResize(ResizeEvent event)
+            {
+                final int height = event.getHeight();
+                updateHeights(height);
+            }
+
+        });
         completeView.addStyleName("calendarPlace");
         navigatorView = new NavigatorView("week", this, bundleManager);
         final Locale locale = bundleManager.getLocale();
@@ -75,6 +96,14 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
             }
         }
         containerDiv.add(drawingContent);
+    }
+
+    private void updateHeights(final int height)
+    {
+        final int drawingContentHeight = drawingContent.getParent().getOffsetHeight();
+        final int windowHeigth = height - OFFSET_NAVIGATION;
+        final int newElementHeight = Math.max(0, Math.max(drawingContentHeight, windowHeigth));
+        treeComponent.getElement().getStyle().setHeight(newElementHeight, Unit.PX);
     }
 
     @Override
@@ -135,10 +164,11 @@ public class CalendarPlaceViewImpl extends AbstractView<Presenter>implements Cal
     }
 
     @Override
-    public void replaceContent(CalendarPlugin<IsWidget> contentProvider)
+    public void replaceContent(IsWidget contentProvider)
     {
         drawingContent.clear();
-        drawingContent.add(contentProvider.provideContent());
+        drawingContent.add(contentProvider);
+        updateHeights(Window.getClientHeight());
     }
 
     @Override

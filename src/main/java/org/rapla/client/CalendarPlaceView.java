@@ -27,7 +27,7 @@ public interface CalendarPlaceView<W>
 
     void show(List<String> viewNames, String selectedView, List<String> calendarNames, String selectedCalendar);
 
-    void replaceContent(CalendarPlugin<W> provider);
+    void replaceContent(W provider);
 
     void setPresenter(Presenter presenter);
 

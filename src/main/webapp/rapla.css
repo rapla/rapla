@@ -74,8 +74,12 @@ h1 {
 .calendarPlace {
 	display: flex;
 }
-.calendarPlace .resources{
+.calendarPlace .resources {
 	width: 300px;
+	overflow-y: visible; 
+}
+.calendarPlace .resources div{
+	overflow-x: hidden;
 }
 .calendarPlace .drawingContainer{
 	width: 100%;
