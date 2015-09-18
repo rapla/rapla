@@ -1,5 +1,8 @@
 package org.rapla.client.gwt.view;
 
+import org.gwtbootstrap3.client.ui.ProgressBar;
+import org.gwtbootstrap3.client.ui.html.Div;
+
 import com.google.gwt.dom.client.BodyElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
@@ -18,7 +21,39 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 public class RaplaPopups
 {
 
+    public static class ProgressBarWrapper 
+    {
+        private final Div wrapper = new Div();
+        private final ProgressBar progressBar = new ProgressBar();
+
+        private ProgressBarWrapper()
+        {
+            wrapper.setId("progressWrapper");
+            final Div asd = new Div();
+            asd.setStyleName("progress");
+            wrapper.add(asd);
+            asd.add(progressBar);
+            progressBar.addStyleName("progress-bar-striped");
+        }
+
+        public void setPercent(double percent)
+        {
+            if (percent < 100)
+            {
+                wrapper.setVisible(true);
+                progressBar.addStyleName("active");
+            }
+            else
+            {
+                wrapper.setVisible(false);
+                progressBar.removeStyleName("active");
+            }
+            progressBar.setPercent(percent);
+        }
+    }
+
     private static final int MAX_WIDTH_POPUP = 1200;
+    private static final ProgressBarWrapper progressBarWrapper = new ProgressBarWrapper();
 
     static
     {
@@ -47,6 +82,7 @@ public class RaplaPopups
                 }
             }
         });
+        RootPanel.get().add(progressBarWrapper.wrapper);
     }
 
     public static void showWarning(String title, String text)
@@ -58,6 +94,11 @@ public class RaplaPopups
         warningPopup.add(layout);
         warningPopup.center();
         warningPopup.show();
+    }
+
+    public static ProgressBarWrapper getProgressBar()
+    {
+        return progressBarWrapper;
     }
 
     public static RootPanel getPopupPanel()
