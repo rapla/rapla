@@ -125,6 +125,18 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
         boolean keepTime = false;
         reservationController.moveAppointment(appointmentBlock, newStart, context, keepTime);
     }
+    
+    @Override
+    public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException
+    {
+        
+        AppointmentBlock appointmentBlock = block.getAppointmentBlock();
+        final Date newStart = appointmentBlock.getAppointment().getStart();
+        Date newEnd = calcDate(daySlot, minuteOfDay);
+        boolean keepTime = false;
+        reservationController.resizeAppointment(appointmentBlock, newStart, newEnd, context, keepTime);
+
+    }
 
     @Override
     public void newReservation(final HTMLDaySlot daySlot, final Integer fromMinuteOfDay, final Integer tillMinuteOfDay, PopupContext context)

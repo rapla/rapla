@@ -2,8 +2,7 @@ package org.rapla.client.gwt.view;
 
 import java.util.List;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.DateTools.TimeWithoutTimezone;
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
@@ -12,7 +11,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Widget;
 
-public class Event extends FlowPanel
+public class Event extends Div
 {
     private HTMLRaplaBlock htmlBlock;
 
@@ -21,13 +20,6 @@ public class Event extends FlowPanel
         super();
         this.htmlBlock = htmlBlock;
         addStyleName("event");
-        TimeWithoutTimezone endtime = DateTools.toTime(htmlBlock.getEnd().getTime());
-        final int endminute = Math.min(22, endtime.hour)*60 + endtime.minute ;
-        TimeWithoutTimezone starttime = DateTools.toTime(htmlBlock.getStart().getTime());
-        final int startminute = Math.max(5, starttime.hour)*60 + starttime.minute ;
-        final int rows = (int) Math.ceil(((endminute - startminute) / ( 30.0)));
-        final int size = Math.max(1, rows);
-        setHeight((size * 15) + "px");
         add(createTitleBlock());
         add(createPersonBlock());
         add(createResourcesBlock());
@@ -35,7 +27,7 @@ public class Event extends FlowPanel
         //        getElement().getStyle().setBackgroundColor(htmlBlock.getBackgroundColor());
         //        getElement().setDraggable(Element.DRAGGABLE_TRUE);
     }
-
+    
     private Widget createResourcesBlock()
     {
         final StringBuilder sb = new StringBuilder();

@@ -18,6 +18,8 @@ public interface CalendarWeekView<W> extends View<Presenter>
         void selectReservation(HTMLRaplaBlock block, PopupContext context);
         
         void newReservation(HTMLDaySlot daySlot, Integer fromMinuteOfDay, Integer tillMinuteOfDay, PopupContext context) throws RaplaException;
+
+        void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException;
     }
 
     W provideContent();

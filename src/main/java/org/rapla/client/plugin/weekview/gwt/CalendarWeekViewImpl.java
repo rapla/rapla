@@ -23,7 +23,7 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 
-@DefaultImplementation( of = CalendarWeekView.class, context = InjectionContext.gwt)
+@DefaultImplementation(of = CalendarWeekView.class, context = InjectionContext.gwt)
 public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.weekview.CalendarWeekView.Presenter>
         implements CalendarWeekView<IsWidget>, Callback
 {
@@ -77,6 +77,19 @@ public class CalendarWeekViewImpl extends AbstractView<org.rapla.client.plugin.w
         try
         {
             getPresenter().newReservation(daySlot, fromMinuteOfDay, tillMinuteOfDay, context);
+        }
+        catch (RaplaException e)
+        {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context)
+    {
+        try
+        {
+            getPresenter().resizeReservation(block, daySlot, minuteOfDay, context);
         }
         catch (RaplaException e)
         {
