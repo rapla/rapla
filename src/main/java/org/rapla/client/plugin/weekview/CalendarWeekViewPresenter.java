@@ -131,8 +131,9 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     {
         
         AppointmentBlock appointmentBlock = block.getAppointmentBlock();
-        final Date newStart = appointmentBlock.getAppointment().getStart();
+        final Date appintmentStart = appointmentBlock.getAppointment().getStart();
         Date newEnd = calcDate(daySlot, minuteOfDay);
+        Date newStart = DateTools.toDateTime(newEnd, appintmentStart);
         boolean keepTime = false;
         reservationController.resizeAppointment(appointmentBlock, newStart, newEnd, context, keepTime);
 

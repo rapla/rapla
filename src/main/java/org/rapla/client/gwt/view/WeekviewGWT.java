@@ -478,16 +478,17 @@ public class WeekviewGWT extends FlexTable
                     Position p = calcPosition(targetCell);
                     final int column = normalize(spanCells, p.row, p.column);
                     final HTMLDaySlot daySlot = findDaySlot(column);
-                    final Integer start = findRowSlot(p.row);
-                    logger.info("day" + daySlot.getHeader() + " - " + start);
                     final PopupContext context = contextCreator.createContext(event);
                     if(originSupport.resizer)
                     {
+                        final Integer start = findRowSlot(p.row + 1);
                         clearAllDayMarks(spanCells, originSupport.point);
                         callback.resizeReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
                     }
                     else
                     {
+                        final Integer start = findRowSlot(p.row);
+                        logger.info("day" + daySlot.getHeader() + " - " + start);
                         unmark(p, p);
                         callback.updateReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
                     }
