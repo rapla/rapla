@@ -213,18 +213,18 @@ public class ResourceDatesView implements ReservationViewPart
     public void createContent(final Reservation reservation)
     {
         this.actualReservation = reservation;
-        final Appointment[] appointments = reservation.getAppointments();
+        allAppointments = reservation.getAppointments();
         //
         Collection<DropDownItem> values = new ArrayList<DropDownItem>();
         boolean first = true;
-        for (int i = 0; i < appointments.length; i++)
+        for (int i = 0; i < allAppointments.length; i++)
         {
-            Appointment appointment = appointments[i];
+            Appointment appointment = allAppointments[i];
             values.add(new DropDownItem(formatDate(appointment), i + "", first));
             first = false;
         }
         datesSelection.changeSelection(values);
-        Appointment selectedAppointment = appointments.length > 0 ? appointments[0] : null;
+        Appointment selectedAppointment = allAppointments.length > 0 ? allAppointments[0] : null;
         if (selectedAppointment != null && selectedAppointment.isRepeatingEnabled() && selectedAppointment.getRepeating() != null)
         {
             Repeating repeating = selectedAppointment.getRepeating();
