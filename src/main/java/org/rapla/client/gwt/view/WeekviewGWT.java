@@ -481,7 +481,8 @@ public class WeekviewGWT extends FlexTable
                     final PopupContext context = contextCreator.createContext(event);
                     if(originSupport.resizer)
                     {
-                        final Integer start = findRowSlot(p.row + 1);
+                        int add = originSupport.event.getHtmlBlock().getRow() < p.row ? 1 : 0;
+                        final Integer start = findRowSlot(p.row + add);
                         clearAllDayMarks(spanCells, originSupport.point);
                         callback.resizeReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
                     }

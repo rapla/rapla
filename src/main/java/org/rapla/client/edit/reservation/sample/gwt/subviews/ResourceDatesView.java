@@ -225,6 +225,17 @@ public class ResourceDatesView implements ReservationViewPart
         }
         datesSelection.changeSelection(values);
         Appointment selectedAppointment = appointments.length > 0 ? appointments[0] : null;
+        if (selectedAppointment != null && selectedAppointment.isRepeatingEnabled() && selectedAppointment.getRepeating() != null)
+        {
+            Repeating repeating = selectedAppointment.getRepeating();
+            RepeatingType type = repeating.getType();
+            repeatingSelection.setSelected(type.name());
+        }
+        else
+        {
+            repeatingSelection.setSelected(NO_REPEATING_ID);
+        }
+
         updateDateRangeComponent(selectedAppointment);
     }
 
