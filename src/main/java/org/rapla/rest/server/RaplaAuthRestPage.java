@@ -5,13 +5,13 @@ import java.io.PrintWriter;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.jws.WebParam;
-import javax.jws.WebService;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.POST;
+import javax.ws.rs.QueryParam;
 
 import org.rapla.components.util.Tools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -26,7 +26,6 @@ import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -49,7 +48,8 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         this.i18n = i18n;
     }
 
-    public LoginTokens create(@WebParam(name = "credentials") LoginCredentials credentials) throws Exception
+    @POST
+    public LoginTokens create(@QueryParam("credentials") LoginCredentials credentials) throws Exception
     {
         final FutureResult<LoginTokens> result = remoteAuthentificationService.auth(credentials);
         final LoginTokens loginTokens = result.get();
@@ -97,8 +97,8 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         // super.generatePage(servletContext, request, response);
     }
 
-    public void create_(@WebParam(name = "url") String url, @WebParam(name = "user") String user, @WebParam(name = "password") String password,
-            @WebParam(name = "connectAs") String connectAs, HttpServletResponse response) throws Exception
+    public void create_(@QueryParam("url") String url, @QueryParam("user") String user, @QueryParam("password") String password,
+            @QueryParam("connectAs") String connectAs, HttpServletResponse response) throws Exception
     {
         final String targetUrl = Tools.createXssSafeString(url);
         final String errorMessage;
@@ -128,7 +128,7 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         createPage(url, user, errorMessage, response);
     }
 
-    public void getHtml(@WebParam(name = "url") String url, HttpServletResponse response) throws IOException
+    public void getHtml(@QueryParam("url") String url, HttpServletResponse response) throws IOException
     {
         createPage(url, null, null, response);
     }

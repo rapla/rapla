@@ -8,7 +8,12 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.jws.WebParam;
-import javax.jws.WebService;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -25,11 +30,11 @@ import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
 @Extension(provides = RaplaPageExtension.class,id="resources")
 @RemoteJsonMethod
+@Path("resources")
 public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPageExtension{
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
@@ -40,7 +45,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
 		super(facade, serverContainer, logger, true);
 	}
 
-	public List<AllocatableImpl> list(@WebParam(name = "user") User user, @WebParam(name = "resourceTypes") List<String> resourceTypes,
+	@GET
+	public List<AllocatableImpl> list(@QueryParam("user") User user, @QueryParam("resourceTypes") List<String> resourceTypes,
 			@WebParam(name = "attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
 		ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
@@ -53,7 +59,9 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
 		return result;
 	}
 
-	public AllocatableImpl get(@WebParam(name = "user") User user, @WebParam(name = "id") String id) throws RaplaException {
+	@GET
+	@Path("{id}")
+	public AllocatableImpl get(@QueryParam("user") User user, @PathParam("id") String id) throws RaplaException {
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
 		if (!RaplaComponent.canRead(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't read  " + resource);
@@ -61,7 +69,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
 		return resource;
 	}
 
-	public AllocatableImpl update(@WebParam(name = "user") User user, AllocatableImpl resource) throws RaplaException {
+	@PUT
+	public AllocatableImpl update(@QueryParam("user") User user, AllocatableImpl resource) throws RaplaException {
 		if (!RaplaComponent.canModify(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
@@ -71,7 +80,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
 		return result;
 	}
 
-	public AllocatableImpl create(@WebParam(name = "user") User user, AllocatableImpl resource) throws RaplaException {
+	@POST
+	public AllocatableImpl create(@QueryParam("user") User user, AllocatableImpl resource) throws RaplaException {
 		resource.setResolver(operator);
 		Classification classification = resource.getClassification();
 		DynamicType type = classification.getType();

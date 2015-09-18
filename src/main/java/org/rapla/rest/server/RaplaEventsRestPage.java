@@ -9,7 +9,12 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.jws.WebParam;
-import javax.jws.WebService;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -22,19 +27,18 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
 
 @Extension(provides = RaplaPageExtension.class,id="events")
 @RemoteJsonMethod
+@Path("events")
 public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 
@@ -45,8 +49,8 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageEx
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
 
-
-    public List<ReservationImpl> list(@WebParam(name="user") User user, @WebParam(name="start")Date start, @WebParam(name="end")Date end, @WebParam(name="resources") List<String> resources, @WebParam(name="eventTypes") List<String> eventTypes,@WebParam(name="attributeFilter") Map<String,String> simpleFilter ) throws Exception
+	@GET
+    public List<ReservationImpl> list(@QueryParam("user") User user, @QueryParam("start")Date start, @QueryParam("end")Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,@QueryParam("attributeFilter") Map<String,String> simpleFilter ) throws Exception
     {
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id :resources)
@@ -71,7 +75,9 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageEx
         return result;
     }
     
-	public ReservationImpl get(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
+	@GET
+    @Path("{id}")
+	public ReservationImpl get(@QueryParam("user") User user, @QueryParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         if (!RaplaComponent.canRead(event, user, getEntityResolver() ))
@@ -81,7 +87,8 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageEx
         return event;
     }
     
-    public ReservationImpl update(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
+	@PUT
+    public ReservationImpl update(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
     {
         if (!RaplaComponent.canModify(event, user, getEntityResolver()))
         {
@@ -93,7 +100,8 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageEx
         return result;
     }
     
-    public ReservationImpl create(@WebParam(name="user") User user, ReservationImpl event) throws RaplaException
+    @POST
+    public ReservationImpl create(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
     {
         event.setResolver( operator);
         if (!getQuery().canCreateReservations(event.getClassification().getType(), user))
