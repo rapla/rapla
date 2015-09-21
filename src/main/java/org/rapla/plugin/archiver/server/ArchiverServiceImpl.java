@@ -12,21 +12,33 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.archiver.ArchiverService;
+import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 
+@DefaultImplementation(of=ArchiverService.class,context= InjectionContext.server)
 public class ArchiverServiceImpl extends RaplaComponent implements ArchiverService
 {
-	public ArchiverServiceImpl(RaplaContext context) {
+    RemoteSession session;
+	public ArchiverServiceImpl(RaplaContext context, RemoteSession session) {
 		super(context);
+        this.session = session;
 	}
 	
 	/** can be overriden to check if user has admin rights when triggered as RemoteService
 	 * @throws RaplaException */
 	protected void checkAccess() throws RaplaException
 	{
+        User user = session.getUser();
+        if ( user != null && !user.isAdmin())
+        {
+            throw new RaplaSecurityException("ArchiverService can only be triggered by admin users");
+        }
 	}
 	
 	public boolean isExportEnabled() throws RaplaException {

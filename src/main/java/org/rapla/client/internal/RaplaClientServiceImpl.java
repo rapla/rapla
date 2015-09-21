@@ -15,6 +15,7 @@ package org.rapla.client.internal;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaClient;
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
@@ -70,7 +71,7 @@ import java.util.concurrent.Semaphore;
 public class RaplaClientServiceImpl extends RaplaClient implements ClientServiceContainer,ClientService,UpdateErrorListener
 {
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
-    I18nBundle i18n;
+    RaplaResources i18n;
     boolean started;
     boolean restartingGUI;
     boolean defaultLanguageChoosen;
@@ -150,14 +151,10 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 		
     	addContainerProvidedComponentInstance(ClientServiceContainer.class, this);
     	
-    	addContainerProvidedComponent( WELCOME_FIELD, LicenseInfoUI.class  );
+    	addContainerProvidedComponent(WELCOME_FIELD, LicenseInfoUI.class);
+        addContainerProvidedComponent( RaplaImages.class, RaplaImages.class  );
+        addContainerProvidedComponent( FrameControllerList.class, FrameControllerList.class  );
         addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
-        addContainerProvidedComponent( RaplaImages.class, RaplaImages.class );
-        addContainerProvidedComponent( RaplaClipboard.class, RaplaSwingClipboard.class );
-        addContainerProvidedComponent( TreeFactory.class, TreeFactoryImpl.class );
-        addContainerProvidedComponent( MenuFactory.class, MenuFactoryImpl.class );
-        addContainerProvidedComponent( InfoFactory.class, InfoFactoryImpl.class );
-        addContainerProvidedComponent( EditController.class, EditControllerImpl.class );
 
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION ,UserOption.class);
         addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , CalendarOption.class);
@@ -179,8 +176,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
         addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
         
-        addContainerProvidedComponent(FrameControllerList.class,FrameControllerList.class);
-
 
         RaplaMenubar menuBar = new RaplaMenubar();
 
@@ -214,10 +209,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponentInstance( InternMenus.NEW_MENU_ROLE, newMenu );
         addContainerProvidedComponentInstance( InternMenus.CALENDAR_SETTINGS, settingsMenu );
         addContainerProvidedComponentInstance( InternMenus.EXTRA_MENU_ROLE, helpMenu );
-        
-        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, DefaultReservationCheck.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.EVENT_SAVE_CHECK, ConflictReservationCheck.class);
-        
+
         boolean webstartEnabled =getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.WEBSTART;
 
         if (webstartEnabled) {
@@ -227,8 +219,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         }
         //Add this service to the container
         addContainerProvidedComponentInstance(ClientService.class, this);
-        this.i18n = getContext().lookup(RaplaComponent.RAPLA_RESOURCES );
-        frameControllerList = getContext().lookup( FrameControllerList.class);
+        this.i18n = getContext().lookup(RaplaResources.class );
+        frameControllerList = inject(FrameControllerList.class);
     }
 
     class SwingScheduler extends DefaultScheduler
@@ -312,7 +304,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 	        if ( getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.CONSOLE)
 			{
 				LoadingProgressC = getClass().getClassLoader().loadClass("org.rapla.bootstrap.LoadingProgress");
-				progressBar = LoadingProgressC.getMethod("getInstance").invoke(null);
+				progressBar = LoadingProgressC.getMethod("inject").invoke(null);
 				if ( finish)
 				{
 					LoadingProgressC.getMethod("close").invoke( progressBar);
@@ -341,6 +333,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 
         final CalendarSelectionModel model = createCalendarModel();
         addContainerProvidedComponentInstance( CalendarModel.class, model );
+
         addContainerProvidedComponentInstance( CalendarSelectionModel.class, model );
         StorageOperator operator = facade.getOperator();
 		if ( operator instanceof RestartServer)
@@ -359,8 +352,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 //        } 
         
         Preferences systemPreferences = facade.getSystemPreferences();
-        List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
-        addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
+        //List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
+        //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
 
         // start client provides
         lookupServicesFor(RaplaClientExtensionPoints.CLIENT_EXTENSION);
@@ -399,8 +392,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         fireClientStarted();
         mainFrame.show();
     }
-    
-    @Override
+
+    /*
     protected Set<String> discoverPluginClassnames() throws RaplaException {
         Set<String> pluginNames = super.discoverPluginClassnames();
         LinkedHashSet<String> result = new LinkedHashSet<String>();
@@ -414,6 +407,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         }
         return pluginNames;
     }
+    */
     
     private void initLanguage() throws RaplaException, RaplaContextException
     {
@@ -572,9 +566,9 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         	final RaplaContext context = getContext();
 			final Logger logger = getLogger();
 			
-            final LanguageChooser languageChooser = new LanguageChooser(logger, context);
+            final LanguageChooser languageChooser = inject(LanguageChooser.class);
             
-            final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent());
+            final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent(), frameControllerList);
             
             Action languageChanged = new AbstractAction()
             {
@@ -649,8 +643,9 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                 }
             };
             loginAction.putValue(Action.NAME,i18n.getString("login"));
-            exitAction.putValue(Action.NAME,i18n.getString("exit"));
-            dlg.setIconImage(context.lookup( RaplaImages.class).getIconFromKey("icon.rapla_small").getImage());
+            exitAction.putValue(Action.NAME, i18n.getString("exit"));
+            RaplaImages inject = getContext().lookup(RaplaImages.class);
+            dlg.setIconImage(inject.getIconFromKey("icon.rapla_small").getImage());
             dlg.setLoginAction( loginAction);
             dlg.setExitAction( exitAction );
             //dlg.setSize( 480, 270);

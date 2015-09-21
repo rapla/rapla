@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.facade.CalendarModel;
@@ -28,6 +29,7 @@ import org.rapla.inject.InjectionContext;
 @Extension(provides = SwingViewFactory.class,id = DayViewFactory.DAY_VIEW)
 public class DayViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    @Inject
     public DayViewFactory( RaplaContext context ) 
     {
         super( context );

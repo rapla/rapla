@@ -1,89 +1,65 @@
 package org.rapla.plugin.export2ical.server;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.TimeZone;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.NameFormatUtil;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.server.TimeZoneConverter;
-
 import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
-import net.fortuna.ical4j.model.WeekDay;
+import net.fortuna.ical4j.model.*;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.component.VTimeZone;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.parameter.Role;
-import net.fortuna.ical4j.model.property.Attendee;
-import net.fortuna.ical4j.model.property.Categories;
-import net.fortuna.ical4j.model.property.Created;
-import net.fortuna.ical4j.model.property.Description;
-import net.fortuna.ical4j.model.property.DtEnd;
-import net.fortuna.ical4j.model.property.DtStamp;
-import net.fortuna.ical4j.model.property.DtStart;
-import net.fortuna.ical4j.model.property.ExDate;
-import net.fortuna.ical4j.model.property.LastModified;
-import net.fortuna.ical4j.model.property.Location;
-import net.fortuna.ical4j.model.property.Method;
-import net.fortuna.ical4j.model.property.Organizer;
-import net.fortuna.ical4j.model.property.ProdId;
-import net.fortuna.ical4j.model.property.RRule;
-import net.fortuna.ical4j.model.property.Summary;
-import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
+import net.fortuna.ical4j.model.property.*;
 import net.fortuna.ical4j.util.CompatibilityHints;
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.*;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.ConfigurationException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.server.TimeZoneConverter;
 
-public class Export2iCalConverter extends RaplaComponent {
+import javax.inject.Inject;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.Date;
+import java.util.TimeZone;
+
+public class Export2iCalConverter {
+
+    private final boolean global_export_attendees;
+    private final String global_export_attendees_participation_status;
 
     net.fortuna.ical4j.model.TimeZone timeZone;
     private java.util.Calendar calendar;
     private String exportAttendeesAttribute;
-    private String exportAttendeesParticipationStatus;
-    private boolean doExportAsMeeting;
     TimeZoneConverter timezoneConverter;
     boolean hasLocationType;
     RaplaLocale raplaLocale;
-    
-    public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences) throws RaplaException {
-        super(context);
-        timezoneConverter = context.lookup( TimeZoneConverter.class);
-        raplaLocale = context.lookup(RaplaLocale.class);
+    Logger logger;
+    ClientFacade facade;
+
+    @Inject
+    public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale,Logger logger,ClientFacade facade) throws RaplaException {
+        this.timezoneConverter = timezoneConverter;
+        this.facade = facade;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
+        TimeZone zone = timezoneConverter.getImportExportTimeZone();
+
         calendar = raplaLocale.createCalendar();
-        doExportAsMeeting = false;
-        DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         for ( DynamicType type:dynamicTypes)
         {
         	if (type.getAnnotation( DynamicTypeAnnotations.KEY_LOCATION) != null)
@@ -92,12 +68,11 @@ public class Export2iCalConverter extends RaplaComponent {
         	}
         }
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
-        RaplaConfiguration config = context.lookup(ClientFacade.class).getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
-        boolean global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
-        String global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS).getValue(Export2iCalPlugin.DEFAULT_attendee_participation_status);
 
-        doExportAsMeeting = preferences == null ? global_export_attendees : preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, global_export_attendees);
-        exportAttendeesParticipationStatus = preferences == null ? global_export_attendees_participation_status : preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, global_export_attendees_participation_status);
+        RaplaConfiguration config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
+        global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS).getValue(
+                Export2iCalPlugin.DEFAULT_attendee_participation_status);
 
         try {
             exportAttendeesAttribute = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE).getValue();
@@ -105,9 +80,6 @@ public class Export2iCalConverter extends RaplaComponent {
             exportAttendeesAttribute = "";
             getLogger().info("ExportAttendeesMailAttribute is not set. So do not export as meeting");
         }
-        //ensure the stored value is not empty string, if so, do not export attendees
-        doExportAsMeeting = doExportAsMeeting && (exportAttendeesAttribute != null && exportAttendeesAttribute.trim().length() > 0);
-
         if (zone != null) {
             final String timezoneId = zone.getID();
 
@@ -123,16 +95,28 @@ public class Export2iCalConverter extends RaplaComponent {
         }
     }
 
-
-    public Calendar createiCalender(Collection<Appointment> appointments) 
+    protected Logger getLogger()
     {
+        return logger;
+    }
+
+    public Calendar createiCalender(Collection<Appointment> appointments, Preferences preferences)
+    {
+
+        boolean doExportAsMeeting = preferences == null ? global_export_attendees : preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, global_export_attendees);
+
+        String exportAttendeesParticipationStatus = preferences == null ? global_export_attendees_participation_status : preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, global_export_attendees_participation_status);
+
+        //ensure the stored value is not empty string, if so, do not export attendees
+        doExportAsMeeting = doExportAsMeeting && (exportAttendeesAttribute != null && exportAttendeesAttribute.trim().length() > 0);
+
         Calendar calendar = initiCalendar();
         addICalMethod(calendar, Method.PUBLISH);
         addVTimeZone(calendar);
         ComponentList components = calendar.getComponents();
         for (Appointment app:appointments) 
         {
-			VEvent event = createVEvent(app);
+			VEvent event = createVEvent(app, doExportAsMeeting,exportAttendeesParticipationStatus);
 			components.add(event);
         }
         return calendar;
@@ -163,10 +147,6 @@ public class Export2iCalConverter extends RaplaComponent {
         iCalendar.getProperties().add(method);
     }
 
-    public void addVEvent(Calendar iCalendar, Appointment appointment) {
-        iCalendar.getComponents().add(createVEvent(appointment));
-    }
-
     /**
      * Erstellt anhand des &uuml;bergebenen Appointment-Objekts einen
      * iCalendar-Event.
@@ -174,7 +154,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment Ein Rapla Appointment.
      * @return Ein iCalendar-Event mit den Daten des Appointments.
      */
-    private VEvent createVEvent(Appointment appointment) {
+    private VEvent createVEvent(Appointment appointment, boolean doExportAsMeeting,String exportAttendeesParticipationStatus) {
 
         PropertyList properties = new PropertyList();
 
@@ -190,8 +170,8 @@ public class Export2iCalConverter extends RaplaComponent {
         addUidToEvent(appointment, properties);
         addLocationToEvent(appointment, properties);
         addCategories(appointment, properties);
-        addOrganizer(appointment, properties);
-        addAttendees(appointment, properties);
+        addOrganizer(appointment, properties, doExportAsMeeting);
+        addAttendees(appointment, properties, doExportAsMeeting, exportAttendeesParticipationStatus);
         addRepeatings(appointment, properties);
 
 
@@ -206,7 +186,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment
      * @param properties
      */
-    private void addOrganizer(Appointment appointment, PropertyList properties) {
+    private void addOrganizer(Appointment appointment, PropertyList properties, boolean doExportAsMeeting) {
         // means we do not export attendees so we do not have a meeting
         if (!doExportAsMeeting)
            return;
@@ -240,7 +220,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment
      * @param properties
      */
-    private void addAttendees(Appointment appointment, PropertyList properties) {
+    private void addAttendees(Appointment appointment, PropertyList properties, boolean doExportAsMeeting, String exportAttendeesParticipationStatus) {
         if (!doExportAsMeeting)
             return;
 
@@ -274,8 +254,6 @@ public class Export2iCalConverter extends RaplaComponent {
     /**
      * Fuegt dem Termin das Modifizierungsdatum hinzu
      *
-     * @param appointment
-     * @param event
      */
     private void addDateStampToEvent(Appointment appointment, PropertyList properties) {
         Date lastChange = appointment.getReservation().getLastChanged();
@@ -287,8 +265,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * des Objektes entsprechen. Da dies jedoch den Import erschwert und sinnlos
      * ist, wird es auf das letzte Modifizierungsdatum geschrieben.
      *
-     * @param appointment
-     * @param event
      */
     private void addLastModifiedDateToEvent(Appointment appointment, PropertyList properties) {
         Date lastChange = appointment.getReservation().getLastChanged();
@@ -300,7 +276,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * &uuml;bergebenen Event-Objekt hinzu.
      *
      * @param appointment Ein Rapla Appointment.
-     * @param event       Ein iCalendar Event.
      */
     private void addRepeatings(Appointment appointment, PropertyList properties) {
         Repeating repeating = appointment.getRepeating();
@@ -370,7 +345,7 @@ public class Export2iCalConverter extends RaplaComponent {
             //DateList dl = new DateList(Value.DATE);
             Date date = itExceptions.next();
 			//dl.add(new net.fortuna.ical4j.model.Date( date));
-            java.util.Calendar cal = getRaplaLocale().createCalendar();
+            java.util.Calendar cal = raplaLocale.createCalendar();
             cal.setTime( date );
             int year = cal.get( java.util.Calendar.YEAR );
             int day_of_year = cal.get( java.util.Calendar.DAY_OF_YEAR);
@@ -418,7 +393,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * F&uuml;gt die Kategorien hinzu.
      *
      * @param appointment Ein Rapla Appointment.
-     * @param event       Ein iCalendar Event.
      */
     private void addCategories(Appointment appointment, PropertyList properties) {
         Classification cls = appointment.getReservation().getClassification();
@@ -453,7 +427,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addLocationToEvent(Appointment appointment, PropertyList properties) {
         Allocatable[] allocatables = appointment.getReservation().getAllocatablesFor(appointment);
@@ -484,7 +457,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addUidToEvent(Appointment appointment, PropertyList properties) {
         // multiple vevents can have the same id
@@ -508,7 +480,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
         Reservation reservation = appointment.getReservation();
@@ -544,7 +515,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addEndDateToEvent(Appointment appointment, PropertyList properties, boolean isAllDayEvent) {
 
@@ -594,7 +564,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addStartDateToEvent(Appointment appointment, PropertyList properties, boolean isAllDayEvent) {
 
@@ -642,7 +611,6 @@ public class Export2iCalConverter extends RaplaComponent {
      * Appointment-Objekt hinzu.
      *
      * @param appointment
-     * @param event
      */
     private void addCreateDateToEvent(Appointment appointment, PropertyList properties) {
 

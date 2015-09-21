@@ -4,18 +4,16 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.gui.PublishExtension;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -31,11 +29,15 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
      final JTextField titleField;
      final JPanel statusHtml;
      final JCheckBox onlyAllocationInfoField;
-     
-	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model)  
+	 AutoExportResources autoExportI18n;
+	 RaplaResources i18n;
+
+
+	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model) throws RaplaContextException
 	 {
 		super(context);
-    	setChildBundleName( AutoExportPlugin.AUTOEXPORT_PLUGIN_RESOURCE);
+		autoExportI18n = context.lookup(AutoExportResources.class);
+		 i18n = context.lookup(RaplaResources.class);
     	this.model = model;
     	
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
@@ -47,7 +49,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
         saveSelectedDateField = new JCheckBox();
         onlyAllocationInfoField = new JCheckBox();
         htmlURL = new JTextField();
-        checkbox = new JCheckBox("HTML " + getString("publish"));
+        checkbox = new JCheckBox("HTML " + i18n.getString("publish"));
         statusHtml = createStatus( htmlURL);
         panel.add(checkbox,"0,0");
        
@@ -60,14 +62,14 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
     	});
         
         
-        panel.add(new JLabel(getString("weekview.print.title_textfield") +":"),"2,2");
+        panel.add(new JLabel(i18n.getString("weekview.print.title_textfield") +":"),"2,2");
         panel.add( titleField, "4,2");
-        panel.add(new JLabel(getString("show_navigation")),"2,4");
+        panel.add(new JLabel(autoExportI18n.getString("show_navigation")),"2,4");
         panel.add( showNavField, "4,4");
         String dateString = getRaplaLocale().formatDate(model.getSelectedDate());
-        panel.add(new JLabel(getI18n().format("including_date",dateString)),"2,6");
+        panel.add(new JLabel(i18n.format("including_date",dateString)),"2,6");
         panel.add( saveSelectedDateField, "4,6");
-        panel.add(new JLabel(getI18n().getString("only_allocation_info")),"2,8");
+        panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,8");
         panel.add( onlyAllocationInfoField, "4,8");
         panel.add( statusHtml, "2,10,4,1");
         
@@ -116,18 +118,19 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 		        copyButton.setEnabled( enabled);
 		    }
 		};
-		status.setLayout( new BorderLayout());
-		urlLabel.setText( "");
-		urlLabel.setEditable( true );
-		urlLabel.setFont( urlLabel.getFont().deriveFont( (float)10.0));
+		status.setLayout(new BorderLayout());
+		urlLabel.setText("");
+		urlLabel.setEditable(true);
+		urlLabel.setFont(urlLabel.getFont().deriveFont((float) 10.0));
 		status.add( new JLabel("URL: "), BorderLayout.WEST );
-		status.add( urlLabel, BorderLayout.CENTER );
+		status.add(urlLabel, BorderLayout.CENTER);
 		
-		copyButton.setBorder(BorderFactory.createEmptyBorder(2,2,2,2));
+		copyButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		copyButton.setFocusable(false);
 		copyButton.setRolloverEnabled(false);
-		copyButton.setIcon(getIcon("icon.copy"));
-		copyButton.setToolTipText(getString("copy_to_clipboard"));
+		ImageIcon icon = getImages().getIconFromKey( i18n.getString("icon.copy"));
+		copyButton.setIcon(icon);
+		copyButton.setToolTipText(i18n.getString("copy_to_clipboard"));
 		copyButton.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
 		    	urlLabel.requestFocus();

@@ -27,7 +27,6 @@ public interface Container extends Disposable
      /** @deprecated use system preferences to store config instead */ 
      <T,I extends T> void addContainerProvidedComponent(Class<T> roleInterface,Class<I> implementingClass, Configuration config);
      <T,I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass);
-     void addResourceFile(TypedComponentRole<I18nBundle> resourceFile);
      /** @deprecated use system preferences to store config instead. Use addResourceFile for language resources */
      <T,I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass, Configuration config);
   

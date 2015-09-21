@@ -18,6 +18,7 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -41,7 +42,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
 
     @Inject
-    public ReservationInfoUI(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(i18n, raplaLocale, facade, logger);
         this.appointmentFormater = appointmentFormater;

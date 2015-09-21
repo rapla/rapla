@@ -23,6 +23,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
@@ -71,12 +72,13 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
 
-        languageChooser = new LanguageChooser(getLogger(),context);
+        RaplaLocale raplaLocale = getRaplaLocale();
         RaplaResources i18n = getI18n();
+        languageChooser = new LanguageChooser(getLogger(),i18n,raplaLocale);
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
 
-        countryChooser = new CountryChooser(getLogger(),context);
+        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
         languageChooser.addActionListener(new ActionListener()

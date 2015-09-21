@@ -36,12 +36,19 @@ import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditController;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
 
 /** This class handles the edit-ui for all entities (except reservations). */
+
+@DefaultImplementation(of=EditController.class, context = InjectionContext.swing)
 public class EditControllerImpl extends RaplaGUIComponent implements
 		EditController {
 	Collection<EditDialog<?>> editWindowList = new ArrayList<EditDialog<?>>();
 
+	@Inject
 	public EditControllerImpl(RaplaContext sm){
 		super(sm);
 	}

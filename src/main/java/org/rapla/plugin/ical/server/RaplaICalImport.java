@@ -44,10 +44,14 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.gwtjsonrpc.common.FutureResult;
@@ -57,56 +61,50 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
+import javax.inject.Inject;
 
-public class RaplaICalImport extends RaplaComponent implements RemoteMethodFactory<ICalImport> {
+@DefaultImplementation(of=ICalImport.class,context = InjectionContext.server)
+public class RaplaICalImport implements ICalImport {
 	private TimeZone timeZone;
 	private TimeZoneConverter timeZoneConverter;
+	RemoteSession session;
+	ClientFacade facade;
+	Logger logger;
 
-	public RaplaICalImport( RaplaContext context) throws RaplaContextException{
-		this( context, context.lookup(TimeZoneConverter.class).getImportExportTimeZone());
+	@Inject
+	public RaplaICalImport( TimeZoneConverter converter, RemoteSession session,ClientFacade facade, Logger logger) throws RaplaContextException{
+		this.timeZoneConverter = converter;
+		this.session = session;
+		this.facade = facade;
+		this.logger = logger;
 	}
 
-	@Override public Class<ICalImport> getInterfaceClass()
+
+
+	public FutureResult<Integer[]> importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey)
 	{
-		return ICalImport.class;
+		try
+		{
+			List<Allocatable> allocatables = new ArrayList<Allocatable>();
+			if ( allocatableIds.length > 0)
+			{
+				for ( String id:allocatableIds)
+				{
+					Allocatable allocatable = getAllocatable(id);
+					allocatables.add ( allocatable);
+				}
+			}
+			User user = session.getUser();
+			Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
+			return new ResultImpl<Integer[]>(count);
+		} catch (RaplaException ex)
+		{
+			return new ResultImpl<Integer[]>(ex);
+		}
 	}
-	
-    public RaplaICalImport( RaplaContext context, TimeZone timeZone) throws RaplaContextException{
-	    super( context);
-	    this.timeZone = timeZone;
-	    this.timeZoneConverter = context.lookup( TimeZoneConverter.class);
-    }
-	
-	public ICalImport createService(final RemoteSession remoteSession) {
-        return new ICalImport() {
-        	@Override
-            public FutureResult<Integer[]> importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey)  
-            {
-                try
-                {
-                	List<Allocatable> allocatables = new ArrayList<Allocatable>();
-                    if ( allocatableIds.length > 0)
-                    {
-                        for ( String id:allocatableIds)
-                        {
-                            Allocatable allocatable = getAllocatable(id);
-                            allocatables.add ( allocatable);
-                        }
-                    }
-                    User user = remoteSession.getUser();
-                    Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-                    return new ResultImpl<Integer[]>(count);
-                } catch (RaplaException ex)
-                {
-                	return new ResultImpl<Integer[]>(ex);
-                }
-            }
-        };
-	}
-	    
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
-	    AbstractCachableOperator operator = (AbstractCachableOperator) getClientFacade().getOperator();
+	    AbstractCachableOperator operator = (AbstractCachableOperator) facade.getOperator();
 	    final Allocatable refEntity = operator.resolve( id, Allocatable.class);
 	    return refEntity;
 	}
@@ -194,7 +192,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
     				}
     				if (name == null || name.trim().length() == 0)
     				{
-    					getLogger().debug("Ignoring event with empty name [" + uid +  "]" );
+    					logger.debug("Ignoring event with empty name [" + uid + "]");
 				    	eventsSkipped ++;
 				    	continue;
     				}
@@ -202,8 +200,8 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
                 	if ( lookupEvent == null)
     				{
     					// create the reservation
-    					Classification classification = getClientFacade().getDynamicType(eventTypeKey).newClassification();
-    				    lookupEvent = getClientFacade().newReservation(classification,user);
+    					Classification classification = facade.getDynamicType(eventTypeKey).newClassification();
+    				    lookupEvent = facade.newReservation(classification,user);
     				    if ( uid != null)
     				    {
     				    	lookupEvent.setAnnotation( RaplaObjectAnnotations.KEY_EXTERNALID, uid);
@@ -227,8 +225,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
     			        Date t2 = duration.getTime(t1);
     			        duration_millis = t2.getTime() - t1.getTime();
     				} else {
-    					getLogger().warn("Error in ics File. There is an event without DTEND or DURATION. "
-    							+ "SUMMARY: " + name + ", DTSTART: " + startdate);
+    					logger.warn("Error in ics File. There is an event without DTEND or DURATION. " + "SUMMARY: " + name + ", DTSTART: " + startdate);
     					eventsSkipped ++;
     					continue;
     				}
@@ -367,13 +364,13 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 			    }
 			    else
 			    {
-			    	getLogger().debug("Ignoring event with uid " + uid +  " already imported. Ignoring" );
+			    	logger.debug("Ignoring event with uid " + uid + " already imported. Ignoring");
 			    	eventsPresent++;
 			    }
 		    }
 		}
 
-		getClientFacade().storeObjects(toImport.toArray(Reservation.RESERVATION_ARRAY));
+		facade.storeObjects(toImport.toArray(Reservation.RESERVATION_ARRAY));
 		return new Integer[] {eventsInICal, eventsImported, eventsPresent, eventsSkipped};
 	}
 
@@ -383,7 +380,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 		 User user = null;
 	     Date end = null;
 	     keyMap = new LinkedHashMap<String, List<Entity<Reservation>>>();
-	     Reservation[] reservations = getQuery().getReservations(user, start, end, null);
+	     Reservation[] reservations = facade.getReservations(user, start, end, null);
 	     for ( Reservation r:reservations)
 	     {
 	         String key = r.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
@@ -405,7 +402,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 //	private Date toRaplaDate(TimeZone timeZone2,
 //			net.fortuna.ical4j.model.Date startdate) 
 //	{
-//		java.util.Calendar cal = java.util.Calendar.getInstance( getRaplaLocale().getSystemTimeZone());
+//		java.util.Calendar cal = java.util.Calendar.inject( getRaplaLocale().getSystemTimeZone());
 //		cal.setTime(startdate);
 //		cal.add( java.util.Calendar.HOUR_OF_DAY, 2);
 //		int date = cal.get( java.util.Calendar.DATE);
@@ -418,7 +415,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
 //	}
 
 	private Appointment newAppointment(User user,Date begin, Date end) throws RaplaException {
-        Appointment appointment = getClientFacade().newAppointment(begin,end,user);
+        Appointment appointment = facade.newAppointment(begin,end,user);
         return appointment;
     }
 
@@ -428,7 +425,7 @@ public class RaplaICalImport extends RaplaComponent implements RemoteMethodFacto
         final List<Appointment> appointments = new ArrayList<Appointment>();
         for (Recur recur : recurList) {
         	// FIXME need to implement UTC mapping
-            final Appointment appointment = getClientFacade().newAppointment(start.getStart(), start.getEnd(), start.getOwner());
+            final Appointment appointment = facade.newAppointment(start.getStart(), start.getEnd(), start.getOwner());
             appointment.setRepeatingEnabled(true);
             WeekDayList dayList = recur.getDayList();
             if (dayList.size() > 1 || (dayList.size() == 1 && !recur.getFrequency().equals(Recur.WEEKLY)  ))

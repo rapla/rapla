@@ -17,9 +17,11 @@ import java.util.Locale;
 import org.rapla.MockMailer;
 import org.rapla.ServletTestBase;
 import org.rapla.facade.ClientFacade;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.mail.server.RaplaMailToUserOnLocalhost;
+import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 
@@ -58,9 +60,12 @@ public class MailPluginTest extends ServletTestBase {
     
     public void test() throws Exception 
     {
-    	MailToUserInterface mail = new RaplaMailToUserOnLocalhost(raplaServer.getContext());
-        mail.sendMail( "homer","Subject", "MyBody");
         MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class);
+        final ClientFacade facade = getContext().lookup(ClientFacade.class);
+        Logger logger = getContext().lookup(Logger.class);
+    	MailToUserInterface mail = new RaplaMailToUserOnLocalhost(mailMock, facade, logger);
+        mail.sendMail( "homer","Subject", "MyBody");
+
         Thread.sleep( 1000);
 
         assertNotNull( mailMock.getMailBody() );

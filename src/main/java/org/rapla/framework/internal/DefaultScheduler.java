@@ -13,7 +13,10 @@ import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of=CommandScheduler.class,context = {InjectionContext.server,InjectionContext.swing})
 public class DefaultScheduler implements CommandScheduler {
 	private final ScheduledExecutorService executor;
 	Logger logger;

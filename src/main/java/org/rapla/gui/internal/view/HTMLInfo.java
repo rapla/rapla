@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Named;
@@ -37,7 +38,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         super(context);
     }
 
-    public HTMLInfo(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
         super( facade, i18n, raplaLocale, logger);
 //        this.i18n = i18n;
 //        this.raplaLocale = raplaLacale;

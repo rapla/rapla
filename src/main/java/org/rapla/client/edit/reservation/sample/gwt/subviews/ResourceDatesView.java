@@ -66,7 +66,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void dateRangeChanged(Date startDate, Date endDate)
             {
-                getPresenter().timeChanged(actualReservation, startDate, endDate);
+                getPresenter().timeChanged(startDate, endDate);
             }
         });
         contentPanel = new Div();
@@ -79,7 +79,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void onClick(ClickEvent event)
             {
-                getPresenter().deleteDateClicked(actualReservation);
+                getPresenter().deleteDateClicked();
             }
         }));
         datesButtons.add(createButton(i18n.getString("new"), IconType.PLUS_CIRCLE, new ClickHandler()
@@ -87,7 +87,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void onClick(ClickEvent event)
             {
-                getPresenter().newDateClicked(actualReservation);
+                getPresenter().newDateClicked();
             }
         }));
         datesRow.add(datesButtons);
@@ -100,7 +100,7 @@ public class ResourceDatesView implements ReservationViewPart
             {
                 int index = Integer.parseInt(newValue);
                 Appointment selectedAppointment = allAppointments[index];
-                getPresenter().selectAppointment(actualReservation, selectedAppointment);
+                getPresenter().selectAppointment(selectedAppointment);
                 // Update
             }
         }, values);
@@ -109,7 +109,7 @@ public class ResourceDatesView implements ReservationViewPart
             @Override
             public void changed(boolean selected)
             {
-                getPresenter().allDayEvent(actualReservation, selected);
+                getPresenter().allDayEvent(selected);
             }
         });
         drp.setWithTime(true);
@@ -135,16 +135,16 @@ public class ResourceDatesView implements ReservationViewPart
                 {
                     if (NO_REPEATING_ID.equals(id))
                     {
-                        getPresenter().repeating(actualReservation, null);
+                        getPresenter().repeating(null);
                     }
                     else if ("convert".equals(id))
                     {
-                        getPresenter().convertAppointment(actualReservation);
+                        getPresenter().convertAppointment();
                     }
                     else
                     {
                         RepeatingType repeating = RepeatingType.valueOf(id);
-                        getPresenter().repeating(actualReservation, repeating);
+                        getPresenter().repeating(repeating);
                     }
                 }
             });

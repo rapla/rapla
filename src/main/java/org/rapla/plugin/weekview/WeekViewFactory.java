@@ -27,6 +27,7 @@ import javax.swing.*;
 @Extension(provides = SwingViewFactory.class,id =WeekViewFactory.WEEK_VIEW)
 public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    @Inject
     public WeekViewFactory( RaplaContext context )
     {
         super( context );

@@ -19,6 +19,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -27,6 +28,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 @DefaultImplementation(of= RaplaLocale.class, context = {InjectionContext.swing,InjectionContext.server} )
+@Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
     String COUNTRY = "country";

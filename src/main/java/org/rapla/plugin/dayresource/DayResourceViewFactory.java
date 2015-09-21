@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.dayresource;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.RaplaResources;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -21,12 +23,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.gui.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
+import org.rapla.inject.Extension;
 
-public class DayResourceViewFactory extends RaplaComponent implements SwingViewFactory
+@Extension(provides = SwingViewFactory.class,id = DayResourceViewFactory.DAY_RESOURCE_VIEW)
+public class DayResourceViewFactory  implements SwingViewFactory
 {
-    public DayResourceViewFactory( RaplaContext context ) 
+    RaplaResources i18n;
+    @Inject
+    public DayResourceViewFactory( RaplaResources i18n )
     {
-        super( context );
+        this.i18n = i18n;
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
@@ -43,7 +49,7 @@ public class DayResourceViewFactory extends RaplaComponent implements SwingViewF
 
     public String getName()
     {
-        return getString(DAY_RESOURCE_VIEW);
+        return i18n.getString(DAY_RESOURCE_VIEW);
     }
 
     Icon icon;

@@ -5,6 +5,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.tableview.ReservationTableColumn;
 
+import javax.inject.Inject;
+
 /**
 * User: kuestermann
 * Date: 22.08.12
@@ -14,8 +16,9 @@ public final class DurationColumnReservation extends DurationColumn implements R
 
     private EventTimeModel eventTimeModel;
     EventTimeCalculatorFactory factory;
-    public DurationColumnReservation(RaplaContext context) throws RaplaException {
-    	super(context);
+	@Inject
+    public DurationColumnReservation(RaplaContext context, EventTimeCalculatorResources i18n) throws RaplaException {
+    	super(context, i18n);
     	factory = context.lookup(EventTimeCalculatorFactory.class);
     }
 

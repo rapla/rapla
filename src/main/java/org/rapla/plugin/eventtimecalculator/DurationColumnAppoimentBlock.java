@@ -5,6 +5,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.tableview.AppointmentTableColumn;
 
+import javax.inject.Inject;
+
 /**
 * User: kuestermann
 * Date: 22.08.12
@@ -15,8 +17,9 @@ public final class DurationColumnAppoimentBlock extends DurationColumn implement
 	EventTimeCalculatorFactory factory;
     private EventTimeModel eventTimeModel;
 
-    public DurationColumnAppoimentBlock(RaplaContext context) throws RaplaException {
-        super(context);
+    @Inject
+    public DurationColumnAppoimentBlock(RaplaContext context, EventTimeCalculatorResources i18n) throws RaplaException {
+        super(context,i18n);
         factory = context.lookup(EventTimeCalculatorFactory.class);
     }
 

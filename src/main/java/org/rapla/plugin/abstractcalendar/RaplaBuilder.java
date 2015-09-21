@@ -34,6 +34,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
@@ -107,7 +108,7 @@ public abstract class RaplaBuilder
     
 	final private RaplaLocale raplaLocale;
 	final private ClientFacade clientFacade;
-	final private I18nBundle i18n;
+	final private RaplaResources i18n;
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
 	
@@ -128,7 +129,7 @@ public abstract class RaplaBuilder
 //    }
 //	
 	@Inject
-	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, Logger logger, AppointmentFormater appointmentFormater) {
+	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );
         this.raplaLocale = raplaLocale;
@@ -149,7 +150,7 @@ public abstract class RaplaBuilder
         return clientFacade;
     }
     
-    protected I18nBundle getI18n() 
+    protected RaplaResources getI18n()
     {
         return i18n;
     }
@@ -588,7 +589,7 @@ public abstract class RaplaBuilder
         boolean bTimeVisible = false;
         boolean conflictsSelected = false;
         Map<Allocatable,String> colors;
-        I18nBundle i18n;
+        RaplaResources i18n;
         RaplaLocale raplaLocale;
         Logger logger;
         User user;

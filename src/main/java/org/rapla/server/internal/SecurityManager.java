@@ -20,7 +20,9 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -47,16 +49,17 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
 /** checks if the client can store or delete an entity */
+@Singleton
 public class SecurityManager 
 {
-    final I18nBundle i18n;
+    final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
     final StorageOperator operator;
     final Logger logger;
     final ClientFacade facade;
 
     @Inject
-    public SecurityManager(Logger logger, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
+    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
     {
         this.logger = logger;
         this.i18n = i18n;
@@ -160,8 +163,16 @@ public class SecurityManager
         
         if (!permitted)
         {
-            String text = admin ? "error.admin_not_allowed" : "error.modify_not_allowed";
-            throw new RaplaSecurityException(i18n.format(text, new Object []{ user.toString(),entity.toString()}));
+            String errorText;
+            if (admin)
+            {
+                errorText = i18n.format("error.admin_not_allowed", new Object[] { user.toString(), entity.toString() });
+            }
+            else
+            {
+                errorText = i18n.format("error.modify_not_allowed", new Object[] { user.toString(), entity.toString() });
+            }
+            throw new RaplaSecurityException(errorText);
             
         }
 

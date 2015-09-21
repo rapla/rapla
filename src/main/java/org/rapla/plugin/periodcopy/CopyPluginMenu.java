@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.swing.JMenuItem;
 
+import org.rapla.client.EditMenuExtensionPoint;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
@@ -35,7 +36,9 @@ import org.rapla.gui.internal.edit.SaveUndo;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.inject.Extension;
 
+@Extension(provides = EditMenuExtensionPoint.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements IdentifiableMenuEntry,ActionListener
 {
 	RaplaMenuItem item;
@@ -43,7 +46,6 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements IdentifiableMe
 	final String label ;
     public CopyPluginMenu(RaplaContext sm)  {
         super(sm);
-        setChildBundleName( PeriodCopyPlugin.RESOURCE_FILE);
         //menu.insert( new RaplaSeparator("info_end"));
 
         label =getString(id) ;
@@ -51,7 +53,6 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements IdentifiableMe
 
 //      ResourceBundle bundle = ResourceBundle.getBundle( "org.rapla.plugin.periodcopy.PeriodCopy");
        
-        //bundle.getString("copy_events");
         item.setText( label );
         item.setIcon( getIcon("icon.copy") );
         item.addActionListener(this);

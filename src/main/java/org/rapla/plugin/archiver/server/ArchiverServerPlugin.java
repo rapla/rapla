@@ -22,7 +22,6 @@ public class ArchiverServerPlugin implements PluginDescriptor<ServerServiceConta
 {
     public void provideServices(ServerServiceContainer container, Configuration config) {
         
-    	container.addRemoteMethodFactory(ArchiverService.class, ArchiverServiceFactory.class, config);
         if ( !config.getAttributeAsBoolean("enabled", ArchiverPlugin.ENABLE_BY_DEFAULT) )
         	return;
 

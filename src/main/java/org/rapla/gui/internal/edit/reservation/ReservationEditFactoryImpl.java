@@ -8,10 +8,15 @@ import org.rapla.gui.ReservationEdit;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 @DefaultImplementation(of= ReservationEditFactory.class,context = InjectionContext.swing)
+@Singleton
 public class ReservationEditFactoryImpl implements ReservationEditFactory
 {
     RaplaContext context;
+    @Inject
     public ReservationEditFactoryImpl(RaplaContext context)
     {
         this.context = context;

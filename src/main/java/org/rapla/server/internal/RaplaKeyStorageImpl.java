@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.User;
@@ -17,8 +18,12 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.server.RaplaKeyStorage;
 
+@DefaultImplementation(of=RaplaKeyStorage.class,context = InjectionContext.server)
+@Singleton
 public class RaplaKeyStorageImpl implements RaplaKeyStorage
 {
 	//private static final String USER_KEYSTORE = "keystore";

@@ -16,12 +16,14 @@ import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -34,14 +36,12 @@ final public class LanguageChooser implements RaplaWidget
 {
     JComboBox jComboBox;
     String country;
-    RaplaContext context;
+    //RaplaContext context;
     Logger logger;
-    
-    public LanguageChooser(Logger logger,RaplaContext context) throws RaplaException {
+
+    @Inject
+    public LanguageChooser(Logger logger,RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaException {
         this.logger = logger;
-        this.context = context;
-        final I18nBundle i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
-        final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         country = raplaLocale.getLocale().getCountry();
         String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
 

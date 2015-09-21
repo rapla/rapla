@@ -9,10 +9,12 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
 /**
  * ****************************************************************************
@@ -26,11 +28,14 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
 	private Preferences preferences;
 	Configuration config;
 	JPanel panel;
-	public EventTimeCalculatorUserOption(RaplaContext sm, Configuration config) {
-        super(sm);
+
+    EventTimeCalculatorResources eventTimei18n;
+	public EventTimeCalculatorUserOption(RaplaContext context, Configuration config) throws RaplaContextException
+    {
+        super(context);
         this.config = config;
-        optionPanel = new EventTimeCalculatorOption(sm, false);
-        setChildBundleName(EventTimeCalculatorPlugin.RESOURCE_FILE);
+        eventTimei18n = context.lookup(EventTimeCalculatorResources.class);
+        optionPanel = new EventTimeCalculatorOption(context, false);
         panel = optionPanel.createPanel();
     }
 
@@ -65,7 +70,7 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
      * returns a string with the name of the plugin.
      */
     public String getName(Locale locale) {
-        return getString("EventTimeCalculatorPlugin");
+        return eventTimei18n.getString("EventTimeCalculatorPlugin");
     }
 
 }

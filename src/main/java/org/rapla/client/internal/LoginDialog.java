@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import org.omg.CORBA.FREE_MEM;
+import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.layout.TableLayout;
@@ -23,8 +25,10 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.gui.toolkit.RaplaFrame;
 
+import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -51,7 +55,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 	JLabel						passwordLabel		= new JLabel();
 	JButton						loginBtn			= new JButton();
 	JButton						exitBtn				= new JButton();
-	I18nBundle					i18n;
+	RaplaResources				i18n;
 	ImageObserver				observer;
 	Image						image;
 	JPanel						canvas;
@@ -59,20 +63,21 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
     StartupEnvironment env;
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     RaplaGUIComponent guiComponent;
-    
-    public LoginDialog(RaplaContext context) throws RaplaException
+
+	@Inject
+    public LoginDialog(RaplaContext context, FrameControllerList frameControllerList) throws RaplaException
 	{
-		super(context);
+		super(frameControllerList);
 		this.guiComponent = new RaplaGUIComponent(context);
 		env =  context.lookup( StartupEnvironment.class );
-		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+		i18n = context.lookup(RaplaResources.class);
 		localeSelector = (ServerBundleManager)context.lookup(BundleManager.class);
 		localeSelector.addLocaleChangeListener(this);
 	}
 	
-	public static LoginDialog create(RaplaContext sm, JComponent languageSelector) throws RaplaException
+	public static LoginDialog create(RaplaContext sm, JComponent languageSelector, FrameControllerList frameControllerList) throws RaplaException
 	{
-		LoginDialog dlg = new LoginDialog(sm);
+		LoginDialog dlg = new LoginDialog(sm,frameControllerList);
 		dlg.init(languageSelector);
 		return dlg;
 	}

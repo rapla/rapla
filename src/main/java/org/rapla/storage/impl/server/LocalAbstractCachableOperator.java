@@ -40,6 +40,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -278,7 +279,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	    }
     }
 	
-	public LocalAbstractCachableOperator(Logger logger,  I18nBundle i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
+	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
 		super( logger, i18n,raplaLocale);
 		this.scheduler = scheduler; 
 		        //context.lookup( CommandScheduler.class);

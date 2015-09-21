@@ -32,7 +32,9 @@ import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.inject.Extension;
 
+@Extension(provides = EventCheck.class,id="defaultcheck")
 public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
 {
     AppointmentFormater appointmentFormater;

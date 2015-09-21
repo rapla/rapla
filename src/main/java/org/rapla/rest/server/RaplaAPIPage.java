@@ -15,6 +15,7 @@ import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.servletpages.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +32,7 @@ public class RaplaAPIPage implements RaplaPageExtension
     final ServerServiceContainer serverContainer;
     Logger logger;
 
+    @Inject
     public RaplaAPIPage(Logger logger,ServerServiceContainer serverContainer ) throws RaplaContextException {
         this.logger = logger;
         this.serverContainer = serverContainer;

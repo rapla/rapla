@@ -56,6 +56,7 @@ import org.rapla.storage.impl.EntityStore;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,6 +64,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Handles security and synchronizing aspects.
  */
 @DefaultImplementation(of=UpdateDataManager.class, context = InjectionContext.server)
+@Singleton
 public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable, UpdateDataManager
 {
     private CachableStorageOperator operator;

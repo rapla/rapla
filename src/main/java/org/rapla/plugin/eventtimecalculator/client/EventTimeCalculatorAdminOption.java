@@ -5,13 +5,10 @@ import java.util.Locale;
 
 import javax.swing.JPanel;
 
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
+import org.rapla.framework.*;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
 /**
  * ****************************************************************************
@@ -21,10 +18,12 @@ import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
  */
 public class EventTimeCalculatorAdminOption extends DefaultPluginOption {
     EventTimeCalculatorOption optionPanel;
+    EventTimeCalculatorResources i18n;
 
-    public EventTimeCalculatorAdminOption(RaplaContext sm) {
+    public EventTimeCalculatorAdminOption(RaplaContext sm,EventTimeCalculatorResources i18n) throws RaplaContextException
+    {
         super(sm);
-        setChildBundleName(EventTimeCalculatorPlugin.RESOURCE_FILE);
+        this.i18n = i18n;
         optionPanel = new EventTimeCalculatorOption(sm, true);
     }
 
@@ -63,7 +62,7 @@ public class EventTimeCalculatorAdminOption extends DefaultPluginOption {
      * returns a string with the name of the plugin.
      */
     public String getName(Locale locale) {
-        return getString("EventTimeCalculatorPlugin");
+        return i18n.getString("EventTimeCalculatorPlugin");
     }
 
 }

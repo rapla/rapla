@@ -16,6 +16,7 @@ package org.rapla.storage.xml;
 import java.util.Date;
 import java.util.Map;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
@@ -57,7 +58,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     private Map<String,RaplaType> localnameMap;
     private Map<RaplaType,RaplaXMLReader> readerMap;
     private SerializableDateTimeFormat dateTimeFormat;
-    private I18nBundle i18n;
+    private RaplaResources i18n;
     private Date now;
     private RaplaContext context;
     
@@ -89,7 +90,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         this.context = context;
         logger = context.lookup( Logger.class );
-        this.i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        this.i18n = context.lookup(RaplaResources.class);
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         this.store = context.lookup( EntityStore.class); 
         this.idTable = context.lookup( IdCreator.class );

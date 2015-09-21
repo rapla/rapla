@@ -23,21 +23,11 @@ import org.rapla.framework.TypedComponentRole;
 
 /** Users can subscribe for allocation change notifications for selected resources or persons.*/
 
-public class NotificationPlugin implements PluginDescriptor<ClientServiceContainer>
+public class NotificationPlugin
 {
-    public static final String ResourceFileId = "org.rapla.plugin.notification.NotificationResources";
-    public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(ResourceFileId);
-    public static final boolean ENABLE_BY_DEFAULT = false;
 	public final static TypedComponentRole<Boolean> NOTIFY_IF_OWNER_CONFIG = new TypedComponentRole<Boolean>("org.rapla.plugin.notification.notify_if_owner");
 	public final static TypedComponentRole<RaplaMap<Allocatable>> ALLOCATIONLISTENERS_CONFIG = new TypedComponentRole<RaplaMap<Allocatable>>("org.rapla.plugin.notification.allocationlisteners");
 
-    public void provideServices(ClientServiceContainer container, Configuration config) {
-        if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
-        	return;
-
-        container.addResourceFile(RESOURCE_FILE);
-        container.addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, NotificationOption.class);
-    }
 
 }
 

@@ -28,7 +28,6 @@ public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer
     
     public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException
     {
-        container.addRemoteMethodFactory(JNDIConfig.class, RaplaJNDITestOnLocalhost.class);
         convertSettings(container.getContext(),config);
      	if ( !config.getAttributeAsBoolean("enabled", JNDIPlugin.ENABLE_BY_DEFAULT) )
         	return;

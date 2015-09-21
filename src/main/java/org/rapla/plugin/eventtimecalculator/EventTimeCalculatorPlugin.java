@@ -13,11 +13,7 @@ import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorUserOption
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
 
 public class EventTimeCalculatorPlugin implements PluginDescriptor<ClientServiceContainer> {
-
-
-    public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>( EventTimeCalculatorPlugin.class.getPackage().getName() + ".EventTimeCalculatorResources");
-
-    public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getName();
+public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getName();
     public static final boolean ENABLE_BY_DEFAULT = false;
 
     // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";
@@ -43,7 +39,6 @@ public class EventTimeCalculatorPlugin implements PluginDescriptor<ClientService
      * uses the extension points to provide the different services of the plugin.
      */
     public void provideServices(ClientServiceContainer container, Configuration config) {
-        container.addResourceFile(RESOURCE_FILE);
         container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, EventTimeCalculatorAdminOption.class);
         if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
             return;
