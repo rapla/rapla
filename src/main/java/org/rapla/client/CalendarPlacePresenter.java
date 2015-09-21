@@ -91,7 +91,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
             final Date selectedDate = model.getSelectedDate();
             view.updateDate(selectedDate);
             updateView();
-            view.replaceContent(selectedView);
+            view.replaceContent(selectedView.provideContent());
         }
         catch (RaplaException e)
         {
@@ -157,7 +157,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         model.setSelectedDate(nextDate);
         view.updateDate(nextDate);
-        updateView();
     }
 
     public void updatePlace()

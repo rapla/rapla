@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import org.rapla.client.base.CalendarPlugin;
 import org.rapla.entities.domain.Allocatable;
 
 public interface CalendarPlaceView<W>
@@ -27,7 +26,7 @@ public interface CalendarPlaceView<W>
 
     void show(List<String> viewNames, String selectedView, List<String> calendarNames, String selectedCalendar);
 
-    void replaceContent(CalendarPlugin<W> provider);
+    void replaceContent(W provider);
 
     void setPresenter(Presenter presenter);
 

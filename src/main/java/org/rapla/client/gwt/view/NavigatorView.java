@@ -3,10 +3,12 @@ package org.rapla.client.gwt.view;
 import java.util.Date;
 
 import org.gwtbootstrap3.client.ui.Button;
-import org.gwtbootstrap3.client.ui.base.helper.StyleHelper;
+import org.gwtbootstrap3.client.ui.Column;
+import org.gwtbootstrap3.client.ui.Container;
+import org.gwtbootstrap3.client.ui.Row;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
+import org.gwtbootstrap3.client.ui.constants.ColumnSize;
 import org.gwtbootstrap3.client.ui.constants.DeviceSize;
-import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.DateComponent;
 import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.components.i18n.BundleManager;
@@ -14,8 +16,9 @@ import org.rapla.components.util.DateTools;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.ui.IsWidget;
 
-public class NavigatorView extends Div
+public class NavigatorView extends Container
 {
     public static interface NavigatorAction
     {
@@ -28,10 +31,11 @@ public class NavigatorView extends Div
 
     private final DateComponent dateComponent;
 
-    public NavigatorView(final String parentStyle, final NavigatorAction navigatorAction, BundleManager bundleManager)
+    public NavigatorView(final NavigatorAction navigatorAction, BundleManager bundleManager)
     {
         super();
-        setStyleName(parentStyle);
+        final Row row = new Row();
+        add(row);
         setVisibleOn(DeviceSize.SM_MD_LG);
         dateComponent = new DateComponent(new Date(), new DateValueChanged()
         {
@@ -41,9 +45,12 @@ public class NavigatorView extends Div
                 navigatorAction.selectedDate(newValue);
             }
         }, bundleManager);
-        this.add(dateComponent);
+        final Column col = new Column(ColumnSize.LG_3, ColumnSize.MD_4, ColumnSize.SM_3);
+        col.add(dateComponent);
+        row.add(col);
         final Button today = new Button("today");
         today.setType(ButtonType.PRIMARY);
+        today.setBlock(true);
         today.addClickHandler(new ClickHandler()
         {
             @Override
@@ -53,7 +60,7 @@ public class NavigatorView extends Div
                 navigatorAction.selectedDate(today);
             }
         });
-        this.add(today);
+        addColumn(row, today);
         final Button previousButton = new Button("previous");
         previousButton.addClickHandler(new ClickHandler()
         {
@@ -63,7 +70,8 @@ public class NavigatorView extends Div
                 navigatorAction.previous();
             }
         });
-        this.add(previousButton);
+        previousButton.setBlock(true);
+        addColumn(row, previousButton);
         final Button nextButton = new Button("next");
         nextButton.addClickHandler(new ClickHandler()
         {
@@ -73,7 +81,15 @@ public class NavigatorView extends Div
                 navigatorAction.next();
             }
         });
-        this.add(nextButton);
+        nextButton.setBlock(true);
+        addColumn(row, nextButton);
+    }
+
+    private void addColumn(final Row row, final IsWidget componentToAdd)
+    {
+        final Column col = new Column(ColumnSize.LG_2, ColumnSize.MD_2, ColumnSize.SM_3);
+        col.add(componentToAdd);
+        row.add(col);
     }
 
     public void setDate(Date date)

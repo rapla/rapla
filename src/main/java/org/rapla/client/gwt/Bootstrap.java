@@ -7,6 +7,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.rapla.client.Application;
+import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
@@ -35,6 +36,7 @@ public class Bootstrap
         facadeImpl.setCachingEnabled(false);
         FutureResult<VoidResult> load = facadeImpl.load();
         logger.info("Loading resources");
+        RaplaPopups.getProgressBar().setPercent(40);
         load.get(new AsyncCallback<VoidResult>()
         {
 
@@ -43,6 +45,7 @@ public class Bootstrap
             {
                 try
                 {
+                    RaplaPopups.getProgressBar().setPercent(70);
                     Collection<Allocatable> allocatables = Arrays.asList(facade.getAllocatables());
                     logger.info("loaded " + allocatables.size() + " resources. Starting application");
                     application.get().start();

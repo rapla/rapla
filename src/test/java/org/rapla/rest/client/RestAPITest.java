@@ -26,8 +26,8 @@ public class RestAPITest extends ServletTestBase {
                 TestCase.assertEquals(o1, o2);
             }
         };
-        URL baseUrl = new URL("http://localhost:8052/rapla/");
-        example.testRestApi(baseUrl,"homer","duffs");
+        URL baseUrl = new URL("http://localhost:8051/rapla/");
+        example.testRestApi(baseUrl,"admin","");
     }
 
    

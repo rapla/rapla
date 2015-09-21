@@ -127,6 +127,31 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     }
 
     @Override
+    public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException
+    {
+
+        AppointmentBlock appointmentBlock = block.getAppointmentBlock();
+        final Date appintmentStart = appointmentBlock.getAppointment().getStart();
+        final Date date1 = calcDate(daySlot, minuteOfDay);
+        final Date date2 = DateTools.toDateTime(date1, appintmentStart);
+        final Date newStart;
+        final Date newEnd;
+        if (date1.getTime() < date2.getTime())
+        {
+            newStart = date1;
+            newEnd = date2;
+        }
+        else
+        {
+            newStart = date2;
+            newEnd = date1;
+        }
+        boolean keepTime = false;
+        reservationController.resizeAppointment(appointmentBlock, newStart, newEnd, context, keepTime);
+
+    }
+
+    @Override
     public void newReservation(final HTMLDaySlot daySlot, final Integer fromMinuteOfDay, final Integer tillMinuteOfDay, PopupContext context)
             throws RaplaException
     {

@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gui.menu.gwt.context.ContextCreator;
 import org.rapla.client.plugin.weekview.HTMLDaySlot;
 import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.RowSlot;
@@ -17,6 +19,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PopupContext;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.ImageElement;
@@ -48,6 +52,7 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 public class WeekviewGWT extends FlexTable
 {
@@ -60,6 +65,7 @@ public class WeekviewGWT extends FlexTable
 
         void newReservation(HTMLDaySlot daySlot, Integer fromMinuteOfDay, Integer tillMinuteOfDay, PopupContext context);
 
+        void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context);
     }
 
     private static final String BACKGROUND_COLOR_TARGET = "#54FFE5";//"#ffa";
@@ -115,6 +121,14 @@ public class WeekviewGWT extends FlexTable
         setupTable(daylist, timelist, weeknumber);
     }
 
+    private static class IncrementalHelper
+    {
+        int column = 1;
+        HTMLDaySlot daySlot;
+        protected Iterator<Slot> daySlotIterator;
+        int totalNumSteps ;
+    }
+
     private void setupTable(final List<HTMLDaySlot> daylist, final List<RowSlot> timelist, final String weeknumber)
     {
         final FlexCellFormatter flexCellFormatter = this.getFlexCellFormatter();
@@ -125,8 +139,71 @@ public class WeekviewGWT extends FlexTable
         final List<Integer> timeRows = calcTimeRows(timelist);
         final boolean[][] spanCells = new boolean[actualRowCount][actualColumnCount];
         initSpanCells(daylist, timelist, spanCells);
-        createEvents(daylist, spanCells, flexCellFormatter, timeRows);
-        createDragAndDropSupport(spanCells, actualColumnCount, actualRowCount, daylist, timelist);
+        RaplaPopups.getProgressBar().setPercent(1);
+        events.clear();
+        int countTotalNumSteps = 0;
+        for (HTMLDaySlot htmlDaySlot : daylist)
+        {
+            for (Slot slot : htmlDaySlot)
+            {
+                countTotalNumSteps += slot.getBlocks().size();
+            }
+        }
+        final IncrementalHelper helper = new IncrementalHelper();
+        helper.totalNumSteps = countTotalNumSteps;
+        final Iterator<HTMLDaySlot> daylistIterator = daylist.iterator();
+        Scheduler.get().scheduleFixedPeriod(new RepeatingCommand()
+        {
+            @Override
+            public boolean execute()
+            {
+                if (helper.daySlotIterator != null )
+                {
+                    if(helper.daySlotIterator.hasNext())
+                    {
+                        final Slot slot = helper.daySlotIterator.next();
+                        helper.column = fillSlot(spanCells, flexCellFormatter, timeRows, helper.column, slot);
+                        updateProgressBar();
+                        return true;
+                    }
+                    else
+                    {
+                        helper.daySlotIterator = null;
+                        fillWithEmptyCellsInInterval(spanCells, helper.column, 1, spanCells.length, timeRows, "empty emptyDayRow");
+                        helper.column++;
+                        updateProgressBar();
+                        return true;
+                    }
+                }
+                if (daylistIterator.hasNext())
+                {
+                    final HTMLDaySlot daySlot = daylistIterator.next();
+                    helper.daySlot = daySlot;
+                    if (daySlot.isEmpty())
+                    {
+                        fillWithEmptyCellsInInterval(spanCells, helper.column, 1, spanCells.length, timeRows, "empty emptyDayRow");
+                        helper.column++;
+                        updateProgressBar();
+                        return true;
+                    }
+                    else
+                    {
+                        helper.daySlotIterator = daySlot.iterator();
+                        return true;
+                    }
+                }
+                createDragAndDropSupport(spanCells, actualColumnCount, actualRowCount, daylist, timelist);
+                RaplaPopups.getProgressBar().setPercent(100);
+                return false;
+            }
+
+            private void updateProgressBar()
+            {
+                final double percent = Math.min((events.size()  * 100.) / helper.totalNumSteps, 99.99);
+                logger.info("percent: "+percent);
+                RaplaPopups.getProgressBar().setPercent(percent);
+            }
+        }, 30);
     }
 
     private ArrayList<Integer> calcTimeRows(final List<RowSlot> timelist)
@@ -151,6 +228,7 @@ public class WeekviewGWT extends FlexTable
     {
         private Event event;
         private Position point;
+        private boolean resizer;
     }
 
     private static final class Position
@@ -225,7 +303,7 @@ public class WeekviewGWT extends FlexTable
     {
         int col = -1;
         final boolean[] spans = spanCells[row];
-        logger.info("spans: " + spans);
+        //        logger.info("spans: " + spans);
         for (int i = 0; i < spans.length; i++)
         {
             final boolean isSpan = spans[i];
@@ -290,11 +368,23 @@ public class WeekviewGWT extends FlexTable
             {
                 if (originSupport.event != null)
                 {
-                    if (!events.containsKey(tc.getFirstChildElement()))
+                    if (originSupport.resizer)
                     {
-                        final Position position = calcPosition(tc);
-                        mark(position, position);
-                        tc.getStyle().setBackgroundColor(BACKGROUND_COLOR_TARGET);
+                        final Position newPosition = calcPosition(tc);
+                        final Position fromPosition = originSupport.point;
+                        logger.info("from: " + fromPosition);
+                        logger.info("to: " + newPosition);
+                        clearAllDayMarks(spanCells, fromPosition);
+                        mark(fromPosition, newPosition);
+                    }
+                    else
+                    {
+                        if (!events.containsKey(tc.getFirstChildElement()))
+                        {
+                            final Position position = calcPosition(tc);
+                            mark(position, position);
+                            tc.getStyle().setBackgroundColor(BACKGROUND_COLOR_TARGET);
+                        }
                     }
                 }
                 else if (originSupport.point != null)
@@ -373,12 +463,19 @@ public class WeekviewGWT extends FlexTable
         {
             if (originSupport.event != null)
             {
-                com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
-                final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
-                if (tc != null)
+                if (originSupport.resizer)
                 {
-                    final Position position = calcPosition(tc);
-                    unmark(position, position);
+
+                }
+                else
+                {
+                    com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
+                    final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
+                    if (tc != null)
+                    {
+                        final Position position = calcPosition(tc);
+                        unmark(position, position);
+                    }
                 }
             }
             event.stopPropagation();
@@ -400,14 +497,26 @@ public class WeekviewGWT extends FlexTable
         public void onDragStart(final DragStartEvent event)
         {
             com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
+            boolean isResizer = DOM.eventGetTarget(event2).hasClassName("resizerIcon");
             final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
             final Event myEvent = events.get(tc.getFirstChildElement());
             if (myEvent != null)
             {
                 WeekviewGWT.this.addStyleName("dragging");
                 logger.info("event drag");
+                originSupport.resizer = isResizer;
                 originSupport.event = myEvent;
-                originSupport.point = null;
+                if (isResizer)
+                {
+                    final Element parentElement = originSupport.event.getElement().getParentElement();
+                    logger.info("fromParent: " + parentElement);
+                    final Position fromPosition = calcPosition(parentElement);
+                    originSupport.point = fromPosition;
+                }
+                else
+                {
+                    originSupport.point = null;
+                }
             }
             else
             {
@@ -440,13 +549,23 @@ public class WeekviewGWT extends FlexTable
                 if (!isDroppedOnStart(targetCell))
                 {
                     Position p = calcPosition(targetCell);
-                    unmark(p, p);
                     final int column = normalize(spanCells, p.row, p.column);
                     final HTMLDaySlot daySlot = findDaySlot(column);
-                    final Integer start = findRowSlot(p.row);
-                    logger.info("day" + daySlot.getHeader() + " - " + start);
                     final PopupContext context = contextCreator.createContext(event);
-                    callback.updateReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
+                    if (originSupport.resizer)
+                    {
+                        int add = originSupport.event.getHtmlBlock().getRow() < p.row ? 1 : 0;
+                        final Integer start = findRowSlot(p.row + add);
+                        clearAllDayMarks(spanCells, originSupport.point);
+                        callback.resizeReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
+                    }
+                    else
+                    {
+                        final Integer start = findRowSlot(p.row);
+                        logger.info("day" + daySlot.getHeader() + " - " + start);
+                        unmark(p, p);
+                        callback.updateReservation(originSupport.event.getHtmlBlock(), daySlot, start, context);
+                    }
                 }
             }
             else if (originSupport.point != null)
@@ -530,54 +649,49 @@ public class WeekviewGWT extends FlexTable
         return position;
     }
 
-    private void createEvents(final List<HTMLDaySlot> daylist, final boolean[][] spanCells, final FlexCellFormatter flexCellFormatter, List<Integer> timeRows)
+    private Widget createResizer()
     {
-        events.clear();
-        // create events
-        int column = 1;
-        for (final HTMLDaySlot daySlot : daylist)
+        final Div resizerDiv = new Div();
+        resizerDiv.setStyleName("resizer");
+        final Div resizerIconDiv = new Div();
+        resizerIconDiv.setStyleName("resizerIcon");
+        resizerIconDiv.getElement().setDraggable(Element.DRAGGABLE_TRUE);
+        resizerIconDiv.getElement().setInnerText("=");
+        resizerDiv.add(resizerIconDiv);
+        return resizerDiv;
+    }
+
+    private int fillSlot(final boolean[][] spanCells, final FlexCellFormatter flexCellFormatter, List<Integer> timeRows, int column, final Slot slot)
+    {
+        int lastEndRow = 1;
+        final Collection<Block> blocks = slot.getBlocks();
+        for (final Block block : blocks)
         {
-            if (daySlot.isEmpty())
+            final HTMLRaplaBlock htmlBlock = (HTMLRaplaBlock) block;
+            final int blockRow = htmlBlock.getRow();
+            fillWithEmptyCellsInInterval(spanCells, column, lastEndRow, blockRow, timeRows, "empty");
+            final int blockColumn = calcColumn(spanCells, blockRow, column);
+            final Event event = new Event(htmlBlock);
+            this.setWidget(blockRow, blockColumn, event);
+            this.getFlexCellFormatter().getElement(blockRow, blockColumn).appendChild(createResizer().getElement());
+            final Element element = event.getElement();
+            events.put(element, event);
+            final Element td = element.getParentElement();
+            td.getStyle().setBackgroundColor(htmlBlock.getBackgroundColor());
+            td.setClassName("eventTd");
+            td.setDraggable(Element.DRAGGABLE_TRUE);
+            final int rowCount = htmlBlock.getRowCount();
+            for (int i = 1; i < rowCount; i++)
             {
-                fillWithEmptyCellsInInterval(spanCells, column, 1, spanCells.length, timeRows, "empty emptyDayRow");
-                column++;
+                spanCells[blockRow + i][column] = true;
             }
-            else
-            {
-                for (final Slot slot : daySlot)
-                {
-                    int lastEndRow = 1;
-                    final Collection<Block> blocks = slot.getBlocks();
-                    for (final Block block : blocks)
-                    {
-                        final HTMLRaplaBlock htmlBlock = (HTMLRaplaBlock) block;
-                        final int blockRow = htmlBlock.getRow();
-                        fillWithEmptyCellsInInterval(spanCells, column, lastEndRow, blockRow, timeRows, "empty");
-                        final int blockColumn = calcColumn(spanCells, blockRow, column);
-                        final Event event = new Event(htmlBlock);
-                        this.setWidget(blockRow, blockColumn, event);
-                        final Element element = event.getElement();
-                        events.put(element, event);
-                        final Element td = element.getParentElement();
-                        td.getStyle().setBackgroundColor(htmlBlock.getBackgroundColor());
-                        td.setClassName("eventTd");
-                        td.setDraggable(Element.DRAGGABLE_TRUE);
-                        final int rowCount = htmlBlock.getRowCount();
-                        for (int i = 1; i < rowCount; i++)
-                        {
-                            spanCells[blockRow + i][column] = true;
-                        }
-                        flexCellFormatter.setVerticalAlignment(blockRow, blockColumn, HasVerticalAlignment.ALIGN_TOP);
-                        flexCellFormatter.setRowSpan(blockRow, blockColumn, rowCount);
-                        lastEndRow = blockRow + rowCount;
-                    }
-                    fillWithEmptyCellsInInterval(spanCells, column, lastEndRow, spanCells.length, timeRows, "empty");
-                    column++;
-                }
-                fillWithEmptyCellsInInterval(spanCells, column, 1, spanCells.length, timeRows, "empty emptyDayRow");
-                column++;
-            }
+            flexCellFormatter.setVerticalAlignment(blockRow, blockColumn, HasVerticalAlignment.ALIGN_TOP);
+            flexCellFormatter.setRowSpan(blockRow, blockColumn, rowCount);
+            lastEndRow = blockRow + rowCount;
         }
+        fillWithEmptyCellsInInterval(spanCells, column, lastEndRow, spanCells.length, timeRows, "empty");
+        column++;
+        return column;
     }
 
     // 1. fuellt die spanCells

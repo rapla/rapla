@@ -1,9 +1,11 @@
 package org.rapla.rest.server;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -13,6 +15,10 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
 
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Attribute;
@@ -50,7 +56,7 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 		operator = facade.getOperator();
 		this.serverContainer = serverContainer;
 		Class class1 = getServiceObject().getClass();
-		Collection<String> publicMethodNames = getPublicMethods(class1);
+//		Collection<String> publicMethodNames = getPublicMethods(class1);
 		try
 		{
 			servlet = new RaplaJsonServlet(logger, class1);
@@ -63,21 +69,46 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 		{
 			throw new RaplaException(ex);
 		}
-		if (publicMethodNames.contains("get")) {
-			getMethod = "get";
-		}
-		if (publicMethodNames.contains("update")) {
-			updatetMethod = "update";
-		}
-		if (publicMethodNames.contains("create")) {
-			createMethod = "create";
-		}
-		if (publicMethodNames.contains("list")) {
-			listMethod = "list";
-		}
+        getMethod = getMethodNameWithAnnotations(class1, GET.class, Path.class);
+		updatetMethod = getMethodNameWithAnnotations(class1, PUT.class);
+		createMethod = getMethodNameWithAnnotations(class1, POST.class);
+		listMethod = getMethodNameWithAnnotations(class1, GET.class);
 	}
 
-	@Override
+	private static String getMethodNameWithAnnotations(Class<?> clazz, Class<? extends Annotation> ... annotations)
+    {
+	    final Method[] methods = clazz.getMethods();
+	    for (Method method : methods)
+        {
+            if(Modifier.isPublic(method.getModifiers()) && containsOnlyThisAnnotatoins(method, annotations))
+            {
+                return method.getName();
+            }
+        }
+        return null;
+    }
+
+    private static boolean containsOnlyThisAnnotatoins(Method method, Class<? extends Annotation>[] annotations)
+    {
+        final Annotation[] methodAnnotations = method.getAnnotations();
+        if(methodAnnotations.length != annotations.length)
+        {
+            return false;
+        }
+        final ArrayList<Class<? extends Annotation>> methodAppointmentsClassList = new ArrayList<Class<? extends Annotation>>();
+        for (Annotation annotation : methodAnnotations)
+        {
+            methodAppointmentsClassList.add(annotation.annotationType());
+        }
+        final List<Class<? extends Annotation>> annotationsAsList = Arrays.asList(annotations);
+        if(methodAppointmentsClassList.containsAll(annotationsAsList))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
 	public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		Object serviceObj = getServiceObject();
 		try {
@@ -93,21 +124,17 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 			String method = request.getMethod();
 			if (appendix > 0) {
 				if (method.equals("GET") && getMethod != null) {
-					String id = pathInfo.substring(appendix + 1);
-					request.setAttribute("id", id);
 					request.setAttribute("method", getMethod);
 				} else if (method.equals("PATCH") && getMethod != null && updatetMethod != null) {
-					String id = pathInfo.substring(appendix + 1);
-					request.setAttribute("id", id);
 					request.setAttribute("method", getMethod);
 					request.setAttribute("patchMethod", updatetMethod);
 				} else if (method.equals("PUT") && updatetMethod != null) {
-					String id = pathInfo.substring(appendix + 1);
-					request.setAttribute("id", id);
 					request.setAttribute("method", updatetMethod);
 				} else {
 					throw new RaplaException(method + " Method not supported in this context");
 				}
+				String id = pathInfo.substring(appendix + 1);
+				request.setAttribute("id", id);
 			} else {
 				if (method.equals("GET") && listMethod != null) {
 					request.setAttribute("method", listMethod);
@@ -116,7 +143,6 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 				} else {
 					throw new RaplaException(method + " Method not supported in this context");
 				}
-
 			}
 		} catch (RaplaException ex) {
 			servlet.serviceError(request, response, servletContext, ex);
@@ -130,7 +156,7 @@ public abstract class AbstractRestPage implements RaplaPageGenerator, RemoteJson
 		HashSet<String> result = new HashSet<String>();
 		for (Method m : class1.getMethods()) {
 			if (Modifier.isPublic(m.getModifiers())) {
-				result.add(m.getName());
+			    result.add(m.getName());
 			}
 		}
 		return result;

@@ -1,22 +1,23 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.user.client.Cookies;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.RootPanel;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.inject.Provider;
+
+import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.framework.RaplaException;
 import org.rapla.gwtjsonrpc.client.ExceptionDeserializer;
 import org.rapla.gwtjsonrpc.client.impl.AbstractJsonProxy;
 import org.rapla.gwtjsonrpc.client.impl.EntryPointFactory;
-import org.rapla.server.RemoteMethodFactory;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
-import javax.inject.Provider;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.user.client.Cookies;
+import com.google.gwt.user.client.Window;
 
 /**
  * Created by Christopher on 02.09.2015.
@@ -75,11 +76,10 @@ public class RaplaGwtStarter
     public void startApplication()
     {
         setProxy();
-        RootPanel.get("raplaPopup").setVisible(false);
-
         LoginTokens token = getValidToken();
         if (token != null)
         {
+            RaplaPopups.getProgressBar().setPercent(20);
             //            final Document doc = Document.Util.getDocument();
             //            final HTMLElement titleBar = doc.getElementById("title");
             //            titleBar.setInnerHTML("Hallo Rapla");

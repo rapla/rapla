@@ -9,6 +9,7 @@ import javax.inject.Singleton;
 import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -78,9 +79,11 @@ public class Application<W> implements ApplicationView.Presenter
                 public void dataChanged(ModificationEvent evt) throws RaplaException
                 {
                     actualPlacePresenter.updateView();
+                    // TODO inform activities?
                 }
             });
             ((FacadeImpl) facade).setCachingEnabled(false);
+            RaplaPopups.getProgressBar().setPercent(100);
         }
         catch (RaplaException e)
         {
