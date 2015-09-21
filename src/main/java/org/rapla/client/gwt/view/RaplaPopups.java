@@ -8,6 +8,7 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.dom.client.NodeList;
+import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
@@ -41,12 +42,13 @@ public class RaplaPopups
             if (percent < 100)
             {
                 wrapper.setVisible(true);
-                progressBar.addStyleName("active");
+                wrapper.getElement().getStyle().setTop(Window.getScrollTop(), Unit.PX);
+                Document.get().getBody().getStyle().setOverflow(Overflow.HIDDEN);
             }
             else
             {
                 wrapper.setVisible(false);
-                progressBar.removeStyleName("active");
+                Document.get().getBody().getStyle().setOverflow(Overflow.AUTO);
             }
             progressBar.setPercent(percent);
         }
