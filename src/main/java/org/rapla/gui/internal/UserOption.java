@@ -67,7 +67,7 @@ public class UserOption extends RaplaGUIComponent
     private void create() throws RaplaException {
     	superPanel.removeAll();
     	TableLayout tableLayout = new TableLayout(new double[][]{{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED},{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED}});
-    	languageChooser= new LanguageChooser( getLogger(), getContext());
+		languageChooser= new LanguageChooser( getLogger(), getI18n(),getRaplaLocale());
 	    RaplaButton changeNameButton = new RaplaButton();
 	    RaplaButton changeEmailButton = new RaplaButton();
 	    RaplaButton changePasswordButton = new RaplaButton();

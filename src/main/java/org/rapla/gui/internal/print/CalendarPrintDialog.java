@@ -41,6 +41,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
@@ -84,7 +85,7 @@ public class CalendarPrintDialog extends DialogUI
    // public static int[] sizes = new int[] {50,60,70,80,90,100,120,150,180,200};
     public static double defaultBorder = 11.0; //11 mm defaultBorder
 
-    I18nBundle i18n;
+    RaplaResources i18n;
 
     Listener listener = new Listener();
     PageFormat m_format;
@@ -205,7 +206,7 @@ public class CalendarPrintDialog extends DialogUI
 		}
         RaplaContext context = getContext();
         printTool = context.lookup(IOInterface.class);
-        i18n =  context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        i18n =  context.lookup(RaplaResources.class);
 
         m_format = format;
         if (m_format == null) {

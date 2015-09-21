@@ -17,7 +17,6 @@ public class EventTimeCalculatorServerPlugin implements PluginDescriptor<ServerS
      * uses the extension points to provide the different services of the plugin.
      */
     public void provideServices(ServerServiceContainer container, Configuration config) {
-        container.addResourceFile(EventTimeCalculatorPlugin.RESOURCE_FILE );
         if (!config.getAttributeAsBoolean("enabled", EventTimeCalculatorPlugin.ENABLE_BY_DEFAULT))
             return;
     	container.addContainerProvidedComponent(EventTimeCalculatorFactory.class,EventTimeCalculatorFactory.class, config);

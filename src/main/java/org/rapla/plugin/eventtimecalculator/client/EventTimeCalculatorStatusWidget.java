@@ -19,6 +19,7 @@ import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.toolkit.RaplaWidget;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.plugin.eventtimecalculator.EventTimeModel;
 
 /**
@@ -29,10 +30,10 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
     JPanel content = new JPanel();
     JLabel totalDurationLabel = new JLabel();
     JLabel selectedDurationLabel = new JLabel();
-    I18nBundle i18n;
     ReservationEdit reservationEdit;
     EventTimeCalculatorFactory factory;
 
+    EventTimeCalculatorResources eventTimei18n;
     /**
      * creates the panel for the GUI in window "reservation".
      */
@@ -40,8 +41,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         super(context);
         factory = context.lookup(EventTimeCalculatorFactory.class);
         //this.config = config;
-        i18n = context.lookup(EventTimeCalculatorPlugin.RESOURCE_FILE);
-        setChildBundleName(EventTimeCalculatorPlugin.RESOURCE_FILE);
+        eventTimei18n = context.lookup( EventTimeCalculatorResources.class);
 
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5},
@@ -99,7 +99,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         if (totalDurationVisible) {
             long totalDuration = 0;
             totalDuration = eventTimeModel.calcDuration(event.getAppointments());
-            totalDurationLabel.setText(getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
+            totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
         }
 
         final Collection<Appointment> selectedAppointmentsCollection = reservationEdit.getSelectedAppointments();

@@ -15,89 +15,86 @@ package org.rapla.plugin.jndi.server;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-public class RaplaJNDITestOnLocalhost extends RaplaComponent implements RemoteMethodFactory<JNDIConfig>
-{
-    public RaplaJNDITestOnLocalhost( RaplaContext context)  {
-            super( context );
-        }
+import javax.inject.Inject;
 
-    @Override public Class<JNDIConfig> getInterfaceClass()
+@DefaultImplementation(of = JNDIConfig.class, context = InjectionContext.server) public class RaplaJNDITestOnLocalhost implements JNDIConfig
+{
+    private final ClientFacade facade;
+    private final Logger logger;
+    private final RemoteSession remoteSession;
+    @Inject
+    public RaplaJNDITestOnLocalhost(final RemoteSession remoteSession,Logger logger, ClientFacade facade)
     {
-        return JNDIConfig.class;
+        this.remoteSession = remoteSession;
+        this.logger = logger;
+        this.facade = facade;
     }
 
-    public JNDIConfig createService(final RemoteSession remoteSession) {
-			return new JNDIConfig() {
-                
-                @Override
+    @Override public void test(DefaultConfiguration config, String username, String password) throws RaplaException
+    {
+        User user = remoteSession.getUser();
+        if (!user.isAdmin())
+        {
+            throw new RaplaSecurityException("Access only for admin users");
+        }
+        JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(facade, logger);
+        testStore.initWithConfig(config);
+        logger.info("Test of JNDI Plugin started");
+        boolean authenticate;
+        if (password == null || password.equals(""))
+        {
+            throw new RaplaException("LDAP Plugin doesnt accept empty passwords.");
+        }
 
-                public void test(DefaultConfiguration config,String username,String password ) throws RaplaException 
-                {
-                    User user = remoteSession.getUser();
-                    if ( !user.isAdmin())
-                    {
-                        throw new RaplaSecurityException("Access only for admin users");
-                    }
+        try
+        {
+            authenticate = testStore.authenticate(username, password);
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException(e);
+        }
+        finally
+        {
+            testStore.dispose();
+        }
+        if (!authenticate)
+        {
+            throw new RaplaSecurityException("Can establish connection but can't authenticate test user " + username);
+        }
+        logger.info("Test of JNDI Plugin successfull");
+    }
 
-                    Logger logger = getLogger();
-                    JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(getContext(), logger);
-                    testStore.initWithConfig( config);
-                    logger.info("Test of JNDI Plugin started");
-                    boolean authenticate;
-                    if ( password == null || password.equals(""))
-                    {
-                        throw new RaplaException("LDAP Plugin doesnt accept empty passwords.");
-                    }
+    @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException
+    {
 
-                    try {
-                        authenticate = testStore.authenticate(username, password);
-                    } catch (Exception e) {
-                        throw new RaplaException(e);
-                    } finally {
-                        testStore.dispose();
-                    }
-                    if (!authenticate)
-                    {
-                        throw new RaplaSecurityException("Can establish connection but can't authenticate test user " + username);
-                    }
-                    logger.info("Test of JNDI Plugin successfull");
-                }
-                
-                @SuppressWarnings("deprecation")
-                @Override
-                public DefaultConfiguration getConfig() throws RaplaException {
-                    
-                    User user = remoteSession.getUser();
-                    if ( !user.isAdmin())
-                    {
-                        throw new RaplaSecurityException("Access only for admin users");
-                    }
-                    Preferences preferences = getQuery().getSystemPreferences();
-                    DefaultConfiguration config = preferences.getEntry( JNDIPlugin.JNDISERVER_CONFIG);
-                    if ( config == null)
-                    {
-                        config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(JNDIPlugin.class.getName());
-                    }
-                    return config;
-                }
-            };
-		}
+        User user = remoteSession.getUser();
+        if (!user.isAdmin())
+        {
+            throw new RaplaSecurityException("Access only for admin users");
+        }
+        Preferences preferences = facade.getSystemPreferences();
+        DefaultConfiguration config = preferences.getEntry(JNDIPlugin.JNDISERVER_CONFIG);
+        if (config == null)
+        {
+            config = (DefaultConfiguration) ((PreferencesImpl) preferences).getOldPluginConfig(JNDIPlugin.class.getName());
+        }
+        return config;
+    }
 
-
-		
-		
-
-        
 }
 

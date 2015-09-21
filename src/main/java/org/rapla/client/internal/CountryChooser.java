@@ -19,12 +19,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -43,11 +45,10 @@ final public class CountryChooser implements RaplaWidget
     Logger logger;
     Map<String,Set<String>> countries;
     
-    public CountryChooser(Logger logger,RaplaContext context) throws RaplaException {
+    @Inject
+    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale) throws RaplaException {
         this.logger = logger;
         this.context = context;
-        final I18nBundle i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
-        final RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         final RemoteLocaleService remoteLocaleService = context.lookup( RemoteLocaleService.class );

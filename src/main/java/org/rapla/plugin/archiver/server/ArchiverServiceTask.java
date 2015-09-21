@@ -10,10 +10,13 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.server.ServerExtension;
+import org.rapla.server.internal.RemoteSessionImpl;
+
+import javax.inject.Provider;
 
 public class ArchiverServiceTask extends RaplaComponent implements ServerExtension
 {
-	public ArchiverServiceTask( final RaplaContext context, final Configuration config ) throws RaplaContextException
+	public ArchiverServiceTask( final RaplaContext context, final Configuration config,Provider<ArchiverService> archiverProvider ) throws RaplaContextException
     {
         super( context );
         final int days = config.getChild( ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
@@ -24,7 +27,9 @@ public class ArchiverServiceTask extends RaplaComponent implements ServerExtensi
             CommandScheduler timer = context.lookup( CommandScheduler.class);
             Command removeTask = new Command() {
             	public void execute() throws RaplaException {
-            		ArchiverServiceImpl task = new ArchiverServiceImpl(getContext());
+
+            		ArchiverServiceImpl task = (ArchiverServiceImpl)archiverProvider.get();
+
             		try 
             		{
             			if ( export && task.isExportEnabled())

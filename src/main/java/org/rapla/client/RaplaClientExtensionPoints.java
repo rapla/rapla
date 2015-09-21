@@ -61,13 +61,7 @@ public interface RaplaClientExtensionPoints
      **/
     TypedComponentRole<IdentifiableMenuEntry> RESERVATION_WIZARD_EXTENSION = new TypedComponentRole<IdentifiableMenuEntry>("org.rapla.gui.ReservationWizardExtension");
 
-    /** you can add an interactive check when the user stores a reservation 
-     *@see ReservationCheck 
-     **/
-    Class<ReservationCheck> RESERVATION_SAVE_CHECK = ReservationCheck.class;
-
-    /** you can add an interactive check when the user stores a reservation 
-     *@see ReservationCheck 
+    /** you can add an interactive check when the user stores a reservation
      **/
     Class<EventCheck> EVENT_SAVE_CHECK = EventCheck.class;
 

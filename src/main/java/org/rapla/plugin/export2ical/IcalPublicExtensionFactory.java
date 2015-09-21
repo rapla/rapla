@@ -10,9 +10,12 @@ import org.rapla.gui.PublishExtension;
 import org.rapla.gui.PublishExtensionFactory;
 import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
+
 @Extension(provides=PublishExtensionFactory.class,id="ical")
 public class IcalPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
 {
+	@Inject
 	public IcalPublicExtensionFactory(RaplaContext context)
 	{
 		super(context);

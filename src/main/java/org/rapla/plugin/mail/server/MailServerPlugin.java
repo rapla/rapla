@@ -52,7 +52,6 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
 {
 
     public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException {
-        container.addRemoteMethodFactory(MailConfigService.class,RaplaConfigServiceImpl.class);
         convertSettings(container.getContext(), config);
     	if ( !config.getAttributeAsBoolean("enabled", false) )
         	return;
@@ -77,9 +76,6 @@ public class MailServerPlugin implements PluginDescriptor<ServerServiceContainer
         }
         
         container.addContainerProvidedComponent( MailInterface.class, mailClass);
-        // only add mail service on localhost
-        container.addRemoteMethodFactory(MailToUserInterface.class,RaplaMailToUserOnLocalhost.class);
-        container.addContainerProvidedComponent( MailToUserInterface.class, RaplaMailToUserOnLocalhost.class);
     }
 
     private void convertSettings(RaplaContext context,Configuration config) throws RaplaContextException

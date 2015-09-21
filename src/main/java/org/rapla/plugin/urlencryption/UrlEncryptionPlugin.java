@@ -18,7 +18,6 @@ import org.rapla.framework.TypedComponentRole;
  */
 public class UrlEncryptionPlugin implements PluginDescriptor<ClientServiceContainer>
 {
-	static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(UrlEncryptionPlugin.class.getPackage().getName() + ".UrlEncryptionResource");
     static final String PLUGIN_ENTRY = "org.rapla.plugin.urlencryption";
 	public static final String URL_ENCRYPTION = PLUGIN_ENTRY+".selected";
     public static final String PLUGIN_CLASS = UrlEncryptionPlugin.class.getName();
@@ -35,7 +34,6 @@ public class UrlEncryptionPlugin implements PluginDescriptor<ClientServiceContai
 
 		// Adding option panel for the administrators
 	    container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, URLEncyrptionPublicExtensionFactory.class, configuration);
-        container.addResourceFile( RESOURCE_FILE );
 
 	}
 	

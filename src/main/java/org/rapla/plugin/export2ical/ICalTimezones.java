@@ -4,11 +4,12 @@ import java.util.List;
 
 import javax.jws.WebService;
 
+import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.gwtjsonrpc.common.ResultType;
 
-@WebService
+@RemoteJsonMethod
 public interface ICalTimezones extends RemoteJsonService
 {
     @ResultType(value=String.class,container=List.class)

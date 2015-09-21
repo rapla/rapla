@@ -8,7 +8,10 @@ import javax.inject.Provider;
 
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of=RaplaClipboard.class,context = InjectionContext.swing)
 public class RaplaSwingClipboard extends RaplaClipboard
 {
 

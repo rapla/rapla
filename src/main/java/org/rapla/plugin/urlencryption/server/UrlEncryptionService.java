@@ -17,10 +17,13 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.storage.RaplaSecurityException;
 
 /**
  * This class provides functionality to encrypt URL parameters to secure the resource export.
@@ -29,7 +32,8 @@ import org.rapla.server.RemoteSession;
  *
  * @author Jonas Kohlbrenner
  */
-public class UrlEncryptionService extends RaplaComponent implements UrlEncryption, RemoteMethodFactory<UrlEncryption> {
+@DefaultImplementation(of=UrlEncryption.class,context = InjectionContext.server)
+public class UrlEncryptionService extends RaplaComponent implements UrlEncryption {
     @Deprecated
 	private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<String>("org.rapla.plugin.urlencryption.urlEncKey");
     @Deprecated
@@ -149,13 +153,4 @@ public class UrlEncryptionService extends RaplaComponent implements UrlEncryptio
         }
     }
 
-    public UrlEncryption createService(RemoteSession remoteSession) 
-    {
-        return this;
-    }
-
-    @Override public Class<UrlEncryption> getInterfaceClass()
-    {
-        return UrlEncryption.class;
-    }
 }

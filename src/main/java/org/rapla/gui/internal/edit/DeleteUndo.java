@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
@@ -25,8 +26,8 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	private List<T> entities;
 	Map<Category,Category> removedCategories = new LinkedHashMap<Category, Category>();
 	ClientFacade facade;
-	I18nBundle i18n;
-	public DeleteUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> entities)  
+	RaplaResources i18n;
+	public DeleteUndo(ClientFacade facade, RaplaResources i18n,Collection<T> entities)
 	{
 	    this.facade = facade;
 	    this.i18n = i18n;
@@ -162,7 +163,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
      {
 	     Iterator<T> iterator = entities.iterator();
 	     StringBuffer buf = new StringBuffer();
-	     buf.append(getI18n().getString("delete") );
+	     buf.append(i18n.getString("delete") );
 	     if ( iterator.hasNext())
 	     {
 	         RaplaType raplaType = iterator.next().getRaplaType();

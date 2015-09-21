@@ -14,11 +14,15 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
+import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 
 public class ICalImportTest extends RaplaTestCase{
@@ -28,11 +32,14 @@ public class ICalImportTest extends RaplaTestCase{
 	}
 	
 	public void testICalImport1() throws Exception{
-        RaplaContext parentContext = getContext();
-        RaplaDefaultContext context = new RaplaDefaultContext(parentContext);
-        context.put( TimeZoneConverter.class, new TimeZoneConverterImpl());
+
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
-        RaplaICalImport importer = new RaplaICalImport(context, timezone);
+        TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
+        converter.setImportExportTimeZone(timezone);
+        Logger logger = getLogger();
+        ClientFacade facade = getFacade();
+        RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
+        RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = true;
         String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
         Allocatable newResource = getFacade().newResource();
@@ -45,11 +52,13 @@ public class ICalImportTest extends RaplaTestCase{
     }
 	
 	public void testICalImport2() throws Exception{
-        RaplaContext parentContext = getContext();
-        RaplaDefaultContext context = new RaplaDefaultContext(parentContext);
-        context.put( TimeZoneConverter.class, new TimeZoneConverterImpl());
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
-        RaplaICalImport importer = new RaplaICalImport(context, timezone);
+        TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
+        converter.setImportExportTimeZone(timezone);
+        Logger logger = getLogger();
+        ClientFacade facade = getFacade();
+        RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
+        RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = false;
         String packageName = getClass().getPackage().getName().replaceAll("\\.", "/");
 		String pathname = TEST_SRC_FOLDER_NAME + "/" + packageName + "/test.ics";

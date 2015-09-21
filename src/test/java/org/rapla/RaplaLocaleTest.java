@@ -63,7 +63,7 @@ public class RaplaLocaleTest extends TestCase {
     public void testTimeFormat4() 
     {
         RaplaLocale raplaLocale= new RaplaLocaleImpl(createConfig("en","US"));
-        Calendar cal = Calendar.getInstance(raplaLocale.getTimeZone()
+        Calendar cal = Calendar.inject(raplaLocale.getTimeZone()
 					    ,Locale.US);
         cal.set(Calendar.HOUR_OF_DAY,21);
         cal.set(Calendar.MINUTE,0);

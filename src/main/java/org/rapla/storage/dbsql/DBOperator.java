@@ -37,6 +37,7 @@ import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -83,7 +84,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     
     Provider<ImportExportManager> importExportManager;
     @Inject
-    public DBOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale locale, CommandScheduler scheduler, Provider<ImportExportManager> importExportManager, DataSource dataSource) {
+    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Provider<ImportExportManager> importExportManager, DataSource dataSource) {
         super(  logger, i18n, locale, scheduler);
         lookup = dataSource;
         this.importExportManager = importExportManager;

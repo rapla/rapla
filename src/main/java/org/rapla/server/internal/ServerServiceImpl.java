@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -22,16 +21,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -45,15 +38,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.rest.RemoteLogger;
-import org.rapla.rest.server.RaplaAPIPage;
-import org.rapla.rest.server.RaplaAuthRestPage;
-import org.rapla.rest.server.RaplaDynamicTypesRestPage;
-import org.rapla.rest.server.RaplaEventsRestPage;
-import org.rapla.rest.server.RaplaResourcesRestPage;
-import org.rapla.rest.server.token.SignedToken;
-import org.rapla.rest.server.token.TokenInvalidException;
-import org.rapla.rest.server.token.ValidToken;
-import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.RemoteMethodFactory;
@@ -82,7 +66,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     static Class<RaplaPageGenerator> SERVLET_PAGE_EXTENSION = RaplaPageGenerator.class;
 
     protected CachableStorageOperator operator;
-    protected I18nBundle i18n;
+
 
     ShutdownService shutdownService;
 
@@ -124,7 +108,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
             {
                 RemoteSession remoteSession = adminSession;
-                T service = getInstance(a, remoteSession);
+                T service = inject(a, remoteSession);
                 return service;
             }
         });
@@ -196,30 +180,24 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addContainerProvidedComponentInstance(ServerServiceContainer.class, this);
         addContainerProvidedComponentInstance(CachableStorageOperator.class, operator);
 
-        addContainerProvidedComponent(SecurityManager.class, SecurityManager.class);
-        addRemoteMethodFactory(RemoteLogger.class, RemoteLoggerImpl.class, null);
         // adds 5 basic pages to the webapplication
         addWebpage("raplaapplet", RaplaAppletPageGenerator.class);
         //addWebpage("store", RaplaStorePage.class);
 
-        i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+        {
+            RaplaResources i18n = context.lookup(RaplaResources.class);
 
-        // Index page menu 
-        addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT,
-                new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_webstart"), "rapla/raplaclient.jnlp"));
-        addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT,
-                new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_applet"), "rapla?page=raplaapplet"));
-        addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT,
-                new DefaultHTMLMenuEntry(context, i18n.getString("server_status"), "rapla?page=server"));
+            // Index page menu
+            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_webstart"), "rapla/raplaclient.jnlp"));
+            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_applet"), "rapla?page=raplaapplet"));
+            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("server_status"), "rapla?page=server"));
+        }
 
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
         //        else
         operator.connect();
-
-        addContainerProvidedComponent(RaplaKeyStorage.class, RaplaKeyStorageImpl.class);
-
         Preferences preferences = operator.getPreferences(null, true);
         //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
         //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
@@ -275,7 +253,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
         User user = getFirstAdmin(operator);
         adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
-        initializePlugins(preferences, ServerServiceContainer.class);
+        //initializePlugins(preferences, ServerServiceContainer.class);
 
         Set<I18nBundle> i18nBundles = lookupServicesFor(I18nBundle.class);
         Set<String> i18nBundleIds = new LinkedHashSet<String>();
@@ -304,9 +282,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     public <T> T getRemoteMethod(Class<T> a, RemoteSessionImpl standaloneSession) throws RaplaContextException
     {
-        @SuppressWarnings({ "unchecked", "deprecation" })
-        RemoteMethodFactory<T> factory = lookup(REMOTE_METHOD_FACTORY, a.getName());
-        T service = factory.createService(standaloneSession);
+        T service = inject(a, standaloneSession);
         return service;
     }
 
@@ -391,6 +367,10 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             if (cause != null)
             {
                 getLogger().error(cause.getMessage(), cause);
+            }
+            else
+            {
+                getLogger().error(ex.getMessage(), ex);
             }
             return null;
         }

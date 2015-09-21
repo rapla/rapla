@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
@@ -57,7 +58,10 @@ import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuInterface;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaSeparator;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+@DefaultImplementation(of=MenuFactory.class,context = InjectionContext.swing)
 public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 {
     public void addReservationWizards( MenuInterface menu, MenuContext context, String afterId ) throws RaplaException
@@ -68,8 +72,13 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         }
     }
 
-        
-            
+
+    @Inject
+    public MenuFactoryImpl(RaplaContext sm) {
+        super(sm);
+    }
+
+
 
 
     /**
@@ -168,9 +177,6 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     
   
 
-    public MenuFactoryImpl(RaplaContext sm) {
-       super(sm);
-    }
 
     public MenuInterface addNew( MenuInterface menu, MenuContext context,String afterId) throws RaplaException
     {

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
@@ -28,16 +29,14 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final String commandoName;
    	protected boolean firstTimeCall = true;
    	private ClientFacade facade;
-   	I18nBundle i18n;
+   	RaplaResources i18n;
 	
-	public SaveUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> newEntity,Collection<T> originalEntity) 
+	public SaveUndo(ClientFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity)
 	{
 		this( facade, i18n,newEntity, originalEntity, null);
 	}
 	
-
-	
-	public SaveUndo(ClientFacade facade, @javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName) 
+	public SaveUndo(ClientFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName)
 	{
 	    this.facade = facade;
 	    this.i18n = i18n;
@@ -219,7 +218,6 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	     boolean isNew = oldEntities == null;     
          Iterator<T> iterator = newEntities.iterator();
          StringBuffer buf = new StringBuffer();
-         I18nBundle i18n = getI18n();
          buf.append(isNew ? i18n.getString("new"): i18n.getString("edit") );
          if ( iterator.hasNext())
          {

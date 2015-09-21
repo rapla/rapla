@@ -226,13 +226,13 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
      */
     protected int connectionAttempt = 0;
     
-    RaplaContext rapla_context;
     Logger logger;
+    ClientFacade facade;
     
-    public JNDIAuthenticationStore(RaplaContext context,Logger logger) throws RaplaException {
+    public JNDIAuthenticationStore(ClientFacade facade,Logger logger) throws RaplaException {
         this.logger = logger.getChildLogger("ldap");
-        this.rapla_context = context;
-        Preferences preferences = context.lookup(ClientFacade.class).getSystemPreferences();
+        this.facade = facade;
+        Preferences preferences = facade.getSystemPreferences();
         DefaultConfiguration config = preferences.getEntry( JNDIPlugin.JNDISERVER_CONFIG, new RaplaConfiguration());
         initWithConfig(config);
         /*
@@ -376,10 +376,9 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         } 
         /*
          * Adds the default user groups if the user doesnt already have a group*/
-        if (rapla_context != null && user.getGroupList().size() == 0)
+        if (facade != null && user.getGroupList().size() == 0)
         {
-            ClientFacade facade = rapla_context.lookup(ClientFacade.class);
-        	Preferences preferences = facade.getSystemPreferences();
+            Preferences preferences = facade.getSystemPreferences();
         	
         	RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
         	Collection<Category> groups;

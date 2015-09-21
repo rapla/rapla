@@ -38,15 +38,10 @@ public class AppointmentFormaterImpl
     implements
     AppointmentFormater
 {
-    I18nBundle i18n;
+    RaplaResources i18n;
     RaplaLocale loc;
 
-    public AppointmentFormaterImpl(RaplaContext context) throws RaplaException 
-    {
-        this.i18n = context.lookup( RaplaComponent.RAPLA_RESOURCES);
-        this.loc = context.lookup( RaplaLocale.class);
-    }
-    
+
     @Inject
     public AppointmentFormaterImpl(RaplaResources i18n,RaplaLocale loc)
     {

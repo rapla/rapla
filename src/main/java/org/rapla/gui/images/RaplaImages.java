@@ -24,6 +24,8 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
@@ -33,17 +35,20 @@ import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
 
 /**
  * Offers direct access to the images. 
  */
+@Singleton
 public class RaplaImages
 {
     Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());
     final Logger logger;
     final ResourceBundle resourceBundle;
     final String className = "org.rapla.gui.images.RaplaImages";
-    
+
+    @Inject
     public RaplaImages(Logger logger) throws RaplaException
     {
         this.logger = logger;

@@ -18,47 +18,57 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.storage.RaplaSecurityException;
 
-public class RaplaMailToUserOnLocalhost extends RaplaComponent implements MailToUserInterface, RemoteMethodFactory<MailToUserInterface>
+import javax.inject.Inject;
+
+@DefaultImplementation(of = MailToUserInterface.class, context = InjectionContext.server) public class RaplaMailToUserOnLocalhost implements MailToUserInterface
 {
-        public RaplaMailToUserOnLocalhost( RaplaContext context)  {
-            super( context );
-        }
-        
-        public void sendMail(String userName,String subject, String body) throws RaplaException {
-            User recipientUser = getQuery().getUser( userName );
-            // O.K. We need to generate the mail
-            String recipientEmail = recipientUser.getEmail();
-            if (recipientEmail == null || recipientEmail.trim().length() == 0) {
-                getLogger().warn("No email address specified for user "  
-                                 + recipientUser.getUsername()
-                                 + " Can't send mail.");
-                return;
-            }
 
+    final MailInterface mail;
+    final ClientFacade facade;
+    final Logger logger;
 
-            final MailInterface mail = getContext().lookup(MailInterface.class);
-            ClientFacade facade =  getContext().lookup(ClientFacade.class);
-            Preferences prefs = facade.getSystemPreferences();
-            final String defaultSender = prefs.getEntryAsString( MailPlugin.DEFAULT_SENDER_ENTRY, "");
-            mail.sendMail( defaultSender, recipientEmail,subject, body);
-            getLogger().getChildLogger("mail").info("Email send to user " + userName);
-        }
-
-    @Override public Class<MailToUserInterface> getInterfaceClass()
+    @Inject public RaplaMailToUserOnLocalhost(final MailInterface mail, final ClientFacade facade, final RemoteSession session, final Logger logger)
+            throws RaplaSecurityException
     {
-        return MailToUserInterface.class;
+        this(mail, facade, logger);
+        if (!session.isAuthentified())
+        {
+            throw new RaplaSecurityException("User needs to be authentified to use the service");
+        }
     }
 
-    public MailToUserInterface createService(RemoteSession remoteSession) {
-            return this;
+    public RaplaMailToUserOnLocalhost(final MailInterface mail, final ClientFacade facade, final Logger logger)
+    {
+        this.mail = mail;
+        this.facade = facade;
+        this.logger = logger;
+    }
+
+    public void sendMail(String userName, String subject, String body) throws RaplaException
+    {
+        User recipientUser = facade.getUser(userName);
+        // O.K. We need to generate the mail
+        String recipientEmail = recipientUser.getEmail();
+        if (recipientEmail == null || recipientEmail.trim().length() == 0)
+        {
+            logger.warn("No email address specified for user " + recipientUser.getUsername() + " Can't send mail.");
+            return;
         }
 
-		
-  
+        Preferences prefs = facade.getSystemPreferences();
+        final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
+        mail.sendMail(defaultSender, recipientEmail, subject, body);
+        logger.getChildLogger("mail").info("Email send to user " + userName);
+    }
+
 }
 

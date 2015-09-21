@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaType;
@@ -79,10 +80,10 @@ public class IOContext
         writerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsWriter(context) );
     }
 
-    public RaplaDefaultContext createInputContext(Logger logger,RaplaLocale locale,I18nBundle i18n, EntityStore store, IdCreator idTable) throws RaplaException {
+    public RaplaDefaultContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable) throws RaplaException {
          
         RaplaDefaultContext ioContext = new RaplaDefaultContext( );
-        ioContext.put(RaplaComponent.RAPLA_RESOURCES, i18n);
+        ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put(EntityStore.class, store);
         ioContext.put(IdCreator.class,idTable);
@@ -96,10 +97,10 @@ public class IOContext
     public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
     public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<Provider<Category>>( IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultContext createOutputContext(Logger logger,RaplaLocale locale,I18nBundle i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
+    public RaplaDefaultContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
         
         RaplaDefaultContext ioContext = new RaplaDefaultContext( );
-        ioContext.put(RaplaComponent.RAPLA_RESOURCES, i18n);
+        ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put( Logger.class,logger );
         if ( includeIds)

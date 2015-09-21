@@ -22,13 +22,10 @@ public class PeriodCopyPlugin implements PluginDescriptor<ClientServiceContainer
 {
 	public static final boolean ENABLE_BY_DEFAULT = true;
 
-    public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(PeriodCopyPlugin.class.getPackage().getName() + ".PeriodCopy");
-
     public void provideServices(ClientServiceContainer container, Configuration config) {
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;
 
-        container.addResourceFile( RESOURCE_FILE );
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.EDIT_MENU_EXTENSION_POINT, CopyPluginMenu.class);
     }
 

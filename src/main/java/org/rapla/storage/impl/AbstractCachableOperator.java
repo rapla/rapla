@@ -30,6 +30,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -82,11 +83,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	
 	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
 	protected LocalCache cache;
-	protected I18nBundle i18n;
+	protected RaplaResources i18n;
 	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	
-	public AbstractCachableOperator( Logger logger, I18nBundle i18n, RaplaLocale raplaLocale)  {
+	public AbstractCachableOperator( Logger logger, RaplaResources i18n, RaplaLocale raplaLocale)  {
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		this.i18n = i18n;

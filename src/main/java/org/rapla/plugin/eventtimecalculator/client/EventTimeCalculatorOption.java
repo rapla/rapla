@@ -10,8 +10,10 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
 /**
  * ****************************************************************************
@@ -29,10 +31,14 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
     private JCheckBox chkAllowUserPrefs;
     boolean adminOptions;
 
-    public EventTimeCalculatorOption(RaplaContext sm, boolean adminOptions)  {
+    EventTimeCalculatorResources eventTimei18n;
+
+
+    public EventTimeCalculatorOption(RaplaContext sm, boolean adminOptions) throws RaplaContextException
+    {
         super(sm);
         this.adminOptions = adminOptions;
-        setChildBundleName(EventTimeCalculatorPlugin.RESOURCE_FILE);
+        this.eventTimei18n = sm.lookup( EventTimeCalculatorResources.class);
     }
 
     /**
@@ -52,11 +58,11 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
                 }};
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
-        content.add(new JLabel(getString("time_till_break") + ":"), "1,0");
-        content.add(new JLabel(getString("break_duration") + ":"), "1,2");
-      //  content.add(new JLabel(i18n.getString("lunch_break_duration") + ":"), "1,4");
-        content.add(new JLabel(getString("time_unit") + ":"), "1,6");
-        content.add(new JLabel(getString("time_format") + ":"), "1,8");
+        content.add(new JLabel(eventTimei18n.getString("time_till_break") + ":"), "1,0");
+        content.add(new JLabel(eventTimei18n.getString("break_duration") + ":"), "1,2");
+      //  content.add(new JLabel(eventTimei18n.getString("lunch_break_duration") + ":"), "1,4");
+        content.add(new JLabel(eventTimei18n.getString("time_unit") + ":"), "1,6");
+        content.add(new JLabel(eventTimei18n.getString("time_format") + ":"), "1,8");
 
         intervalNumber = new RaplaNumber(EventTimeCalculatorPlugin.DEFAULT_intervalNumber, 0, null, false);
         content.add(intervalNumber, "3,0");
@@ -68,7 +74,7 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
 
 //        lunchbreakNumber = new RaplaNumber(EventTimeCalculatorPlugin.DEFAULT_lunchbreakNumber, new Integer(1), null, false);
 //        content.add(lunchbreakNumber, "3,4");
-//        content.add(new JLabel(i18n.getString("minutes")), "5,4");
+//        content.add(new JLabel(eventTimei18n.getString("minutes")), "5,4");
 
         timeUnit = new RaplaNumber(EventTimeCalculatorPlugin.DEFAULT_timeUnit, 1, null, false);
         content.add(timeUnit, "3,6");
@@ -80,7 +86,7 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
         {
         	chkAllowUserPrefs = new JCheckBox();
         	content.add(chkAllowUserPrefs, "3,10");
-        	content.add(new JLabel(getString("allow_user_prefs")), "1,10");
+        	content.add(new JLabel(eventTimei18n.getString("allow_user_prefs")), "1,10");
         }
         return content;
     }

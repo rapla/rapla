@@ -18,6 +18,7 @@ import java.util.concurrent.Semaphore;
 import javax.swing.JComponent;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.internal.SwingPopupContext;
@@ -99,7 +100,8 @@ public abstract class GUITestCase extends RaplaTestCase {
         Use this method for testing new GUI-Components.
      */
     public void testComponent(JComponent component,int x,int y) throws Exception{
-        RaplaFrame frame = new RaplaFrame(getClientService().getContext());
+        FrameControllerList frameControllerList = getClientService().getContext().lookup(FrameControllerList.class);
+        RaplaFrame frame = new RaplaFrame(frameControllerList);
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(component, BorderLayout.CENTER);
         frame.setSize(x,y);

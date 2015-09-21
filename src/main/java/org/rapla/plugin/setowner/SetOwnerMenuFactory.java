@@ -10,13 +10,15 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.TreeSet;
 
-import javax.swing.JTree;
+import javax.inject.Inject;
+import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -28,6 +30,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
@@ -39,18 +42,26 @@ import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaTree;
 
-public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenuFactory
+public class SetOwnerMenuFactory implements ObjectMenuFactory
 {
-
-    public SetOwnerMenuFactory( RaplaContext context)
+    SetOwnerResources setOwnerI18n;
+    RaplaResources i18n;
+    ClientFacade facade;
+    TreeFactory treeFactory;
+    RaplaGUIComponent old;
+    @Inject
+    public SetOwnerMenuFactory( SetOwnerResources isetOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context)
     {
-        super( context );
-        setChildBundleName( SetOwnerPlugin.RESOURCE_FILE);
+        this.setOwnerI18n = setOwnerI18n;
+        old = new RaplaGUIComponent(context);
+        this.i18n = i18n;
+        this.facade = facade;
+        this.treeFactory = treeFactory;
     }
 
     public RaplaMenuItem[] create( final MenuContext menuContext, final RaplaObject focusedObject )
     {
-    	if (!isAdmin())
+    	if (!old.isAdmin())
     	{
     		return RaplaMenuItem.EMPTY_ARRAY;
     	}
@@ -112,8 +123,9 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         
         // create the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("SETOWNER");
-        setOwnerItem.setText(getI18n().getString("changeowner"));
-        setOwnerItem.setIcon(getIcon("icon.tree.persons"));
+        setOwnerItem.setText(setOwnerI18n.getString("changeowner"));
+        ImageIcon icon = old.getImages().getIconFromKey( i18n.getString("icon.tree.persons"));
+        setOwnerItem.setIcon(icon);
         setOwnerItem.addActionListener( new ActionListener()
         {
             public void actionPerformed( ActionEvent e )
@@ -125,18 +137,18 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
                 		ArrayList<Entity<?>> toStore = new ArrayList<Entity<?>>();
                 		for ( Entity<? extends Entity> ownable: ownables)
                 		{
-                			Entity<?> editableOwnables = getClientFacade().edit( ownable);
+                			Entity<?> editableOwnables = facade.edit( ownable);
 	                		Ownable casted = (Ownable)editableOwnables;
 							casted.setOwner(newOwner);
 	                		toStore.add( editableOwnables);
                 		}
 	                		//((SimpleEntity) editableEvent).setLastChangedBy(newOwner);
-                		getClientFacade().storeObjects( toStore.toArray( Entity.ENTITY_ARRAY) ); 
+                		facade.storeObjects(toStore.toArray(Entity.ENTITY_ARRAY));
                 	}
                 }
                 catch (RaplaException ex )
                 {
-                    showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()));
+                    old.showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()));
                 } 
             }
          });
@@ -146,7 +158,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
     
     
     final private TreeFactory getTreeFactory() {
-        return  getService(TreeFactory.class);
+        return  treeFactory;
     }
     
     private User showAddDialog() throws RaplaException {
@@ -157,7 +169,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         
         DefaultMutableTreeNode userRoot = new DefaultMutableTreeNode("ROOT");
         //DefaultMutableTreeNode userRoot = TypeNode(User.TYPE, getString("users"));
-        User[] userList = getQuery().getUsers();
+        User[] userList = facade.getUsers();
         for (final User user: sorted(userList)) {
             DefaultMutableTreeNode node = new DefaultMutableTreeNode();
             node.setUserObject( user );
@@ -168,12 +180,12 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
         treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
         treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
         dialog = DialogUI.create(
-                getContext()
-                ,getMainComponent()
+                old.getContext()
+                ,old.getMainComponent()
                 ,true
                 ,treeSelection
-                ,new String[] { getString("apply"),getString("cancel")});
-        dialog.setTitle(getI18n().getString("changeownerto"));
+                ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
+        dialog.setTitle(setOwnerI18n.getString("changeownerto"));
         dialog.getButton(0).setEnabled(false);
         
         final JTree tree = treeSelection.getTree(); 
@@ -209,7 +221,7 @@ public class SetOwnerMenuFactory extends RaplaGUIComponent implements ObjectMenu
     }
     
     private <T extends Named> Collection<T> sorted(T[] allocatables) {
-        TreeSet<T> sortedList = new TreeSet<T>(new NamedComparator<T>(getLocale()));
+        TreeSet<T> sortedList = new TreeSet<T>(new NamedComparator<T>(old.getLocale()));
         sortedList.addAll(Arrays.asList(allocatables));
         return sortedList;
     }

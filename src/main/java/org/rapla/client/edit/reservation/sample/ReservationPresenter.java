@@ -1,20 +1,9 @@
 package org.rapla.client.edit.reservation.sample;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-
-import org.rapla.client.ActivityManager.Activity;
-import org.rapla.client.ActivityPresenter;
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.StopActivityEvent;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.PermissionContainer;
@@ -28,56 +17,40 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.storage.StorageOperator;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
-@Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
-public class ReservationPresenter implements ReservationController, Presenter, ActivityPresenter
+public class ReservationPresenter implements ReservationController, Presenter
 {
-
-    private static class ReservationInfo
-    {
-        boolean isNew;
-        private Appointment selectedAppointment;
-        private Reservation editReservation;
-    }
-
     public static final String EDIT_ACTIVITY_ID = "edit";
 
-    private final Map<String, ReservationInfo> reservationMap = new LinkedHashMap<String, ReservationInfo>();
+    @Inject private ClientFacade facade;
+    @Inject private Logger logger;
+    @Inject private RaplaLocale raplaLocale;
 
-    @Inject
-    private Logger logger;
-    @Inject
-    private RaplaLocale raplaLocale;
-    @Inject
-    private ClientFacade facade;
-
-    @Inject
-    private EventBus eventBus;
+    @Inject private EventBus eventBus;
 
     private ReservationView<?> view;
+    private Reservation editReservation;
+    Appointment selectedAppointment;
+    private boolean isNew;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Inject
-    public ReservationPresenter(ReservationView view)
+    @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public ReservationPresenter(ReservationView view)
     {
         this.view = view;
         view.setPresenter(this);
     }
 
-    @Override
-    public void edit(final Reservation event, boolean isNew)
+    @Override public void edit(final Reservation event, boolean isNew)
     {
         try
         {
-            final ReservationInfo ri = new ReservationInfo();
-            ri.isNew = isNew;
-            ri.editReservation = facade.edit(event);
-            ri.selectedAppointment = ri.editReservation.getAppointments().length > 0 ? ri.editReservation.getAppointments()[0] : null;
-            reservationMap.put(event.getId(), ri);
+            this.isNew = isNew;
+            editReservation = facade.edit(event);
+            selectedAppointment = editReservation.getAppointments().length > 0 ? editReservation.getAppointments()[0] : null;
             view.show(event);
         }
         catch (RaplaException e)
@@ -86,59 +59,48 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         }
     }
 
-    @Override
-    public void onSaveButtonClicked(Reservation reservation)
+    @Override public void onSaveButtonClicked()
     {
         logger.info("save clicked");
         try
         {
-            final ReservationInfo ri = reservationMap.get(reservation.getId());
-            final Reservation editReservation = ri.editReservation;
             facade.store(editReservation);
         }
         catch (RaplaException e1)
         {
             logger.error(e1.getMessage(), e1);
         }
-        fireEventAndCloseView(reservation);
+        fireEventAndCloseView();
     }
 
-    @Override
-    public void onDeleteButtonClicked(final Reservation reservation)
+    @Override public void onDeleteButtonClicked()
     {
         logger.info("delete clicked");
         try
         {
-            final ReservationInfo ri = reservationMap.get(reservation.getId());
-            final Reservation tempReservation = ri.editReservation;
-            facade.remove(tempReservation);
+            facade.remove(editReservation);
         }
         catch (RaplaException e1)
         {
             logger.error(e1.getMessage(), e1);
         }
-        fireEventAndCloseView(reservation);
+        fireEventAndCloseView();
     }
 
-    @Override
-    public void onCancelButtonClicked(final Reservation reservation)
+    @Override public void onCancelButtonClicked()
     {
         logger.info("cancel clicked");
-        fireEventAndCloseView(reservation);
+        fireEventAndCloseView();
     }
 
-    private void fireEventAndCloseView(final Reservation reservation)
+    private void fireEventAndCloseView()
     {
-        eventBus.fireEvent(new StopActivityEvent(EDIT_ACTIVITY_ID, reservation.getId()));
-        reservationMap.remove(reservation.getId());
-        view.hide(reservation);
+        eventBus.fireEvent(new StopActivityEvent(EDIT_ACTIVITY_ID, editReservation.getId()));
+        view.hide();
     }
 
-    @Override
-    public void changeAttribute(Reservation reservation, Attribute attribute, Object newValue)
+    @Override public void changeAttribute(Attribute attribute, Object newValue)
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        final Reservation editReservation = ri.editReservation;
         final Classification classification = editReservation.getClassification();
         if (isAllowedToWrite(attribute, classification))
         {
@@ -147,7 +109,6 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         else
         {
             view.showWarning("Not allowed!", "Editing value for " + attribute.getName(raplaLocale.getLocale()));
-            view.show(editReservation);
         }
     }
 
@@ -157,28 +118,22 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         return true;
     }
 
-    @Override
-    public boolean isDeleteButtonEnabled(final Reservation reservation)
+    @Override public boolean isDeleteButtonEnabled()
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        return !ri.isNew;
+        return isNew;
     }
 
-    @Override
-    public void changeClassification(Reservation reservation, DynamicType newDynamicType)
+    @Override public void changeClassification(DynamicType newDynamicType)
     {
         if (newDynamicType != null)
         {
-            final ReservationInfo ri = reservationMap.get(reservation.getId());
-            final Reservation tempReservation = ri.editReservation;
             final Classification newClassification = newDynamicType.newClassification();
-            tempReservation.setClassification(newClassification);
-            view.show(tempReservation);
+            editReservation.setClassification(newClassification);
+            view.show(editReservation);
         }
     }
 
-    @Override
-    public Collection<DynamicType> getChangeableReservationDynamicTypes()
+    @Override public Collection<DynamicType> getChangeableReservationDynamicTypes()
     {
         final Collection<DynamicType> creatableTypes = new ArrayList<DynamicType>();
         try
@@ -200,20 +155,16 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         return creatableTypes;
     }
 
-    @Override
-    public void newDateClicked(Reservation reservation)
+    @Override public void newDateClicked()
     {
         Date startDate = new Date();
         Date endDate = new Date();
         try
         {
-            final ReservationInfo ri = reservationMap.get(reservation.getId());
-            final Reservation tempReservation = ri.editReservation;
             Appointment newAppointment = facade.newAppointment(startDate, endDate);
-            tempReservation.addAppointment(newAppointment);
-            Appointment[] allAppointments = tempReservation.getAppointments();
-            ri.selectedAppointment = newAppointment;
-            view.updateAppointments(tempReservation, allAppointments, newAppointment);
+            editReservation.addAppointment(newAppointment);
+            this.selectedAppointment = newAppointment;
+            view.updateAppointments(newAppointment);
         }
         catch (RaplaException e)
         {
@@ -221,90 +172,50 @@ public class ReservationPresenter implements ReservationController, Presenter, A
         }
     }
 
-    @Override
-    public void selectAppointment(Reservation reservation, Appointment selectedAppointment)
+    @Override public void selectAppointment(Appointment selectedAppointment)
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        final Reservation tempReservation = ri.editReservation;
-        ri.selectedAppointment = selectedAppointment;
-        Appointment[] allAppointments = tempReservation.getAppointments();
-        view.updateAppointments(tempReservation, allAppointments, selectedAppointment);
+        this.selectedAppointment = selectedAppointment;
+        view.updateAppointments(selectedAppointment);
     }
 
-    @Override
-    public void deleteDateClicked(Reservation reservation)
+    @Override public void deleteDateClicked()
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        final Reservation tempReservation = ri.editReservation;
-        tempReservation.removeAppointment(ri.selectedAppointment);
-        Appointment[] allAppointments = tempReservation.getAppointments();
+        editReservation.removeAppointment(selectedAppointment);
+        Appointment[] allAppointments = editReservation.getAppointments();
         Appointment newSelectedAppointment = allAppointments.length > 0 ? allAppointments[0] : null;
-        ri.selectedAppointment = newSelectedAppointment;
-        view.updateAppointments(tempReservation, allAppointments, newSelectedAppointment);
+        selectedAppointment = newSelectedAppointment;
+        view.updateAppointments(newSelectedAppointment);
     }
 
-    @Override
-    public void timeChanged(Reservation reservation, Date startDate, Date endDate)
+    @Override public void timeChanged(Date startDate, Date endDate)
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        if (ri.selectedAppointment != null)
+        if (selectedAppointment != null)
         {
-            ri.selectedAppointment.move(startDate, endDate);
+            selectedAppointment.move(startDate, endDate);
         }
     }
 
-    @Override
-    public void allDayEvent(Reservation reservation, boolean wholeDays)
+    @Override public void allDayEvent(boolean wholeDays)
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        final Reservation tempReservation = ri.editReservation;
-        if (ri.selectedAppointment != null)
+        if (selectedAppointment != null)
         {
-            ri.selectedAppointment.setWholeDays(wholeDays);
-            Appointment[] allAppointments = tempReservation.getAppointments();
-            view.updateAppointments(tempReservation, allAppointments, ri.selectedAppointment);
+            selectedAppointment.setWholeDays(wholeDays);
+            view.updateAppointments(selectedAppointment);
         }
     }
 
-    @Override
-    public void repeating(Reservation reservation, RepeatingType repeating)
+    @Override public void repeating(RepeatingType repeating)
     {
-        final ReservationInfo ri = reservationMap.get(reservation.getId());
-        if (ri.selectedAppointment != null)
+        if (selectedAppointment != null)
         {
-            ri.selectedAppointment.setRepeatingEnabled(repeating != null);
-            ri.selectedAppointment.getRepeating().setType(repeating);
+            selectedAppointment.setRepeatingEnabled(repeating != null);
+            selectedAppointment.getRepeating().setType(repeating);
         }
     }
 
-    @Override
-    public void convertAppointment(Reservation reservation)
+    @Override public void convertAppointment()
     {
         // TODO implement me
     }
 
-    @Override
-    @SuppressWarnings("rawtypes")
-    public boolean startActivity(Activity activity)
-    {
-        try
-        {
-            final StorageOperator operator = facade.getOperator();
-            final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getInfo()), false);
-            final Collection<Entity> values = entities.values();
-            for (Entity entity : values)
-            {
-                if (entity != null && entity instanceof Reservation)
-                {
-                    edit((Reservation) entity, false);
-                    return true;
-                }
-            }
-        }
-        catch (RaplaException e)
-        {
-            logger.error("Error initializing activity: " + activity, e);
-        }
-        return false;
-    }
 }

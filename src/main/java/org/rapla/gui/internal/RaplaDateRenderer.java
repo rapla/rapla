@@ -20,12 +20,18 @@ import org.rapla.entities.domain.Period;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
+
+@DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})
 public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     protected WeekendHighlightRenderer renderer = new WeekendHighlightRenderer();
     protected Color periodColor = new Color(0xc5,0xda,0xdd);
     protected PeriodModel periodModel;
 
+    @Inject
     public RaplaDateRenderer(RaplaContext sm) {
         super(sm);
         periodModel = getPeriodModel();

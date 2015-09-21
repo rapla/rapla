@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.facade.CalendarModel;
@@ -26,6 +27,7 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
 {
     public final static String DAY_TIMESLOT = "day_timeslot";
 
+    @Inject
     public CompactDayViewFactory( RaplaContext context ) 
     {
         super( context );

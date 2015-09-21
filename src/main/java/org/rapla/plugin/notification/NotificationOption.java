@@ -35,10 +35,11 @@ public class NotificationOption extends RaplaGUIComponent implements OptionPanel
     JCheckBox notifyIfOwnerCheckBox;
     TreeAllocatableSelection selection;
     Preferences preferences;
+    NotificationResources notificationI18n;
     
-    public NotificationOption(RaplaContext sm) {
+    public NotificationOption(RaplaContext sm, NotificationResources notificationI18n) {
         super( sm);
-        setChildBundleName( NotificationPlugin.RESOURCE_FILE);
+        this.notificationI18n = notificationI18n;
         selection = new TreeAllocatableSelection(sm);
         selection.setAddDialogTitle(getString("subscribe_notification"));
         double[][] sizes = new double[][] {
@@ -47,21 +48,27 @@ public class NotificationOption extends RaplaGUIComponent implements OptionPanel
             };
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
-        content.add(new JLabel(getStringAsHTML("notification.option.description")), "1,0");
+        content.add(new JLabel(getAsHTML(notificationI18n.getString("notification.option.description"))), "1,0");
       
         notifyIfOwnerCheckBox = new JCheckBox();
         content.add(notifyIfOwnerCheckBox, "1,2");
         
-        notifyIfOwnerCheckBox.setText(getStringAsHTML("notify_if_owner"));
+        notifyIfOwnerCheckBox.setText(getAsHTML(notificationI18n.getString("notify_if_owner")));
        
         content.add(selection.getComponent(), "1,4");
     }
-    
+
+    /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
+    final public String getAsHTML(String string) {
+        return "<html>" + string + "</html>";
+    }
+
+
     public JComponent getComponent() {
         return content;
     }
     public String getName(Locale locale) {
-        return getString("notification_options");
+        return notificationI18n.getString("notification_options");
     }
 
     public void show() throws RaplaException {

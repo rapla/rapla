@@ -18,6 +18,7 @@ import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 
@@ -42,14 +43,19 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+
 /** The factory can creatres an information-panel or dialog for
 the entities of rapla.
 @see ViewTable*/
+@DefaultImplementation(of=InfoFactory.class, context = InjectionContext.swing)
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
 
+    @Inject
     public InfoFactoryImpl(RaplaContext sm) {
         super( sm);
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(sm) );

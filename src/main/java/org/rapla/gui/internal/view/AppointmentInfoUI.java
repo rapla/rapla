@@ -15,6 +15,7 @@ package org.rapla.gui.internal.view;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -37,7 +38,7 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
     }
     
     @Inject
-    public AppointmentInfoUI(@javax.inject.Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super( i18n, raplaLocale, facade, logger);
         parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater);

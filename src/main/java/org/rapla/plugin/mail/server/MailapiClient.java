@@ -12,10 +12,13 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.ServerService;
 
+@DefaultImplementation(of=MailInterface.class,context= InjectionContext.server)
 public class MailapiClient implements MailInterface
 {
     String mailhost = "localhost";

@@ -16,6 +16,7 @@ package org.rapla.plugin.abstractcalendar;
 
 import java.util.Date;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.ClientFacade;
@@ -33,7 +34,7 @@ public class SwingRaplaBuilder extends RaplaBuilder
     
     public SwingRaplaBuilder(RaplaContext context) throws RaplaContextException 
     {
-        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaComponent.RAPLA_RESOURCES), context.lookup(Logger.class),context.lookup( AppointmentFormater.class));
+        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaResources.class), context.lookup(Logger.class),context.lookup( AppointmentFormater.class));
         this.images= context.lookup( RaplaImages.class);
     }
 

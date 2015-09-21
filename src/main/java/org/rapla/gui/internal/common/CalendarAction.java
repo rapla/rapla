@@ -21,6 +21,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.toolkit.DisposingTool;
+import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.gui.toolkit.RaplaFrame;
 
 
@@ -51,7 +52,7 @@ public class CalendarAction extends RaplaAction {
 
     public void actionPerformed() {
         try {
-            RaplaFrame frame = new RaplaFrame(getContext());
+            RaplaFrame frame = new RaplaFrame(getContext().lookup(FrameControllerList.class));
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
             frame.setSize(new Dimension(
                                         Math.min(dimension.width,800)

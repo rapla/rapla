@@ -16,6 +16,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
@@ -50,11 +51,13 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
     private String user_export_attendees_participants_status;
 
     ICalConfigService configService;
+	final Export2iCalResources i18nIcal;
     
-    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService) {
+    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService) throws RaplaContextException
+	{
 		super(sm);
 		this.configService = configService;
-		setChildBundleName(Export2iCalPlugin.RESOURCE_FILE);
+		i18nIcal = sm.lookup( Export2iCalResources.class);
 	}
 
 	public JComponent getComponent() {
@@ -62,13 +65,13 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 	}
 
 	public String getName(Locale locale) {
-		return getString("ical_export_user_settings");
+		return i18nIcal.getString("ical_export_user_settings");
 	}
 
 	public void createList()  {
 
 		panel.removeAll();
-        chkExportAttendees = new JCheckBox(getString("export_attendees_of_vevent"));
+        chkExportAttendees = new JCheckBox(i18nIcal.getString("export_attendees_of_vevent"));
         chkExportAttendees.addActionListener(this);
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(new String [] {
@@ -95,13 +98,13 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 		panel.setLayout(tableLayout);
 
 		JPanel interval = new JPanel();
-		interval.add(new JLabel(getString("previous_days_text")));
+		interval.add(new JLabel(i18nIcal.getString("previous_days_text")));
 		spiDaysBefore = new JSpinner(new SpinnerNumberModel(30, 0, 100, 1));
 		interval.add(spiDaysBefore);
-		interval.add(new JLabel(getString("subsequent_days_text")));
+		interval.add(new JLabel(i18nIcal.getString("subsequent_days_text")));
 		spiDaysAfter = new JSpinner(new SpinnerNumberModel(30, 0, 100, 1));
 		interval.add(spiDaysAfter);
-		chkUseUserdefinedIntervall = new JCheckBox(getString("use_user_interval_setting_text"));
+		chkUseUserdefinedIntervall = new JCheckBox(i18nIcal.getString("use_user_interval_setting_text"));
 		chkUseUserdefinedIntervall.setSelected(userdefined);
 		interval.add(chkUseUserdefinedIntervall);
 		int before = global_interval ? global_days_before : user_days_before;
@@ -111,7 +114,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 		spiDaysAfter.setValue(new Integer(after));
 		
 		if (addButtons) {
-			panel.add(new JLabel(getString("user_interval_setting_text")), "1,0");
+			panel.add(new JLabel(i18nIcal.getString("user_interval_setting_text")), "1,0");
 			panel.add(chkUseUserdefinedIntervall,"1,2");
 			panel.add(interval, "1,4");
 		}
@@ -122,7 +125,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
         cbDefaultParticipationsStatusRessourceAttribute.setEnabled(user_export_attendees);
 
         panel.add(chkExportAttendees, "1,6");
-        panel.add(new JLabel(getString("participation_status")), "1,8");
+        panel.add(new JLabel(i18nIcal.getString("participation_status")), "1,8");
         panel.add(cbDefaultParticipationsStatusRessourceAttribute, "3,8");
 	
 		chkUseUserdefinedIntervall.setEnabled(!global_interval);

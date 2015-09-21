@@ -12,18 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.dayresource.server;
 
+import org.rapla.RaplaResources;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
-public class DayResourceHTMLViewFactory extends RaplaComponent implements HTMLViewFactory
+import javax.inject.Inject;
+
+@Extension(provides = HTMLViewFactory.class,id=DayResourceHTMLViewFactory.DAY_RESOURCE_VIEW)
+public class DayResourceHTMLViewFactory  implements HTMLViewFactory
 {
-    public DayResourceHTMLViewFactory( RaplaContext context ) 
+
+    RaplaResources i18n;
+    @Inject
+    public DayResourceHTMLViewFactory( RaplaResources i18n)
     {
-        super( context );
+        this.i18n = i18n;
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
@@ -40,7 +48,7 @@ public class DayResourceHTMLViewFactory extends RaplaComponent implements HTMLVi
 
     public String getName()
     {
-        return getString(DAY_RESOURCE_VIEW);
+        return i18n.getString(DAY_RESOURCE_VIEW);
     }
 
 

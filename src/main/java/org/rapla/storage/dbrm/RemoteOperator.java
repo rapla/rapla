@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
@@ -82,13 +83,9 @@ import org.rapla.storage.impl.EntityStore;
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
  * (usually this is the default rapla-server).
- * <p>Sample configuration:
-  <pre>
-   &lt;remote-storage id="web">
-   &lt;/remote-storate>
-  </pre>
 */
 @DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client)
+@Singleton
 public class RemoteOperator  extends  AbstractCachableOperator implements  RestartServer,Disposable
 {
     private boolean bSessionActive = false;

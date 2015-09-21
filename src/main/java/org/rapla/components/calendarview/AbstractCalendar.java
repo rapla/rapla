@@ -10,7 +10,7 @@ import org.rapla.framework.RaplaLocale;
 
 public abstract class  AbstractCalendar {
 	private int daysInView = 7;
-	private int firstWeekday = 2;//Calendar.getInstance().getFirstDayOfWeek();
+	private int firstWeekday = 2;//Calendar.inject().getFirstDayOfWeek();
     /** shared calendar instance. Only used for temporary stored values. */
 	protected Collection<Integer> excludeDays = Collections.emptySet();
 

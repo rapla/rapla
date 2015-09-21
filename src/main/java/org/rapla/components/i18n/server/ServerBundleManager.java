@@ -1,24 +1,23 @@
 package org.rapla.components.i18n.server;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
-import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.server.internal.ServerServiceImpl;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 
 @DefaultImplementation(of=BundleManager.class,context = { InjectionContext.server, InjectionContext.swing})
+@Singleton
 public class ServerBundleManager implements BundleManager {
     private I18nLocaleFormats formats;
     private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();
@@ -29,7 +28,7 @@ public class ServerBundleManager implements BundleManager {
     private Map<String, Map<String, String>> bundles;
 
     @Inject
-    public ServerBundleManager() throws RaplaException
+    public ServerBundleManager()
     {
         String selectedCountry = Locale.getDefault().getCountry() ;
         String selectedLanguage = Locale.getDefault().getLanguage();

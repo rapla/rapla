@@ -37,6 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.LayoutFocusTraversalPolicy;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -69,7 +70,7 @@ public class DialogUI extends JDialog
     private FrameControllerList frameList = null;
     protected boolean packFrame = true;
     private ServerBundleManager localeSelector;
-    private I18nBundle i18n;
+    private RaplaResources i18n;
 
     private RaplaContext context = null;
     private ButtonListener buttonListener = new ButtonListener();
@@ -258,7 +259,7 @@ public class DialogUI extends JDialog
 
     private void service(RaplaContext context) throws RaplaException {
         this.context = context;
-    	i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+    	i18n = context.lookup(RaplaResources.class);
     	RaplaImages images = context.lookup(RaplaImages.class); 
     	if (useDefaultOptions) {
     		if (buttons.length > 1) {

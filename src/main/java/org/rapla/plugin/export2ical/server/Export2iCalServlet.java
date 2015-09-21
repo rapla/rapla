@@ -1,24 +1,9 @@
 package org.rapla.plugin.export2ical.server;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.SimpleTimeZone;
-import java.util.TimeZone;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ValidationException;
-
+import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
@@ -32,19 +17,26 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaDefaultContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.RaplaPageExtension;
 
-public class Export2iCalServlet extends RaplaComponent implements RaplaPageGenerator {
+import javax.inject.Inject;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
+@Extension(provides = RaplaPageExtension.class, id = "ical")
+public class Export2iCalServlet  implements RaplaPageExtension
+{
 	private int global_daysBefore;
 	private int global_daysAfter;
 
@@ -63,11 +55,21 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	private Date firstPluginStartDate = new Date(0);
 	//private TimeZone pluginTimeZone;
 	private int lastModifiedIntervall;
+	Export2iCalConverter converter;
+	TimeZoneConverter timeZoneConverter;
+	ClientFacade facade;
+	Logger logger;
+	final RaplaLocale raplaLocale ;
+	RaplaResources i18n;
 
-	
-    public Export2iCalServlet(RaplaContext context) throws RaplaException{
-		super(createLoggerContext(context));
-		RaplaConfiguration config = context.lookup(ClientFacade.class).getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+	@Inject
+    public Export2iCalServlet(ClientFacade facade, Export2iCalConverter converter, Logger logger, RaplaLocale raplaLocale, RaplaResources i18n) throws RaplaException{
+		this. logger = logger.getChildLogger("ical");
+		this.raplaLocale = raplaLocale;
+		this.facade = facade;
+		this.i18n = i18n;
+		this.converter = converter;
+		RaplaConfiguration config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
 		global_interval = config.getChild(Export2iCalPlugin.GLOBAL_INTERVAL).getValueAsBoolean(Export2iCalPlugin.DEFAULT_globalIntervall);
 
 		global_daysBefore = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
@@ -88,6 +90,11 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		return newContext;
 	}
 
+	public Logger getLogger()
+	{
+		return logger;
+	}
+
 	public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		//this.response = response;
@@ -105,7 +112,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
             String message = "The calendar '" + filename + "' you tried to retrieve is not published or available for the user " + username + ".";
 			try
             {
-            	user = getQuery().getUser(username);
+            	user = facade.getUser(username);
             }
             catch (EntityNotFoundException ex)
             {
@@ -114,7 +121,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
                 response.setStatus( 404);
                 return;
             }
-            final Preferences preferences = getQuery().getPreferences(user);
+            final Preferences preferences = facade.getPreferences(user);
 
 			final CalendarModel calModel = getCalendarModel(preferences, user, filename);
 
@@ -165,7 +172,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	 */
 	private CalendarModel getCalendarModel(Preferences preferences, User user, String filename) {
 		try {
-			final CalendarSelectionModel calModel = getClientFacade().newCalendarModel( user);
+			final CalendarSelectionModel calModel = facade.newCalendarModel(user);
 			calModel.load(filename);
 
 			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, 11);
@@ -175,7 +182,6 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 
 			//calModel.getReservations(startDate, endDate)
 
-            final RaplaLocale raplaLocale = getRaplaLocale();
             final java.util.Calendar calendar = raplaLocale.createCalendar();
 
 			// set start Date
@@ -209,7 +215,6 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	}
 
 	private Reservation[] getAllReservations(final CalendarModel calModel) throws RaplaException {
-        final RaplaLocale raplaLocale = getRaplaLocale();
         final java.util.Calendar calendar = raplaLocale.createCalendar();
 
 		calendar.set(calendar.getMinimum(java.util.Calendar.YEAR), calendar.getMinimum(java.util.Calendar.MONTH), calendar.getMinimum(java.util.Calendar.DAY_OF_MONTH));
@@ -226,19 +231,15 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 
 	    if (filename == null )
 	    {
-	        filename = getString("default");
+	        filename = i18n.getString("default");
 	    }
-		RaplaLocale raplaLocale = getRaplaLocale();
 		response.setContentType("text/calendar; charset=" + raplaLocale.getCharsetNonUtf());
 		response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".ics");
 
 		if (appointments == null) {
 			throw new RaplaException("Error with returning '" + filename);
 		}
-		final RaplaContext context = getContext();
-		TimeZone timezone = context.lookup( TimeZoneConverter.class).getImportExportTimeZone();
-		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences);
-		final Calendar iCal = converter.createiCalender(appointments);
+		final Calendar iCal = converter.createiCalender(appointments, preferences);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
 		final PrintWriter responseWriter = response.getWriter();
 		try {
@@ -264,7 +265,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		{
 			return firstPluginStartDate;
 		}
-		java.util.Calendar calendar = getRaplaLocale().createCalendar();
+		java.util.Calendar calendar = raplaLocale.createCalendar();
 		long nowInMillis = DateTools.cutDate(new Date()).getTime();
 		long daysSinceStart = (nowInMillis - firstPluginStartDate.getTime()) / DateTools.MILLISECONDS_PER_DAY;
 		calendar.setTimeInMillis(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY);
@@ -274,13 +275,11 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 	/**
 	 * Get last modified if a list of allocatables
 	 * 
-	 * @param allocatable
-	 * @return
 	 */
 	public  Date getLastModified(CalendarModel calModel) throws RaplaException {
 
 		Date endDate = null;
-        Date startDate = getClientFacade().today();
+        Date startDate = facade.today();
         final Reservation[] reservations = calModel.getReservations(startDate, endDate);
 		
 		// set to minvalue

@@ -76,10 +76,11 @@ public class MainServlet extends HttpServlet {
             // this is the default purpose of the servlet to start rapla server as http servlet
             if ( startupMode.equals("server"))
     		{
-    	        if ( env_development != null && env_development )
-    	        {
-    	            JettyDevelopment.addDevelopmentWarFolders(logger);
-    	        }
+				// Does not work with maven yet
+//    	        if ( env_development != null && env_development )
+//    	        {
+//    	            JettyDevelopment.addDevelopmentWarFolders(logger);
+//    	        }
     		    serverStarter  = new ServerStarter(logger, jndi);
     		    serverStarter.startServer();
     		}

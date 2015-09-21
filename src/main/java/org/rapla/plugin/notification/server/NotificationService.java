@@ -12,22 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.base.CalendarPlugin;
+import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter;
+import org.rapla.client.plugin.weekview.gwt.WeekViewPlugin;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -46,13 +42,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
+import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.ServerExtension;
 
 /** Sends Notification Mails on allocation change.*/
 
-public class NotificationService extends RaplaComponent
+@Extension(provides = ServerExtension.class, id ="notification")
+public class NotificationService
     implements
     AllocationChangeListener,
     ServerExtension
@@ -61,13 +60,18 @@ public class NotificationService extends RaplaComponent
     MailToUserInterface mailToUserInterface;
     protected CommandScheduler mailQueue;
     AppointmentFormater appointmentFormater;
+    NotificationResources notificationI18n;
+    RaplaResources raplaI18n;
+
+    Logger logger;
+
 
     @Inject
-    public NotificationService(ClientFacade facade,@Named(RaplaComponent.RaplaResourcesId) I18nBundle   i18nBundle,@Named(NotificationPlugin.ResourceFileId) I18nBundle   childBundle, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
+    public NotificationService(ClientFacade facade,Set<CalendarPlugin> plugins,RaplaResources   i18nBundle,NotificationResources   notificationI18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
     {
-        super( facade, new  CompoundI18n(childBundle,i18nBundle), raplaLocale, logger);
+        this.notificationI18n = notificationI18n;
         this.clientFacade = facade;
-        setLogger( getLogger().getChildLogger("notification"));
+        this.logger = getLogger().getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         try
         {
@@ -82,6 +86,16 @@ public class NotificationService extends RaplaComponent
         clientFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         getLogger().info("NotificationServer Plugin started");
+    }
+
+    protected  Logger getLogger()
+    {
+        return logger;
+    }
+
+    public Locale getLocale()
+    {
+        return raplaI18n.getLocale();
     }
 
     public void changed(AllocationChangeEvent[] changeEvents) {
@@ -164,9 +178,8 @@ public class NotificationService extends RaplaComponent
             buf.append( eventBlock );
             buf.append("\n\n");
         }
-        I18nBundle i18n = getI18n();
-		String raplaTitle = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
-		buf.append(i18n.format("disclaimer_1", raplaTitle));
+        String raplaTitle = clientFacade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, raplaI18n.getString("rapla.title"));
+		buf.append(notificationI18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {
             if ( allocatableNames.length() > 0)
@@ -176,8 +189,8 @@ public class NotificationService extends RaplaComponent
             allocatableNames.append(alloc.getName(getLocale()));
         }
         String allocatablesString = allocatableNames.toString();
-        buf.append(i18n.format("disclaimer_2", allocatablesString));
-		mail.subject = i18n.format("mail_subject",allocatablesString);
+        buf.append(notificationI18n.format("disclaimer_2", allocatablesString));
+		mail.subject = notificationI18n.format("mail_subject",allocatablesString);
         mail.body = buf.toString();
         mail.recipient = owner.getUsername();
         return mail;
@@ -187,11 +200,11 @@ public class NotificationService extends RaplaComponent
     	StringBuilder buf =new StringBuilder();
     	buf.append("\n");
         buf.append("-----------");
-        buf.append(getString("changes"));
+        buf.append(raplaI18n.getString("changes"));
         buf.append("-----------");
         buf.append("\n");
         buf.append("\n");
-        buf.append(getString("reservation"));
+        buf.append(raplaI18n.getString("reservation"));
         buf.append(": ");
         buf.append(reservation.getName(getLocale()));
         buf.append("\n");
@@ -205,7 +218,7 @@ public class NotificationService extends RaplaComponent
             if (!event.getType().equals( AllocationChangeEvent.REMOVE ))
                 removed = false;
 
-            buf.append(getI18n().format("appointment." + event.getType()
+            buf.append(raplaI18n.format("appointment." + event.getType()
                                         ,event.getAllocatable().getName(getLocale()))
                        );
 //            changes.append("[" + event.getAllocatable().getName(getLocale()) + "]");
@@ -215,7 +228,7 @@ public class NotificationService extends RaplaComponent
                 printAppointment (buf, event.getOldAppointment() );
             }
             if (event.getType().equals( AllocationChangeEvent.CHANGE )) {
-                buf.append(getString("moved_to"));
+                buf.append(notificationI18n.getString("moved_to"));
             }
             if (!event.getType().equals( AllocationChangeEvent.REMOVE )) {
                 printAppointment (buf, event.getNewAppointment() );
@@ -243,7 +256,7 @@ public class NotificationService extends RaplaComponent
 				{
 					name = "Rapla";
 				}
-				buf.insert(0, getI18n().format("mail_body", name) + "\n");
+				buf.insert(0, notificationI18n.format("mail_body", name) + "\n");
             	changed = true;
             }
             
@@ -255,18 +268,18 @@ public class NotificationService extends RaplaComponent
             return buf.toString();
 
         buf.append("-----------");
-        buf.append(getString("complete_reservation"));
+        buf.append(notificationI18n.getString("complete_reservation"));
         buf.append("-----------");
         buf.append("\n");
         buf.append("\n");
-        buf.append(getString("reservation.owner"));
+        buf.append(raplaI18n.getString("reservation.owner"));
         buf.append(": ");
         buf.append(reservation.getOwner().getUsername());
         buf.append(" <");
         buf.append(reservation.getOwner().getName());
         buf.append(">");
         buf.append("\n");
-        buf.append(getString("reservation_type"));
+        buf.append(raplaI18n.getString("reservation_type"));
         buf.append(": ");
         Classification classification = reservation.getClassification();
         buf.append( classification.getType().getName(getLocale()) );
@@ -284,14 +297,14 @@ public class NotificationService extends RaplaComponent
         Allocatable[] resources = reservation.getResources();
         if (resources.length>0) {
             buf.append("\n");
-            buf.append( getString("resources"));
+            buf.append( raplaI18n.getString("resources"));
             buf.append( ": ");
             printAllocatables(buf,reservation,resources);
         }
         Allocatable[] persons = reservation.getPersons();
         if (persons.length>0) {
             buf.append("\n");
-            buf.append( getString("persons"));
+            buf.append( raplaI18n.getString("persons"));
             buf.append( ": ");
             printAllocatables(buf,reservation,persons);
         }
@@ -299,7 +312,7 @@ public class NotificationService extends RaplaComponent
         if (appointments.length>0) {
             buf.append("\n");
             buf.append("\n");
-            buf.append( getString("appointments"));
+            buf.append( raplaI18n.getString("appointments"));
             buf.append( ": ");
             buf.append("\n");
         }
@@ -320,7 +333,7 @@ public class NotificationService extends RaplaComponent
             buf.append("\n");
             if ( repeating.hasExceptions() ) {
                 String exceptionString =
-                    getString("appointment.exceptions") + ": " + repeating.getExceptions().length ;
+                    raplaI18n.getString("appointment.exceptions") + ": " + repeating.getExceptions().length ;
                 buf.append(exceptionString);
                 buf.append("\n");
             }

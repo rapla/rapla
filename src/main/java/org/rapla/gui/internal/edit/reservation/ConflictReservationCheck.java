@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JTree;
 import javax.swing.tree.TreeModel;
@@ -39,9 +40,12 @@ import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaTree;
+import org.rapla.inject.Extension;
 
+@Extension(provides = EventCheck.class,id="conflictcheck")
 public class ConflictReservationCheck extends RaplaGUIComponent implements EventCheck
 {
+    @Inject
     public ConflictReservationCheck(RaplaContext context) {
         super(context);
     }

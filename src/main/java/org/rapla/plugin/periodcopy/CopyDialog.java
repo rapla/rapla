@@ -69,17 +69,19 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 
     JPanel customSourcePanel = new JPanel();
     JPanel customDestPanel = new JPanel();
+
+    PeriodCopyResources periodCopyI18n;
     
     @SuppressWarnings("unchecked")
 	public CopyDialog(RaplaContext sm) throws RaplaException {
         super(sm);
+        periodCopyI18n = sm.lookup( PeriodCopyResources.class);
         locale = getRaplaLocale();
         sourceBegin = createRaplaCalendar();
         sourceEnd = createRaplaCalendar();
         destBegin = createRaplaCalendar();
         
         
-        setChildBundleName( PeriodCopyPlugin.RESOURCE_FILE);
         Period[] periods = getQuery().getPeriods();
         singleChooser = new BooleanField(sm, "singleChooser");
         singleChooser.addChangeListener( new ChangeListener() {
@@ -95,11 +97,11 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
 		Date today = getQuery().today();
-        final PeriodImpl customSource = new PeriodImpl(getString("custom_period"), today, today);
+        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today);
         sourceModel.insertElementAt(customSource, 0);
         
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customDest = new PeriodImpl(getString("custom_period"),today, null);
+        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null);
         {
 	        destModel.insertElementAt(customDest, 0);
         }
@@ -109,7 +111,7 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         
         sourcePeriodChooser.setModel( sourceModel);
         destPeriodChooser.setModel( destModel);
-        label.setText(getString("copy_selected_events_from"));
+        label.setText(periodCopyI18n.getString("copy_selected_events_from"));
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.setLayout(new TableLayout(new double[][]{
                  {TableLayout.PREFERRED ,5 , TableLayout.FILL }
@@ -130,7 +132,7 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         panel.add( new JLabel(getString("destination")),"0,6" );
         panel.add( destPeriodChooser,"2,6" );
         panel.add( customDestPanel,"2,8" );
-        panel.add( new JLabel(getString("copy_single")),"0,10" );
+        panel.add( new JLabel(periodCopyI18n.getString("copy_single")),"0,10" );
         panel.add( singleChooser.getComponent(),"2,10" );
         singleChooser.setValue( Boolean.TRUE);
         panel.add( new JLabel(getString("reservations")) , "0,12,l,t");

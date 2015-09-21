@@ -20,8 +20,7 @@ public class UrlEncryptionServerPlugin implements PluginDescriptor<ServerService
 {
 	public void provideServices(ServerServiceContainer container, Configuration configuration) throws RaplaContextException
 	{
-		container.addRemoteMethodFactory(UrlEncryption.class,UrlEncryptionService.class, configuration);
-	    if(!configuration.getAttributeAsBoolean("enabled", UrlEncryptionPlugin.ENABLE_BY_DEFAULT))
+		if(!configuration.getAttributeAsBoolean("enabled", UrlEncryptionPlugin.ENABLE_BY_DEFAULT))
 		{
 			return;
 		}

@@ -173,18 +173,7 @@ public class CustomJettyStarter
 		}
         loader = Thread.currentThread().getContextClassLoader();
     	Class<?> LoadingProgressC= null;
-		final Object progressBar;
-	
-        if ( startupMode.equals("standalone" ) || startupMode.equals("client" ))
-		{
-			LoadingProgressC = loader.loadClass("org.rapla.bootstrap.LoadingProgress");
-			progressBar = LoadingProgressC.getMethod("getInstance").invoke(null);
-			LoadingProgressC.getMethod("start", int.class, int.class).invoke( progressBar, 1,4);
-		}
-        else
-        {
-        	progressBar = null;
-        }
+
 		final String contextPath = System.getProperty("org.rapla.context",null);
 		final String downloadUrl = System.getProperty("org.rapla.serverUrl",null);
 		final String[] jettyArgs = configFiles.split(",");
@@ -354,10 +343,6 @@ public class CustomJettyStarter
                 return null;
             }
         });
-        if ( progressBar != null && LoadingProgressC != null)
-        {
-        	LoadingProgressC.getMethod("close").invoke( progressBar);
-        }
         Throwable th = exception.get();
         if (th != null)
         {

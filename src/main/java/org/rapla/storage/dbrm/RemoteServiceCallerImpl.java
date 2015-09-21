@@ -1,22 +1,19 @@
 package org.rapla.storage.dbrm;
 
+import org.rapla.ConnectInfo;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.storage.dbrm.StatusUpdater.Status;
+
+import javax.inject.Inject;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.rapla.ConnectInfo;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.storage.dbrm.StatusUpdater.Status;
 
 public class RemoteServiceCallerImpl implements RemoteServiceCaller
 {
@@ -26,7 +23,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
     RaplaHTTPConnector connector;
     
     @Inject
-    public RemoteServiceCallerImpl(CommandScheduler commandQueue, Logger callLogger, RemoteConnectionInfo remoteConnectionInfo, @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n) {
+    public RemoteServiceCallerImpl(CommandScheduler commandQueue, Logger callLogger, RemoteConnectionInfo remoteConnectionInfo, RaplaResources i18n) {
         super();
         this.commandQueue = commandQueue;
         this.callLogger = callLogger;

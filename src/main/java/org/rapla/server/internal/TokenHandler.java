@@ -14,10 +14,12 @@ import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 
 @DefaultImplementation(of=TokenHandler.class,context = InjectionContext.server)
+@Singleton
 public class TokenHandler
 {
     SignedToken accessTokenSigner;

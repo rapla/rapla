@@ -24,6 +24,7 @@ import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.*;
 
 @DefaultImplementation(of = RemoteAuthentificationService.class, context = InjectionContext.server)

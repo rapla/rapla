@@ -7,56 +7,53 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-public class ICalConfigServiceImpl implements RemoteMethodFactory<ICalConfigService> {
+@DefaultImplementation(of =ICalConfigService.class,context = InjectionContext.server)
+public class ICalConfigServiceImpl implements ICalConfigService {
     final ClientFacade facade;
+    RemoteSession remoteSession;
     
-    public ICalConfigServiceImpl(ClientFacade facade)
+    public ICalConfigServiceImpl(ClientFacade facade, RemoteSession remoteSession)
     {
         this.facade = facade;
+        this.remoteSession = remoteSession;
     }
 
-    @Override public Class<ICalConfigService> getInterfaceClass()
-    {
-        return ICalConfigService.class;
+    public DefaultConfiguration getConfig() throws RaplaException {
+        User user = remoteSession.getUser();
+        if ( !user.isAdmin())
+        {
+            throw new RaplaSecurityException("Access only for admin users");
+        }
+        Preferences preferences = facade.getSystemPreferences();
+        DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
+        if ( config == null)
+        {
+            config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(Export2iCalPlugin.class.getName());
+        }
+        return config;
     }
 
-    @Override
-    public ICalConfigService createService(final RemoteSession remoteSession) throws RaplaContextException {
-        return new ICalConfigService() {
-            @SuppressWarnings("deprecation")
-            @Override
-            public DefaultConfiguration getConfig() throws RaplaException {
-                User user = remoteSession.getUser();
-                if ( !user.isAdmin())
-                {
-                    throw new RaplaSecurityException("Access only for admin users");
-                }
-                Preferences preferences = facade.getSystemPreferences();
-                DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
-                if ( config == null)
-                {
-                    config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(Export2iCalPlugin.class.getName());
-                }
-                return config;
-            }
-
-            public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
-                Preferences preferences = facade.getSystemPreferences();
-                DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
-                if ( config == null)
-                {
-                    config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(Export2iCalPlugin.class.getName());
-                }
-                return config;
-            }
-
-        };
+    public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
+        if ( !remoteSession.isAuthentified())
+        {
+            throw new RaplaSecurityException("user not authentified");
+        }
+        Preferences preferences = facade.getSystemPreferences();
+        DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
+        if ( config == null)
+        {
+            config = (DefaultConfiguration) ((PreferencesImpl)preferences).getOldPluginConfig(Export2iCalPlugin.class.getName());
+        }
+        return config;
     }
+
 
 }

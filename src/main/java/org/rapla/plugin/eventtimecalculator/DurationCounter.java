@@ -26,9 +26,12 @@ import org.rapla.plugin.tableview.internal.SummaryExtension;
 */
 public final class DurationCounter extends RaplaComponent implements SummaryExtension {
     EventTimeCalculatorFactory factory;
-    
-    public DurationCounter(RaplaContext context) throws RaplaException {
+    protected final EventTimeCalculatorResources i18n;
+
+
+    public DurationCounter(RaplaContext context,EventTimeCalculatorResources i18n) throws RaplaException {
         super(context);
+        this.i18n = i18n;
         factory = context.lookup(EventTimeCalculatorFactory.class);
     }
 
@@ -73,7 +76,6 @@ public final class DurationCounter extends RaplaComponent implements SummaryExte
                          totalduration+= duration;
                      }
                  }
-                 I18nBundle i18n = getService(EventTimeCalculatorPlugin.RESOURCE_FILE);
                  String durationString = totalduration < 0 ? i18n.getString("infinite") : eventTimeModel.format(totalduration);
                  counter.setText( i18n.getString("total_duration") + " " + durationString);
              }

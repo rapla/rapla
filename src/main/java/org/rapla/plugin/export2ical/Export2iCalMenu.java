@@ -26,10 +26,12 @@ public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMe
 	String id = "export_file_text";
 	JMenuItem item;
 	ICalExport exportService;
-	public Export2iCalMenu(RaplaContext sm,ICalExport exportService){
+	final Export2iCalResources i18nIcal;
+
+	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal){
 		super(sm);
 		this.exportService = exportService;
-		setChildBundleName(Export2iCalPlugin.RESOURCE_FILE);
+		this.i18nIcal = i18nIcal;
 		item = new JMenuItem(getString(id));
 		item.setIcon(getIcon("icon.export"));
 		item.addActionListener(this);
@@ -58,7 +60,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMe
 		    String result = exportService.export(appointmentIds);
 		    if ( result.trim().length() == 0)
 		    {
-		        JOptionPane.showMessageDialog(null, getString("no_dates_text"), "Export2iCal", JOptionPane.INFORMATION_MESSAGE);
+				String no_dates_text = i18nIcal.getString("no_dates_text");
+				JOptionPane.showMessageDialog(null, no_dates_text, "Export2iCal", JOptionPane.INFORMATION_MESSAGE);
 		    }
 		    else
 		    {

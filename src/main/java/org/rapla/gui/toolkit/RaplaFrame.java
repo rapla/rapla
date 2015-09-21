@@ -19,6 +19,7 @@ import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.util.ArrayList;
 
+import javax.inject.Inject;
 import javax.swing.JFrame;
 
 import org.rapla.framework.RaplaContext;
@@ -39,7 +40,8 @@ public class RaplaFrame extends JFrame
        a veto if necessary.
      * @throws RaplaException
     */
-    public RaplaFrame(RaplaContext sm) throws RaplaException {
+    @Inject
+    public RaplaFrame(FrameControllerList frameList) throws RaplaException {
         enableEvents(AWTEvent.WINDOW_EVENT_MASK);
         /*
         AWTAdapterFactory fact =
@@ -51,7 +53,7 @@ public class RaplaFrame extends JFrame
                     }
                 });
         }*/
-        frameList = sm.lookup(FrameControllerList.class);
+        this.frameList = frameList;
         frameList.add(this);
     }
 

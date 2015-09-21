@@ -109,8 +109,7 @@ public class RaplaClient extends ContainerImpl
             SimpleProvider<RemoteServiceCaller> simpleProvider = (SimpleProvider<RemoteServiceCaller>) caller;
             if ( simpleProvider.get() == null)
             {
-                String className = RemoteServiceCallerImpl.class.getName();
-                RemoteServiceCaller instanciate = (RemoteServiceCaller) instanciate(className, null, getLogger());
+                RemoteServiceCaller instanciate = inject(RemoteServiceCallerImpl.class);
                 simpleProvider.setValue(instanciate);
             }
         }

@@ -14,40 +14,40 @@ import org.rapla.entities.dynamictype.DynamicType;
 public interface ReservationView<W> extends View<Presenter> {
 
 	public interface Presenter {
-		void onSaveButtonClicked(Reservation reservation);
+		void onSaveButtonClicked();
 
-		void onDeleteButtonClicked(Reservation reservation);
+		void onDeleteButtonClicked();
 
-		boolean isDeleteButtonEnabled(Reservation reservation);
+		boolean isDeleteButtonEnabled();
 
-		void onCancelButtonClicked(Reservation reservation);
+		void onCancelButtonClicked();
 		
-		void changeAttribute(Reservation reservation, Attribute attribute, Object newValue);
+		void changeAttribute(Attribute attribute, Object newValue);
 
         Collection<DynamicType> getChangeableReservationDynamicTypes();
 
-        void changeClassification(Reservation reservation, DynamicType newDynamicType);
+        void changeClassification(DynamicType newDynamicType);
 
-        void newDateClicked(Reservation reservation);
+        void newDateClicked();
 
-        void deleteDateClicked(Reservation reservation);
+        void deleteDateClicked();
 
-        void selectAppointment(Reservation reservation, Appointment selectedAppointment);
+        void selectAppointment(Appointment selectedAppointment);
 
-        void timeChanged(Reservation reservation, Date startDate, Date endDate);
+        void timeChanged(Date startDate, Date endDate);
 
-        void allDayEvent(Reservation reservation, boolean selected);
+        void allDayEvent(boolean selected);
 
-        void repeating(Reservation reservation, RepeatingType repeating);
+        void repeating(RepeatingType repeating);
 
-        void convertAppointment(Reservation reservation);
+        void convertAppointment();
 	}
 
 	void show(Reservation event);
 
-	void hide(Reservation reservation);
+	void hide();
 
     void showWarning(String string, String string2);
 
-    void updateAppointments(Reservation reservation, Appointment[] allAppointments, Appointment newSelectedAppointment);
+    void updateAppointments(Appointment newSelectedAppointment);
 }

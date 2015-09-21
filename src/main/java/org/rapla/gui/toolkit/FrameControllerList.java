@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
@@ -32,6 +33,7 @@ import org.rapla.framework.logger.Logger;
    The FrameControllerList is responsible for positioning the windows
    and closing all open windows on exit.
 */
+@Singleton
 final public class FrameControllerList {
     private Stack<FrameController> openFrameController = new Stack<FrameController>();
     private Window mainWindow = null;

@@ -15,11 +15,13 @@ import org.rapla.framework.RaplaException;
 * Date: 22.08.12
 * Time: 09:30
 */
-public class DurationColumn extends RaplaComponent implements ModificationListener {
+public abstract class DurationColumn extends RaplaComponent implements ModificationListener {
 
-    public DurationColumn(RaplaContext context)
+    protected final EventTimeCalculatorResources i18n;
+    public DurationColumn(RaplaContext context, EventTimeCalculatorResources i18n)
     {
         super(context);
+        this.i18n = i18n;
         getUpdateModule().addModificationListener( this);
     }
 
@@ -31,7 +33,6 @@ public class DurationColumn extends RaplaComponent implements ModificationListen
 
 
     public String getColumnName() {
-        I18nBundle i18n = getService(EventTimeCalculatorPlugin.RESOURCE_FILE);
         return i18n.getString("duration");
     }
 

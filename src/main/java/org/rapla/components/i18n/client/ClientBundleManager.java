@@ -15,7 +15,10 @@ import org.rapla.storage.RemoteLocaleService;
 
 import com.google.inject.Inject;
 
+import javax.inject.Singleton;
+
 @DefaultImplementation(of=BundleManager.class,context= InjectionContext.gwt)
+@Singleton
 public class ClientBundleManager implements BundleManager
 {
     LocalePackage localePackage;

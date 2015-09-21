@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JTree;
@@ -77,12 +78,17 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.gui.MenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.toolkit.TreeToolTipRenderer;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
 
+@DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
+    @Inject
     public TreeFactoryImpl(RaplaContext sm) {
         super(sm);
     }

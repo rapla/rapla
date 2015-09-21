@@ -67,11 +67,7 @@ import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.internal.SwingPopupContext;
-import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.EmptyLineBorder;
-import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.gui.toolkit.RaplaFrame;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.gui.toolkit.*;
 
 final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
 {
@@ -153,7 +149,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
         */
 
-        frame = new RaplaFrame(sm);
+        frame = new RaplaFrame(sm.lookup(FrameControllerList.class));
         mainContent.setLayout( tableLayout );
         mainContent.add(reservationInfo.getComponent(),"0,0");
         mainContent.add(appointmentEdit.getComponent(),"0,1");

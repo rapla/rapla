@@ -10,9 +10,12 @@ import org.rapla.gui.PublishExtension;
 import org.rapla.gui.PublishExtensionFactory;
 import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
+
 @Extension(provides=PublishExtensionFactory.class,id="html")
 public class HTMLPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
 {
+	@Inject
 	public HTMLPublicExtensionFactory(RaplaContext context) {
 		super(context);
 	}

@@ -13,6 +13,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.Preferences;
@@ -42,7 +43,7 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
 
     @Inject
     public RaplaAuthRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, RemoteAuthentificationService remoteAuthentificationService,
-            @Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n) throws RaplaException
+            RaplaResources i18n) throws RaplaException
     {
         super(facade, serverContainer, logger, false);
         this.remoteAuthentificationService = remoteAuthentificationService;

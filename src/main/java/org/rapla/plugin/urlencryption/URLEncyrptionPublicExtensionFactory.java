@@ -1,5 +1,19 @@
 package org.rapla.plugin.urlencryption;
 
+import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.logger.Logger;
+import org.rapla.gui.PublishExtension;
+import org.rapla.gui.PublishExtensionFactory;
+import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.UnsupportedEncodingException;
@@ -7,53 +21,42 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.gui.PublishExtension;
-import org.rapla.gui.PublishExtensionFactory;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.inject.Extension;
-
 @Extension(provides=PublishExtensionFactory.class,id="urlencryption")
-public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
+public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFactory
 {
 
-    UrlEncryption webservice;
-	public URLEncyrptionPublicExtensionFactory(RaplaContext context, UrlEncryption webservice)
+    private final UrlEncryption webservice;
+	private final StartupEnvironment env;
+	private final UrlEncryptionResources i18n;
+	private final Logger logger;
+	private final ClientFacade facade;
+
+	@Inject
+	public URLEncyrptionPublicExtensionFactory( UrlEncryption webservice, StartupEnvironment env,UrlEncryptionResources i18n, Logger logger,ClientFacade facade)
     {
-		super(context);
 		this.webservice = webservice;
+		this.env = env;
+		this.i18n = i18n;
+		this.logger = logger;
+		this.facade = facade;
 	}
 
 	
 	public PublishExtension creatExtension(CalendarSelectionModel model, PropertyChangeListener refreshCallBack)
 			throws RaplaException {
-		return new EncryptionPublishExtension(getContext(), model, refreshCallBack);
+		return new EncryptionPublishExtension(model, refreshCallBack);
 	}
 	
 	
-	class EncryptionPublishExtension extends RaplaGUIComponent implements PublishExtension
+	class EncryptionPublishExtension  implements PublishExtension
 	{
 		JPanel panel = new JPanel();
 		CalendarSelectionModel model;
 		final JCheckBox encryptionCheck;
 		PropertyChangeListener refreshCallBack;
 		
-		public EncryptionPublishExtension(RaplaContext context, CalendarSelectionModel model, PropertyChangeListener refreshCallBack)  
+		public EncryptionPublishExtension( CalendarSelectionModel model, PropertyChangeListener refreshCallBack)
 		{
-			super(context);
 			this.refreshCallBack = refreshCallBack;
 			this.model = model;
 			panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
@@ -65,7 +68,6 @@ public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implemen
 		
 		   	encryptionCheck = new JCheckBox();
 
-			I18nBundle i18n = getService(UrlEncryptionPlugin.RESOURCE_FILE);
 			String encryption = i18n.getString("encryption");
 		    encryptionCheck.setSelected(encryptionEnabled);
 		    encryptionCheck.setText("URL " + encryption);
@@ -104,7 +106,6 @@ public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implemen
 			final URL codeBase;
 	        try 
 	        {
-	            StartupEnvironment env = getService( StartupEnvironment.class );
 	            codeBase = env.getDownloadURL();
 	        }
 	        catch (Exception ex)
@@ -116,7 +117,7 @@ public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implemen
 	        try 
 	        {
 	            // In case of enabled and activated URL encryption:
-	            String pageParameters = "page="+generator+"&user=" + getUser().getUsername();
+	            String pageParameters = "page="+generator+"&user=" + facade.getUser().getUsername();
 	            if ( filename != null)
 	            {
 	            	pageParameters = pageParameters + "&file=" + URLEncoder.encode( filename, "UTF-8" );
@@ -137,7 +138,7 @@ public class URLEncyrptionPublicExtensionFactory extends RaplaComponent implemen
 	        } 
 	        catch (RaplaException ex)
 	        {
-	        	getLogger().error(ex.getMessage(), ex);
+	        	logger.error(ex.getMessage(), ex);
 	        	return "Exportname is invalid ";
 	        } 
 	        catch (MalformedURLException e) 

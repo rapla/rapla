@@ -5,26 +5,39 @@ import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
+import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 import java.util.Date;
+import java.util.Locale;
 
 @Extension(provides = I18nBundle.class, id = RaplaResources.ID)
+@DefaultImplementation(of=RaplaResources.class, context = {InjectionContext.server, InjectionContext.swing})
+@Singleton
 public class RaplaResources extends AbstractBundle {
-    public static final String ID = "org.rapla.RaplaResources";
+    public static final String ID = "org.rapla";
+    public static final String BUNDLENAME = ID + ".RaplaResources";
+
     @Inject
-    public RaplaResources(BundleManager loader)
+    public RaplaResources(BundleManager bundleManager)
     {
-      super(ID, loader);
+      super(BUNDLENAME, bundleManager);
     }
-    public String getString(@PropertyKey(resourceBundle = ID) String key)
+    public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key)
     {
         return super.getString(key);
     }
 
-    public String format(@PropertyKey(resourceBundle = ID) String key, Object... obj)
+    public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key,Locale locale)
+    {
+        return super.getString(key, locale);
+    }
+
+    public String format(@PropertyKey(resourceBundle = BUNDLENAME) String key, Object... obj)
     {
         return super.format(key, obj);
     }

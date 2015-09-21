@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.internal;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.facade.CalendarModel;
@@ -24,6 +25,7 @@ import org.rapla.gui.images.RaplaImages;
 
 public class ReservationTableViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    @Inject
     public ReservationTableViewFactory( RaplaContext context ) 
     {
         super( context );

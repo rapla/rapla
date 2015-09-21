@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -25,6 +26,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of= ReservationController.class,context = InjectionContext.swing)
+@Singleton
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
     Container container;

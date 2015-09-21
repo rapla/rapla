@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.monthview;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.facade.CalendarModel;
@@ -24,6 +25,7 @@ import org.rapla.gui.images.RaplaImages;
 
 public class MonthViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    @Inject
     public MonthViewFactory( RaplaContext context ) 
     {
         super( context );

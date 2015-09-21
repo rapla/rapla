@@ -95,7 +95,7 @@ public class InfoView implements ReservationViewPart
                 public void valueChanged(String newValue)
                 {
                     DynamicType newDynamicType = idToDynamicType.get(newValue);
-                    getPresenter().changeClassification(reservation, newDynamicType);
+                    getPresenter().changeClassification(newDynamicType);
                 }
             }, values);
             final Column column = new Column(COLUMN_SIZE);
@@ -121,7 +121,7 @@ public class InfoView implements ReservationViewPart
                     @Override
                     public void valueChanged(Long newValue)
                     {
-                        getPresenter().changeAttribute(reservation, attribute, newValue);
+                        getPresenter().changeAttribute(attribute, newValue);
                     }
                 });
                 final Column column = new Column(COLUMN_SIZE);
@@ -136,7 +136,7 @@ public class InfoView implements ReservationViewPart
                     @Override
                     public void valueChanged(String newValue)
                     {
-                        getPresenter().changeAttribute(reservation, attribute, newValue);
+                        getPresenter().changeAttribute(attribute, newValue);
                     }
                 });
                 final Column column = new Column(COLUMN_SIZE);
@@ -151,7 +151,7 @@ public class InfoView implements ReservationViewPart
                     @Override
                     public void valueChanged(Date newValue)
                     {
-                        getPresenter().changeAttribute(reservation, attribute, newValue);
+                        getPresenter().changeAttribute(attribute, newValue);
                     }
                 }, bundleManager);
                 final Column column = new Column(COLUMN_SIZE);
@@ -166,7 +166,7 @@ public class InfoView implements ReservationViewPart
                     @Override
                     public void valueChanged(Boolean newValue)
                     {
-                        getPresenter().changeAttribute(reservation, attribute, newValue);
+                        getPresenter().changeAttribute(attribute, newValue);
                     }
                 });
                 final Column column = new Column(COLUMN_SIZE);
@@ -187,7 +187,7 @@ public class InfoView implements ReservationViewPart
                     public void valueChanged(String newValue)
                     {
                         final Category newCategory = idToCategory.get(newValue);
-                        getPresenter().changeAttribute(reservation, attribute, newCategory);
+                        getPresenter().changeAttribute(attribute, newCategory);
                     }
                 }, values, multipleSelectionPossible);
                 final Column column = new Column(COLUMN_SIZE);

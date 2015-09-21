@@ -12,7 +12,6 @@ import org.rapla.framework.TypedComponentRole;
 
 public class ImportFromICalPlugin implements PluginDescriptor<ClientServiceContainer>{
 
-	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(ImportFromICalPlugin.class.getPackage().getName() + ".ImportFromICalResources");
 
 	public static final boolean ENABLE_BY_DEFAULT = false;
 
@@ -27,10 +26,9 @@ public class ImportFromICalPlugin implements PluginDescriptor<ClientServiceConta
 		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
 			return;
 
-		container.addResourceFile(RESOURCE_FILE);
 	    if ( !isApplet )
         {
-        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.IMPORT_MENU_EXTENSION_POINT, ImportFrom2iCalMenu.class);
+        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.IMPORT_MENU_EXTENSION_POINT, ImportFromICalMenu.class);
         }
 	}
 

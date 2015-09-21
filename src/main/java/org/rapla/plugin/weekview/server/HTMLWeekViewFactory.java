@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.server;
 
+import org.rapla.RaplaResources;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -20,12 +21,16 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
+import javax.inject.Inject;
+
 @Extension(provides = HTMLViewFactory.class,id=HTMLWeekViewFactory.WEEK_VIEW)
-public class HTMLWeekViewFactory extends RaplaComponent implements HTMLViewFactory
+public class HTMLWeekViewFactory implements HTMLViewFactory
 {
-    public HTMLWeekViewFactory( RaplaContext context ) 
+    RaplaResources i18n;
+    @Inject
+    public HTMLWeekViewFactory( RaplaResources i18n )
     {
-        super( context );
+        this.i18n = i18n ;
     }
 
     public final static String WEEK_VIEW = "week";
@@ -42,7 +47,7 @@ public class HTMLWeekViewFactory extends RaplaComponent implements HTMLViewFacto
 
     public String getName()
     {
-        return getString(WEEK_VIEW);
+        return i18n.getString(WEEK_VIEW);
     }
 
 

@@ -29,6 +29,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
@@ -109,7 +110,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     protected boolean isConnected = false;
     final boolean includeIds= false;
     @Inject
-    public FileOperator( Logger logger,@Named(RaplaComponent.RaplaResourcesId) I18nBundle i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
+    public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
     {
         super(  logger, i18n, raplaLocale, scheduler );
         //StartupEnvironment env =  context.lookup( StartupEnvironment.class );

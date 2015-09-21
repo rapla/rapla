@@ -20,6 +20,7 @@ import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
 
+import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
@@ -60,14 +61,12 @@ import org.rapla.framework.logger.Logger;
  */
 public class RaplaComponent 
 {
-	public static final String RaplaResourcesId = RaplaResources.ID;
-    public static final TypedComponentRole<I18nBundle> RAPLA_RESOURCES = new TypedComponentRole<I18nBundle>(RaplaResourcesId);
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
 	//private final ClientServiceManager serviceManager;
     private TypedComponentRole<I18nBundle> childBundleName;
     private Logger logger;
     RaplaLocale raplaLocale;
-    I18nBundle i18n;
+    RaplaResources i18n;
     ClientFacade facade;
     private RaplaContext context;
     
@@ -84,11 +83,11 @@ public class RaplaComponent
         }
         try
         {
-            this.i18n =context.lookup(RaplaComponent.RAPLA_RESOURCES);
+            this.i18n =context.lookup(RaplaResources.class);
         }
         catch (RaplaContextException ex)
         {
-            serviceExcption(RaplaComponent.RAPLA_RESOURCES, ex);
+            serviceExcption(RaplaResources.class.getName(), ex);
         }
         try
         {
@@ -107,7 +106,7 @@ public class RaplaComponent
         }
     }
     
-    public RaplaComponent(ClientFacade facade, I18nBundle i18n, RaplaLocale raplaLocale, Logger logger) {
+    public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
 //        try {
 //            logger = context.lookup(Logger.class );
 //        } catch (RaplaContextException e) {
@@ -129,14 +128,6 @@ public class RaplaComponent
     	this.logger = logger;
 	}
 
-
-    final public TypedComponentRole<I18nBundle> getChildBundleName() {
-        return childBundleName;
-    }
-
-    final public void setChildBundleName(TypedComponentRole<I18nBundle> childBundleName) {
-        this.childBundleName =  childBundleName;
-    }
 
     @Deprecated
     final protected Container getContainer() throws RaplaContextException {
@@ -739,7 +730,7 @@ public class RaplaComponent
     }
     
     @Deprecated
-    protected RaplaContext getContext() {
+    public RaplaContext getContext() {
         return context;
     }
 
@@ -752,21 +743,12 @@ public class RaplaComponent
     }
 
 
-    protected Locale getLocale() {
+    public Locale getLocale() {
         return getRaplaLocale().getLocale();
     }
 
-    protected I18nBundle childBundle;
     /** lookup I18nBundle from the serviceManager */
-    protected I18nBundle getI18n() {
-    	TypedComponentRole<I18nBundle> childBundleName = getChildBundleName();
-        if ( childBundleName != null) {
-            if ( childBundle == null) {
-                I18nBundle pluginI18n = getService(childBundleName );
-                childBundle = new CompoundI18n(pluginI18n,i18n);
-            }
-            return childBundle;
-        }
+    protected RaplaResources getI18n() {
         return i18n;
     }
 
@@ -830,15 +812,10 @@ public class RaplaComponent
     }
 
     /** calls getI18n().getString(key) */
-    final public String getString(String key) {
+    final public String getString(@PropertyKey(resourceBundle = RaplaResources.BUNDLENAME)String key) {
         return getI18n().getString(key);
     }
 
-
-    /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
-    final public String getStringAsHTML(String key) {
-        return "<html>" + getI18n().getString(key) + "</html>";
-    }
 
     private static class ClientServiceManager  {
         I18nBundle i18n;

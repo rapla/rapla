@@ -35,7 +35,7 @@ public class SunBugsTest extends TestCase {
     /** this is not bug, but a undocumented feature. The exception should be thrown 
      *  in calendar.roll(Calendar.MONTH, 1)
     public void testCalendarBug1_5_0() {
-        Calendar calendar =  Calendar.getInstance(TimeZone.getTimeZone("GMT+0"), Locale.GERMANY);
+        Calendar calendar =  Calendar.inject(TimeZone.getTimeZone("GMT+0"), Locale.GERMANY);
         calendar.setLenient( false );
         calendar.setTime( new Date());
 
