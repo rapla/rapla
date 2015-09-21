@@ -157,7 +157,6 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         model.setSelectedDate(nextDate);
         view.updateDate(nextDate);
-        updateView();
     }
 
     public void updatePlace()
