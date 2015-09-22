@@ -103,7 +103,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 //        else
 //        {
 //	        try {
-//	        	lookup  = ContextTools.resolveContextObject(datasourceName, context );
+//	        	lookupDeprecated  = ContextTools.resolveContextObject(datasourceName, context );
 //	        } catch (RaplaContextException ex) {
 //	        	throw new RaplaDBException("Datasource " + datasourceName + " not found"); 
 //	        }
@@ -139,16 +139,16 @@ public class DBOperator extends LocalAbstractCachableOperator
     private Connection createConnection(final boolean withTransactionSupport, final int count) throws RaplaException {
     	Connection connection = null;
         try {
-        	 //datasource lookup 
+        	 //datasource lookupDeprecated
         	Object source = lookup;
-//        	if ( lookup instanceof String)
+//        	if ( lookupDeprecated instanceof String)
 //        	{
 //        		InitialContext ctx = new InitialContext();
-//        		source  = ctx.lookup("java:comp/env/"+ lookup);
+//        		source  = ctx.lookupDeprecated("java:comp/env/"+ lookupDeprecated);
 //        	}
 //        	else
 //        	{
-//        		source = lookup;
+//        		source = lookupDeprecated;
 //        	}
         	
     		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();

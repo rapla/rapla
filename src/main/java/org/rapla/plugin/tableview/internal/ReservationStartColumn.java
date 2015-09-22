@@ -2,17 +2,21 @@ package org.rapla.plugin.tableview.internal;
 
 import java.util.Date;
 
+import javax.inject.Inject;
 import javax.swing.table.TableColumn;
 
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.tableview.DateCellRenderer;
-import org.rapla.plugin.tableview.ReservationTableColumn;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
+import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 
+@Extension(provides = ReservationTableColumn.class, id = "start")
 public class ReservationStartColumn extends RaplaComponent implements ReservationTableColumn {
-		
+
+	@Inject
 	public ReservationStartColumn(RaplaContext context) {
 		super(context);
 	}

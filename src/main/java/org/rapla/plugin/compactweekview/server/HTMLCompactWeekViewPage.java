@@ -20,26 +20,38 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 
-public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage
+import javax.inject.Inject;
+
+@Extension(provides = HTMLViewPage.class,id= CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
+public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements  HTMLViewPage
 {
-
-    public HTMLCompactWeekViewPage( RaplaContext context, CalendarModel calendarModel) 
+    @Inject
+    public HTMLCompactWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+            AppointmentFormater appointmentFormater)
     {
-        super( context,  calendarModel);
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     protected AbstractHTMLView createCalendarView() {
@@ -47,7 +59,7 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage
         {
         	@Override
         	public void rebuild(Builder b) {
-        		 String weeknumberString = MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate());
+        		 String weeknumberString = MessageFormat.format(getI18n().getString("calendarweek.abbreviation"), getStartDate());
         		 setWeeknumber(weeknumberString);
         		 super.rebuild(b);
         	}

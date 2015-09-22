@@ -1,27 +1,20 @@
 package org.rapla.plugin.autoexport.server;
 
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.framework.RaplaContext;
-import org.rapla.plugin.autoexport.AutoExportPlugin;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportResources;
+import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 
+import javax.inject.Inject;
+
+@Extension(provides = HtmlMainMenu.class,id="exportedcalendars")
 public class ExportMenuEntry extends DefaultHTMLMenuEntry
 {
-	private final AutoExportResources i18n;
-	public ExportMenuEntry(RaplaContext context, AutoExportResources i18n) {
+	@Inject
+	public ExportMenuEntry(AutoExportResources i18n) {
         
-		super(context);
-		this.i18n = i18n;
-	}
-	
-	@Override
-	public String getName() {
-		return i18n.getString( "calendar_list");
-	}
-	@Override
-	public String getLinkName() {
-		return "rapla?page=calendarlist";
+		super(i18n.getString( "calendar_list"),"rapla?page=calendarlist");
+
 	}
 	
 }

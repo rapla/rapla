@@ -82,7 +82,7 @@ public class RaplaGUIComponent extends RaplaComponent
         super(context);
     }
 
-    /** lookup FrameControllerList from the context */
+    /** lookupDeprecated FrameControllerList from the context */
     final protected FrameControllerList getFrameList() {
         return getService(FrameControllerList.class);
     }
@@ -222,7 +222,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return cal;
     }
 
-    /** lookup DateRenderer from the serviceManager */
+    /** lookupDeprecated DateRenderer from the serviceManager */
     final protected DateRenderer getDateRenderer() {
         return  getService(DateRenderer.class);
     }

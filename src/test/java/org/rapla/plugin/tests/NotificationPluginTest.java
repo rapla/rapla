@@ -50,11 +50,11 @@ public class NotificationPluginTest extends ServletTestBase
     {
         super.setUp();
         // start the server
-        ServerServiceContainer raplaServerContainer =  getContainer().lookup( ServerServiceContainer.class, getStorageName() );
+        ServerServiceContainer raplaServerContainer =  getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
         raplaServer = raplaServerContainer.getContext().lookup( ServerService.class );
 
         // start the client service
-        facade1 = getContainer().lookup( ClientFacade.class , "remote-facade" );
+        facade1 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         facade1.login( "homer", "duffs".toCharArray() );
         locale = Locale.getDefault();
     }

@@ -33,7 +33,7 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.plugin.weekview.WeekViewFactory;
+import org.rapla.plugin.weekview.WeekviewPlugin;
 
 public class ClassificationFilterTest extends RaplaTestCase {
     ModificationModule modificationMod;
@@ -86,7 +86,7 @@ public class ClassificationFilterTest extends RaplaTestCase {
         ClassificationFilter[] filter = new ClassificationFilter[] {classificationFilter};
 
         CalendarSelectionModel calendar = modificationMod.newCalendarModel(getFacade().getUser() );
-        calendar.setViewId( WeekViewFactory.WEEK_VIEW);
+        calendar.setViewId( WeekviewPlugin.WEEK_VIEW);
         calendar.setSelectedObjects( Collections.emptyList());
         calendar.setSelectedDate( queryMod.today());
         calendar.setReservationFilter( filter);

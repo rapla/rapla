@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.deploy.util.SessionState;
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
@@ -36,38 +37,53 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
-public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements RaplaPageGenerator
+public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 {
     protected AbstractHTMLView view;
     protected String calendarviewHTML;
     protected CalendarModel model = null;
     RaplaBuilder builder;
-    protected RaplaResources raplaResources;
+    final protected RaplaResources raplaResources;
+    final protected RaplaLocale raplaLocale;
+    final protected ClientFacade facade;
+    final protected Logger logger;
+    final protected AppointmentFormater appointmentFormater;
 
-    public AbstractHTMLCalendarPage(RaplaContext context, CalendarModel calendarModel) {
-        super( context);
-        raplaResources = getService(RaplaResources.class);
-        this.model = calendarModel.clone();
+    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
+        this.raplaResources = raplaResources;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
+        this.facade = facade;
+        this.appointmentFormater = appointmentFormater;
     }
 
-    @Override
+    protected RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
+    }
+
+
     public RaplaResources getI18n()
     {
         return raplaResources;
     }
 
     protected RaplaBuilder createBuilder() throws RaplaException {
-        RaplaBuilder builder = new HTMLRaplaBuilder( getContext());
+        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
 		builder.setFromModel( model, startDate, endDate  );
@@ -82,7 +98,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 	 {
 	        Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
 	    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>( Arrays.asList( selectedAllocatables));
-	        Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>( getLocale() ));
+	        Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>( raplaLocale.getLocale() ));
 	        return sortedAllocatables;
 	 }
     
@@ -91,9 +107,9 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
     }
 
     public String getDateChooserHTML( Date date) {
-        Calendar calendar = getRaplaLocale().createCalendar();
+        Calendar calendar = raplaLocale.createCalendar();
         calendar.setTime( date );
-        return HTMLDateComponents.getDateSelection( "", calendar,getLocale());
+        return HTMLDateComponents.getDateSelection("", calendar, raplaLocale.getLocale());
     }
 
     public Date getStartDate() {
@@ -109,19 +125,19 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
     }
 
     public int getDay( Date date) {
-        Calendar calendarview = getRaplaLocale().createCalendar();
+        Calendar calendarview = raplaLocale.createCalendar();
         calendarview.setTime( date);
-        return calendarview.get( Calendar.DATE);
+        return calendarview.get(Calendar.DATE);
     }
 
     public int getMonth( Date date) {
-        Calendar calendarview = getRaplaLocale().createCalendar();
+        Calendar calendarview = raplaLocale.createCalendar();
         calendarview.setTime( date);
         return calendarview.get( Calendar.MONTH) + 1;
     }
 
     public int getYear( Date date) {
-        Calendar calendarview = getRaplaLocale().createCalendar();
+        Calendar calendarview = raplaLocale.createCalendar();
         calendarview.setTime( date);
         return calendarview.get( Calendar.YEAR);
     }
@@ -137,16 +153,18 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
         }
         return 1;
     }
-    
-    public void generatePage( ServletContext context,HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+
+    @Override
+    public void generatePage( ServletContext context,HttpServletRequest request, HttpServletResponse response,CalendarModel calendarModel) throws ServletException, IOException
     {
-        response.setContentType("text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
+        this.model = calendarModel.clone();
+        response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
         java.io.PrintWriter out = response.getWriter();
 
-        Calendar calendarview = getRaplaLocale().createCalendar();
+        Calendar calendarview = raplaLocale.createCalendar();
         calendarview.setTime( model.getSelectedDate() );
         if ( request.getParameter("today") != null ) {
-            Date today = getQuery().today();
+            Date today = facade.today();
 			calendarview.setTime( today );
         } else if ( request.getParameter("day") != null ) {
             String dateString = Tools.createXssSafeString(request.getParameter("year") + "-"
@@ -154,7 +172,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
                                + request.getParameter("day"));
             
             try {
-                SerializableDateTimeFormat format = getRaplaLocale().getSerializableFormat();
+                SerializableDateTimeFormat format = raplaLocale.getSerializableFormat();
                 calendarview.setTime( format.parseDate( dateString, false ) );
             } catch (ParseDateException ex) {
                 out.close();
@@ -173,10 +191,10 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
         try {
         	configureView();
         } catch (RaplaException ex) {
-            getLogger().error("Can't configure view ", ex);
+            logger.error("Can't configure view ", ex);
             throw new ServletException( ex );
         }
-        view.setLocale( getRaplaLocale() );
+        view.setLocale( raplaLocale );
         view.setToDate(model.getSelectedDate());
         model.setStartDate( view.getStartDate() );
         model.setEndDate( view.getEndDate() );
@@ -184,7 +202,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
         try {
             builder = createBuilder();
         } catch (RaplaException ex) {
-            getLogger().error("Can't create builder ", ex);
+            logger.error("Can't create builder ", ex);
             out.close();
             throw new ServletException( ex );
         }
@@ -201,7 +219,6 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
         boolean navigationVisible = isNavigationVisible( request );
         String linkPrefix = request.getPathTranslated() != null ? "../": "";
 		        
-        RaplaLocale raplaLocale= getRaplaLocale();
         calendarviewHTML = view.getHtml();
         out.println("<!DOCTYPE html>"); // we have HTML5 
 		out.println("<html>");
@@ -218,7 +235,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 		{
             try {
                 Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
-                printAllocatableList(request, out, getLocale(), selectedAllocatables);
+                printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables);
             } catch (RaplaException e) {
                 throw new ServletException(e);
             }
@@ -256,11 +273,11 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 				out.println("<span class=\"spacer\">&nbsp;</span> ");
 				out.println(getDateChooserHTML(currentDate.getTime()));
 				// add the "goto" button including the css class="super button"
-				out.println("<span class=\"button\"><input type=\"submit\" name=\"goto\" value=\"" + getString("goto_date") + "\"/></span>");
+				out.println("<span class=\"button\"><input type=\"submit\" name=\"goto\" value=\"" + getI18n().getString("goto_date") + "\"/></span>");
 				out.println("<span class=\"spacer\">&nbsp;</span>");
 				out.println("<span class=\"spacer\">&nbsp;</span>");
 				// add the "today" button including the css class="super button"
-				out.println("<span class=\"button\"><input type=\"submit\" name=\"today\" value=\"" + getString("today") + "\"/></span>");
+				out.println("<span class=\"button\"><input type=\"submit\" name=\"today\" value=\"" + getI18n().getString("today") + "\"/></span>");
 				out.println("<span class=\"spacer\">&nbsp;</span>");
 				// add the "next" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"next\" value=\"&gt;&gt;\"/></span>");
@@ -390,7 +407,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
 
     public CalendarOptions getCalendarOptions() {
        User user = model.getUser();
-       return getCalendarOptions(user);
+       return RaplaComponent.getCalendarOptions(user, facade);
     }
 
 }

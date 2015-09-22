@@ -9,14 +9,18 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.QueryModule;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
@@ -33,48 +37,48 @@ import org.rapla.storage.RaplaSecurityException;
  * @author Jonas Kohlbrenner
  */
 @DefaultImplementation(of=UrlEncryption.class,context = InjectionContext.server)
-public class UrlEncryptionService extends RaplaComponent implements UrlEncryption {
+public class UrlEncryptionService implements UrlEncryption {
     @Deprecated
 	private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<String>("org.rapla.plugin.urlencryption.urlEncKey");
     @Deprecated
     private static String KEY_ATTRIBUTE_NAME = "urlEncKey";
-    String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
+    private final String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
     private byte[] encryptionKey;
 
     private Cipher encryptionCipher;
     private Cipher decryptionCipher;
 
     private Base64 base64;
+    private final Logger logger;
 
     /**
      * Initializes the Url encryption plugin.
      * Checks whether an encryption key exists or not, reads an existing one from the configuration file
      * or generates a new one. The decryption and encryption ciphers are also initialized here.
      *
-     * @param context
-     * @param config
      * @throws RaplaException
      */
-    public UrlEncryptionService(RaplaContext context, Configuration config) throws RaplaException, InvalidKeyException {
-        super(context);
+    @Inject
+    public UrlEncryptionService(ClientFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException, InvalidKeyException {
+        this.logger = logger;
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
 
         // Try to read the encryption key from the plugin configuration file.
-    	Preferences preferences = getQuery().getSystemPreferences();
+    	Preferences preferences =facade.getSystemPreferences();
 
     	// first we try the old key entry
 		String keyEntry = preferences.getEntryAsString(KEY_PREFERENCE_ENTRY, null);
 		boolean testingOldConfig = ( keyEntry == null);
 		if ( testingOldConfig)
 		{
-			keyEntry = config.getAttribute(UrlEncryptionService.KEY_ATTRIBUTE_NAME, null);
+            //FIXME does not work with 1.7 configurations
+			//keyEntry = config.getAttribute(UrlEncryptionService.KEY_ATTRIBUTE_NAME, null);
 			
 		}
 		// now use the system private key 
 		if ( keyEntry == null)
 		{
-		    RaplaKeyStorage keyStore = getContext().lookup(RaplaKeyStorage.class);
 		    keyEntry = keyStore.getRootKeyBase64();
 		}
 
@@ -114,10 +118,10 @@ public class UrlEncryptionService extends RaplaComponent implements UrlEncryptio
             this.decryptionCipher.init(Cipher.DECRYPT_MODE, specKey);
         } catch (NoSuchAlgorithmException e) {
             // AES Algorithm does not exist here
-            getLogger().error("AES Algorithm does not exist here");
+            logger.error("AES Algorithm does not exist here");
         } catch (NoSuchPaddingException e) {
             // AES/ECB/PKCS5 Padding missing
-        	getLogger().error("AES/ECB/PKCS5 Padding missing");
+        	logger.error("AES/ECB/PKCS5 Padding missing");
         }
     }
 

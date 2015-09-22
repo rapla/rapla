@@ -4,6 +4,7 @@
 package org.rapla.server.servletpages;
 
 import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -14,7 +15,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaapplet")
-public class RaplaAppletPageGenerator implements RaplaPageExtension {
+public class RaplaAppletPageGenerator implements RaplaPageExtension
+{
 
     private String getLibsApplet(ServletContext context) throws java.io.IOException {
         StringBuffer buf = new StringBuffer();

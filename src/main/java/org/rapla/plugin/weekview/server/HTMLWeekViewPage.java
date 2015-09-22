@@ -18,23 +18,34 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+
+@Extension(provides = HTMLViewPage.class,id= WeekviewPlugin.WEEK_VIEW)
 public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 {
-
-    public HTMLWeekViewPage( RaplaContext context, CalendarModel calendarModel ) 
+    @Inject
+    public HTMLWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
-        super( context,  calendarModel );
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     protected AbstractHTMLView createCalendarView() {
@@ -77,7 +88,7 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
     protected RaplaBuilder createBuilder() throws RaplaException {
         RaplaBuilder builder = super.createBuilder();
 
-        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
+        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( raplaLocale.getLocale() );
         boolean compactColumns = getCalendarOptions().isCompactColumns() ||  builder.getAllocatables().size() ==0 ;
         strategy.setFixedSlotsEnabled( !compactColumns);
         strategy.setResolveConflictsEnabled( true );

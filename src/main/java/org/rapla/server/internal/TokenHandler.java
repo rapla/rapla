@@ -52,10 +52,12 @@ public class TokenHandler
         return getUserWithToken(tokenString, accessTokenSigner);
     }
 
+    /*
     public User getUserWithRefreshToken(String tokenString) throws RaplaException
     {
         return getUserWithToken(tokenString, refreshTokenSigner);
     }
+    */
 
     private User getUserWithToken(String tokenString, SignedToken tokenSigner) throws RaplaException
     {

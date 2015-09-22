@@ -17,11 +17,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.inject.Named;
 
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
@@ -30,13 +32,14 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.abstractcalendar.server.HTMLViewFactory;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.server.RaplaServerExtensionPoints;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
 
@@ -55,19 +58,22 @@ import org.rapla.server.servletpages.RaplaPageGenerator;
  * &year=<year>:  int-value of the year
  * &today:  will set the view to the current day. Ignores day, month and year
  */
-@Extension(provides = RaplaPageGenerator.class,id="calendar")
-public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGenerator
+@Extension(provides = RaplaPageExtension.class,id=AutoExportPlugin.CALENDAR_GENERATOR)
+@Singleton
+public class CalendarPageGenerator  implements RaplaPageGenerator
 {
-	 private Map<String,HTMLViewFactory> factoryMap = new HashMap<String, HTMLViewFactory>();
+	 final private Map<String,Provider<HTMLViewPage>> factoryMap;
+     ClientFacade facade;
+     Logger logger;
+    RaplaLocale raplaLocale;
 
-	 public CalendarPageGenerator(RaplaContext context) throws  RaplaContextException
+     @Inject
+	 public CalendarPageGenerator(Map<String,Provider<HTMLViewPage>> extensionMap,ClientFacade facade, Logger logger,RaplaLocale raplaLocale) throws  RaplaContextException
 	 {
-		 super(context);
-		 for (HTMLViewFactory fact: getContainer().lookupServicesFor(RaplaServerExtensionPoints.HTML_CALENDAR_VIEW_EXTENSION))
-		 {
-			 String id = fact.getViewId();
-			 factoryMap.put( id , fact);
-		 }
+         this.facade = facade;
+         this.logger = logger;
+         this.raplaLocale = raplaLocale;
+         this.factoryMap = extensionMap;
 	 }
 
     public void generatePage( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response )
@@ -81,18 +87,18 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
             User user;
             try
             {
-            	user = getQuery().getUser( username );
+            	user = facade.getUser( username );
             }
             catch (EntityNotFoundException ex)
             {
               	String message = "404 Calendar not availabe  " + username +"/" + filename ;
              	write404(response, message);
-              	getLogger().getChildLogger("html.404").warn("404 User not found "+ username);
+              	logger.getChildLogger("html.404").warn("404 User not found "+ username);
     			return;
             }
             try
             {
-                model = getModification().newCalendarModel( user );
+                model = facade.newCalendarModel(user);
             	model.load(filename);
             } 
             catch (CalendarNotFoundExeption ex)
@@ -101,7 +107,7 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
     			write404(response, message);
             	return;            	
             }
-            String allocatableId = request.getParameter( "allocatable_id" );
+            String allocatableId = request.getParameter("allocatable_id");
             if ( allocatableId != null)
             {
             	Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
@@ -135,16 +141,16 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
             }
             
             final String viewId = model.getViewId();
-            HTMLViewFactory factory = getFactory(viewId);
+            final Provider<HTMLViewPage> htmlViewPageProvider = factoryMap.get(viewId);
 
-            if ( factory != null )
+            if ( htmlViewPageProvider != null )
             {
-                RaplaPageGenerator currentView = factory.createHTMLView( getContext(), model );
+                HTMLViewPage currentView = htmlViewPageProvider.get();
                 if ( currentView != null )
                 {
                     try
                     {
-                    	currentView.generatePage( servletContext, request, response );
+                    	currentView.generatePage( servletContext, request, response, model);
                     }
                     catch ( ServletException ex)
                     {
@@ -183,13 +189,10 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
        
     }
 
-	protected HTMLViewFactory getFactory(final String viewId) {
-		return factoryMap.get( viewId );
-	}
 
 	private void writeStacktrace(HttpServletResponse response, Exception ex)
 			throws IOException {
-        String charsetNonUtf = getRaplaLocale().getCharsetNonUtf();
+        String charsetNonUtf = raplaLocale.getCharsetNonUtf();
         response.setContentType( "text/html; charset=" + charsetNonUtf);
 		java.io.PrintWriter out = response.getWriter();
 		out.println( IOUtil.getStackTraceAsString( ex ) );
@@ -199,14 +202,14 @@ public class CalendarPageGenerator extends RaplaComponent implements RaplaPageGe
     protected void write404(HttpServletResponse response, String message) throws IOException {
     	response.setStatus( 404 );
         response.getWriter().print(message);
-        getLogger().getChildLogger("html.404").warn( message);
+        logger.getChildLogger("html.404").warn( message);
         response.getWriter().close();
     }
 
     private void writeError( HttpServletResponse response, String message ) throws IOException
     {
     	response.setStatus( 500 );
-    	response.setContentType( "text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
+    	response.setContentType( "text/html; charset=" + raplaLocale.getCharsetNonUtf() );
         java.io.PrintWriter out = response.getWriter();
         out.println( message );
         out.close();

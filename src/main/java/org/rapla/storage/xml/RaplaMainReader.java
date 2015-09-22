@@ -162,7 +162,7 @@ public class RaplaMainReader extends RaplaXMLReader
             return;
         }
 
-        // lookup delegation-handler for the localName
+        // lookupDeprecated delegation-handler for the localName
         DelegationHandler handler = localnameTable.get( localName );
         // Ignore unknown elements
           if (handler != null)

@@ -48,8 +48,8 @@ import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.plugin.tableview.internal.AppointmentTableViewFactory;
-import org.rapla.plugin.tableview.internal.ReservationTableViewFactory;
+import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
+import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 import org.rapla.storage.UpdateResult;
 
 public class SavedCalendarView extends RaplaGUIComponent implements ActionListener {

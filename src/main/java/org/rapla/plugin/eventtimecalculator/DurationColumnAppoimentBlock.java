@@ -3,7 +3,7 @@ package org.rapla.plugin.eventtimecalculator;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.tableview.AppointmentTableColumn;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
 import javax.inject.Inject;
 

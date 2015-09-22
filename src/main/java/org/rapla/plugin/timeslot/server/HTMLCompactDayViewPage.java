@@ -18,34 +18,46 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.timeslot.Timeslot;
+import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 
+@Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 {
+	private final TimeslotProvider timeslotProvider;
+	@Inject
+	public HTMLCompactDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+			AppointmentFormater appointmentFormater, TimeslotProvider timeslotProvider)
+	{
+		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+		this.timeslotProvider = timeslotProvider;
+	}
 
-    public HTMLCompactDayViewPage( RaplaContext context, CalendarModel calendarModel) 
-    {
-        super( context,  calendarModel);
-    }
-    
-    protected AbstractHTMLView createCalendarView() {
+	protected AbstractHTMLView createCalendarView() {
         HTMLCompactWeekView weekView = new HTMLCompactWeekView()
         {
         	protected List<String> getHeaderNames()
@@ -56,7 +68,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 		        		 List<Allocatable> sortedAllocatables = getSortedAllocatables();
 		        		 for (Allocatable alloc: sortedAllocatables)
 		        		 {
-		        			 headerNames.add( alloc.getName( getLocale()));
+		        			 headerNames.add( alloc.getName( getRaplaLocale().getLocale()));
 		        		 }
 	       		}
 	       		catch (RaplaException ex)
@@ -98,7 +110,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 
     protected RaplaBuilder createBuilder() throws RaplaException 
     {
-    	List<Timeslot> timeslots = getService(TimeslotProvider.class).getTimeslots();
+    	final List<Timeslot> timeslots = timeslotProvider.getTimeslots();
     	List<Integer> startTimes = new ArrayList<Integer>();
     	for (Timeslot slot:timeslots) {
     		 startTimes.add( slot.getMinuteOfDay());

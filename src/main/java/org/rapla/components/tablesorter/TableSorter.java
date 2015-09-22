@@ -393,7 +393,7 @@ public class TableSorter extends AbstractTableModel {
             // a) all the changes are on one row (e.getFirstRow() == e.getLastRow()) and,
             // b) all the changes are in one column (column != TableModelEvent.ALL_COLUMNS) and,
             // c) we are not sorting on that column (getSortingStatus(column) == NOT_SORTED) and,
-            // d) a reverse lookup will not trigger a sort (modelToView != null)
+            // d) a reverse lookupDeprecated will not trigger a sort (modelToView != null)
             //
             // Note: INSERT and DELETE events fail this test as they have column == ALL_COLUMNS.
             //

@@ -262,7 +262,7 @@ public class MainServlet extends HttpServlet {
         }
     }
 
-    //serverVersion = raplaContainer.getContext().lookup(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");
+    //serverVersion = raplaContainer.getContext().lookupDeprecated(RaplaComponent.RAPLA_RESOURCES).getString("rapla.version");
 //  private boolean isClientVersionSupported(String clientVersion) {
 //		// add/remove supported client versions here 
 //		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ; 

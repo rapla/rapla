@@ -1,5 +1,6 @@
 package org.rapla.plugin.eventtimecalculator;
 
+import javax.inject.Inject;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -9,26 +10,32 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
 
 import org.rapla.components.tablesorter.TableSorter;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.tableview.internal.AppointmentTableModel;
-import org.rapla.plugin.tableview.internal.ReservationTableModel;
-import org.rapla.plugin.tableview.internal.SummaryExtension;
-
-/**
-* User: kuestermann
-* Date: 22.08.12
-* Time: 09:29
+import org.rapla.inject.Extension;
+import org.rapla.inject.ExtensionRepeatable;
+import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
+import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
+import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
+/*
+@ExtensionRepeatable({
+    @Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID),
+    @Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
+})
 */
-public final class DurationCounter extends RaplaComponent implements SummaryExtension {
+public final class DurationCounter extends RaplaComponent implements ReservationSummaryExtension, AppointmentSummaryExtension
+{
     EventTimeCalculatorFactory factory;
     protected final EventTimeCalculatorResources i18n;
 
 
+    @Inject
     public DurationCounter(RaplaContext context,EventTimeCalculatorResources i18n) throws RaplaException {
         super(context);
         this.i18n = i18n;

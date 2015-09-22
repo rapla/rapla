@@ -29,7 +29,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
 @Extension(provides = RaplaPageExtension.class,id="resources")

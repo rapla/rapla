@@ -28,7 +28,6 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
@@ -41,14 +40,8 @@ import org.rapla.gui.*;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.*;
 import org.rapla.gui.internal.common.InternMenus;
-import org.rapla.gui.internal.common.RaplaClipboard;
-import org.rapla.gui.internal.common.RaplaSwingClipboard;
-import org.rapla.gui.internal.edit.EditControllerImpl;
 import org.rapla.gui.internal.edit.annotation.*;
-import org.rapla.gui.internal.edit.reservation.*;
-import org.rapla.gui.internal.view.InfoFactoryImpl;
 import org.rapla.gui.internal.view.LicenseInfoUI;
-import org.rapla.gui.internal.view.TreeFactoryImpl;
 import org.rapla.gui.toolkit.*;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -63,7 +56,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 
 /** Implementation of the ClientService.
@@ -152,29 +144,29 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     	addContainerProvidedComponentInstance(ClientServiceContainer.class, this);
     	
     	addContainerProvidedComponent(WELCOME_FIELD, LicenseInfoUI.class);
-        addContainerProvidedComponent( RaplaImages.class, RaplaImages.class  );
-        addContainerProvidedComponent( FrameControllerList.class, FrameControllerList.class  );
-        addContainerProvidedComponent( MAIN_COMPONENT, RaplaFrame.class);
+        addContainerProvidedComponent(RaplaImages.class, RaplaImages.class);
+        addContainerProvidedComponent(FrameControllerList.class, FrameControllerList.class);
+        addContainerProvidedComponent(MAIN_COMPONENT, RaplaFrame.class);
 
-        addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION ,UserOption.class);
-        addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , CalendarOption.class);
-        addContainerProvidedComponent( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION , WarningsOption.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, UserOption.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, CalendarOption.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, WarningsOption.class);
 
-        addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class );
-        addContainerProvidedComponent( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class );
+        addContainerProvidedComponent(RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class);
+        addContainerProvidedComponent(RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class);
 
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ColorAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, CategorizationAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedRowsAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedColumnsAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, EmailAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, SortingAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ColorAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, CategorizationAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedRowsAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedColumnsAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, EmailAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, SortingAnnotationEdit.class);
         
-        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, LocationAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ConflictCreationAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
-        addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, LocationAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ConflictCreationAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
+        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
         
 
         RaplaMenubar menuBar = new RaplaMenubar();
@@ -213,9 +205,9 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         boolean webstartEnabled =getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.WEBSTART;
 
         if (webstartEnabled) {
-            addContainerProvidedComponent( IOInterface.class,WebstartIO.class );
+            addContainerProvidedComponent(IOInterface.class, WebstartIO.class);
         } else {
-            addContainerProvidedComponent( IOInterface.class,DefaultIO.class );
+            addContainerProvidedComponent(IOInterface.class, DefaultIO.class);
         }
         //Add this service to the container
         addContainerProvidedComponentInstance(ClientService.class, this);
@@ -361,7 +353,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         // Add daterender if not provided by the plugins
         if ( !getContext().has( DateRenderer.class))
         {
-            addContainerProvidedComponent( DateRenderer.class, RaplaDateRenderer.class );
+            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
         }
         started = true;
         User user = model.getUser();

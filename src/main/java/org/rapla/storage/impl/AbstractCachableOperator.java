@@ -91,8 +91,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		this.i18n = i18n;
-//		raplaLocale = context.lookup(RaplaLocale.class);
-//		i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
+//		raplaLocale = context.lookupDeprecated(RaplaLocale.class);
+//		i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
 		cache = new LocalCache();

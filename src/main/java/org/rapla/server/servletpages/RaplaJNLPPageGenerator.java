@@ -22,6 +22,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
 public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageExtension{

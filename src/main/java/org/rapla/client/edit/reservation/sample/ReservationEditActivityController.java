@@ -16,13 +16,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Created by Christopher on 17.09.2015.
- */
-@Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID) public class ReservationEditActivityController
-        implements ActivityPresenter
+@Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
+public class ReservationEditActivityController  implements ActivityPresenter
 {
-    @Inject private Provider<ReservationPresenter> presenterProvider;
+    //@Inject private Provider<ReservationPresenter> presenterProvider;
+    @Inject private ReservationPresenter presenterProvider;
     @Inject private ClientFacade facade;
     @Inject private Logger logger;
 
@@ -38,7 +36,7 @@ import java.util.Map;
             {
                 if (entity != null && entity instanceof Reservation)
                 {
-                    presenterProvider.get().edit((Reservation) entity, false);
+                    presenterProvider.edit((Reservation) entity, false);
                     return true;
                 }
             }

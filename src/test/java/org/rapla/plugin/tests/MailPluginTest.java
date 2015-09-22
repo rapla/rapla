@@ -21,7 +21,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.mail.server.RaplaMailToUserOnLocalhost;
-import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 
@@ -41,10 +40,10 @@ public class MailPluginTest extends ServletTestBase {
         super.setUp();
        
        // start the server
-        ServerServiceContainer container = getContainer().lookup(ServerServiceContainer.class,getStorageName());
+        ServerServiceContainer container = getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
         raplaServer = container.getContext().lookup( ServerService.class);
         // start the client service
-        facade1 =  getContainer().lookup(ClientFacade.class ,"remote-facade");
+        facade1 =  getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         facade1.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
     }

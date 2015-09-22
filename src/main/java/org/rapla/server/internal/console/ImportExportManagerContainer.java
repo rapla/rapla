@@ -33,7 +33,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
         if ( fileDatasource != null)
         {
             addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, fileDatasource );
-            addContainerProvidedComponent( FileOperator.class, FileOperator.class);
+            addContainerProvidedComponent(FileOperator.class, FileOperator.class);
         }
         else
         {
@@ -43,13 +43,13 @@ public class ImportExportManagerContainer extends ContainerImpl{
         if ( dbDatasource != null)
         {
             addContainerProvidedComponentInstance( DataSource.class, dbDatasource );
-            addContainerProvidedComponent( DBOperator.class, DBOperator.class);
+            addContainerProvidedComponent(DBOperator.class, DBOperator.class);
         }
         else
         {
             throw new RaplaException("No database configured for import/export");
         }
-        addContainerProvidedComponent( ImportExportManager.class, ImportExportManagerImpl.class);
+        addContainerProvidedComponent(ImportExportManager.class, ImportExportManagerImpl.class);
     }
     
     public void doImport() throws  RaplaException

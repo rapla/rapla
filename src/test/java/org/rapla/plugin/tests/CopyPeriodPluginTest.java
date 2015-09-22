@@ -36,7 +36,7 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        facade = raplaContainer.lookup(ClientFacade.class , "local-facade");
+        facade = raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade");
         facade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
     }

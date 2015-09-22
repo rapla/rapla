@@ -294,7 +294,7 @@ public class ServiceListCreator
         return list;
     }
 
-    /** lookup for plugin classes in classpath*/
+    /** lookupDeprecated for plugin classes in classpath*/
     public static Collection<String> findPluginClasses(Logger logger) throws ClassNotFoundException
     {
         Collection<String> result = new LinkedHashSet<String>();
@@ -321,7 +321,7 @@ public class ServiceListCreator
         return result;
     }
 
-    /** lookup for plugin classes in classpath*/
+    /** lookupDeprecated for plugin classes in classpath*/
     public static Collection<File> findPluginWebappfolders(Logger logger) throws ClassNotFoundException
     {
         Collection<File> result = new LinkedHashSet<File>();

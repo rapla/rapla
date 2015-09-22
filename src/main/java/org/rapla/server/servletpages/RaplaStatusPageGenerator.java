@@ -4,13 +4,11 @@
 package org.rapla.server.servletpages;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

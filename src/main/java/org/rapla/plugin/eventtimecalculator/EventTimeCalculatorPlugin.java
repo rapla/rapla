@@ -2,7 +2,6 @@ package org.rapla.plugin.eventtimecalculator;
 
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
@@ -10,15 +9,16 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorAdminOption;
 import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorStatusFactory;
 import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorUserOption;
-import org.rapla.plugin.tableview.TableViewExtensionPoints;
 
 public class EventTimeCalculatorPlugin implements PluginDescriptor<ClientServiceContainer> {
 public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getName();
     public static final boolean ENABLE_BY_DEFAULT = false;
 
-    // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";
 
-    public static final TypedComponentRole<RaplaConfiguration> USER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.eventtimecalculator");
+    // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";
+    public static final String PLUGIN_ID = "org.rapla.plugin.eventtimecalculator";
+
+    public static final TypedComponentRole<RaplaConfiguration> USER_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
 
     public static final String INTERVAL_NUMBER = "interval_number";
     public static final String BREAK_NUMBER = "break_number";
@@ -39,19 +39,20 @@ public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getNam
      * uses the extension points to provide the different services of the plugin.
      */
     public void provideServices(ClientServiceContainer container, Configuration config) {
-        container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, EventTimeCalculatorAdminOption.class);
-        if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
-            return;
-    	container.addContainerProvidedComponent(EventTimeCalculatorFactory.class,EventTimeCalculatorFactory.class, config);
-        if ( config.getChild(USER_PREFS).getValueAsBoolean(false))
-        {
-        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, EventTimeCalculatorUserOption.class, config);
-        }
-        container.addContainerProvidedComponent(RaplaClientExtensionPoints.APPOINTMENT_STATUS, EventTimeCalculatorStatusFactory.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, DurationColumnAppoimentBlock.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, DurationColumnReservation.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, DurationCounter.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, DurationCounter.class);
+        //container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, EventTimeCalculatorAdminOption.class);
+//        if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
+//            return;
+//    	container.addContainerProvidedComponent(EventTimeCalculatorFactory.class,EventTimeCalculatorFactory.class, config);
+//        if ( config.getChild(USER_PREFS).getValueAsBoolean(false))
+//        {
+//        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, EventTimeCalculatorUserOption.class, config);
+//        }
+//        container.addContainerProvidedComponent(RaplaClientExtensionPoints.APPOINTMENT_STATUS, EventTimeCalculatorStatusFactory.class);
+//        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, DurationColumnAppoimentBlock.class);
+//        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, DurationColumnReservation.class);
+//        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, DurationCounter.class);
+//        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, DurationCounter.class);
     }
+
 
 }

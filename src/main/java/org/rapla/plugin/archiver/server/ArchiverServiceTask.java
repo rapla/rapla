@@ -3,28 +3,33 @@ package org.rapla.plugin.archiver.server;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
-import org.rapla.server.ServerExtension;
-import org.rapla.server.internal.RemoteSessionImpl;
+import org.rapla.server.extensionpoints.ServerExtension;
 
+import javax.inject.Inject;
 import javax.inject.Provider;
 
-public class ArchiverServiceTask extends RaplaComponent implements ServerExtension
+@Extension(provides = ServerExtension.class,id="archiver")
+public class ArchiverServiceTask  implements ServerExtension
 {
-	public ArchiverServiceTask( final RaplaContext context, final Configuration config,Provider<ArchiverService> archiverProvider ) throws RaplaContextException
+    @Inject
+	public ArchiverServiceTask( final Provider<ArchiverService> archiverProvider, CommandScheduler timer, Logger logger, ClientFacade facade)
+            throws RaplaException
     {
-        super( context );
+        final RaplaConfiguration config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());
         final int days = config.getChild( ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
         final boolean export = config.getChild( ArchiverService.EXPORT).getValueAsBoolean(false);
-        
         if ( days != -20 || export)
         {
-            CommandScheduler timer = context.lookup( CommandScheduler.class);
             Command removeTask = new Command() {
             	public void execute() throws RaplaException {
 
@@ -42,7 +47,7 @@ public class ArchiverServiceTask extends RaplaComponent implements ServerExtensi
                         }
 					} 
             		catch (RaplaException e) {
-			            getLogger().error("Could not execute archiver task ", e);
+			            logger.error("Could not execute archiver task ", e);
 			        }
             	}
             };

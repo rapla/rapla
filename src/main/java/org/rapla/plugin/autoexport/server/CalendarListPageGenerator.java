@@ -24,34 +24,45 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.plugin.autoexport.AutoExportResources;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
-@Extension(provides = RaplaPageExtension.class,id="calendar")
-public class CalendarListPageGenerator extends RaplaComponent implements RaplaPageExtension
+@Extension(provides = RaplaPageExtension.class,id=AutoExportPlugin.CALENDAR_LIST_GENERATOR)
+public class CalendarListPageGenerator  implements RaplaPageExtension
 {
-    public CalendarListPageGenerator( RaplaContext context ) 
-    {
-        super( context );
-    }
 
-    public String getWeb()
+    final private ClientFacade facade;
+    final private RaplaLocale raplaLocale;
+    final private RaplaResources i18n;
+    final private AutoExportResources autoexportI18n;
+
+
+    @Inject
+    public CalendarListPageGenerator(ClientFacade facade, RaplaLocale raplaLocale, RaplaResources i18n, AutoExportResources autoexportI18n)
     {
-        return "calendarlist";
+        this.facade = facade;
+        this.raplaLocale = raplaLocale;
+        this.i18n = i18n;
+        this.autoexportI18n = autoexportI18n;
     }
 
     public void generatePage( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response )
@@ -61,31 +72,31 @@ public class CalendarListPageGenerator extends RaplaComponent implements RaplaPa
         try
         {
             String username = request.getParameter( "user" );
-            response.setContentType("text/html; charset=" + getRaplaLocale().getCharsetNonUtf() );
-            User[] users = getQuery().getUsers();
+            response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf() );
+            User[] users = facade.getUsers();
             SortedSet<User> sortedUsers = new TreeSet<User>( User.USER_COMPARATOR);
             sortedUsers.addAll( Arrays.asList( users));
             if ( username != null)
             {
-                users = new User[] { getQuery().getUser( username )}; 
+                users = new User[] { facade.getUser(username)};
             }
-			String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
+			String calendarName = facade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, i18n.getString("rapla.title"));
             out.println( "<html>" );
             out.println( "<head>" );
             out.println( "<title>" + calendarName + "</title>" );
             out.println( "</head>" );
             out.println( "<body>" );            
             
-            out.println( "<h2>" + getString("webserver") + ": " + calendarName + "</h2>");            
-          
+            out.println( "<h2>" + autoexportI18n.getString("webserver") + ": " + calendarName + "</h2>");
+
             for (User user : sortedUsers)
             {
-                Preferences preferences = getQuery().getPreferences( user );
+                Preferences preferences = facade.getPreferences(user);
                 LinkedHashMap<String, CalendarModelConfiguration> completeMap = new LinkedHashMap<String, CalendarModelConfiguration>();
                 CalendarModelConfiguration defaultConf =  preferences.getEntry( CalendarModelConfiguration.CONFIG_ENTRY );
                 if ( defaultConf != null)
                 {
-                    completeMap.put( getString("default"), defaultConf);
+                    completeMap.put(i18n.getString("default"), defaultConf);
                 }
                 
                 final RaplaMap<CalendarModelConfiguration> raplaMap =  preferences.getEntry( AutoExportPlugin.PLUGIN_ENTRY );

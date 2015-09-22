@@ -12,30 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.autoexport;
 
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
 
-public class AutoExportPlugin implements PluginDescriptor<ClientServiceContainer>
+public class AutoExportPlugin
 {
 	public static final String CALENDAR_GENERATOR = "calendar";
+    public static final String CALENDAR_LIST_GENERATOR = "calendarlist";
     public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> PLUGIN_ENTRY = CalendarModelConfiguration.EXPORT_ENTRY;
     public static final String HTML_EXPORT= PLUGIN_ENTRY + ".selected";
     public static final String SHOW_CALENDAR_LIST_IN_HTML_MENU = "show_calendar_list_in_html_menu";
     public static final boolean ENABLE_BY_DEFAULT = true;
-
-    public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
-        container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, AutoExportPluginOption.class);
-        if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
-        	return;
-
-        container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, HTMLPublicExtensionFactory.class);
-    }
-
 
 }

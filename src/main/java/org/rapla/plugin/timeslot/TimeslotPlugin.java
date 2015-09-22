@@ -16,10 +16,13 @@ import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
+import org.rapla.plugin.timeslot.client.swing.TimeslotOption;
 
 public class TimeslotPlugin implements PluginDescriptor<ClientServiceContainer>
 {
 	public final static boolean ENABLE_BY_DEFAULT = false;
+    public final static String DAY_TIMESLOT = "day_timeslot";
+    public final static String WEEK_TIMESLOT = "week_timeslot";
 
     public void provideServices(ClientServiceContainer container, Configuration config) {
     	container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION,TimeslotOption.class);
@@ -27,8 +30,6 @@ public class TimeslotPlugin implements PluginDescriptor<ClientServiceContainer>
     	if ( !config.getAttributeAsBoolean("enabled",  ENABLE_BY_DEFAULT))
         	return;
 
-        container.addContainerProvidedComponent(RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,CompactDayViewFactory.class);
-        container.addContainerProvidedComponent(RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,CompactWeekViewFactory.class);
         container.addContainerProvidedComponent(TimeslotProvider.class,TimeslotProvider.class,config );
     }
 

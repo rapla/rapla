@@ -15,16 +15,12 @@ package org.rapla.plugin.notification.server;
 import java.util.*;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.plugin.weekview.CalendarWeekViewPresenter;
-import org.rapla.client.plugin.weekview.gwt.WeekViewPlugin;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -37,7 +33,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
@@ -46,7 +41,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
-import org.rapla.server.ServerExtension;
+import org.rapla.server.extensionpoints.ServerExtension;
 
 /** Sends Notification Mails on allocation change.*/
 
@@ -71,7 +66,7 @@ public class NotificationService
     {
         this.notificationI18n = notificationI18n;
         this.clientFacade = facade;
-        this.logger = getLogger().getChildLogger("notification");
+        this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         try
         {

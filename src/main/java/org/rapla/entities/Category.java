@@ -37,7 +37,7 @@ public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp,
     Category getParent();
     /** returns true if the passed category is a direct child of this category */
     boolean hasCategory(Category category);
-    /** set the key of the category. The can be used in the getCategory() method for lookup. */
+    /** set the key of the category. The can be used in the getCategory() method for lookupDeprecated. */
     void setKey(String key);
     /** returns the key of the category */
     String getKey();

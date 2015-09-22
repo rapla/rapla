@@ -39,8 +39,11 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     protected Preferences preferences;
     JComponent container;
 
-    abstract public Class<? extends PluginDescriptor<?>> getPluginClass();
-    
+    private Class<? extends PluginDescriptor<?>> getPluginClass()
+    {
+        return null;
+    }
+
     /**
      * @throws RaplaException  
      */

@@ -400,7 +400,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     		throw new NullPointerException("Attribute can't be null");
     	}
     	String attributeKey = attribute.getKey();
-    	// first lookup in attribute map
+    	// first lookupDeprecated in attribute map
         List<String> list = data.get(attributeKey);
         if ( list == null || list.size() == 0)
         {
@@ -424,7 +424,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     		throw new NullPointerException("Attribute can't be null");
     	}
     	String attributeKey = attribute.getKey();
-        // first lookup in attribute map
+        // first lookupDeprecated in attribute map
         List<String> o = data.get(attributeKey);
         if ( o == null  || o.size() == 0)
         {

@@ -14,12 +14,15 @@
 
 package org.rapla.gui;
 
+import javax.inject.Singleton;
 import javax.swing.JComponent;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
-
+@ExtensionPoint(context = InjectionContext.swing, id="week")
 public interface SwingCalendarView extends RaplaWidget
 {
     public void update( ) throws RaplaException;

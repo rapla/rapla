@@ -8,12 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.jws.WebParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
 import org.rapla.entities.User;
@@ -32,7 +30,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
 

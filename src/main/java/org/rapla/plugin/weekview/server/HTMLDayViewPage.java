@@ -14,15 +14,27 @@ package org.rapla.plugin.weekview.server;
 
 import java.util.Calendar;
 
+import org.rapla.RaplaResources;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+
+@Extension(provides = HTMLViewPage.class,id = WeekviewPlugin.DAY_VIEW)
 public class HTMLDayViewPage extends HTMLWeekViewPage
 {
-    public HTMLDayViewPage( RaplaContext context, CalendarModel calendarModel ) 
+    @Inject
+    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
-        super( context,  calendarModel );
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     @Override
@@ -30,7 +42,6 @@ public class HTMLDayViewPage extends HTMLWeekViewPage
     {
     	return 1;
     }
-
 
     public int getIncrementSize() {
         return Calendar.DAY_OF_YEAR;

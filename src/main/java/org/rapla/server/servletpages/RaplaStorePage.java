@@ -1,6 +1,7 @@
 package org.rapla.server.servletpages;
 
 import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;

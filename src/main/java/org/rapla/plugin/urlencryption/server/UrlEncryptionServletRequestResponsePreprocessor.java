@@ -17,8 +17,10 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
+import org.rapla.plugin.urlencryption.UrlEncryptionResources;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 /**
@@ -26,6 +28,7 @@ import org.rapla.server.servletpages.ServletRequestPreprocessor;
  * Date: 15.08.12
  * Time: 19:39
  */
+@Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionResources.PLUGIN_ID)
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
     private UrlEncryptionService urlEncryptionService;
     private ClientFacade facade;

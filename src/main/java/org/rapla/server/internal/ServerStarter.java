@@ -11,7 +11,6 @@ import javax.sql.DataSource;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
@@ -106,7 +105,7 @@ public class ServerStarter
                     server.setShutdownService( new ShutdownServiceImpl());
                 }
             }
-            processors = server.lookupServicesFor(RaplaServerExtensionPoints.SERVLET_REQUEST_RESPONSE_PREPROCESSING_POINT);
+            processors = server.lookupServicesFor(ServletRequestPreprocessor.class);
             return server;
         }
         catch( Exception e )

@@ -63,7 +63,7 @@ final public class WebstartIO extends DefaultIO {
 
             getName = fileContents.getMethod("getName", new Class[] {} );
             getInputStream = fileContents.getMethod("getInputStream", new Class[] {} );
-            lookup = serviceManagerC.getMethod("lookup", new Class[] {String.class});
+            lookup = serviceManagerC.getMethod("lookupDeprecated", new Class[] {String.class});
             getDefaultPage = printServiceC.getMethod("getDefaultPage",new Class[] {});
             showPageFormatDialog = printServiceC.getMethod("showPageFormatDialog",new Class[] {PageFormat.class});
             print = printServiceC.getMethod("print",new Class[] {Printable.class});

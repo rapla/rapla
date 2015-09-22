@@ -53,7 +53,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.gui.SwingViewFactory;
+import org.rapla.client.extensionpoints.SwingViewFactory;
 import org.rapla.gui.VisibleTimeInterval;
 
 

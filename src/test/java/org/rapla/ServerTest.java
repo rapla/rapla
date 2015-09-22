@@ -44,7 +44,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.plugin.weekview.WeekViewFactory;
+import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.StorageOperator;
@@ -76,15 +76,14 @@ public class ServerTest extends ServletTestBase {
 		// start the server
 
 		Container container = getContainer();
-		ServerServiceContainer raplaServerContainer = container.lookup(
-				ServerServiceContainer.class, getStorageName());
+		ServerServiceContainer raplaServerContainer = container.lookupDeprecated(ServerServiceContainer.class, getStorageName());
 		raplaServer = raplaServerContainer.getContext().lookup(
 				ServerService.class);
 		// start the client service
-		facade1 = container.lookup(ClientFacade.class, "remote-facade");
+		facade1 = container.lookupDeprecated(ClientFacade.class, "remote-facade");
 		facade1.login("homer", "duffs".toCharArray());
 		
-		facade2 = container.lookup(ClientFacade.class, "remote-facade-2");
+		facade2 = container.lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();
 	}
@@ -202,8 +201,7 @@ public class ServerTest extends ServletTestBase {
 		removeAnAttribute();
 		// Wait for the update
 		{
-			ClientFacade facade2 = getContainer().lookup(ClientFacade.class,
-					"remote-facade-2");
+			ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 			facade2.login("homer", "duffs".toCharArray());
 			facade2.getUser("test-user");
 			facade2.logout();
@@ -222,8 +220,7 @@ public class ServerTest extends ServletTestBase {
 		assertEquals(5, facade1.getAllocatables().length);
 		assertEquals(2, allocatable.getClassification().getAttributes().length);
 
-		ClientFacade facade2 = getContainer().lookup(ClientFacade.class,
-				"remote-facade-2");
+		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		// we check if the store affectes the second client.
 		assertEquals(5, facade2.getAllocatables().length);
@@ -284,7 +281,7 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeLogin() throws RaplaException {
-		ClientFacade facade2 = getContainer().lookup(ClientFacade.class,"remote-facade-2");
+		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("monty", "burns".toCharArray());
 
 		// boolean canChangePassword = facade2.canChangePassword();
@@ -349,7 +346,7 @@ public class ServerTest extends ServletTestBase {
 		ClassificationFilter[] filter = new ClassificationFilter[] { classificationFilter };
 		User user1 = facade1.getUser();
 		CalendarSelectionModel calendar = facade1.newCalendarModel(user1);
-		calendar.setViewId(WeekViewFactory.WEEK_VIEW);
+		calendar.setViewId(WeekviewPlugin.WEEK_VIEW);
 		calendar.setAllocatableFilter(filter);
 		calendar.setSelectedObjects(Collections.emptyList());
 		calendar.setSelectedDate(facade1.today());
@@ -397,7 +394,7 @@ public class ServerTest extends ServletTestBase {
 
 		CalendarSelectionModel calendar = facade1.newCalendarModel(facade1
 				.getUser());
-		calendar.setViewId(WeekViewFactory.WEEK_VIEW);
+		calendar.setViewId(WeekviewPlugin.WEEK_VIEW);
 		calendar.setSelectedObjects(Collections.singletonList(r));
 		calendar.setSelectedDate(facade1.today());
 		calendar.setTitle("test");
@@ -438,8 +435,7 @@ public class ServerTest extends ServletTestBase {
 			facade1.logout();
 		}
 		{
-			ClientFacade facade2 = getContainer().lookup(ClientFacade.class,
-					"remote-facade-2");
+			ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 			facade2.login("homer", "duffs".toCharArray());
 
 			Reservation[] res = facade2.getReservationsForAllocatable(null,
@@ -460,8 +456,7 @@ public class ServerTest extends ServletTestBase {
 				"my-group");
 		assertTrue(Arrays.asList(groups).contains(myGroup));
 		user.removeGroup(myGroup);
-		ClientFacade facade2 = getContainer().lookup(ClientFacade.class,
-				"remote-facade-2");
+		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
 		assertTrue(testResource.canAllocate(facade2.getUser("monty"), null,

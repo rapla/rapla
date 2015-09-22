@@ -282,7 +282,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
 		super( logger, i18n,raplaLocale);
 		this.scheduler = scheduler; 
-		        //context.lookup( CommandScheduler.class);
+		        //context.lookupDeprecated( CommandScheduler.class);
 		
 
 	}

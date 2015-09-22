@@ -10,8 +10,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.archiver.ArchiverService;
@@ -21,13 +21,27 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 
+import javax.inject.Inject;
+
 @DefaultImplementation(of=ArchiverService.class,context= InjectionContext.server)
-public class ArchiverServiceImpl extends RaplaComponent implements ArchiverService
+public class ArchiverServiceImpl  implements ArchiverService
 {
-    RemoteSession session;
-	public ArchiverServiceImpl(RaplaContext context, RemoteSession session) {
-		super(context);
+    private final RemoteSession session;
+    private final ClientFacade clientFacade;
+    private final ImportExportManager importExportManager;
+    private final Logger    logger;
+
+    @Inject
+	public ArchiverServiceImpl(
+            ClientFacade facade,
+            ImportExportManager importExportManager,
+            Logger logger,
+            RemoteSession session
+            ) {
         this.session = session;
+        this.clientFacade = facade;
+        this.importExportManager = importExportManager;
+        this.logger = logger;
 	}
 	
 	/** can be overriden to check if user has admin rights when triggered as RemoteService
@@ -42,7 +56,6 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
 	}
 	
 	public boolean isExportEnabled() throws RaplaException {
-		ClientFacade clientFacade = getContext().lookup(ClientFacade.class);
 		StorageOperator operator = clientFacade.getOperator();
 		boolean enabled =  operator instanceof DBOperator;
 		return enabled;
@@ -54,8 +67,8 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
 		{
 			throw new RaplaException("Export not enabled");
 		}
-		ImportExportManager lookup = getContext().lookup(ImportExportManager.class);
-		lookup.doExport();
+
+		importExportManager.doExport();
 	}
 
 	public void restore() throws RaplaException {
@@ -65,13 +78,11 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
 			throw new RaplaException("Export not enabled");
 		}
 		// We only do an import here 
-		ImportExportManager lookup = getContext().lookup(ImportExportManager.class);
-		lookup.doImport();
+		importExportManager.doImport();
 	}
 
 	public void delete(Integer removeOlderInDays) throws RaplaException {
 		checkAccess();
-		ClientFacade clientFacade = getContext().lookup(ClientFacade.class);
 		Date endDate = new Date(clientFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
         Reservation[] events = clientFacade.getReservations((User) null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
         List<Reservation> toRemove = new ArrayList<Reservation>();
@@ -85,7 +96,7 @@ public class ArchiverServiceImpl extends RaplaComponent implements ArchiverServi
         }
         if ( toRemove.size() > 0)
         {
-            getLogger().info("Removing " + toRemove.size() + " old events.");
+            logger.info("Removing " + toRemove.size() + " old events.");
             Reservation[] eventsToRemove = toRemove.toArray( Reservation.RESERVATION_ARRAY);
             int STEP_SIZE = 100;
             for ( int i=0;i< eventsToRemove.length;i+=STEP_SIZE)

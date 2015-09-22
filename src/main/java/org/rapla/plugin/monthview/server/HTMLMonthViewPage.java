@@ -15,21 +15,35 @@ package org.rapla.plugin.monthview.server;
 import java.util.Calendar;
 import java.util.Set;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLMonthView;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.plugin.monthview.MonthViewPlugin;
+import org.rapla.plugin.weekview.server.HTMLWeekViewPage;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+
+@Extension(provides = HTMLViewPage.class,id= MonthViewPlugin.MONTH_VIEW)
 public class HTMLMonthViewPage extends AbstractHTMLCalendarPage
 {
-    public HTMLMonthViewPage( RaplaContext context,  CalendarModel calendarModel ) 
+    @Inject
+    public HTMLMonthViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+            AppointmentFormater appointmentFormater)
     {
-        super( context, calendarModel );
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     protected AbstractHTMLView createCalendarView() {

@@ -8,7 +8,7 @@ import org.rapla.framework.TypedComponentRole;
 public class ContextTools {
 
 	/** resolves a context value in the passed string. 
-	 If the string begins with <code>${</code> the method will lookup the String-Object in the context and returns it.
+	 If the string begins with <code>${</code> the method will lookupDeprecated the String-Object in the context and returns it.
 	 If it doesn't, the method returns the unmodified string.
 	 Example:
 	 <code>resolveContext("${download-server}")</code> returns the same as

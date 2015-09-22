@@ -24,7 +24,7 @@ abstract public class JNLPUtil {
             Class<?> basicServiceC = Class.forName( basicService );
             //Class unavailableServiceException = Class.forName("javax.jnlp.UnavailableServiceException");
 
-            Method lookup = serviceManagerC.getMethod("lookup", new Class[] {String.class});
+            Method lookup = serviceManagerC.getMethod("lookupDeprecated", new Class[] {String.class});
             Method getCodeBase = basicServiceC.getMethod("getCodeBase", new Class[] {});
             Object service = lookup.invoke( null, new Object[] { basicService });
             return (URL) getCodeBase.invoke( service, new Object[] {});

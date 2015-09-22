@@ -115,11 +115,11 @@ public abstract class RaplaBuilder
 //	public RaplaBuilder(RaplaContext context)  {
 //	    try
 //	    {
-//    	    raplaLocale = context.lookup(RaplaLocale.class);
-//    	    clientFacade = context.lookup(ClientFacade.class);
-//    	    i18n = context.lookup(RaplaComponent.RAPLA_RESOURCES);
-//    	    logger = context.lookup(Logger.class);
-//    	    appointmentFormater = context.lookup( AppointmentFormater.class);
+//    	    raplaLocale = context.lookupDeprecated(RaplaLocale.class);
+//    	    clientFacade = context.lookupDeprecated(ClientFacade.class);
+//    	    i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
+//    	    logger = context.lookupDeprecated(Logger.class);
+//    	    appointmentFormater = context.lookupDeprecated( AppointmentFormater.class);
 //	    }
 //	    catch (RaplaException ex)
 //	    {

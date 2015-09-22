@@ -47,7 +47,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.plugin.weekview.WeekViewFactory;
+import org.rapla.plugin.weekview.WeekviewPlugin;
 
 public class ClientFacadeTest extends RaplaTestCase {
     ClientFacade facade;
@@ -109,7 +109,7 @@ public class ClientFacadeTest extends RaplaTestCase {
 
     // Make some Changes to the Reservation in another client
     private void changeInSecondFacade(String name) throws Exception {
-        ClientFacade facade2 =  raplaContainer.lookup(ClientFacade.class ,"local-facade2");
+        ClientFacade facade2 =  raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
         facade2.login("homer","duffs".toCharArray());
         UserModule userMod2 =  facade2;
         QueryModule queryMod2 =  facade2;
@@ -238,7 +238,7 @@ public class ClientFacadeTest extends RaplaTestCase {
     }
 
     public void testLogin() throws Exception {
-        ClientFacade facade2 = raplaContainer.lookup(ClientFacade.class , "local-facade2");
+        ClientFacade facade2 = raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
         assertEquals(false, facade2.login("non_existant_user","".toCharArray()));
         assertEquals(false, facade2.login("non_existant_user","fake".toCharArray()));
         assertTrue(facade2.login("homer","duffs".toCharArray()));
@@ -247,7 +247,7 @@ public class ClientFacadeTest extends RaplaTestCase {
     }
 
     public void testSavePreferences() throws Exception {
-        ClientFacade facade2 = raplaContainer.lookup(ClientFacade.class , "local-facade2");
+        ClientFacade facade2 = raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
         assertTrue(facade2.login("monty","burns".toCharArray()));
         Preferences prefs = facade.edit( facade.getPreferences() );
         facade2.store( prefs );
@@ -273,7 +273,7 @@ public class ClientFacadeTest extends RaplaTestCase {
 
         CalendarSelectionModel calendar = facade.newCalendarModel(facade.getUser() );
         calendar.setSelectedObjects( Collections.singleton( allocatable));
-        calendar.setViewId( WeekViewFactory.WEEK_VIEW);
+        calendar.setViewId( WeekviewPlugin.WEEK_VIEW);
         CalendarModelConfiguration config = ((CalendarModelImpl)calendar).createConfiguration();
 
         RaplaMap<CalendarModelConfiguration> calendarList = facade.newRaplaMap( Collections.singleton( config ));

@@ -12,11 +12,19 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class TimeslotProvider extends RaplaComponent {
 	
 	private ArrayList<Timeslot> timeslots;
-	
+
+	@Inject
 	public TimeslotProvider(RaplaContext context, Configuration config) throws  ParseDateException
 	{
 		super(context);

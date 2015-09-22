@@ -144,15 +144,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private OptionPanel find(Collection<PluginOptionPanel> panels,
 			PluginDescriptor<?> plugin) 
     {
-    	for (PluginOptionPanel panel: panels)
-    	{
-    		Class<? extends PluginDescriptor<?>> pluginClass = panel.getPluginClass();
-    		if (plugin.getClass().equals( pluginClass))
-    		{
-    			return panel;
-    		}
-			
-    	}
+        // FIXME
     	return null;
 	}
 

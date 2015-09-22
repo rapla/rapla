@@ -1,31 +1,42 @@
 package org.rapla.plugin.dayresource.server;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
+import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
+import org.rapla.server.extensionpoints.HTMLViewPage;
 
-public class HTMLDayResourcePage extends HTMLDayViewPage {
+import javax.inject.Inject;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-	public HTMLDayResourcePage(RaplaContext context, CalendarModel calendarModel)
+@Extension(provides = HTMLViewPage.class,id= DayResourcePlugin.DAY_RESOURCE_VIEW)
+public class HTMLDayResourcePage extends HTMLDayViewPage
+{
+    @Inject
+	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+			AppointmentFormater appointmentFormater)
 	{
-		super(context, calendarModel);
+		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
 	}
-	
-    protected AbstractHTMLView createCalendarView() {
+
+	@Override
+	protected AbstractHTMLView createCalendarView() {
         HTMLWeekView weekView = new HTMLWeekView(){
             
             
@@ -35,7 +46,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage {
             	try 
             	{
 					Allocatable allocatable = getSortedAllocatables().get(i);
-					return  allocatable.getName( getLocale());
+					return  allocatable.getName( getRaplaLocale().getLocale());
 				} 
             	catch (RaplaException e) {
 					return "";

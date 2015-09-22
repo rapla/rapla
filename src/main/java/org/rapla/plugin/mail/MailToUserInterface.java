@@ -5,7 +5,6 @@ import javax.jws.WebService;
 import org.rapla.framework.RaplaException;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.RemoteJsonService;
-@WebService
 @RemoteJsonMethod
 public interface MailToUserInterface extends RemoteJsonService
 {

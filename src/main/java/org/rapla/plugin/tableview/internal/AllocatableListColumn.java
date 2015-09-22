@@ -9,7 +9,8 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
-import org.rapla.plugin.tableview.AppointmentTableColumn;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
 public class AllocatableListColumn extends RaplaComponent implements AppointmentTableColumn {
 	public AllocatableListColumn(RaplaContext context) {

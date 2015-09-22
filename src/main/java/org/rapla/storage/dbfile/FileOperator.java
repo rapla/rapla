@@ -113,7 +113,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
     {
         super(  logger, i18n, raplaLocale, scheduler );
-        //StartupEnvironment env =  context.lookup( StartupEnvironment.class );
+        //StartupEnvironment env =  context.lookupDeprecated( StartupEnvironment.class );
 
 //        URL contextRootURL = env.getContextRootURL();
 //

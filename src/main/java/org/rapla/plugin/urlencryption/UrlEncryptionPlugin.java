@@ -2,11 +2,10 @@ package org.rapla.plugin.urlencryption;
 
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.TypedComponentRole;
+import org.rapla.plugin.urlencryption.client.swing.UrlEncryptionOption;
 
 /**
  * This plugin provides a service to secure the publishing function of a calendar by encrypting the source parameters.

@@ -7,21 +7,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 
-public class DefaultHTMLMenuEntry extends RaplaComponent implements RaplaMenuGenerator
+public class DefaultHTMLMenuEntry  implements RaplaMenuGenerator
 {
     protected String name;
     protected String linkName;
 
-    public DefaultHTMLMenuEntry(RaplaContext context,String name, String linkName)
+    public DefaultHTMLMenuEntry(String name, String linkName)
     {
-    	super( context);
-        this.name = name;
+    	this.name = name;
         this.linkName = linkName;
-    }
-    
-    public DefaultHTMLMenuEntry(RaplaContext context)
-    {
-    	super( context);
     }
     
     public String getName() {

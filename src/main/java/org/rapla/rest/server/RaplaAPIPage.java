@@ -12,7 +12,7 @@ import org.rapla.gwtjsonrpc.server.JsonServlet;
 import org.rapla.gwtjsonrpc.server.RPCServletUtils;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;

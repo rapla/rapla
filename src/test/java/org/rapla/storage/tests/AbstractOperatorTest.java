@@ -39,8 +39,8 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        operator = raplaContainer.lookup(CachableStorageOperator.class , getStorageName());
-        facade = raplaContainer.lookup(ClientFacade.class, getFacadeName());
+        operator = raplaContainer.lookupDeprecated(CachableStorageOperator.class, getStorageName());
+        facade = raplaContainer.lookupDeprecated(ClientFacade.class, getFacadeName());
     }
 
     abstract protected String getStorageName();

@@ -108,7 +108,7 @@ public class RaplaComponent
     
     public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
 //        try {
-//            logger = context.lookup(Logger.class );
+//            logger = context.lookupDeprecated(Logger.class );
 //        } catch (RaplaContextException e) {
 //            logger = new ConsoleLogger();
 //        }
@@ -704,8 +704,8 @@ public class RaplaComponent
         return logger;
     }
 
-    /** lookup the service in the serviceManager under the specified key:
-        serviceManager.lookup(role).
+    /** lookupDeprecated the service in the serviceManager under the specified key:
+        serviceManager.lookupDeprecated(role).
         @throws IllegalStateException if GUIComponent wasn't serviced. No service method called
         @throws UnsupportedOperationException if service not available.
      */
@@ -734,7 +734,7 @@ public class RaplaComponent
         return context;
     }
 
-    /** lookup RaplaLocale from the context */
+    /** lookupDeprecated RaplaLocale from the context */
     protected RaplaLocale getRaplaLocale() {
         return raplaLocale;
 //        if (serviceManager.raplaLocale == null)
@@ -747,7 +747,7 @@ public class RaplaComponent
         return getRaplaLocale().getLocale();
     }
 
-    /** lookup I18nBundle from the serviceManager */
+    /** lookupDeprecated I18nBundle from the serviceManager */
     protected RaplaResources getI18n() {
         return i18n;
     }
@@ -758,14 +758,14 @@ public class RaplaComponent
 //        return serviceManager.i18n;
 //    }
 //
-    /** lookup AppointmentFormater from the serviceManager */
+    /** lookupDeprecated AppointmentFormater from the serviceManager */
 //    protected AppointmentFormater getAppointmentFormater() {
 //        if (serviceManager.appointmentFormater == null)
 //            serviceManager.appointmentFormater = getService(AppointmentFormater.class);
 //        return serviceManager.appointmentFormater;
 //    }
 
-    /** lookup PeriodModel from the serviceManager */
+    /** lookupDeprecated PeriodModel from the serviceManager */
     protected PeriodModel getPeriodModel() {
     	try {
     		return getQuery().getPeriodModel();
@@ -774,7 +774,7 @@ public class RaplaComponent
     	}
     }
 
-    /** lookup QueryModule from the serviceManager */
+    /** lookupDeprecated QueryModule from the serviceManager */
     protected QueryModule getQuery() {
         return getClientFacade();
     }
@@ -783,17 +783,17 @@ public class RaplaComponent
         return facade;
     }
 
-    /** lookup ModificationModule from the serviceManager */
+    /** lookupDeprecated ModificationModule from the serviceManager */
     protected ModificationModule getModification() {
         return getClientFacade();
     }
 
-    /** lookup UpdateModule from the serviceManager */
+    /** lookupDeprecated UpdateModule from the serviceManager */
     protected UpdateModule getUpdateModule() {
         return getClientFacade();
     }
 
-    /** lookup UserModule from the serviceManager */
+    /** lookupDeprecated UserModule from the serviceManager */
    protected UserModule getUserModule() {
         return getClientFacade();
     }

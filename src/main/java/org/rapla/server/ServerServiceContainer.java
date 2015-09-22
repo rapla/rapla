@@ -11,7 +11,8 @@ import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public interface ServerServiceContainer extends Container 
 {
-    <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory);
+    /** not supported anymore. just to provide compatiblity to old calls*/
+   @Deprecated
     <T> void addRemoteMethodFactory( Class<T> service, Class<? extends RemoteMethodFactory<T>> factory, Configuration config);
 
     /**

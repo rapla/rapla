@@ -8,9 +8,11 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.tableview.AppointmentTableColumn;
-import org.rapla.plugin.tableview.DateCellRenderer;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
+import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
 
+@Extension(provides = AppointmentTableColumn.class, id = "start")
 public final class AppointmentStartDate extends RaplaComponent implements AppointmentTableColumn {
 	public AppointmentStartDate(RaplaContext context) {
 		super(context);

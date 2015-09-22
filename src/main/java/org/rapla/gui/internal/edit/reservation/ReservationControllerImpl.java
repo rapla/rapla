@@ -63,7 +63,7 @@ import org.rapla.gui.internal.view.ReservationInfoUI;
 public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
     /** We store all open ReservationEditWindows with their reservationId
-     * in a map, to lookup if the reservation is already beeing edited.
+     * in a map, to lookupDeprecated if the reservation is already beeing edited.
      That prevents editing the same Reservation in different windows
      */
     Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();

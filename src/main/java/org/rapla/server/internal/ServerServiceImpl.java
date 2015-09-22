@@ -20,7 +20,6 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
-import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -37,14 +36,13 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.rest.RemoteLogger;
-import org.rapla.server.RaplaKeyStorage;
-import org.rapla.server.RaplaServerExtensionPoints;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
+import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.servletpages.*;
 import org.rapla.storage.*;
 import org.rapla.storage.dbfile.FileOperator;
@@ -108,7 +106,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
             {
                 RemoteSession remoteSession = adminSession;
-                T service = inject(a, remoteSession);
+                T service = getInstance(a, remoteSession);
                 return service;
             }
         });
@@ -184,14 +182,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         addWebpage("raplaapplet", RaplaAppletPageGenerator.class);
         //addWebpage("store", RaplaStorePage.class);
 
-        {
-            RaplaResources i18n = context.lookup(RaplaResources.class);
-
-            // Index page menu
-            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_webstart"), "rapla/raplaclient.jnlp"));
-            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("start_rapla_with_applet"), "rapla?page=raplaapplet"));
-            addContainerProvidedComponentInstance(RaplaServerExtensionPoints.HTML_MAIN_MENU_EXTENSION_POINT, new DefaultHTMLMenuEntry(context, i18n.getString("server_status"), "rapla?page=server"));
-        }
 
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
@@ -265,7 +255,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         ResourceBundleList implementingInstance = new ResourceBundleList(i18nBundleIds);
         addContainerProvidedComponentInstance(ResourceBundleList.class, implementingInstance);
         // start server provides
-        lookupServicesFor(RaplaServerExtensionPoints.SERVER_EXTENSION);
+        lookupServicesFor(ServerExtension.class);
 
 
     }
@@ -358,7 +348,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         {
             String lowerCase = page.toLowerCase();
             @SuppressWarnings("deprecation")
-            RaplaPageGenerator factory = lookup(RaplaPageExtension.class, lowerCase);
+            RaplaPageGenerator factory = lookupDeprecated(RaplaPageExtension.class, lowerCase);
             return factory;
         }
         catch (RaplaContextException ex)
@@ -497,7 +487,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         }
         if (user == null)
         {
-            user = getContext().lookup(TokenHandler.class).getUserWithAccessToken(token);
+            user = inject(TokenHandler.class).getUserWithAccessToken(token);
         }
         return user;
     }

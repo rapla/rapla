@@ -25,7 +25,7 @@ import javax.swing.ImageIcon;
    can be defined in XML or as an java-object.
 Example Usage:
 <pre>
-   I18nBundle i18n = serviceManager.lookup(I18nBundle.class);
+   I18nBundle i18n = serviceManager.lookupDeprecated(I18nBundle.class);
    i18n.getString("yes"); // will get the translation for yes.
 </pre>
 */

@@ -1,5 +1,6 @@
 package org.rapla.plugin.tableview.internal;
 
+import javax.inject.Inject;
 import javax.swing.table.TableColumn;
 
 import org.rapla.components.util.xml.XMLWriter;
@@ -7,9 +8,12 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
-import org.rapla.plugin.tableview.AppointmentTableColumn;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
+@Extension(provides = AppointmentTableColumn.class, id = "name")
 public final class AppointmentNameColumn extends RaplaComponent implements AppointmentTableColumn {
+	@Inject
 	public AppointmentNameColumn(RaplaContext context) {
 		super(context);
 	}

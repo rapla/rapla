@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.jws.WebParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.QueryParam;
 
@@ -16,7 +15,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.servletpages.RaplaPageExtension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="dynamictypes")
 @RemoteJsonMethod

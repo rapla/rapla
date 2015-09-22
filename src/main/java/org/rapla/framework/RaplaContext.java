@@ -14,6 +14,6 @@ public interface RaplaContext
     <T> T lookup(Class<T> componentRole) throws RaplaContextException;
     boolean has(Class<?> clazz);
     <T> T lookup(TypedComponentRole<T> componentRole) throws RaplaContextException;
-    //<T> T lookup(TypedComponentRole<T> componentRole, String hint) throws RaplaContextException;
+    //<T> T lookupDeprecated(TypedComponentRole<T> componentRole, String hint) throws RaplaContextException;
     boolean has(TypedComponentRole<?> componentRole);
 }
