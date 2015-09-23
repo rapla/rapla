@@ -260,9 +260,9 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     }
 
-    protected Collection<InjectionContext> getSupportedContexts()
+    @Override protected boolean isSupported(InjectionContext... contexts)
     {
-        return Arrays.asList(InjectionContext.server);
+        return InjectionContext.isInjectableOnServer(contexts);
     }
 
     public void setPasswordCheckDisabled(boolean passwordCheckDisabled)

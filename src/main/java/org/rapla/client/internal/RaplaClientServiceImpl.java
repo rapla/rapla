@@ -109,10 +109,12 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         lookAndFeelSet = true;
     }
 
-    protected Collection<InjectionContext> getSupportedContexts()
+    @Override protected boolean isSupported(InjectionContext... contexts)
     {
-        return Arrays.asList(new InjectionContext[]{InjectionContext.client, InjectionContext.swing});
+        return InjectionContext.isInjectableOnSwing(contexts);
     }
+
+
 
     @Override
     protected void initialize() throws Exception {

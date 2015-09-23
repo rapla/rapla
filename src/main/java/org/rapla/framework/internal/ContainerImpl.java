@@ -49,7 +49,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
@@ -994,17 +993,11 @@ public class ContainerImpl implements Container
         return ids;
     }
 
-    protected Collection<InjectionContext> getSupportedContexts()
+    protected boolean isSupported(InjectionContext... context)
     {
-        return Collections.emptyList();
+        return true;
     }
 
-    private boolean isRelevant(InjectionContext... context)
-    {
-        final List<InjectionContext> c2 = Arrays.asList(context);
-        Collection<InjectionContext> supportedContexts = getSupportedContexts();
-        return !Collections.disjoint(c2, supportedContexts) || c2.contains(InjectionContext.all);
-    }
 
     private boolean isImplementing(Class interfaceClass, DefaultImplementation... clazzAnnot)
     {
@@ -1012,7 +1005,7 @@ public class ContainerImpl implements Container
         {
             final Class provides = ext.of();
             final InjectionContext[] context = ext.context();
-            if (provides.equals(interfaceClass) && isRelevant(context))
+            if (provides.equals(interfaceClass) && isSupported(context))
             {
                 return true;
             }
@@ -1022,8 +1015,6 @@ public class ContainerImpl implements Container
 
     private <T> void addImplementations(Class<T> interfaceClass) throws IOException
     {
-        Collection<InjectionContext> supportedContexts = getSupportedContexts();
-
         final ExtensionPoint extensionPointAnnotation = interfaceClass.getAnnotation(ExtensionPoint.class);
         final RemoteJsonMethod remoteJsonMethodAnnotation = interfaceClass.getAnnotation(RemoteJsonMethod.class);
         final boolean isExtensionPoint = extensionPointAnnotation != null;
@@ -1031,7 +1022,7 @@ public class ContainerImpl implements Container
         if (isExtensionPoint)
         {
             final InjectionContext[] context = extensionPointAnnotation.context();
-            if (!isRelevant(context))
+            if (!isSupported(context))
             {
                 return;
             }

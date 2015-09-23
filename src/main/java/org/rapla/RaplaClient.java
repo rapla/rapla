@@ -87,9 +87,9 @@ public class RaplaClient extends ContainerImpl
         });
     }
 
-    protected Collection<InjectionContext> getSupportedContexts()
+    @Override protected boolean isSupported(InjectionContext... contexts)
     {
-        return Arrays.asList(InjectionContext.client);
+        return InjectionContext.isInjectableOnClient(contexts);
     }
     
     public RaplaClient(  StartupEnvironment env) throws Exception
