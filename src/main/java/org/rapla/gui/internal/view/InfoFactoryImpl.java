@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.view;
 
+import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -20,7 +21,6 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.swing.AbstractAction;
-import javax.swing.JComponent;
 
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
@@ -50,7 +50,7 @@ import org.rapla.inject.InjectionContext;
 the entities of rapla.
 @see ViewTable*/
 @DefaultImplementation(of=InfoFactory.class, context = InjectionContext.swing)
-public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
+public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Component, DialogUI>
 
 {
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
@@ -81,7 +81,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         throw new RaplaException( "Could not create view for this object: " + object.getClass() );
     }
 
-    public <T> JComponent createInfoComponent( T object ) throws RaplaException {
+    public <T> Component createInfoComponent( T object ) throws RaplaException {
         ViewTable<T> viewTable = new ViewTable<T>(getContext());
         viewTable.updateInfo( object );
         return viewTable.getComponent();
