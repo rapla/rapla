@@ -1,17 +1,15 @@
 package org.rapla.plugin.tableview;
 
-import javax.swing.table.TableColumn;
+public interface RaplaTableColumn<T, C> {
 
-public interface RaplaTableColumn<T> {
+	String getColumnName();
 
-	public abstract String getColumnName();
+	Object getValue(T object);
 
-	public abstract Object getValue(T object);
+	void init(C column);
 
-	public abstract void init(TableColumn column);
+	Class<?> getColumnClass();
 
-	public abstract Class<?> getColumnClass();
-
-	public abstract String getHtmlValue(T object);
+	String getHtmlValue(T object);
 
 }

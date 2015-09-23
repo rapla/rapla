@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview.internal;
 
 import java.util.Date;
 
+import javax.inject.Inject;
 import javax.swing.table.TableColumn;
 
 import org.rapla.entities.domain.AppointmentBlock;
@@ -9,11 +10,12 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
 @Extension(provides = AppointmentTableColumn.class, id = "start")
-public final class AppointmentStartDate extends RaplaComponent implements AppointmentTableColumn {
+public final class AppointmentStartDate extends RaplaComponent implements AppointmentTableColumn<TableColumn> {
+    @Inject
 	public AppointmentStartDate(RaplaContext context) {
 		super(context);
 	}

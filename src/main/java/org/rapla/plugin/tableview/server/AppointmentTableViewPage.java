@@ -13,32 +13,26 @@
 package org.rapla.plugin.tableview.server;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.rapla.entities.domain.Appointment;
+import javax.inject.Inject;
+
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
-public class AppointmentTableViewPage  extends TableViewPage<AppointmentBlock>
+public class AppointmentTableViewPage<C>  extends TableViewPage<AppointmentBlock,C>
 {
-    Set<AppointmentTableColumn> columnSet;
+    Set<AppointmentTableColumn<C>> columnSet;
 
-    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, Set<AppointmentTableColumn> columnSet)
+    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, Set<AppointmentTableColumn<C>> columnSet)
     {
         super(raplaLocale);
         this.columnSet = columnSet;
@@ -47,7 +41,7 @@ public class AppointmentTableViewPage  extends TableViewPage<AppointmentBlock>
     public String getCalendarHTML() throws RaplaException
     {
         final List<AppointmentBlock> blocks = model.getBlocks();
-        List<RaplaTableColumn<AppointmentBlock>> appointmentColumnPlugins = new ArrayList<RaplaTableColumn<AppointmentBlock>>(columnSet);
+        List<RaplaTableColumn<AppointmentBlock,C>> appointmentColumnPlugins = new ArrayList<RaplaTableColumn<AppointmentBlock,C>>(columnSet);
         return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }
 

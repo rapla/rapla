@@ -31,6 +31,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.rapla.components.calendar.DateChangeEvent;
@@ -127,7 +128,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
 
         int column = 0;
-        for (RaplaTableColumn<?> col: reservationColumnPlugins)
+        for (RaplaTableColumn<?, TableColumn> col: reservationColumnPlugins)
         {
         	col.init(table.getColumnModel().getColumn(column  ));
         	column++;	

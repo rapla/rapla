@@ -80,7 +80,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
 	    // generates a text file from all filtered events;
 	    StringBuffer buf = new StringBuffer();
 	    
-	    Collection< ? extends RaplaTableColumn<?>> columns;
+	    Collection< ? extends RaplaTableColumn<?,?>> columns;
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
@@ -89,7 +89,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
 	    }
 	    else
 	    {
-	    	columns = getContainer().lookupServicesFor(AppointmentTableColumn.class);
+	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) getContainer().lookupServicesFor(AppointmentTableColumn.class);
 		    objects.addAll( model.getBlocks()); 
 	    }
 	    for (RaplaTableColumn column: columns)

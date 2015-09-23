@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Reservation;
@@ -61,12 +62,12 @@ public class ReservationTableModel extends DefaultTableModel
     public Object getValueAt( int rowIndex, int columnIndex )
     {
         Reservation event = reservations[rowIndex];
-        RaplaTableColumn<Reservation> tableColumn = columns.get( columnIndex);
+        RaplaTableColumn<Reservation,TableColumn> tableColumn = columns.get( columnIndex);
         return tableColumn.getValue(event);
     }
 
     public Class<?> getColumnClass(int columnIndex) {
-    	RaplaTableColumn<Reservation> tableColumn = columns.get( columnIndex);
+    	RaplaTableColumn<Reservation, TableColumn> tableColumn = columns.get( columnIndex);
         return tableColumn.getColumnClass();
     }
 

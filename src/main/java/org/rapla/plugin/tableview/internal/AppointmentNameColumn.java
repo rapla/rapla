@@ -12,7 +12,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
 @Extension(provides = AppointmentTableColumn.class, id = "name")
-public final class AppointmentNameColumn extends RaplaComponent implements AppointmentTableColumn {
+public final class AppointmentNameColumn extends RaplaComponent implements AppointmentTableColumn<TableColumn> {
 	@Inject
 	public AppointmentNameColumn(RaplaContext context) {
 		super(context);

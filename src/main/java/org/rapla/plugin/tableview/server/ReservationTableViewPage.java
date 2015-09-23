@@ -12,7 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.table.TableColumn;
 
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
@@ -23,10 +30,8 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-
 @Extension(provides = HTMLViewPage.class,id=TableViewPlugin.TABLE_EVENT_VIEW)
-public class ReservationTableViewPage extends TableViewPage<Reservation>
+public class ReservationTableViewPage extends TableViewPage<Reservation, TableColumn>
 {
     Set<ReservationTableColumn> columnSet;
     @Inject
@@ -40,7 +45,7 @@ public class ReservationTableViewPage extends TableViewPage<Reservation>
         final Date startDate = model.getStartDate();
         final Date endDate = model.getEndDate();
         final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));           
-        List< RaplaTableColumn<Reservation>> columPluigns =  new ArrayList<RaplaTableColumn<Reservation>>( columnSet);
+        List< RaplaTableColumn<Reservation, TableColumn>> columPluigns =  new ArrayList<RaplaTableColumn<Reservation, TableColumn>>( columnSet);
         return getCalendarHTML( columPluigns, reservations,TableViewPlugin.EVENTS_SORTING_STRING_OPTION );
     }
 

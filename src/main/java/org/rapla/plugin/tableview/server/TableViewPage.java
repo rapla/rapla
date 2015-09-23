@@ -14,16 +14,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 
-abstract public class TableViewPage<T> implements HTMLViewPage
+abstract public class TableViewPage<T, C> implements HTMLViewPage
 {
 
 	protected CalendarModel model;
@@ -98,7 +95,7 @@ abstract public class TableViewPage<T> implements HTMLViewPage
         @SuppressWarnings("rawtypes")
         RaplaTableColumn reservationColumnPlugins;
         int direction;
-        TableRow(T originalObject, RaplaTableColumn<T> reservationColumnPlugins, int sortDirection)
+        TableRow(T originalObject, RaplaTableColumn<T, C> reservationColumnPlugins, int sortDirection)
         {
             this.object = originalObject;
             this.reservationColumnPlugins = reservationColumnPlugins;
@@ -137,9 +134,9 @@ abstract public class TableViewPage<T> implements HTMLViewPage
     }
 	 
 
-	public  String getCalendarHTML(List< RaplaTableColumn<T>> columPluigns, List<T> rowObjects,String sortingStringOption) {
+	public  String getCalendarHTML(List< RaplaTableColumn<T, C>> columPluigns, List<T> rowObjects,String sortingStringOption) {
 
-	       RaplaTableColumn<T> columPlugin = null;
+	       RaplaTableColumn<T, C> columPlugin = null;
 	       int sortDirection =1;
 	       String sorting = model.getOption(sortingStringOption);
 	       if ( sorting != null)
@@ -168,7 +165,7 @@ abstract public class TableViewPage<T> implements HTMLViewPage
 	       StringBuffer buf = new StringBuffer();
 	       buf.append("<table class='export table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
 	       buf.append("<thead><tr>");
-	       for (RaplaTableColumn<?> col: columPluigns)
+	       for (RaplaTableColumn<?, C> col: columPluigns)
 	       {
 	           buf.append("<th>");
 	           buf.append(col.getColumnName());
@@ -179,7 +176,7 @@ abstract public class TableViewPage<T> implements HTMLViewPage
 	       for (TableRow row :rows)
 	       {
 	           buf.append("<tr>");
-	           for (RaplaTableColumn<T> col: columPluigns)
+	           for (RaplaTableColumn<T, C> col: columPluigns)
 	           {
 	               buf.append("<td>");
 	               T rowObject = row.object;

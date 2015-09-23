@@ -47,4 +47,5 @@ public class ReservationStartColumn extends RaplaComponent implements Reservatio
 		String string= raplaLocale.formatDateLong(firstDate) + " " + raplaLocale.formatTime( firstDate);
 		return string;
 	}
+
 }
