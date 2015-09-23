@@ -62,6 +62,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.action.AppointmentAction;
+import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.ErrorDialog;
 import org.rapla.gui.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
@@ -315,7 +316,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return  getService( ClientService.SESSION_MAP);
     }
 
-    protected InfoFactory getInfoFactory() {
+    protected InfoFactory<Component, DialogUI> getInfoFactory() {
         return getService( InfoFactory.class );
     }
     

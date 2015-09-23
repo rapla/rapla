@@ -1,13 +1,10 @@
 package org.rapla.gui;
 
-import javax.swing.JComponent;
-
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.toolkit.DialogUI;
 
-public interface InfoFactory
+public interface InfoFactory<C, D>
 {
-    <T> JComponent createInfoComponent( T object ) throws RaplaException;
+    <T> C createInfoComponent( T object ) throws RaplaException;
 
     /** same as getToolTip(obj, true) */
     <T> String getToolTip( T obj );
@@ -17,6 +14,6 @@ public interface InfoFactory
 
     <T> void showInfoDialog( T object, PopupContext popupContext ) throws RaplaException;
 
-    DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException;
+    D createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException;
 
 }

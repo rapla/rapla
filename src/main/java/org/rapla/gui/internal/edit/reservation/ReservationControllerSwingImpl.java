@@ -30,7 +30,7 @@ import org.rapla.inject.InjectionContext;
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
     Container container;
-    InfoFactory infoFactory;    
+    InfoFactory<Component, DialogUI> infoFactory;    
     RaplaContext context;
     Wrapper wrapper;
     RaplaImages images;
@@ -51,7 +51,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     
     @Inject
     public ReservationControllerSwingImpl(RaplaContext context,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, Container container,InfoFactory infoFactory, RaplaImages images)
+            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, Container container,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard);
         this.infoFactory = infoFactory;
