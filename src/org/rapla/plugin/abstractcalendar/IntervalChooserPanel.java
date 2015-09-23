@@ -260,8 +260,14 @@ public class IntervalChooserPanel extends RaplaGUIComponent
 					                if ( period == null) {
 					                    return;
 					                }
-					                updateDates( period.getStart(), period.getEnd());
-					                fireDateChange( period.getStart());
+					                
+					                final Date periodStart = period.getStart();
+                                    final Date periodEnd = period.getEnd();
+                                    if ( periodEnd != null && periodEnd != null)
+                                    {
+                                        updateDates( periodStart, periodEnd);
+                                        fireDateChange( periodStart);
+                                    }
 					            }
         }
 

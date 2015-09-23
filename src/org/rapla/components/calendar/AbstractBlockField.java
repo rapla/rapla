@@ -360,8 +360,6 @@ public abstract class AbstractBlockField extends JTextField {
                     bValid = false;
                 } else {
                     //if (offs < currentText.length()-1)
-                    //System.out.println("offset-char: " + currentText.charAt(offs));
-//
                     if (isSeparator(source[i]))
                         if (isNextSeparator(currentText,offs)
                             || isPrevSeparator(i,source,currentText,offs)
@@ -380,17 +378,8 @@ public abstract class AbstractBlockField extends JTextField {
             }
             if (bShouldBeep)
                 beep();
-            super.insertString(offs, new String(result, 0, j), a);
-        }
-        public void remove(int offs, int len)
-            throws BadLocationException {
-            if (m_lastChar == 0
-                || (!isSeparator(m_lastChar)
-                    && (isValidChar(m_lastChar)
-                        || !Character.isLetter(m_lastChar))
-                    )
-                )
-                super.remove(offs, len);
+            final String insertedString = new String(result, 0, j);
+            super.insertString(offs, insertedString, a);
         }
     }
 

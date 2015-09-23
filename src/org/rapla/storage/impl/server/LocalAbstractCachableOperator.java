@@ -2152,6 +2152,31 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             DynamicType type = (DynamicType) entity;
             DynamicTypeImpl.validate( type, i18n);
         }
+        else if ( Allocatable.TYPE == raplaType)
+        {
+            final Classification classification = ( (Allocatable) entity).getClassification();
+            if (classification.getType().getKey().equals( PERIOD_TYPE))
+            {
+                String keyName = null;
+                if ( classification.getValue("start") == null  )
+                {
+                    keyName = getString("start_date");
+                }
+                else if ( classification.getValue("end") == null  )
+                {
+                    keyName = getString("end_date");
+                }
+                else if ( classification.getValue("name") == null || classification.getValue("name").toString().trim().isEmpty())
+                {
+                    keyName = getString("name");
+                }
+                if ( keyName != null)
+                {
+                    throw new RaplaException(getI18n().format("error.no_entry_for", keyName));
+                }
+            }
+            
+        }
     }
 	
 	protected void checkReservation(Reservation reservation) throws RaplaException {

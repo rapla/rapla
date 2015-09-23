@@ -170,19 +170,26 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             { // EXCO: Why this test ?
             	continue;
             }
-    	    from_start = diff(period.getStart(),date);
-    	    if ( endDate != null )
+            if ( period.getStart() != null && period.getEnd() != null)
             {
-    	        from_end = Math.abs(diff(period.getEnd(), endDate));
+        	    from_start = diff(period.getStart(),date);
+        	    if ( endDate != null )
+                {
+        	        from_end = Math.abs(diff(period.getEnd(), endDate));
+                }
+        	    if (    from_start < min_from_start	
+                    || (from_start == min_from_start && from_end < min_from_end)
+        		  ) 
+               {
+                   min_from_start = from_start;
+                   min_from_end   = from_end;
+                   result = period;
+               }
             }
-    	    if (    from_start < min_from_start	
-                || (from_start == min_from_start && from_end < min_from_end)
-    		  ) 
-           {
-               min_from_start = from_start;
-               min_from_end   = from_end;
-               result = period;
-           }
+            else if ( result == null)
+            {
+                result =  period;
+            }
         }
         return result;
     }
@@ -193,12 +200,15 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         Iterator<Period> it = periodList.iterator();
         while (it.hasNext()) {
             Period period = it.next();
-            if (min == -1) {
-                min = diff(period.getEnd(),date);
+            if (min == -1 ) {
+                if ( period.getEnd() != null)
+                {
+                    min = diff(period.getEnd(),date);
+                }
                 result = period;
             }
-            if (diff(period.getEnd(),date) < min) {
-                min = diff(period.getStart(),date);
+            if (period.getEnd() != null && diff(period.getEnd(),date) < min) {
+                min = diff(period.getEnd(),date);
                 result = period;
             }
         }

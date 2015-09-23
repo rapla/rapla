@@ -63,6 +63,10 @@ public class PeriodImpl implements Period
     }
 
     public boolean contains(Date date) {
+        if ( date == null)
+        {
+            return false;
+        }
         return ((end == null || date.before(end))&& (start == null || !date.before(start)));
     }
 
@@ -70,17 +74,34 @@ public class PeriodImpl implements Period
         return getName() + " " + getStart() + " - " + getEnd();
     }
 
+    /*
     public int compareTo_(Date date) {
-        int result = getEnd().compareTo(date);
+        final Date end2 = getEnd();
+        int result = end2.compareTo(date);
         if (result == 0)
             return 1;
         else
             return result;
     }
+    */
 
     public int compareTo(Period period) {
-        int result = getStart().compareTo(period.getStart());
-        if (result != 0) return result;
+        final Date start1 = getStart();
+        final Date start2 = period.getStart();
+        if ( start1 == null || start2 == null)
+        {
+            if ( start1 != null)
+            {
+                return 1;              
+            }
+            if ( start2 != null)
+            {
+                return -1;              
+            }
+        } else {
+            int result = start1.compareTo(start2);
+            if (result != 0) return result;
+        }
 
         if (equals(period))
             return 0;
