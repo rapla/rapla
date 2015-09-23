@@ -219,10 +219,18 @@ public class DateChooserPanel extends RaplaGUIComponent
                 calendar.add(incrementSize,getIncrementAmount(incrementSize ));
             }
             if (evt.getSource() == periodChooser) {
-                date = periodChooser.getDate();
+                final Date periodDate = periodChooser.getDate();
                 Period period = periodChooser.getPeriod();
-                model.setStartDate( period.getStart() );
-                model.setEndDate( period.getEnd() );
+                final Date start = period.getStart();
+                final Date end = period.getEnd();
+                if ( period == null || start == null || end == null)
+                {
+                    getLogger().warn("Period start or end can't be null");
+                    return;
+                }
+                date = periodDate;
+                model.setStartDate( start );
+                model.setEndDate( end );
             } else {
                 date = calendar.getTime();
             }

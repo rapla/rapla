@@ -280,6 +280,7 @@ final public class DateField extends AbstractBlockField {
                 return true;
             }
             m_calendar.setTime(m_parsingFormat.parse(dateTxt));
+            
             nullValue = false;
             return true;
         } catch (ParseException e) {
