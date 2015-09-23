@@ -295,25 +295,42 @@ public class AppointmentFormaterImpl
 
     private boolean isPeriodicaly(Period period, Repeating r) {
         Appointment a = r.getAppointment();
-        if (r.getEnd().after( period.getEnd() ) )
+        final Date periodEnd = period.getEnd();
+        final Date periodStart = period.getStart();
+        if ( periodStart == null)
+        {
+            return false;
+        }
+        if ( periodEnd == null)
+        {
+            if (r.getEnd() == null )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        if (r.getEnd().after( periodEnd ) )
             return false;
         if ( r.isWeekly() )
         {
             return
-               ( DateTools.cutDate(a.getStart().getTime()) - period.getStart().getTime() )
-               <= DateTools.MILLISECONDS_PER_DAY * 6
-               &&
-               ( DateTools.cutDate(period.getEnd().getTime()) - r.getEnd().getTime() )
-               <= DateTools.MILLISECONDS_PER_DAY * 6
-               ;
+                    ( DateTools.cutDate(a.getStart().getTime()) - periodStart.getTime() )
+                            <= DateTools.MILLISECONDS_PER_DAY * 6
+                            &&
+                            ( DateTools.cutDate(periodEnd.getTime()) - r.getEnd().getTime() )
+                                    <= DateTools.MILLISECONDS_PER_DAY * 6
+                    ;
         }
         else if ( r.isDaily() )
         {
             return
-                isSameDay( a.getStart(), period.getStart() )
-                &&
-                isSameDay( r.getEnd(), period.getEnd() )
-                ;
+                    isSameDay( a.getStart(), periodStart )
+                            &&
+                            isSameDay( r.getEnd(), periodEnd )
+                    ;
         }
         return false;
     }
