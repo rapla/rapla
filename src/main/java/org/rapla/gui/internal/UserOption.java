@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -59,6 +60,7 @@ public class UserOption extends RaplaGUIComponent
 	LanguageChooser languageChooser; 		
 	
 	Preferences preferences;
+	@Inject
     public UserOption(RaplaContext sm) {
         super(sm);
     }

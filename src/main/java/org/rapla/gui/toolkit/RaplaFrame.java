@@ -20,11 +20,12 @@ import java.beans.VetoableChangeListener;
 import java.util.ArrayList;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.JFrame;
 
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
+@Singleton
 public class RaplaFrame extends JFrame
     implements
         FrameController

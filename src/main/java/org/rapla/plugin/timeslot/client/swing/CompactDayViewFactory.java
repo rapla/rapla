@@ -22,8 +22,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.client.extensionpoints.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 
+@Extension(provides = SwingCalendarView.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class CompactDayViewFactory extends RaplaComponent implements SwingViewFactory
 {
 

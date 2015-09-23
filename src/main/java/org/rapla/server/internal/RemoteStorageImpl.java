@@ -46,15 +46,15 @@ import java.util.*;
 public class RemoteStorageImpl implements RemoteStorage
 {
     private final RemoteSession session;
-    CachableStorageOperator operator;
-    protected SecurityManager security;
-    ShutdownService shutdownService;
+    private final CachableStorageOperator operator;
+    private final SecurityManager security;
+    private final ShutdownService shutdownService;
 
-    Provider<AuthenticationStore> authenticationStore;
+    private final Provider<AuthenticationStore> authenticationStore;
 
-    RaplaResources i18n;
-    Provider<MailInterface> mailInterface;
-    UpdateDataManager updateDataManager;
+    private final RaplaResources i18n;
+    private final Provider<MailInterface> mailInterface;
+    private final UpdateDataManager updateDataManager;
 
     @Inject public RemoteStorageImpl(RemoteSession session, CachableStorageOperator operator, SecurityManager security, ShutdownService shutdownService,
             Provider<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager)
@@ -64,6 +64,9 @@ public class RemoteStorageImpl implements RemoteStorage
         this.operator = operator;
         this.security = security;
         this.authenticationStore = authenticationStore;
+        this.shutdownService = shutdownService;
+        this.mailInterface = mailInterface;
+        this.i18n = i18n;
     }
 
     public FutureResult<UpdateEvent> getResources()

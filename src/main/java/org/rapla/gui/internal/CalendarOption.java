@@ -17,6 +17,7 @@ import java.awt.FlowLayout;
 import java.util.Calendar;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
@@ -77,6 +78,7 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
     JComboBox firstDayOfWeek;
     RaplaNumber daysInWeekview;
 
+    @Inject
     public CalendarOption(RaplaContext sm) {
         super( sm);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.client.swing;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.facade.CalendarModel;
@@ -21,11 +22,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
 import org.rapla.client.extensionpoints.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 
+@Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.WEEK_TIMESLOT)
 public class CompactViewFactory extends RaplaComponent implements SwingViewFactory
 {
 
+    @Inject
     public CompactViewFactory(RaplaContext context)
     {
         super( context );

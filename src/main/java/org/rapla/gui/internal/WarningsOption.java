@@ -14,6 +14,7 @@ package org.rapla.gui.internal;
 
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -32,6 +33,7 @@ public class WarningsOption extends RaplaGUIComponent implements OptionPanel
     Preferences preferences;
     JCheckBox showConflictWarningsField = new JCheckBox();
 
+    @Inject
     public WarningsOption(RaplaContext sm) {
         super( sm);
         showConflictWarningsField.setText("");        
