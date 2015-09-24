@@ -24,14 +24,7 @@ import java.awt.Graphics2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -39,6 +32,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendarview.CalendarView;
@@ -53,7 +47,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.gui.VisibleTimeInterval;
 
 
@@ -71,10 +65,12 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     JComponent container;
     JLabel titleView;
     int units = 1;
-   
-	public AbstractRaplaSwingCalendar(RaplaContext sm,CalendarModel model, boolean editable) throws RaplaException {
+    protected final Set<ObjectMenuFactory> objectMenuFactories;
+
+    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories) throws RaplaException {
         super( sm);
         this.model = model;
+        this.objectMenuFactories = objectMenuFactories;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -124,7 +120,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent());
+        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories);
     }
 
     public JComponent getDateSelection()   {

@@ -1,17 +1,22 @@
 package org.rapla.gui.internal.edit.annotation;
 
 
+import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.TextField;
+import org.rapla.inject.Extension;
 
-public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension {
+
+@Extension(provides= AnnotationEditTypeExtension.class, id="exporteventname")
+public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+{
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT;
     protected String DEFAULT_VALUE = "";
     

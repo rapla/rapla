@@ -12,11 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit.reservation;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Cursor;
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
@@ -30,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -47,7 +44,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.ActionMapUIResource;
 
-import org.rapla.client.RaplaClientExtensionPoints;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -62,7 +59,7 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.AppointmentListener;
-import org.rapla.gui.AppointmentStatusFactory;
+import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
@@ -129,14 +126,16 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     List<AppointmentListener> appointmentListeners = new ArrayList<AppointmentListener>();
 
 
+    private final Set<AppointmentStatusFactory> appointmentStatusFactories;
 
-    ReservationEditImpl(RaplaContext sm) throws RaplaException {
+    @Inject
+    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories) throws RaplaException {
         super( sm);
-        
+        this.appointmentStatusFactories = appointmentStatusFactories;
         commandHistory = new CommandHistory();
         reservationInfo = new ReservationInfoEdit(sm, commandHistory);
         appointmentEdit = new AppointmentListEdit(sm, commandHistory);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -220,7 +219,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         contentPane.add(toolBar, BorderLayout.NORTH);
         contentPane.add(buttonsPanel, BorderLayout.SOUTH);
         contentPane.add(mainContent, BorderLayout.CENTER);
-        Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         frame.setSize(new Dimension(
                                     Math.min(dimension.width,990)
                                     // BJO 00000032 temp fix for filter out of frame bounds
@@ -444,8 +443,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.setReservation(mutableReservation);
 
         List<AppointmentStatusFactory> statusFactories = new ArrayList<AppointmentStatusFactory>();
-       Collection<AppointmentStatusFactory> list= getContainer().lookupServicesFor(RaplaClientExtensionPoints.APPOINTMENT_STATUS);
-       	for (AppointmentStatusFactory entry:list)
+       	for (AppointmentStatusFactory entry: appointmentStatusFactories)
        	{
        		statusFactories.add(entry);
        	}
@@ -456,7 +454,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         for (AppointmentStatusFactory factory: statusFactories)
         {
         	RaplaWidget statusWidget = factory.createStatus(getContext(), this);
-        	status.add( statusWidget.getComponent());
+        	status.add((Component) statusWidget.getComponent());
         }
 
         // Should be done in initialization method of Appointmentstatus. The appointments are already selected then, so you can query the selected appointments thers.

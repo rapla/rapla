@@ -15,6 +15,9 @@ import javax.inject.Inject;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.plugin.ical.ImportFromICalResources;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.ImportExportManager;
@@ -31,6 +34,7 @@ import org.rapla.storage.dbsql.DBOperator;
   </importexport>
 </pre>
 */
+@DefaultImplementation(of= ImportExportManager.class,context = InjectionContext.server)
 public class ImportExportManagerImpl implements ImportExportManager {
     CachableStorageOperator source;
     CachableStorageOperator dest;

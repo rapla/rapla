@@ -23,7 +23,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.RaplaSecurityException;
 
 
@@ -40,7 +39,6 @@ public class PermissionTest extends ServletTestBase {
     protected void setUp() throws Exception {
         super.setUp();
         // start the server
-        getContainer().lookupDeprecated(ServerServiceContainer.class, "storage-file");
         // start the client service
         adminFacade =  getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         adminFacade.login("homer","duffs".toCharArray());

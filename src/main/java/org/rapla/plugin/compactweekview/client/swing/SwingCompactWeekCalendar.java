@@ -27,6 +27,7 @@ import java.util.Set;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
 import org.rapla.components.calendar.DateRendererAdapter;
@@ -51,8 +52,8 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable) throws RaplaException {
-        super( sm, settings, editable);
+    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories);
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
@@ -103,7 +104,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 
     
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent()) {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories) {
             
             @Override
             public void selectionChanged(Date start, Date end) {

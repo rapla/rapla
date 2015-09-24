@@ -15,11 +15,14 @@ import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
+import javax.inject.Inject;
+
 @DefaultImplementation(of =ICalConfigService.class,context = InjectionContext.server)
 public class ICalConfigServiceImpl implements ICalConfigService {
     final ClientFacade facade;
     RemoteSession remoteSession;
-    
+
+    @Inject
     public ICalConfigServiceImpl(ClientFacade facade, RemoteSession remoteSession)
     {
         this.facade = facade;

@@ -13,6 +13,7 @@
 package org.rapla.gui.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.internal.CountryChooser;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.components.calendar.RaplaNumber;
@@ -27,15 +28,22 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.inject.Extension;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalTimezones;
+import org.rapla.storage.RemoteLocaleService;
 
+import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Locale;
 
-public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
+
+@Extension(provides = SystemOptionPanel.class, id="startOption")
+public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
     JPanel panel = new JPanel();
     JTextField calendarName;
     Preferences preferences;
@@ -53,7 +61,8 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
     }
 
 
-    public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService) throws RaplaException {
+    @Inject
+    public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService, RemoteLocaleService localeService) throws RaplaException {
         super(context);
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre}}));
@@ -78,7 +87,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements OptionPanel {
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
 
-        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale);
+        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale,localeService);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
         languageChooser.addActionListener(new ActionListener()

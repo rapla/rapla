@@ -8,11 +8,10 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 
-@Extension(provides = I18nBundle.class, id = NotificationResources.PLUGIN_ID)
+@Extension(provides = I18nBundle.class, id = NotificationPlugin.PLUGIN_ID)
 public class NotificationResources extends AbstractBundle
 {
-    public static final String PLUGIN_ID ="org.rapla.plugin.notification";
-    private static final String BUNDLENAME = PLUGIN_ID + ".NotificationResources";
+    private static final String BUNDLENAME = NotificationPlugin.PLUGIN_ID + ".NotificationResources";
 
 
     @Inject

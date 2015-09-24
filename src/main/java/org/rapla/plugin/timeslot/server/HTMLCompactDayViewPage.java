@@ -26,10 +26,8 @@ import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -40,10 +38,8 @@ import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 @Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage

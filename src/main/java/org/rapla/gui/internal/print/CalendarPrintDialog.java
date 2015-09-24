@@ -13,14 +13,24 @@
 
 package org.rapla.gui.internal.print;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.Rectangle;
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.components.iolayer.ComponentPrinter;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaDefaultContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.SwingCalendarView;
+import org.rapla.gui.images.RaplaImages;
+import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.gui.toolkit.ErrorDialog;
+import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -28,36 +38,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.util.HashMap;
 import java.util.Map;
-
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.iolayer.ComponentPrinter;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.Container;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaDefaultContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.extensionpoints.SwingViewFactory;
-import org.rapla.gui.images.RaplaImages;
-import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.ErrorDialog;
-import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 
 
 public class CalendarPrintDialog extends DialogUI
@@ -100,7 +81,8 @@ public class CalendarPrintDialog extends DialogUI
     
     boolean updatePageCount = true;
     int pageCount;
-    
+
+
     private JComponent page = new JComponent()
     {
 		private static final long serialVersionUID = 1L;
@@ -157,33 +139,7 @@ public class CalendarPrintDialog extends DialogUI
 
     };
 
-
-
-
-
-
-    public static CalendarPrintDialog create(RaplaContext sm,Component owner,boolean modal,CalendarSelectionModel model,PageFormat format) throws RaplaException {
-        CalendarPrintDialog dlg;
-        Component topLevel = getOwnerWindow(owner);
-        if (topLevel instanceof Dialog)
-            dlg = new CalendarPrintDialog(sm,(Dialog)topLevel);
-        else
-            dlg = new CalendarPrintDialog(sm,(Frame)topLevel);
-
-        try {
-            dlg.init(modal,model,format);
-        } catch (Exception ex) {
-            throw new RaplaException( ex );
-        }
-        return dlg;
-    }
-
-    protected CalendarPrintDialog(RaplaContext context,Dialog owner) throws RaplaException {
-        super(context,owner);
-        init(context);
-    }
-
-    protected CalendarPrintDialog(RaplaContext context,Frame owner) throws RaplaException {
+    public CalendarPrintDialog(RaplaContext context,Frame owner) throws RaplaException {
         super(context,owner);
         init(context);
     }
@@ -193,15 +149,9 @@ public class CalendarPrintDialog extends DialogUI
 		images = context.lookup( RaplaImages.class);
     }
     
-    private void init(boolean modal,CalendarSelectionModel model,PageFormat format) throws Exception {
+    public void init(boolean modal,final Map<String,SwingViewFactory> factoryMap,CalendarSelectionModel model,PageFormat format) throws Exception {
         super.init(modal,new JPanel(),new String[] {"print","format","print_to_file","cancel"});
         this.model = model;
-   	 	Map<String,SwingViewFactory> factoryMap = new HashMap<String, SwingViewFactory>();
-        for (SwingViewFactory fact: getContext().lookup(Container.class).lookupServicesFor(RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION))
-		{
-			String id = fact.getViewId();
-			factoryMap.put( id , fact);
-		}
         RaplaContext context = getContext();
         printTool = context.lookup(IOInterface.class);
         i18n =  context.lookup(RaplaResources.class);
@@ -222,7 +172,7 @@ public class CalendarPrintDialog extends DialogUI
         }
         else
         {
-        	Component comp = currentView.getComponent();
+        	Component comp = (Component)currentView.getComponent();
             printable = new ComponentPrinter( comp, comp.getPreferredSize());
         }
         String title = model.getTitle();
@@ -270,7 +220,7 @@ public class CalendarPrintDialog extends DialogUI
         southPanel.setMinimumSize( new Dimension(1,1));
         southPanel.setPreferredSize( new Dimension(1,1));
         southPanel.setLayout( null);
-        southPanel.add( currentView.getComponent());
+        southPanel.add( (Component)currentView.getComponent());
       
         scrollPane.getVerticalScrollBar().setUnitIncrement(10);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(10);

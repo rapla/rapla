@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.jws.WebParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -35,6 +36,7 @@ import org.rapla.storage.RaplaSecurityException;
 @Extension(provides = RaplaPageExtension.class,id="resources")
 @RemoteJsonMethod
 @Path("resources")
+@Singleton
 public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPageExtension{
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,

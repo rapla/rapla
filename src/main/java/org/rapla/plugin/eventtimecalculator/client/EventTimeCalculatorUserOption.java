@@ -2,17 +2,22 @@ package org.rapla.plugin.eventtimecalculator.client;
 
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.internal.UserOption;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
@@ -22,7 +27,9 @@ import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
  *
  * @author Tobias Bertram
  */
-public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements OptionPanel {
+@Extension(provides = UserOptionPanel.class, id=EventTimeCalculatorPlugin.PLUGIN_ID)
+public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements UserOptionPanel
+{
    
     EventTimeCalculatorOption optionPanel;
 	private Preferences preferences;
@@ -30,12 +37,13 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
 	JPanel panel;
 
     EventTimeCalculatorResources eventTimei18n;
-	public EventTimeCalculatorUserOption(RaplaContext context, Configuration config) throws RaplaContextException
+    @Inject
+	public EventTimeCalculatorUserOption(RaplaContext context, EventTimeCalculatorResources i18n, ClientFacade facade) throws RaplaException
     {
         super(context);
-        this.config = config;
-        eventTimei18n = context.lookup(EventTimeCalculatorResources.class);
-        optionPanel = new EventTimeCalculatorOption(context, false);
+        this.config = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+        eventTimei18n = i18n;
+        optionPanel = new EventTimeCalculatorOption(context, false, i18n);
         panel = optionPanel.createPanel();
     }
 

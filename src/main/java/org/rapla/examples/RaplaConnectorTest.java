@@ -2,6 +2,7 @@ package org.rapla.examples;
 
 import java.util.Locale;
 
+import org.rapla.RaplaClient;
 import org.rapla.RaplaMainContainer;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
@@ -20,11 +21,10 @@ public class RaplaConnectorTest
             // Connects to http://localhost:8051/
             // and calls rapla/rpc/methodNames for interacting 
             StartupEnvironment env = new SimpleConnectorStartupEnvironment( "localhost", 8051,"/", false, logger);
-            RaplaMainContainer container = new RaplaMainContainer( env);
-            RaplaContext  context = container.getContext();
+            RaplaClient container = new RaplaClient( env);
 
             // get an interface to the facade and login
-            ClientFacade facade = context.lookup(ClientFacade.class);
+            ClientFacade facade = container.lookupDeprecated(ClientFacade.class, null);
 
             if ( !facade.login( "admin", "".toCharArray()) ) {
                 throw new RaplaException("Can't login");

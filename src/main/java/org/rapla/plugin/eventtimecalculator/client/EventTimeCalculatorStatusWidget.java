@@ -37,11 +37,11 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
     /**
      * creates the panel for the GUI in window "reservation".
      */
-    public EventTimeCalculatorStatusWidget(final RaplaContext context, final ReservationEdit reservationEdit) throws RaplaException {
+    public EventTimeCalculatorStatusWidget(final RaplaContext context, final ReservationEdit reservationEdit, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources) throws RaplaException {
         super(context);
-        factory = context.lookup(EventTimeCalculatorFactory.class);
+        this.factory = factory;
         //this.config = config;
-        eventTimei18n = context.lookup( EventTimeCalculatorResources.class);
+        eventTimei18n = resources;
 
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5},

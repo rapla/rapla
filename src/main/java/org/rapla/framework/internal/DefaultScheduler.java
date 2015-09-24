@@ -11,13 +11,19 @@ import java.util.concurrent.TimeUnit;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-@DefaultImplementation(of=CommandScheduler.class,context = {InjectionContext.server,InjectionContext.swing})
-public class DefaultScheduler implements CommandScheduler {
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@DefaultImplementation(of=CommandScheduler.class,context = {InjectionContext.server})
+@Singleton
+public class DefaultScheduler implements CommandScheduler, Disposable
+{
 	private final ScheduledExecutorService executor;
 	Logger logger;
 	
@@ -25,7 +31,12 @@ public class DefaultScheduler implements CommandScheduler {
 	{
         return logger;
     }
-	
+
+	@Inject
+	public DefaultScheduler(Logger logger) {
+	    this(logger, 6);
+	}
+
 	public DefaultScheduler(Logger logger, int poolSize) {
 	    this.logger = logger;
 		final ScheduledExecutorService executor = Executors.newScheduledThreadPool(poolSize,new ThreadFactory() {
@@ -91,6 +102,11 @@ public class DefaultScheduler implements CommandScheduler {
 				}
 			}
 		};
+	}
+
+	@Override public void dispose()
+	{
+		cancel();
 	}
 
 	public Cancelable schedule(Runnable task, long delay, long period) {

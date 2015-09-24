@@ -15,7 +15,9 @@
 package org.rapla.plugin.weekview.client.swing;
 
 import java.util.Calendar;
+import java.util.Set;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.RaplaContext;
@@ -24,9 +26,9 @@ import org.rapla.framework.RaplaException;
 
 public class SwingDayCalendar extends SwingWeekCalendar
 {
-    public SwingDayCalendar( RaplaContext sm, CalendarModel model, boolean editable ) throws RaplaException
+    public SwingDayCalendar( RaplaContext sm, CalendarModel model, boolean editable,final Set<ObjectMenuFactory> objectMenuFactories ) throws RaplaException
     {
-        super( sm, model, editable );
+        super( sm, model, editable, objectMenuFactories );
     }
     
     @Override

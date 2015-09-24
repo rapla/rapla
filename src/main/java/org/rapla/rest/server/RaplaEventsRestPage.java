@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -37,6 +38,7 @@ import org.rapla.storage.RaplaSecurityException;
 @Extension(provides = RaplaPageExtension.class,id="events")
 @RemoteJsonMethod
 @Path("events")
+@Singleton
 public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 

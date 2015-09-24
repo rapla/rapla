@@ -14,12 +14,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -75,8 +70,9 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     CopyListener copyListener = new CopyListener();
     CopyListener cutListener = new CopyListener();
-	
-    public SwingReservationTableView( RaplaContext context, final CalendarModel model, final boolean editable ) throws RaplaException
+
+    public SwingReservationTableView(RaplaContext context, final CalendarModel model, Set<ReservationSummaryExtension> reservationSummaryExtensions,
+            Set<ReservationTableColumn> reservationColumnPlugins, final boolean editable) throws RaplaException
     {
         super( context );
         cutListener.setCut(true);
@@ -106,7 +102,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         	PopupTableHandler popupHandler = new PopupTableHandler();
         	scrollpane.addMouseListener( popupHandler);
         	table.addMouseListener( popupHandler );
-        	Collection< ? extends SummaryExtension> reservationSummaryExtensions  = getContainer().lookupServicesFor(ReservationSummaryExtension.class);
      		for ( SummaryExtension summary:reservationSummaryExtensions)
      		{
      			summary.init(table, extensionPanel);
@@ -122,7 +117,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
        	
-       	List< ? extends ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>(getContainer().lookupServicesFor(ReservationTableColumn.class));
        	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnPlugins );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);

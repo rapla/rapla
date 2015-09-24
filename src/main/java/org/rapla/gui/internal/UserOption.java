@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
@@ -45,11 +46,12 @@ import org.rapla.gui.internal.action.user.PasswordChangeAction;
 import org.rapla.gui.toolkit.ActionWrapper;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.inject.Extension;
 
-
+@Extension(provides = UserOptionPanel.class,id="userOption")
 public class UserOption extends RaplaGUIComponent
     implements
-        OptionPanel
+        UserOptionPanel
 {
 	JPanel superPanel = new JPanel();
 

@@ -17,6 +17,7 @@ import java.awt.Dimension;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -26,24 +27,32 @@ import javax.swing.event.ChangeListener;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditComponent;
 import org.rapla.gui.internal.edit.fields.BooleanField;
 import org.rapla.gui.internal.edit.fields.ClassificationField;
 import org.rapla.gui.internal.edit.fields.PermissionListField;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.Extension;
+
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
-class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
+
+@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.dynamictype.Allocatable")
+public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     ClassificationField<Allocatable> classificationField;
     PermissionListField permissionField;
     BooleanField holdBackConflictsField;
-    final boolean internal;
-    
-    public AllocatableEditUI(RaplaContext context, boolean internal) throws RaplaException {
+    final JComponent holdBackConflictPanel;
+
+    @Inject
+    public AllocatableEditUI(RaplaContext context) throws RaplaException {
         super(context);
-        this.internal = internal;
         classificationField = new ClassificationField<Allocatable>(context);
         permissionField = new PermissionListField(context,getString("permissions"));
         
@@ -51,20 +60,12 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         final JComponent permissionPanel = permissionField.getComponent();
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
-        final JComponent holdBackConflictPanel;
-        if ( !internal)
-        {
-            holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
-            holdBackConflictPanel = new JPanel();
-            holdBackConflictPanel.setLayout( new BorderLayout());
-            holdBackConflictPanel.add( new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);
-            holdBackConflictPanel.add( holdBackConflictsField.getComponent(), BorderLayout.CENTER);
-            editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-        }
-        else
-        {
-            holdBackConflictPanel = null;
-        }
+        holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
+        holdBackConflictPanel = new JPanel();
+        holdBackConflictPanel.setLayout( new BorderLayout());
+        holdBackConflictPanel.add(new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);
+        holdBackConflictPanel.add(holdBackConflictsField.getComponent(), BorderLayout.CENTER);
+
         classificationField.addChangeListener(new ChangeListener()
         {
             
@@ -75,21 +76,15 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
                 permissionPanel.setVisible( !mainTabSelected);
                 if ( !mainTabSelected && !editPanel.isAncestorOf( permissionPanel) )
                 {
-                    if ( holdBackConflictPanel != null)
-                    {
-                        editPanel.remove( holdBackConflictPanel);
-                    }
+                    editPanel.remove( holdBackConflictPanel);
                     editPanel.add( permissionPanel, BorderLayout.SOUTH);
                     editPanel.repaint();
                 }
                 
-                if (  mainTabSelected && (holdBackConflictPanel == null || !editPanel.isAncestorOf( holdBackConflictPanel)) )
+                if (  mainTabSelected && ( !editPanel.isAncestorOf( holdBackConflictPanel)) )
                 {
                     editPanel.remove( permissionPanel );
-                    if ( holdBackConflictPanel != null)
-                    {
-                        editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-                    }
+                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
                     editPanel.repaint();
                 }
                 AllocatableEditUI.this.stateChanged(e);
@@ -103,17 +98,20 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         permissionField.mapTo( objectList);
         if ( getName(objectList).length() == 0)
             throw new RaplaException(getString("error.no_name"));
-        if ( !internal)
+        for ( Allocatable alloc:objectList)
         {
-            Boolean value = holdBackConflictsField.getValue();
-            if ( value != null)
+            if ( !isInternalType( alloc))
             {
-                for ( Allocatable alloc:objectList)
-                {
-                	alloc.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, value  ? ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE  : null); 
-                }
+                Boolean value = holdBackConflictsField.getValue();
+                alloc.setAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, (value != null && value) ? ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE : null);
             }
         }
+    }
+
+    private boolean isInternalType(Allocatable alloc) {
+        DynamicType type = alloc.getClassification().getType();
+        String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
     }
 
     protected void mapFromObjects() throws RaplaException {
@@ -122,8 +120,13 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         Set<Boolean> values = new HashSet<Boolean>();
         boolean canAdmin = true;
         boolean allPermissions = true;
+        boolean internal = false;
         for ( Allocatable alloc:objectList)
         {
+            if ( isInternalType( alloc))
+            {
+                internal = true;
+            }
             if ((( DynamicTypeImpl)alloc.getClassification().getType()).isInternal())
             {
                 allPermissions = false;
@@ -148,8 +151,13 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         {
             permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ );
         }
-        if ( !internal)
-        {   
+        if ( internal)
+        {
+            holdBackConflictPanel.setVisible( false );
+            classificationField.setTypeChooserVisible( false );
+        }
+        else
+        {
             if ( values.size() ==  1)
             {
                 Boolean singleValue = values.iterator().next();
@@ -159,8 +167,10 @@ class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             {
                 holdBackConflictsField.setFieldForMultipleValues();
             }
+            holdBackConflictPanel.setVisible( true);
+            classificationField.setTypeChooserVisible( true);
         }
-        classificationField.setTypeChooserVisible( !internal);
+
     }
 
 

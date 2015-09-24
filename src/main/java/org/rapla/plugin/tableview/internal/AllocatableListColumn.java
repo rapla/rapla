@@ -12,7 +12,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 
-public class AllocatableListColumn extends RaplaComponent implements AppointmentTableColumn<TableColumn> {
+public class AllocatableListColumn extends RaplaComponent implements AppointmentTableColumn {
 	public AllocatableListColumn(RaplaContext context) {
 		super(context);
 	}

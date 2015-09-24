@@ -1,16 +1,21 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.inject.Extension;
 
-public class LocationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension{
+@Extension(provides= AnnotationEditTypeExtension.class, id="location")
+public class LocationAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+{
 
     private final String annotationName = DynamicTypeAnnotations.KEY_LOCATION;
 

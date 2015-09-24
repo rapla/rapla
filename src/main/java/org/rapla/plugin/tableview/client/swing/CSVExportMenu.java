@@ -19,15 +19,15 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
+import javax.inject.Inject;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
+import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -35,20 +35,27 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
-
-public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener
+@Extension(provides = ExportMenuExtension.class, id = TableViewPlugin.PLUGIN_ID)
+public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener
 {
 	JMenuItem exportEntry;
 	String idString = "csv";
+	private final Set<AppointmentTableColumn> appointmentTableColumns;
+	private final Set<ReservationTableColumn> reservationTableColumns;
 
-	public CSVExportMenu( RaplaContext context ) 
+	@Inject
+	public CSVExportMenu(RaplaContext context, Set<AppointmentTableColumn> appointmentTableColumns, Set<ReservationTableColumn> reservationTableColumns)
     {
         super( context );
-        exportEntry = new JMenuItem(getString("csv.export"));
+		this.appointmentTableColumns = appointmentTableColumns;
+		this.reservationTableColumns = reservationTableColumns;
+		exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon( getIcon("icon.export") );
         exportEntry.addActionListener(this);
     }
@@ -79,18 +86,17 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
 	{
 	    // generates a text file from all filtered events;
 	    StringBuffer buf = new StringBuffer();
-	    
-	    Collection< ? extends RaplaTableColumn<?,?>> columns;
+	    Set< ? extends RaplaTableColumn<?,?>> columns;
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = getContainer().lookupServicesFor(ReservationTableColumn.class);
+	    	columns = reservationTableColumns;
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) getContainer().lookupServicesFor(AppointmentTableColumn.class);
-		    objects.addAll( model.getBlocks()); 
+	    	columns = (Set<? extends RaplaTableColumn<?, ?>>) appointmentTableColumns;
+		    objects.addAll( model.getBlocks());
 	    }
 	    for (RaplaTableColumn column: columns)
     	{

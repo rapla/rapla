@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -33,16 +34,18 @@ import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
+@Extension(provides = PluginOptionPanel.class,id = TimeslotPlugin.PLUGIN_ID)
 public class TimeslotOption extends DefaultPluginOption
 {
 	JPanel list = new JPanel();
@@ -76,7 +79,8 @@ public class TimeslotOption extends DefaultPluginOption
     	
     	
     }
-    
+
+	@Inject
     public TimeslotOption(RaplaContext sm) 
     {
         super(sm);
@@ -225,7 +229,7 @@ public class TimeslotOption extends DefaultPluginOption
     			timeslots.add( new Timeslot( name, minuteOfDay));
     		}
     	}
-      	Collections.sort( timeslots);
+      	Collections.sort(timeslots);
 		return timeslots;
 	}
 
@@ -253,14 +257,6 @@ public class TimeslotOption extends DefaultPluginOption
     	super.commit();
     }
 
-
-    /**
-     * @see org.rapla.gui.DefaultPluginOption#getPluginClass()
-     */
-    public Class<? extends PluginDescriptor<?>> getPluginClass() {
-        return TimeslotPlugin.class;
-    }
-    
     public String getName(Locale locale) {
         return "Timeslot Plugin";
     }

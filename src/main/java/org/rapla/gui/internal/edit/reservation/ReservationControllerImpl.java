@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -49,7 +50,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.EventCheck;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.ReservationController;
 import org.rapla.gui.ReservationEdit;
@@ -234,7 +235,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException;
 
-    abstract protected Collection<EventCheck> getEventChecks() throws RaplaException;
+    abstract protected Set<Provider<EventCheck>> getEventChecks() throws RaplaException;
 /*
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables)
     {
@@ -923,7 +924,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         }
 	}
 
-	protected AllocatableExchangeCommand exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,final Allocatable newAllocatable, Date newStart,PopupContext context) throws RaplaException {
+	private AllocatableExchangeCommand exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,final Allocatable newAllocatable, Date newStart,PopupContext context) throws RaplaException {
 		Map<Allocatable,Appointment[]> newRestrictions = new HashMap<Allocatable, Appointment[]>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
@@ -1562,10 +1563,11 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		}
 
 		boolean save(Collection<Reservation> reservations,PopupContext sourceComponent) throws RaplaException {
-	        Collection<EventCheck> checkers = getEventChecks();
-            for (EventCheck check:checkers)
+	        Set<Provider<EventCheck>> checkers = getEventChecks();
+            for (Provider<EventCheck> checkProvider:checkers)
             {
-                boolean successful= check.check(reservations, sourceComponent);
+                final EventCheck eventCheck = checkProvider.get();
+                boolean successful= eventCheck.check(reservations, sourceComponent);
                 if ( !successful)
                 {
                     return false;

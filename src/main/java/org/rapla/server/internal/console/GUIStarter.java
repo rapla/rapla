@@ -4,7 +4,6 @@ import java.util.concurrent.Semaphore;
 
 import org.rapla.ConnectInfo;
 import org.rapla.client.ClientService;
-import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.framework.RaplaException;
@@ -35,9 +34,7 @@ class GUIStarter
             try
             {
                 Thread.currentThread().setContextClassLoader( ClassLoader.getSystemClassLoader());
-                ClientServiceContainer clientContainer = raplaContainer.getContext().lookup(ClientServiceContainer.class );
-                ClientService client =  clientContainer.getContext().lookup( ClientService.class);
-                client.addRaplaClientListener(new RaplaClientListenerAdapter() {
+                raplaContainer.addRaplaClientListener(new RaplaClientListenerAdapter() {
                          public void clientClosed(ConnectInfo reconnect) {
                              GUIStarter.this.reconnect = reconnect;
                              if ( reconnect != null) {
@@ -52,7 +49,7 @@ class GUIStarter
                             exit();
                         }
                      });
-                clientContainer.start(connectInfo);
+                raplaContainer.start(connectInfo);
             }
             finally
             {

@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -37,17 +38,19 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.gui.internal.edit.fields.GroupListField;
 import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.storage.RaplaSecurityException;
 
 
+@Extension(provides = PluginOptionPanel.class,id= JNDIPlugin.PLUGIN_ID)
 public class JNDIOption extends DefaultPluginOption implements JNDIConf {
 	TableLayout tableLayout;
 	JPanel content;
@@ -65,7 +68,8 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
 	
 	GroupListField groupField;
 	JNDIConfig configService;
-    
+
+    @Inject
     public JNDIOption(RaplaContext sm,JNDIConfig config) {
         super(sm);
         this.configService = config;
@@ -262,13 +266,6 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf {
     }
 
 
-    /**
-     * @see org.rapla.gui.DefaultPluginOption#getPluginClass()
-     */
-    public Class<? extends PluginDescriptor<?>> getPluginClass() {
-        return JNDIPlugin.class;
-    }
-    
     @Override
     public String getName(Locale locale) {
         return JNDIPlugin.PLUGIN_NAME;

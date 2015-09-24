@@ -12,21 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification;
 
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.TypedComponentRole;
 
 /** Users can subscribe for allocation change notifications for selected resources or persons.*/
 
 public class NotificationPlugin
 {
-	public final static TypedComponentRole<Boolean> NOTIFY_IF_OWNER_CONFIG = new TypedComponentRole<Boolean>("org.rapla.plugin.notification.notify_if_owner");
-	public final static TypedComponentRole<RaplaMap<Allocatable>> ALLOCATIONLISTENERS_CONFIG = new TypedComponentRole<RaplaMap<Allocatable>>("org.rapla.plugin.notification.allocationlisteners");
+    public static final String PLUGIN_ID ="org.rapla.plugin.notification";
+    public final static TypedComponentRole<Boolean> NOTIFY_IF_OWNER_CONFIG = new TypedComponentRole<Boolean>(PLUGIN_ID + ".notify_if_owner");
+	public final static TypedComponentRole<RaplaMap<Allocatable>> ALLOCATIONLISTENERS_CONFIG = new TypedComponentRole<RaplaMap<Allocatable>>(PLUGIN_ID + ".allocationlisteners");
 
 
 }

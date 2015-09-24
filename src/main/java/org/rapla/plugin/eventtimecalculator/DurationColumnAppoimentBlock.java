@@ -13,15 +13,15 @@ import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 * Date: 22.08.12
 * Time: 09:30
 */
-public final class DurationColumnAppoimentBlock extends DurationColumn implements AppointmentTableColumn<TableColumn> {
+public final class DurationColumnAppoimentBlock extends DurationColumn implements AppointmentTableColumn {
 
 	EventTimeCalculatorFactory factory;
     private EventTimeModel eventTimeModel;
 
     @Inject
-    public DurationColumnAppoimentBlock(RaplaContext context, EventTimeCalculatorResources i18n) throws RaplaException {
+    public DurationColumnAppoimentBlock(RaplaContext context, EventTimeCalculatorResources i18n, EventTimeCalculatorFactory factory) throws RaplaException {
         super(context,i18n);
-        factory = context.lookup(EventTimeCalculatorFactory.class);
+        this.factory = factory;
     }
 
     public String getValue(AppointmentBlock block) {

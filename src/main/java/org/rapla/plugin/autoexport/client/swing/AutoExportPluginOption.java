@@ -3,6 +3,7 @@ package org.rapla.plugin.autoexport.client.swing;
 import java.awt.BorderLayout;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -10,16 +11,18 @@ import javax.swing.JPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 
+@Extension(provides = PluginOptionPanel.class,id= AutoExportPlugin.PLUGIN_ID)
 public class AutoExportPluginOption extends DefaultPluginOption
 {
     JCheckBox booleanField = new JCheckBox();
-    //
+    @Inject
     public AutoExportPluginOption( RaplaContext sm )
     {
         super( sm );

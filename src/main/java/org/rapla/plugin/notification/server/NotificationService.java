@@ -52,7 +52,7 @@ public class NotificationService
     ServerExtension
 {
     ClientFacade clientFacade;
-    MailToUserInterface mailToUserInterface;
+    Provider<MailToUserInterface> mailToUserInterface;
     protected CommandScheduler mailQueue;
     AppointmentFormater appointmentFormater;
     NotificationResources notificationI18n;
@@ -68,19 +68,16 @@ public class NotificationService
         this.clientFacade = facade;
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
-        try
-        {
-            this.mailToUserInterface = mailToUserInterface.get();
-        }
-        catch (Exception ex)
-        {
-            getLogger().error("Could not start notification service, because Mail Plugin not activated. Check for mail plugin activation or errors.");
-            return;
-        }
+        this.mailToUserInterface = mailToUserInterface;
         this.mailQueue = mailQueue;
         clientFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         getLogger().info("NotificationServer Plugin started");
+    }
+
+    @Override public void start()
+    {
+
     }
 
     protected  Logger getLogger()
@@ -391,7 +388,8 @@ public class NotificationService
                     getLogger().debug("Sending mail " + mail.toString());
                 getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
                 try {
-                    mailToUserInterface.sendMail(mail.recipient, mail.subject, mail.body );
+
+                    mailToUserInterface.get().sendMail(mail.recipient, mail.subject, mail.body );
                     getLogger().info("AllocationChange. Mail sent.");
                 } catch (RaplaException ex) {
                     getLogger().error("Could not send mail to " + mail.recipient + " Cause: " + ex.getMessage(), ex);

@@ -25,4 +25,5 @@ public class AutoExportPlugin
     public static final String SHOW_CALENDAR_LIST_IN_HTML_MENU = "show_calendar_list_in_html_menu";
     public static final boolean ENABLE_BY_DEFAULT = true;
 
+    public static final String PLUGIN_ID ="org.rapla.plugin.autoexport";
 }

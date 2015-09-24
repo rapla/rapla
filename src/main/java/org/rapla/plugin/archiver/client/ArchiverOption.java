@@ -17,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -25,15 +26,17 @@ import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.storage.dbrm.RestartServer;
 
+@Extension(provides = PluginOptionPanel.class,id=ArchiverService.PLUGIN_ID)
 public class ArchiverOption extends DefaultPluginOption implements ActionListener  {
    
     RaplaNumber dayField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
@@ -43,7 +46,8 @@ public class ArchiverOption extends DefaultPluginOption implements ActionListene
     RaplaButton backupButton; 
     RaplaButton restoreButton;
 	ArchiverService archiver;
-    
+
+    @Inject
     public ArchiverOption(RaplaContext sm, ArchiverService archiver){
         super(sm);
         this.archiver = archiver;

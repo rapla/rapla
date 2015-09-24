@@ -29,7 +29,7 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     private final RemoteSession session;
     private final Logger logger;
     private final StorageOperator operator;
-    ResourceBundleList resourceBundleList;
+    private final ResourceBundleList resourceBundleList;
     @Inject
     public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, RemoteSession session, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList)
     {
@@ -41,23 +41,6 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
         this.session = session;
         this.logger = logger;
     }
-
-    private Map<String, Map<String, String>> getBundles(Locale locale)
-    {
-        Map<String, Map<String, String>> bundles = new LinkedHashMap<String, Map<String, String>>();
-        for (String packageId : resourceBundleList.getBundleIds())
-        {
-            final Collection<String> keys = bundleManager.getKeys(packageId);
-            final LinkedHashMap<String, String> raplaResourceIdMap = new LinkedHashMap<String, String>();
-            bundles.put(packageId, raplaResourceIdMap);
-            for (String key : keys)
-            {
-                raplaResourceIdMap.put(key, bundleManager.getString(packageId, key, locale));
-            }
-        }
-        return bundles;
-    }
-
 
     @Override public FutureResult<LocalePackage> locale(String id, String localeString)
     {
@@ -82,7 +65,7 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
             }
             Locale locale = LocaleTools.getLocale(localeString);
             final I18nLocaleFormats formats = bundleManager.getFormats(locale);
-            Map<String, Map<String, String>> bundles = getBundles(locale);
+            Map<String, Map<String, String>> bundles = resourceBundleList.getBundles(locale);
             String language = locale.getLanguage();
             String country = locale.getCountry();
             Set<String> availableLanguages = bundleManager.getAvailableLanguages();

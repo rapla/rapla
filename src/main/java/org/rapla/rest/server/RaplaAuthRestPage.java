@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -32,6 +33,7 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 @Extension(provides = RaplaPageExtension.class,id="auth")
 @RemoteJsonMethod
+@Singleton
 public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 

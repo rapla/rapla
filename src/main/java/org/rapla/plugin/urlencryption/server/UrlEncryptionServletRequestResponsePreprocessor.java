@@ -28,7 +28,7 @@ import org.rapla.server.servletpages.ServletRequestPreprocessor;
  * Date: 15.08.12
  * Time: 19:39
  */
-@Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionResources.PLUGIN_ID)
+@Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
     private UrlEncryptionService urlEncryptionService;
     private ClientFacade facade;

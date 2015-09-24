@@ -8,11 +8,10 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 
-@Extension(provides = I18nBundle.class, id = UrlEncryptionResources.PLUGIN_ID)
+@Extension(provides = I18nBundle.class, id = UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionResources extends AbstractBundle
 {
-        public static final String PLUGIN_ID ="org.rapla.plugin.urlencryption";
-        private static final String BUNDLENAME = PLUGIN_ID +  ".UrlEncryptionResources";
+        private static final String BUNDLENAME = UrlEncryptionPlugin.PLUGIN_ID +  ".UrlEncryptionResources";
         @Inject
         public UrlEncryptionResources(BundleManager loader)
         {

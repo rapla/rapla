@@ -31,12 +31,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.ServerService;
-import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.internal.ServerServiceImpl;
 
 /** listens for allocation changes */
 public class NotificationPluginTest extends ServletTestBase
 {
-    ServerService raplaServer;
+    ServerServiceImpl raplaServer;
 
     ClientFacade facade1;
     Locale locale;
@@ -50,8 +50,7 @@ public class NotificationPluginTest extends ServletTestBase
     {
         super.setUp();
         // start the server
-        ServerServiceContainer raplaServerContainer =  getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
-        raplaServer = raplaServerContainer.getContext().lookup( ServerService.class );
+        raplaServer = getContainer();
 
         // start the client service
         facade1 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
@@ -98,25 +97,25 @@ public class NotificationPluginTest extends ServletTestBase
 
         add( allocatable, facade1.getPreferences() );
         User user2 = facade1.getUser("monty");
-		add( allocatable2, facade1.getPreferences(user2) );
+		add(allocatable2, facade1.getPreferences(user2));
 
         Reservation r = facade1.newReservation();
         String reservationName = "New Reservation";
-        r.getClassification().setValue( "name", reservationName );
+        r.getClassification().setValue("name", reservationName);
         Appointment appointment = facade1.newAppointment( new Date(), new Date( new Date().getTime()
                 + DateTools.MILLISECONDS_PER_HOUR ) );
-        r.addAppointment( appointment );
+        r.addAppointment(appointment);
         r.addAllocatable( allocatable );
-        r.addAllocatable( allocatable2 );
+        r.addAllocatable(allocatable2);
 
         
-        System.out.println( r.getLastChanged() );
+        System.out.println(r.getLastChanged());
 
-        facade1.store( r );
+        facade1.store(r);
 
-        System.out.println( r.getLastChanged() );
+        System.out.println(r.getLastChanged());
 
-        MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class );
+        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated(MailInterface.class, null);
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)
@@ -167,7 +166,7 @@ public class NotificationPluginTest extends ServletTestBase
         facade1.store( r );
         facade1.remove( r );
 
-        MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class );
+        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated( MailInterface.class, null );
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)

@@ -80,6 +80,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.treetable.AbstractTreeTableModel;
 import org.rapla.components.treetable.JTreeTable;
@@ -181,15 +182,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	FilterEditButton filter;
 
 	AppointmentFormater appointmentFormater;
-	
-	public AllocatableSelection(RaplaContext context)  
-	{
-		this(context, false, new CommandHistory());
-	}
+	final private Set<SwingViewFactory> swingViewFactories;
 
-	public AllocatableSelection(RaplaContext context, boolean addCalendarButton,CommandHistory commandHistory)  
+	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories)
 	{
 		super(context);
+		this.swingViewFactories = swingViewFactories;
 		// Undo Command History
 		appointmentFormater = getService(AppointmentFormater.class);
 		this.commandHistory = commandHistory;
@@ -2058,6 +2056,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		private static final long	serialVersionUID	= 1L;
 		
 		String						command;
+
 		public AllocatableAction()
 		{}
 		AllocatableAction(String command)
@@ -2094,7 +2093,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			if (command.indexOf("calendar") >= 0)
 			{
 				JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
-				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel);
+				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, swingViewFactories);
 				calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
 				Collection<Appointment> appointments = Arrays.asList( AllocatableSelection.this.appointments);
 				calendarAction.setStart(findFirstStart(appointments));

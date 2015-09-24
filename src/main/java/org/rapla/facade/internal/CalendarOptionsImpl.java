@@ -24,6 +24,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
@@ -77,6 +78,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 	int firstDayOfWeek;
 	private int minBlockWidth;
 
+    @Inject
 	public CalendarOptionsImpl() throws RaplaException {
 	    this(new DefaultConfiguration());
 	}

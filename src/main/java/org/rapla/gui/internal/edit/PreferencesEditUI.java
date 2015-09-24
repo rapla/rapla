@@ -18,12 +18,10 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -36,25 +34,26 @@ import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
+import org.rapla.client.extensionpoints.SystemOptionPanel;
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.OptionPanel;
-import org.rapla.gui.PluginOptionPanel;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.toolkit.RaplaTree;
+import org.rapla.inject.Extension;
 
+@Extension(provides = EditComponent.class, id="org.rapla.entities.configuration.Preferences")
 public class PreferencesEditUI extends RaplaGUIComponent
     implements
-        EditComponent<Preferences>
+        EditComponent<Preferences,JComponent>
         ,ChangeListener
 {
     private JSplitPane content = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -67,12 +66,21 @@ public class PreferencesEditUI extends RaplaGUIComponent
     OptionPanel lastOptionPanel;
     Preferences preferences;
 
+    private final Set<Provider<UserOptionPanel>> userOptionPanel;
+    private final Set<Provider<SystemOptionPanel>> systemOptionPanel;
+    private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
+
     /** called during initialization to create the info component */
-    public PreferencesEditUI(RaplaContext context) {
-        super( context);
+    @Inject
+    public PreferencesEditUI(RaplaContext context, Set<Provider<UserOptionPanel>> userOptionPanel, Set<Provider<SystemOptionPanel>> systemOptionPanel,
+            Map<String, Provider<PluginOptionPanel>> pluginOptionPanel) {
+        super(context);
+        this.userOptionPanel = userOptionPanel;
+        this.systemOptionPanel = systemOptionPanel;
+        this.pluginOptionPanel = pluginOptionPanel;
         jPanelContainer.setLayout(new BorderLayout());
-        jPanelContainer.add(messages,BorderLayout.SOUTH);
-        messages.setForeground( Color.red);
+        jPanelContainer.add(messages, BorderLayout.SOUTH);
+        messages.setForeground(Color.red);
         Border  emptyLineBorder = new Border() {
             Insets insets = new Insets(2,0,2,0);
             Color COLOR = Color.LIGHT_GRAY;
@@ -93,11 +101,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
                 return true;
             }
         };
-        content.setBorder( emptyLineBorder);
-        jPanelContainer.add(content,BorderLayout.CENTER);
+        content.setBorder(emptyLineBorder);
+        jPanelContainer.add(content, BorderLayout.CENTER);
         jPanelSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
         jPanelSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
-        container.setPreferredSize( new Dimension(700,550));
+        container.setPreferredSize(new Dimension(700, 550));
         content.setLeftComponent(jPanelSelection);
         content.setRightComponent(container);
         content.setDividerLocation(260);
@@ -112,57 +120,37 @@ public class PreferencesEditUI extends RaplaGUIComponent
         return getService(TreeFactory.class);
     }
 
-	protected OptionPanel[] getPluginOptions() throws RaplaException {
-        Collection<PluginOptionPanel> panelList = getContainer().lookupServicesFor( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION);
+	protected Collection<OptionPanel> getPluginOptions() throws RaplaException {
         List<OptionPanel> optionList = new ArrayList<OptionPanel>();
-        List<PluginDescriptor<ClientServiceContainer>> pluginList = getService( ClientServiceContainer.CLIENT_PLUGIN_LIST);
-        for (final PluginDescriptor<ClientServiceContainer> plugin:pluginList) {
-            OptionPanel optionPanel = find(panelList, plugin);
-            if ( optionPanel == null ) {
-            	
-                optionPanel = new DefaultPluginOption(getContext()) {
-
-                    @SuppressWarnings("unchecked")
-					public Class<? extends PluginDescriptor<ClientServiceContainer>> getPluginClass() {
-                        return (Class<? extends PluginDescriptor<ClientServiceContainer>>) plugin.getClass();
-                    }
-
-                    @Override
-                    public String getName(Locale locale) {
-                    	String string = plugin.getClass().getSimpleName();
-						return string;
-                    }
-
-                };
-            }
-            optionList.add( optionPanel );
+        for ( Provider<PluginOptionPanel> panel: pluginOptionPanel.values())
+        {
+            final PluginOptionPanel e = panel.get();
+            optionList.add(e);
         }
         sort( optionList);
-        return optionList.toArray(new OptionPanel[] {});
+        return optionList;
     }
-
-    private OptionPanel find(Collection<PluginOptionPanel> panels,
-			PluginDescriptor<?> plugin) 
-    {
-        // FIXME
-    	return null;
-	}
-
 
 	public void sort(List<OptionPanel> list) {
-        Collections.sort( list, new NamedComparator<OptionPanel>(getRaplaLocale().getLocale()));
+        Collections.sort(list, new NamedComparator<OptionPanel>(getRaplaLocale().getLocale()));
     }
 
-    public OptionPanel[] getUserOptions() throws RaplaException {
-        List<OptionPanel> optionList = new ArrayList<OptionPanel>(getContainer().lookupServicesFor( RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION ));
-        sort( optionList);
-        return optionList.toArray(new OptionPanel[] {});
+    public Collection<OptionPanel> getUserOptions() throws RaplaException {
+        List<OptionPanel> optionList = new ArrayList<OptionPanel>();
+        for (Provider<UserOptionPanel> panel : userOptionPanel){
+            optionList.add(panel.get());
+        }
+        sort(optionList);
+        return optionList;
     }
 
-    public OptionPanel[] getAdminOptions() throws RaplaException {
-        List<OptionPanel> optionList = new ArrayList<OptionPanel>(getContainer().lookupServicesFor( RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION ));
-        sort( optionList);
-        return optionList.toArray(new OptionPanel[] {});
+    public Collection<OptionPanel> getAdminOptions() throws RaplaException {
+        List<OptionPanel> optionList = new ArrayList<OptionPanel>();
+        for (Provider<SystemOptionPanel> panel : systemOptionPanel){
+            optionList.add(panel.get());
+        }
+        sort(optionList);
+        return optionList;
     }
 
     protected JComponent createInfoComponent() {
@@ -174,9 +162,9 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private void setOptionPanel(OptionPanel optionPanel) throws Exception {
         String title = getString("nothing_selected");
         JComponent comp = defaultPanel;
-        if ( optionPanel != null) {
+        if ( optionPanel != null ) {
             title = optionPanel.getName( getRaplaLocale().getLocale());
-            comp =  optionPanel.getComponent();
+            comp =  (JComponent)optionPanel.getComponent();
         }
 
         TitledBorder  titledBorder = new TitledBorder(BorderFactory.createEmptyBorder(4,4,4,4),title);
@@ -206,24 +194,26 @@ public class PreferencesEditUI extends RaplaGUIComponent
         TreeFactory f = getTreeFactory();
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
         if ( preferences.getOwner() != null) {
-            Named[] element = getUserOptions();
-            for (int i=0; i< element.length; i++) {
-                root.add(  f.newNamedNode( element[i]));
+            Collection<? extends Named> elements = getUserOptions();
+            for (Named element:elements) {
+                root.add(  f.newNamedNode( element));
             }
         } else {
             {
-                Named[] element = getAdminOptions();
+                Collection<? extends Named> elements = getAdminOptions();
                 DefaultMutableTreeNode adminRoot = new DefaultMutableTreeNode("admin-options");
-                for (int i=0; i< element.length; i++) {
-                    adminRoot.add( f.newNamedNode( element[i]));
+                for (Named element:elements) {
+
+                    adminRoot.add( f.newNamedNode( element));
                 }
                 root.add( adminRoot );
             }
             {
-                Named[] element = getPluginOptions();
+                Collection<? extends Named> elements = getPluginOptions();
                 DefaultMutableTreeNode pluginRoot = new DefaultMutableTreeNode("plugins");
-                for (int i=0; i< element.length; i++) {
-                    pluginRoot.add( f.newNamedNode( element[i]));
+                for (Named element:elements)
+                {
+                    pluginRoot.add( f.newNamedNode( element));
                 }
                 root.add( pluginRoot );
             }

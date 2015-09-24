@@ -18,7 +18,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -30,6 +32,8 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -65,10 +69,11 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final JToolBar templatePanel;
     final JPanel left;
     boolean listenersDisabled = false;
-    public CalendarEditor(RaplaContext context, final CalendarSelectionModel model) throws RaplaException {
+    @Inject
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories) throws RaplaException {
         super(context);
-        
-        calendarContainer = new MultiCalendarView(getContext(), model, this);
+
+        calendarContainer = new MultiCalendarView(context, model, this,factoryList);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 
@@ -191,7 +196,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JPanel jp = new JPanel();
         jp.setLayout( new BorderLayout());
         
-        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection,model);
+        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection,model, extensionFactories);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
         templatePanel.setVisible( false);
         jp.add( templatePanel, BorderLayout.WEST );

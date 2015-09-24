@@ -11,25 +11,31 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.print;
-import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.print.PageFormat;
+import java.util.Map;
 
+import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaAction;
 
 
 public class PrintAction extends RaplaAction {
     CalendarSelectionModel model;
     PageFormat m_pageFormat;
-    public PrintAction(RaplaContext sm) {
+    final Map<String,SwingViewFactory> factoryMap;
+    @Inject
+    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap) {
         super( sm);
+        this.factoryMap = factoryMap;
         setEnabled(false);
         putValue(NAME,getString("print"));
-        putValue(SMALL_ICON,getIcon("icon.print"));
+        putValue(SMALL_ICON, getIcon("icon.print"));
     }
 
     public void setModel(CalendarSelectionModel settings) {
@@ -42,11 +48,14 @@ public class PrintAction extends RaplaAction {
         m_pageFormat = pageFormat;
     }
 
+
     public void actionPerformed() {
         Component parent = getMainComponent();
         try {
             boolean modal = true;
-            final CalendarPrintDialog dialog = CalendarPrintDialog.create(getContext(),parent,modal, model, m_pageFormat);
+            CalendarPrintDialog dialog = new CalendarPrintDialog(getContext(),(Frame)parent);
+
+            dialog.init(modal,factoryMap,model,m_pageFormat);
             final Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
             dialog.setSize(new Dimension(
                                         Math.min(dimension.width,900)

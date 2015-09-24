@@ -29,6 +29,8 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
+import javax.inject.Inject;
+
 @DefaultImplementation(of = MailConfigService.class, context = InjectionContext.server)
 public class RaplaConfigServiceImpl implements MailConfigService
 {
@@ -38,7 +40,9 @@ public class RaplaConfigServiceImpl implements MailConfigService
     final private ClientFacade facade;
     final private MailInterface mailInterface;
 
-    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade,RaplaContext context) throws RaplaContextException
+
+    @Inject
+    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, RaplaContext context) throws RaplaContextException
     {
         this.remoteSession = remoteSession;
         this.keyStore = keyStore;

@@ -16,10 +16,9 @@ package org.rapla.client.internal;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaClient;
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.client.RaplaClientListener;
+import org.rapla.client.*;
+import org.rapla.client.extensionpoints.AnnotationEdit;
+import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -34,7 +33,6 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.*;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.*;
-import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.*;
 import org.rapla.gui.images.RaplaImages;
@@ -60,7 +58,7 @@ import java.util.concurrent.Semaphore;
 
 /** Implementation of the ClientService.
 */
-public class RaplaClientServiceImpl extends RaplaClient implements ClientServiceContainer,ClientService,UpdateErrorListener
+public class RaplaClientServiceImpl extends RaplaClient implements ClientService,UpdateErrorListener
 {
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     RaplaResources i18n;
@@ -71,7 +69,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
 	static boolean lookAndFeelSet;
-	
+    protected RaplaDefaultContext m_context;
+
 	public RaplaClientServiceImpl(StartupEnvironment env) throws Exception {
         super( env);
     }
@@ -114,13 +113,52 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         return InjectionContext.isInjectableOnSwing(contexts);
     }
 
+    public RaplaContext getContext()
+    {
+        return m_context;
+    }
+
 
 
     @Override
     protected void initialize() throws Exception {
         super.initialize();
+        m_context = new RaplaDefaultContext()
+        {
+
+            @Override public boolean has(Class<?> componentRole)
+            {
+                boolean has = super.has(componentRole);
+                if (!has && isWebservice(componentRole))
+                {
+                    return true;
+                }
+                return has;
+            }
+
+            @Override public <T> T lookup(Class<T> componentRole) throws RaplaContextException
+            {
+                if (isWebservice(componentRole))
+                {
+                    T proxy = (T) remoteServiceCaller.get().getRemoteMethod(componentRole);
+                    return proxy;
+                }
+                return super.lookup(componentRole);
+            }
+
+            @Override protected Object lookup(String role) throws RaplaContextException
+            {
+                return lookupPrivateWithNull(role, 0);
+            }
+
+            @Override protected boolean has(String role)
+            {
+                return hasRole( role);
+            }
+        };
+        addContainerProvidedComponentInstance(RaplaContext.class, m_context);
         advanceLoading(false);
-    	StartupEnvironment env = getContext().lookup(StartupEnvironment.class);
+    	StartupEnvironment env = lookup(StartupEnvironment.class);
         int startupMode = env.getStartupMode();
         final Logger logger = getLogger();
  		if ( startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
@@ -143,33 +181,10 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     	defaultLanguageChoosen = true;
     	getLogger().info("Starting gui ");
 		
-    	addContainerProvidedComponentInstance(ClientServiceContainer.class, this);
-    	
     	addContainerProvidedComponent(WELCOME_FIELD, LicenseInfoUI.class);
         addContainerProvidedComponent(RaplaImages.class, RaplaImages.class);
         addContainerProvidedComponent(FrameControllerList.class, FrameControllerList.class);
         addContainerProvidedComponent(MAIN_COMPONENT, RaplaFrame.class);
-
-        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, UserOption.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, CalendarOption.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, WarningsOption.class);
-
-        addContainerProvidedComponent(RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, CalendarOption.class);
-        addContainerProvidedComponent(RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION, RaplaStartOption.class);
-
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ColorAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, CategorizationAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedRowsAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, ExpectedColumnsAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, EmailAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.ATTRIBUTE_ANNOTATION_EDIT, SortingAnnotationEdit.class);
-        
-        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, LocationAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ConflictCreationAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ResourceTreeNameAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventNameAnnotationEdit.class);
-        addContainerProvidedComponent(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, ExportEventDescriptionAnnotationEdit.class);
-        
 
         RaplaMenubar menuBar = new RaplaMenubar();
 
@@ -215,33 +230,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponentInstance(ClientService.class, this);
         this.i18n = getContext().lookup(RaplaResources.class );
         frameControllerList = inject(FrameControllerList.class);
-    }
-
-    class SwingScheduler extends DefaultScheduler
-    {
-        public SwingScheduler(Logger logger) {
-            super(logger, 3);
-        }
-
-        @Override
-        protected Runnable createTask(final Command command) {
-            Runnable timerTask = new Runnable() {
-                public void run() {
-                    Runnable runnable = SwingScheduler.super.createTask( command);
-                    javax.swing.SwingUtilities.invokeLater(runnable);
-                }
-                public String toString()
-                {
-                    return command.toString();
-                }
-            };
-            return timerTask;
-        }         
-    }
-    
-    @Override
-    protected CommandScheduler createCommandQueue() {
-        return new SwingScheduler(getLogger());
     }
 
 	public ClientFacade getFacade() throws RaplaContextException {
@@ -350,7 +338,11 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
 
         // start client provides
-        lookupServicesFor(RaplaClientExtensionPoints.CLIENT_EXTENSION);
+        Set<ClientExtension> clientExtensions = lookupServicesFor(ClientExtension.class, 0);
+        for ( ClientExtension ext:clientExtensions)
+        {
+            ext.start();
+        }
 
         // Add daterender if not provided by the plugins
         if ( !getContext().has( DateRenderer.class))
@@ -382,7 +374,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
             }
     
         });
-        MainFrame mainFrame = new MainFrame( getContext());
+        MainFrame mainFrame = inject(MainFrame.class);
         fireClientStarted();
         mainFrame.show();
     }

@@ -55,8 +55,9 @@ public class ArchiverServiceTask  implements ServerExtension
             timer.schedule(removeTask, 0, DateTools.MILLISECONDS_PER_HOUR); 
         }
     }
-    
 
-   
+    @Override public void start()
+    {
 
+    }
 }

@@ -34,11 +34,11 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
     EventTimeCalculatorResources eventTimei18n;
 
 
-    public EventTimeCalculatorOption(RaplaContext sm, boolean adminOptions) throws RaplaContextException
+    public EventTimeCalculatorOption(RaplaContext sm, boolean adminOptions, EventTimeCalculatorResources i18n) throws RaplaContextException
     {
         super(sm);
         this.adminOptions = adminOptions;
-        this.eventTimei18n = sm.lookup( EventTimeCalculatorResources.class);
+        this.eventTimei18n = i18n;
     }
 
     /**

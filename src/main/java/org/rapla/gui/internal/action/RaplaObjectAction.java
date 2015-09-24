@@ -32,6 +32,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditController;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.internal.edit.DeleteUndo;
@@ -53,7 +54,7 @@ public class RaplaObjectAction extends RaplaAction {
     protected int type;
     boolean isPerson;
     protected Entity<?> object;
-    Collection<Entity<?>> objectList;
+    List<Entity<?>> objectList;
     protected RaplaType raplaType;
     private final PopupContext popupContext;
 
@@ -324,8 +325,10 @@ public class RaplaObjectAction extends RaplaAction {
     protected void editSelection() throws RaplaException {
  		if (objectList == null || objectList.size() == 0)
  			return;
-        Entity[] array = objectList.toArray(Entity.ENTITY_ARRAY);
-        getEditController().edit(array, popupContext);
+        String title = null;
+        List<Entity> list = new ArrayList<>(objectList);
+        EditController.EditCallback<List<Entity>> callback = null;
+        getEditController().edit(list,title, popupContext, callback);
  	}
 
 	public void setPerson(boolean b) {

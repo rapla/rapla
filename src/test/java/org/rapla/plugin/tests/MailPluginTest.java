@@ -22,11 +22,11 @@ import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.mail.server.RaplaMailToUserOnLocalhost;
 import org.rapla.server.ServerService;
-import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.internal.ServerServiceImpl;
 
 /** listens for allocation changes */
 public class MailPluginTest extends ServletTestBase {
-    ServerService raplaServer;
+    ServerServiceImpl raplaServer;
 
     ClientFacade facade1;
     Locale locale;
@@ -40,8 +40,8 @@ public class MailPluginTest extends ServletTestBase {
         super.setUp();
        
        // start the server
-        ServerServiceContainer container = getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
-        raplaServer = container.getContext().lookup( ServerService.class);
+        //ServerServiceContainer container = getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
+        raplaServer = this.getContainer();
         // start the client service
         facade1 =  getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         facade1.login("homer","duffs".toCharArray());
@@ -59,7 +59,7 @@ public class MailPluginTest extends ServletTestBase {
     
     public void test() throws Exception 
     {
-        MockMailer mailMock = (MockMailer) raplaServer.getContext().lookup( MailInterface.class);
+        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated(MailInterface.class, null);
         final ClientFacade facade = getContext().lookup(ClientFacade.class);
         Logger logger = getContext().lookup(Logger.class);
     	MailToUserInterface mail = new RaplaMailToUserOnLocalhost(mailMock, facade, logger);

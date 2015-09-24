@@ -12,24 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui;
 
-import java.awt.BorderLayout;
-import java.util.Locale;
-
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-abstract public class DefaultPluginOption extends RaplaGUIComponent implements PluginOptionPanel {
+import javax.swing.*;
+import java.awt.*;
+import java.util.Locale;
+
+abstract public class DefaultPluginOption extends RaplaGUIComponent implements PluginOptionPanel
+{
     public DefaultPluginOption(RaplaContext sm)  {
         super(sm);
     }
@@ -39,7 +37,7 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     protected Preferences preferences;
     JComponent container;
 
-    private Class<? extends PluginDescriptor<?>> getPluginClass()
+    private Class getPluginClass()
     {
         return null;
     }
@@ -70,23 +68,25 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     }
 
     protected void writePluginConfig(boolean addChildren) {
-        RaplaConfiguration config =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        if ( config  == null)
-	    {
-	    	config = new RaplaConfiguration("org.rapla.plugin");
-	    }
-        String className = getPluginClass().getName();
-        //getDescritorClassName()
-        
-        RaplaConfiguration newChild = new RaplaConfiguration("plugin" );
-        newChild.setAttribute( "enabled", activate.isSelected());
-        newChild.setAttribute( "class", className);
-        if ( addChildren)
-        {
-            addChildren( newChild );
-        }
-        RaplaConfiguration newConfig = config.replace(config.find("class", className), newChild);
-        preferences.putEntry( RaplaComponent.PLUGIN_CONFIG,newConfig);
+        if ( true)
+            return;
+//        RaplaConfiguration config =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+//        if ( config  == null)
+//	    {
+//	    	config = new RaplaConfiguration("org.rapla.plugin");
+//	    }
+//        String className = getPluginClass().getName();
+//        //getDescritorClassName()
+//
+//        RaplaConfiguration newChild = new RaplaConfiguration("plugin" );
+//        newChild.setAttribute( "enabled", activate.isSelected());
+//        newChild.setAttribute( "class", className);
+//        if ( addChildren)
+//        {
+//            addChildren( newChild );
+//        }
+//        RaplaConfiguration newConfig = config.replace(config.find("class", className), newChild);
+//        preferences.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
     }
     
     /**
@@ -111,36 +111,36 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     {
         activate.setText( getString("selected"));
         container = createPanel();
-	    Class<? extends PluginDescriptor<?>> pluginClass = getPluginClass();
-        boolean defaultSelection = false;
-		try {
-			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
-		} catch (Throwable e) {
-		}
-        
+//	    Class pluginClass = getPluginClass();
+//        boolean defaultSelection = false;
+//		try {
+//			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
+//		} catch (Throwable e) {
+//		}
+//
 		config = getConfig();
 
-		String className = getPluginClass().getName();
-		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        Configuration pluginClassConfig = null;
-		if ( pluginConfig != null)
-		{
-		    pluginClassConfig = pluginConfig.find("class", className);
-		}
-        if ( pluginClassConfig == null )
-        {
-            // use old config for compatibilty
-            pluginClassConfig = config;
-        }
-        activate.setSelected( pluginClassConfig.getAttributeAsBoolean("enabled", defaultSelection));
+//		String className = getPluginClass().getName();
+//		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+//        Configuration pluginClassConfig = null;
+//		if ( pluginConfig != null)
+//		{
+//		    pluginClassConfig = pluginConfig.find("class", className);
+//		}
+//        if ( pluginClassConfig == null )
+//        {
+//            // use old config for compatibilty
+//            pluginClassConfig = config;
+//        }
+        //activate.setSelected( defaultSelection);
         readConfig( config );
     }
 
     @SuppressWarnings({ "deprecation", "unused" })
     protected Configuration getConfig()  throws RaplaException {
-        return ((PreferencesImpl)preferences).getOldPluginConfig(getPluginClass().getName());
+        return new RaplaConfiguration();//((PreferencesImpl)preferences).getOldPluginConfig(getPluginClass().getName());
     }
-   
+
     /**
      * @see org.rapla.gui.toolkit.RaplaWidget#getComponent()
      */

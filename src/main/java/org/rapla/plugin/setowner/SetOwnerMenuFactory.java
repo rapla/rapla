@@ -34,14 +34,16 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
-import org.rapla.gui.ObjectMenuFactory;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaTree;
+import org.rapla.inject.Extension;
 
+@Extension(provides = ObjectMenuFactory.class, id="setowner")
 public class SetOwnerMenuFactory implements ObjectMenuFactory
 {
     SetOwnerResources setOwnerI18n;

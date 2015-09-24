@@ -11,7 +11,8 @@ import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 @RemoteJsonMethod
 public interface ArchiverService
 {
-	public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.archiver.server");
+	public static final String PLUGIN_ID = "org.rapla.plugin.archiver.server";
+	public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
 
 	String REMOVE_OLDER_THAN_ENTRY = "remove-older-than";
 	String EXPORT = "export";

@@ -17,11 +17,13 @@ import java.util.List;
 
 import javax.swing.Action;
 
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.rapla.client.ClientService;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EditComponent;
+import org.rapla.gui.EditController;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaAction;
 import org.rapla.gui.internal.edit.EditDialog;
@@ -35,7 +37,7 @@ public class UserAction extends RaplaAction {
     private PopupContext popupContext;
 
     public UserAction(RaplaContext sm,PopupContext popupContext) {
-        super( sm);
+        super(sm);
         this.popupContext = popupContext;
     }
 
@@ -70,9 +72,8 @@ public class UserAction extends RaplaAction {
             if (type == NEW) {
                 setEnabled(isAdmin());
             } else if (type == SWITCH_TO_USER) {
-                ClientService service = getService( ClientService.class);
-                setEnabled(service.canSwitchBack() ||
-                           (object != null && isAdmin() && !user.equals(object )));
+                ClientService service = getService(ClientService.class);
+                setEnabled(service.canSwitchBack() || (object != null && isAdmin() && !user.equals(object)));
             }
         } catch (RaplaException ex) {
             setEnabled(false);
@@ -94,14 +95,37 @@ public class UserAction extends RaplaAction {
                 }
             } else if (type == NEW) {
                 User newUser = getModification().newUser();
-                EditComponent<User> ui = getEditController().createUI( newUser);
-                EditDialog<User> gui = new EditDialog<User>(getContext(),ui);
-                List<User> singletonList = new ArrayList<User>();
-                singletonList.add(newUser);
-                if (gui.start( singletonList ,getString("user"), popupContext) == 0
-                    && getUserModule().canChangePassword() )
-                    changePassword(newUser,false);
-                object = newUser;
+                // create new user dialog and show password dialog if user is created successfully
+                final String title = getString("user");
+                getEditController().edit(newUser, title,popupContext,new EditController.EditCallback<User>()
+                    {
+                            @Override public void onFailure(Throwable e)
+                            {
+                                showException( e, popupContext);
+                            }
+
+                            @Override public void onSuccess(User editObject)
+                            {
+                                object = editObject;
+                                if (getUserModule().canChangePassword())
+                                {
+                                    try
+                                    {
+                                        changePassword(editObject, false);
+                                    }
+                                    catch (RaplaException e)
+                                    {
+                                        onFailure(e);
+                                    }
+                                }
+                            }
+
+                            @Override public void onAbort()
+                            {
+                            }
+                        }
+                );
+
             }
         } catch (RaplaException ex) {
             showException(ex, popupContext);

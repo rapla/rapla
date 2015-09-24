@@ -34,7 +34,7 @@ public final class CalendarEditorTest extends GUITestCase
     public void testShow() throws Exception {
         CalendarSelectionModel settings = getFacade().newCalendarModel(getFacade().getUser() );
         settings.setSelectedDate(new Date());
-        CalendarEditor editor = new CalendarEditor(getClientService().getContext(),settings);
+        CalendarEditor editor = null;// new CalendarEditor(getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
         editor.start();
         //editor.listUI.treeSelection.getTree().setSelectionRow(1);

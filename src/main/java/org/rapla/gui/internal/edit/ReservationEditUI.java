@@ -16,34 +16,45 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditField;
 import org.rapla.gui.internal.edit.fields.ClassificationField;
 import org.rapla.gui.internal.edit.fields.EditFieldLayout;
 import org.rapla.gui.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.gui.internal.edit.fields.PermissionListField;
 import org.rapla.gui.internal.edit.reservation.AllocatableSelection;
+import org.rapla.inject.Extension;
+
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
-class ReservationEditUI  extends AbstractEditUI<Reservation>  {
+@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Reservation")
+public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
     PermissionListField permissionField;
     AllocatableSelection allocatableSelection;
-    
-    public ReservationEditUI(RaplaContext context) throws RaplaException {
+
+    @Inject
+    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories) throws RaplaException {
         super(context);
         classificationField = new ClassificationField<Reservation>(context);
         permissionField = new PermissionListField(context,getString("permissions"));
-        allocatableSelection = new AllocatableSelection( context )
+
+        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories
+        )
         {
             public boolean isRestrictionVisible() {return false;}
         };

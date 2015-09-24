@@ -13,11 +13,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -28,7 +24,6 @@ import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
@@ -43,7 +38,7 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
-import org.rapla.gui.ObjectMenuFactory;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
@@ -78,10 +73,12 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     CopyListener cutListener = new CopyListener();
 
 	private JComponent container;
+    final Set<ObjectMenuFactory> objectMenuFactories;
 
-    public SwingAppointmentTableView( RaplaContext context, CalendarModel model, final boolean editable ) throws RaplaException
+    public SwingAppointmentTableView( RaplaContext context, CalendarModel model, Set< AppointmentSummaryExtension> appointmentSummaryExtensions,Set<AppointmentTableColumn> columnPlugins,final Set<ObjectMenuFactory> objectMenuFactories,final boolean editable ) throws RaplaException
     {
         super( context );
+        this.objectMenuFactories = objectMenuFactories;
         cutListener.setCut( true );
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -109,8 +106,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         	JPanel extensionPanel = new JPanel();
         	extensionPanel.setLayout( new BoxLayout(extensionPanel, BoxLayout.X_AXIS));
         	container.add( extensionPanel, BorderLayout.SOUTH);
-        	Collection< ? extends SummaryExtension> reservationSummaryExtensions = getContainer().lookupServicesFor(AppointmentSummaryExtension.class);
-    		for ( SummaryExtension summary:reservationSummaryExtensions)
+    		for ( SummaryExtension summary:appointmentSummaryExtensions)
     		{
     			summary.init(table, extensionPanel);
     		}
@@ -123,7 +119,6 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         this.model = model;
         
-       	Collection< ? extends AppointmentTableColumn> columnPlugins = getContainer().lookupServicesFor(AppointmentTableColumn.class);
 		appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
         sorter =  SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;
@@ -409,7 +404,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
 	
 	    
-		Iterator<?> it = getContainer().lookupServicesFor( RaplaClientExtensionPoints.OBJECT_MENU_EXTENSION).iterator();
+		Iterator<?> it = objectMenuFactories.iterator();
 		while (it.hasNext())
 		{
 			ObjectMenuFactory objectMenuFact = (ObjectMenuFactory) it.next();

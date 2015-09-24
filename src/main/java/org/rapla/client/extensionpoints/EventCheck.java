@@ -1,13 +1,16 @@
-package org.rapla.gui;
+package org.rapla.client.extensionpoints;
 
 import java.util.Collection;
 
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.PopupContext;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
-/** performs a check, if the reservation is entered correctly. An example of a reservation check is the conflict checker*/
+/** performs a check, if the reservation is entered correctly. An example of a reservation check is the conflict checker
+ *  you can add an interactive check when the user stores a reservation
+ **/
 @ExtensionPoint(id="eventcheck",context = InjectionContext.swing)
 public interface EventCheck 
 {

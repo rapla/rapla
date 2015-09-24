@@ -6,10 +6,7 @@ import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.SimpleProvider;
-import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.*;
@@ -91,9 +88,9 @@ public class StandaloneStarter extends GUIStarter
 
     protected void exit() {
         ServerServiceContainer server = serverStarter.getServer();
-        if ( server != null)
+        if (server != null && server instanceof  Disposable)
         {
-            server.dispose();
+            ((Disposable)server).dispose();
         }
         super.exit();
        

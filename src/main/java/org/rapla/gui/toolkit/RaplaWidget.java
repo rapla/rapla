@@ -14,6 +14,6 @@ package org.rapla.gui.toolkit;
 import javax.swing.JComponent;
 
 /** Should be implemented by all rapla-gui-components that have a view.*/
-public interface RaplaWidget {
-    public JComponent getComponent();
+public interface RaplaWidget<T> {
+    public T getComponent();
 }

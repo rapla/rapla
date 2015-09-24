@@ -12,22 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview;
 
-
-
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.Container;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.plugin.tableview.internal.*;
-
 public class TableViewPlugin
 {
 	public static final String PLUGIN_CLASS = TableViewPlugin.class.getName();
     public final static String TABLE_EVENT_VIEW =  "table";
     public final static String TABLE_APPOINTMENTS_VIEW =  "table_appointments";
-    public static final String EVENTS_SORTING_STRING_OPTION = "org.rapla.plugin.tableview.events.sortingstring";
-    public static final String BLOCKS_SORTING_STRING_OPTION = "org.rapla.plugin.tableview.blocks.sortingstring";
+    public static final String PLUGIN_ID = "org.rapla.plugin.tableview";
+    public static final String EVENTS_SORTING_STRING_OPTION = PLUGIN_ID +".events.sortingstring";
+    public static final String BLOCKS_SORTING_STRING_OPTION = PLUGIN_ID+".blocks.sortingstring";
 
 	public final static boolean ENABLE_BY_DEFAULT = true;
     public static final String APPOINTMENT_TABLE_COLUMN = "appointment_column";

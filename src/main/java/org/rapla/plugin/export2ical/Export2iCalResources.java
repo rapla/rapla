@@ -8,10 +8,9 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 
-@Extension(provides = I18nBundle.class, id = Export2iCalResources.PLUGIN_ID) public class Export2iCalResources extends AbstractBundle
+@Extension(provides = I18nBundle.class, id = Export2iCalPlugin.PLUGIN_ID) public class Export2iCalResources extends AbstractBundle
 {
-    public static final String PLUGIN_ID = "org.rapla.plugin.export2ical";
-    public static final String BUNDLENAME = PLUGIN_ID + ".Export2iCalResources";
+    public static final String BUNDLENAME = Export2iCalPlugin.PLUGIN_ID + ".Export2iCalResources";
 
     @Inject public Export2iCalResources(BundleManager loader)
     {

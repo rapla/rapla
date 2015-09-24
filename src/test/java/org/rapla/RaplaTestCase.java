@@ -19,11 +19,10 @@ import java.net.URL;
 import junit.framework.TestCase;
 
 import org.rapla.client.ClientService;
-import org.rapla.client.ClientServiceContainer;
+import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -32,7 +31,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.gui.toolkit.ErrorDialog;
 
 public abstract class RaplaTestCase extends TestCase {
-    protected Container raplaContainer;
+    protected RaplaClientServiceImpl raplaContainer;
  	Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN).getChildLogger("test");
 
  	public static String TEST_SRC_FOLDER_NAME="test-src";
@@ -95,7 +94,7 @@ public abstract class RaplaTestCase extends TestCase {
         URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
         //env.setConfigURL( configURL);
         copyDataFile("test-src/" + testFile);
-        raplaContainer = new RaplaMainContainer( env );
+        raplaContainer = new RaplaClientServiceImpl( env );
         assertNotNull("Container not initialized.",raplaContainer);
         ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());
@@ -106,8 +105,8 @@ public abstract class RaplaTestCase extends TestCase {
         setUp("testdefault.xml");
     }
 
-    protected ClientService getClientService() throws RaplaException {
-        ClientServiceContainer clientContainer = getContext().lookup(ClientServiceContainer.class);
+    protected RaplaClientServiceImpl getClientService() throws RaplaException {
+        RaplaClientServiceImpl clientContainer = raplaContainer;
         if ( ! clientContainer.isRunning())
         {
             try {
@@ -116,7 +115,7 @@ public abstract class RaplaTestCase extends TestCase {
                 throw new RaplaException( e.getMessage(), e);
             }
         }
-        return clientContainer.getContext().lookup( ClientService.class);
+        return raplaContainer;
     }
 
     protected ClientFacade getFacade() throws RaplaException {

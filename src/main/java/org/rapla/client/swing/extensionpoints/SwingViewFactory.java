@@ -12,7 +12,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.client.extensionpoints;
+package org.rapla.client.swing.extensionpoints;
 
 import javax.swing.Icon;
 

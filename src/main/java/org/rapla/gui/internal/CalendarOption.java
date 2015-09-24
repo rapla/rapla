@@ -27,6 +27,8 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 
+import org.rapla.client.extensionpoints.SystemOptionPanel;
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.RaplaNumber;
@@ -42,7 +44,14 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
-public class CalendarOption extends RaplaGUIComponent implements OptionPanel, DateChangeListener
+import org.rapla.inject.Extension;
+import org.rapla.inject.ExtensionRepeatable;
+
+@ExtensionRepeatable({
+@Extension(provides = UserOptionPanel.class,id="calendarOption"),
+@Extension(provides = SystemOptionPanel.class,id="calendarOption")
+})
+public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel,SystemOptionPanel, DateChangeListener
 {
     JPanel panel = new JPanel();
     JCheckBox showExceptionsField = new JCheckBox();

@@ -14,27 +14,15 @@ package org.rapla.plugin.jndi.server;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.AuthenticationStore;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.UpdateDataManagerImpl;
 
-public class JNDIServerPlugin implements PluginDescriptor<ServerServiceContainer> {
+public class JNDIServerPlugin  {
     
-    public void provideServices(ServerServiceContainer container, Configuration config) throws RaplaContextException
-    {
-        convertSettings(container.getContext(),config);
-     	if ( !config.getAttributeAsBoolean("enabled", JNDIPlugin.ENABLE_BY_DEFAULT) )
-        	return;
-
-        container.addContainerProvidedComponent( AuthenticationStore.class, JNDIAuthenticationStore.class);
-    }
-
     private void convertSettings(RaplaContext context,Configuration config) throws RaplaContextException
     {
         String className = JNDIPlugin.class.getName();

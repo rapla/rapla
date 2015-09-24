@@ -16,8 +16,11 @@ import java.util.List;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
-public interface EditComponent<T> extends RaplaWidget
+@ExtensionPoint(context = InjectionContext.swing, id = "editDialogFor")
+public interface EditComponent<T,W> extends RaplaWidget<W>
 {
     /** maps all fields back to the current object.*/
     public void mapToObjects() throws RaplaException;

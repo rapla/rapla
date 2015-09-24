@@ -21,6 +21,7 @@ import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.HTMLView;
 import org.rapla.gui.toolkit.RaplaWidget;
 
+import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -37,6 +38,7 @@ final public class LicenseInfoUI
     JScrollPane scrollPane;
     HTMLView license;
 
+    @Inject
     public LicenseInfoUI(RaplaContext context) throws RaplaException  {
         super( context);
         license = new HTMLView();

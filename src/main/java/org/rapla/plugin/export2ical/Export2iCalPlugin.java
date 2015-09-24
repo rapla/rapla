@@ -1,17 +1,14 @@
 package org.rapla.plugin.export2ical;
 
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 
 
-public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContainer> {
+public class Export2iCalPlugin  {
 
 	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(Export2iCalPlugin.class.getPackage().getName() + ".Export2iCalResources");
 
@@ -45,15 +42,16 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
     public static final String EXPORT_ATTENDEES_PARTICIPATION_STATUS = "export_attendees_participation_status";
 
     public static final TypedComponentRole<String> EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE = new TypedComponentRole<String>("export_attendees_participation_status");
+	public static final String PLUGIN_ID = "org.rapla.plugin.export2ical";
 
-    //FIXME maybe this is no longer needed with signed applets
+	//FIXME maybe this is no longer needed with signed applets
     boolean isApplet;
     public Export2iCalPlugin(StartupEnvironment env)
     {
         isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
     }
     
-	public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
+	//public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
 //		container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, Export2iCalAdminOption.class);
 //		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
 //			return;
@@ -65,6 +63,6 @@ public class Export2iCalPlugin implements PluginDescriptor<ClientServiceContaine
 //        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, Export2iCalMenu.class);
 //        }
 //	    container.addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, Export2iCalUserOption.class);
-	}
+//	}
 
 }

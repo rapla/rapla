@@ -15,6 +15,7 @@
 package org.rapla.plugin.weekview.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
@@ -32,7 +33,6 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 import javax.swing.*;
 import java.awt.*;
-import java.text.MessageFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
@@ -42,9 +42,9 @@ import java.util.Set;
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
 	
-    public SwingWeekCalendar( RaplaContext context, CalendarModel model, boolean editable ) throws RaplaException
+    public SwingWeekCalendar( RaplaContext context, CalendarModel model, boolean editable,Set<ObjectMenuFactory> objectMenuFactories ) throws RaplaException
     {
-        super( context, model, editable );
+        super( context, model, editable, objectMenuFactories);
     }
 
     protected AbstractSwingCalendar createView(boolean showScrollPane) {

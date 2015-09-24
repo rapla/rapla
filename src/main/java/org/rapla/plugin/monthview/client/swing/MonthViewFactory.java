@@ -15,29 +15,34 @@ package org.rapla.plugin.monthview.client.swing;
 import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 
+import java.util.Set;
+
 @Extension(provides = SwingViewFactory.class, id = MonthViewPlugin.MONTH_VIEW)
 public class MonthViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    private final Set<ObjectMenuFactory>objectMenuFactories;
     @Inject
-    public MonthViewFactory( RaplaContext context ) 
+    public MonthViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories)
     {
         super( context );
+        this.objectMenuFactories = objectMenuFactories;
     }
 
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingMonthCalendar( context, model, editable);
+        return new SwingMonthCalendar( context, model, editable, objectMenuFactories);
     }
 
     public String getViewId()

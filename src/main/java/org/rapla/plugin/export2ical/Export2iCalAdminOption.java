@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -20,12 +21,13 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.inject.Extension;
 
 /*******************************************************************************
  * This is the admin-option panel
@@ -33,6 +35,7 @@ import org.rapla.gui.RaplaGUIComponent;
  * @author Twardon
  * 
  */
+@Extension(provides = PluginOptionPanel.class,id= Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalAdminOption extends DefaultPluginOption implements ActionListener {
 
 	private JSpinner spiDaysBefore;
@@ -48,6 +51,7 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
     private JComboBox cbDefaultParticipationsStatusRessourceAttribute;
     private ICalConfigService configService;
 
+	@Inject
     public Export2iCalAdminOption(RaplaContext sm, ICalConfigService configService){
 		super(sm);
 		this.configService = configService;
@@ -202,10 +206,6 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
         cbDefaultParticipationsStatusRessourceAttribute.setSelectedItem(exportAttendeeParticipationStatus);
         cbDefaultParticipationsStatusRessourceAttribute.setEnabled(chkExportAttendees.isSelected());
 		//this.setTextFieldInput();
-	}
-
-	public Class<? extends PluginDescriptor<?>> getPluginClass() {
-		return Export2iCalPlugin.class;
 	}
 
 	public String getName(Locale locale) {

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui;
 
+import javax.swing.*;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.gui.toolkit.RaplaWidget;
@@ -21,7 +22,7 @@ import org.rapla.gui.toolkit.RaplaWidget;
     A fieldName "username" will result in a getUsername() and setUsername()
     method.
 */
-public interface EditField extends RaplaWidget
+public interface EditField extends RaplaWidget<JComponent>
 {
     public String getFieldName();
     /** registers new ChangeListener for this component.

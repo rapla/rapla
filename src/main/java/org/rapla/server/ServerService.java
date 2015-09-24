@@ -33,9 +33,4 @@ public interface ServerService {
     public static final TypedComponentRole<Object> ENV_RAPLAMAIL= new TypedComponentRole<Object>("env.raplamail");
     public static final TypedComponentRole<Object> TIMESTAMP = new TypedComponentRole<Object>("timestamp");
     public static final TypedComponentRole<String> CONTEXT_ROOT  = new TypedComponentRole<String>("context-root");
-    /**
-     * @Deprecated Use dependency injection
-     */
-    @Deprecated
-    RaplaContext getContext();
 }

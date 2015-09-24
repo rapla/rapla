@@ -19,14 +19,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -39,7 +32,6 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
@@ -52,7 +44,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.gui.VisibleTimeInterval;
 import org.rapla.gui.internal.CalendarEditor;
 import org.rapla.gui.internal.FilterEditButton;
@@ -107,23 +99,23 @@ public class MultiCalendarView extends RaplaGUIComponent
 
 
     private final CalendarSelectionModel model;
-    final Collection<SwingViewFactory> factoryList;
+    final Set<SwingViewFactory> factoryList;
     /** renderer for weekdays in month-view */
     boolean editable = true;
     boolean listenersEnabled = true;
     FilterEditButton filter;
     CalendarEditor calendarEditor;
     
-    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor) throws RaplaException {
-    	this( context, model, true);
+    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor,final Set<SwingViewFactory> factoryList) throws RaplaException {
+    	this( context, model, factoryList, true);
     	this.calendarEditor = calendarEditor;
     }
     
 
-	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, boolean editable) throws RaplaException {
+	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
         super( context);
+        this.factoryList = factoryList;
         this.editable = editable;
-        factoryList = getContainer().lookupServicesFor(RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION);
         this.model = model;
         String[] ids = getIds();
         {
@@ -373,7 +365,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                 JComponent dateSelection = currentView.getDateSelection();
 				if ( dateSelection != null)
                     page.add( dateSelection, "1,0,f,f" );
-                JComponent component = currentView.getComponent();
+                JComponent component = (JComponent) currentView.getComponent();
 				page.add( component, "0,1,1,1,f,f" );
 				component.setBorder( BorderFactory.createEtchedBorder());
 				page.setVisible(false);

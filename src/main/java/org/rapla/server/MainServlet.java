@@ -17,7 +17,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.server.internal.JettyDevelopment;
 import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;

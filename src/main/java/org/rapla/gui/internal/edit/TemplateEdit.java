@@ -51,8 +51,7 @@ public class TemplateEdit extends RaplaGUIComponent
     public TemplateEdit(RaplaContext context) throws RaplaException {
         super(context);
         I18nBundle i18n = getI18n();
-        boolean internal = true;
-        allocatableEdit = new AllocatableEditUI(context, internal)
+        allocatableEdit = new AllocatableEditUI(context)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();

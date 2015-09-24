@@ -12,48 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.Category;
-import org.rapla.entities.Named;
-import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.Container;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
     Base class for most components. Eases
@@ -128,11 +109,6 @@ public class RaplaComponent
     	this.logger = logger;
 	}
 
-
-    @Deprecated
-    final protected Container getContainer() throws RaplaContextException {
-        return getContext().lookup(Container.class);
-    }
 
     /** returns if the session user is admin */
     final public boolean isAdmin() {

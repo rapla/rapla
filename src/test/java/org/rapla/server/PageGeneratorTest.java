@@ -30,9 +30,9 @@ public class PageGeneratorTest extends ServletTestBase {
 
     public void testGenerator() throws Exception
     {
-        ServerServiceContainer raplaContainer = getContainer().getContext().lookup(ServerServiceContainer.class);
+        ServerServiceContainer raplaContainer = null;
         String pagename = "testpage";
-        raplaContainer.addWebpage(pagename, TestPage.class);
+        //raplaContainer.addWebpage(pagename, TestPage.class);
         String body = "";
         String authenticationToken = null;
         String paramValue = "world";

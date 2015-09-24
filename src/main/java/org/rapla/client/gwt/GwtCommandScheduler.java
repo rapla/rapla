@@ -11,8 +11,10 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
+@Singleton
 public final class GwtCommandScheduler implements CommandScheduler
 {
     private final Logger gwtLogger;

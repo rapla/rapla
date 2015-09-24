@@ -20,26 +20,34 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.client.swing.SwingReservationTableView;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
+
+import java.util.Set;
 
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewFactory extends RaplaComponent implements SwingViewFactory
 {
+    private final Set<ReservationSummaryExtension> reservationSummaryExtensions;
+    private final Set<ReservationTableColumn> reservationColumnPlugins;
     @Inject
-    public ReservationTableViewFactory( RaplaContext context ) 
+    public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
+            Set<ReservationTableColumn> reservationColumnPlugins)
     {
         super( context );
+        this.reservationSummaryExtensions = reservationSummaryExtensions;
+        this.reservationColumnPlugins = reservationColumnPlugins;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, editable);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, reservationColumnPlugins, editable);
     }
 
     public String getViewId()

@@ -46,12 +46,11 @@ final public class CountryChooser implements RaplaWidget
     Map<String,Set<String>> countries;
     
     @Inject
-    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale) throws RaplaException {
+    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaException {
         this.logger = logger;
         this.context = context;
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
-        final RemoteLocaleService remoteLocaleService = context.lookup( RemoteLocaleService.class );
         try
         {
             countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages)).get();

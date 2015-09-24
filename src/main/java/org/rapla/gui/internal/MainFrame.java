@@ -21,6 +21,7 @@ import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.Box;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -52,16 +53,16 @@ public class MainFrame extends RaplaGUIComponent
     Listener listener = new Listener();
     CalendarEditor cal;
     JLabel statusBar = new JLabel("");
-    public MainFrame(RaplaContext sm) throws RaplaException {
+    @Inject
+    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor) throws RaplaException {
         super(sm);
-        menuBar = new RaplaMenuBar(getContext());
+        this.menuBar = raplaMenuBar;
         frame =  getService( ClientService.MAIN_COMPONENT );
         String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
         	
-        CalendarSelectionModel model =  getService( CalendarSelectionModel.class);
-        cal = new CalendarEditor(sm,model);
+        cal = editor;
         getUpdateModule().addModificationListener(this);
 
         JMenuBar menuBar = getService( InternMenus.MENU_BAR);

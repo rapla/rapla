@@ -12,37 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import javax.swing.AbstractAction;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
+import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
 import org.rapla.gui.EditComponent;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
@@ -51,14 +30,28 @@ import org.rapla.gui.internal.edit.fields.PermissionListField;
 import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import static org.rapla.entities.dynamictype.DynamicType.*;
 
 /****************************************************************
  * This is the controller-class for the DynamicType-Edit-Panel   *
  ****************************************************************/
-class DynamicTypeEditUI extends RaplaGUIComponent
+@Extension(provides=EditComponent.class,id= "org.rapla.entities.dynamictype.DynamicType")
+public class DynamicTypeEditUI extends RaplaGUIComponent
     implements
-     EditComponent<DynamicType>
+     EditComponent<DynamicType,JComponent>
 {
     public static String WARNING_SHOWED = DynamicTypeEditUI.class.getName() + "/Warning";
     DynamicType dynamicType;
@@ -90,11 +83,11 @@ class DynamicTypeEditUI extends RaplaGUIComponent
     AnnotationEditUI annotationEdit;
     DialogUI dialog;
     PermissionListField permissionField;
-    
-    public DynamicTypeEditUI(RaplaContext context) throws RaplaException {
+
+    @Inject
+    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions) throws RaplaException {
         super(context);
-        Collection<AnnotationEditExtension> annotationExtensions = context.lookup(Container.class).lookupServicesFor(AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT);
-        annotationEdit = new AnnotationEditUI(context, annotationExtensions);
+        annotationEdit = new AnnotationEditUI(context,annotationEditTypeExtensions);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
@@ -103,7 +96,7 @@ class DynamicTypeEditUI extends RaplaGUIComponent
       
         name = new MultiLanguageField(context,"name");
         elementKey = new TextField(context,"elementKey");
-        attributeEdit = new AttributeEdit(context);
+        this.attributeEdit = attributeEdit;
         nameLabel.setText(getString("dynamictype.name") + ":");
         elementKeyLabel.setText(getString("elementkey") + ":");
         annotationPanel.setVisible( true);

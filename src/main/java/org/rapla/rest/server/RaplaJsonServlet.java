@@ -11,10 +11,7 @@ import org.rapla.gwtjsonrpc.server.JsonServlet;
 import org.rapla.gwtjsonrpc.server.NoPublicServiceMethodsException;
 import org.rapla.storage.RaplaSecurityException;
 
-/**
- * Created by Christopher on 02.09.2015.
- */
-public class RaplaJsonServlet extends JsonServlet
+class RaplaJsonServlet extends JsonServlet
 {
     Logger logger = null;
     public RaplaJsonServlet(Logger logger,Class class1) throws Exception

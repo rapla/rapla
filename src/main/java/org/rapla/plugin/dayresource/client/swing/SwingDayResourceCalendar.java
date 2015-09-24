@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
@@ -48,9 +49,9 @@ import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
-    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable ) throws RaplaException
+    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories ) throws RaplaException
     {
-        super( sm, model, editable );
+        super( sm, model, editable, objectMenuFactories );
     }
     
   
@@ -138,7 +139,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent()) {
+    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

@@ -31,7 +31,6 @@ public interface TimeZoneConverter
 	 *            the orgin timezone
 	 * @param time
 	 *            the Date object in the passed timezone 
-     * @see fromRaplaTime
 	 */
 	Date toRaplaTime(TimeZone timeZone,Date time);	
 

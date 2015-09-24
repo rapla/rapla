@@ -41,12 +41,12 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.Container;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.StorageOperator;
 
 public class ServerTest extends ServletTestBase {
@@ -75,10 +75,8 @@ public class ServerTest extends ServletTestBase {
 		super.setUp();
 		// start the server
 
-		Container container = getContainer();
-		ServerServiceContainer raplaServerContainer = container.lookupDeprecated(ServerServiceContainer.class, getStorageName());
-		raplaServer = raplaServerContainer.getContext().lookup(
-				ServerService.class);
+		ServerServiceImpl container = getContainer();
+		raplaServer = container;
 		// start the client service
 		facade1 = container.lookupDeprecated(ClientFacade.class, "remote-facade");
 		facade1.login("homer", "duffs".toCharArray());
@@ -358,7 +356,7 @@ public class ServerTest extends ServletTestBase {
 		prefs.putEntry(TEST_CONF, conf);
 		facade1.store(prefs);
 
-		ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
+		ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
 		User user = facade.getUser("homer");
 		Preferences storedPrefs = facade.getPreferences(user);
 		assertNotNull(storedPrefs);
@@ -532,7 +530,7 @@ public class ServerTest extends ServletTestBase {
 
 		String reservationName = "bowling";
 		{
-			ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
+			ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
 			String description = getDescriptionOfReservation(facade,
 					reservationName);
 			assertTrue(description.contains("\n"));
@@ -550,7 +548,7 @@ public class ServerTest extends ServletTestBase {
 	{
 		// first test creation on server
 		{
-			ClientFacade facade = getContainer().lookupServicesFor(ClientFacade.class).iterator().next();
+			ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
 			DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
 			Classification classification = dynamicType.newClassification();
 			Allocatable task = facade.newAllocatable(classification, null);

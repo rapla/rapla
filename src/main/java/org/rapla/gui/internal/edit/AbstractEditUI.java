@@ -36,7 +36,7 @@ import org.rapla.gui.internal.edit.fields.EditFieldWithLayout;
  */
 public abstract class AbstractEditUI<T> extends RaplaGUIComponent
 implements
-    EditComponent<T>
+    EditComponent<T,JComponent>
     ,ChangeListener
 {
 

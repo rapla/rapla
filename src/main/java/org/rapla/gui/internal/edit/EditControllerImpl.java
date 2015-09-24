@@ -12,15 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -30,28 +24,94 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.EditComponent;
-import org.rapla.gui.EditController;
-import org.rapla.gui.PopupContext;
-import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.gui.*;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.*;
 
 /** This class handles the edit-ui for all entities (except reservations). */
 
 @DefaultImplementation(of=EditController.class, context = InjectionContext.swing)
-public class EditControllerImpl extends RaplaGUIComponent implements
+@Singleton
+public class EditControllerImpl<W> implements
 		EditController {
 	Collection<EditDialog<?>> editWindowList = new ArrayList<EditDialog<?>>();
+	private Map<String,Provider<EditComponent>> editUiProviders;
+	private final ReservationController reservationController;
+	private final RaplaResources i18n;
+	private final ClientFacade facade;
+	private final RaplaContext context;
 
 	@Inject
-	public EditControllerImpl(RaplaContext sm){
-		super(sm);
+	public EditControllerImpl(Map<String,Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
+			RaplaContext context)
+	{
+		this.editUiProviders = editUiProviders;
+		this.reservationController = controller;
+		this.i18n = i18n;
+		this.facade = facade;
+		this.context = context;
 	}
+
+	@Override
+	public <T extends Entity> void edit(T obj, PopupContext popupContext) throws RaplaException {
+        String title = null;
+        boolean createNew=false;
+        EditCallback<List<T>> callback = null;
+        List<T> list = Collections.singletonList(obj);
+        editAndOpenDialog(list, title, popupContext, createNew, callback);
+	}
+
+	public <T extends Entity> void editNew(T obj, PopupContext popupContext) throws RaplaException {
+        String title = null;
+        boolean createNew=true;
+        EditCallback<List<T>> callback = null;
+        List<T> list = Collections.singletonList(obj);
+        editAndOpenDialog(list, title, popupContext, createNew, callback);
+	}
+
+	public <T extends Entity> void edit(final T obj, final String title,final PopupContext popupContext, final EditController.EditCallback<T> callback) throws RaplaException {
+        final EditCallback<List<T>> listCallback;
+        if ( callback != null)
+        {
+            listCallback = new EditCallback<List<T>>()
+            {
+                @Override public void onFailure(Throwable e)
+                {
+                    callback.onFailure(e);
+                }
+
+                @Override public void onSuccess(List<T> editObject)
+                {
+                    callback.onSuccess(editObject.get(0));
+                }
+
+                @Override public void onAbort()
+                {
+                    callback.onAbort();
+                }
+            };
+        }
+        else
+        {
+            listCallback = null;
+        }
+        edit(Collections.singletonList(obj), title, popupContext, listCallback);
+	}
+
+	public <T extends Entity> void edit(List<T> list, String title,PopupContext popupContext, EditController.EditCallback<List<T>> callback) throws RaplaException {
+
+		//		if selektion contains only one object start usual Edit dialog
+        editAndOpenDialog(list, title, popupContext, false, callback);
+	}
+
 
 	void addEditDialog(EditDialog<?> editWindow) {
 		editWindowList.add(editWindow);
@@ -61,78 +121,48 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 		editWindowList.remove(editWindow);
 	}
 
-	public <T extends Entity> EditComponent<T> createUI(T obj) throws RaplaException 
-	{
-		return createUI( obj,false);
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.rapla.gui.edit.IEditController#createUI(org.rapla.entities.
-	 * RaplaPersistant)
-	 */
-	@SuppressWarnings("unchecked")
-    public <T extends Entity> EditComponent<T> createUI(T obj, boolean createNew) throws RaplaException {
-		RaplaType type = obj.getRaplaType();
-		EditComponent<?> ui = null;
-		if (Allocatable.TYPE.equals(type)) {
-			boolean internal = isInternalType( (Allocatable)obj);
-            ui = new AllocatableEditUI(getContext(), internal);
-		} else if (DynamicType.TYPE.equals(type)) {
-			ui =  new DynamicTypeEditUI(getContext());
-		} else if (User.TYPE.equals(type)) {
-			ui =  new UserEditUI(getContext());
-		} else if (Category.TYPE.equals(type)) {
-			ui = new CategoryEditUI(getContext(), createNew);
-		} else if (Preferences.TYPE.equals(type)) {
-			ui =  new PreferencesEditUI(getContext());
-		} else if (Reservation.TYPE.equals(type)) {
-            ui =  new ReservationEditUI(getContext());
-        }
 
-		if (ui == null) {
-			throw new RuntimeException("Can't edit objects of type "
-					+ type.toString());
+	@SuppressWarnings("unchecked")
+    private <T extends Entity> EditComponent<T,W> createUI(T obj) throws RaplaException {
+		RaplaType type = obj.getRaplaType();
+		final String id = type.getTypeClass().getName();
+		final Provider<EditComponent> editComponentProvider = editUiProviders.get(id);
+		if ( editUiProviders != null)
+		{
+			EditComponent<T,W> ui = (EditComponent<T,W>)editComponentProvider.get();
+			return ui;
 		}
-		return (EditComponent<T>)ui;
+		else
+		{
+			throw new RuntimeException("Can't edit objects of type " + type.toString());
+		}
 	}
-	
-    private boolean isInternalType(Allocatable alloc) {
-        DynamicType type = alloc.getClassification().getType();
-        String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-        return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-    }
 
 //	enhancement of the method to deal with arrays
-	protected String guessTitle(Object obj) {
+	private String guessTitle(Collection obj) {
 		RaplaType raplaType = getRaplaType(obj);
 		String title = "";
 		if(raplaType != null) {
-			title = getString(raplaType.getLocalName());
+			title = i18n.getString(raplaType.getLocalName());
 		}
-		
+
 		return title;
 	}
-	
-//	method for determining the consistent RaplaType from different objects 
-	protected RaplaType getRaplaType(Object obj){
+
+//	method for determining the consistent RaplaType from different objects
+	protected RaplaType getRaplaType(Collection obj){
 		Set<RaplaType> types = new HashSet<RaplaType>();
-		
-//		if the committed object is no array -> wrap object into array
-		if (!obj.getClass().isArray()) {
-			obj = new Object[] { obj };
-		}
+
 
 //		iterate all committed objects and store RaplayType of the objects in a Set
 //		identic typs aren't stored double because of Set
-		for (Object o : (Object[]) obj) {
+		for (Object o : obj) {
 			if (o instanceof Entity) {
 				RaplaType type = ((Entity<?>) o).getRaplaType();
 				types.add(type);
 			}
 		}
-		
+
 //		check if there is a explicit type, then return this type; otherwise return null
 		if (types.size() == 1)
 			return types.iterator().next();
@@ -140,95 +170,64 @@ public class EditControllerImpl extends RaplaGUIComponent implements
 			return null;
 	}
 
-	@Override
-	public <T extends Entity> void edit(T obj, PopupContext popupContext) throws RaplaException {
-		edit(obj, guessTitle(obj), popupContext);
-	}
+    private <T extends Entity> void editAndOpenDialog(List<T> list, String title, PopupContext popupContext, boolean createNew, EditCallback<List<T>> callback) throws RaplaException {
+        if( list.size() == 0)
+        {
+            throw new RaplaException("Empty list not allowed. You must have at least one entity to edit.");
+        }
+        if(title == null)
+        {
+            title = guessTitle(list);
 
-	public <T extends Entity> void editNew(T obj, PopupContext popupContext)
-			throws RaplaException {
-		edit(obj, guessTitle(obj), popupContext, true);
-	}
+        }
+        //		checks if all entities are from the same type; otherwise return
+        if(getRaplaType(list) == null)
+        {
+            if (callback != null)
+            {
+                callback.onAbort();
+            }
+            return;
+        }
 
-	public <T extends Entity> void edit(T[] obj, PopupContext popupContext) throws RaplaException {
-		edit(obj, guessTitle(obj), popupContext);
-	}
+        if ( list.size() == 1)
+         {
+             Entity<?> testObj = (Entity<?>) list.get(0);
+             if ( testObj instanceof Reservation)
+             {
+                 reservationController.edit((Reservation) testObj);
+                 return;
+             }
+             // Lookup if the entity (not a reservation) is already beeing edited
+             EditDialog<?> c = null;
+             Iterator<EditDialog<?>> it = editWindowList.iterator();
+             while (it.hasNext()) {
+                 c =  it.next();
+                 List<?> editObj = c.ui.getObjects();
+                 if (editObj != null && editObj.size() == 1 )
+                 {
+                     Object first = editObj.get(0);
+                     if (first  instanceof Entity && ((Entity<?>) first).isIdentical(testObj))
+                     {
+                         break;
+                     }
+                 }
+                 c = null;
+             }
 
-
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.rapla.gui.edit.IEditController#edit(org.rapla.entities.Entity,
-	 * java.lang.String, java.awt.Component)
-	 */
-	public <T extends Entity> void edit(T obj, String title, PopupContext popupContext )
-			throws RaplaException {
-		edit(obj, title, popupContext, false);
-	}
-	
-	protected <T extends Entity> void edit(T obj, String title, PopupContext popupContext,boolean createNew )
-				throws RaplaException {
-		
-		// Hack for 1.6 compiler compatibility
-		@SuppressWarnings("cast")
-		Entity<?> testObj = (Entity<?>) obj;
-		if ( testObj instanceof Reservation)
-		{
-			getReservationController().edit( (Reservation) testObj );
-			return;
-		}
-		// Lookup if the reservation is already beeing edited
-		EditDialog<?> c = null;
-		Iterator<EditDialog<?>> it = editWindowList.iterator();
-		while (it.hasNext()) {
-			c =  it.next();
-			List<?> editObj = c.ui.getObjects();
-			if (editObj != null && editObj.size() == 1 ) 
-			{
-			    Object first = editObj.get(0);
-			    if (first  instanceof Entity && ((Entity<?>) first).isIdentical(obj))
-			    {
-			        break;
-			    }
-			} 
-			c = null;
-		}
-
-		if (c != null) {
-			c.dlg.requestFocus();
-			c.dlg.toFront();
-		} else {
-            editAndOpenDialog( Collections.singletonList( obj),title, popupContext, createNew);
-		}
-	}
-	
-//	method analog to edit(Entity obj, String title, Component owner)
-
-//	however for using with arrays
-	public  <T extends Entity> void edit(T[] obj, String title, PopupContext popupContext)
-			throws RaplaException {
-		
-//		checks if all entities are from the same type; otherwise return
-		if(getRaplaType(obj) == null) return;
-		
-//		if selektion contains only one object start usual Edit dialog
-		if(obj.length == 1){
-			edit(obj[0], title, popupContext);
-		}
-		else
-		{
-		    editAndOpenDialog(Arrays.asList(obj), title, popupContext, false);
-    	}
-	}
-
-    protected <T extends Entity> void editAndOpenDialog(List<T> list, String title, PopupContext popupContext, boolean createNew) throws RaplaException {
+             if (c != null)
+             {
+                 c.dlg.requestFocus();
+                 c.dlg.toFront();
+                 return;
+             }
+         }
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
-    	Collection<T> toEdit = getModification().edit( list);
+    	Collection<T> toEdit = facade.edit(list);
     	if (toEdit.size() > 0) {
-        	EditComponent<T> ui = createUI(toEdit.iterator().next(), createNew);
-        	EditDialog<T> gui = new EditDialog<T>(getContext(), ui, false);
-            gui.start(toEdit, title, popupContext);
+        	EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)createUI(toEdit.iterator().next());
+        	EditDialog<T> gui = new EditDialog<T>(context, ui);
+            gui.start(toEdit, title, popupContext, createNew, callback);
         }
     }
 }

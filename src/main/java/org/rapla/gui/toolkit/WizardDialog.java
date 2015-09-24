@@ -104,13 +104,13 @@ public class WizardDialog extends DialogUI {
             start();
 
         if (wizardPanel != null)
-            content.remove(wizardPanel.getComponent());
+            content.remove((Component)wizardPanel.getComponent());
         wizardPanel = newPanel;
         if (wizardPanel == null)
             close();
 
-        content.add(wizardPanel.getComponent(),BorderLayout.CENTER);
-        wizardPanel.getComponent().setBorder(BorderFactory.createEmptyBorder(0,4,0,4));
+        content.add((Component)wizardPanel.getComponent(),BorderLayout.CENTER);
+        ((JComponent)wizardPanel.getComponent()).setBorder(BorderFactory.createEmptyBorder(0,4,0,4));
         if (wizardPanel.getHelp() != null)
             helpView.setBody(wizardPanel.getHelp());
         String defaultAction = wizardPanel.getDefaultAction();

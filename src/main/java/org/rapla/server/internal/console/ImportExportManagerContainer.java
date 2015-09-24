@@ -54,12 +54,12 @@ public class ImportExportManagerContainer extends ContainerImpl{
     
     public void doImport() throws  RaplaException
     {
-        getContext().lookup( ImportExportManager.class).doImport();
+        lookup( ImportExportManager.class).doImport();
     }
     
     public void doExport() throws RaplaException
     {
-        getContext().lookup( ImportExportManager.class).doExport();
+        lookup( ImportExportManager.class).doExport();
     }
 
     protected Collection<InjectionContext> getSupportedContexts()

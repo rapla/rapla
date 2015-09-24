@@ -7,6 +7,7 @@ import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.gwtjsonrpc.server.JsonServlet;
 import org.rapla.gwtjsonrpc.server.RPCServletUtils;
@@ -16,6 +17,7 @@ import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +29,7 @@ import java.util.Map;
 
 
 @Extension(provides = RaplaPageExtension.class,id="json")
+@Singleton
 public class RaplaAPIPage implements RaplaPageExtension
 {
     final ServerServiceContainer serverContainer;
@@ -63,11 +66,17 @@ public class RaplaAPIPage implements RaplaPageExtension
         {
             try
             {
+                // security check, we need to be sure a webservice with the name is provide before we load the class
                 if (!serverContainer.hasWebservice(interfaceName))
                 {
                     throw new RaplaException("Webservice " + interfaceName + " not configured or initialized.");
                 }
                 Class<?> interfaceClass =  Class.forName(interfaceName, true,RaplaAPIPage.class.getClassLoader());
+                final Class webserviceAnnotation = RemoteJsonMethod.class;
+                if (interfaceClass.getAnnotation(webserviceAnnotation) == null)
+                {
+                    throw new RaplaException(interfaceName + " is not a webservice. Did you forget the annotation " + webserviceAnnotation.getName() + "?");
+                }
                 // Test if service is found
                 servlet = new RaplaJsonServlet(logger, interfaceClass);
             }

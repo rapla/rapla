@@ -4,20 +4,21 @@ import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.EventCheck;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.gui.InfoFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
@@ -33,23 +34,22 @@ import org.rapla.inject.InjectionContext;
 @Singleton
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
-    Container container;
-    InfoFactory<Component, DialogUI> infoFactory;    
-    RaplaContext context;
-    RaplaGUIComponent wrapper;
-    RaplaImages images;
-
+    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaContext context;
+    private final RaplaGUIComponent wrapper;
+    private final RaplaImages images;
+    private final Set<Provider<EventCheck>> checkers;
     
     @Inject
     public ReservationControllerSwingImpl(RaplaContext context,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, Container container,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images)
+            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard);
         this.infoFactory = infoFactory;
-        this.container = container;
         this.context = context;
         this.wrapper = new RaplaGUIComponent(context);
         this.images = images;
+        this.checkers = checkers;
     }
 
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
@@ -96,10 +96,10 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
         int index = dialog.getSelectedIndex();
         return index;
     }
-    
-    protected Collection<EventCheck> getEventChecks() throws RaplaException
+
+    @Override
+    protected Set<Provider<EventCheck>> getEventChecks() throws RaplaException
     {
-        Collection<EventCheck> checkers = container.lookupServicesFor(EventCheck.class);
         return checkers;
     }
 

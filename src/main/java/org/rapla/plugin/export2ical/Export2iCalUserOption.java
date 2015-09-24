@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -12,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.Configuration;
@@ -20,13 +22,16 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 
 /***
  * This is the user-option panel
  * @author Twardon
  *
  */
-public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPanel, ActionListener {
+@Extension(provides = UserOptionPanel.class, id= Export2iCalPlugin.PLUGIN_ID)
+public class Export2iCalUserOption extends RaplaGUIComponent implements UserOptionPanel, ActionListener {
 	
 	private Preferences preferences;
 	private JPanel panel = new JPanel();
@@ -52,12 +57,13 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements OptionPa
 
     ICalConfigService configService;
 	final Export2iCalResources i18nIcal;
-    
-    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService) throws RaplaContextException
+
+	@Inject
+    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService, Export2iCalResources i18nIcal) throws RaplaContextException
 	{
 		super(sm);
 		this.configService = configService;
-		i18nIcal = sm.lookup( Export2iCalResources.class);
+		this.i18nIcal = i18nIcal;
 	}
 
 	public JComponent getComponent() {

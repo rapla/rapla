@@ -12,35 +12,27 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.client;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
+import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.framework.*;
+import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.gui.internal.edit.fields.TextField;
+import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.mail.MailConfigService;
+import org.rapla.plugin.mail.MailPlugin;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 
-import org.rapla.components.calendar.RaplaNumber;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.PluginDescriptor;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.gui.DefaultPluginOption;
-import org.rapla.gui.internal.edit.fields.TextField;
-import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.plugin.mail.MailConfigService;
-import org.rapla.plugin.mail.MailPlugin;
-
-
+@Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
 public class MailOption extends DefaultPluginOption {
    
     TextField mailServer;
@@ -56,6 +48,7 @@ public class MailOption extends DefaultPluginOption {
 	private boolean externalConfigEnabled;
    
 	MailConfigService configService;
+	@Inject
     public MailOption(RaplaContext sm,MailConfigService mailConfigService)   
     {
         super(sm);
@@ -157,9 +150,6 @@ public class MailOption extends DefaultPluginOption {
 					{
 						newConfig.removeChild(child);
 					}
-					String className = getPluginClass().getName();
-					newConfig.setAttribute( "class", className);
-					newConfig.setAttribute( "enabled", activate.isSelected());
 //					if ( !activate.isSelected())
 //					{
 //						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options")); 
@@ -290,14 +280,6 @@ public class MailOption extends DefaultPluginOption {
     	preferences.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, defaultSender.getText() );
     }
 
-
-    /**
-     * @see org.rapla.gui.DefaultPluginOption#getPluginClass()
-     */
-    public Class<? extends PluginDescriptor<?>> getPluginClass() {
-        return MailPlugin.class;
-    }
-    
     public String getName(Locale locale) {
         return "Mail Plugin";
     }

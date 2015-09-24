@@ -4,13 +4,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -30,6 +24,7 @@ import javax.swing.JToolBar;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -62,6 +57,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     final CalendarSelectionModel model;
     final ResourceSelection resourceSelection; 
     JToolBar toolbar = new JToolBar();
+    private final Set<PublishExtensionFactory> extensionFactories;
     class SaveAction extends RaplaAction
     {
 
@@ -87,7 +83,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
             putValue(SMALL_ICON,getIcon("icon.export"));
-            publishDialog = new PublishDialog(getContext());
+            publishDialog = new PublishDialog(getContext(), extensionFactories);
             
         }
 
@@ -203,8 +199,10 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     }
     
     
-    public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection, final CalendarSelectionModel model) throws RaplaException {
+    public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories) throws RaplaException {
         super(context);
+        this.extensionFactories = extensionFactories;
         // I18nBundle i18n = getI18n();
         saveAction = new SaveAction(context);
         publishAction = new PublishAction(context);

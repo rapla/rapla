@@ -1,24 +1,20 @@
 package org.rapla.gui.internal.edit.annotation;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.rapla.entities.Annotatable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.internal.edit.AbstractEditUI;
 
-public class AnnotationEditUI extends AbstractEditUI<Annotatable> 
+public class AnnotationEditUI extends AbstractEditUI<Annotatable>
 {
-    Collection<AnnotationEditExtension> annotationExtensions;
-    Map<AnnotationEditExtension,EditField> fieldMap = new HashMap<AnnotationEditExtension,EditField>();
+    Set<? extends AnnotationEdit> annotationExtensions;
+    Map<AnnotationEdit,EditField> fieldMap = new HashMap<AnnotationEdit,EditField>();
     
-    public AnnotationEditUI(RaplaContext context, Collection<AnnotationEditExtension> annotationExtensions) {
+    public AnnotationEditUI(RaplaContext context, Set<? extends AnnotationEdit> annotationExtensions) {
         super(context);
         this.annotationExtensions = annotationExtensions;
     }
@@ -31,7 +27,7 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
     protected void mapFromObjects() throws RaplaException {
         List<EditField> fields = new ArrayList<EditField>();
         Annotatable annotatable = objectList.get(0);
-        for ( AnnotationEditExtension annot: annotationExtensions)
+        for ( AnnotationEdit annot: annotationExtensions)
         {
             EditField field = annot.createEditField(annotatable);
             if ( field != null)
@@ -46,7 +42,7 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
     
     public void mapTo(List<Annotatable> annotatables) throws RaplaException {
         Annotatable annotatable = annotatables.get(0);
-        for ( AnnotationEditExtension annot: annotationExtensions)
+        for ( AnnotationEdit annot: annotationExtensions)
         {
             EditField field = fieldMap.get( annot);
             annot.mapTo(field, annotatable);

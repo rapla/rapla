@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.QueryParam;
 
@@ -19,6 +20,7 @@ import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="dynamictypes")
 @RemoteJsonMethod
+@Singleton
 public class RaplaDynamicTypesRestPage extends AbstractRestPage implements RaplaPageExtension
 {
 	@Inject

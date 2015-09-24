@@ -1,16 +1,9 @@
 package org.rapla.plugin.eventtimecalculator;
 
-import org.rapla.client.ClientServiceContainer;
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorAdminOption;
-import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorStatusFactory;
-import org.rapla.plugin.eventtimecalculator.client.EventTimeCalculatorUserOption;
 
-public class EventTimeCalculatorPlugin implements PluginDescriptor<ClientServiceContainer> {
+public class EventTimeCalculatorPlugin  {
 public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getName();
     public static final boolean ENABLE_BY_DEFAULT = false;
 
@@ -18,6 +11,7 @@ public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getNam
     // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";
     public static final String PLUGIN_ID = "org.rapla.plugin.eventtimecalculator";
 
+    public static final TypedComponentRole<RaplaConfiguration> SYSTEM_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
     public static final TypedComponentRole<RaplaConfiguration> USER_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
 
     public static final String INTERVAL_NUMBER = "interval_number";
@@ -38,7 +32,7 @@ public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getNam
      * provides the resource file of the plugin.
      * uses the extension points to provide the different services of the plugin.
      */
-    public void provideServices(ClientServiceContainer container, Configuration config) {
+    //public void provideServices(ClientServiceContainer container, Configuration config) {
         //container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, EventTimeCalculatorAdminOption.class);
 //        if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
 //            return;
@@ -52,7 +46,7 @@ public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getNam
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, DurationColumnReservation.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, DurationCounter.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, DurationCounter.class);
-    }
+    //}
 
 
 }

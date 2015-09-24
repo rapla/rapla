@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import org.rapla.RaplaClient;
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
@@ -42,8 +43,8 @@ public class RaplaImportUsers  {
         try
         {
             StartupEnvironment env = new SimpleConnectorStartupEnvironment( "localhost", 8051, "/",false, logger);
-            RaplaMainContainer container = new RaplaMainContainer( env);
-            importFile( container.getContext(), args[0] );
+            RaplaClient container = new RaplaClient( env);
+            importFile( container, args[0] );
             // cleanup the Container
             container.dispose();
         }
@@ -54,14 +55,14 @@ public class RaplaImportUsers  {
 
     }
 
-    private static void importFile(RaplaContext context,String filename) throws Exception {
+    private static void importFile(RaplaClient container,String filename) throws Exception {
     	
         System.out.println(" Please enter the admin password ");
         BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
         String adminPass = stdin.readLine();
 
         //      get an interface to the facade and login
-        ClientFacade facade = context.lookup(ClientFacade.class);
+        ClientFacade facade = container.lookupDeprecated(ClientFacade.class, null);
         if ( !facade.login("admin", adminPass.toCharArray() ) ) {
             throw new RaplaException("Can't login");
         }

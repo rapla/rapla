@@ -15,11 +15,13 @@ package org.rapla.plugin.notification.client.swing;
 import java.util.Collection;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
@@ -29,21 +31,25 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.TreeAllocatableSelection;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 
-public class NotificationOption extends RaplaGUIComponent implements OptionPanel {
+@Extension(provides = UserOptionPanel.class, id= NotificationPlugin.PLUGIN_ID)
+public class NotificationOption extends RaplaGUIComponent implements UserOptionPanel {
     JPanel content= new JPanel();
     JCheckBox notifyIfOwnerCheckBox;
     TreeAllocatableSelection selection;
     Preferences preferences;
     NotificationResources notificationI18n;
-    
+
+    @Inject
     public NotificationOption(RaplaContext sm, NotificationResources notificationI18n) {
         super( sm);
         this.notificationI18n = notificationI18n;
         selection = new TreeAllocatableSelection(sm);
-        selection.setAddDialogTitle(getString("subscribe_notification"));
+        selection.setAddDialogTitle(notificationI18n.getString("subscribe_notification"));
         double[][] sizes = new double[][] {
                 {5,TableLayout.FILL,5}
                 ,{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL}

@@ -13,26 +13,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import javax.swing.MenuElement;
-
+import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -43,25 +27,36 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditController;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.defaultwizard.DefaultWizard;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.Collator;
+import java.util.*;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
-public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener, ModificationListener
+@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID)
+public class TemplateWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener, ModificationListener
 {
 	Collection<Allocatable> templateNames;
+	@Inject
     public TemplateWizard(RaplaContext context) throws RaplaException{
         super(context);
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
-    
+
     public String getId() {
 		return "020_templateWizard";
 	}
@@ -280,12 +275,12 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
                 return;
             }
             Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
-            CalendarSelectionModel model = getService( CalendarSelectionModel.class);
+            CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 		    Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
 		    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
             boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
-	    	Date beginn = getStartDate( model);
-	    	Collection<Reservation> newReservations = getModification().copy( reservations, beginn, keepTime);
+	    	Date beginn = getStartDate(model);
+	    	Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime);
        		if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
        		{
        		    Appointment app = newReservations.iterator().next().getAppointments()[0];
@@ -301,9 +296,12 @@ public class TemplateWizard extends RaplaGUIComponent implements IdentifiableMen
        		    }
        		    app.move(app.getStart(), end);
        		}
-            Collection<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, getUser());
+            List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, getUser());
             Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
-            getEditController().edit(array, new SwingPopupContext(getMainComponent(), null));
+			final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
+			String title = null;
+			EditController.EditCallback<List<Reservation>> callback = null;
+			getEditController().edit(list, title, popupContext, callback);
  
 		}
 		catch (RaplaException ex)

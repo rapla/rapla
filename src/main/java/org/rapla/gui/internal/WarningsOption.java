@@ -20,6 +20,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -27,7 +28,10 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.OptionPanel;
 import org.rapla.gui.RaplaGUIComponent;
-public class WarningsOption extends RaplaGUIComponent implements OptionPanel
+import org.rapla.inject.Extension;
+
+@Extension(provides = UserOptionPanel.class,id="warningOption")
+public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
 {
     JPanel panel = new JPanel();
     Preferences preferences;

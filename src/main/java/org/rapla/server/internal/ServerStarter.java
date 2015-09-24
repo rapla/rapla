@@ -105,7 +105,7 @@ public class ServerStarter
                     server.setShutdownService( new ShutdownServiceImpl());
                 }
             }
-            processors = server.lookupServicesFor(ServletRequestPreprocessor.class);
+            processors = server.getServletRequestPreprocessors();
             return server;
         }
         catch( Exception e )

@@ -11,21 +11,14 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import javax.inject.Inject;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
 
-import org.rapla.client.RaplaClientExtensionPoints;
+import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -46,7 +39,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
-import org.rapla.gui.ObjectMenuFactory;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.action.DynamicTypeAction;
@@ -72,10 +65,14 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         }
     }
 
+    private final Set<ReservationWizardExtension> reservationWizards;
+    private final Set<ObjectMenuFactory> objectMenuFactories;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories) {
         super(sm);
+        this.reservationWizards = reservationWizards;
+        this.objectMenuFactories = objectMenuFactories;
     }
 
 
@@ -131,10 +128,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     	 boolean canAllocateSelected = canAllocateSelected();
          if ( canAllocateSelected  ) 
          {
-			Collection<IdentifiableMenuEntry> wizards = getContainer().lookupServicesFor( RaplaClientExtensionPoints.RESERVATION_WIZARD_EXTENSION);
-			
 			Map<String,IdentifiableMenuEntry> sortedMap = new TreeMap<String, IdentifiableMenuEntry>();
-			for (IdentifiableMenuEntry entry:wizards)
+			for (IdentifiableMenuEntry entry:reservationWizards)
 			{
 				sortedMap.put(entry.getId(), entry);
 			}
@@ -324,7 +319,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 		 	}
 	     }
 
-        Iterator<ObjectMenuFactory> it = getContainer().lookupServicesFor( RaplaClientExtensionPoints.OBJECT_MENU_EXTENSION).iterator();
+        Iterator<ObjectMenuFactory> it = objectMenuFactories.iterator();
         while (it.hasNext())
         {
             ObjectMenuFactory objectMenuFact =  it.next();

@@ -1,14 +1,13 @@
 package org.rapla;
 
-import java.io.File;
-
-import org.rapla.framework.Container;
+import junit.framework.TestCase;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.MainServlet;
+import org.rapla.server.internal.ServerServiceImpl;
 
-import junit.framework.TestCase;
+import java.io.File;
 
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase extends TestCase
@@ -75,7 +74,7 @@ public abstract class ServletTestBase extends TestCase
         //return mainServlet.getContext();
     }
     
-    protected Container getContainer()
+    protected ServerServiceImpl getContainer()
     {
         throw new IllegalStateException();
         //return mainServlet.getContainer();

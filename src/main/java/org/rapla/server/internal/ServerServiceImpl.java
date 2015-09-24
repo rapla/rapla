@@ -26,7 +26,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -36,11 +35,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.server.RemoteMethodFactory;
-import org.rapla.server.RemoteSession;
-import org.rapla.server.ServerService;
-import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.*;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.servletpages.*;
@@ -56,13 +51,8 @@ import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
 
-public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerServiceContainer, ServerService, ShutdownService
+public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerService, ShutdownService, ServerServiceContainer
 {
-
-    @SuppressWarnings("rawtypes")
-    public static Class<RemoteMethodFactory> REMOTE_METHOD_FACTORY = RemoteMethodFactory.class;
-    static Class<RaplaPageGenerator> SERVLET_PAGE_EXTENSION = RaplaPageGenerator.class;
-
     protected CachableStorageOperator operator;
 
 
@@ -72,6 +62,11 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     private boolean passwordCheckDisabled;
 
     RemoteSessionImpl adminSession;
+
+    public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors() throws RaplaContextException
+    {
+        return lookupServicesFor(ServletRequestPreprocessor.class, 0);
+    }
 
     public static class ServerContainerContext
     {
@@ -157,30 +152,21 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         //addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
         if (selectedStorage == null || "raplafile".equals( selectedStorage ))
         {
-            operator = getContext().lookup(FileOperator.class);
+            operator = lookup(FileOperator.class);
         }
         else if (selectedStorage.equals("rapladb"))
         {
-            operator = getContext().lookup(DBOperator.class);
+            operator = lookup(DBOperator.class);
         }
         else
         {
             throw new RaplaException("Unknown datasource " + selectedStorage);
         }
         addContainerProvidedComponentInstance(StorageOperator.class, operator);
-        //addContainerProvidedComponent(ClientFacade.class, FacadeImpl.class);
-        RaplaContext context = getContext();
-
-        addContainerProvidedComponentInstance(ServerService.class, this);
-        addContainerProvidedComponentInstance(ServerServiceContainer.class, this);
-
-        addContainerProvidedComponentInstance(ShutdownService.class, this);
-        addContainerProvidedComponentInstance(ServerServiceContainer.class, this);
         addContainerProvidedComponentInstance(CachableStorageOperator.class, operator);
 
-        // adds 5 basic pages to the webapplication
-        addWebpage("raplaapplet", RaplaAppletPageGenerator.class);
-        //addWebpage("store", RaplaStorePage.class);
+        addContainerProvidedComponentInstance(ServerServiceContainer.class, this);
+        addContainerProvidedComponentInstance(ShutdownService.class, this);
 
 
         operator.addStorageUpdateListener(this);
@@ -207,8 +193,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         }
         String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
-        RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
-        TimeZoneConverter importExportLocale = context.lookup(TimeZoneConverter.class);
+        RaplaLocale raplaLocale = lookup(RaplaLocale.class);
+        TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
         try
         {
             TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
@@ -245,19 +231,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
         //initializePlugins(preferences, ServerServiceContainer.class);
 
-        Set<I18nBundle> i18nBundles = lookupServicesFor(I18nBundle.class);
-        Set<String> i18nBundleIds = new LinkedHashSet<String>();
-        for ( I18nBundle i18n:i18nBundles)
-        {
-            String packageId = i18n.getPackageId();
-            i18nBundleIds.add( packageId);
-        }
-        ResourceBundleList implementingInstance = new ResourceBundleList(i18nBundleIds);
-        addContainerProvidedComponentInstance(ResourceBundleList.class, implementingInstance);
         // start server provides
-        lookupServicesFor(ServerExtension.class);
-
-
+        final Set<ServerExtension> serverExtensions = lookupServicesFor(ServerExtension.class, 0);
+        for (ServerExtension extension : serverExtensions)
+        {
+            extension.start();
+        }
     }
 
     @Override protected boolean isSupported(InjectionContext... contexts)
@@ -303,16 +282,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         return null;
     }
 
-    public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory)
-    {
-        addRemoteMethodFactory(role, factory, null);
-    }
-
-    public <T> void addRemoteMethodFactory(Class<T> role, Class<? extends RemoteMethodFactory<T>> factory, Configuration configuration)
-    {
-        addContainerProvidedComponent(REMOTE_METHOD_FACTORY, factory, role.getCanonicalName(), configuration);
-    }
-
     @Override
     public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
     {
@@ -324,22 +293,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     @Override
     public boolean hasWebservice(String interfaceName)
     {
-        boolean found = has(REMOTE_METHOD_FACTORY, interfaceName);
-        if ( ! found)
-        {
-            ComponentHandler handler = getHandler(interfaceName);
-            return handler != null;
-        }
-        return found;
+        return super.hasRole( interfaceName);
     }
-
-    public <T extends RaplaPageGenerator> void addWebpage(String pagename, Class<T> pageClass)
-    {
-
-        String lowerCase = pagename.toLowerCase();
-        addContainerProvidedComponent(SERVLET_PAGE_EXTENSION, pageClass, lowerCase, null);
-    }
-
 
 
     public RaplaPageGenerator getWebpage(String page)
@@ -480,14 +435,14 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             String password = request.getParameter("password");
             if (username != null && password != null)
             {
-                RemoteAuthentificationService service = getContext().lookup(RemoteAuthentificationService.class);
+                RemoteAuthentificationService service = lookup(RemoteAuthentificationService.class);
                 // TODO remove HACK
                 user = ((RemoteAuthentificationServiceImpl)service).getUserWithPassword(username, password);
             }
         }
         if (user == null)
         {
-            user = inject(TokenHandler.class).getUserWithAccessToken(token);
+            user = lookup(TokenHandler.class).getUserWithAccessToken(token);
         }
         return user;
     }

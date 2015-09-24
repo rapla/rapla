@@ -18,8 +18,10 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 
+import javax.swing.table.TableColumn;
+
 @ExtensionPoint(context = InjectionContext.all, id= TableViewPlugin.APPOINTMENT_TABLE_COLUMN)
-public interface AppointmentTableColumn<C> extends RaplaTableColumn<AppointmentBlock, C>
+public interface AppointmentTableColumn extends RaplaTableColumn<AppointmentBlock, TableColumn>
 {
 }
 

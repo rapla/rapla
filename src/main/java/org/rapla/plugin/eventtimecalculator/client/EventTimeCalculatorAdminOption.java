@@ -1,30 +1,29 @@
 package org.rapla.plugin.eventtimecalculator.client;
 
-import java.awt.BorderLayout;
-import java.util.Locale;
-
-import javax.swing.JPanel;
-
 import org.rapla.framework.*;
 import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
-/**
- * ****************************************************************************
- * This is the admin-option panel.
- *
- * @author Tobias Bertram
- */
-public class EventTimeCalculatorAdminOption extends DefaultPluginOption {
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
+import java.util.Locale;
+
+@Extension(provides = PluginOptionPanel.class,id= EventTimeCalculatorPlugin.PLUGIN_ID)
+public class EventTimeCalculatorAdminOption extends DefaultPluginOption
+{
     EventTimeCalculatorOption optionPanel;
     EventTimeCalculatorResources i18n;
 
+    @Inject
     public EventTimeCalculatorAdminOption(RaplaContext sm,EventTimeCalculatorResources i18n) throws RaplaContextException
     {
         super(sm);
         this.i18n = i18n;
-        optionPanel = new EventTimeCalculatorOption(sm, true);
+        optionPanel = new EventTimeCalculatorOption(sm, true, i18n);
     }
 
     /**
@@ -49,13 +48,6 @@ public class EventTimeCalculatorAdminOption extends DefaultPluginOption {
      */
     protected void readConfig(Configuration config) {
     	optionPanel.readConfig(config);
-    }
-
-    /**
-     * returns a string with the name of the class EventTimeCalculatorPlugin.
-     */
-    public Class<? extends PluginDescriptor<?>> getPluginClass() {
-        return EventTimeCalculatorPlugin.class;
     }
 
     /**

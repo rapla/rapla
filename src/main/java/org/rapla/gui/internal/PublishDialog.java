@@ -22,19 +22,19 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.gui.PublishExtension;
-import org.rapla.gui.PublishExtensionFactory;
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 
@@ -43,18 +43,19 @@ import org.rapla.gui.toolkit.DialogUI;
 
 public class PublishDialog extends RaplaGUIComponent
 {
-	Collection<PublishExtensionFactory> extensionFactories;
+	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
 
-    public PublishDialog(RaplaContext sm) throws RaplaException
+
+    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories) throws RaplaException
     {
         super(sm);
         if ( !isModifyPreferencesAllowed() ) {
-        	extensionFactories = Collections.emptyList();
+        	this.extensionFactories = Collections.emptySet();
         }
         else
         {
-        	extensionFactories = getContainer().lookupServicesFor(RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION);
+            this.extensionFactories = extensionFactories;
         }
     }
     

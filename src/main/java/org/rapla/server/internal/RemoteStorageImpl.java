@@ -39,9 +39,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.*;
 
-/**
- * Created by Christopher on 16.09.2015.
- */
 @DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
 public class RemoteStorageImpl implements RemoteStorage
 {

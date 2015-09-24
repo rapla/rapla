@@ -7,7 +7,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gui.PublishExtension;
-import org.rapla.gui.PublishExtensionFactory;
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;

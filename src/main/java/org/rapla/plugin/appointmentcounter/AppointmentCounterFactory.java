@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
@@ -16,13 +18,21 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.AppointmentListener;
-import org.rapla.gui.AppointmentStatusFactory;
+import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationEdit;
 import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.inject.Extension;
 
+@Extension(provides = AppointmentStatusFactory.class, id="appointmentcounter")
+@Singleton
 public class AppointmentCounterFactory implements AppointmentStatusFactory 
 {
+	@Inject
+	public AppointmentCounterFactory()
+	{
+	}
+
 	public RaplaWidget createStatus(RaplaContext context, ReservationEdit reservationEdit) throws RaplaException
 	{
 		return new AppointmentCounter(context, reservationEdit);

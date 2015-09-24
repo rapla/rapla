@@ -27,7 +27,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.EventCheck;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.SwingPopupContext;

@@ -32,7 +32,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.EventCheck;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;

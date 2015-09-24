@@ -1,16 +1,20 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.inject.Extension;
 
-public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension{
+@Extension(provides= AnnotationEditAttributeExtension.class, id="categorization")
+public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+{
 
     final String annotationName = AttributeAnnotations.KEY_CATEGORIZATION;
 

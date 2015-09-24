@@ -53,13 +53,12 @@ import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.internal.view.TreeFactoryImpl.NamedNode;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaTree;
+import org.rapla.inject.Extension;
 
-/**
- *  @author Christopher Kohlhaas
- */
+@Extension(provides = EditComponent.class, id="org.rapla.entities.Category")
 public class CategoryEditUI extends RaplaGUIComponent
     implements
-    EditComponent<Category>
+    EditComponent<Category, JComponent>
 {
     JPanel panel = new JPanel();
 
@@ -77,11 +76,9 @@ public class CategoryEditUI extends RaplaGUIComponent
     boolean editKeys = true;
     Listener listener = new Listener();
     TreeCellRenderer iconRenderer;
-    boolean createNew;
 
-    public CategoryEditUI(RaplaContext context, boolean createNew)  {
+    public CategoryEditUI(RaplaContext context)  {
         super( context);
-        this.createNew = createNew;
         detailPanel = new CategoryDetail(context);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
@@ -184,10 +181,7 @@ public class CategoryEditUI extends RaplaGUIComponent
     }
     
 	public void processCreateNew() throws RaplaException {
-        if ( createNew )
-        {
-        	createCategory( false);
-        }
+        createCategory( false);
 	}
 
 

@@ -18,8 +18,6 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.server.ServerServiceContainer;
-
 
 public class UserTest extends ServletTestBase {
     
@@ -33,8 +31,6 @@ public class UserTest extends ServletTestBase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        // start the server
-        getContainer().lookupDeprecated(ServerServiceContainer.class, "storage-file");
         // start the client service
         adminFacade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         adminFacade.login("homer","duffs".toCharArray());

@@ -40,6 +40,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditComponent;
 import org.rapla.gui.EditField;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.edit.fields.AbstractEditField;
@@ -49,6 +50,7 @@ import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.gui.toolkit.RaplaTree;
+import org.rapla.inject.Extension;
 
 /****************************************************************
  * This is the controller-class for the User-Edit-Panel         *
@@ -61,6 +63,7 @@ import org.rapla.gui.toolkit.RaplaTree;
   4. isadmin,boolean
 */
 
+@Extension(provides = EditComponent.class, id="org.rapla.entities.User")
 class UserEditUI  extends AbstractEditUI<User> {
     TextField usernameField;
     PersonSelectField personSelect;

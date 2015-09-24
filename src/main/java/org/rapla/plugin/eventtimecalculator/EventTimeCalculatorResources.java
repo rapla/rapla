@@ -8,10 +8,9 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 
-@Extension(provides = I18nBundle.class, id = EventTimeCalculatorResources.PLUGIN_ID) public class EventTimeCalculatorResources extends AbstractBundle
+@Extension(provides = I18nBundle.class, id = EventTimeCalculatorPlugin.PLUGIN_ID) public class EventTimeCalculatorResources extends AbstractBundle
 {
-    public static final String PLUGIN_ID = "org.rapla.plugin.eventtimecalculator";
-    public static final String BUNDLENAME = PLUGIN_ID + ".EventTimeCalculatorResources";
+    public static final String BUNDLENAME = EventTimeCalculatorPlugin.PLUGIN_ID + ".EventTimeCalculatorResources";
 
     @Inject public EventTimeCalculatorResources(BundleManager loader)
     {

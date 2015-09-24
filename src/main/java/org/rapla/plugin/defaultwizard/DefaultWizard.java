@@ -13,20 +13,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.swing.MenuElement;
-
+import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -38,18 +26,31 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditController;
+import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.*;
+import java.util.List;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
-public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener 
+@Extension(provides = ReservationWizardExtension.class, id= "defaultWizard")
+public class DefaultWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener
 {
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
-	    
+
+    @Inject
 	public DefaultWizard(RaplaContext sm){
         super(sm);
     }
@@ -123,20 +124,22 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 		{
 			CalendarModel model = getService(CalendarModel.class);
 	    	Object source = e.getSource();
-			DynamicType type = typeMap.get( source);
+			DynamicType type = typeMap.get(source);
 	    	if ( type == null)
 	    	{
 	    		getLogger().warn("Type not found for " + source + " in map " + typeMap);
 	    		return;
 	    	}
 	        Classification newClassification = type.newClassification();
-			Reservation r = getModification().newReservation( newClassification );
+			Reservation r = getModification().newReservation(newClassification);
 	    	Appointment appointment = createAppointment(model);
 	        r.addAppointment(appointment);
-	        final Collection<Reservation> singletonList = Collections.singletonList( r);
-            Collection<Reservation> list = addAllocatables(model, singletonList, getUser());
-            Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
-            getEditController().edit(array, new SwingPopupContext(getMainComponent(), null));
+	        final List<Reservation> singletonList = Collections.singletonList( r);
+            List<Reservation> list = addAllocatables(model, singletonList, getUser());
+            String title = null;
+            final PopupContext swingPopupContext = new SwingPopupContext(getMainComponent(), null);
+            EditController.EditCallback<List<Reservation>> callback = null;
+            getEditController().edit(list, title, swingPopupContext,callback);
 		}
 		catch (RaplaException ex)
 		{
@@ -144,7 +147,7 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
 		}
     }
 
-    public static Collection<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
+    public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
     {
         Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
         if (markedAllocatables == null || markedAllocatables.size() == 0)
@@ -160,7 +163,7 @@ public class DefaultWizard extends RaplaGUIComponent implements IdentifiableMenu
             Collection<Allocatable> allocatables = markedAllocatables;
             addAlloctables(newReservations, allocatables);
         }
-        Collection<Reservation> list = new ArrayList<Reservation>();
+        List<Reservation> list = new ArrayList<Reservation>();
         for (Reservation reservation : newReservations)
         {
             Reservation cast = reservation;

@@ -11,17 +11,18 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
-import java.net.URL;
-import java.net.URLDecoder;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
-import org.rapla.framework.Container;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+
+import java.net.URL;
+import java.net.URLDecoder;
 
 
 public class MainWebclient  
@@ -29,7 +30,7 @@ public class MainWebclient
     /** The default config filename for client-mode raplaclient.xconf*/
     private Logger logger = RaplaBootstrapLogger.createRaplaLogger();
     RaplaStartupEnvironment env = new RaplaStartupEnvironment();
-    Container raplaContainer;
+    Disposable raplaContainer;
 
     String startupUser;
     

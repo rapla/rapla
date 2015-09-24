@@ -21,6 +21,7 @@ import java.util.Set;
 
 import javax.swing.JComponent;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRendererAdapter;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
@@ -41,8 +42,8 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 
 public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
-	public SwingMonthCalendar(RaplaContext context,CalendarModel settings, boolean editable) throws RaplaException {
-        super( context, settings, editable);
+	public SwingMonthCalendar(RaplaContext context,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories) throws RaplaException {
+        super( context, settings, editable, objectMenuFactories);
     }
 
     public static Color DATE_NUMBER_COLOR_HIGHLIGHTED = Color.black;
@@ -114,7 +115,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent());
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories);
         listener.setKeepTime( true);
 		return listener;
     }

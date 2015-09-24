@@ -8,11 +8,10 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 
-@Extension(provides = I18nBundle.class, id = AutoExportResources.PLUGIN_ID)
+@Extension(provides = I18nBundle.class, id = AutoExportPlugin.PLUGIN_ID)
 public class AutoExportResources extends AbstractBundle
 {
-        public static final String PLUGIN_ID ="org.rapla.plugin.autoexport";
-        private static final String BUNDLENAME = PLUGIN_ID +  ".AutoExportResources";
+    private static final String BUNDLENAME = AutoExportPlugin.PLUGIN_ID +  ".AutoExportResources";
         @Inject
         public AutoExportResources(BundleManager loader)
         {

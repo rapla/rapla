@@ -6,21 +6,32 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class EventTimeCalculatorFactory extends RaplaComponent  
 {
-    boolean isUserPrefAllowed;
-    Configuration config;
 
-    public EventTimeCalculatorFactory(RaplaContext context,Configuration config)
+	@Inject
+    public EventTimeCalculatorFactory(RaplaContext context)
 	{
     	super( context);
-		isUserPrefAllowed = config.getChild(EventTimeCalculatorPlugin.USER_PREFS).getValueAsBoolean(EventTimeCalculatorPlugin.DEFAULT_userPrefs);
-		this.config = config;
+
 	}
 
-    public  EventTimeModel getEventTimeModel () {
-       
-        Configuration configuration = config;
+    public  EventTimeModel getEventTimeModel ()
+	{
+		Configuration configuration = null;
+		try
+		{
+			configuration = getQuery().getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+		}
+		catch (RaplaException e)
+		{
+			throw new IllegalStateException("Can't find prefences");
+		}
+		boolean isUserPrefAllowed = configuration.getChild(EventTimeCalculatorPlugin.USER_PREFS).getValueAsBoolean(EventTimeCalculatorPlugin.DEFAULT_userPrefs);
         if ( isUserPrefAllowed)
         {
         	RaplaConfiguration raplaConfig;

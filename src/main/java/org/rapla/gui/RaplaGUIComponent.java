@@ -88,7 +88,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return getService(FrameControllerList.class);
     }
 
-    public void showException(Exception ex,PopupContext popupContext) {
+    public void showException(Throwable ex,PopupContext popupContext) {
         showException(ex, SwingPopupContext.extractParent(popupContext));
     }
     /** Creates a new ErrorDialog with the specified owner and displays the exception
@@ -96,7 +96,7 @@ public class RaplaGUIComponent extends RaplaComponent
     @param owner the exception that should be displayed. Can be null, but providing
     a parent-component will lead to a more appropriate display.
 	*/
-	public void showException(Exception ex,Component owner) {
+	public void showException(Throwable ex,Component owner) {
 	    RaplaContext context = getContext();
 		Logger logger = getLogger();
 		showException(ex, owner, context, logger);

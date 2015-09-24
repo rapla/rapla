@@ -16,10 +16,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.SimpleProvider;
-import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.*;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
@@ -91,10 +88,13 @@ public class RaplaClient extends ContainerImpl
     {
         return InjectionContext.isInjectableOnClient(contexts);
     }
-    
+
+
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
-        this(  env, new SimpleProvider<RemoteServiceCaller>());
+        this(env, new SimpleProvider<RemoteServiceCaller>());
+
+
     }
     
     protected RaplaClient(StartupEnvironment env,  Provider<RemoteServiceCaller> caller) throws Exception{
@@ -116,11 +116,6 @@ public class RaplaClient extends ContainerImpl
         initialize();
     }
 
-    public <T> T getInstance(Class<T> class1) throws RaplaException {
-        return getContext().lookup(class1);
-    }
 
-    
-	        
  }
 

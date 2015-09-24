@@ -33,9 +33,10 @@ public final class AttributeEditTest extends GUITestCase
     }
 
 
+
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        AttributeEdit editor = new AttributeEdit(clientService.getContext());
+        AttributeEdit editor = new AttributeEdit(getContext(), null);
         editor.setDynamicType(clientService.getFacade().getDynamicTypes(null)[0]);
         testComponent(editor.getComponent(),500,500);
         getLogger().info("Attribute edit started");
@@ -43,7 +44,7 @@ public final class AttributeEditTest extends GUITestCase
 
     public void testNew() throws Exception {
         ClientService clientService = getClientService();
-        AttributeEdit editor = new AttributeEdit(clientService.getContext());
+        AttributeEdit editor = new AttributeEdit(getContext(), null);
         DynamicType type =  clientService.getFacade().edit(clientService.getFacade().getDynamicTypes(null)[0]);
         Attribute attribute = type.getAttributes()[0];
         editor.setDynamicType(type);

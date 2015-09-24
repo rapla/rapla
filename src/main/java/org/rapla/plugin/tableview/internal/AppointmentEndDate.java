@@ -15,7 +15,7 @@ import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
 
 @Extension(provides = AppointmentTableColumn.class, id = "end")
-public final class AppointmentEndDate extends RaplaComponent implements AppointmentTableColumn<TableColumn> {
+public final class AppointmentEndDate extends RaplaComponent implements AppointmentTableColumn {
 	@Inject
 	public AppointmentEndDate(RaplaContext context) {
 		super(context);

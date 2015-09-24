@@ -44,6 +44,10 @@ public abstract class GUITestCase extends RaplaTestCase {
         return new SwingPopupContext( null, null);
     }
 
+    protected RaplaContext getContext()
+    {
+        return null;
+    }
     
     public void interactiveTest(String methodName) {
         try {

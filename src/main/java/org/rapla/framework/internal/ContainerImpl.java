@@ -12,16 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import org.apache.commons.lang3.exception.ContextedException;
 import org.jetbrains.annotations.Nullable;
-import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
@@ -53,22 +47,20 @@ import java.util.concurrent.Semaphore;
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
  */
-public class ContainerImpl implements Container
+public class ContainerImpl implements Disposable
 {
-    protected RaplaDefaultContext m_context;
     public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
     public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
     public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
-    public static final TypedComponentRole<Boolean> ENV_DEVELOPMENT = new TypedComponentRole<Boolean>("env.development");
 
-    protected List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
-    protected Map<String, RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String, RoleEntry>());
-    Logger logger;
-    Class webserviceAnnotation;
-    protected CommandScheduler commandQueue;
+    private List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
+    private Map<String, RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String, RoleEntry>());
+    private Logger logger;
+    private Class webserviceAnnotation;
+    //protected CommandScheduler commandQueue;
     protected final Provider<RemoteServiceCaller> remoteServiceCaller;
-    //public static boolean DEVELOPMENT_RESSOLVING = false;
-    Map<String, Object> singletonMap = new ConcurrentHashMap<>();
+    private Map<String, Object> singletonMap = new ConcurrentHashMap<>();
+    private Map<Class, Semaphore> instanciating = new ConcurrentHashMap<>();
 
     public ContainerImpl(Logger logger, final Provider<RemoteServiceCaller> remoteServiceCaller)
     {
@@ -82,48 +74,7 @@ public class ContainerImpl implements Container
         {
             logger.warn("javax.jws.WebService class not found. Assuming Android env");
         }
-        m_context = new RaplaDefaultContext()
-        {
-
-            @Override public boolean has(Class<?> componentRole)
-            {
-                boolean has = super.has(componentRole);
-                if (!has && isWebservice(componentRole))
-                {
-                    return true;
-                }
-                return has;
-            }
-
-            @Override public <T> T lookup(Class<T> componentRole) throws RaplaContextException
-            {
-                if (isWebservice(componentRole))
-                {
-                    T proxy = (T) remoteServiceCaller.get().getRemoteMethod(componentRole);
-                    return proxy;
-                }
-                return super.lookup(componentRole);
-            }
-
-            @Override protected Object lookup(String role) throws RaplaContextException
-            {
-                return lookupPrivate(role, 0);
-            }
-
-            @Override protected boolean has(String role)
-            {
-                if (getHandler(role) != null)
-                    return true;
-                return false;
-            }
-        };
-        addContainerProvidedComponentInstance(Container.class, this);
         addContainerProvidedComponentInstance(Logger.class, logger);
-        commandQueue = createCommandQueue();
-        addContainerProvidedComponentInstance(CommandScheduler.class, commandQueue);
-        addContainerProvidedComponent(BundleManager.class, ServerBundleManager.class);
-        addContainerProvidedComponent(RaplaLocale.class, RaplaLocaleImpl.class);
-        addContainerProvidedComponent(RaplaResources.class, RaplaResources.class);
     }
 
     public <T> T inject(Class<T> component, Object... params) throws RaplaContextException
@@ -132,81 +83,9 @@ public class ContainerImpl implements Container
         return result;
     }
 
-    protected <T> T getInstance(Class<T> componentRole, Object... params) throws RaplaContextException
-    {
-        String key = componentRole.getName();//+ "/" + hint;
-        ComponentHandler<T> handler = getHandler(key);
-        if (handler != null)
-        {
-            if (handler instanceof RequestComponentHandler)
-            {
-                RequestComponentHandler<T> handler1 = (RequestComponentHandler) handler;
-                T o = handler1.get(0, params);
-                return o;
-            }
-            else
-            {
-                return handler.get(0);
-            }
-        }
-        throw new RaplaContextException(key);
-    }
-
-    @SuppressWarnings("unchecked") @Deprecated public <T> T lookupDeprecated(Class<T> componentRole, String hint) throws RaplaContextException
-    {
-
-        String key = componentRole.getName() + "/" + hint;
-        ComponentHandler<T> handler = getHandler(key);
-        if (handler != null)
-        {
-            return handler.get(0);
-        }
-        throw new RaplaContextException(key);
-    }
-
-    private Object lookupPrivate(String role, int depth) throws RaplaContextException
-    {
-        ComponentHandler handler = getHandler(role);
-        if (handler != null)
-        {
-            return handler.get(depth);
-        }
-        return null;
-    }
-
-    protected boolean has(Class componentRole, String hint)
-    {
-
-        String key = componentRole.getName() + "/" + hint;
-        ComponentHandler handler = getHandler(key);
-
-        if (handler != null)
-        {
-            return true;
-        }
-        //        Constructor injectableConstructor = findInjectableConstructor(componentRole);
-        //        if ( injectableConstructor != null)
-        //        {
-        //            return true;
-        //        }
-        return false;
-    }
-
     public Logger getLogger()
     {
         return logger;
-    }
-
-    public StartupEnvironment getStartupEnvironment()
-    {
-        try
-        {
-            return getContext().lookup(StartupEnvironment.class);
-        }
-        catch (RaplaContextException e)
-        {
-            throw new IllegalStateException(" Container not initialized with a startup environment");
-        }
     }
 
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass)
@@ -239,18 +118,6 @@ public class ContainerImpl implements Container
         addContainerProvidedComponentInstance(roleInterface, implementingInstance, implementingInstance.toString());
     }
 
-    public <T> Collection<T> lookupServicesFor(TypedComponentRole<T> role) throws RaplaContextException
-    {
-        String id = role.getId();
-        return lookupServicesFor(id, 0);
-    }
-
-    public <T> Set<T> lookupServicesFor(Class<T> role) throws RaplaContextException
-    {
-        String id = role.getName();
-        return lookupServicesFor(id, 0);
-    }
-
     protected <T, I extends T> void addContainerProvidedComponentInstance(Class<T> roleInterface, I implementingInstance, String hint)
     {
         addContainerProvidedComponentInstance(roleInterface.getName(), implementingInstance, hint);
@@ -259,6 +126,105 @@ public class ContainerImpl implements Container
     protected <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass, String hint, Configuration config)
     {
         addContainerProvidedComponentPrivate(roleInterface.getName(), implementingClass, hint);
+    }
+
+    protected <T> T getInstance(Class<T> componentRole, Object... params) throws RaplaContextException
+    {
+        String key = componentRole.getName();//+ "/" + hint;
+        ComponentHandler<T> handler = getHandler(key);
+        if (handler != null)
+        {
+            if (handler instanceof RequestComponentHandler)
+            {
+                RequestComponentHandler<T> handler1 = (RequestComponentHandler) handler;
+                T o = handler1.get(0, params);
+                return o;
+            }
+            else
+            {
+                return handler.get(0);
+            }
+        }
+        throw new RaplaContextException(key);
+    }
+
+    protected boolean has(Class componentRole, String hint)
+    {
+        if (isWebservice(componentRole))
+        {
+            return true;
+        }
+        String key = componentRole.getName();
+        if ( hint != null)
+        {
+            key += "/" + hint;
+        }
+        ComponentHandler handler = getHandler(key);
+
+        if (handler != null)
+        {
+            return true;
+        }
+        //        Constructor injectableConstructor = findInjectableConstructor(componentRole);
+        //        if ( injectableConstructor != null)
+        //        {
+        //            return true;
+        //        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked") @Deprecated public <T> T lookupDeprecated(Class<T> componentRole, String hint) throws RaplaContextException
+    {
+
+        String key = componentRole.getName();
+        if ( hint != null)
+        {
+            key += "/" + hint;
+        }
+        ComponentHandler<T> handler = getHandler(key);
+        if (handler != null)
+        {
+            return handler.get(0);
+        }
+        throw new RaplaContextException(key);
+    }
+
+    protected Object lookupPrivateWithNull(String role, int depth) throws RaplaContextException
+    {
+        ComponentHandler handler = getHandler(role);
+        if (handler != null)
+        {
+            return handler.get(depth);
+        }
+        return null;
+    }
+
+    protected <T> T lookup(Class<T> clazz) throws RaplaContextException
+    {
+        return myLookup(clazz, 0);
+    }
+
+    private <T> T myLookup(Class<T> clazz, int depth) throws RaplaContextException
+    {
+        if (isWebservice(clazz))
+        {
+            T proxy = (T) remoteServiceCaller.get().getRemoteMethod(clazz);
+            return proxy;
+        }
+        String role = clazz.getName();
+        ComponentHandler handler = getHandler(role);
+        if (handler != null)
+        {
+            return (T) handler.get(depth);
+        }
+        throw new RaplaContextException(clazz, " Implementation not found.");
+    }
+
+    protected <T> Set<T> lookupServicesFor(Class<T> role, int depth) throws RaplaContextException
+    {
+        Map<String, T> map = lookupServiceMapFor(role, depth);
+        Set<T> result = new LinkedHashSet<T>(map.values());
+        return result;
     }
 
     synchronized private void addContainerProvidedComponentPrivate(String role, Class implementingClass, String hint)
@@ -287,9 +253,10 @@ public class ContainerImpl implements Container
         addHandler(role.getCanonicalName(), hint, handler);
     }
 
-    private <T> Map<String, T> lookupServiceMapFor(String name, int depth)
+    private <T> Map<String, T> lookupServiceMapFor(Class clazz, int depth)
     {
-        RoleEntry entry = m_roleMap.get(name);
+        String className = clazz.getName();
+        RoleEntry entry = m_roleMap.get(className);
         if (entry == null)
         {
             return Collections.emptyMap();
@@ -320,18 +287,19 @@ public class ContainerImpl implements Container
         return result;
     }
 
-    private <T> Set< Provider<T>> lookupServiceSetProviderFor(ParameterizedType paramType, String componentClassName)
+    private <T> Set<Provider<T>> lookupServiceSetProviderFor(ParameterizedType paramType, String componentClassName)
     {
         final Map<String, Provider<T>> stringProviderMap = lookupServiceMapProviderFor(paramType, componentClassName);
         final Collection<Provider<T>> values = stringProviderMap.values();
         return new LinkedHashSet<>(values);
     }
 
-    private <T> Map<String,Provider<T>> lookupServiceMapProviderFor(ParameterizedType paramType, String componentClassName)
+    private <T> Map<String, Provider<T>> lookupServiceMapProviderFor(ParameterizedType paramType, String componentClassName)
     {
-        if(!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
+        if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
         {
-            throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + ". Provider is the only generic that is currently supported by rapla injection");
+            throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName
+                    + ". Provider is the only generic that is currently supported by rapla injection");
         }
         Type[] actualTypeArguments = paramType.getActualTypeArguments();
         Class<? extends Type> interfaceClass = null;
@@ -340,11 +308,11 @@ public class ContainerImpl implements Container
             final Type param = actualTypeArguments[0];
             if (param instanceof Class)
             {
-                interfaceClass = (Class)param;
+                interfaceClass = (Class) param;
             }
             else
             {
-                throw new IllegalStateException("Provider for " + componentClassName + " can't be created. " + param + " is not a class " );
+                throw new IllegalStateException("Provider for " + componentClassName + " can't be created. " + param + " is not a class ");
             }
         }
         else
@@ -357,44 +325,38 @@ public class ContainerImpl implements Container
         {
             return Collections.emptyMap();
         }
-        Map<String,Provider<T>> result = new LinkedHashMap<String,Provider<T>>();
+        Map<String, Provider<T>> result = new LinkedHashMap<String, Provider<T>>();
         Set<String> hintSet = entry.getHintSet();
         for (String hint : hintSet)
         {
             final ComponentHandler handler = entry.getHandler(hint);
-                Provider<T> p = new Provider<T>(){
-                    @Override public T get()
+            Provider<T> p = new Provider<T>()
+            {
+                @Override public T get()
+                {
+                    try
                     {
-                        try
-                        {
-                            Object service = handler.get( 0);
-                            @SuppressWarnings("unchecked") T casted = (T) service;
-                            return casted;
-                        }
-                        catch (Exception e)
-                        {
-                            Throwable ex = e;
-                            while (ex.getCause() != null)
-                            {
-                                ex = ex.getCause();
-                            }
-                            final String message = "Could not initialize component " + handler + " due to " + ex.getMessage() + " removing from service list";
-                            getLogger().error(message, e);
-                            throw new IllegalStateException(message, e);
-                        }
+                        Object service = handler.get(0);
+                        @SuppressWarnings("unchecked") T casted = (T) service;
+                        return casted;
                     }
-                };
+                    catch (Exception e)
+                    {
+                        Throwable ex = e;
+                        while (ex.getCause() != null)
+                        {
+                            ex = ex.getCause();
+                        }
+                        final String message = "Could not initialize component " + handler + " due to " + ex.getMessage() + " removing from service list";
+                        getLogger().error(message, e);
+                        throw new IllegalStateException(message, e);
+                    }
+                }
+            };
 
-                // we can safely cast here because the method is only called from checked methods
-                result.put(hint, p);
+            // we can safely cast here because the method is only called from checked methods
+            result.put(hint, p);
         }
-        return result;
-    }
-
-    private <T> Set<T> lookupServicesFor(String name, int depth)
-    {
-        Map<String, T> map = lookupServiceMapFor(name, depth);
-        Set<T> result = new LinkedHashSet<T>(map.values());
         return result;
     }
 
@@ -413,7 +375,7 @@ public class ContainerImpl implements Container
         m_roleMap.put(roleName, entry);
     }
 
-    protected ComponentHandler getHandler(String role)
+    private ComponentHandler getHandler(String role)
     {
         int hintSeperator = role.indexOf('/');
         String roleName = role;
@@ -441,6 +403,11 @@ public class ContainerImpl implements Container
 
     }
 
+    protected boolean hasRole(String interfaceName)
+    {
+        final boolean found = getHandler(interfaceName) != null;
+        return found;
+    }
 
     class RoleEntry
     {
@@ -505,11 +472,6 @@ public class ContainerImpl implements Container
 
     }
 
-    public RaplaContext getContext()
-    {
-        return m_context;
-    }
-
     boolean disposing;
 
     public void dispose()
@@ -527,10 +489,6 @@ public class ContainerImpl implements Container
         }
         try
         {
-            if (commandQueue != null)
-            {
-                ((DefaultScheduler) commandQueue).cancel();
-            }
             removeAllComponents();
         }
         finally
@@ -554,7 +512,34 @@ public class ContainerImpl implements Container
         m_roleMap.clear();
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" }) Constructor findInjectableConstructor(Class componentClass)
+    protected void initialize() throws Exception
+    {
+        // Discover and register the plugins for Rapla
+        RaplaResources i18n = myLookup(RaplaResources.class, 0);
+        String version = i18n.getString("rapla.version");
+        logger.info("Rapla.Version=" + version);
+        version = i18n.getString("rapla.build");
+        logger.info("Rapla.Build=" + version);
+        AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
+        try
+        {
+            version = System.getProperty("java.version");
+            logger.info("Java.Version=" + version);
+        }
+        catch (SecurityException ex)
+        {
+            version = "-";
+            logger.warn("Permission to system property java.version is denied!");
+        }
+    }
+
+    protected boolean isSupported(InjectionContext... context)
+    {
+        return true;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" }) private Constructor findInjectableConstructor(Class componentClass)
     {
         Constructor[] constructors = componentClass.getConstructors();
         Constructor emptyPublic = null;
@@ -566,7 +551,7 @@ public class ContainerImpl implements Container
             {
                 return constructor;
             }
-            if ( types.length == 0  )
+            if (types.length == 0)
             {
                 if (Modifier.isPublic(constructor.getModifiers()))
                 {
@@ -594,13 +579,15 @@ public class ContainerImpl implements Container
 
     /** Instantiates a class and passes the config, logger and the parent context to the object if needed by the constructor.
      * This concept is taken form pico container.*/
-    Map<Class, Semaphore> instanciating = new ConcurrentHashMap<>();
-    @SuppressWarnings({ "rawtypes", "unchecked" }) private Object instanciate(Class componentClass, int depth, final Object... additionalParamObject) throws RaplaContextException
+
+    @SuppressWarnings({ "rawtypes", "unchecked" }) private Object instanciate(Class componentClass, int depth, final Object... additionalParamObject)
+            throws RaplaContextException
     {
+        depth++;
         String componentClassName = componentClass.getName();
         final boolean isSingleton = componentClass.getAnnotation(Singleton.class) != null;
 
-        if ( depth > 50)
+        if (depth > 50)
         {
             throw new RaplaContextException("Dependency cycle while injection " + componentClassName + " aborting!");
         }
@@ -616,11 +603,14 @@ public class ContainerImpl implements Container
                 try
                 {
                     final Semaphore result = instanciating.putIfAbsent(componentClass, new Semaphore(0));
-                    if(result != null)
+                    if (result != null)
                     {
                         result.acquire();
-                        result.release();
-                        return singletonMap.get( componentClassName);
+                        final Object object = singletonMap.get(componentClassName);
+                        if(object!=null){
+                            result.release();
+                            return object;
+                        }
                     }
                 }
                 catch (InterruptedException e)
@@ -629,165 +619,181 @@ public class ContainerImpl implements Container
                 }
             }
         }
-        final List<Object> additionalParams = new ArrayList<Object>(Arrays.asList(additionalParamObject));
-        final RaplaContext context = m_context;
-        Constructor c = findInjectableConstructor(componentClass);
-        if ( c == null)
+        try
         {
-            throw new RaplaContextException("No javax.inject.Inject Annotation or public default contructor found in class " +componentClass);
-        }
-        Object[] params = null;
-        Class[] types = c.getParameterTypes();
-        Annotation[][] parameterAnnotations = c.getParameterAnnotations();
-        Type[] genericParameterTypes = c.getGenericParameterTypes();
-        params = new Object[types.length];
-        for (int i = 0; i < types.length; i++)
-        {
-            final Class type = types[i];
-            Object p = null;
-            Annotation[] annotations = parameterAnnotations[i];
-            for (Annotation annotation : annotations)
+            final List<Object> additionalParams = new ArrayList<Object>(Arrays.asList(additionalParamObject));
+            Constructor c = findInjectableConstructor(componentClass);
+            if (c == null)
             {
-                if (annotation.annotationType().equals(Named.class))
+                throw new RaplaContextException("No javax.inject.Inject Annotation or public default contructor found in class " + componentClass);
+            }
+            Object[] params = null;
+            Class[] types = c.getParameterTypes();
+            Annotation[][] parameterAnnotations = c.getParameterAnnotations();
+            Type[] genericParameterTypes = c.getGenericParameterTypes();
+            params = new Object[types.length];
+            for (int i = 0; i < types.length; i++)
+            {
+                final Class type = types[i];
+                Object p = null;
+                Annotation[] annotations = parameterAnnotations[i];
+                for (Annotation annotation : annotations)
                 {
-                    String value = ((Named) annotation).value();
-                    Object lookup = lookupPrivate(new TypedComponentRole(value).getId(), depth+1);
-                    p = lookup;
+                    if (annotation.annotationType().equals(Named.class))
+                    {
+                        String value = ((Named) annotation).value();
+                        final String id = new TypedComponentRole(value).getId();
+                        Object lookup = lookupPrivateWithNull(id, depth);
+                        if (lookup == null)
+                        {
+                            throw new RaplaContextException("No constant found for id " + id + " with name " + value);
+                        }
+                        p = lookup;
+                    }
                 }
-            }
-            if (p != null)
-            {
-                params[i] = p;
-                continue;
-            }
-            String typeName = type.getName();
-            final Type type2 = genericParameterTypes[i];
-            if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
-            {
-                Object result = createProvider((ParameterizedType) type2);
-                p = result;
-            }
-            if (typeName.equals("java.util.Set") && type2 instanceof ParameterizedType)
-            {
-                Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
-                if (actualTypeArguments.length > 0)
+                if (p != null)
                 {
-                    final Type param = actualTypeArguments[0];
-                    if (param instanceof Class)
-                    {
-                        final Class<? extends Type> class1 = (Class<? extends Type>) param;
-                        p = lookupServicesFor(class1);
-                    }
-                    else if ( param instanceof ParameterizedType)
-                    {
-                        p = lookupServiceSetProviderFor((ParameterizedType) param, componentClassName);
-                    }
-                    else
-                    {
-                        throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + " unknown type " + param);
-                    }
-                } else {
-                    throw new IllegalStateException("Can't statisfy constructor dependency untyped java.util.Set is not supported for " + componentClassName);
+                    params[i] = p;
+                    continue;
                 }
-            }
-            if (typeName.equals("java.util.Map") && type2 instanceof ParameterizedType)
-            {
-                Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
-                if (actualTypeArguments.length > 1)
+                String typeName = type.getName();
+                final Type type2 = genericParameterTypes[i];
+                if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
                 {
+                    Object result = createProvider((ParameterizedType) type2, depth);
+                    p = result;
+                }
+                if (typeName.equals("java.util.Set") && type2 instanceof ParameterizedType)
+                {
+                    Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
+                    if (actualTypeArguments.length > 0)
                     {
                         final Type param = actualTypeArguments[0];
-                        if (!(param.equals(String.class)))
-                        {
-                            throw new IllegalStateException("Can't statisfy constructor dependency java.util.Map is only supported for String keys. Error in " + componentClassName);
-                        }
-                    }
-                    {
-                        final Type param = actualTypeArguments[1];
                         if (param instanceof Class)
                         {
                             final Class<? extends Type> class1 = (Class<? extends Type>) param;
-                            String class1Name = class1.getName();
-                            p = lookupServiceMapFor(class1Name, depth);
+                            p = lookupServicesFor(class1, depth);
                         }
-                        else if ( param instanceof ParameterizedType)
+                        else if (param instanceof ParameterizedType)
                         {
-                            p = lookupServiceMapProviderFor((ParameterizedType)param, componentClassName);
+                            p = lookupServiceSetProviderFor((ParameterizedType) param, componentClassName);
                         }
                         else
                         {
                             throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + " unknown type " + param);
                         }
                     }
-                } else {
-                    throw new IllegalStateException("Can't statisfy constructor dependency untyped java.util.Map is not supported for " + componentClassName);
-                }
-
-            }
-            if (RaplaContext.class.isAssignableFrom(type))
-            {
-                p = context;
-            }
-            if (p != null)
-            {
-                params[i] = p;
-                continue;
-            }
-            {
-                Class guessedRole = type;
-                if (context.has(guessedRole))
-                {
-                    p = context.lookup(guessedRole);
-                }
-                else
-                {
-                    for (int j =0;j< additionalParams.size();j++)
+                    else
                     {
-                        Object additional = additionalParams.get(j);
-                        Class<?> aClass = additional.getClass();
-                        if (guessedRole.isAssignableFrom(aClass))
+                        throw new IllegalStateException(
+                                "Can't statisfy constructor dependency untyped java.util.Set is not supported for " + componentClassName);
+                    }
+                }
+                if (typeName.equals("java.util.Map") && type2 instanceof ParameterizedType)
+                {
+                    Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
+                    if (actualTypeArguments.length > 1)
+                    {
                         {
-                            p = additional;
-                            // we need to remove the additional params we used, to prevent to inject the same param twice
-                            // e.g. MyClass(Date startDate, Date endDate)
-                            additionalParams.remove(j);
-                            break;
+                            final Type param = actualTypeArguments[0];
+                            if (!(param.equals(String.class)))
+                            {
+                                throw new IllegalStateException(
+                                        "Can't statisfy constructor dependency java.util.Map is only supported for String keys. Error in "
+                                                + componentClassName);
+                            }
+                        }
+                        {
+                            final Type param = actualTypeArguments[1];
+                            if (param instanceof Class)
+                            {
+                                final Class<? extends Type> class1 = (Class<? extends Type>) param;
+                                p = lookupServiceMapFor(class1, depth);
+                            }
+                            else if (param instanceof ParameterizedType)
+                            {
+                                p = lookupServiceMapProviderFor((ParameterizedType) param, componentClassName);
+                            }
+                            else
+                            {
+                                throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + " unknown type " + param);
+                            }
                         }
                     }
-                }
-                if ( p == null)
-                {
-                    Constructor injectableConstructor = findInjectableConstructor(guessedRole);
-                    if (injectableConstructor != null)
+                    else
                     {
-                        p = instanciate( guessedRole, depth+1);
+                        throw new IllegalStateException(
+                                "Can't statisfy constructor dependency untyped java.util.Map is not supported for " + componentClassName);
                     }
-                }
-                if (p == null)
-                {
-                    throw new RaplaContextException(componentClass, "Can't statisfy constructor dependency " + type.getName());
-                }
 
+                }
+                if (p != null)
+                {
+                    params[i] = p;
+                    continue;
+                }
+                {
+                    Class guessedRole = type;
+                    if (has(guessedRole, null))
+                    {
+                        p = lookup(guessedRole);
+                    }
+                    else
+                    {
+                        for (int j = 0; j < additionalParams.size(); j++)
+                        {
+                            Object additional = additionalParams.get(j);
+                            Class<?> aClass = additional.getClass();
+                            if (guessedRole.isAssignableFrom(aClass))
+                            {
+                                p = additional;
+                                // we need to remove the additional params we used, to prevent to inject the same param twice
+                                // e.g. MyClass(Date startDate, Date endDate)
+                                additionalParams.remove(j);
+                                break;
+                            }
+                        }
+                    }
+                    if (p == null)
+                    {
+                        Constructor injectableConstructor = findInjectableConstructor(guessedRole);
+                        if (injectableConstructor != null)
+                        {
+                            p = instanciate(guessedRole, depth);
+                        }
+                    }
+                    if (p == null)
+                    {
+                        throw new RaplaContextException(componentClass, "Can't statisfy constructor dependency " + type.getName());
+                    }
+
+                }
+                params[i] = p;
             }
-            params[i] = p;
+            try
+            {
+                final Object component = c.newInstance(params);
+                if (isSingleton)
+                {
+                    singletonMap.put(componentClassName, component);
+                }
+                return component;
+            }
+            catch (Exception e)
+            {
+                throw new RaplaContextException(componentClassName + " could not be initialized due to " + e.getMessage(), e);
+            }
         }
-        try
+        finally
         {
-            final Object component = c.newInstance(params);
             if (isSingleton)
             {
                 instanciating.get(componentClass).release();
-                singletonMap.put(componentClassName, component);
             }
-            return component;
-        }
-        catch (Exception e)
-        {
-            throw new RaplaContextException(componentClassName + " could not be initialized due to " + e.getMessage(), e);
         }
     }
 
-    @Nullable private Provider createProvider(ParameterizedType type)
+    @Nullable private Provider createProvider(ParameterizedType type, int depth)
     {
         Type[] actualTypeArguments = type.getActualTypeArguments();
         if (actualTypeArguments.length > 0)
@@ -802,7 +808,7 @@ public class ContainerImpl implements Container
                     {
                         try
                         {
-                            return getContext().lookup( class1);
+                            return myLookup(class1, depth);
                         }
                         catch (RaplaContextException e)
                         {
@@ -815,7 +821,7 @@ public class ContainerImpl implements Container
             }
             else
             {
-                throw new IllegalStateException("Provider for " + type + " can't be created. " + param + " is not a class " );
+                throw new IllegalStateException("Provider for " + type + " can't be created. " + param + " is not a class ");
             }
         }
         else
@@ -824,14 +830,14 @@ public class ContainerImpl implements Container
         }
     }
 
-    abstract protected class ComponentHandler<T>
+    abstract private class ComponentHandler<T>
     {
         protected Class componentClass;
 
         abstract T get(int depth) throws RaplaContextException;
     }
 
-    protected class RequestComponentHandler<T> extends ComponentHandler<T>
+    private class RequestComponentHandler<T> extends ComponentHandler<T>
     {
         protected RequestComponentHandler(Class<T> componentClass)
         {
@@ -842,17 +848,17 @@ public class ContainerImpl implements Container
         @Override T get(int depth) throws RaplaContextException
         {
             Object component = instanciate(componentClass, depth);
-            return (T)component;
+            return (T) component;
         }
 
-        T get(int depth,Object... params) throws RaplaContextException
+        T get(int depth, Object... params) throws RaplaContextException
         {
-            Object component = instanciate(componentClass, depth,params);
-            return (T)component;
+            Object component = instanciate(componentClass, depth, params);
+            return (T) component;
         }
     }
 
-    protected class SingletonComponentHandler extends ComponentHandler implements Disposable
+    private class SingletonComponentHandler extends ComponentHandler implements Disposable
     {
         protected Object component;
         boolean dispose = true;
@@ -863,7 +869,7 @@ public class ContainerImpl implements Container
             this.dispose = false;
         }
 
-        protected SingletonComponentHandler( Class componentClass)
+        protected SingletonComponentHandler(Class componentClass)
         {
             this.componentClass = componentClass;
         }
@@ -927,12 +933,6 @@ public class ContainerImpl implements Container
         }
     }
 
-    protected CommandScheduler createCommandQueue()
-    {
-        CommandScheduler commandQueue = new DefaultScheduler(getLogger(), 6);
-        return commandQueue;
-    }
-
     protected void loadFromServiceList() throws Exception
     {
         String folder = org.rapla.inject.generator.AnnotationInjectionProcessor.GWT_MODULE_LIST;
@@ -992,12 +992,6 @@ public class ContainerImpl implements Container
         }
         return ids;
     }
-
-    protected boolean isSupported(InjectionContext... context)
-    {
-        return true;
-    }
-
 
     private boolean isImplementing(Class interfaceClass, DefaultImplementation... clazzAnnot)
     {
@@ -1067,7 +1061,7 @@ public class ContainerImpl implements Container
                         {
                             foundExtension = true;
                             addContainerProvidedComponent(interfaceClass, clazz, id, null);
-                            getLogger().info("Found extension for " + interfaceName + " : " +implementationClassName );
+                            getLogger().info("Found extension for " + interfaceName + " : " + implementationClassName);
                         }
                     }
                     else
@@ -1085,8 +1079,8 @@ public class ContainerImpl implements Container
                     {
                         if (isRemoteMethod)
                         {
-                            String id  = remoteJsonMethodAnnotation.path();
-                            if ( id == null || id.isEmpty())
+                            String id = remoteJsonMethodAnnotation.path();
+                            if (id == null || id.isEmpty())
                             {
                                 id = interfaceName;
                             }
@@ -1096,7 +1090,7 @@ public class ContainerImpl implements Container
                         {
                             addContainerProvidedComponent(interfaceClass, clazz, (Configuration) null);
                         }
-                        getLogger().info("Found implementation for " + interfaceName + " : " +implementationClassName );
+                        getLogger().info("Found implementation for " + interfaceName + " : " + implementationClassName);
 
                         foundDefaultImpl = true;
                         // not necessary in current impl
@@ -1128,171 +1122,6 @@ public class ContainerImpl implements Container
             }
         }
     }
-
-    protected void initialize() throws Exception
-    {
-        //Logger logger = getLogger();
-        CalendarOptions calendarOptions = new CalendarOptionsImpl(new DefaultConfiguration());
-        addContainerProvidedComponentInstance(CalendarOptions.class, calendarOptions);
-        addContainerProvidedComponent(AppointmentFormater.class, AppointmentFormaterImpl.class);
-
-        // Discover and register the plugins for Rapla
-        RaplaResources i18n = getContext().lookup(RaplaResources.class);
-        String version = i18n.getString("rapla.version");
-        logger.info("Rapla.Version=" + version);
-        version = i18n.getString("rapla.build");
-        logger.info("Rapla.Build=" + version);
-        AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
-        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
-        try
-        {
-            version = System.getProperty("java.version");
-            logger.info("Java.Version=" + version);
-        }
-        catch (SecurityException ex)
-        {
-            version = "-";
-            logger.warn("Permission to system property java.version is denied!");
-        }
-    }
-
-    /*
-    protected Set<String> discoverPluginClassnames() throws RaplaException
-    {
-        try
-        {
-            Set<String> pluginNames = new LinkedHashSet<String>();
-
-            //            boolean isDevelopment = getContext().has(ContainerImpl.ENV_DEVELOPMENT) ? getContext().lookupDeprecated( ContainerImpl.ENV_DEVELOPMENT) : DEVELOPMENT_RESSOLVING;
-            Enumeration<URL> pluginEnum = ConfigTools.class.getClassLoader().getResources("META-INF/rapla-plugin.list");
-            //            if (!pluginEnum.hasMoreElements() || isDevelopment)
-            //            {
-            //                Collection<String> result = ServiceListCreator.findPluginClasses(logger);
-            //                pluginNames.addAll(result);
-            //            }
-
-            while (pluginEnum.hasMoreElements())
-            {
-                BufferedReader reader = new BufferedReader(new InputStreamReader((pluginEnum.nextElement()).openStream()));
-                while (true)
-                {
-                    String plugin = reader.readLine();
-                    if (plugin == null)
-                        break;
-                    pluginNames.add(plugin);
-                }
-            }
-            return pluginNames;
-        }
-        catch (Exception ex)
-        {
-            throw new RaplaException(ex.getMessage(), ex);
-        }
-    }
-
-    private <T extends Container> List<PluginDescriptor<T>> getPluginList(Class<T> containerType) throws RaplaException
-    {
-        Logger logger = getLogger().getChildLogger("plugin");
-        @SuppressWarnings("unchecked") List<PluginDescriptor<T>> pluginList = new ArrayList();
-        Set<String> pluginNames = discoverPluginClassnames();
-        for (String plugin : pluginNames)
-        {
-            try
-            {
-                boolean found = false;
-                try
-                {
-                    Class<?> componentClass = ContainerImpl.class.getClassLoader().loadClass(plugin);
-                    Method[] methods = componentClass.getMethods();
-                    for (Method method : methods)
-                    {
-                        if (method.getName().equals("provideServices"))
-                        {
-                            Class<?> type = method.getParameterTypes()[0];
-                            if (containerType.isAssignableFrom(type))
-                            {
-                                found = true;
-                            }
-                        }
-                    }
-                }
-                catch (ClassNotFoundException ex)
-                {
-                    continue;
-                }
-                catch (NoClassDefFoundError ex)
-                {
-                    getLogger().error("Error loading plugin " + plugin + " " + ex.getMessage());
-                    continue;
-                }
-                catch (Exception e1)
-                {
-                    getLogger().error("Error loading plugin " + plugin + " " + e1.getMessage());
-                    continue;
-                }
-                if (found)
-                {
-                    @SuppressWarnings("unchecked") PluginDescriptor<T> descriptor = (PluginDescriptor<T>) instanciate(plugin, null, logger);
-                    pluginList.add(descriptor);
-                    logger.info("Installed plugin " + plugin);
-                }
-            }
-            catch (RaplaContextException e)
-            {
-                if (e.getCause() instanceof ClassNotFoundException)
-                {
-                    logger.error("Could not instanciate plugin " + plugin, e);
-                }
-            }
-        }
-        return pluginList;
-    }
-
-    private Configuration findPluginConfig(RaplaConfiguration raplaConfig, final String pluginClassname)
-    {
-        Configuration pluginConfig;
-        // TODO should be replaced with a more descriptive approach instead of looking for the config by guessing from the package name
-        pluginConfig = raplaConfig.find("class", pluginClassname);
-        // If no plugin config for server is found look for plugin config for client plugin
-        if (pluginConfig == null)
-        {
-            String newClassname = pluginClassname.replaceAll("ServerPlugin", "Plugin");
-            newClassname = newClassname.replaceAll(".server.", ".client.");
-            pluginConfig = raplaConfig.find("class", newClassname);
-            if (pluginConfig == null)
-            {
-                newClassname = newClassname.replaceAll(".client.", ".");
-                pluginConfig = raplaConfig.find("class", newClassname);
-            }
-        }
-        return pluginConfig;
-    }
-
-
-    protected <T extends Container> List<PluginDescriptor<T>> initializePlugins(Preferences preferences, Class<T> pluginContainerClass) throws RaplaException
-    {
-        List<PluginDescriptor<T>> pluginList = getPluginList(pluginContainerClass);
-        RaplaConfiguration raplaConfig = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        // Add plugin configs
-        for (Iterator<PluginDescriptor<T>> it = pluginList.iterator(); it.hasNext(); )
-        {
-            PluginDescriptor<T> pluginDescriptor = it.next();
-            String pluginClassname = pluginDescriptor.getClass().getName();
-            Configuration pluginConfig = null;
-            if (raplaConfig != null)
-            {
-                pluginConfig = findPluginConfig(raplaConfig, pluginClassname);
-            }
-            if (pluginConfig == null)
-            {
-                pluginConfig = new DefaultConfiguration("plugin");
-            }
-            @SuppressWarnings("unchecked") T container = (T) this;
-            pluginDescriptor.provideServices(container, pluginConfig);
-        }
-        return pluginList;
-    }
-*/
 
 }
 

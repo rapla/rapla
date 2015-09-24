@@ -18,6 +18,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.rapla.client.ClientService;
+import org.rapla.framework.RaplaContext;
 import org.rapla.gui.internal.edit.CategoryEditUI;
 import org.rapla.gui.tests.GUITestCase;
 
@@ -34,7 +35,8 @@ public final class CategoryEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        CategoryEditUI editor = new CategoryEditUI( clientService.getContext(), false);
+        RaplaContext context = null;
+        CategoryEditUI editor = new CategoryEditUI( context);
         editor.setObjects( Collections.singletonList(clientService.getFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");
