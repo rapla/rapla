@@ -2,15 +2,12 @@ package org.rapla.plugin.export2ical;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 
 
 public class Export2iCalPlugin  {
 
-	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>(Export2iCalPlugin.class.getPackage().getName() + ".Export2iCalResources");
+	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>("org.rapla.plugin.export2ical" + ".Export2iCalResources");
 
 	public static final String PLUGIN_CLASS = Export2iCalPlugin.class.getName();
 	public static final TypedComponentRole<RaplaConfiguration> ICAL_CONFIG =  new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical.server.Config");
@@ -46,10 +43,10 @@ public class Export2iCalPlugin  {
 
 	//FIXME maybe this is no longer needed with signed applets
     boolean isApplet;
-    public Export2iCalPlugin(StartupEnvironment env)
-    {
-        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
-    }
+//    public Export2iCalPlugin(StartupEnvironment env)
+//    {
+//        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
+//    }
     
 	//public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
 //		container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, Export2iCalAdminOption.class);

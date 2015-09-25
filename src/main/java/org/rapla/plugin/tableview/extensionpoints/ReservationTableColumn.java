@@ -20,7 +20,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 
-@ExtensionPoint(context = InjectionContext.all, id= TableViewPlugin.EVENT_TABLE_COLUMN)
+@ExtensionPoint(context = {InjectionContext.server, InjectionContext.swing}, id= TableViewPlugin.EVENT_TABLE_COLUMN)
 public interface ReservationTableColumn extends RaplaTableColumn<Reservation, TableColumn>
 {
 }
