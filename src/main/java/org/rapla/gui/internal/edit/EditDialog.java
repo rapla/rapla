@@ -166,11 +166,9 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     class SaveAction extends AbstractAction
     {
         private static final long serialVersionUID = 1L;
-        EditController.EditCallback<List<T>> callback;
 
         public SaveAction(EditController.EditCallback<List<T>> callback)
         {
-            this.callback = callback;
         }
 
         public void actionPerformed(ActionEvent evt)
@@ -228,29 +226,14 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 dlg.close();
-                callback.onSuccess(saveObjects);
             }
             catch (IllegalAnnotationException ex)
             {
-                if (callback != null)
-                {
-                    callback.onFailure(ex);
-                }
-                else
-                {
-                    showWarning(ex.getMessage(), dlg);
-                }
+                showWarning(ex.getMessage(), dlg);
             }
             catch (RaplaException ex)
             {
-                if (callback != null)
-                {
-                    callback.onFailure(ex);
-                }
-                else
-                {
-                    showException(ex, dlg);
-                }
+                showException(ex, dlg);
             }
         }
     }
@@ -258,18 +241,14 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     class AbortAction extends AbstractAction
     {
         private static final long serialVersionUID = 1L;
-        EditController.EditCallback<List<T>> callback;
-
         public AbortAction(EditController.EditCallback<List<T>> callback)
         {
-            this.callback = callback;
         }
 
         public void actionPerformed(ActionEvent evt)
         {
             getPrivateEditDialog().removeEditDialog(EditDialog.this);
             dlg.close();
-            callback.onAbort();
         }
     }
 
