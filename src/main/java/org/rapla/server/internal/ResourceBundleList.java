@@ -21,7 +21,7 @@ import java.util.*;
             String packageId = i18n.getPackageId();
             i18nBundleIds.add(packageId);
         }
-        this.bundleIds = bundleIds;
+        this.bundleIds = i18nBundleIds;
     }
 
     public Map<String, Map<String, String>> getBundles(Locale locale)
