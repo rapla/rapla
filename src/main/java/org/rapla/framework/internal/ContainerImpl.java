@@ -12,8 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
-import org.apache.commons.lang3.exception.ContextedException;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.*;
@@ -35,10 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,7 +75,15 @@ public class ContainerImpl implements Disposable
 
     public <T> T inject(Class<T> component, Object... params) throws RaplaContextException
     {
-        T result = (T) instanciate(component, 0, params);
+        T result = null;
+        try
+        {
+            result = (T) instanciate(component, 0, params);
+        }
+        catch (Exception e)
+        {
+            throw new RaplaContextException(e.getMessage(),e);
+        }
         return result;
     }
 
@@ -134,15 +138,26 @@ public class ContainerImpl implements Disposable
         ComponentHandler<T> handler = getHandler(key);
         if (handler != null)
         {
-            if (handler instanceof RequestComponentHandler)
+            try
             {
-                RequestComponentHandler<T> handler1 = (RequestComponentHandler) handler;
-                T o = handler1.get(0, params);
-                return o;
+                if (handler instanceof RequestComponentHandler)
+                {
+                    RequestComponentHandler<T> handler1 = (RequestComponentHandler) handler;
+                    T o = handler1.get(0, params);
+                    return o;
+                }
+                else
+                {
+                    return handler.get(0);
+                }
             }
-            else
+            catch (RaplaContextException ex)
             {
-                return handler.get(0);
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new RaplaContextException(ex.getMessage(),ex);
             }
         }
         throw new RaplaContextException(key);
@@ -155,7 +170,7 @@ public class ContainerImpl implements Disposable
             return true;
         }
         String key = componentRole.getName();
-        if ( hint != null)
+        if (hint != null)
         {
             key += "/" + hint;
         }
@@ -177,14 +192,21 @@ public class ContainerImpl implements Disposable
     {
 
         String key = componentRole.getName();
-        if ( hint != null)
+        if (hint != null)
         {
             key += "/" + hint;
         }
         ComponentHandler<T> handler = getHandler(key);
         if (handler != null)
         {
-            return handler.get(0);
+            try
+            {
+                return handler.get(0);
+            }
+            catch (Exception e)
+            {
+                throw new RaplaContextException(e.getMessage(),e);
+            }
         }
         throw new RaplaContextException(key);
     }
@@ -194,7 +216,14 @@ public class ContainerImpl implements Disposable
         ComponentHandler handler = getHandler(role);
         if (handler != null)
         {
-            return handler.get(depth);
+            try
+            {
+                return handler.get(depth);
+            }
+            catch (Exception e)
+            {
+                throw new RaplaContextException(e.getMessage(),e);
+            }
         }
         return null;
     }
@@ -215,7 +244,14 @@ public class ContainerImpl implements Disposable
         ComponentHandler handler = getHandler(role);
         if (handler != null)
         {
-            return (T) handler.get(depth);
+            try
+            {
+                return (T) handler.get(depth);
+            }
+            catch (Exception e)
+            {
+                throw new RaplaContextException(e.getMessage(),e);
+            }
         }
         throw new RaplaContextException(clazz, " Implementation not found.");
     }
@@ -287,20 +323,15 @@ public class ContainerImpl implements Disposable
         return result;
     }
 
-    private <T> Set<Provider<T>> lookupServiceSetProviderFor(ParameterizedType paramType, String componentClassName)
+    private <T> Set<Provider<T>> lookupServiceSetProviderFor(ParameterizedType paramType)
     {
-        final Map<String, Provider<T>> stringProviderMap = lookupServiceMapProviderFor(paramType, componentClassName);
+        final Map<String, Provider<T>> stringProviderMap = lookupServiceMapProviderFor(paramType);
         final Collection<Provider<T>> values = stringProviderMap.values();
         return new LinkedHashSet<>(values);
     }
 
-    private <T> Map<String, Provider<T>> lookupServiceMapProviderFor(ParameterizedType paramType, String componentClassName)
+    private <T> Map<String, Provider<T>> lookupServiceMapProviderFor(ParameterizedType paramType)
     {
-        if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
-        {
-            throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName
-                    + ". Provider is the only generic that is currently supported by rapla injection");
-        }
         Type[] actualTypeArguments = paramType.getActualTypeArguments();
         Class<? extends Type> interfaceClass = null;
         if (actualTypeArguments.length > 0)
@@ -310,14 +341,18 @@ public class ContainerImpl implements Disposable
             {
                 interfaceClass = (Class) param;
             }
+            else if (param instanceof ParameterizedType && ((ParameterizedType)param).getRawType() instanceof Class)
+            {
+                interfaceClass = (Class) ((ParameterizedType)param).getRawType();
+            }
             else
             {
-                throw new IllegalStateException("Provider for " + componentClassName + " can't be created. " + param + " is not a class ");
+                throw new IllegalStateException("Provider can't be created. " + param + " is not a class ");
             }
         }
         else
         {
-            throw new IllegalStateException("Provider for " + componentClassName + " can't be created not type specified.");
+            throw new IllegalStateException("Provider  can't be created not type specified.");
         }
 
         RoleEntry entry = m_roleMap.get(interfaceClass.getName());
@@ -581,18 +616,19 @@ public class ContainerImpl implements Disposable
      * This concept is taken form pico container.*/
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) private Object instanciate(Class componentClass, int depth, final Object... additionalParamObject)
-            throws RaplaContextException
+            throws Exception
     {
         depth++;
         String componentClassName = componentClass.getName();
         final boolean isSingleton = componentClass.getAnnotation(Singleton.class) != null;
 
-        if (depth > 50)
+        if (depth > 40)
         {
-            throw new RaplaContextException("Dependency cycle while injection " + componentClassName + " aborting!");
+            throw new IllegalStateException("Dependency cycle while injection " + componentClassName + " aborting!");
         }
         if (isSingleton)
         {
+
             Object singleton = singletonMap.get(componentClassName);
             if (singleton != null)
             {
@@ -607,7 +643,8 @@ public class ContainerImpl implements Disposable
                     {
                         result.acquire();
                         final Object object = singletonMap.get(componentClassName);
-                        if(object!=null){
+                        if (object != null)
+                        {
                             result.release();
                             return object;
                         }
@@ -615,7 +652,7 @@ public class ContainerImpl implements Disposable
                 }
                 catch (InterruptedException e)
                 {
-                    throw new RaplaContextException("Timeout while waiting for instanciation of " + componentClass.getName());
+                    throw new IllegalStateException("Timeout while waiting for instanciation of " + componentClass.getName());
                 }
             }
         }
@@ -625,164 +662,39 @@ public class ContainerImpl implements Disposable
             Constructor c = findInjectableConstructor(componentClass);
             if (c == null)
             {
-                throw new RaplaContextException("No javax.inject.Inject Annotation or public default contructor found in class " + componentClass);
+                throw new IllegalStateException("No javax.inject.Inject Annotation or public default contructor found in class " + componentClass);
             }
-            Object[] params = null;
-            Class[] types = c.getParameterTypes();
-            Annotation[][] parameterAnnotations = c.getParameterAnnotations();
-            Type[] genericParameterTypes = c.getGenericParameterTypes();
-            params = new Object[types.length];
-            for (int i = 0; i < types.length; i++)
+            Object[] params = resolveParams(depth, additionalParams, c, isSingleton);
+            final Object component = c.newInstance(params);
+            if (isSingleton)
             {
-                final Class type = types[i];
-                Object p = null;
-                Annotation[] annotations = parameterAnnotations[i];
-                for (Annotation annotation : annotations)
-                {
-                    if (annotation.annotationType().equals(Named.class))
-                    {
-                        String value = ((Named) annotation).value();
-                        final String id = new TypedComponentRole(value).getId();
-                        Object lookup = lookupPrivateWithNull(id, depth);
-                        if (lookup == null)
-                        {
-                            throw new RaplaContextException("No constant found for id " + id + " with name " + value);
-                        }
-                        p = lookup;
-                    }
-                }
-                if (p != null)
-                {
-                    params[i] = p;
-                    continue;
-                }
-                String typeName = type.getName();
-                final Type type2 = genericParameterTypes[i];
-                if (typeName.equals("javax.inject.Provider") && type2 instanceof ParameterizedType)
-                {
-                    Object result = createProvider((ParameterizedType) type2, depth);
-                    p = result;
-                }
-                if (typeName.equals("java.util.Set") && type2 instanceof ParameterizedType)
-                {
-                    Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
-                    if (actualTypeArguments.length > 0)
-                    {
-                        final Type param = actualTypeArguments[0];
-                        if (param instanceof Class)
-                        {
-                            final Class<? extends Type> class1 = (Class<? extends Type>) param;
-                            p = lookupServicesFor(class1, depth);
-                        }
-                        else if (param instanceof ParameterizedType)
-                        {
-                            p = lookupServiceSetProviderFor((ParameterizedType) param, componentClassName);
-                        }
-                        else
-                        {
-                            throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + " unknown type " + param);
-                        }
-                    }
-                    else
-                    {
-                        throw new IllegalStateException(
-                                "Can't statisfy constructor dependency untyped java.util.Set is not supported for " + componentClassName);
-                    }
-                }
-                if (typeName.equals("java.util.Map") && type2 instanceof ParameterizedType)
-                {
-                    Type[] actualTypeArguments = ((ParameterizedType) type2).getActualTypeArguments();
-                    if (actualTypeArguments.length > 1)
-                    {
-                        {
-                            final Type param = actualTypeArguments[0];
-                            if (!(param.equals(String.class)))
-                            {
-                                throw new IllegalStateException(
-                                        "Can't statisfy constructor dependency java.util.Map is only supported for String keys. Error in "
-                                                + componentClassName);
-                            }
-                        }
-                        {
-                            final Type param = actualTypeArguments[1];
-                            if (param instanceof Class)
-                            {
-                                final Class<? extends Type> class1 = (Class<? extends Type>) param;
-                                p = lookupServiceMapFor(class1, depth);
-                            }
-                            else if (param instanceof ParameterizedType)
-                            {
-                                p = lookupServiceMapProviderFor((ParameterizedType) param, componentClassName);
-                            }
-                            else
-                            {
-                                throw new IllegalStateException("Can't statisfy constructor dependency  for " + componentClassName + " unknown type " + param);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        throw new IllegalStateException(
-                                "Can't statisfy constructor dependency untyped java.util.Map is not supported for " + componentClassName);
-                    }
-
-                }
-                if (p != null)
-                {
-                    params[i] = p;
-                    continue;
-                }
-                {
-                    Class guessedRole = type;
-                    if (has(guessedRole, null))
-                    {
-                        p = lookup(guessedRole);
-                    }
-                    else
-                    {
-                        for (int j = 0; j < additionalParams.size(); j++)
-                        {
-                            Object additional = additionalParams.get(j);
-                            Class<?> aClass = additional.getClass();
-                            if (guessedRole.isAssignableFrom(aClass))
-                            {
-                                p = additional;
-                                // we need to remove the additional params we used, to prevent to inject the same param twice
-                                // e.g. MyClass(Date startDate, Date endDate)
-                                additionalParams.remove(j);
-                                break;
-                            }
-                        }
-                    }
-                    if (p == null)
-                    {
-                        Constructor injectableConstructor = findInjectableConstructor(guessedRole);
-                        if (injectableConstructor != null)
-                        {
-                            p = instanciate(guessedRole, depth);
-                        }
-                    }
-                    if (p == null)
-                    {
-                        throw new RaplaContextException(componentClass, "Can't statisfy constructor dependency " + type.getName());
-                    }
-
-                }
-                params[i] = p;
+                singletonMap.put(componentClassName, component);
             }
-            try
+            return component;
+        }
+        catch (IllegalStateException e)
+        {
+            throw e;
+        }
+        catch (InvocationTargetException e)
+        {
+            final Throwable targetException = e.getTargetException();
+            if ( targetException instanceof  Exception)
             {
-                final Object component = c.newInstance(params);
-                if (isSingleton)
-                {
-                    singletonMap.put(componentClassName, component);
-                }
-                return component;
+                throw (Exception) targetException;
             }
-            catch (Exception e)
+            if ( targetException instanceof  Error)
             {
-                throw new RaplaContextException(componentClassName + " could not be initialized due to " + e.getMessage(), e);
+                throw (Error) targetException;
             }
+            else
+            {
+                throw new IllegalStateException( targetException);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(componentClassName + " could not be initialized due to " + e.getMessage(), e);
         }
         finally
         {
@@ -793,48 +705,219 @@ public class ContainerImpl implements Disposable
         }
     }
 
-    @Nullable private Provider createProvider(ParameterizedType type, int depth)
+    @NotNull private Object[] resolveParams(int depth, List<Object> additionalParams, Constructor c, boolean throwSingletonExceptionOnMatchingParam)
+            throws Exception
     {
-        Type[] actualTypeArguments = type.getActualTypeArguments();
-        if (actualTypeArguments.length > 0)
+        Object[] params = null;
+        Class[] types = c.getParameterTypes();
+        Type[] genericParameterTypes = c.getGenericParameterTypes();
+        Annotation[][] parameterAnnotations = c.getParameterAnnotations();
+        params = new Object[types.length];
+        for (int i = 0; i < types.length; i++)
+        {
+            final Class type = types[i];
+            Annotation[] annotations = parameterAnnotations[i];
+            final Type genericType = genericParameterTypes[i];
+            Object p = resolveParam(depth, additionalParams, type, annotations, genericType, throwSingletonExceptionOnMatchingParam);
+            params[i] = p;
+        }
+        return params;
+    }
+
+    private Object resolveParam(int depth, List<Object> additionalParams, Type type, Annotation[] annotations, Type genericType,
+            boolean throwSingletonExceptionOnMatchingParam) throws Exception
+    {
+        for (Annotation annotation : annotations)
+        {
+            if (annotation.annotationType().equals(Named.class))
+            {
+                String value = ((Named) annotation).value();
+                final String id = new TypedComponentRole(value).getId();
+                Object lookup = lookupPrivateWithNull(id, depth);
+                if (lookup == null)
+                {
+                    throw new RaplaContextException("No constant found for id " + id + " with name " + value);
+                }
+                return lookup;
+            }
+        }
+
+        final boolean isParameterizedTyped = genericType instanceof ParameterizedType;
+        if (isParameterizedTyped)
+        {
+            final ParameterizedType parameterizedType = (ParameterizedType) genericType;
+            Object result = resolveParameterized(depth, parameterizedType);
+            if (result != null)
+            {
+                return result;
+            }
+            type = parameterizedType.getRawType();
+        }
+        if (!(type instanceof Class))
+        {
+            throw new IllegalStateException("Param of type "  + type.getTypeName() + " can't be injected it is not a class ");
+        }
+        Class guessedRole = (Class) type;
+        if (has(guessedRole, null))
+        {
+            Object p = lookup(guessedRole);
+            return p;
+        }
+        else
+        {
+            for (int j = 0; j < additionalParams.size(); j++)
+            {
+                Object additional = additionalParams.get(j);
+                Class<?> aClass = additional.getClass();
+                if (guessedRole.isAssignableFrom(aClass))
+                {
+                    // we need to remove the additional params we used, to prevent to inject the same param twice
+                    // e.g. MyClass(Date startDate, Date endDate)
+                    if (throwSingletonExceptionOnMatchingParam)
+                    {
+                        throw new RaplaContextException("Additional Param can't be injected for singletons");
+                    }
+                    additionalParams.remove(j);
+                    return additional;
+                }
+            }
+        }
+        Object p = instanciate(guessedRole, depth);
+        return p;
+    }
+
+    private Object resolveParameterized(int depth, ParameterizedType parameterizedType) throws RaplaContextException
+    {
+        final Object result;
+        String typeName = parameterizedType.getRawType().getTypeName();
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        if (actualTypeArguments.length == 0)
+        {
+            throw new IllegalStateException("Paramater of generic " + typeName + " must be specified for injection ");
+        }
+        //Provider<Provider<Class>>
+        if (typeName.equals("javax.inject.Provider"))
         {
             final Type param = actualTypeArguments[0];
-            if (param instanceof Class)
+            result = new Provider()
             {
-                final Class<? extends Type> class1 = (Class<? extends Type>) param;
-                Provider result = new Provider()
+                @Override public Object get()
                 {
-                    @Override public Object get()
+                    try
                     {
-                        try
-                        {
-                            return myLookup(class1, depth);
-                        }
-                        catch (RaplaContextException e)
-                        {
-                            throw new IllegalStateException(e.getMessage(), e);
-                        }
-                    }
 
-                };
-                return result;
+                        Annotation[] annotations = new Annotation[0];
+                        Type genericType = param;
+                        final boolean throwSingletonExceptionOnMatchingParam = false;
+                        final List additionalParams = Collections.EMPTY_LIST;
+                        // we add the depth here to prevent cycles introduced by calling get in the constructor
+                        return resolveParam(depth, additionalParams, param, annotations, genericType, throwSingletonExceptionOnMatchingParam);
+                    }
+                    catch (IllegalStateException e)
+                    {
+                        throw e;
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e.getMessage(), e);
+                    }
+                }
+
+            };
+
+        }
+        else if (typeName.equals("java.util.Set"))
+        {
+            final Type valueParam = actualTypeArguments[0];
+            if (valueParam instanceof Class)
+            {
+                final Class<? extends Type> class1 = (Class<? extends Type>) valueParam;
+                result = lookupServicesFor(class1, depth);
+            }
+            else if (valueParam instanceof ParameterizedType)
+            {
+                final ParameterizedType paramType = (ParameterizedType) valueParam;
+                if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
+                {
+                    if(paramType.getRawType() instanceof Class)
+                    {
+                        final Class<? extends Type> class1 = (Class<? extends Type>) paramType.getRawType();
+                        result = lookupServicesFor(class1, depth);
+                    }
+                    else
+                    {
+                        throw new RaplaContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
+                    }
+                }
+                else
+                {
+                    result = lookupServiceSetProviderFor(paramType);
+                }
             }
             else
             {
-                throw new IllegalStateException("Provider for " + type + " can't be created. " + param + " is not a class ");
+                throw new IllegalStateException("Can't statisfy constructor dependency  unknown type " + valueParam);
+            }
+        }
+        else if (typeName.equals("java.util.Map"))
+        {
+            if (actualTypeArguments.length > 1)
+            {
+                final Type keyParam = actualTypeArguments[0];
+                if (!(keyParam.equals(String.class)))
+                {
+                    throw new IllegalStateException("Can't statisfy constructor dependency java.util.Map is only supported for String keys.");
+                }
+                {
+                    final Type valueParam = actualTypeArguments[1];
+                    if (valueParam instanceof Class)
+                    {
+                        final Class<? extends Type> paramClass = (Class<? extends Type>) valueParam;
+                        result = lookupServiceMapFor(paramClass, depth);
+                    }
+                    else if (valueParam instanceof ParameterizedType)
+                    {
+                        final ParameterizedType paramType = (ParameterizedType) valueParam;
+                        if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
+                        {
+                            if(paramType.getRawType() instanceof Class)
+                            {
+                                final Class<? extends Type> class1 = (Class<? extends Type>) paramType.getRawType();
+                                result = lookupServiceMapFor(class1, depth);
+                            }
+                            else
+                            {
+                                throw new RaplaContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
+                            }
+                        }
+                        else
+                        {
+                            result = lookupServiceMapProviderFor(paramType);
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalStateException("Can't statisfy constructor dependency for unknown type " + valueParam);
+                    }
+                }
+            }
+            else
+            {
+                throw new IllegalStateException("Can't statisfy constructor dependency untyped java.util.Map is not supported. ");
             }
         }
         else
         {
-            throw new IllegalStateException("Provider for " + type + " can't be created not type specified.");
+            result = null;
         }
+        return result;
     }
 
     abstract private class ComponentHandler<T>
     {
         protected Class componentClass;
 
-        abstract T get(int depth) throws RaplaContextException;
+        abstract T get(int depth) throws Exception;
     }
 
     private class RequestComponentHandler<T> extends ComponentHandler<T>
@@ -845,13 +928,13 @@ public class ContainerImpl implements Disposable
 
         }
 
-        @Override T get(int depth) throws RaplaContextException
+        @Override T get(int depth) throws Exception
         {
             Object component = instanciate(componentClass, depth);
             return (T) component;
         }
 
-        T get(int depth, Object... params) throws RaplaContextException
+        T get(int depth, Object... params) throws Exception
         {
             Object component = instanciate(componentClass, depth, params);
             return (T) component;
@@ -874,7 +957,7 @@ public class ContainerImpl implements Disposable
             this.componentClass = componentClass;
         }
 
-        Object get(int depth) throws RaplaContextException
+        Object get(int depth) throws Exception
         {
             if (component != null)
             {

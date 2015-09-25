@@ -90,7 +90,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         }
     }
 
-    @Inject
     public ServerServiceImpl(Logger logger, ServerContainerContext containerContext, String selectedStorage) throws Exception
     {
         super(logger, new SimpleProvider<RemoteServiceCaller>());
