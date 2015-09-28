@@ -56,7 +56,7 @@ public class InfoView implements ReservationViewPart
         contentPanel = new FlowPanel();
         contentPanel.setStyleName("appointmentInfo");
     }
-    
+
     private Presenter getPresenter()
     {
         return presenter;
@@ -67,7 +67,7 @@ public class InfoView implements ReservationViewPart
     {
         return contentPanel;
     }
-    
+
     @Override
     public void createContent(final Reservation reservation)
     {

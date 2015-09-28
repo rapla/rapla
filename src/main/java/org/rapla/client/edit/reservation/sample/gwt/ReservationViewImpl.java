@@ -18,6 +18,7 @@ import org.rapla.client.edit.reservation.sample.ReservationView;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
+import org.rapla.client.edit.reservation.sample.gwt.subviews.RightsView;
 import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
@@ -38,8 +39,8 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
 
-@DefaultImplementation(of = ReservationView.class, context = InjectionContext.gwt) public class ReservationViewImpl extends AbstractView<Presenter>
-        implements ReservationView<IsWidget>
+@DefaultImplementation(of = ReservationView.class, context = InjectionContext.gwt)
+public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
 {
 
     public static class Dual
@@ -86,7 +87,8 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
     private ReservationViewPart selectedView;
     private Reservation reservation;
 
-    @Inject public ReservationViewImpl(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
+    @Inject
+    public ReservationViewImpl(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
     {
         this.i18n = i18n;
         this.bundleManager = bundleManager;
@@ -149,17 +151,19 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
         popup.removeFromParent();
     }
 
-    @Override public void showWarning(String title, String warning)
+    @Override
+    public void showWarning(String title, String warning)
     {
         RaplaPopups.showWarning(title, warning);
     }
 
-    @Override public void show(final Reservation reservation)
+    @Override
+    public void show(final Reservation reservation)
     {
         this.reservation = reservation;
         navEntries.add(new Dual(new AnchorListItem("Veranstaltungsinformationen"), new InfoView(i18n, bundleManager, getPresenter())));
         navEntries.add(new Dual(new AnchorListItem("Termine und Ressourcen"), new ResourceDatesView(i18n, bundleManager, raplaLocale, getPresenter())));
-        navEntries.add(new Dual(new AnchorListItem("Rechte"), null));
+        navEntries.add(new Dual(new AnchorListItem(i18n.getString("permissions")), new RightsView(i18n, bundleManager, getPresenter())));
         content.setStyleName("content");
         for (Dual dual : navEntries)
         {
@@ -170,7 +174,8 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
             IconType type = IconType.SAVE;
             ClickHandler handler = new ClickHandler()
             {
-                @Override public void onClick(ClickEvent event)
+                @Override
+                public void onClick(ClickEvent event)
                 {
                     getPresenter().onSaveButtonClicked();
                 }
@@ -181,7 +186,8 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
             IconType type = IconType.REMOVE;
             ClickHandler handler = new ClickHandler()
             {
-                @Override public void onClick(ClickEvent event)
+                @Override
+                public void onClick(ClickEvent event)
                 {
                     getPresenter().onCancelButtonClicked();
                 }
@@ -192,7 +198,8 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
             IconType type = IconType.TRASH;
             ClickHandler handler = new ClickHandler()
             {
-                @Override public void onClick(ClickEvent event)
+                @Override
+                public void onClick(ClickEvent event)
                 {
                     getPresenter().onDeleteButtonClicked();
                 }
@@ -201,7 +208,8 @@ import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
         }
         bar.addDomHandler(new ClickHandler()
         {
-            @Override public void onClick(ClickEvent event)
+            @Override
+            public void onClick(ClickEvent event)
             {
                 Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
                 while (relativeElement != null && !(LIElement.is(relativeElement)))

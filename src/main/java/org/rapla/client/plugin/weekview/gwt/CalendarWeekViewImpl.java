@@ -1,6 +1,5 @@
 package org.rapla.client.plugin.weekview.gwt;
 
-import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
