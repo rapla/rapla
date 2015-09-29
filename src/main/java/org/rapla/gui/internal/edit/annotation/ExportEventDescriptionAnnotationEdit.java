@@ -7,6 +7,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
@@ -20,6 +23,7 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
     protected String annotationName = DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT;
     protected String DEFAULT_VALUE = "";
     
+    @Inject
     public ExportEventDescriptionAnnotationEdit(RaplaContext context) {
         super(context);
     }

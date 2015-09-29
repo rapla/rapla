@@ -4,17 +4,17 @@ import java.awt.Component;
 import java.util.Arrays;
 import java.util.Collection;
 
+import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 
-import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.ListField;
@@ -26,6 +26,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
 
     private final String annotationName = DynamicTypeAnnotations.KEY_CONFLICTS;
 
+    @Inject
     public ConflictCreationAnnotationEdit(RaplaContext context) {
         super(context);
     }

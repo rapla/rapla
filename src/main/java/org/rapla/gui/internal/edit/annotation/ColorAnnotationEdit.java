@@ -7,6 +7,9 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
@@ -19,6 +22,7 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
 
     private final String annotationName = AttributeAnnotations.KEY_COLOR;
 
+    @Inject
     public ColorAnnotationEdit(RaplaContext context) {
         super(context);
     }

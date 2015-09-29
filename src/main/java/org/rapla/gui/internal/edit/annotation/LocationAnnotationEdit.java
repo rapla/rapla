@@ -7,6 +7,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
@@ -19,6 +22,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
 
     private final String annotationName = DynamicTypeAnnotations.KEY_LOCATION;
 
+    @Inject
     public LocationAnnotationEdit(RaplaContext context) {
         super(context);
     }

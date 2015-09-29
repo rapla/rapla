@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.util.Arrays;
 import java.util.Collection;
 
+import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 
@@ -28,6 +29,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
     private final String annotationName = AttributeAnnotations.KEY_SORTING;
     String NOTHING_SELECTED = "nothing_selected";
     
+    @Inject
     public SortingAnnotationEdit(RaplaContext context) {
         super(context);
     }

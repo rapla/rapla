@@ -7,6 +7,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
@@ -19,6 +22,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
     protected String DEFAULT_VALUE = new String();
     
+    @Inject
     public ResourceTreeNameAnnotationEdit(RaplaContext context) {
         super(context);
     }

@@ -17,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.*;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -72,6 +73,7 @@ public class AttributeEdit extends RaplaGUIComponent
 
 
 
+    @Inject
     public AttributeEdit(RaplaContext context, AttributeDefaultConstraints constraintPanel) throws RaplaException {
         super( context);
 

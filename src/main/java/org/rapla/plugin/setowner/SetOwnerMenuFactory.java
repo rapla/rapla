@@ -52,7 +52,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     TreeFactory treeFactory;
     RaplaGUIComponent old;
     @Inject
-    public SetOwnerMenuFactory( SetOwnerResources isetOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context)
+    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context)
     {
         this.setOwnerI18n = setOwnerI18n;
         old = new RaplaGUIComponent(context);
