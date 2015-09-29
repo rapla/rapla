@@ -113,7 +113,7 @@ public class RaplaGwtStarter
         else
         {
             final String historyToken = History.getToken();
-            final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=" + historyToken : "";
+            final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=rapla.html#" + historyToken : "";
             Window.Location.replace(GWT.getModuleBaseURL() + "../rapla?page=auth" + appendig);
         }
     }
