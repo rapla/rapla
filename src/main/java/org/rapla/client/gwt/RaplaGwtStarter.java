@@ -17,6 +17,7 @@ import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Cookies;
+import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Window;
 
 /**
@@ -37,15 +38,17 @@ public class RaplaGwtStarter
     {
         AbstractJsonProxy.setServiceEntryPointFactory(new EntryPointFactory()
         {
-            @Override public String getEntryPoint(String interfaceName, String relativePath)
+            @Override
+            public String getEntryPoint(String interfaceName, String relativePath)
             {
-                String url = GWT.getModuleBaseURL() + "../rapla/json/" + (relativePath != null  ? relativePath : interfaceName);
+                String url = GWT.getModuleBaseURL() + "../rapla/json/" + (relativePath != null ? relativePath : interfaceName);
                 return url;
             }
         });
         AbstractJsonProxy.setExceptionDeserializer(new ExceptionDeserializer()
         {
-            @Override public Exception deserialize(String exception, String message, List<String> parameter)
+            @Override
+            public Exception deserialize(String exception, String message, List<String> parameter)
             {
                 final RaplaExceptionDeserializer raplaExceptionDeserializer = new RaplaExceptionDeserializer();
                 final RaplaException deserializedException = raplaExceptionDeserializer.deserializeException(exception, message, parameter);
@@ -98,7 +101,8 @@ public class RaplaGwtStarter
             AbstractJsonProxy.setAuthThoken(token.getAccessToken());
             Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
             {
-                @Override public boolean execute()
+                @Override
+                public boolean execute()
                 {
                     Bootstrap bootstrap = bootstrapProvider.get();
                     bootstrap.load();
@@ -108,7 +112,9 @@ public class RaplaGwtStarter
         }
         else
         {
-            Window.Location.replace(GWT.getModuleBaseURL() + "../rapla?page=auth");
+            final String historyToken = History.getToken();
+            final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=" + historyToken : "";
+            Window.Location.replace(GWT.getModuleBaseURL() + "../rapla?page=auth" + appendig);
         }
     }
 
