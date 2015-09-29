@@ -126,7 +126,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         // create the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("SETOWNER");
         setOwnerItem.setText(setOwnerI18n.getString("changeowner"));
-        ImageIcon icon = old.getImages().getIconFromKey( i18n.getString("icon.tree.persons"));
+        ImageIcon icon = old.getImages().getIconFromKey( "icon.tree.persons");
         setOwnerItem.setIcon(icon);
         setOwnerItem.addActionListener( new ActionListener()
         {
