@@ -659,6 +659,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AllocatableFunction(type);
             }
+            else if (variableName.equals("appointmentBlock:allocatables"))
+            {
+                return new AllocatableFunction(type);
+            }
 	        return null;
 		}
 		
