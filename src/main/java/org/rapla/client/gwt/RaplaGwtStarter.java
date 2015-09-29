@@ -83,21 +83,6 @@ public class RaplaGwtStarter
         if (token != null)
         {
             RaplaPopups.getProgressBar().setPercent(20);
-            //            final Document doc = Document.Util.getDocument();
-            //            final HTMLElement titleBar = doc.getElementById("title");
-            //            titleBar.setInnerHTML("Hallo Rapla");
-            //            final HTMLElement button = doc.getElementById("send");
-            //            button.setInnerHTML("Los!");
-            //            logger.info("Hallo welt");
-            //;
-            //final MyEventListener func = new MyEventListener(titleBar);
-            //button.setOnclick(func);
-            //            button.addEventListener("click", (Event e) -> {
-            //                        HTMLElement name = doc.getElementById("name");
-            //                        String val = name.getValue();
-            //                        titleBar.setInnerText("Hallo " + val);
-            //                    }, true
-            //            );
             AbstractJsonProxy.setAuthThoken(token.getAccessToken());
             Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
             {

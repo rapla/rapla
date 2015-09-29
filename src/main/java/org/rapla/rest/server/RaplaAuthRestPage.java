@@ -61,42 +61,6 @@ public class RaplaAuthRestPage
         throw new RaplaSecurityException(loginErrorMessage);
     }
 
-    //    @Override
-    //    public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    //    {
-    //        Object serviceObj = this;
-    //        String method = request.getMethod();
-    //        final String contentType = request.getHeader("Accept");
-    //        if (method.equals("GET") && contentType.startsWith("text/html"))
-    //        {
-    //            final String url = request.getParameter("url");
-    //            getHtml(url, response);
-    //        }
-    //        else if (method.equals("POST") && contentType.startsWith("text/html"))
-    //        {
-    //            request.setAttribute("method", "create_");
-    //            String url = request.getParameter("url");
-    //            String user = request.getParameter("userName");
-    //            String password = request.getParameter("password");
-    //            String connectAs = request.getParameter("connectAs");
-    //            try
-    //            {
-    //                create_(url, user, password, connectAs, response);
-    //            }
-    //            catch (Exception e)
-    //            {
-    //                servlet.serviceError(request, response, servletContext, e);
-    //                return;
-    //            }
-    //            //servlet.service(request, response, servletContext, serviceObj);
-    //        }
-    //        else
-    //        {
-    //            super.generatePage(servletContext, request, response);
-    //        }
-    //        // super.generatePage(servletContext, request, response);
-    //    }
-
     @POST
     @Produces(MediaType.TEXT_HTML)
     public void create_(@QueryParam("url") String url, @QueryParam("userName") String user, @QueryParam("password") String password,
