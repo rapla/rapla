@@ -1,6 +1,9 @@
 package org.rapla.client;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -102,10 +105,24 @@ public class Application<W> implements ApplicationView.Presenter
         }
         else
         {
-            actualPlacePresenter = placePresenters.values().iterator().next();
+            actualPlacePresenter = findBestSuited();
             actualPlacePresenter.resetPlace();
             mainView.updateContent((W) actualPlacePresenter.provideContent());
         }
+    }
+
+    private PlacePresenter findBestSuited()
+    {
+        final Set<Entry<String, PlacePresenter>> entrySet = placePresenters.entrySet();
+        for (Entry<String, PlacePresenter> entry : entrySet)
+        {
+            if(entry.getKey().equals(CalendarPlacePresenter.PLACE_ID))
+            {
+                return entry.getValue();
+            }
+        }
+        // last change take first...
+        return placePresenters.values().iterator().next();
     }
 
     @Override
