@@ -28,16 +28,13 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
-@Extension(provides = RaplaPageExtension.class,id="resources")
-@RemoteJsonMethod
 @Path("resources")
 @Singleton
-public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPageExtension{
+@RemoteJsonMethod
+public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON });

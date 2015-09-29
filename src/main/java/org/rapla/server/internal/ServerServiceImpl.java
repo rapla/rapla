@@ -12,15 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
-import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
+import javax.ws.rs.Path;
 
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -35,14 +44,23 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.server.*;
+import org.rapla.rest.server.RaplaRestApiWrapper;
+import org.rapla.server.RemoteSession;
+import org.rapla.server.ServerService;
+import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.servletpages.*;
-import org.rapla.storage.*;
+import org.rapla.server.servletpages.RaplaPageGenerator;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.StorageUpdateListener;
+import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbfile.FileOperator;
-import org.rapla.storage.dbrm.*;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
+import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
@@ -226,10 +244,49 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                     "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
 
+        {// Rest Pages
+            // Scan for services 
+            try
+            {
+                final String name = "META-INF/services/" + Path.class.getCanonicalName();
+                final Enumeration<URL> restPagesDefinitions = getClass().getClassLoader().getResources(name);
+                Set<String> restPagesSet = new LinkedHashSet<String>();
+                while (restPagesDefinitions.hasMoreElements())
+                {
+                    final URL url = restPagesDefinitions.nextElement();
+                    final InputStream modules = url.openStream();
+                    final BufferedReader br = new BufferedReader(new InputStreamReader(modules, "UTF-8"));
+                    String module = null;
+                    while ((module = br.readLine()) != null)
+                    {
+                        restPagesSet.add(module);
+                    }
+                    br.close();
+                }
+                for (String restPage : restPagesSet)
+                {
+                    try
+                    {
+                        final Class<?> restPageClass = Class.forName(restPage);
+                        final String restUri = restPageClass.getAnnotation(Path.class).value();
+                        final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(this, getLogger(), restPageClass);
+                        addContainerProvidedComponentInstance(RaplaPageExtension.class, restWrapper, restUri);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error(restPage + " could not be used as REST page: " + e.getMessage(), e);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.error("Rest pages not available due to " + e.getMessage(), e);
+            }
+        }
+        
         User user = getFirstAdmin(operator);
         adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
         //initializePlugins(preferences, ServerServiceContainer.class);
-
         // start server provides
         final Set<ServerExtension> serverExtensions = lookupServicesFor(ServerExtension.class, 0);
         for (ServerExtension extension : serverExtensions)

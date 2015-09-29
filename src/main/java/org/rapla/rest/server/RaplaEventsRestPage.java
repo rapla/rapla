@@ -29,17 +29,14 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.inject.Extension;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 
 
-@Extension(provides = RaplaPageExtension.class,id="events")
-@RemoteJsonMethod
 @Path("events")
 @Singleton
-public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageExtension
+@RemoteJsonMethod
+public class RaplaEventsRestPage extends AbstractRestPage 
 {
 
 	@Inject

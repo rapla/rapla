@@ -5,13 +5,15 @@ import java.io.PrintWriter;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
@@ -20,36 +22,33 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.inject.Extension;
-import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
-@Extension(provides = RaplaPageExtension.class,id="auth")
-@RemoteJsonMethod
 @Singleton
-public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExtension
+@Path("auth")
+@RemoteJsonMethod
+public class RaplaAuthRestPage
 {
 
-    private RemoteAuthentificationService remoteAuthentificationService;
-    private I18nBundle i18n;
+    private final RemoteAuthentificationService remoteAuthentificationService;
+    private final I18nBundle i18n;
+    private final ClientFacade facade;
 
     @Inject
-    public RaplaAuthRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, RemoteAuthentificationService remoteAuthentificationService,
-            RaplaResources i18n) throws RaplaException
+    public RaplaAuthRestPage(ClientFacade facade, RemoteAuthentificationService remoteAuthentificationService, RaplaResources i18n) throws RaplaException
     {
-        super(facade, serverContainer, logger, false);
+        this.facade = facade;
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.i18n = i18n;
     }
 
     @POST
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public LoginTokens create(@QueryParam("credentials") LoginCredentials credentials) throws Exception
     {
         final FutureResult<LoginTokens> result = remoteAuthentificationService.auth(credentials);
@@ -62,44 +61,46 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         throw new RaplaSecurityException(loginErrorMessage);
     }
 
-    @Override
-    public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        Object serviceObj = this;
-        String method = request.getMethod();
-        final String contentType = request.getHeader("Accept");
-        if (method.equals("GET") && contentType.startsWith("text/html"))
-        {
-            final String url = request.getParameter("url");
-            getHtml(url, response);
-        }
-        else if (method.equals("POST") && contentType.startsWith("text/html"))
-        {
-            request.setAttribute("method", "create_");
-            String url = request.getParameter("url");
-            String user = request.getParameter("userName");
-            String password = request.getParameter("password");
-            String connectAs = request.getParameter("connectAs");
-            try
-            {
-                create_(url, user, password, connectAs, response);
-            }
-            catch (Exception e)
-            {
-                servlet.serviceError(request, response, servletContext, e);
-                return;
-            }
-            //servlet.service(request, response, servletContext, serviceObj);
-        }
-        else
-        {
-            super.generatePage(servletContext, request, response);
-        }
-        // super.generatePage(servletContext, request, response);
-    }
+    //    @Override
+    //    public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    //    {
+    //        Object serviceObj = this;
+    //        String method = request.getMethod();
+    //        final String contentType = request.getHeader("Accept");
+    //        if (method.equals("GET") && contentType.startsWith("text/html"))
+    //        {
+    //            final String url = request.getParameter("url");
+    //            getHtml(url, response);
+    //        }
+    //        else if (method.equals("POST") && contentType.startsWith("text/html"))
+    //        {
+    //            request.setAttribute("method", "create_");
+    //            String url = request.getParameter("url");
+    //            String user = request.getParameter("userName");
+    //            String password = request.getParameter("password");
+    //            String connectAs = request.getParameter("connectAs");
+    //            try
+    //            {
+    //                create_(url, user, password, connectAs, response);
+    //            }
+    //            catch (Exception e)
+    //            {
+    //                servlet.serviceError(request, response, servletContext, e);
+    //                return;
+    //            }
+    //            //servlet.service(request, response, servletContext, serviceObj);
+    //        }
+    //        else
+    //        {
+    //            super.generatePage(servletContext, request, response);
+    //        }
+    //        // super.generatePage(servletContext, request, response);
+    //    }
 
-    public void create_(@QueryParam("url") String url, @QueryParam("user") String user, @QueryParam("password") String password,
-            @QueryParam("connectAs") String connectAs, HttpServletResponse response) throws Exception
+    @POST
+    @Produces(MediaType.TEXT_HTML)
+    public void create_(@QueryParam("url") String url, @QueryParam("userName") String user, @QueryParam("password") String password,
+            @QueryParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = Tools.createXssSafeString(url);
         final String errorMessage;
@@ -129,7 +130,8 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         createPage(url, user, errorMessage, response);
     }
 
-    public void getHtml(@QueryParam("url") String url, HttpServletResponse response) throws IOException
+    @GET
+    public void getHtml(@QueryParam("url") String url, @Context HttpServletResponse response) throws IOException
     {
         createPage(url, null, null, response);
     }
@@ -168,21 +170,21 @@ public class RaplaAuthRestPage extends AbstractRestPage implements RaplaPageExte
         out.println("    <form method=\"post\">");
         if (url != null)
         {
-            out.println("    	<input type=\"hidden\" name=\"url\" value=\"" + Tools.createXssSafeString(url) + "\"/>");
+            out.println("       <input type=\"hidden\" name=\"url\" value=\"" + Tools.createXssSafeString(url) + "\"/>");
         }
-        out.println("			<div class=\"loginOuterPanel\">");
-        out.println("				<div class=\"loginInputPanel\">");
+        out.println("           <div class=\"loginOuterPanel\">");
+        out.println("               <div class=\"loginInputPanel\">");
         final String userNameValue = userName != null ? userName : "";
-        out.println("					<input name=\"userName\" type=\"text\" value=\"" + userNameValue + "\">");
-        out.println("					<input name=\"password\"type=\"password\" >");
-        out.println("				</div>");
-        out.println("				<div class=\"loginCommandPanel\">");
-        out.println("					<button type=\"submit\" class=\"sendButton\">login</button>");
-        out.println("				</div>");
-        out.println("			</div>");
+        out.println("                   <input name=\"userName\" type=\"text\" value=\"" + userNameValue + "\">");
+        out.println("                   <input name=\"password\"type=\"password\" >");
+        out.println("               </div>");
+        out.println("               <div class=\"loginCommandPanel\">");
+        out.println("                   <button type=\"submit\" class=\"sendButton\">login</button>");
+        out.println("               </div>");
+        out.println("           </div>");
         if (errorMessage != null)
         {
-            out.println("		<div class=\"errorMessage\">" + errorMessage + "</div>");
+            out.println("       <div class=\"errorMessage\">" + errorMessage + "</div>");
         }
         out.println("  </body>");
         out.println("</html>");
