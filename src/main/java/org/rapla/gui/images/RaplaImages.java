@@ -29,6 +29,8 @@ import javax.inject.Singleton;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
+import org.jetbrains.annotations.PropertyKey;
+import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
@@ -92,7 +94,7 @@ public class RaplaImages
         }
     }
 
-    public ImageIcon getIconFromKey(String key)
+    public ImageIcon getIconFromKey(@PropertyKey(resourceBundle = RaplaResources.BUNDLENAME) String key)
     {
         String iconfile;
         try
