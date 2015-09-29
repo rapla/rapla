@@ -71,7 +71,7 @@ public class TestContainerImpl
             Assert.fail("Exception should be throwns");
         } catch (Exception ex)
         {
-           Assert.assertTrue(ex.getMessage().contains("cycle"));
+           Assert.assertTrue(ex.getMessage().toLowerCase().contains("cycle"));
         }
     }
     public static class Dep1

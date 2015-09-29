@@ -352,7 +352,7 @@ public class ContainerImpl implements Disposable
         }
         else
         {
-            throw new IllegalStateException("Provider  can't be created not type specified.");
+            throw new IllegalStateException("Provider  can't be created no type specified.");
         }
 
         RoleEntry entry = m_roleMap.get(interfaceClass.getName());
