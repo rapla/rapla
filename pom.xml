@@ -210,7 +210,7 @@
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
 					<sourceLevel>1.8</sourceLevel>
 					<jsInteropMode>JS</jsInteropMode>
-					<gen>${project.build.directory}/generated-gwt</gen>
+					<gen>${project.build.directory}/generated-gwt-code</gen>
 					<detail>false</detail>
 				</configuration>
 			</plugin>
