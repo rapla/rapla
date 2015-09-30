@@ -2,6 +2,7 @@ package org.rapla.client.edit.reservation.sample;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -25,6 +26,7 @@ public class ReservationEditActivityController  implements ActivityPresenter
     @Inject private Provider<ReservationPresenter> presenterProvider;
     @Inject private ClientFacade facade;
     @Inject private Logger logger;
+    private final Map<String, ReservationPresenter> opendPresenter = new HashMap<>();
 
     @Override @SuppressWarnings("rawtypes") public boolean startActivity(ActivityManager.Activity activity)
     {
@@ -38,7 +40,14 @@ public class ReservationEditActivityController  implements ActivityPresenter
             {
                 if (entity != null && entity instanceof Reservation)
                 {
-                    presenterProvider.get().edit((Reservation) entity, false);
+                    final Reservation reservation = (Reservation) entity;
+                    final ReservationPresenter alreadyOpendPresenter = opendPresenter.get(reservation.getId());
+                    if(alreadyOpendPresenter == null || !alreadyOpendPresenter.isVisible())
+                    {
+                        final ReservationPresenter newReservationPresenter = presenterProvider.get();
+                        newReservationPresenter.edit(reservation, false);
+                        opendPresenter.put(reservation.getId(), newReservationPresenter);
+                    }
                     return true;
                 }
             }

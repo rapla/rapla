@@ -5,4 +5,6 @@ import org.rapla.framework.RaplaException;
 
 public interface ReservationController {
     public void edit(Reservation event, boolean isNew) throws RaplaException;
+
+    boolean isVisible();
 }

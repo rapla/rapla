@@ -94,6 +94,12 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
     }
+    
+    @Override
+    public boolean isVisible()
+    {
+        return popup != null && popup.isAttached() && popup.isVisible();
+    }
 
     private void createIcon(IconType type, ClickHandler handler, String text)
     {

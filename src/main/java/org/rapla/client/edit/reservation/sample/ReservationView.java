@@ -44,6 +44,8 @@ public interface ReservationView<W> extends View<Presenter> {
 	}
 
 	void show(Reservation event);
+	
+	boolean isVisible();
 
 	void hide();
 

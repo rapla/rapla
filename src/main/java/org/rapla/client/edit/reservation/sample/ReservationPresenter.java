@@ -43,6 +43,12 @@ public class ReservationPresenter implements ReservationController, Presenter
         this.view = view;
         view.setPresenter(this);
     }
+    
+    @Override
+    public boolean isVisible()
+    {
+        return view.isVisible();
+    }
 
     @Override public void edit(final Reservation event, boolean isNew)
     {
