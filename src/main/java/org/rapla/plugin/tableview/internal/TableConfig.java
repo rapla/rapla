@@ -27,6 +27,51 @@ public class TableConfig
         List<String> item = new ArrayList();
     }
     
+    static TableConfig DEFAULT = new TableConfig();
+    static
+    {
+        TableConfig config = DEFAULT;
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("name");
+            columnConfig.setDefaultValue("{name()}");
+            columnConfig.setType("string");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "name");
+            name.setName("de", "Name");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+        }
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("start");
+            columnConfig.setDefaultValue("{context:start}");
+            columnConfig.setType("datetime");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "start");
+            name.setName("de", "Start");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+        }
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("end");
+            columnConfig.setDefaultValue("{context:end}");
+            columnConfig.setType("datetime");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "start");
+            name.setName("de", "Start");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+        }
+        
+    }
+    
+    static public TableConfig getDefaultConfig()
+    {
+        return DEFAULT;
+    }
+    
     //@XmlAccessorType(XmlAccessType.FIELD)
     static public class TableColumnConfig
     {
@@ -121,6 +166,11 @@ public class TableConfig
         final String key = config.getKey();
         addItem(view, key);
         //views.put( view , list);
+    }
+    
+    public Set<TableColumnConfig> getAllColumns()
+    {
+        return column;
     }
     
     // returns null of the tablecolumnconfig is not found
