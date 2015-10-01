@@ -69,6 +69,10 @@ public class DefaultConfiguration implements Configuration {
     }
 
     
+    public DefaultConfiguration getMutableChild(String name) {
+        return getMutableChild(name, true);
+    }
+    
     public DefaultConfiguration getMutableChild(String name, boolean create) {
         for (DefaultConfiguration child:children)
         {
