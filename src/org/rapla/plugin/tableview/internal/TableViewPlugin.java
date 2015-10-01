@@ -22,7 +22,7 @@ import org.rapla.framework.Container;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.AnnotationEditExtension;
-import org.rapla.gui.internal.edit.annotation.ColorAnnotationEdit;
+import org.rapla.plugin.mail.client.MailOption;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
 
 public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer>
@@ -46,6 +46,7 @@ public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, CSVExportMenu.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,ReservationTableViewFactory.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,AppointmentTableViewFactory.class);
+        container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, TableviewOption.class);
         
 		addReservationTableColumns(container);
         addAppointmentTableColumns(container);
