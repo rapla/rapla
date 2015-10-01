@@ -1,5 +1,10 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -19,10 +24,10 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
-            return null;
+            return Collections.emptyList();
         }
         Attribute attribute = (Attribute)annotatable;
         String annotation = annotatable.getAnnotation(annotationName);
@@ -38,7 +43,7 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
                 field.setValue( true );
             }
         }
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

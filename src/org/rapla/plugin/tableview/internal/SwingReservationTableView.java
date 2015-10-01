@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
+import java.sql.Date;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,18 +32,24 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
+import org.rapla.components.util.ParseDateException;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
@@ -57,6 +64,7 @@ import org.rapla.plugin.abstractcalendar.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.ReservationTableColumn;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {
@@ -118,7 +126,99 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
        	
-       	List< ? extends ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>(getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN));
+       	List<ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>();
+       	TableConfig config =TableConfig.getDefaultConfig();
+       	final Collection<TableColumnConfig> columns = config.getColumns("eventtable");
+       	for ( final TableColumnConfig column: columns)
+       	{
+           	reservationColumnPlugins.add( new ReservationTableColumn()
+           	        {
+    
+                        @Override
+                        public String getColumnName()
+                        {
+                            final MultiLanguageName name = column.getName();
+                            return name.getName(getLocale().getLanguage());
+                        }
+    
+                        @Override
+                        public Object getValue(Reservation object)
+                        {
+                            String annotationName = getAnnotationName();
+                            final String format = object.format(getLocale(), annotationName);
+                            if ( isDate())
+                            {
+                                java.util.Date date;
+                                try
+                                {
+                                    date = SerializableDateTimeFormat.INSTANCE.parseDate( format, false);
+                                    return date;
+                                }
+                                catch (ParseDateException e)
+                                {
+                                    return null;
+                                }
+                            }
+                            return format;
+                        }
+    
+                        private String getAnnotationName()
+                        {
+                            return TableViewExtensionPoints.COLUMN_ANNOTATION +column.getKey();
+                        }
+
+                        @Override
+                        public void init(TableColumn column)
+                        {
+                            // TODO Auto-generated method stub
+                        }
+    
+                        @Override
+                        public Class<?> getColumnClass()
+                        {
+                            if ( isDate())
+                            {
+                                return Date.class;
+                            }
+                            return String.class;
+                        }
+
+                        private boolean isDate()
+                        {
+                            String type = column.getType();
+                            final boolean isDate = type.equals("date") || type.equals("datetime");
+                            return isDate;
+                        }
+    
+                        @Override
+                        public String getHtmlValue(Reservation object)
+                        {
+                            Object value = getValue(object);
+                            if ( value == null)
+                            {
+                                return "";
+                            }
+                            if ( isDate())
+                            {
+                                RaplaLocale raplaLocale = getRaplaLocale();
+                                if ( value instanceof Date)
+                                {
+                                    Date date = (Date) value;
+                                    value =  raplaLocale.formatDateLong(date) + " " + raplaLocale.formatTime( date);
+                                }
+                                else
+                                {
+                                    value = "invalid date";
+                                }
+                            }
+                            return XMLWriter.encode(value.toString());
+                                
+                        }
+           	    
+           	        }
+           	        );
+       	}
+       	//getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN)
        	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnPlugins );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);

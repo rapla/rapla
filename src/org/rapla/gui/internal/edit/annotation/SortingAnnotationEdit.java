@@ -3,6 +3,7 @@ package org.rapla.gui.internal.edit.annotation;
 import java.awt.Component;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
@@ -29,17 +30,17 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
-            return null;
+            return Collections.emptyList();
         }
         Attribute attribute = (Attribute)annotatable;
         DynamicType dynamicType = attribute.getDynamicType();
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if ( classificationType == null || !(classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON ) || classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)))
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList( new String[] {NOTHING_SELECTED,AttributeAnnotations.VALUE_SORTING_ASCENDING, AttributeAnnotations.VALUE_SORTING_DESCENDING}); 
@@ -67,7 +68,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
             }
         };
         field.setRenderer( renderer);
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

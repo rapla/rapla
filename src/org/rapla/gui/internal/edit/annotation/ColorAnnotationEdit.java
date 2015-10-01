@@ -1,5 +1,8 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -20,16 +23,16 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
-            return null;
+            return Collections.emptyList();
         }
         Attribute attribute = (Attribute)annotatable;
         AttributeType type = attribute.getType();
         if ( type!=AttributeType.CATEGORY && type!= AttributeType.STRING)
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         BooleanField field = new BooleanField(getContext(),getString(annotationName));
@@ -37,7 +40,7 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
         {
             field.setValue( annotation.equalsIgnoreCase("true"));
         }
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

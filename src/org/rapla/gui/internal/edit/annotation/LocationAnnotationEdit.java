@@ -1,5 +1,8 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -19,10 +22,10 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
-            return null;
+            return Collections.emptyList();
         }
         DynamicType dynamicType = (DynamicType)annotatable;
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -30,7 +33,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
         boolean isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         if ( !isResourceType)
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         BooleanField field = new BooleanField(getContext(),getString("is_location"));
@@ -38,7 +41,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
         {
             field.setValue( annotation.equalsIgnoreCase("true"));
         }
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

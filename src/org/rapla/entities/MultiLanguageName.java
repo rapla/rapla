@@ -16,6 +16,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+
 
 
 
@@ -25,6 +30,7 @@ import java.util.TreeMap;
     support for multi-language-environments.
     @see MultiLanguageNamed
 */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;

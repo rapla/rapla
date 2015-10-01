@@ -3,6 +3,7 @@ package org.rapla.gui.internal.edit.annotation;
 import java.awt.Component;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
@@ -26,10 +27,10 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
-            return null;
+            return Collections.emptyList();
         }
         DynamicType dynamicType = (DynamicType)annotatable;
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -37,7 +38,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
         //boolean isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         if ( !isEventType)
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList( new String[] {DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES}); 
@@ -65,7 +66,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
             }
         };
         field.setRenderer( renderer);
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

@@ -16,9 +16,13 @@ package org.rapla.plugin.tableview.internal;
 
 import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Container;
 import org.rapla.framework.PluginDescriptor;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.gui.AnnotationEditExtension;
+import org.rapla.gui.internal.edit.annotation.ColorAnnotationEdit;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
 
 public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer>
@@ -30,11 +34,15 @@ public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer
 
 	public final static boolean ENABLE_BY_DEFAULT = true;
 
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>("org.rapla.plugin.tableview.config");
+
     public void provideServices(final ClientServiceContainer container, Configuration config)
     {
+        container.addContainerProvidedComponent( AnnotationEditExtension.DYNAMICTYPE_ANNOTATION_EDIT, TableColumnAnnotationEdit.class);
         if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
         	return;
 
+        //container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, TablePluginOption.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, CSVExportMenu.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,ReservationTableViewFactory.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,AppointmentTableViewFactory.class);

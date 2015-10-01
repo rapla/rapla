@@ -22,5 +22,7 @@ public interface TableViewExtensionPoints {
 	 @see SummaryExtension
 	* */
 	TypedComponentRole<SummaryExtension> APPOINTMENT_TABLE_SUMMARY = new TypedComponentRole<SummaryExtension>("org.rapla.plugin.tableview.appointmentsummary");
+   
+	String COLUMN_ANNOTATION = "tablecolumn_";
 
 }

@@ -16,7 +16,7 @@ import org.rapla.gui.internal.edit.AbstractEditUI;
 public class AnnotationEditUI extends AbstractEditUI<Annotatable> 
 {
     Collection<AnnotationEditExtension> annotationExtensions;
-    Map<AnnotationEditExtension,EditField> fieldMap = new HashMap<AnnotationEditExtension,EditField>();
+    Map<AnnotationEditExtension,Collection<? extends EditField>> fieldMap = new HashMap<>();
     
     public AnnotationEditUI(RaplaContext context, Collection<AnnotationEditExtension> annotationExtensions) {
         super(context);
@@ -33,11 +33,12 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
         Annotatable annotatable = objectList.get(0);
         for ( AnnotationEditExtension annot: annotationExtensions)
         {
-            EditField field = annot.createEditField(annotatable);
-            if ( field != null)
+            final Collection<? extends EditField> annotationFields = annot.createEditField(annotatable);
+            fieldMap.put(  annot, annotationFields);
+            for (EditField field:annotationFields)
             {
                 fields.add( field);
-                fieldMap.put(  annot, field);
+                
             }
         }
         setFields(fields);
@@ -48,8 +49,11 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
         Annotatable annotatable = annotatables.get(0);
         for ( AnnotationEditExtension annot: annotationExtensions)
         {
-            EditField field = fieldMap.get( annot);
-            annot.mapTo(field, annotatable);
+            Collection<? extends EditField> fields = fieldMap.get( annot);
+            for ( EditField field:fields)
+            {
+                annot.mapTo(field, annotatable);
+            }
         }
     }
 

@@ -437,17 +437,21 @@ public class ParsedText implements Serializable {
 	    public NameFunction( List<Function> args) throws IllegalAnnotationException {
 	        super( "name", args);
 	        final int argSize = args.size();
-            if ( argSize < 1 || argSize > 2 )
+            if (  argSize > 2 )
 	        {
-	            throw new IllegalAnnotationException("Name Function expects one or two argument!");
+	            throw new IllegalAnnotationException("Name Function expects max two argument!");
 	        }
-	        objectFunction = args.get(0);
+	        objectFunction = args.size() > 0 ?  args.get(0): null;
 	        languageFunction = args.size() == 2?args.get(1):null;
 	        //testMethod();
 	    }
 	    
 	    @GwtIncompatible
 	    private void testMethod() throws IllegalAnnotationException {
+	        if ( objectFunction == null)
+	        {
+	            return;
+	        }
 	        Method method;
 	        try {
 	            Class<? extends Function> class1 = objectFunction.getClass();
@@ -468,6 +472,15 @@ public class ParsedText implements Serializable {
 	    @Override
 	    public String eval(EvalContext context) 
 	    {
+	        if ( objectFunction == null)
+	        {
+	            Classification classification = context.getClassification();
+	            if ( classification == null)
+	            {
+	                return "";
+	            }
+	            getName(classification,context);
+	        }
             Object obj = objectFunction.eval(context);
             if (obj == null)
             {
