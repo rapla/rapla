@@ -6,10 +6,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
@@ -26,6 +27,7 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension{
 
     
+    @Inject
     public TableColumnAnnotationEdit(RaplaContext context) throws Exception {
         super(context);
         
@@ -50,9 +52,8 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         TableConfig config;
         try
         {
-            final Preferences systemPreferences = getClientFacade().getSystemPreferences();
-            RaplaConfiguration configEntry = systemPreferences.getEntry( TableViewPlugin.CONFIG, null);
-            config = configEntry != null ? TableConfig.read( configEntry) : TableConfig.getDefaultConfig();
+            final Preferences preferences = getClientFacade().getSystemPreferences();
+            config = TableConfig.read( preferences);
         }
         catch (Exception ex)
         {

@@ -30,6 +30,7 @@ import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.DefaultPluginOption;
 import org.rapla.gui.internal.edit.fields.MultiLanguageField;
 import org.rapla.inject.Extension;
@@ -46,7 +47,7 @@ public class TableviewOption extends DefaultPluginOption {
     private final List<TableColumnConfig> tablerows = new ArrayList<TableColumnConfig>();
     private final List<TableRow> rows = new ArrayList<TableRow>();
     private JPanel main;
-    private TableConfig config;
+    private TableConfig tableConfig;
     private JComboBox typeSelection;
     private Sorting sorting;
 
@@ -77,7 +78,7 @@ public class TableviewOption extends DefaultPluginOption {
         {// Ordering definitionr
             JPanel containerForOrderingAndValueDefinition = new JPanel(new BorderLayout());
             typeSelection = new JComboBox();
-            typeSelection.addItem(new TypeSelection("reservations", getString("reservations")));
+            typeSelection.addItem(new TypeSelection("events", getString("reservations")));
             typeSelection.addItem(new TypeSelection("appointments", getString("appointments")));
             typeSelection.addActionListener(new ActionListener() {
                 @Override
@@ -137,14 +138,14 @@ public class TableviewOption extends DefaultPluginOption {
     }
 
     protected void addChildren(DefaultConfiguration newConfig) {
-        final RaplaConfiguration raplaConfig = TableConfig.print(config);
+        final RaplaConfiguration raplaConfig = TableConfig.print(tableConfig);
         newConfig.add(raplaConfig);
     }
 
     protected List<TableColumnConfig> mapToRows() {
         List<TableColumnConfig> newRows = new ArrayList<TableColumnConfig>();
 
-        for (TableColumnConfig column : config.getAllColumns()) {
+        for (TableColumnConfig column : tableConfig.getAllColumns()) {
             newRows.add(column);
         }
         return newRows;
@@ -152,22 +153,22 @@ public class TableviewOption extends DefaultPluginOption {
 
     @Override
     protected Configuration getConfig() throws RaplaException {
-        if (this.config == null) {
+        //if (this.config == null) {
             Configuration config = preferences.getEntry(TableViewPlugin.CONFIG, null);
             if (config == null) {
                 config = TableConfig.print(TableConfig.getDefaultConfig());
             }
             return config;
-        } else {
-            return TableConfig.print(config);
-        }
+        //} else {
+//            return TableConfig.print(config);
+        //}
     }
 
     protected void readConfig(Configuration config) {
         try {
-            this.config = TableConfig.read((RaplaConfiguration) config);
+            this.tableConfig = TableConfig.read((RaplaConfiguration) config);
             tablerows.clear();
-            tablerows.addAll(this.config.getAllColumns());
+            tablerows.addAll(this.tableConfig.getAllColumns());
             initRows();
             update();
         } catch (ConfigurationException ex) {
@@ -181,11 +182,15 @@ public class TableviewOption extends DefaultPluginOption {
 
     public void commit() throws RaplaException {
         tablerows.clear();
-        super.commit();
+        writePluginConfig(false);
+        TypedComponentRole<RaplaConfiguration> configEntry = TableViewPlugin.CONFIG;
+        final RaplaConfiguration newConfig = TableConfig.print(tableConfig);
+        preferences.putEntry( configEntry,newConfig);
     }
 
     public String getName(Locale locale) {
         return "Tableview Plugin";
+
     }
 
     private class TableRow {
@@ -274,7 +279,7 @@ public class TableviewOption extends DefaultPluginOption {
                 public void actionPerformed(ActionEvent e) {
                     final SortingRow selectedItem = (SortingRow) allSortingRows.getSelectedItem();
                     if (selectedItem != null) {
-                        config.addView(selectedTable, selectedItem.columnConfig);
+                        tableConfig.addView(selectedTable, selectedItem.columnConfig);
                         init(selectedTable);
                         list.setSelectedIndex(listModel.getSize()-1);
                     }
@@ -289,7 +294,12 @@ public class TableviewOption extends DefaultPluginOption {
                     if (selectedIndices != null) {
                         for (int i = selectedIndices.length - 1; i >= 0; i--) {
                             int index = selectedIndices[i];
+                            SortingRow test = (SortingRow)listModel.get(index);
                             listModel.remove(index);
+                            if ( test != null)
+                            {
+                                tableConfig.removeColumn(test.columnConfig );
+                            }
                         }
                     }
                 }
@@ -304,7 +314,7 @@ public class TableviewOption extends DefaultPluginOption {
 
         private void init(String selectedTable) {
             this.selectedTable = selectedTable;
-            final Collection<TableColumnConfig> columns = config.getColumns(selectedTable);
+            final Collection<TableColumnConfig> columns = tableConfig.getColumns(selectedTable);
             final Locale locale = getLocale();
             listModel.removeAllElements();
             rows.clear();
@@ -316,7 +326,7 @@ public class TableviewOption extends DefaultPluginOption {
                 }
             }
             allSortingRows.removeAllItems();
-            final Set<TableColumnConfig> allColumns = config.getAllColumns();
+            final Set<TableColumnConfig> allColumns = tableConfig.getAllColumns();
             for (TableColumnConfig column : allColumns) {
                 allSortingRows.addItem(new SortingRow(column, locale));
             }
@@ -344,7 +354,7 @@ public class TableviewOption extends DefaultPluginOption {
                     } else {
                         for (int i = selectedIndices.length - 1; i >= 0; i--) {
                             final int indexToPullDown = selectedIndices[i];
-                            if (indexToPullDown < selectedIndices.length) {
+                            if (indexToPullDown < list.getModel().getSize()) {
                                 final SortingRow row = rows.remove(indexToPullDown);
                                 final int newIndex = Math.max(0, Math.min(rows.size(), indexToPullDown + 1));
                                 rows.add(newIndex, row);
@@ -352,10 +362,10 @@ public class TableviewOption extends DefaultPluginOption {
                         }
                     }
                     // remove old
-                    config.removeView(selectedTable);
+                    tableConfig.removeView(selectedTable);
                     // write again
                     for (SortingRow row : rows) {
-                        config.addView(selectedTable, row.columnConfig);
+                        tableConfig.addView(selectedTable, row.columnConfig);
                     }
                     init(selectedTable);
                     // select the new ones

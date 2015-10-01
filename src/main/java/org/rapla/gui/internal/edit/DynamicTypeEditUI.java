@@ -53,6 +53,7 @@ import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
 
+
 /****************************************************************
  * This is the controller-class for the DynamicType-Edit-Panel   *
  ****************************************************************/
@@ -338,8 +339,9 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
                 try {
                     annotationEdit.mapTo(asList);
-                } catch (RaplaException e1) {
+                } catch (Exception e1) {
                     getLogger().error(e1.getMessage(), e1);
+                    showException( e1, getMainComponent());
                 }
                 dialog.close();
             }

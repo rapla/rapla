@@ -62,7 +62,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     private Date createDate;
 
     // added an attribute array for performance reasons
-    List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
+	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
     private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>(1);
     MultiLanguageName name  = new MultiLanguageName();
     String key = "";
@@ -71,43 +71,43 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     transient DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
     transient Map<String,AttributeImpl> attributeIndex;
     public DynamicTypeImpl() {
-        this( new Date(),new Date());
+    	this( new Date(),new Date());
     }
     
     public DynamicTypeImpl(Date createDate, Date lastChanged) {
-        this.createDate = createDate;
-        this.lastChanged = lastChanged;
+    	this.createDate = createDate;
+    	this.lastChanged = lastChanged;
     }
 
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
         for (AttributeImpl child:attributes)
         {
-            child.setParent( this);
+        	child.setParent( this);
         }
-        for ( ParsedText annotation: annotations.values())
-        {
-            try {
-                annotation.init(parseContext);
-            } catch (IllegalAnnotationException e) {
-            }
-        }
-        for (PermissionImpl p:permissions)
-        {
-            p.setResolver( resolver);
-        }
+    	for ( ParsedText annotation: annotations.values())
+    	{
+    		try {
+				annotation.init(parseContext);
+			} catch (IllegalAnnotationException e) {
+			}
+    	}
+    	for (PermissionImpl p:permissions)
+    	{
+    	    p.setResolver( resolver);
+    	}
     }
 
     public RaplaType<DynamicType> getRaplaType() {return TYPE;}
     
     public boolean isInternal()
     {
-        boolean result =key.startsWith("rapla:");
-        return result;
+    	boolean result =key.startsWith("rapla:");
+    	return result;
     }
     
     public Classification newClassification() {
-        return newClassification( true );
+    	return newClassification( true );
     }
     
     public Classification newClassification(boolean useDefaults) {
@@ -121,20 +121,20 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         final ClassificationImpl classification = new ClassificationImpl(this);
         if ( resolver != null)
         {
-            classification.setResolver( resolver);
+        	classification.setResolver( resolver);
         }
         // Array could not be up todate
         final Attribute[] attributes2 = getAttributes();
         if ( useDefaults)
         {
-            for ( Attribute att: attributes2)
-            {
-                final Object defaultValue = att.defaultValue();
-                if ( defaultValue != null)
-                {
-                    classification.setValue(att, defaultValue);
-                }   
-            }
+	        for ( Attribute att: attributes2)
+	        {
+	            final Object defaultValue = att.defaultValue();
+	            if ( defaultValue != null)
+	            {
+	                classification.setValue(att, defaultValue);
+	            }   
+	        }
         }
         return classification;
     }
@@ -181,16 +181,16 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 Object originalValue = original.getValue( attributeKey );
                 if ( newAttribute != null  && newAttribute.getType().equals( originalAttribute.getType())) 
                 {
-                    Object newDefaultValue = newAttribute.defaultValue();
-                    // If the default value of the new type differs from the old one and the value is the same as the old default then use the new default
-                    if (  newDefaultValue != null && ((defaultValue == null && originalValue == null )|| (defaultValue != null && originalValue != null && !newDefaultValue.equals(defaultValue) && (originalValue.equals( defaultValue)))))
-                    {
-                        newClassification.setValue( newAttribute, newDefaultValue);
-                    }
-                    else
-                    {
-                        newClassification.setValue( newAttribute, newAttribute.convertValue( originalValue ));
-                    }
+                	Object newDefaultValue = newAttribute.defaultValue();
+                	// If the default value of the new type differs from the old one and the value is the same as the old default then use the new default
+                	if (  newDefaultValue != null && ((defaultValue == null && originalValue == null )|| (defaultValue != null && originalValue != null && !newDefaultValue.equals(defaultValue) && (originalValue.equals( defaultValue)))))
+                	{
+                		newClassification.setValue( newAttribute, newDefaultValue);
+                	}
+                	else
+                	{
+                		newClassification.setValue( newAttribute, newAttribute.convertValue( originalValue ));
+                	}
                 }
             }
             return newClassification;
@@ -198,18 +198,18 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public ClassificationFilter newClassificationFilter() {
-        if ( !isReadOnly()) {
-            throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
-        }
+    	if ( !isReadOnly()) {
+    		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
+    	}
         return newClassificationFilterWithoutCheck();
     }
 
     public ClassificationFilter newClassificationFilterWithoutCheck() {
         ClassificationFilterImpl classificationFilterImpl = new ClassificationFilterImpl(this);
-        if ( resolver != null)
-        {
-            classificationFilterImpl.setResolver( resolver);
-        }
+		if ( resolver != null)
+		{
+			classificationFilterImpl.setResolver( resolver);
+		}
         return classificationFilterImpl;
     }
 
@@ -223,19 +223,19 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public String getName(Locale locale) {
-        if ( locale == null)
-        {
-            return name.getName( null);
-        }
+    	if ( locale == null)
+    	{
+    		return name.getName( null);
+    	}
         String language = locale.getLanguage();
-        return name.getName(language);
+		return name.getName(language);
     }
 
     public String getAnnotation(String key) {
-        ParsedText parsedAnnotation = annotations.get(key);
+    	ParsedText parsedAnnotation = annotations.get(key);
         if ( parsedAnnotation != null) 
         {
-            return parsedAnnotation.getExternalRepresentation(parseContext);
+			return parsedAnnotation.getExternalRepresentation(parseContext);
         } 
         else 
         {
@@ -250,7 +250,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     @Override
     public Date getLastChanged() {
-        return lastChanged;
+    	return lastChanged;
     }
 
     public Date getCreateTime() {
@@ -259,7 +259,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public void setLastChanged(Date date) {
         checkWritable();
-        lastChanged = date;
+    	lastChanged = date;
     }
     
     @Override
@@ -285,8 +285,8 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     @Override
     public void addEntity(Entity entity) 
     {
-        Attribute attribute = (Attribute) entity;
-        attributes.add((AttributeImpl) attribute);
+    	Attribute attribute = (Attribute) entity;
+    	attributes.add((AttributeImpl) attribute);
         if (attribute.getDynamicType() != null
             && !this.isIdentical(attribute.getDynamicType()))
             throw new IllegalStateException("Attribute '" + attribute
@@ -297,14 +297,14 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
 
     public String getAnnotation(String key, String defaultValue) {
-        String annotation = getAnnotation( key );
+    	String annotation = getAnnotation( key );
         return annotation != null ? annotation : defaultValue;
     }
 
     public void setAnnotation(String key,String annotation) throws IllegalAnnotationException {
         checkWritable();
         if (annotation == null) {
-            annotations.remove(key);
+        	annotations.remove(key);
             return;
         }
         ParsedText parsedText = new ParsedText(annotation);
@@ -325,9 +325,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         checkWritable();
         this.key = key;
         for ( ParsedText text:annotations.values())
-        {
-            text.updateFormatString(parseContext);
-        }
+		{
+			text.updateFormatString(parseContext);
+		}
     }
 
     public String getElementKey()
@@ -346,10 +346,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         Attribute[] attribute = getAttributes();
         Attribute attribute1 = attribute[index1];
         Attribute attribute2 = attribute[index2];
-        List<AttributeImpl> newMap = new ArrayList<AttributeImpl>();
+		List<AttributeImpl> newMap = new ArrayList<AttributeImpl>();
         for (int i=0;i<attribute.length;i++) {
-            Attribute att;
-            if (i == index1)
+        	Attribute att;
+        	if (i == index1)
                 att = attribute2;
             else if (i == index2)
                 att = attribute1;
@@ -360,7 +360,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         attributes = newMap;
     }
 
-    /** find an attribute in the dynamic-type that equals the specified attribute. */
+	/** find an attribute in the dynamic-type that equals the specified attribute. */
 
     public Attribute findAttributeForId(Object id) {
         Attribute[] typeAttributes = getAttributes();
@@ -374,44 +374,44 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
 
     /**
-     * @param attributeImpl  
+	 * @param attributeImpl  
      * @param key 
-     */
+	 */
     public void keyChanged(AttributeImpl attributeImpl, String key) {
-        attributeIndex = null;
-        for ( ParsedText text:annotations.values())
-        {
-            text.updateFormatString(parseContext);
-        }
-    }
+		attributeIndex = null;
+		for ( ParsedText text:annotations.values())
+		{
+			text.updateFormatString(parseContext);
+		}
+	}
     
     public void removeAttribute(Attribute attribute) {
         checkWritable();
         String matchingAttributeKey = findAttribute( attribute );
-        if ( matchingAttributeKey == null) {
+		if ( matchingAttributeKey == null) {
             return;
         }
         attributes.remove( attribute);
         if (this.equals(attribute.getDynamicType()))
         {
-            if (((AttributeImpl) attribute).isReadOnly())
-            {
-                throw new IllegalArgumentException("Attribute is not writable. It does not belong to the same dynamictype instance");
-            }
+        	if (((AttributeImpl) attribute).isReadOnly())
+        	{
+        		throw new IllegalArgumentException("Attribute is not writable. It does not belong to the same dynamictype instance");
+        	}
             ((AttributeImpl) attribute).setParent(null);
         }
     }
 
-    public String findAttribute(Attribute attribute) {
-        for ( AttributeImpl att: attributes )
+	public String findAttribute(Attribute attribute) {
+		for ( AttributeImpl att: attributes )
         {
-            if (att.equals( attribute))
-            {
-                return att.getKey();
-            }
+        	if (att.equals( attribute))
+        	{
+        		return att.getKey();
+        	}
         }
-        return null;
-    }
+		return null;
+	}
 
     public void addAttribute(Attribute attribute) {
         checkWritable();
@@ -441,16 +441,16 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
 
     public AttributeImpl getAttribute(String key) {
-        if ( attributeIndex == null)
-        {
-            attributeIndex = new HashMap<String, AttributeImpl>();
-            for ( AttributeImpl att:attributes)
-            {
-                attributeIndex.put( att.getKey(), att);
-            }
-        }
-        AttributeImpl attributeImpl = attributeIndex.get( key);
-        return attributeImpl;
+    	if ( attributeIndex == null)
+    	{
+    		attributeIndex = new HashMap<String, AttributeImpl>();
+        	for ( AttributeImpl att:attributes)
+        	{
+        		attributeIndex.put( att.getKey(), att);
+        	}
+    	}
+    	AttributeImpl attributeImpl = attributeIndex.get( key);
+		return attributeImpl;
     }
 
     public ParsedText getParsedAnnotation(String key) {
@@ -458,8 +458,8 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
     
     @SuppressWarnings("unchecked")
-    public Collection<AttributeImpl> getSubEntities() {
-        return attributes;
+	public Collection<AttributeImpl> getSubEntities() {
+    	return attributes;
     }
 
     @Override
@@ -529,52 +529,52 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return buf.toString();
     }
 
-    /**
-     * @param newType
-     * @param attributeId
-     */
-    public boolean hasAttributeChanged(DynamicTypeImpl newType, String attributeId) {
-        Attribute oldAttribute = findAttributeForId(attributeId );
-        Attribute newAttribute = newType.findAttributeForId(attributeId );
-        if ( oldAttribute == null && newAttribute == null)
-        {
-            return false;
-        }
-        if ((newAttribute == null ) ||  ( oldAttribute == null)) {
-            return true;
-        }
-        String newKey = newAttribute.getKey();
+	/**
+	 * @param newType
+	 * @param attributeId
+	 */
+	public boolean hasAttributeChanged(DynamicTypeImpl newType, String attributeId) {
+    	Attribute oldAttribute = findAttributeForId(attributeId );
+    	Attribute newAttribute = newType.findAttributeForId(attributeId );
+    	if ( oldAttribute == null && newAttribute == null)
+    	{
+    		return false;
+    	}
+    	if ((newAttribute == null ) ||  ( oldAttribute == null)) {
+    		return true;
+    	}
+		String newKey = newAttribute.getKey();
         String oldKey = oldAttribute.getKey();
-        if ( !newKey.equals( oldKey )) {
-            return true;
-        }
-        if ( !newAttribute.getType().equals( oldAttribute.getType())) {
-            return true;
-        }
-        {
-            String[] keys = newAttribute.getConstraintKeys();
-            String[] oldKeys = oldAttribute.getConstraintKeys();
-            if ( keys.length != oldKeys.length) {
-                return true;
-            }
-            for ( int i=0;i< keys.length;i++) {
-                if ( !keys[i].equals( oldKeys[i]) )
-                    return true;
-                Object oldConstr = oldAttribute.getConstraint( keys[i]);
-                Object newConstr = newAttribute.getConstraint( keys[i]);
-                if ( oldConstr == null && newConstr == null)
-                    continue;
-                if ( oldConstr == null || newConstr == null)
-                    return true;
+		if ( !newKey.equals( oldKey )) {
+			return true;
+		}
+		if ( !newAttribute.getType().equals( oldAttribute.getType())) {
+			return true;
+		}
+		{
+			String[] keys = newAttribute.getConstraintKeys();
+			String[] oldKeys = oldAttribute.getConstraintKeys();
+			if ( keys.length != oldKeys.length) {
+				return true;
+			}
+			for ( int i=0;i< keys.length;i++) {
+				if ( !keys[i].equals( oldKeys[i]) )
+					return true;
+				Object oldConstr = oldAttribute.getConstraint( keys[i]);
+				Object newConstr = newAttribute.getConstraint( keys[i]);
+				if ( oldConstr == null && newConstr == null)
+					continue;
+				if ( oldConstr == null || newConstr == null)
+					return true;
 
-                if ( !oldConstr.equals( newConstr))
-                    return true;
-            }
-        }
-        return false;
-    }
+				if ( !oldConstr.equals( newConstr))
+					return true;
+			}
+		}
+		return false;
+	}
 
-    public Attribute getFirstAttributeWithAnnotation(String annotationKey) {
+	public Attribute getFirstAttributeWithAnnotation(String annotationKey) {
         for (Attribute attribute: attributes)
         {
             String annotation = attribute.getAnnotation(annotationKey);
@@ -624,25 +624,25 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     }
 
-    static class DynamicTypeParseContext implements ParseContext {
-        private DynamicTypeImpl type;
+	static class DynamicTypeParseContext implements ParseContext {
+		private DynamicTypeImpl type;
 
-        DynamicTypeParseContext( DynamicType type)
-        {
-            this.type = (DynamicTypeImpl)type;
-        }
-        
-        public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
-            Attribute attribute = type.getAttribute(variableName);
-            if (attribute != null) 
-            {
-                return new AttributeFunction(attribute);
-            } 
-            else if (variableName.equals(type.getKey()) ) 
-            {
-                return new TypeFunction(type);
-            }
-            else if (variableName.equals("type:type" )) 
+		DynamicTypeParseContext( DynamicType type)
+		{
+			this.type = (DynamicTypeImpl)type;
+		}
+		
+		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
+			Attribute attribute = type.getAttribute(variableName);
+	        if (attribute != null) 
+	        {
+	        	return new AttributeFunction(attribute);
+	        } 
+	        else if (variableName.equals(type.getKey()) ) 
+	        {
+	        	return new TypeFunction(type);
+	        }
+	        else if (variableName.equals("type:type" )) 
             {
                 return new ThisTypeFunction();
             }
@@ -658,6 +658,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentStartFunction(type);
             }
+            else if (variableName.equals("context:lastchanged")) 
+            {
+                return new LastChangedFunction(type);
+            }
             else if (variableName.equals("context:end")) 
             {
                 return new AppointmentEndFunction(type);
@@ -666,84 +670,88 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentBlockFunction(type);
             }
+            else if (variableName.equals("context:allocatables")) 
+            {
+                return new AllocatableFunction(type);
+            }
             else if (variableName.equals("appointment:allocatables")) 
             {
                 return new AllocatableFunction(type);
             }
-            return null;
-        }
-        
-        class AttributeFunction extends ParsedText.Function
-        {
-            Object id;
-            AttributeFunction(Attribute attribute )
-            {
-                super("attribute:"+attribute.getKey());
-                id =attribute.getId() ;
-                
-            }
-            
-            protected String getName() {
-                Attribute attribute = findAttribute( type);
-                if  ( attribute != null)
-                {
-                    return attribute.getKey();
-                }
+	        return null;
+		}
+		
+		class AttributeFunction extends ParsedText.Variable
+		{
+			Object id;
+			AttributeFunction(Attribute attribute )
+			{
+				super("attribute:"+attribute.getKey());
+				id =attribute.getId() ;
+				
+			}
+			
+			protected String getName() {
+			    Attribute attribute = findAttribute( type);
+			    if  ( attribute != null)
+			    {
+			        return attribute.getKey();
+			    }
                 return name;
-            }
+			}
 
-            public Attribute eval(EvalContext context) {
-                Classification classification = context.getClassification();
-                DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
-                return findAttribute(type);
-            }
+			public Attribute eval(EvalContext context) {
+				Classification classification = context.getClassification();
+				DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
+				return findAttribute(type);
+			}
 
             public Attribute findAttribute(DynamicTypeImpl type) {
                 Attribute attribute =  type.findAttributeForId( id );
-                if ( attribute!= null) {
-                    return attribute;
-                }
-                return null;
+				if ( attribute!= null) {
+					return attribute;
+	            }
+				return null;
             }
-            
-            @Override
-            public String getRepresentation( ParseContext context)
-            {
-                
-                Attribute attribute = type.findAttributeForId( id );
-                if ( attribute!= null) {
-                    return attribute.getKey();
-                }
-                return "";
-            }
-        }
-        
-        class TypeFunction extends ParsedText.Function
-        {
-            Object id;
-            TypeFunction(DynamicType type) 
-            {
-                super("type:"+type.getKey());
-                id = type.getId() ;
-            }
-            
-            public DynamicType eval(EvalContext context) 
-            {
-                DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
-                return type;
-            }
-            
-            @Override
-            public String getRepresentation( ParseContext context)
-            {
-                if ( type.getId().equals( id ) ) {
-                    return type.getKey();
-                }
-                return "";
-            }
-        }
-        
-        class ThisTypeFunction extends ParsedText.Function
+			
+			@Override
+			public String getRepresentation( ParseContext context)
+			{
+				
+		        Attribute attribute = type.findAttributeForId( id );
+		        if ( attribute!= null) {
+		        	return attribute.getKey();
+		        }
+		        return "";
+			}
+		}
+		
+		class TypeFunction extends ParsedText.Variable
+		{
+			Object id;
+			TypeFunction(DynamicType type) 
+			{
+				super("type:"+type.getKey());
+				id = type.getId() ;
+			}
+			
+			public DynamicType eval(EvalContext context) 
+			{
+				DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
+				return type;
+			}
+			
+			@Override
+			public String getRepresentation( ParseContext context)
+			{
+				if ( type.getId().equals( id ) ) {
+					return type.getKey();
+		        }
+				return "";
+			}
+		}
+		
+		class ThisTypeFunction extends ParsedText.Variable
         {
             ThisTypeFunction() 
             {
@@ -757,10 +765,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             }
             
         }
-        
-        class AllocatableFunction extends ParsedText.Function
-        {
-            AllocatableFunction(DynamicType type) 
+		
+		class AllocatableFunction extends ParsedText.Variable
+		{
+		    AllocatableFunction(DynamicType type) 
             {
                 super("event:allocatables");
             }
@@ -782,10 +790,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 }
                 return Collections.emptyList();
             }
-            
-        }
-        
-        class AppointmentFunction extends ParsedText.Function
+		    
+		}
+		
+		class AppointmentFunction extends ParsedText.Variable
         {
             AppointmentFunction(DynamicType type) 
             {
@@ -804,8 +812,30 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             }
             
         }
-        
-        class AppointmentStartFunction extends ParsedText.Function
+		
+		class LastChangedFunction extends ParsedText.Variable
+        {
+		    LastChangedFunction(DynamicType type) 
+            {
+                super("context:lastchanged");
+            }
+
+            @Override
+            public Date eval(EvalContext context) {
+                if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation != null)
+                    {
+                        return reservation.getLastChanged();
+                    }
+                }
+                return null;
+            }
+            
+        }
+		
+		class AppointmentStartFunction extends ParsedText.Variable
         {
             AppointmentStartFunction(DynamicType type) 
             {
@@ -814,15 +844,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             @Override
             public Date eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getFirstDate(); 
-                }
                 if ( context instanceof AppointmentBlockEvalContext)
                 {
                     AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
@@ -832,7 +853,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return new Date(block.getStart()); 
                 }
-                if ( context instanceof AppointmentEvalContext)
+                else if ( context instanceof AppointmentEvalContext)
                 {
                     Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
                     if ( appointment == null)
@@ -841,12 +862,22 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return appointment.getStart();
                 }
+                else if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation == null)
+                    {
+                        return null;
+                    }
+                    return reservation.getFirstDate(); 
+                }
+                
                 return null;
             }
             
         }
-        
-        class AppointmentEndFunction extends ParsedText.Function
+		
+		class AppointmentEndFunction extends ParsedText.Variable
         {
             AppointmentEndFunction(DynamicType type) 
             {
@@ -855,15 +886,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             @Override
             public Date eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getMaxEnd(); 
-                }
                 if ( context instanceof AppointmentBlockEvalContext)
                 {
                     AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
@@ -873,7 +895,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return new Date(block.getEnd()); 
                 }
-                if ( context instanceof AppointmentEvalContext)
+                else if ( context instanceof AppointmentEvalContext)
                 {
                     Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
                     if ( appointment == null)
@@ -882,13 +904,23 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return appointment.getEnd();
                 }
+                else if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation == null)
+                    {
+                        return null;
+                    }
+                    return reservation.getMaxEnd(); 
+                }
+                
                 return null;
             }
 
             
         }
-        
-        class AppointmentBlockFunction extends ParsedText.Function
+		
+		class AppointmentBlockFunction extends ParsedText.Variable
         {
             AppointmentBlockFunction(DynamicType type) 
             {
@@ -931,9 +963,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 return size + 1;
             }
         }
-    }
-    
-    static public class ReservationEvalContext extends EvalContext
+	}
+	
+	static public class ReservationEvalContext extends EvalContext
     {
         private Reservation reservation;
 
@@ -950,22 +982,22 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         
     }
 
-    static public class AppointmentEvalContext extends ReservationEvalContext
-    {
-        private Appointment appointment;
-        
-        public AppointmentEvalContext( Locale locale, int callStackDepth, String annotationName, Appointment appointment)
-        {
-            super(locale,callStackDepth, annotationName, appointment.getReservation());
-            this.appointment = appointment;
-        }
-        
+	static public class AppointmentEvalContext extends ReservationEvalContext
+	{
+	    private Appointment appointment;
+	    
+	    public AppointmentEvalContext( Locale locale, int callStackDepth, String annotationName, Appointment appointment)
+	    {
+	        super(locale,callStackDepth, annotationName, appointment.getReservation());
+	        this.appointment = appointment;
+	    }
+	    
         public Appointment getAppointment()
         {
             return appointment;
-        }       
-    }
-    
+        }	    
+	}
+	
     static public class AppointmentBlockEvalContext extends AppointmentEvalContext
     {
         private AppointmentBlock block;
@@ -983,28 +1015,28 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     }
 
-    public static boolean isTransferedToClient(Classifiable classifiable) {
-        if ( classifiable == null)
-        {
-            return false;
-        }
-        DynamicType type = classifiable.getClassification().getType();
-        boolean result = isTransferedToClient(type);
-        return result;
-    }
+	public static boolean isTransferedToClient(Classifiable classifiable) {
+		if ( classifiable == null)
+		{
+			return false;
+		}
+		DynamicType type = classifiable.getClassification().getType();
+		boolean result = isTransferedToClient(type);
+		return result;
+	}
 
-    public static boolean isTransferedToClient(DynamicType type) {
-        String annotation = type.getAnnotation( DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT);
-        if ( annotation == null)
-        {
-            return true;
-        }
-        return !annotation.equals( DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-    }
+	public static boolean isTransferedToClient(DynamicType type) {
+		String annotation = type.getAnnotation( DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT);
+		if ( annotation == null)
+		{
+			return true;
+		}
+		return !annotation.equals( DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
+	}
 
 
-    
-    
+	
+	
 }
 
 

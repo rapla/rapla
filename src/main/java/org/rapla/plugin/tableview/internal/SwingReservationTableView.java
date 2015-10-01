@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.sql.Date;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,17 +33,13 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
-import org.rapla.components.util.ParseDateException;
-import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.util.xml.XMLWriter;
-import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
@@ -109,20 +104,20 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         scrollpane = new JScrollPane( table);
         if ( editable )
         {
-            container = new JPanel();
-            container.setLayout( new BorderLayout());
-            container.add( scrollpane, BorderLayout.CENTER);
-            JPanel extensionPanel = new JPanel();
-            extensionPanel.setLayout( new BoxLayout(extensionPanel, BoxLayout.X_AXIS));
-            container.add( extensionPanel, BorderLayout.SOUTH);
+        	container = new JPanel();
+        	container.setLayout( new BorderLayout());
+        	container.add( scrollpane, BorderLayout.CENTER);
+        	JPanel extensionPanel = new JPanel();
+        	extensionPanel.setLayout( new BoxLayout(extensionPanel, BoxLayout.X_AXIS));
+        	container.add( extensionPanel, BorderLayout.SOUTH);
             scrollpane.setPreferredSize( new Dimension(600,800));
-            PopupTableHandler popupHandler = new PopupTableHandler();
-            scrollpane.addMouseListener( popupHandler);
-            table.addMouseListener( popupHandler );
-            for ( SummaryExtension summary:reservationSummaryExtensions)
-            {
-                summary.init(table, extensionPanel);
-            }
+        	PopupTableHandler popupHandler = new PopupTableHandler();
+        	scrollpane.addMouseListener( popupHandler);
+        	table.addMouseListener( popupHandler );
+     		for ( SummaryExtension summary:reservationSummaryExtensions)
+     		{
+     			summary.init(table, extensionPanel);
+     		}
         }
         else
         {
@@ -133,110 +128,26 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.model = model;
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
-        
-        List<ReservationTableColumn> reservationColumnConfigured = new ArrayList<ReservationTableColumn>();
-        TableConfig config =TableConfig.getDefaultConfig();
-        final Collection<TableColumnConfig> columns = config.getColumns("eventtable");
-        for ( final TableColumnConfig column: columns)
-        {
-            reservationColumnConfigured.add( new ReservationTableColumn()
-                    {
-    
-                        @Override
-                        public String getColumnName()
-                        {
-                            final MultiLanguageName name = column.getName();
-                            return name.getName(getLocale().getLanguage());
-                        }
-    
-                        @Override
-                        public Object getValue(Reservation object)
-                        {
-                            String annotationName = getAnnotationName();
-                            final String format = object.format(getLocale(), annotationName);
-                            if ( isDate())
-                            {
-                                java.util.Date date;
-                                try
-                                {
-                                    date = SerializableDateTimeFormat.INSTANCE.parseDate( format, false);
-                                    return date;
-                                }
-                                catch (ParseDateException e)
-                                {
-                                    return null;
-                                }
-                            }
-                            return format;
-                        }
-    
-                        private String getAnnotationName()
-                        {
-                            return TableViewPlugin.COLUMN_ANNOTATION +column.getKey();
-                        }
-
-                        @Override
-                        public void init(TableColumn column)
-                        {
-                            // TODO Auto-generated method stub
-                        }
-    
-                        @Override
-                        public Class<?> getColumnClass()
-                        {
-                            if ( isDate())
-                            {
-                                return Date.class;
-                            }
-                            return String.class;
-                        }
-
-                        private boolean isDate()
-                        {
-                            String type = column.getType();
-                            final boolean isDate = type.equals("date") || type.equals("datetime");
-                            return isDate;
-                        }
-    
-                        @Override
-                        public String getHtmlValue(Reservation object)
-                        {
-                            Object value = getValue(object);
-                            if ( value == null)
-                            {
-                                return "";
-                            }
-                            if ( isDate())
-                            {
-                                RaplaLocale raplaLocale = getRaplaLocale();
-                                if ( value instanceof Date)
-                                {
-                                    Date date = (Date) value;
-                                    value =  raplaLocale.formatDateLong(date) + " " + raplaLocale.formatTime( date);
-                                }
-                                else
-                                {
-                                    value = "invalid date";
-                                }
-                            }
-                            return XMLWriter.encode(value.toString());
-                                
-                        }
-                
-                    }
-                    );
-        }
+       	
+       	List<ReservationTableColumn> reservationColumnConfigured = new ArrayList<ReservationTableColumn>();
+       	final Preferences preferences = getClientFacade().getSystemPreferences();
+       	TableConfig config = TableConfig.read( preferences);
+       	final Collection<TableColumnConfig> columns = config.getColumns("events");
+       	for ( final TableColumnConfig column: columns)
+       	{
+           	final RaplaLocale raplaLocale = getRaplaLocale();
+            reservationColumnConfigured.add( new MyReservatitonTableColumn(column, raplaLocale));
+       	}
         reservationColumnConfigured.addAll(reservationColumnPlugins);
-        //getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN)
-        reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnConfigured );
+       	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnConfigured );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
 
         int column = 0;
         for (ReservationTableColumn col: reservationColumnConfigured)
         {
-            col.init(table.getColumnModel().getColumn(column  ));
-            column++;   
+        	col.init(table.getColumnModel().getColumn(column  ));
+        	column++;	
         }
         
         
@@ -244,9 +155,9 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         table.setRowSelectionAllowed( true);
         table.getTableHeader().setReorderingAllowed(false);
        
-        table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
-        table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
-        
+    	table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
+    	table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
+    	
         dateChooser = new IntervalChooserPanel( context, model);
         dateChooser.addDateChangeListener( new DateChangeListener() {
             public void dateChanged( DateChangeEvent evt )
@@ -263,31 +174,50 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
         
         Listener listener = new Listener();
-        table.getSelectionModel().addListSelectionListener( listener);
-        table.addFocusListener( listener);
+      	table.getSelectionModel().addListSelectionListener( listener);
+      	table.addFocusListener( listener);
+    }
+    final class MyReservatitonTableColumn extends AbstractTableColumn<Reservation> implements ReservationTableColumn
+    {
+        private MyReservatitonTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
+        {
+           super( column, raplaLocale);
+        }
+        public Object getValue(Reservation object)
+        {
+            final String annotationName = getAnnotationName();
+            final String format = object.format(getLocale(), annotationName);
+            return format(format);
+        }
+        
+        public String getHtmlValue(Reservation object)
+        {
+            Object value = getValue(object);
+            return formatHtml(value);
+        }
     }
     
     private final class CopyListener implements ActionListener {
         boolean cut;
         public void actionPerformed(ActionEvent evt) 
-        {
-            List<Reservation> selectedEvents = getSelectedEvents();
-            Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-            try {
-                ReservationController reservationController = getReservationController();
+		{
+	        List<Reservation> selectedEvents = getSelectedEvents();
+	        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+	        try {
+	            ReservationController reservationController = getReservationController();
                 if ( isCut())
-                {
+	            {
                     reservationController.cutReservations(selectedEvents, markedAllocatables);
-                }
-                else
-                {
-                    reservationController.copyReservations(selectedEvents, markedAllocatables);
-                }
+	            }
+	            else
+	            {
+	                reservationController.copyReservations(selectedEvents, markedAllocatables);
+	            }
             } catch (RaplaException ex) {
                 showException(ex, getComponent());
             }
-            copy(table, evt);            
-        }
+	        copy(table, evt);            
+		}
         
         public boolean isCut() {
             return cut;
@@ -300,16 +230,16 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     class Listener implements ListSelectionListener, FocusListener
     {
-       public void valueChanged(ListSelectionEvent e) {
-           updateEditMenu();
-       }
+	   public void valueChanged(ListSelectionEvent e) {
+		   updateEditMenu();
+	   }
 
-       public void focusGained(FocusEvent e) {
-           updateEditMenu();
-        }
+	   public void focusGained(FocusEvent e) {
+		   updateEditMenu();
+		}
 
-        public void focusLost(FocusEvent e) {
-        }
+		public void focusLost(FocusEvent e) {
+		}
 
     }
 
@@ -357,27 +287,27 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     }
     
     protected void updateEditMenu() {
-        List<Reservation> selectedEvents = getSelectedEvents();
-        if ( selectedEvents.size() == 0 )
-        {
-            return;
-        }
-        RaplaMenu editMenu =  getService(InternMenus.EDIT_MENU_ROLE);
-        RaplaMenu newMenu = getService(InternMenus.NEW_MENU_ROLE);
+		List<Reservation> selectedEvents = getSelectedEvents();
+		if ( selectedEvents.size() == 0 )
+		{
+			return;
+		}
+		RaplaMenu editMenu =  getService(InternMenus.EDIT_MENU_ROLE);
+		RaplaMenu newMenu = getService(InternMenus.NEW_MENU_ROLE);
 
-        editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
-        newMenu.removeAll();
-        Point p  = null;
-        try {
-            updateMenu(editMenu,newMenu, p);
-            boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
-            boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
-            newMenu.setEnabled(enableNewMenu);
-            editMenu.setEnabled(canUserAllocateSomething(getUser()));
-        } catch (RaplaException ex) {
-            showException (ex,getComponent());
-        }
-    }
+		editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
+		newMenu.removeAll();
+		Point p  = null;
+		try {
+			updateMenu(editMenu,newMenu, p);
+			boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
+			boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
+			newMenu.setEnabled(enableNewMenu);
+			editMenu.setEnabled(canUserAllocateSomething(getUser()));
+		} catch (RaplaException ex) {
+			showException (ex,getComponent());
+		}
+	}
     
     public void update() throws RaplaException
     {
@@ -397,11 +327,11 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     public JComponent getComponent()
     {
-        return container;
+    	return container;
     }
     
     protected void updateMenu(MenuInterface editMenu,MenuInterface newMenu, Point p) throws RaplaException {
-        List<Reservation> selectedEvents = getSelectedEvents();
+		List<Reservation> selectedEvents = getSelectedEvents();
         Reservation focusedObject = null;
         if ( selectedEvents.size() == 1) {
             focusedObject = selectedEvents.get( 0);
@@ -417,10 +347,10 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         if ( selectedEvents.size() != 0) {
             {
                 final JMenuItem copyItem = new JMenuItem();
-                copyItem.addActionListener( cutListener);
-                copyItem.setText(getString("cut"));
-                copyItem.setIcon(  getIcon("icon.cut"));
-                editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+            	copyItem.addActionListener( cutListener);
+            	copyItem.setText(getString("cut"));
+            	copyItem.setIcon(  getIcon("icon.cut"));
+            	editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
             }
             {
                 final JMenuItem copyItem = new JMenuItem();
@@ -433,7 +363,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             menuFactory.addObjectMenu( editMenu, menuContext, "EDIT_BEGIN");
         } 
 
-    }
+	}
 
     List<Reservation> getSelectedEvents() {
         int[] rows = table.getSelectedRows();
@@ -449,24 +379,24 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     class PopupTableHandler extends MouseAdapter {
 
         void showPopup(MouseEvent me) {
-             try
+        	 try
              {
-                RaplaPopupMenu menu= new RaplaPopupMenu();
-                Point p = new Point(me.getX(), me.getY());
-                RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
-                newMenu.setText(getString("new"));
-                menu.add(newMenu);
-                boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
-                updateMenu(menu,newMenu, p);
-                boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
-                newMenu.setEnabled(enableNewMenu);
-                menu.show( table, p.x, p.y);
+	        	RaplaPopupMenu menu= new RaplaPopupMenu();
+	            Point p = new Point(me.getX(), me.getY());
+	            RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
+	            newMenu.setText(getString("new"));
+	            menu.add(newMenu);
+	            boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
+	            updateMenu(menu,newMenu, p);
+	            boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
+	            newMenu.setEnabled(enableNewMenu);
+            	menu.show( table, p.x, p.y);
             } catch (RaplaException ex) {
-                showException (ex,getComponent());
+            	showException (ex,getComponent());
             }
         }
 
-        
+		
 
         /** Implementation-specific. Should be private.*/
         public void mousePressed(MouseEvent me) {
@@ -502,14 +432,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
      * @see java.awt.print.Printable#print(java.awt.Graphics, java.awt.print.PageFormat, int)
      */
     public int print(Graphics graphics, PageFormat format, int page) throws PrinterException {
-        MessageFormat f1 = new MessageFormat( model.getNonEmptyTitle());
-        Printable  printable = table.getPrintable( JTable.PrintMode.FIT_WIDTH,f1, null );
+    	MessageFormat f1 = new MessageFormat( model.getNonEmptyTitle());
+    	Printable  printable = table.getPrintable( JTable.PrintMode.FIT_WIDTH,f1, null );
         return printable.print( graphics, format, page);
     }
     
-    public TimeInterval getVisibleTimeInterval() {
-        return new TimeInterval(model.getStartDate(), model.getEndDate());
-    }
+	public TimeInterval getVisibleTimeInterval() {
+		return new TimeInterval(model.getStartDate(), model.getEndDate());
+	}
 
 
  }

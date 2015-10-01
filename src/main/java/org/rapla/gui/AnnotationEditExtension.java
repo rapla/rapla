@@ -11,7 +11,7 @@ public interface AnnotationEditExtension {
     TypedComponentRole<AnnotationEditExtension> CATEGORY_ANNOTATION_EDIT = new TypedComponentRole<AnnotationEditExtension>("org.rapla.gui.categoryAnnotation");
     TypedComponentRole<AnnotationEditExtension> DYNAMICTYPE_ANNOTATION_EDIT = new TypedComponentRole<AnnotationEditExtension>("org.rapla.gui.typeAnnotation");
 
-    Collection<? extends EditField> createEditField(Annotatable annotatable);
+    Collection<? extends EditField> createEditField(Annotatable annotatable) throws RaplaException;
    
     void mapTo(EditField field,Annotatable annotatable) throws RaplaException;
 }
