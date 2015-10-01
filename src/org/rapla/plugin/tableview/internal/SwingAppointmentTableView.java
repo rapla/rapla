@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -33,6 +34,7 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -41,6 +43,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.ObjectMenuFactory;
@@ -58,6 +61,7 @@ import org.rapla.plugin.abstractcalendar.IntervalChooserPanel;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.tableview.AppointmentTableColumn;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 public class SwingAppointmentTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {
@@ -118,8 +122,22 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         this.model = model;
         
-       	Collection< ? extends AppointmentTableColumn> columnPlugins = getContainer().lookupServicesFor(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
-		appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
+        List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
+        final Preferences preferences = getClientFacade().getSystemPreferences();
+        TableConfig config = TableConfig.read( preferences);
+        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
+        for ( final TableColumnConfig column: columns)
+        {
+            final RaplaLocale raplaLocale = getRaplaLocale();
+            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
+        }
+        final Collection<AppointmentTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
+        for ( AppointmentTableColumn column:lookupServicesFor)
+        {
+            columnPlugins.add( column);
+        }
+       	
+       	appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
         sorter =  SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;
         for (AppointmentTableColumn col: columnPlugins)
@@ -422,4 +440,29 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 		return new TimeInterval(model.getStartDate(), model.getEndDate());
 	}
 
+	class MyAppoitmentTableColumn extends AbstractTableColumn<AppointmentBlock> implements AppointmentTableColumn
+	{
+        MyAppoitmentTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
+        {
+            super(column, raplaLocale);
+        }
+
+        @Override
+        public Object getValue(AppointmentBlock block)
+        {
+            final Reservation reservation = block.getAppointment().getReservation();
+            final Locale locale = getLocale();
+            final String annotationName = getAnnotationName();
+            final String format = reservation.format( locale, annotationName, block);
+            return format(format);
+        }
+
+        @Override
+        public String getHtmlValue(AppointmentBlock block)
+        {
+            final Object value = getValue(block);
+            return formatHtml(value);
+        }
+        	    
+	}
  }

@@ -658,6 +658,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentStartFunction(type);
             }
+            else if (variableName.equals("context:lastchanged")) 
+            {
+                return new LastChangedFunction(type);
+            }
             else if (variableName.equals("context:end")) 
             {
                 return new AppointmentEndFunction(type);
@@ -666,6 +670,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             {
                 return new AppointmentBlockFunction(type);
             }
+            else if (variableName.equals("context:allocatables")) 
+            {
+                return new AllocatableFunction(type);
+            }
             else if (variableName.equals("appointment:allocatables")) 
             {
                 return new AllocatableFunction(type);
@@ -673,7 +681,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	        return null;
 		}
 		
-		class AttributeFunction extends ParsedText.Function
+		class AttributeFunction extends ParsedText.Variable
 		{
 			Object id;
 			AttributeFunction(Attribute attribute )
@@ -718,7 +726,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 		}
 		
-		class TypeFunction extends ParsedText.Function
+		class TypeFunction extends ParsedText.Variable
 		{
 			Object id;
 			TypeFunction(DynamicType type) 
@@ -743,7 +751,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 		}
 		
-		class ThisTypeFunction extends ParsedText.Function
+		class ThisTypeFunction extends ParsedText.Variable
         {
             ThisTypeFunction() 
             {
@@ -758,7 +766,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             
         }
 		
-		class AllocatableFunction extends ParsedText.Function
+		class AllocatableFunction extends ParsedText.Variable
 		{
 		    AllocatableFunction(DynamicType type) 
             {
@@ -785,7 +793,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		    
 		}
 		
-		class AppointmentFunction extends ParsedText.Function
+		class AppointmentFunction extends ParsedText.Variable
         {
             AppointmentFunction(DynamicType type) 
             {
@@ -805,7 +813,29 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             
         }
 		
-		class AppointmentStartFunction extends ParsedText.Function
+		class LastChangedFunction extends ParsedText.Variable
+        {
+		    LastChangedFunction(DynamicType type) 
+            {
+                super("context:lastchanged");
+            }
+
+            @Override
+            public Date eval(EvalContext context) {
+                if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation != null)
+                    {
+                        return reservation.getLastChanged();
+                    }
+                }
+                return null;
+            }
+            
+        }
+		
+		class AppointmentStartFunction extends ParsedText.Variable
         {
             AppointmentStartFunction(DynamicType type) 
             {
@@ -814,15 +844,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             @Override
             public Date eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getFirstDate(); 
-                }
                 if ( context instanceof AppointmentBlockEvalContext)
                 {
                     AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
@@ -832,7 +853,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return new Date(block.getStart()); 
                 }
-                if ( context instanceof AppointmentEvalContext)
+                else if ( context instanceof AppointmentEvalContext)
                 {
                     Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
                     if ( appointment == null)
@@ -841,12 +862,22 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return appointment.getStart();
                 }
+                else if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation == null)
+                    {
+                        return null;
+                    }
+                    return reservation.getFirstDate(); 
+                }
+                
                 return null;
             }
             
         }
 		
-		class AppointmentEndFunction extends ParsedText.Function
+		class AppointmentEndFunction extends ParsedText.Variable
         {
             AppointmentEndFunction(DynamicType type) 
             {
@@ -855,15 +886,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             @Override
             public Date eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getMaxEnd(); 
-                }
                 if ( context instanceof AppointmentBlockEvalContext)
                 {
                     AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
@@ -873,7 +895,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return new Date(block.getEnd()); 
                 }
-                if ( context instanceof AppointmentEvalContext)
+                else if ( context instanceof AppointmentEvalContext)
                 {
                     Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
                     if ( appointment == null)
@@ -882,13 +904,23 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                     }
                     return appointment.getEnd();
                 }
+                else if ( context instanceof ReservationEvalContext)
+                {
+                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    if ( reservation == null)
+                    {
+                        return null;
+                    }
+                    return reservation.getMaxEnd(); 
+                }
+                
                 return null;
             }
 
             
         }
 		
-		class AppointmentBlockFunction extends ParsedText.Function
+		class AppointmentBlockFunction extends ParsedText.Variable
         {
             AppointmentBlockFunction(DynamicType type) 
             {

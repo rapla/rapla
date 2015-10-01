@@ -47,9 +47,8 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         TableConfig config;
         try
         {
-            final Preferences systemPreferences = getClientFacade().getSystemPreferences();
-            RaplaConfiguration configEntry = systemPreferences.getEntry( TableViewPlugin.CONFIG, null);
-            config = configEntry != null ? TableConfig.read( configEntry) : TableConfig.getDefaultConfig();
+            final Preferences preferences = getClientFacade().getSystemPreferences();
+            config = TableConfig.read( preferences);
         }
         catch (Exception ex)
         {

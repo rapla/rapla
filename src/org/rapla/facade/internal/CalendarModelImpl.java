@@ -59,6 +59,7 @@ import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
+import org.rapla.entities.dynamictype.internal.ParsedText.Variable;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
@@ -591,8 +592,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
 			if ( variableName.equals("allocatables"))
 			{
-				List<Function> emptyList = Collections.emptyList();
-				return new Function(variableName, emptyList)
+				return new Variable(variableName)
 				{
 					@Override
 					public Object eval(EvalContext context) {
@@ -607,8 +607,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			}
 			else if ( variableName.equals("timeIntervall"))
 			{
-				List<Function> emptyList = Collections.emptyList();
-				return new Function(variableName, emptyList)
+				return new Variable(variableName)
 				{
 					@Override
 					public Object eval(EvalContext context) {
@@ -619,8 +618,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			}
 			else if ( variableName.equals("selectedDate"))
 			{
-				List<Function> emptyList = Collections.emptyList();
-				return new Function(variableName, emptyList)
+				return new Variable(variableName)
 				{
 					@Override
 					public Object eval(EvalContext context) {

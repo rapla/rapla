@@ -337,8 +337,9 @@ class DynamicTypeEditUI extends RaplaGUIComponent
                 List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
                 try {
                     annotationEdit.mapTo(asList);
-                } catch (RaplaException e1) {
+                } catch (Exception e1) {
                     getLogger().error(e1.getMessage(), e1);
+                    showException( e1, getMainComponent());
                 }
                 dialog.close();
             }

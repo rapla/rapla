@@ -120,18 +120,30 @@ public class ParsedText implements Serializable {
     }
 
     public String formatName(EvalContext context) {
-        if ( nonVariablesList == null)
+        if ( nonVariablesList == null && variablesList == null)
         {
             return first;
         }
         StringBuffer buf = new StringBuffer();
-        for (int i=0; i<nonVariablesList.size(); i++) {
-            buf.append(nonVariablesList.get(i));
-            if ( i < variablesList.size()) {
+        if (variablesList != null && (nonVariablesList == null || nonVariablesList.size() ==  0 ))
+        {
+            for (int i=0; i<variablesList.size(); i++) {
                 Function function = variablesList.get(i);
-				Object result = function.eval(context);
-				String stringResult = toString(result, context);
+                Object result = function.eval(context);
+                String stringResult = toString(result, context);
                 buf.append( stringResult);
+            }
+        }
+        else if ( nonVariablesList != null)
+        {
+            for (int i=0; i<nonVariablesList.size(); i++) {
+                buf.append(nonVariablesList.get(i));
+                if ( i < variablesList.size()) {
+                    Function function = variablesList.get(i);
+    				Object result = function.eval(context);
+    				String stringResult = toString(result, context);
+                    buf.append( stringResult);
+                }
             }
         }
         
@@ -162,7 +174,7 @@ public class ParsedText implements Serializable {
 						if ( depth == 0)
 						{
 							String recursiveContent = content.substring(i+1,j);
-							String function = functionName.toString();
+							String function = functionName.toString().trim();
 							return parseArguments( context,function,recursiveContent);
 						}
 						else
@@ -282,6 +294,14 @@ public class ParsedText implements Serializable {
         {
             return new FilterFunction(args);
         }
+		else if ( functionName.equals("isResource"))
+        {
+            return new ClassificationFunction(args, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "isResource");
+        }
+		else if ( functionName.equals("isPerson"))
+        {
+            return new ClassificationFunction(args,  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, "isPerson" );
+        }
 		else
 		{
 			 throw new IllegalAnnotationException("Unknown function '"+ functionName + "'" );
@@ -290,6 +310,19 @@ public class ParsedText implements Serializable {
 	}
 	
 	
+	static public abstract class Variable extends Function
+	{
+	    public Variable(String string)
+        {
+           super(string);
+        }
+
+        @Override
+	    public String getRepresentation(ParseContext context)
+	    {
+	        return getName();
+	    }
+	}
 	static public abstract class Function
 	{
 		String name;
@@ -315,23 +348,18 @@ public class ParsedText implements Serializable {
 		public String getRepresentation( ParseContext context)
 		{
 			StringBuffer buf = new StringBuffer();
+			
 			buf.append(getName());
+			buf.append("(");
 			for (  int i=0;i<args.size();i++)
 			{
-				if ( i == 0)
-				{
-					buf.append("(");
-				}
-				else
+				if ( i > 0)
 				{
 					buf.append(",");
 				}
 				buf.append( args.get(i).getRepresentation(context));
-				if ( i == args.size() - 1)
-				{
-					buf.append(")");
-				}
 			}
+		     buf.append(")");
 			return buf.toString();
 		}
 		
@@ -358,7 +386,31 @@ public class ParsedText implements Serializable {
 			return buf.toString();
 		}
 	}
+    class ClassificationFunction extends Function
+    {
 
+        String valueClassificationType;
+        public ClassificationFunction(List<Function> args, String valueClassificationType, String functionName)
+        {
+            super( functionName, args);
+            this.valueClassificationType = valueClassificationType;
+        }
+
+        @Override
+        public Boolean eval(EvalContext context)
+        {
+            final Classification classification = context.getClassification();
+            if ( classification != null)
+            {
+                final String classificationType = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+                return classificationType != null && classificationType.equals( valueClassificationType);
+            }
+            return Boolean.FALSE;
+        }
+        
+    }
+    
+	
 	class KeyFunction extends Function
 	{
 		Function arg;
@@ -479,7 +531,7 @@ public class ParsedText implements Serializable {
 	            {
 	                return "";
 	            }
-	            getName(classification,context);
+	            return getName(classification,context);
 	        }
             Object obj = objectFunction.eval(context);
             if (obj == null)
@@ -506,10 +558,23 @@ public class ParsedText implements Serializable {
             {
                 return "";
             }
+            /*
+            if ( obj instanceof Classifiable)
+            {
+                ((Classifiable)obj).getClassification();
+                Locale locale = context.getLocale();
+                int callStackDepth = context.getCallStackDepth();
+                String annotationName = context.getAnnotationName();
+                Classification classification = (Classification) obj;
+                context =new EvalContext(locale,callStackDepth, annotationName,classification);
+                classification.get
+            }
+            */
             if (!(obj instanceof Named))
             {
                 return obj.toString();
             }
+            
             if (!(obj instanceof MultiLanguageNamed))
             {
                 return ((Named) obj).getName(context.getLocale());
@@ -926,7 +991,7 @@ public class ParsedText implements Serializable {
 		else if ( result instanceof Date)
 		{
 			Date date = (Date) result;
-			String formatDate = DateTools.formatDate( date, locale);
+			String formatDate = DateTools.formatDateTime( date, locale);
 			return formatDate;			
 		}
 		else if ( result  instanceof Boolean) 

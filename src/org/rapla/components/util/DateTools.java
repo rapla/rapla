@@ -67,6 +67,11 @@ public abstract class DateTools
 	
 	public static String formatDateTime(Date date)
 	{
+	    return formatDate(date, null);
+	}
+	
+	public static String formatDateTime(Date date,@SuppressWarnings("unused") Locale locale)
+	{
 		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
 		String dateString = format.formatDate( date);
 		String timeString = format.formatTime( date);

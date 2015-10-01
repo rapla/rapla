@@ -10,10 +10,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 //@XmlAccessorType(XmlAccessType.FIELD)
 public class TableConfig
@@ -42,7 +45,8 @@ public class TableConfig
             columnConfig.setName(name);
             config.addColumn(columnConfig);
             
-            config.addView("eventtable", columnConfig);
+            config.addView("events", columnConfig);
+            config.addView("appointments", columnConfig);
         }
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
@@ -55,7 +59,8 @@ public class TableConfig
             columnConfig.setName(name);
             config.addColumn(columnConfig);
             
-            config.addView("eventtable", columnConfig);
+            config.addView("events", columnConfig);
+            config.addView("appointments", columnConfig);
         }
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
@@ -68,8 +73,49 @@ public class TableConfig
             columnConfig.setName(name);
             config.addColumn(columnConfig);
             
-            config.addView("eventtable", columnConfig);
+            config.addView("appointments", columnConfig);
             
+        }
+        
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("lastchanged");
+            columnConfig.setDefaultValue("{context:lastchanged}");
+            columnConfig.setType("datetime");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "last changed");
+            name.setName("de", "zuletzt geaendert");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+            
+            config.addView("events", columnConfig);
+        }
+        
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("resources");
+            columnConfig.setDefaultValue("{filter(context:allocatables, isResource(type:type))}");
+            columnConfig.setType("string");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "resources");
+            name.setName("de", "Ressourcen");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+            
+            config.addView("appointments", columnConfig);
+        }
+        
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("persons");
+            columnConfig.setDefaultValue("{filter(context:allocatables, isPerson(type:type))}");
+            columnConfig.setType("string");
+            final MultiLanguageName name = new MultiLanguageName();
+            name.setName("en", "persons");
+            name.setName("de", "Personen");
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+            config.addView("appointments", columnConfig);
         }
         
         
@@ -203,7 +249,10 @@ public class TableConfig
         for ( String key:linkedHashSet)
         {
             final TableColumnConfig column = map.get(key);
-            result.add( column);
+            if ( column != null)
+            {
+                result.add( column);
+            }
         }
         return result;
     }
@@ -222,6 +271,20 @@ public class TableConfig
     public boolean removeView(String view)
     {
         return views.remove(view) != null;
+    }
+    
+    public static TableConfig read( Preferences preferences) throws RaplaException
+    {
+        RaplaConfiguration configEntry = preferences.getEntry( TableViewPlugin.CONFIG, null);
+        try
+        {
+            TableConfig config = configEntry != null ? read( configEntry) : TableConfig.getDefaultConfig();
+            return config;
+        }
+        catch ( ConfigurationException ex)
+        {
+            throw new RaplaException(ex.getMessage(),ex);
+        }
     }
 
     public static TableConfig read(RaplaConfiguration config) throws ConfigurationException
@@ -266,7 +329,7 @@ public class TableConfig
 
     public static RaplaConfiguration print(TableConfig config)
     {
-        final RaplaConfiguration result = new RaplaConfiguration();
+        final RaplaConfiguration result = new RaplaConfiguration("config");
         for (TableConfig.TableColumnConfig column : config.column)
         {
             final DefaultConfiguration col = new DefaultConfiguration("column");
@@ -304,5 +367,10 @@ public class TableConfig
             
         }
         return result;
+    }
+
+    public void removeColumn(TableColumnConfig columnConfig)
+    {
+        column.remove( columnConfig);
     }
 }
