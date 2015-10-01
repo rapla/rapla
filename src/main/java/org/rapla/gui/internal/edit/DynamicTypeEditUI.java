@@ -12,13 +12,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.AbstractAction;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.dynamictype.*;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -31,19 +52,6 @@ import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.rapla.entities.dynamictype.DynamicType.*;
 
 /****************************************************************
  * This is the controller-class for the DynamicType-Edit-Panel   *

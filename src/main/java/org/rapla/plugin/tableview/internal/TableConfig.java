@@ -41,6 +41,8 @@ public class TableConfig
             name.setName("de", "Name");
             columnConfig.setName(name);
             config.addColumn(columnConfig);
+            
+            config.addView("eventtable", columnConfig);
         }
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
@@ -52,6 +54,8 @@ public class TableConfig
             name.setName("de", "Start");
             columnConfig.setName(name);
             config.addColumn(columnConfig);
+            
+            config.addView("eventtable", columnConfig);
         }
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
@@ -59,11 +63,15 @@ public class TableConfig
             columnConfig.setDefaultValue("{context:end}");
             columnConfig.setType("datetime");
             final MultiLanguageName name = new MultiLanguageName();
-            name.setName("en", "start");
-            name.setName("de", "Start");
+            name.setName("en", "end");
+            name.setName("de", "End");
             columnConfig.setName(name);
             config.addColumn(columnConfig);
+            
+            config.addView("eventtable", columnConfig);
+            
         }
+        
         
     }
     

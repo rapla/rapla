@@ -1,5 +1,24 @@
 package org.rapla.gui.internal.edit;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.AbstractAction;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
@@ -8,21 +27,23 @@ import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
-import org.rapla.entities.dynamictype.*;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.ConstraintIds;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.internal.edit.annotation.AnnotationEditUI;
-import org.rapla.gui.internal.edit.fields.*;
+import org.rapla.gui.internal.edit.fields.AbstractEditField;
+import org.rapla.gui.internal.edit.fields.BooleanField;
+import org.rapla.gui.internal.edit.fields.CategorySelectField;
+import org.rapla.gui.internal.edit.fields.ListField;
+import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.gui.toolkit.RaplaButton;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
 
 public class AttributeDefaultConstraints extends AbstractEditField
     implements ActionListener

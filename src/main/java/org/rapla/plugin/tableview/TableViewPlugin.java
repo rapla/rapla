@@ -12,51 +12,56 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview;
 
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.framework.TypedComponentRole;
+
 public class TableViewPlugin
 {
-	public static final String PLUGIN_CLASS = TableViewPlugin.class.getName();
+    public static final String PLUGIN_CLASS = TableViewPlugin.class.getName();
     public final static String TABLE_EVENT_VIEW =  "table";
     public final static String TABLE_APPOINTMENTS_VIEW =  "table_appointments";
     public static final String PLUGIN_ID = "org.rapla.plugin.tableview";
     public static final String EVENTS_SORTING_STRING_OPTION = PLUGIN_ID +".events.sortingstring";
     public static final String BLOCKS_SORTING_STRING_OPTION = PLUGIN_ID+".blocks.sortingstring";
 
-	public final static boolean ENABLE_BY_DEFAULT = true;
+    public final static boolean ENABLE_BY_DEFAULT = true;
     public static final String APPOINTMENT_TABLE_COLUMN = "appointment_column";
     public static final String EVENT_TABLE_COLUMN = "event_column";
     public static final String RESERVATION_SUMMARY = "event_summary";
     public static final String APPOINTMENT_SUMMARY = "appointment_summary";
+    public static final String COLUMN_ANNOTATION = "tablecolumn_";
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID + ".config");
 
     //    public void provideServices(final ClientServiceContainer container, Configuration config)
 //    {
 //        if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
-//        	return;
+//          return;
 //
 //        container.addContainerProvidedComponent( RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, CSVExportMenu.class);
 //        container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,ReservationTableViewFactory.class);
 //        container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,AppointmentTableViewFactory.class);
 //
-//		addReservationTableColumns(container);
+//      addReservationTableColumns(container);
 //        addAppointmentTableColumns(container);
 //
 //        //Summary rows
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, EventCounter.class);
-//		container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, AppointmentCounter.class);
+//      container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, AppointmentCounter.class);
 //    }
 //
-//	protected void addAppointmentTableColumns(final Container container) {
-//		container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentNameColumn.class);
+//  protected void addAppointmentTableColumns(final Container container) {
+//      container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentNameColumn.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentStartDate.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentEndDate.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, ResourceColumn.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, PersonColumn.class);
-//	}
+//  }
 //
-//	protected void addReservationTableColumns(final Container container) {
-//		container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationNameColumn.class);
+//  protected void addReservationTableColumns(final Container container) {
+//      container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationNameColumn.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationStartColumn.class);
 //        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationLastChangedColumn.class);
-//	}
+//  }
 
 }
 

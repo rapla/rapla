@@ -15,11 +15,15 @@ import org.rapla.components.util.DateTools;
 
 import java.util.*;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
 /** Some entities (especially dynamic-types and attributes)
     can have multiple names to allow easier reuse of created schemas or
     support for multi-language-environments.
     @see MultiLanguageNamed
 */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
@@ -57,10 +61,10 @@ public class MultiLanguageName implements java.io.Serializable {
     }
 
     public String getName(String language) {
-    	if ( language == null)
-    	{
-    		language = "en";
-    	}
+        if ( language == null)
+        {
+            language = "en";
+        }
         String result = mapLocales.get(language);
         if (result == null) {
             result = mapLocales.get("en");
@@ -87,7 +91,7 @@ public class MultiLanguageName implements java.io.Serializable {
             throw new ReadOnlyException("Can't modify this multilanguage name.");
     }
 
-	public void setTo(MultiLanguageName newName) {
+    public void setTo(MultiLanguageName newName) {
         checkWritable();
         mapLocales = new TreeMap<String,String>(newName.mapLocales);
     }
@@ -107,13 +111,13 @@ public class MultiLanguageName implements java.io.Serializable {
     }
     
     @Deprecated
-	public void setNameWithoutReadCheck(String language, String translation) {
+    public void setNameWithoutReadCheck(String language, String translation) {
         if (translation != null && !translation.trim().equals("")) {
             mapLocales.put(language,translation.trim());
         } else {
             mapLocales.remove(language);
         }
-	}
+    }
 }
 
 

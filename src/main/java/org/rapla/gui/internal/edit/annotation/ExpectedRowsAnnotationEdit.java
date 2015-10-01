@@ -1,5 +1,11 @@
 package org.rapla.gui.internal.edit.annotation;
 
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.inject.Inject;
+
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -7,10 +13,6 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-
-import javax.inject.Inject;
-
-import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.LongField;
@@ -28,16 +30,16 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
-            return null;
+            return Collections.emptyList();
         }
         Attribute attribute = (Attribute)annotatable;
         AttributeType type = attribute.getType();
         if ( type!=AttributeType.STRING)
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         LongField field = new LongField(getContext(),getString(annotationName));
@@ -50,7 +52,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
             field.setValue( DEFAULT_VALUE);
         }
         addCopyPaste(field.getComponent());
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

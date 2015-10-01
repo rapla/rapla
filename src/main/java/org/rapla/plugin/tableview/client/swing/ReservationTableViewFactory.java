@@ -12,22 +12,23 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.client.swing;
 
+import java.util.Set;
+
 import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.SwingCalendarView;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
-
-import java.util.Set;
+import org.rapla.plugin.tableview.internal.SwingReservationTableView;
 
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewFactory extends RaplaComponent implements SwingViewFactory

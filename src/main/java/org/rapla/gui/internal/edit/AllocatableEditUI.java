@@ -36,7 +36,6 @@ import org.rapla.gui.EditComponent;
 import org.rapla.gui.internal.edit.fields.BooleanField;
 import org.rapla.gui.internal.edit.fields.ClassificationField;
 import org.rapla.gui.internal.edit.fields.PermissionListField;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
 
 /****************************************************************

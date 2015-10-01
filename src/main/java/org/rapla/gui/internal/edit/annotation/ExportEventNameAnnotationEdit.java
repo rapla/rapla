@@ -1,16 +1,18 @@
 package org.rapla.gui.internal.edit.annotation;
 
 
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.inject.Inject;
+
+import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-
-import javax.inject.Inject;
-
-import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.gui.EditField;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.fields.TextField;
@@ -29,16 +31,16 @@ public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements 
     }
 
     @Override
-    public EditField createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
-            return null;
+            return Collections.emptyList();
         }
         DynamicType dynamicType = (DynamicType)annotatable;
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if ( classificationType == null || !(classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION) ))
         {
-            return null;
+            return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
         TextField field = new TextField(getContext(),getString(annotationName));
@@ -51,7 +53,7 @@ public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements 
             field.setValue( DEFAULT_VALUE);
         }
         addCopyPaste(field.getComponent());
-        return field;
+        return Collections.singleton(field);
     }
 
     @Override

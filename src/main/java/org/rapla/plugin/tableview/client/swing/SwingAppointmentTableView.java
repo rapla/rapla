@@ -13,7 +13,12 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -24,6 +29,7 @@ import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
@@ -38,7 +44,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
-import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.gui.PopupContext;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.ReservationController;
@@ -54,10 +59,11 @@ import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.gui.toolkit.RaplaPopupMenu;
 import org.rapla.plugin.abstractcalendar.IntervalChooserPanel;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
-import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
+import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
+import org.rapla.plugin.tableview.internal.SwingReservationTableView;
 
 public class SwingAppointmentTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {

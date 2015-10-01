@@ -17,7 +17,6 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 
 public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaException> {

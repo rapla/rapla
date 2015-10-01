@@ -12,29 +12,33 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.edit;
 
-import java.util.*;
-
-import org.rapla.RaplaResources;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.gui.*;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.*;
+import javax.swing.JComponent;
+
+import org.rapla.RaplaResources;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.gui.EditComponent;
+import org.rapla.gui.EditController;
+import org.rapla.gui.PopupContext;
+import org.rapla.gui.ReservationController;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 /** This class handles the edit-ui for all entities (except reservations). */
 

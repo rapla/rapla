@@ -21,7 +21,6 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> newEntities;
