@@ -220,8 +220,13 @@ public class TableviewOption extends DefaultPluginOption {
         private final TableColumnConfig columnConfig;
 
         private SortingRow(TableColumnConfig column, Locale locale) {
-            super(column.getName().getName(locale.getLanguage()));
+            super(createName(column, locale));
             this.columnConfig = column;
+        }
+
+        private static String createName(TableColumnConfig column, Locale locale) {
+            final String name = column.getName().getName(locale.getLanguage());
+            return name != null && !name.isEmpty() ? name : " ";
         }
 
         @Override
