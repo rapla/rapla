@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 
+import javax.inject.Inject;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.PrintException;
@@ -57,6 +58,7 @@ public class DefaultIO  implements IOInterface{
     public PrinterJob job;
     Logger logger;
 
+    @Inject
     public DefaultIO(Logger logger) {
         this.logger =  logger;
     }
