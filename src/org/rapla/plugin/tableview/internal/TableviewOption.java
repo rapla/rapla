@@ -291,10 +291,9 @@ public class TableviewOption extends DefaultPluginOption {
                             int index = selectedIndices[i];
                             SortingRow test = (SortingRow) listModel.get(index);
                             listModel.remove(index);
-                            if (test != null) {
-                                tableConfig.removeColumn(test.columnConfig);
-                            }
                         }
+                        list.validate();
+                        list.repaint();
                     }
                 }
             });
