@@ -307,7 +307,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
 
     public <T> T getRemoteMethod(Class<T> a, RemoteSessionImpl standaloneSession) throws RaplaContextException
     {
-        T service = inject(a, standaloneSession);
+        T service = getInstance(a, standaloneSession);
         return service;
     }
 
