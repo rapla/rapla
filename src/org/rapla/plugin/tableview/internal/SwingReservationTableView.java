@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 import javax.swing.BoxLayout;
@@ -40,6 +41,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
@@ -179,11 +181,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         {
            super( column, raplaLocale);
         }
-        public Object getValue(Reservation object)
+        
+        public Object getValue(Reservation reservation)
         {
+            final Locale locale = getLocale();
             final String annotationName = getAnnotationName();
-            final String format = object.format(getLocale(), annotationName);
-            return format(format);
+            int callStackDepth = 0;
+            final DynamicTypeImpl.ReservationEvalContext reservationEvalContext = new DynamicTypeImpl.ReservationEvalContext(locale, callStackDepth, annotationName, reservation);
+            return format(reservationEvalContext);
         }
         
         public String getHtmlValue(Reservation object)

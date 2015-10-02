@@ -8,7 +8,13 @@ import javax.swing.table.TableColumn;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
+import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.DateCellRenderer;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -50,8 +56,26 @@ abstract class AbstractTableColumn<T> implements RaplaTableColumn<T>
     abstract public String getHtmlValue(T object);
     
 
-    protected Object format(final String format)
+    protected Object format(EvalContext context) 
     {
+        final DynamicTypeImpl type = (DynamicTypeImpl)context.getClassification().getType();
+        final String annotationName = context.getAnnotationName();
+        ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName);
+        if ( parsedAnnotation == null)
+        {
+            final String defaultValue = column.getDefaultValue();
+            parsedAnnotation = new ParsedText( defaultValue );
+            final DynamicTypeParseContext parseContext = type.getParseContext();
+            try
+            {
+                parsedAnnotation.init( parseContext);
+            }
+            catch ( IllegalAnnotationException ex)
+            {
+                return null;
+            }
+        }
+        String format = parsedAnnotation.formatName( context);
         if ( isDate() || isDatetime())
         {
             java.util.Date date;

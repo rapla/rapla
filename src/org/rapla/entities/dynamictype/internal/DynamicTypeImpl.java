@@ -97,6 +97,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     	    p.setResolver( resolver);
     	}
     }
+    
+    public DynamicTypeParseContext getParseContext()
+    {
+        return parseContext;
+    }
 
     public RaplaType<DynamicType> getRaplaType() {return TYPE;}
     
@@ -624,7 +629,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     }
 
-	static class DynamicTypeParseContext implements ParseContext {
+	public static class DynamicTypeParseContext implements ParseContext {
 		private DynamicTypeImpl type;
 
 		DynamicTypeParseContext( DynamicType type)
@@ -640,10 +645,17 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	        } 
 	        else if (variableName.equals(type.getKey()) ) 
 	        {
-	        	return new TypeFunction(type);
+	            // use type function
+	            return new TypeFunction(type);
 	        }
 	        else if (variableName.equals("type:type" )) 
             {
+	             //use type function
+                return new ThisTypeFunction();
+            }
+	        else if (variableName.equals("context:type" )) 
+            {
+                 //use type function
                 return new ThisTypeFunction();
             }
             else if (variableName.equals("event:allocatables") || variableName.equals("event:resources")) 
@@ -726,6 +738,8 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 		}
 		
+		/** use type() function instead*/
+		@Deprecated
 		class TypeFunction extends ParsedText.Variable
 		{
 			Object id;
@@ -751,11 +765,28 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 		}
 		
+		/** use type() function instead*/
+		@Deprecated 
 		class ThisTypeFunction extends ParsedText.Variable
         {
             ThisTypeFunction() 
             {
                 super("type:type");
+            }
+            
+            public DynamicType eval(EvalContext context) 
+            {
+                DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
+                return type;
+            }
+            
+        }
+		
+		class ContextTypeFunction extends ParsedText.Variable
+        {
+            ContextTypeFunction() 
+            {
+                super("context:type");
             }
             
             public DynamicType eval(EvalContext context) 
@@ -965,7 +996,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
 	}
 	
-	static public class ReservationEvalContext extends EvalContext
+	static public class ReservationEvalContext extends EvalContext 
     {
         private Reservation reservation;
 

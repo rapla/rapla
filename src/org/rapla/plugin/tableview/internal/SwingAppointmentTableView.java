@@ -39,6 +39,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -450,11 +452,11 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         @Override
         public Object getValue(AppointmentBlock block)
         {
-            final Reservation reservation = block.getAppointment().getReservation();
             final Locale locale = getLocale();
             final String annotationName = getAnnotationName();
-            final String format = reservation.format( locale, annotationName, block);
-            return format(format);
+            int callStackDepth = 0;
+            final DynamicTypeImpl.AppointmentBlockEvalContext appointmentEvalContext = new DynamicTypeImpl.AppointmentBlockEvalContext(locale, callStackDepth, annotationName, block);
+            return format(appointmentEvalContext);
         }
 
         @Override

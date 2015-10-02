@@ -4,11 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.rapla.entities.Annotatable;
+import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
@@ -59,7 +60,9 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         {
             final String key = column.getKey();
             final String defaultValue = column.getDefaultValue();
-            final TextField field = new TextField(getContext(), key);
+            String label = getLabel( column, getLocale());
+            final TextField field = new MyTextField(getContext(), column, label);
+            
             fields.add(field);
             String value = columnAnnotations.get( key);
             if ( value == null || value.length() == 0)
@@ -98,6 +101,38 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         return fields;
     }
 
+    static String getLabel(TableColumnConfig config, Locale locale)
+    {
+        final MultiLanguageName name = config.getName();
+        if ( name != null)
+        {
+            String result = name.getName(  locale.getLanguage());
+            if ( result != null)
+            {
+                return result;
+            }
+        }
+        return config.getKey();
+    }
+    class MyTextField extends TextField 
+    {
+
+        TableColumnConfig column;
+        public MyTextField(RaplaContext context, TableColumnConfig column,String label)
+        {
+            super(context, label);
+            this.column = column;
+        }
+        
+
+        
+        TableColumnConfig getColumn()
+        {
+            return column;
+        }
+        
+    }
+    
     private Map<String, String> getColumnAnnotations(DynamicType dynamicType)
     {
         final String columnAnnotationPrefix = TableViewExtensionPoints.COLUMN_ANNOTATION;
@@ -125,12 +160,12 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         final Map<String, String> columnAnnotations = getColumnAnnotations(dynamicType);
         if ( field != null)
         {
-            final TextField textField = (TextField)field;
+            final MyTextField textField = (MyTextField)field;
             @SuppressWarnings("unchecked")
             String value = textField.getValue();
-            final String fieldName = textField.getFieldName();
+            final String keyName = textField.getColumn().getKey();
             final String columnAnnotationPrefix = TableViewExtensionPoints.COLUMN_ANNOTATION;
-            String annotationName = columnAnnotationPrefix + fieldName;
+            String annotationName = columnAnnotationPrefix + keyName;
             if ( value != null)
             {
                 annotatable.setAnnotation(annotationName, value);
