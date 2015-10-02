@@ -117,6 +117,15 @@ public class TableConfig
             config.addColumn(columnConfig);
             config.addView("appointments", columnConfig);
         }
+        for(int i = 1; i <= 3; i++)
+        {
+            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+            columnConfig.setKey("customColumn_"+i);
+            columnConfig.setType("string");
+            final MultiLanguageName name = new MultiLanguageName();
+            columnConfig.setName(name);
+            config.addColumn(columnConfig);
+        }
         
         
     }
