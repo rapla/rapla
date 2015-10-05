@@ -289,8 +289,13 @@ public class TableviewOption extends DefaultPluginOption {
                     if (selectedIndices != null) {
                         for (int i = selectedIndices.length - 1; i >= 0; i--) {
                             int index = selectedIndices[i];
-                            SortingRow test = (SortingRow) listModel.get(index);
                             listModel.remove(index);
+                        }
+                        tableConfig.removeView(selectedTable);
+                        for(int i = 0; i < listModel.size(); i++)
+                        {
+                            final SortingRow row = (SortingRow) listModel.get(i);
+                            tableConfig.addView(selectedTable, row.columnConfig);
                         }
                         list.validate();
                         list.repaint();
