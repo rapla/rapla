@@ -12,10 +12,44 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.framework.*;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.RemoteJsonService;
@@ -24,21 +58,6 @@ import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.dbrm.RemoteServiceCaller;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
@@ -571,7 +590,7 @@ public class ContainerImpl implements Disposable
 
     protected boolean isSupported(InjectionContext... context)
     {
-        return true;
+        return InjectionContext.isInjectableOnServer(context);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" }) private Constructor findInjectableConstructor(Class componentClass)
@@ -1181,9 +1200,9 @@ public class ContainerImpl implements Disposable
                     }
 
                 }
-                catch (ClassNotFoundException e)
+                catch (Throwable e)
                 {
-                    logger.warn("Error loading implementationClassName (" + implementationClassName + ") for " + interfaceName);
+                    logger.warn("Error loading implementationClassName (" + implementationClassName + ") for " + interfaceName+" from file "+url);
                 }
 
             }
