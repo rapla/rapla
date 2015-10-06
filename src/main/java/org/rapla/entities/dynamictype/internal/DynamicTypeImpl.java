@@ -21,8 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
@@ -638,11 +636,25 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		}
 		
 		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
-			Attribute attribute = type.getAttribute(variableName);
-	        if (attribute != null) 
-	        {
-	        	return new AttributeFunction(attribute);
-	        } 
+		    if ( !variableName.contains(":"))
+		    {
+		        Attribute attribute = type.getAttribute(variableName);
+	            if (attribute != null) 
+	            {
+	                boolean shortForm = true;
+	                return new AttributeFunction(attribute, shortForm );
+	            }
+		    }
+		    else if ( variableName.startsWith("attribute:"))
+            {
+		        String attriubuteName = variableName.substring("attribute:".length());
+		        Attribute attribute = type.getAttribute(attriubuteName);
+	            if (attribute != null) 
+	            {
+	                boolean shortForm = false;
+	                return new AttributeFunction(attribute, shortForm);
+	            }     
+            }
 	        else if (variableName.equals(type.getKey()) ) 
 	        {
 	            // use type function
@@ -653,42 +665,13 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	             //use type function
                 return new ThisTypeFunction();
             }
-	        else if (variableName.equals("context:type" )) 
-            {
-                 //use type function
-                return new ThisTypeFunction();
-            }
             else if (variableName.equals("event:allocatables") || variableName.equals("event:resources")) 
             {
-                return new AllocatableFunction(type);
-            }
-            else if (variableName.equals("event:appointments")) 
-            {
-                return new AppointmentFunction(type);
-            }
-            else if (variableName.equals("context:start")) 
-            {
-                return new AppointmentStartFunction(type);
-            }
-            else if (variableName.equals("context:lastchanged")) 
-            {
-                return new LastChangedFunction(type);
-            }
-            else if (variableName.equals("context:end")) 
-            {
-                return new AppointmentEndFunction(type);
-            }
-            else if (variableName.equals("appointmentBlock:number")) 
-            {
-                return new AppointmentBlockFunction(type);
-            }
-            else if (variableName.equals("context:allocatables")) 
-            {
-                return new AllocatableFunction(type);
+                return new AllocatableFunction();
             }
             else if (variableName.equals("appointment:allocatables")) 
             {
-                return new AllocatableFunction(type);
+                return new AppointmentAllocatableFunction();
             }
 	        return null;
 		}
@@ -696,9 +679,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		class AttributeFunction extends ParsedText.Variable
 		{
 			Object id;
-			AttributeFunction(Attribute attribute )
+            private boolean shortForm;
+			AttributeFunction(Attribute attribute, boolean shortForm )
 			{
 				super("attribute:"+attribute.getKey());
+                this.shortForm = shortForm;
 				id =attribute.getId() ;
 				
 			}
@@ -712,10 +697,12 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 return name;
 			}
 
-			public Attribute eval(EvalContext context) {
+			public Object eval(EvalContext context) {
 				Classification classification = context.getClassification();
 				DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
-				return findAttribute(type);
+				final Attribute attribute = findAttribute(type);
+				final Object result = ParsedText.getProxy(classification, attribute);
+				return result;
 			}
 
             public Attribute findAttribute(DynamicTypeImpl type) {
@@ -732,7 +719,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 				
 		        Attribute attribute = type.findAttributeForId( id );
 		        if ( attribute!= null) {
-		        	return attribute.getKey();
+		            return (shortForm ? "":"attribute:") + attribute.getKey();
 		        }
 		        return "";
 			}
@@ -782,270 +769,74 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             
         }
 		
-		class ContextTypeFunction extends ParsedText.Variable
-        {
-            ContextTypeFunction() 
-            {
-                super("context:type");
-            }
-            
-            public DynamicType eval(EvalContext context) 
-            {
-                DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
-                return type;
-            }
-            
-        }
-		
+	
+		@Deprecated
 		class AllocatableFunction extends ParsedText.Variable
 		{
-		    AllocatableFunction(DynamicType type) 
+		    AllocatableFunction() 
             {
                 super("event:allocatables");
             }
 
             @Override
             public Collection<Allocatable> eval(EvalContext context) {
-                if ( context instanceof AppointmentEvalContext)
+                Object object = context.getFirstContextObject();
+                if ( object instanceof AppointmentBlock)
                 {
-                    Appointment appointment = ((AppointmentEvalContext)context).getAppointment();
+                    object =((AppointmentBlock)object).getAppointment();
+                }
+                if ( object instanceof Appointment)
+                {
+                    Appointment appointment = ((Appointment)object);
                     final Reservation reservation = appointment.getReservation();
                     List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
                     return asList;
                 }
-                else if ( context instanceof ReservationEvalContext)
+                else if ( object instanceof Reservation)
                 {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
+                    Reservation reservation = (Reservation)object;
                     List<Allocatable> asList = Arrays.asList(reservation.getAllocatables());
                     return asList;
                 }
                 return Collections.emptyList();
             }
-		    
 		}
 		
-		class AppointmentFunction extends ParsedText.Variable
+		@Deprecated
+		class AppointmentAllocatableFunction extends ParsedText.Variable
         {
-            AppointmentFunction(DynamicType type) 
+		    AppointmentAllocatableFunction() 
             {
-                super("event:appointments");
+                super("appoitment:allocatables");
             }
 
             @Override
-            public Collection<Appointment> eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
+            public Collection<Allocatable> eval(EvalContext context) {
+                Object object = context.getFirstContextObject();
+                if ( object instanceof AppointmentBlock)
                 {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    List<Appointment> asList = Arrays.asList(reservation.getAppointments());
+                    object =((AppointmentBlock)object).getAppointment();
+                }
+                if ( object instanceof Appointment)
+                {
+                    Appointment appointment = ((Appointment)object);
+                    final Reservation reservation = appointment.getReservation();
+                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                    return asList;
+                }
+                else if ( object instanceof Reservation)
+                {
+                    Reservation reservation = (Reservation)object;
+                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatables());
                     return asList;
                 }
                 return Collections.emptyList();
             }
-            
         }
 		
-		class LastChangedFunction extends ParsedText.Variable
-        {
-		    LastChangedFunction(DynamicType type) 
-            {
-                super("context:lastchanged");
-            }
-
-            @Override
-            public Date eval(EvalContext context) {
-                if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation != null)
-                    {
-                        return reservation.getLastChanged();
-                    }
-                }
-                return null;
-            }
-            
-        }
-		
-		class AppointmentStartFunction extends ParsedText.Variable
-        {
-            AppointmentStartFunction(DynamicType type) 
-            {
-                super("context:start");
-            }
-
-            @Override
-            public Date eval(EvalContext context) {
-                if ( context instanceof AppointmentBlockEvalContext)
-                {
-                    AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
-                    if ( block == null)
-                    {
-                        return null;
-                    }
-                    return new Date(block.getStart()); 
-                }
-                else if ( context instanceof AppointmentEvalContext)
-                {
-                    Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
-                    if ( appointment == null)
-                    {
-                        return null;
-                    }
-                    return appointment.getStart();
-                }
-                else if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getFirstDate(); 
-                }
-                
-                return null;
-            }
-            
-        }
-		
-		class AppointmentEndFunction extends ParsedText.Variable
-        {
-            AppointmentEndFunction(DynamicType type) 
-            {
-                super("context:end");
-            }
-
-            @Override
-            public Date eval(EvalContext context) {
-                if ( context instanceof AppointmentBlockEvalContext)
-                {
-                    AppointmentBlock block= ((AppointmentBlockEvalContext)context).getBlock();
-                    if ( block == null)
-                    {
-                        return null;
-                    }
-                    return new Date(block.getEnd()); 
-                }
-                else if ( context instanceof AppointmentEvalContext)
-                {
-                    Appointment appointment= ((AppointmentEvalContext)context).getAppointment();
-                    if ( appointment == null)
-                    {
-                        return null;
-                    }
-                    return appointment.getEnd();
-                }
-                else if ( context instanceof ReservationEvalContext)
-                {
-                    Reservation reservation = ((ReservationEvalContext)context).getReservation();
-                    if ( reservation == null)
-                    {
-                        return null;
-                    }
-                    return reservation.getMaxEnd(); 
-                }
-                
-                return null;
-            }
-
-            
-        }
-		
-		class AppointmentBlockFunction extends ParsedText.Variable
-        {
-            AppointmentBlockFunction(DynamicType type) 
-            {
-                super("appointmentBlock:number");
-            }
-
-            @Override
-            public String eval(EvalContext context) {
-                if ( context instanceof AppointmentBlockEvalContext)
-                {
-                    final AppointmentBlock block = ((AppointmentBlockEvalContext)context).getBlock();
-                    if ( block != null)
-                    {
-                        final int appointmentNumber = getAppointmentNumber( block);
-                        return "" + appointmentNumber;
-                    }
-                }
-                return "";
-            }
-            
-            private int getAppointmentNumber(AppointmentBlock appointmentBlock)
-            {
-                final long blockStart = appointmentBlock.getEnd();
-                final Date end = new Date(blockStart);
-                final Appointment appointment = appointmentBlock.getAppointment();
-                final Reservation reservation = appointment.getReservation();
-                final Date start = reservation.getFirstDate(); 
-                SortedSet<AppointmentBlock> blocks = new TreeSet<AppointmentBlock>();
-                for (Appointment app:reservation.getAppointments())
-                {
-                    app.createBlocks( start, end, blocks);
-                }
-                final SortedSet<AppointmentBlock> headSet = blocks.headSet( appointmentBlock);
-                final int size = headSet.size();
-//                final long appoimtmentStart = reservation.getFirstDate().getTime();
-//                if (appoimtmentStart ==  start)
-//                {
-//                    return 1;
-//                }
-                return size + 1;
-            }
-        }
+				
 	}
 	
-	static public class ReservationEvalContext extends EvalContext 
-    {
-        private Reservation reservation;
-
-        public ReservationEvalContext( Locale locale, int callStackDepth, String annotationName, Reservation reservation)
-        {
-            super(locale,callStackDepth, annotationName, reservation.getClassification());
-            this.reservation = reservation;
-        }
-        
-        public Reservation getReservation()
-        {
-            return reservation;
-        }
-        
-    }
-
-	static public class AppointmentEvalContext extends ReservationEvalContext
-	{
-	    private Appointment appointment;
-	    
-	    public AppointmentEvalContext( Locale locale, int callStackDepth, String annotationName, Appointment appointment)
-	    {
-	        super(locale,callStackDepth, annotationName, appointment.getReservation());
-	        this.appointment = appointment;
-	    }
-	    
-        public Appointment getAppointment()
-        {
-            return appointment;
-        }	    
-	}
-	
-    static public class AppointmentBlockEvalContext extends AppointmentEvalContext
-    {
-        private AppointmentBlock block;
-
-        public AppointmentBlockEvalContext(Locale locale, int callStackDepth, String annotationName, AppointmentBlock block)
-        {
-            super(locale, callStackDepth, annotationName, block.getAppointment());
-            this.block = block;
-        }
-
-        public AppointmentBlock getBlock()
-        {
-            return block;
-        }
-
-    }
-
 	public static boolean isTransferedToClient(Classifiable classifiable) {
 		if ( classifiable == null)
 		{

@@ -189,7 +189,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
             return "";
         }
-        EvalContext evalContext = new EvalContext(locale, 0, annotationName, this );
+        EvalContext evalContext = new EvalContext(locale, annotationName, Collections.singletonList(this));
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }

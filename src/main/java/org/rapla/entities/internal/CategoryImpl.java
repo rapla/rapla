@@ -45,8 +45,9 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     private Date createDate;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
     private transient Category parent;
-    CategoryImpl()
+    public CategoryImpl()
     {
+        this(new Date(), new Date());
     }
     
     public CategoryImpl(Date createDate, Date lastChanged) {

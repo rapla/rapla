@@ -15,6 +15,7 @@ import java.awt.print.PrinterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -482,8 +484,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             final Locale locale = getLocale();
             final String annotationName = getAnnotationName();
-            int callStackDepth = 0;
-            final DynamicTypeImpl.AppointmentBlockEvalContext appointmentEvalContext = new DynamicTypeImpl.AppointmentBlockEvalContext(locale, callStackDepth, annotationName, block);
+            final ParsedText.EvalContext appointmentEvalContext = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(block));
             return format(appointmentEvalContext);
         }
 
