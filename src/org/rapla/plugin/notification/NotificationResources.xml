@@ -11,7 +11,7 @@
   <entry key="mail_subject">
     <text lang="en">Rapla: Allocation change of [{0}]</text>
     <text lang="de">Rapla: Reservierungsbenachrichtigung [{0}]</text>
-    <text lang="fr">Rapla: Changement d'allocation pour [{0}]</text>
+    <text lang="fr">Rapla: Changement d''allocation pour [{0}]</text>
     <text lang="es">Rapla: Cambio de asignación para [{0}]</text>
     <text lang="nl">Rapla: Reservatie wijziging voor [{0}]</text>
   </entry>
