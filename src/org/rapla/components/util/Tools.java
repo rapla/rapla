@@ -56,6 +56,10 @@ public abstract class Tools
 
     /** Rudimentary tests if the string is a valid xml-tag.*/
     public static boolean isKey(String key) {
+        if ( key.equals( "true") || key.equals("false"))
+        {
+            return false;
+        }
     	// A tag name must start with a letter (a-z, A-Z) or an underscore (_) and can contain letters, digits 0-9, the period (.), the underscore (_) or the hyphen (-). 
         char[] c = key.toCharArray();
         if (c.length == 0)

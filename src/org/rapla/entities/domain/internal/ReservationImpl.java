@@ -44,9 +44,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.AppointmentBlockEvalContext;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.AppointmentEvalContext;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.ReservationEvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
 import org.rapla.entities.internal.ModifiableTimestamp;
@@ -185,7 +182,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return "";
         }
-        EvalContext evalContext = appointment != null ? new AppointmentEvalContext(locale, 0, annotationName, appointment ) : new ReservationEvalContext(locale, 0, annotationName, this);
+        EvalContext evalContext = appointment != null ? createEvalContext(locale, annotationName, appointment ) : createEvalContext(locale, annotationName, this);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
@@ -198,11 +195,15 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return "";
         }
-        EvalContext evalContext = block != null ? new AppointmentBlockEvalContext(locale, 0, annotationName, block ) : new ReservationEvalContext(locale, 0, annotationName, this);
+        EvalContext evalContext = block != null ? createEvalContext(locale,  annotationName, block ) : createEvalContext(locale,  annotationName, this);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
     
+    private EvalContext createEvalContext(Locale locale, String annotationName, Object object)
+    {
+        return new EvalContext(locale, annotationName, Collections.singletonList(object));
+    }
     
     public Date getLastChanged() {
         return lastChanged;

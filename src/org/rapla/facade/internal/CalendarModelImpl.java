@@ -650,7 +650,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 			} catch (IllegalAnnotationException e) {
 				return e.getMessage();
 			}
-        	EvalContext evalContext = new EvalContext( locale);
+        	EvalContext evalContext = new EvalContext( locale, null, Collections.singletonList(this));
 			String result = parsedTitle.formatName( evalContext);
         	return result;
         }

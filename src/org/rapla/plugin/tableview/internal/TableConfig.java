@@ -16,7 +16,6 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 //@XmlAccessorType(XmlAccessType.FIELD)
 public class TableConfig
@@ -27,7 +26,7 @@ public class TableConfig
 
     private static class MyList 
     {
-        List<String> item = new ArrayList();
+        List<String> item = new ArrayList<>();
     }
     
     static TableConfig DEFAULT = new TableConfig();
@@ -37,7 +36,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("name");
-            columnConfig.setDefaultValue("{name()}");
+            columnConfig.setDefaultValue("{p->name(p)}");
             columnConfig.setType("string");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "name");
@@ -51,7 +50,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("start");
-            columnConfig.setDefaultValue("{context:start}");
+            columnConfig.setDefaultValue("{p->start(p)}");
             columnConfig.setType("datetime");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "start");
@@ -65,7 +64,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("end");
-            columnConfig.setDefaultValue("{context:end}");
+            columnConfig.setDefaultValue("{p->end(p)}");
             columnConfig.setType("datetime");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "end");
@@ -80,7 +79,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("lastchanged");
-            columnConfig.setDefaultValue("{context:lastchanged}");
+            columnConfig.setDefaultValue("{p->lastchanged(p)}");
             columnConfig.setType("datetime");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "last changed");
@@ -94,7 +93,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("resources");
-            columnConfig.setDefaultValue("{filter(context:allocatables, isResource(type:type))}");
+            columnConfig.setDefaultValue("{p->filter(resources(p),r->not(isPerson(r)))}");
             columnConfig.setType("string");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "resources");
@@ -108,7 +107,7 @@ public class TableConfig
         {
             TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
             columnConfig.setKey("persons");
-            columnConfig.setDefaultValue("{filter(context:allocatables, isPerson(type:type))}");
+            columnConfig.setDefaultValue("{p->filter(resources(p),r->isPerson(r))}");
             columnConfig.setType("string");
             final MultiLanguageName name = new MultiLanguageName();
             name.setName("en", "persons");

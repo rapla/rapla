@@ -15,6 +15,7 @@ import java.awt.print.PrinterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -454,8 +455,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             final Locale locale = getLocale();
             final String annotationName = getAnnotationName();
-            int callStackDepth = 0;
-            final DynamicTypeImpl.AppointmentBlockEvalContext appointmentEvalContext = new DynamicTypeImpl.AppointmentBlockEvalContext(locale, callStackDepth, annotationName, block);
+            final ParsedText.EvalContext appointmentEvalContext = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(block));
             return format(appointmentEvalContext);
         }
 
