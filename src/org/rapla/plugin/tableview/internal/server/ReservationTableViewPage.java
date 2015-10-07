@@ -14,16 +14,24 @@ package org.rapla.plugin.tableview.internal.server;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.ReservationTableColumn;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
+import org.rapla.plugin.tableview.internal.MyReservatitonTableColumn;
+import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableViewPlugin;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 public class ReservationTableViewPage extends TableViewPage<Reservation> 
 {
@@ -36,7 +44,7 @@ public class ReservationTableViewPage extends TableViewPage<Reservation>
         final Date startDate = model.getStartDate();
         final Date endDate = model.getEndDate();
         final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));           
-        List< RaplaTableColumn<Reservation>> columPluigns = new ArrayList<RaplaTableColumn<Reservation>>(getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN));
+        List< RaplaTableColumn<Reservation>> columPluigns = loadColumns();
         return getCalendarHTML( columPluigns, reservations,TableViewPlugin.EVENTS_SORTING_STRING_OPTION );
     }
 
@@ -49,6 +57,26 @@ public class ReservationTableViewPage extends TableViewPage<Reservation>
         int compareTo = r1.getFirstDate().compareTo( r2.getFirstDate());
         return compareTo;
     }
+    
+    private List<RaplaTableColumn<Reservation>> loadColumns() throws RaplaException, RaplaContextException
+    {
+        List<RaplaTableColumn<Reservation>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<Reservation>>();
+        final Preferences preferences = getClientFacade().getSystemPreferences();
+        TableConfig config = TableConfig.read( preferences, getI18n());
+        final Collection<TableColumnConfig> columns = config.getColumns("events");
+        for ( final TableColumnConfig column: columns)
+        {
+            final RaplaLocale raplaLocale = getRaplaLocale();
+            reservationColumnPlugins.add( new MyReservatitonTableColumn(column, raplaLocale));
+        }
+        final Collection<ReservationTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
+        for ( ReservationTableColumn column:lookupServicesFor)
+        {
+            reservationColumnPlugins.add( column);
+        }
+        return reservationColumnPlugins;
+    }
+
         
    
 }

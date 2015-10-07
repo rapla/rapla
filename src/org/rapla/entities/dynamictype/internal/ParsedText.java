@@ -1313,13 +1313,13 @@ public class ParsedText implements Serializable
         public String eval(EvalContext context)
         {
             Object obj ;
+            Locale locale = context.getLocale();
             if ( objectFunction != null)
             {
                 obj = objectFunction.eval(context);
                 if (languageFunction != null)
                 {
                     String language = ParsedText.this.evalToString(languageFunction.eval(context), context);
-                    Locale locale = context.getLocale();
                     if (language != null && language != locale.getLanguage())
                     {
                         final String country = context.getLocale().getCountry();
@@ -1340,6 +1340,18 @@ public class ParsedText implements Serializable
             {
                 obj = ((Appointment)obj).getReservation();
             }
+            
+            if ( obj instanceof MultiLanguageName)
+            {
+                MultiLanguageNamed raplaObject = (MultiLanguageNamed) obj;
+                final String format = raplaObject.getName().getName(locale);
+                return format;                
+            }
+            else if ( obj instanceof Named)
+            {
+                return ((Named) obj).getName(locale);
+            }
+
             return evalToString(obj, context);
         }
     }

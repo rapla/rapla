@@ -46,28 +46,13 @@ public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,ReservationTableViewFactory.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.CALENDAR_VIEW_EXTENSION,AppointmentTableViewFactory.class);
         container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, TableviewOption.class);
-        
-		//addReservationTableColumns(container);
-        //addAppointmentTableColumns(container);
 
         //Summary rows
         container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, EventCounter.class);
 		container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, AppointmentCounter.class);
     }
 
-	protected void addAppointmentTableColumns(final Container container) {
-		container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentNameColumn.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentStartDate.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, AppointmentEndDate.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, ResourceColumn.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, PersonColumn.class);
-	}
-
-	protected void addReservationTableColumns(final Container container) {
-		container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationNameColumn.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationStartColumn.class);
-        container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, ReservationLastChangedColumn.class); 
-	}
+	
 
 }
 

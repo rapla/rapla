@@ -46,6 +46,7 @@ import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.gui.MenuContext;
@@ -124,20 +125,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
        	
-       	List<ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>();
-       	final Preferences preferences = getClientFacade().getSystemPreferences();
-       	TableConfig config = TableConfig.read( preferences, getI18n());
-       	final Collection<TableColumnConfig> columns = config.getColumns("events");
-       	for ( final TableColumnConfig column: columns)
-       	{
-           	final RaplaLocale raplaLocale = getRaplaLocale();
-            reservationColumnPlugins.add( new MyReservatitonTableColumn(column, raplaLocale));
-       	}
-       	final Collection<ReservationTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
-       	for ( ReservationTableColumn column:lookupServicesFor)
-       	{
-       	    reservationColumnPlugins.add( column);
-       	}
+       	List<ReservationTableColumn> reservationColumnPlugins = loadColumns();
        	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnPlugins );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
@@ -176,23 +164,24 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
       	table.getSelectionModel().addListSelectionListener( listener);
       	table.addFocusListener( listener);
     }
-    final class MyReservatitonTableColumn extends AbstractTableColumn<Reservation> implements ReservationTableColumn
+
+    private List<ReservationTableColumn> loadColumns() throws RaplaException, RaplaContextException
     {
-        private MyReservatitonTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
-        {
-           super( column, raplaLocale);
-        }
-        
-        public Object getValue(Reservation reservation)
-        {
-            return format(reservation);
-        }
-        
-        public String getHtmlValue(Reservation object)
-        {
-            Object value = getValue(object);
-            return formatHtml(value);
-        }
+        List<ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>();
+       	final Preferences preferences = getClientFacade().getSystemPreferences();
+       	TableConfig config = TableConfig.read( preferences, getI18n());
+       	final Collection<TableColumnConfig> columns = config.getColumns("events");
+       	for ( final TableColumnConfig column: columns)
+       	{
+           	final RaplaLocale raplaLocale = getRaplaLocale();
+            reservationColumnPlugins.add( new MyReservatitonTableColumn(column, raplaLocale));
+       	}
+       	final Collection<ReservationTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
+       	for ( ReservationTableColumn column:lookupServicesFor)
+       	{
+       	    reservationColumnPlugins.add( column);
+       	}
+        return reservationColumnPlugins;
     }
     
     private final class CopyListener implements ActionListener {

@@ -125,20 +125,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         this.model = model;
         
-        List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
-        final Preferences preferences = getClientFacade().getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences, getI18n());
-        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
-        for ( final TableColumnConfig column: columns)
-        {
-            final RaplaLocale raplaLocale = getRaplaLocale();
-            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
-        }
-        final Collection<AppointmentTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
-        for ( AppointmentTableColumn column:lookupServicesFor)
-        {
-            columnPlugins.add( column);
-        }
+        List<AppointmentTableColumn> columnPlugins = loadAppointmentColumns();
        	
        	appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
         sorter =  SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
@@ -179,6 +166,25 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
  		
         });
+    }
+
+    private List<AppointmentTableColumn> loadAppointmentColumns() throws RaplaException, RaplaContextException
+    {
+        List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
+        final Preferences preferences = getClientFacade().getSystemPreferences();
+        TableConfig config = TableConfig.read( preferences, getI18n());
+        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
+        for ( final TableColumnConfig column: columns)
+        {
+            final RaplaLocale raplaLocale = getRaplaLocale();
+            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
+        }
+        final Collection<AppointmentTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
+        for ( AppointmentTableColumn column:lookupServicesFor)
+        {
+            columnPlugins.add( column);
+        }
+        return columnPlugins;
     }
 
 	protected void update(CalendarModel model) throws RaplaException 
@@ -441,27 +447,5 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
 	public TimeInterval getVisibleTimeInterval() {
 		return new TimeInterval(model.getStartDate(), model.getEndDate());
-	}
-
-	class MyAppoitmentTableColumn extends AbstractTableColumn<AppointmentBlock> implements AppointmentTableColumn
-	{
-        MyAppoitmentTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
-        {
-            super(column, raplaLocale);
-        }
-
-        @Override
-        public Object getValue(AppointmentBlock block)
-        {
-            return format(block);
-        }
-
-        @Override
-        public String getHtmlValue(AppointmentBlock block)
-        {
-            final Object value = getValue(block);
-            return formatHtml(value);
-        }
-        	    
 	}
  }
