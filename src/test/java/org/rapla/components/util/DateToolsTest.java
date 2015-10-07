@@ -157,4 +157,13 @@ public class DateToolsTest extends TestCase
             assertEquals(2, week);
         }
     }
+    
+    public void testFormat()
+    {
+        long date = DateTools.toDate( 2000, 1, 1);
+        long time = DateTools.toTime(12, 30, 0);
+        Date dateTime = new Date(date + time);
+        final String format = DateTools.formatDateTime( dateTime);
+        assertEquals("2000-01-01 12:30:00", format);
+    }
 }

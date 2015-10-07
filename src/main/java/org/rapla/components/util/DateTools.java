@@ -70,7 +70,7 @@ public abstract class DateTools
 	
 	public static String formatDateTime(Date date)
 	{
-	    return formatDate(date, null);
+        return formatDateTime(date, null);
 	}
 	
 	public static String formatDateTime(Date date, Locale locale)
