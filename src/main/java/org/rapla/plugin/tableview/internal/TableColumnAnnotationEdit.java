@@ -142,7 +142,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
     private Map<String, String> getColumnAnnotations(DynamicType dynamicType)
     {
         final String columnAnnotationPrefix = TableViewPlugin.COLUMN_ANNOTATION;
-        Map<String,String> columnAnnotations = new LinkedHashMap<>();
+        Map<String,String> columnAnnotations = new LinkedHashMap<String,String>();
         for ( String annotationKey:dynamicType.getAnnotationKeys())
         {
                if ( annotationKey.startsWith(columnAnnotationPrefix))
