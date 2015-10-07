@@ -47,7 +47,8 @@ public abstract class AbstractTableColumn<T> implements RaplaTableColumn<T, Tabl
     public String getColumnName()
     {
         final MultiLanguageName name = column.getName();
-        return name.getName(getLocale().getLanguage());
+        final Locale locale = getLocale();
+        return name.getName(locale);
     }
 
     @Override

@@ -15,11 +15,9 @@ import java.awt.print.PrinterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import javax.swing.BoxLayout;
@@ -41,8 +39,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
@@ -69,7 +65,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
-import org.rapla.plugin.tableview.internal.AbstractTableColumn;
+import org.rapla.plugin.tableview.internal.MyAppoitmentTableColumn;
 import org.rapla.plugin.tableview.internal.SwingReservationTableView;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
@@ -135,16 +131,9 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             container = scrollpane;
         }
         this.model = model;
-        List<AppointmentTableColumn> columnPluginsConfigured = new ArrayList<AppointmentTableColumn>();
-        final Preferences preferences = getClientFacade().getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences, getI18n());
-        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
-        for (final TableColumnConfig column : columns)
-        {
-            final RaplaLocale raplaLocale = getRaplaLocale();
-            columnPluginsConfigured.add(new MyAppoitmentTableColumn(column, raplaLocale));
-        }
+        List<AppointmentTableColumn> columnPluginsConfigured = loadAppointmentColumns();
         columnPluginsConfigured.addAll(columnPlugins);
+        
         appointmentTableModel = new AppointmentTableModel(getLocale(), getI18n(), columnPluginsConfigured);
         sorter = SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;
@@ -188,6 +177,20 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             }
 
         });
+    }
+
+    private List<AppointmentTableColumn> loadAppointmentColumns() throws RaplaException, RaplaContextException
+    {
+        List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
+        final Preferences preferences = getClientFacade().getSystemPreferences();
+        TableConfig config = TableConfig.read( preferences, getI18n());
+        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
+        for ( final TableColumnConfig column: columns)
+        {
+            final RaplaLocale raplaLocale = getRaplaLocale();
+            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
+        }
+        return columnPlugins;
     }
 
     protected void update(CalendarModel model) throws RaplaException
@@ -470,27 +473,5 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     public TimeInterval getVisibleTimeInterval()
     {
         return new TimeInterval(model.getStartDate(), model.getEndDate());
-    }
-
-    class MyAppoitmentTableColumn extends AbstractTableColumn<AppointmentBlock>implements AppointmentTableColumn
-    {
-        MyAppoitmentTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
-        {
-            super(column, raplaLocale);
-        }
-
-        @Override
-        public Object getValue(AppointmentBlock block)
-        {
-            return format(block);
-        }
-
-        @Override
-        public String getHtmlValue(AppointmentBlock block)
-        {
-            final Object value = getValue(block);
-            return formatHtml(value);
-        }
-
     }
 }

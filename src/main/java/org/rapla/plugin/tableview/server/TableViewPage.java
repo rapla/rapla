@@ -180,7 +180,8 @@ abstract public class TableViewPage<T, C> implements HTMLViewPage
 	           {
 	               buf.append("<td>");
 	               T rowObject = row.object;
-	               buf.append(col.getHtmlValue(rowObject));
+	               final String htmlValue = col.getHtmlValue(rowObject);
+                buf.append(htmlValue);
 	               buf.append("</td>");
 	           }
 	          
