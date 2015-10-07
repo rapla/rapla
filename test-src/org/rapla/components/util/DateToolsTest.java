@@ -2,10 +2,11 @@ package org.rapla.components.util;
 
 import java.util.Date;
 
-import junit.framework.TestCase;
-
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.entities.tests.Day;
+import org.rapla.entities.tests.Time;
+
+import junit.framework.TestCase;
 
 public class DateToolsTest extends TestCase
 {
@@ -40,5 +41,14 @@ public class DateToolsTest extends TestCase
     	Date gmtDate = day.toGMTDate();
     	Date gmtDateOneHour = new Date(gmtDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
     	assertEquals(DateTools.cutDate( gmtDateOneHour),  gmtDate);
+    }
+    
+    public void testFormat()
+    {
+        long date = DateTools.toDate( 2000, 1, 1);
+        long time = DateTools.toTime(12, 30, 0);
+        Date dateTime = new Date(date + time);
+        final String format = DateTools.formatDateTime( dateTime);
+        assertEquals("2000-01-01 12:30:00", format);
     }
 }
