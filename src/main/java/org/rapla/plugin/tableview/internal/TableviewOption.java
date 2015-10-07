@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -36,6 +37,7 @@ import org.rapla.gui.internal.edit.fields.MultiLanguageField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
 /**
  *
@@ -78,8 +80,6 @@ public class TableviewOption extends DefaultPluginOption {
         {// Ordering definitionr
             JPanel containerForOrderingAndValueDefinition = new JPanel(new BorderLayout());
             typeSelection = new JComboBox();
-            typeSelection.addItem(new TypeSelection("events", getString("reservations")));
-            typeSelection.addItem(new TypeSelection("appointments", getString("appointments")));
             typeSelection.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -107,6 +107,13 @@ public class TableviewOption extends DefaultPluginOption {
         for (TableColumnConfig slot : tablerows) {
             TableRow row = new TableRow(slot, getContext());
             rows.add(row);
+        }
+        for ( Entry<String, ViewDefinition>  entry :tableConfig.getViewMap().entrySet())
+        {
+            final String key = entry.getKey();
+            final ViewDefinition value = entry.getValue();
+            final String name = value.getName( getLocale());
+            typeSelection.addItem(new TypeSelection(key, name));
         }
     }
 
@@ -153,15 +160,9 @@ public class TableviewOption extends DefaultPluginOption {
 
     @Override
     protected Configuration getConfig() throws RaplaException {
-        //if (this.config == null) {
-            Configuration config = preferences.getEntry(TableViewPlugin.CONFIG, null);
-            if (config == null) {
-                config = TableConfig.print(TableConfig.getDefaultConfig());
-            }
-            return config;
-        //} else {
-//            return TableConfig.print(config);
-        //}
+        TableConfig config = TableConfig.read(preferences, getI18n(), getRaplaLocale());
+        final RaplaConfiguration configuration = TableConfig.print( config);
+        return configuration;
     }
 
     protected void readConfig(Configuration config) {
@@ -279,7 +280,7 @@ public class TableviewOption extends DefaultPluginOption {
                 public void actionPerformed(ActionEvent e) {
                     final SortingRow selectedItem = (SortingRow) allSortingRows.getSelectedItem();
                     if (selectedItem != null) {
-                        tableConfig.addView(selectedTable, selectedItem.columnConfig);
+                        tableConfig.getOrCreateView(selectedTable).addColumn(selectedItem.columnConfig);
                         init(selectedTable);
                         list.setSelectedIndex(listModel.getSize()-1);
                     }
@@ -292,15 +293,16 @@ public class TableviewOption extends DefaultPluginOption {
                 public void actionPerformed(ActionEvent e) {
                     final int[] selectedIndices = list.getSelectedIndices();
                     if (selectedIndices != null) {
+                        List<TableColumnConfig> toRemove = new ArrayList<>();
                         for (int i = selectedIndices.length - 1; i >= 0; i--) {
                             int index = selectedIndices[i];
-                            listModel.remove(index);
+                            final SortingRow row = (SortingRow) listModel.remove(index);
+                            toRemove.add(row.columnConfig);
                         }
-                        tableConfig.removeView(selectedTable);
-                        for(int i = 0; i < listModel.size(); i++)
+                        final ViewDefinition view = tableConfig.getOrCreateView(selectedTable);
+                        for (TableColumnConfig row : toRemove)
                         {
-                            final SortingRow row = (SortingRow) listModel.get(i);
-                            tableConfig.addView(selectedTable, row.columnConfig);
+                            view.removeColumn(row);
                         }
                         list.validate();
                         list.repaint();
@@ -351,7 +353,8 @@ public class TableviewOption extends DefaultPluginOption {
                             final int indexToPullUp = selectedIndices[i];
                             if (indexToPullUp > 0) {
                                 final SortingRow row = rows.remove(indexToPullUp);
-                                rows.add(Math.max(0, indexToPullUp - 1), row);
+                                final int index = Math.max(0, indexToPullUp - 1);
+                                rows.add(index, row);
                             }
                         }
                     } else {
@@ -364,19 +367,23 @@ public class TableviewOption extends DefaultPluginOption {
                             }
                         }
                     }
-                    // remove old
-                    tableConfig.removeView(selectedTable);
+                    final ViewDefinition view = tableConfig.getOrCreateView(selectedTable);
+                    final Collection<TableColumnConfig> columns = tableConfig.getColumns(selectedTable);
+                    for (TableColumnConfig columnConfig : columns)
+                    {
+                        view.removeColumn(columnConfig);
+                    }
                     // write again
                     for (SortingRow row : rows) {
-                        tableConfig.addView(selectedTable, row.columnConfig);
+                        view.addColumn(row.columnConfig);
                     }
                     init(selectedTable);
                     // select the new ones
                     final int[] newSelectedIndices = new int[selectedIndices.length];
                     for (int i = 0; i < selectedIndices.length; i++) {
                         int selectedIndice = selectedIndices[i];
-                        int newSelectedIndex = Math.max(0, Math.min(listModel.size()-1, selectedIndice + (moveUpwards ? -1 : +1)));
-                        newSelectedIndices[i]=newSelectedIndex;
+                        int newSelectedIndex = Math.max(0, Math.min(listModel.size() - 1, selectedIndice + (moveUpwards ? -1 : +1)));
+                        newSelectedIndices[i] = newSelectedIndex;
                     }
                     list.setSelectedIndices(newSelectedIndices);
                 }

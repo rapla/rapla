@@ -226,12 +226,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public String getName(Locale locale) {
-    	if ( locale == null)
-    	{
-    		return name.getName( null);
-    	}
-        String language = locale.getLanguage();
-		return name.getName(language);
+		return name.getName(locale);
     }
 
     public String getAnnotation(String key) {
@@ -627,6 +622,18 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     }
 
+    static private Classification getRootClassification(EvalContext context)
+    {
+        EvalContext parent = context.getParent();
+        while (parent != null)
+        {
+            context = parent;
+            parent = context.getParent();
+        }
+        return ParsedText.guessClassification( context.getFirstContextObject());
+    }
+    
+    
 	public static class DynamicTypeParseContext implements ParseContext {
 		private DynamicTypeImpl type;
 
@@ -698,7 +705,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			}
 
 			public Object eval(EvalContext context) {
-				Classification classification = context.getClassification();
+				Classification classification = getRootClassification( context);
 				DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
 				final Attribute attribute = findAttribute(type);
 				final Object result = ParsedText.getProxy(classification, attribute);
@@ -738,7 +745,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			
 			public DynamicType eval(EvalContext context) 
 			{
-				DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
+				DynamicTypeImpl type = (DynamicTypeImpl) getRootClassification(context).getType();
 				return type;
 			}
 			
@@ -763,7 +770,12 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             
             public DynamicType eval(EvalContext context) 
             {
-                DynamicTypeImpl type = (DynamicTypeImpl) context.getClassification().getType();
+                final Classification classification = ParsedText.guessClassification( context.getFirstContextObject());
+                if ( classification == null)
+                {
+                    return null;
+                }
+                DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
                 return type;
             }
             

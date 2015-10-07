@@ -587,6 +587,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return this.selectedView;
     }
 
+    /* use resources() timeIntervall and selectedDate function*/
+    @Deprecated 
     class CalendarModelParseContext implements ParseContext
     {
         public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {

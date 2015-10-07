@@ -54,10 +54,24 @@ public class MultiLanguageName implements java.io.Serializable {
     {
         if ( locale == null)
         {
-            return getName(null);
+            return getName((String)null);
         }
         String language = DateTools.getLang(locale);
         return getName(language);
+    }
+
+    public String getName(Locale locale)
+    {
+        String lang;
+        if (locale != null)
+        {
+            lang = locale.getLanguage();
+        }
+        else
+        {
+            lang = null;
+        }
+        return getName(lang);
     }
 
     public String getName(String language) {

@@ -134,7 +134,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
        	
        	List<ReservationTableColumn> reservationColumnConfigured = new ArrayList<ReservationTableColumn>();
        	final Preferences preferences = getClientFacade().getSystemPreferences();
-       	TableConfig config = TableConfig.read( preferences);
+        TableConfig config = TableConfig.read( preferences, getI18n());
        	final Collection<TableColumnConfig> columns = config.getColumns("events");
        	for ( final TableColumnConfig column: columns)
        	{
@@ -188,10 +188,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         }
         public Object getValue(Reservation reservation)
         {
-            final Locale locale = getLocale();
-            final String annotationName = getAnnotationName();
-            final ParsedText.EvalContext reservationEvalContext = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(reservation));
-            return format(reservationEvalContext);
+            return format(reservation);
         }
         
         public String getHtmlValue(Reservation object)

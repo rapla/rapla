@@ -1,6 +1,7 @@
 package org.rapla.plugin.tableview.internal;
 
 import java.sql.Date;
+import java.util.Collections;
 import java.util.Locale;
 
 import javax.swing.table.TableColumn;
@@ -10,6 +11,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
@@ -55,10 +57,13 @@ public abstract class AbstractTableColumn<T> implements RaplaTableColumn<T, Tabl
     abstract public String getHtmlValue(T object);
     
 
-    protected Object format(EvalContext context) 
+    protected Object format(Object object) 
     {
-        final DynamicTypeImpl type = (DynamicTypeImpl)context.getClassification().getType();
-        final String annotationName = context.getAnnotationName();
+        final Locale locale = getLocale();
+        final String annotationName = getAnnotationName();
+        final ParsedText.EvalContext context = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(object));
+        final Classification classification = ParsedText.guessClassification( object);
+        final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName);
         if ( parsedAnnotation == null)
         {
