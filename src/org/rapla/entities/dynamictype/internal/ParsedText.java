@@ -340,7 +340,7 @@ public class ParsedText implements Serializable
 
             private BoundParameterFunction(String variableName, int indexOf)
             {
-                super(variableName);
+                super(variableName, emptyList());
                 this.variableName = variableName;
                 this.indexOf = indexOf;
             }
@@ -365,7 +365,7 @@ public class ParsedText implements Serializable
 
             private ParentParameterFunction(Function parentFunction, String variableName)
             {
-                super(variableName);
+                super(variableName, emptyList());
                 this.parentFunction = parentFunction;
                 this.variableName = variableName;
 
@@ -633,13 +633,18 @@ public class ParsedText implements Serializable
         //return new SubstringFunction(functionName, args);
     }
 
+    static List<Function> emptyList()
+    {
+        return Collections.emptyList();
+    }
+    
     static public abstract class Variable extends Function
     {
         public Variable(String string)
         {
-            super(string);
+            super(string, emptyList());
         }
-
+        
         @Override
         public String getRepresentation(ParseContext context)
         {
@@ -686,12 +691,6 @@ public class ParsedText implements Serializable
             {
                 throw new IllegalAnnotationException(name + " function expects no more then " + maxSize + " arguments");
             }
-        }
-
-        public Function(String name)
-        {
-            this.name = name;
-            this.args = Collections.emptyList();
         }
 
         protected String getName()
@@ -865,7 +864,7 @@ public class ParsedText implements Serializable
         Collection<Object> result;
         if (attribute.getType() == AttributeType.CATEGORY)
         {
-            Collection<Object> wrapperList = new ArrayList<>();
+            Collection<Object> wrapperList = new ArrayList<Object>();
             for (Object value : values)
             {
                 if (value instanceof Category)
@@ -1333,11 +1332,19 @@ public class ParsedText implements Serializable
             {
                 obj = context.getFirstContextObject();
             }
+            if ( obj instanceof AppointmentBlock)
+            {
+                obj = ((AppointmentBlock)obj).getAppointment().getReservation();
+            }
+            else if ( obj instanceof Appointment)
+            {
+                obj = ((Appointment)obj).getReservation();
+            }
             return evalToString(obj, context);
         }
     }
 
-    class IntVariable extends Function
+    class IntVariable extends Variable
     {
         Long l;
 
@@ -1365,7 +1372,7 @@ public class ParsedText implements Serializable
 
     }
 
-    class StringVariable extends Function
+    class StringVariable extends Variable
     {
         String s;
 
@@ -1393,7 +1400,7 @@ public class ParsedText implements Serializable
 
     }
     
-    class BooleanVariable extends Function
+    class BooleanVariable extends Variable
     {
         boolean value;
 
@@ -1971,7 +1978,7 @@ public class ParsedText implements Serializable
                 {
                     return null;
                 }
-                List<Appointment> result = new ArrayList<>();
+                List<Appointment> result = new ArrayList<Appointment>();
                 for ( Reservation event:reservations){
                     result.addAll(event.getSortedAppointments());
                 }
@@ -2088,7 +2095,7 @@ public class ParsedText implements Serializable
             if (object instanceof Reservation)
             {
                 Reservation reservation = ((Reservation) object);
-                List<AppointmentBlock> blocks= new ArrayList<>();
+                List<AppointmentBlock> blocks= new ArrayList<AppointmentBlock>();
                 for ( Appointment appointment:reservation.getSortedAppointments()){
                     appointment.createBlocks(start, end, blocks);;
                 }
@@ -2098,7 +2105,7 @@ public class ParsedText implements Serializable
             if (object instanceof Appointment)
             {
                 Appointment appointment = ((Appointment) object);
-                Collection<AppointmentBlock> blocks= new ArrayList<>();
+                Collection<AppointmentBlock> blocks= new ArrayList<AppointmentBlock>();
                 appointment.createBlocks(start, end, blocks);;
                 return blocks;
             }
@@ -2133,7 +2140,7 @@ public class ParsedText implements Serializable
 
         AppointmentStartFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super("start");
+            super("start", args);
             if (args.size() != 1)
             {
                 throw new IllegalAnnotationException("appointment function expects 1 argument!");
