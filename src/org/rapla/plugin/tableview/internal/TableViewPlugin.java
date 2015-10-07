@@ -33,7 +33,7 @@ public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer
 
 	public final static boolean ENABLE_BY_DEFAULT = true;
 
-    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>("org.rapla.plugin.tableview.config");
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.tableview.config");
 
     public void provideServices(final ClientServiceContainer container, Configuration config)
     {

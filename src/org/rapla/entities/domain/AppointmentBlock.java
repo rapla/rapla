@@ -146,7 +146,9 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	
 	public String toString()
 	{
-		return DateTools.formatDateTime(new Date(start)) + " - " + DateTools.formatDateTime(new Date(end));
+		final String startDate = DateTools.formatDateTime(new Date(start));
+        final String endDate = DateTools.formatDateTime(new Date(end));
+        return startDate + " - " + endDate;
 	}
 
     

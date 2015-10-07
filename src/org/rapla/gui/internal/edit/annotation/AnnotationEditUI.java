@@ -16,7 +16,7 @@ import org.rapla.gui.internal.edit.AbstractEditUI;
 public class AnnotationEditUI extends AbstractEditUI<Annotatable> 
 {
     Collection<AnnotationEditExtension> annotationExtensions;
-    Map<AnnotationEditExtension,Collection<? extends EditField>> fieldMap = new HashMap<>();
+    Map<AnnotationEditExtension,Collection<? extends EditField>> fieldMap = new HashMap<AnnotationEditExtension,Collection<? extends EditField>>();
     
     public AnnotationEditUI(RaplaContext context, Collection<AnnotationEditExtension> annotationExtensions) {
         super(context);

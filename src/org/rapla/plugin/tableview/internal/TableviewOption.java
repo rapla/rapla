@@ -252,8 +252,8 @@ public class TableviewOption extends DefaultPluginOption {
         private final DefaultListModel listModel = new DefaultListModel();
         private final JList list = new JList(listModel);
         private String selectedTable = null;
-        private final List<SortingRow> rows = new ArrayList<>();
-        private final JComboBox<SortingRow> allSortingRows = new JComboBox<SortingRow>();
+        private final List<SortingRow> rows = new ArrayList<SortingRow>();
+        private final JComboBox allSortingRows = new JComboBox();
 
         public Sorting() {
             super();
@@ -296,7 +296,7 @@ public class TableviewOption extends DefaultPluginOption {
                 public void actionPerformed(ActionEvent e) {
                     final int[] selectedIndices = list.getSelectedIndices();
                     if (selectedIndices != null) {
-                        List<TableColumnConfig> toRemove = new ArrayList<>();
+                        List<TableColumnConfig> toRemove = new ArrayList<TableColumnConfig>();
                         for (int i = selectedIndices.length - 1; i >= 0; i--) {
                             int index = selectedIndices[i];
                             final SortingRow row = (SortingRow) listModel.remove(index);

@@ -33,7 +33,7 @@ public class TableConfig
     public static class ViewDefinition implements Named
     {
         private  MultiLanguageName name = new MultiLanguageName();
-        private final List<String> columns = new ArrayList<>();
+        private final List<String> columns = new ArrayList<String>();
         private ParsedText contentDefinition = new ParsedText("{appointmentBlocks()}");
 
         public List<String> getColumns()
@@ -308,7 +308,7 @@ public class TableConfig
         }
         Collection<TableColumnConfig> result = new ArrayList<TableColumnConfig>();
         Map<String, TableColumnConfig> map = new LinkedHashMap<String, TableColumnConfig>();
-        final LinkedHashSet<String> linkedHashSet = new LinkedHashSet<>(myList.columns);
+        final LinkedHashSet<String> linkedHashSet = new LinkedHashSet<String>(myList.columns);
         for (TableColumnConfig col : column)
         {
             final String key = col.getKey();
@@ -381,7 +381,7 @@ public class TableConfig
     public static TableConfig read(RaplaConfiguration config) throws ConfigurationException
     {
         TableConfig result = new TableConfig();
-        Map<String, TableColumnConfig> columnSet = new HashMap<>();
+        Map<String, TableColumnConfig> columnSet = new HashMap<String, TableColumnConfig>();
         for (Configuration columnConfig : config.getChildren("column"))
         {
             String key = columnConfig.getChild("key").getValue();
