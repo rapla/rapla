@@ -127,7 +127,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         
         List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
         final Preferences preferences = getClientFacade().getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences);
+        TableConfig config = TableConfig.read( preferences, getI18n());
         final Collection<TableColumnConfig> columns = config.getColumns("appointments");
         for ( final TableColumnConfig column: columns)
         {
@@ -453,10 +453,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         @Override
         public Object getValue(AppointmentBlock block)
         {
-            final Locale locale = getLocale();
-            final String annotationName = getAnnotationName();
-            final ParsedText.EvalContext appointmentEvalContext = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(block));
-            return format(appointmentEvalContext);
+            return format(block);
         }
 
         @Override

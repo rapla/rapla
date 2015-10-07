@@ -33,6 +33,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -41,6 +42,8 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.CalendarModel;
+import org.rapla.framework.RaplaException;
 import org.rapla.rest.GwtIncompatible;
 
 /** 
@@ -308,10 +311,6 @@ public class ParsedText implements Serializable
         }
         catch (NumberFormatException ex)
         {
-        }
-        if (!Tools.isKey(variableName))
-        {
-            throw new IllegalAnnotationException("no valid variable name " + variableName);
         }
         Function varFunction = context.resolveVariableFunction(variableName);
         if (varFunction != null)
@@ -585,7 +584,19 @@ public class ParsedText implements Serializable
         }
         else if (functionName.equals("appointments"))
         {
-            return new AppointmentFunction(args);
+            return new AppointmentsFunction(args);
+        }
+        else if (functionName.equals("appointmentBlocks"))
+        {
+            return new AppointmentBlocksFunction(args);
+        }
+        else if (functionName.equals("events"))
+        {
+            return new EventsFunction(args);
+        }
+        else if (functionName.equals("resources"))
+        {
+            return new ResourcesFunction(args);
         }
         else if (functionName.equals("start"))
         {
@@ -594,6 +605,14 @@ public class ParsedText implements Serializable
         else if (functionName.equals("end"))
         {
             return new AppointmentEndFunction(args);
+        }
+        else if (functionName.equals("date"))
+        {
+            return new DateFunction(args);
+        }
+        else if (functionName.equals("intervall"))
+        {
+            return new IntervallFunction(args);
         }
         else if (functionName.equals("stringComparator"))
         {
@@ -1226,7 +1245,7 @@ public class ParsedText implements Serializable
         return null;
     }
 
-    static private Classification guessClassification(Object contextObject)
+    static public Classification guessClassification(Object contextObject)
     {
         if (contextObject instanceof Classification)
         {
@@ -1255,8 +1274,11 @@ public class ParsedText implements Serializable
         public NameFunction(List<Function> args) throws IllegalAnnotationException
         {
             super("name", args);
-            assertArgs(1, 2);
-            objectFunction = args.get(0);
+            assertArgs(0, 2);
+            if ( args.size() >0)
+            {
+                objectFunction = args.get(0);
+            }
             languageFunction = args.size() == 2 ? args.get(1) : null;
             //testMethod();
         }
@@ -1291,17 +1313,25 @@ public class ParsedText implements Serializable
         @Override
         public String eval(EvalContext context)
         {
-            Object obj = objectFunction.eval(context);
-            if (languageFunction != null)
+            Object obj ;
+            if ( objectFunction != null)
             {
-                String language = ParsedText.this.evalToString(languageFunction.eval(context), context);
-                Locale locale = context.getLocale();
-                if (language != null && language != locale.getLanguage())
+                obj = objectFunction.eval(context);
+                if (languageFunction != null)
                 {
-                    final String country = context.getLocale().getCountry();
-                    locale = new Locale(language, country);
-                    context = context.clone(locale);
+                    String language = ParsedText.this.evalToString(languageFunction.eval(context), context);
+                    Locale locale = context.getLocale();
+                    if (language != null && language != locale.getLanguage())
+                    {
+                        final String country = context.getLocale().getCountry();
+                        locale = new Locale(language, country);
+                        context = context.clone(locale);
+                    }
                 }
+            }
+            else
+            {
+                obj = context.getFirstContextObject();
             }
             return evalToString(obj, context);
         }
@@ -1426,21 +1456,11 @@ public class ParsedText implements Serializable
                 return null;
             }
             RaplaObject raplaObject = (RaplaObject) obj;
-
             RaplaType raplaType = raplaObject.getRaplaType();
             if (raplaType == Category.TYPE)
             {
                 Category category = (Category) raplaObject;
                 return category.getParent();
-            }
-            else if (raplaType == Attribute.TYPE)
-            {
-                Classification classification = context.getClassification();
-                Object result = classification.getValue((Attribute) raplaObject);
-                if (result instanceof Category)
-                {
-                    return ((Category) result).getParent();
-                }
             }
             return null;
 
@@ -1903,21 +1923,32 @@ public class ParsedText implements Serializable
 
     }
 
-    class AppointmentFunction extends Function
+    class AppointmentsFunction extends Function
     {
         private Function subFunction;
 
-        AppointmentFunction(List<Function> args) throws IllegalAnnotationException
+        AppointmentsFunction(List<Function> args) throws IllegalAnnotationException
         {
             super("appointments", args);
-            assertArgs(1);
-            subFunction = args.get(0);
+            assertArgs(0,1);
+            if ( args.size() > 0)
+            {
+                subFunction = args.get(0);
+            }
         }
 
         @Override
         public Collection<Appointment> eval(EvalContext context)
         {
-            Object object = subFunction.eval(context);
+            Object object;
+            if ( subFunction != null)
+            {
+                object = subFunction.eval(context);
+            }
+            else
+            {
+                object = context.getFirstContextObject();
+            }
             if (object instanceof Reservation)
             {
                 Reservation reservation = ((Reservation) object);
@@ -1928,10 +1959,173 @@ public class ParsedText implements Serializable
             {
                 return Collections.singletonList((Appointment) object);
             }
+            if (object instanceof CalendarModel)
+            {
+                final CalendarModel calendarModel = (CalendarModel)object;
+                Reservation[] reservations;
+                try
+                {
+                    reservations = calendarModel.getReservations();
+                }
+                catch (RaplaException e)
+                {
+                    return null;
+                }
+                List<Appointment> result = new ArrayList<>();
+                for ( Reservation event:reservations){
+                    result.addAll(event.getSortedAppointments());
+                }
+                result.sort( new AppointmentStartComparator());
+                return result;
+            }
+            
+            return Collections.emptyList();
+        }
+    }
+    
+    class EventsFunction extends Function
+    {
+        private Function subFunction;
+
+        EventsFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super("events", args);
+            assertArgs(0,1);
+            if ( args.size() > 0)
+            {
+                subFunction = args.get(0);
+            }
+        }
+
+        @Override
+        public Collection<Reservation> eval(EvalContext context)
+        {
+            Object object;
+            if ( subFunction != null)
+            {
+                object = subFunction.eval(context);
+            }
+            else
+            {
+                object = context.getFirstContextObject();
+            }
+            if (object instanceof Reservation)
+            {
+                return Collections.singletonList((Reservation) object);
+            }
+            if (object instanceof CalendarModel)
+            {
+                final CalendarModel calendarModel = (CalendarModel)object;
+                Reservation[] reservations;
+                try
+                {
+                    reservations = calendarModel.getReservations();
+                }
+                catch (RaplaException e)
+                {
+                    return null;
+                }
+                return Arrays.asList( reservations);
+            }
+            return Collections.emptyList();
+        }
+    }
+    
+    class AppointmentBlocksFunction extends Function
+    {
+        private Function subFunction;
+        private Function startFunction;
+        private Function endFunction;
+
+        AppointmentBlocksFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super("appointmentBlocks", args);
+            assertArgs(0,3);
+            if ( args.size() > 0)
+            {
+                subFunction = args.get(0);
+            }
+            if ( args.size() > 1)
+            {
+                startFunction = args.get(1);
+            }
+            if ( args.size() > 2)
+            {
+                endFunction = args.get(2);
+            }
+        }
+
+        @Override
+        public Collection<AppointmentBlock> eval(EvalContext context)
+        {
+            Object object;
+            Date start =null;
+            Date end = null;
+            if ( subFunction != null)
+            {
+                object = subFunction.eval(context);
+            }
+            else
+            {
+                object = context.getFirstContextObject();
+            }
+            if ( startFunction != null)
+            {   
+                Object value = startFunction.eval( context);
+                if ( value instanceof Date)
+                {
+                    start = (Date) value;
+                }
+            }
+            if ( endFunction != null)
+            {   
+                Object value = endFunction.eval( context);
+                if ( value instanceof Date)
+                {
+                    start = (Date) value;
+                }
+            }
+            if (object instanceof Reservation)
+            {
+                Reservation reservation = ((Reservation) object);
+                List<AppointmentBlock> blocks= new ArrayList<>();
+                for ( Appointment appointment:reservation.getSortedAppointments()){
+                    appointment.createBlocks(start, end, blocks);;
+                }
+                Collections.sort( blocks);
+                return blocks;
+            }
+            if (object instanceof Appointment)
+            {
+                Appointment appointment = ((Appointment) object);
+                Collection<AppointmentBlock> blocks= new ArrayList<>();
+                appointment.createBlocks(start, end, blocks);;
+                return blocks;
+            }
+            if (object instanceof AppointmentBlock)
+            {
+                return Collections.singletonList((AppointmentBlock) object);
+            }
+            if (object instanceof CalendarModel)
+            {
+                final CalendarModel calendarModel = (CalendarModel)object;
+                List<AppointmentBlock> blocks;
+                try
+                {
+                    blocks = calendarModel.getBlocks();
+                }
+                catch (RaplaException e)
+                {
+                    return null;
+                }
+                return blocks;
+            }
+            
             return Collections.emptyList();
         }
 
     }
+    
 
     class AppointmentStartFunction extends Function
     {
@@ -1951,6 +2145,10 @@ public class ParsedText implements Serializable
         public Date eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
+            if ( object == null)
+            {
+                return null;
+            }
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
@@ -1966,6 +2164,11 @@ public class ParsedText implements Serializable
                 Reservation reservation = (Reservation) object;
                 return reservation.getFirstDate();
             }
+            else if (object instanceof CalendarModel)
+            {
+                CalendarModel reservation = (CalendarModel) object;
+                return reservation.getStartDate();
+            }
             return null;
         }
 
@@ -1978,14 +2181,25 @@ public class ParsedText implements Serializable
         ResourcesFunction(List<Function> args) throws IllegalAnnotationException
         {
             super("resources", args);
-            assertArgs(1);
-            subFunction = args.get(0);
+            assertArgs(0, 1);
+            if (args.size() > 0)
+            {
+                subFunction = args.get(0);
+            }
         }
 
         @Override
         public Collection<Allocatable> eval(EvalContext context)
         {
-            Object object = subFunction.eval(context);
+            Object object;
+            if ( subFunction != null)
+            {
+                object = subFunction.eval(context);
+            }
+            else
+            {
+                object = context.getFirstContextObject();
+            }
             if (object instanceof AppointmentBlock)
             {
                 object = ((AppointmentBlock) object).getAppointment();
@@ -1995,6 +2209,21 @@ public class ParsedText implements Serializable
                 Appointment appointment = ((Appointment) object);
                 final Reservation reservation = appointment.getReservation();
                 List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                return asList;
+            }
+            if (object instanceof CalendarModel)
+            {
+                CalendarModel model = ((CalendarModel) object);
+                Allocatable[] selectedAllocatables;
+                try
+                {
+                    selectedAllocatables = model.getSelectedAllocatables();
+                }
+                catch (RaplaException e)
+                {
+                    return null;
+                }
+                List<Allocatable> asList = Arrays.asList(selectedAllocatables);
                 return asList;
             }
             else if (object instanceof Reservation)
@@ -2022,6 +2251,10 @@ public class ParsedText implements Serializable
         public Date eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
+            if ( object == null)
+            {
+                return null;
+            }
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
@@ -2038,12 +2271,106 @@ public class ParsedText implements Serializable
                 Reservation reservation = (Reservation) object;
                 return reservation.getMaxEnd();
             }
-
+            else if (object instanceof CalendarModel)
+            {
+                CalendarModel reservation = (CalendarModel) object;
+                return reservation.getEndDate();
+            }
             return null;
         }
 
     }
 
+    class DateFunction extends Function
+    {
+        private Function subFunction;
+
+        DateFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super("date", args);
+            assertArgs(1);
+            subFunction = args.get(0);
+        }
+
+        @Override
+        public Date eval(EvalContext context)
+        {
+            Object object = subFunction.eval(context);
+            if ( object == null)
+            {
+                return null;
+            }
+            if (object instanceof AppointmentBlock)
+            {
+                AppointmentBlock block = (AppointmentBlock) object;
+                return new Date(block.getStart());
+            }
+            else if (object instanceof Appointment)
+            {
+                Appointment appointment = (Appointment) object;
+                return appointment.getStart();
+
+            }
+            else if (object instanceof Reservation)
+            {
+                Reservation reservation = (Reservation) object;
+                return reservation.getFirstDate();
+            }
+            else if (object instanceof CalendarModel)
+            {
+                CalendarModel reservation = (CalendarModel) object;
+                return reservation.getSelectedDate();
+            }
+            return null;
+        }
+
+    }
+
+    class IntervallFunction extends Function
+    {
+        private Function subFunction;
+
+        IntervallFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super("intervall", args);
+            assertArgs(1);
+            subFunction = args.get(0);
+        }
+
+        @Override
+        public TimeInterval eval(EvalContext context)
+        {
+            Object object = subFunction.eval(context);
+            if ( object == null)
+            {
+                return null;
+            }
+            if (object instanceof AppointmentBlock)
+            {
+                AppointmentBlock block = (AppointmentBlock) object;
+                return new TimeInterval(new Date(block.getStart()),new Date(block.getEnd()));
+            }
+            else if (object instanceof Appointment)
+            {
+                Appointment appointment = (Appointment) object;
+                return new TimeInterval(appointment.getStart(),appointment.getEnd());
+            }
+            else if (object instanceof Reservation)
+            {
+                Reservation reservation = (Reservation) object;
+                return new TimeInterval(reservation.getFirstDate(),reservation.getMaxEnd());
+            }
+            else if (object instanceof CalendarModel)
+            {
+                CalendarModel calendarModel = (CalendarModel) object;
+                return new TimeInterval( calendarModel.getStartDate(), calendarModel.getEndDate());
+            }
+            return null;
+        }
+
+    }
+
+    
     class AppointmentBlockFunction extends Function
     {
         Function subFunction;
@@ -2251,7 +2578,7 @@ public class ParsedText implements Serializable
             this.parent = parent;
         }
 
-        private EvalContext getParent()
+        EvalContext getParent()
         {
             return parent;
         }
@@ -2273,11 +2600,7 @@ public class ParsedText implements Serializable
             return clone;
         }
 
-        /**  override this method if you can return a classification object in the context. The use of attributes is possible*/
-        public Classification getClassification()
-        {
-            return guessClassification(getFirstContextObject());
-        }
+        
 
         public Object getContextObject(int pos)
         {
@@ -2317,6 +2640,12 @@ public class ParsedText implements Serializable
             return locale;
         }
 
+    }
+    
+    @Override
+    public String toString()
+    {
+        return formatString;
     }
 
 }

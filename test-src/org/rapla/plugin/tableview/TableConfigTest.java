@@ -16,6 +16,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -77,13 +78,16 @@ public class TableConfigTest extends TestCase
             startColumn = columnConfig;
         }
         
-        config.addView("events", nameColumn);
-        config.addView("appointments", nameColumn);
-        config.addView("appointments", startColumn);
+        final ViewDefinition eventView = config.getOrCreateView("events");
+        eventView.addColumn(nameColumn);
+        
+        final ViewDefinition appointmentView = config.getOrCreateView("appointments");
+        appointmentView.addColumn(nameColumn);
+        appointmentView.addColumn(startColumn);
         GsonBuilder builder = new GsonBuilder();
         final Gson gson = builder.setPrettyPrinting().create();
         final String json = gson.toJson(config);
-        //System.out.println(json);
+        System.out.println(json);
         final TableConfig fromJson = gson.fromJson( json , TableConfig.class);
         //System.out.println(fromJson.toString());
         JAXBContext context = JAXBContext.newInstance(Transport.class);

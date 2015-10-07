@@ -13,6 +13,7 @@
 package org.rapla.entities;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -30,7 +31,6 @@ import javax.xml.bind.annotation.XmlElement;
     support for multi-language-environments.
     @see MultiLanguageNamed
 */
-@XmlAccessorType(XmlAccessType.FIELD)
 public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
@@ -57,6 +57,19 @@ public class MultiLanguageName implements java.io.Serializable {
         return this.readOnly;
     }
 
+    public String getName(Locale locale) {
+        String lang;
+        if ( locale != null)
+        {
+            lang = locale.getLanguage();
+        }
+        else
+        {
+            lang = null;
+        }
+        return getName( lang);
+    }
+    
     public String getName(String language) {
     	if ( language == null)
     	{

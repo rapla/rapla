@@ -147,7 +147,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			String key = UNRESOLVED_RESOURCE_TYPE;
 			type.setKey(key);
 			type.setId( key);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{p->type(p)}");
 			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 			type.setResolver( this);
@@ -164,7 +164,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			String key = ANONYMOUSEVENT_TYPE;
 			type.setKey(key);
             type.setId( key);
-			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{"+key + "}");
+			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{p->type(p)}");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 			type.getName().setName("en", "anonymous");
 			type.setResolver( this);
@@ -179,7 +179,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		
 		{
 		    DynamicTypeImpl type = new DynamicTypeImpl();
-		    String key = DEFAUTL_USER_TYPE;
+		    String key = DEFAULT_USER_TYPE;
             type.setKey(key);
             type.setId( key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);

@@ -1496,6 +1496,10 @@ See French text.
 		<text lang="pt">Início</text>        
         <text lang="fi">Aloitus</text>
     </entry>
+    <entry key="unnamed_column">
+        <text lang="en">unnamed column</text>
+        <text lang="de">unbenannte Spalte</text>
+    </entry>
     <entry key="table">
         <text lang="en">Table</text>
         <text lang="de">Tabelle</text>
@@ -1693,10 +1697,10 @@ See French text.
 		<text lang="pt">Usuário ''{0}'' sem permissão para modificar o objeto ''{1}''.</text>
 		<text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa muuttaa kohdetta ''{1}''.</text>
     </entry>
-        <entry key="error.admin_not_allowed">
+    <entry key="error.admin_not_allowed">
         <text lang="en">User ''{0}'' is not allowed to administer the object ''{1}''.</text>
         <text lang="de">Benutzer ''{0}'' hat keine Adminberechtigung für das Objekt ''{1}''.</text>
-        <text lanf="fr">L'utilisateur ''{0}'' n'est pas administrateur de l'objet ''{1}''.</text>
+        <text lang="fr">L''utilisateur ''{0}'' n'est pas administrateur de l''objet ''{1}''.</text>
         <text lang="fi">Käyttäjällä ''{0}'' ei ole lupaa hallinnoida kohdetta ''{1}''.</text>
     </entry>
     <entry key="error.read_not_allowed">

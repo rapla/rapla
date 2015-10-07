@@ -49,7 +49,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         try
         {
             final Preferences preferences = getClientFacade().getSystemPreferences();
-            config = TableConfig.read( preferences);
+            config = TableConfig.read( preferences, getI18n());
         }
         catch (Exception ex)
         {
