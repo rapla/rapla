@@ -4,7 +4,12 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -35,11 +40,11 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 RaplaResources i18n;
 
 
-	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model) throws RaplaContextException
+	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaResources raplaResources) throws RaplaContextException
 	 {
 		super(context);
-		autoExportI18n = context.lookup(AutoExportResources.class);
-		 i18n = context.lookup(RaplaResources.class);
+		this.autoExportI18n = autoExportI18n ;
+		 i18n = raplaResources;
     	this.model = model;
     	
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
@@ -130,7 +135,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		copyButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		copyButton.setFocusable(false);
 		copyButton.setRolloverEnabled(false);
-		ImageIcon icon = getImages().getIconFromKey( i18n.getString("icon.copy"));
+		ImageIcon icon = getImages().getIconFromKey( "icon.copy");
 		copyButton.setIcon(icon);
 		copyButton.setToolTipText(i18n.getString("copy_to_clipboard"));
 		copyButton.addActionListener(new ActionListener() {
