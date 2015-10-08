@@ -42,7 +42,7 @@ import org.rapla.inject.Extension;
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
 
-@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.dynamictype.Allocatable")
+@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Allocatable")
 public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     ClassificationField<Allocatable> classificationField;
     PermissionListField permissionField;

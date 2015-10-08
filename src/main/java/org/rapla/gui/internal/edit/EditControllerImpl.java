@@ -131,7 +131,7 @@ public class EditControllerImpl<W> implements
 		RaplaType type = obj.getRaplaType();
 		final String id = type.getTypeClass().getName();
 		final Provider<EditComponent> editComponentProvider = editUiProviders.get(id);
-		if ( editUiProviders != null)
+		if ( editComponentProvider != null)
 		{
 			EditComponent<T,W> ui = (EditComponent<T,W>)editComponentProvider.get();
 			return ui;
