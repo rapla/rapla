@@ -1,7 +1,7 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.sql.Date;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Locale;
 
 import javax.swing.table.TableColumn;
@@ -13,9 +13,8 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
-import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
+import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
