@@ -1,22 +1,23 @@
 package org.rapla.plugin.mail.server;
 
-
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Properties;
-
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.ServerService;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Properties;
 
 @DefaultImplementation(of=MailInterface.class,context= InjectionContext.server)
 public class MailapiClient implements MailInterface
@@ -26,34 +27,24 @@ public class MailapiClient implements MailInterface
     boolean ssl =false;
     String username;
     String password;
-    RaplaContext context;
-    Object lookup;
-    public MailapiClient( RaplaContext context) throws  RaplaException {
-    	this.context = context;
-    	if (  context.has(ServerService.ENV_RAPLAMAIL))
-    	{
-    		lookup =  context.lookup(ServerService.ENV_RAPLAMAIL);
-    	}
+    ClientFacade facade;
+    Object externalMailSession;
+
+    @Inject
+    public MailapiClient( ClientFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession) throws  RaplaException {
+    	this.facade = facade;
+    	this.externalMailSession =  externalMailSession.get();
     }
-    
+
     public MailapiClient()
     {
     }
-    
-    public boolean isSsl() {
-		return ssl;
-	}
-
-	public void setSsl(boolean ssl) {
-		this.ssl = ssl;
-	}
-
 
     public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
     {
-        if ( lookup != null)
+        if ( externalMailSession != null)
         {
-            send(senderMail, recipient, subject, mailBody,  lookup);
+            send(senderMail, recipient, subject, mailBody, externalMailSession);
             return;
         }
         else
@@ -66,11 +57,12 @@ public class MailapiClient implements MailInterface
     public void sendMail( String senderMail, String recipient, String subject, String mailBody, Configuration config ) throws MailException
     {
         Object session;
-        if ( config == null && context != null && context.has( ClientFacade.class))
+
+        if ( config == null && facade != null)
         {
             Preferences systemPreferences;
             try {
-                systemPreferences = context.lookup(ClientFacade.class).getSystemPreferences();
+                systemPreferences = facade.getSystemPreferences();
             } catch (RaplaException e) {
                 throw new MailException( e.getMessage(),e);
             }
@@ -282,5 +274,14 @@ public class MailapiClient implements MailInterface
     {
         this.username = username;
     }
+
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
 
 }

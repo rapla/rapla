@@ -17,7 +17,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -30,6 +29,8 @@ import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
 
 @DefaultImplementation(of = MailConfigService.class, context = InjectionContext.server)
 public class RaplaConfigServiceImpl implements MailConfigService
@@ -42,13 +43,13 @@ public class RaplaConfigServiceImpl implements MailConfigService
 
 
     @Inject
-    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, RaplaContext context) throws RaplaContextException
+    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession) throws RaplaContextException
     {
         this.remoteSession = remoteSession;
         this.keyStore = keyStore;
         this.facade = facade;
         this.mailInterface = mailInterface;
-        externalConfigEnabled = context.has(ServerService.ENV_RAPLAMAIL);
+        externalConfigEnabled = externalMailSession.get() != null;
     }
 
     @Override public boolean isExternalConfigEnabled()
@@ -87,7 +88,15 @@ public class RaplaConfigServiceImpl implements MailConfigService
         String recipient = user.getEmail();
         if (test instanceof MailapiClient)
         {
-            ((MailapiClient) test).sendMail(defaultSender, recipient, subject, mailBody, config);
+            // ignore config if
+            if (externalConfigEnabled)
+            {
+                test.sendMail(defaultSender, recipient, subject, mailBody);
+            }
+            else
+            {
+                ((MailapiClient) test).sendMail(defaultSender, recipient, subject, mailBody, config);
+            }
         }
         else
         {

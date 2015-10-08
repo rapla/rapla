@@ -114,8 +114,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         ((SimpleProvider<RemoteServiceCaller>) remoteServiceCaller).setValue(new RemoteServiceCaller()
         {
 
-            @Override
-            public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
+            @Override public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
             {
                 RemoteSession remoteSession = adminSession;
                 T service = getInstance(a, remoteSession);
@@ -123,24 +122,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         });
 
-
-        //        URL downloadURL = env.getDownloadURL();
-        //        if (downloadURL != null)
-        //        {
-        //            File file = IOUtil.getFileFrom( downloadURL);
-        //            addContainerProvidedComponentInstance( ServerService.CONTEXT_ROOT, file.getPath());
-        //        }
-        addContainerProvidedComponentInstance(ServerService.TIMESTAMP, new Object()
-        {
-
-            public String toString()
-            {
-                DateFormat formatter = new SimpleDateFormat("yyyyMMdd-HHmmss");
-                String formatNow = formatter.format(new Date());
-                return formatNow;
-            }
-
-        });
         if (containerContext.fileDatasource != null)
         {
             addContainerProvidedComponentInstance(ServerService.ENV_RAPLAFILE, containerContext.fileDatasource);
@@ -160,10 +141,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         {
             addContainerProvidedComponent(ImportExportManager.class, ImportExportManagerImpl.class);
         }
+        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
         if (containerContext.mailSession != null)
         {
-            addContainerProvidedComponentInstance(ServerService.ENV_RAPLAMAIL, containerContext.mailSession);
+            externalMailSession.setValue(containerContext.getMailSession());
         }
+        addContainerProvidedComponentInstance(ServerService.ENV_RAPLAMAIL, externalMailSession);
         loadFromServiceList();
         initialize();
         //addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
