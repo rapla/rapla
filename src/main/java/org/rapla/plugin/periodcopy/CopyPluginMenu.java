@@ -80,7 +80,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     
     public void actionPerformed(ActionEvent evt) {
         try {
-            final CopyDialog useCase = new CopyDialog(getContext());
+            final CopyDialog useCase = new CopyDialog(getContext(), i18n);
             String[] buttons = new String[]{getString("abort"), getString("copy") };
             final DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, useCase.getComponent(), buttons);
             dialog.setTitle( label);
