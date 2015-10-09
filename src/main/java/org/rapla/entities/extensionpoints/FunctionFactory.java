@@ -11,7 +11,7 @@ import org.rapla.inject.InjectionContext;
 
 @ExtensionPoint(context=InjectionContext.all, id="org.rapla.entities.Function")
 public interface FunctionFactory {
-    Function createFunction(List<Function> args);
+    Function createFunction(List<Function> args) throws IllegalAnnotationException;
 
     static public abstract class Function
     {

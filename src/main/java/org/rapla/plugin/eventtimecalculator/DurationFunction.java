@@ -1,14 +1,15 @@
 package org.rapla.plugin.eventtimecalculator;
 
-import org.rapla.entities.dynamictype.internal.ParsedText;
-
 import java.util.List;
 
-public class DurationFunction extends ParsedText.Function
+import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.entities.extensionpoints.FunctionFactory.Function;
+
+public class DurationFunction extends Function
 {
     EventTimeCalculatorFactory factory;
 
-    public DurationFunction(String name, List<ParsedText.Function> args)
+    public DurationFunction(String name, List<Function> args)
     {
         super(name, args);
     }

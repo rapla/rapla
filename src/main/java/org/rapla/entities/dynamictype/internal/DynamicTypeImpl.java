@@ -46,8 +46,9 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
-import org.rapla.entities.dynamictype.internal.ParsedText.Function;
 import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
+import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.extensionpoints.FunctionFactory.Function;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
@@ -640,6 +641,13 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		DynamicTypeParseContext( DynamicType type)
 		{
 			this.type = (DynamicTypeImpl)type;
+		}
+		
+		@Override
+		public Map<String, FunctionFactory> getFunctionFactories()
+		{
+		    // TODO Auto-generated method stub
+		    return null;
 		}
 		
 		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
