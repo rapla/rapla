@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.JMenuItem;
 
 import org.rapla.client.EditMenuExtensionPoint;
@@ -34,16 +35,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.internal.edit.SaveUndo;
 import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.gui.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
 
 @Extension(provides = EditMenuExtensionPoint.class,id="org.rapla.plugin.periodcopy")
-public class CopyPluginMenu  extends RaplaGUIComponent implements IdentifiableMenuEntry,ActionListener
+public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtensionPoint, ActionListener
 {
 	RaplaMenuItem item;
 	String id = "copy_events";
 	final String label ;
+	@Inject
     public CopyPluginMenu(RaplaContext sm)  {
         super(sm);
         //menu.insert( new RaplaSeparator("info_end"));
