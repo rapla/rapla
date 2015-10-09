@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -34,6 +35,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 
+import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.components.iolayer.FileContent;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -50,7 +52,7 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.TreeFactory;
 import org.rapla.gui.internal.TreeAllocatableSelection;
 import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.IdentifiableMenuEntry;
+import org.rapla.inject.Extension;
 
 /**
  * 
@@ -58,18 +60,19 @@ import org.rapla.gui.toolkit.IdentifiableMenuEntry;
  * 
  * @author Jan Fischer
  */
-
-public class ImportFromICalMenu extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener {
+@Extension(provides=ImportMenuExtension.class, id=ImportFromICalPlugin.PLUGIN_ID)
+public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuExtension, ActionListener {
 
 	JMenuItem item;
 	String id = "ical";
 	ICalImport importService;
 	ImportFromICalResources i18n;
-	public ImportFromICalMenu(RaplaContext context, ICalImport importService) throws RaplaContextException
+	@Inject
+	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources) throws RaplaContextException
 	{
 		super(context);
 		this.importService = importService;
-		this.i18n = context.lookup( ImportFromICalResources.class);
+		this.i18n = icalImportResources;
 		item = new JMenuItem(i18n.getString("ical.import"));
 		item.setIcon(getIcon("icon.import"));
 		item.addActionListener(this);

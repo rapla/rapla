@@ -6,6 +6,7 @@ public class ImportFromICalPlugin {
 
 
 	public static final boolean ENABLE_BY_DEFAULT = false;
+    public static final String PLUGIN_ID ="org.rapla.plugin.ical";
 
 	//FIXME maybe this is no longer needed with signed applets
 	boolean isApplet;
