@@ -100,6 +100,7 @@ class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
             showNavField.setEnabled( htmlEnabled);
             saveSelectedDateField.setEnabled( htmlEnabled);
             statusHtml.setEnabled( htmlEnabled);
+            onlyAllocationInfoField.setEnabled(htmlEnabled);
 	}
 	 
 	JPanel createStatus( final JTextField urlLabel)  
