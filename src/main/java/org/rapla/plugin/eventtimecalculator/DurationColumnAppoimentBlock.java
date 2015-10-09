@@ -6,14 +6,15 @@ import javax.swing.table.TableColumn;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 
 /**
 * User: kuestermann
 * Date: 22.08.12
 * Time: 09:30
 */
-public final class DurationColumnAppoimentBlock extends DurationColumn implements AppointmentTableColumn {
+public final class DurationColumnAppoimentBlock extends DurationColumn implements RaplaTableColumn<AppointmentBlock, TableColumn>
+{
 
 	EventTimeCalculatorFactory factory;
     private EventTimeModel eventTimeModel;

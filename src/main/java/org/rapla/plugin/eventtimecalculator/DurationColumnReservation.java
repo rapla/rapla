@@ -3,14 +3,14 @@ package org.rapla.plugin.eventtimecalculator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 
 import javax.inject.Inject;
+import javax.swing.table.TableColumn;
 
 //@Extension(provides = ReservationTableColumn.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 public final class DurationColumnReservation
-        extends DurationColumn implements ReservationTableColumn
+        extends DurationColumn implements RaplaTableColumn<Reservation, TableColumn>
 {
 
     private EventTimeModel eventTimeModel;

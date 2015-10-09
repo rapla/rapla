@@ -1,59 +1,19 @@
-package org.rapla.plugin.tableview.internal;
+package org.rapla.plugin.tableview.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.awt.print.PrinterException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-
-import javax.inject.Inject;
-import javax.swing.BoxLayout;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.TableModel;
-
+import org.rapla.RaplaResources;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.gui.MenuContext;
-import org.rapla.gui.MenuFactory;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationController;
-import org.rapla.gui.SwingCalendarView;
-import org.rapla.gui.VisibleTimeInterval;
+import org.rapla.gui.*;
 import org.rapla.gui.internal.SwingPopupContext;
 import org.rapla.gui.internal.common.InternMenus;
 import org.rapla.gui.toolkit.MenuInterface;
@@ -61,12 +21,29 @@ import org.rapla.gui.toolkit.RaplaMenu;
 import org.rapla.gui.toolkit.RaplaPopupMenu;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.IntervalChooserPanel;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
-import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+import org.rapla.plugin.tableview.internal.TableConfig;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.List;
 
 @Extension(id="ReservationTableView", provides=SwingCalendarView.class)
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
@@ -85,7 +62,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            final Set<ReservationTableColumn> reservationColumnPlugins, final boolean editable) throws RaplaException
+             final boolean editable) throws RaplaException
     {
         super( context );
         cutListener.setCut(true);
@@ -129,16 +106,17 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.model = model;
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
-       	
-       	List<ReservationTableColumn> reservationColumnConfigured = loadColumns();
 
-        reservationColumnConfigured.addAll(reservationColumnPlugins);
-       	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnConfigured );
+        final ClientFacade clientFacade = getClientFacade();
+        final RaplaLocale raplaLocale = getRaplaLocale();
+        final RaplaResources i18n = getI18n();
+        List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "events");
+       	reservationTableModel = new ReservationTableModel( getLocale(), i18n, reservationColumnConfigured );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
 
         int column = 0;
-        for (ReservationTableColumn col: reservationColumnConfigured)
+        for (RaplaTableColumn<Reservation,TableColumn> col: reservationColumnConfigured)
         {
         	col.init(table.getColumnModel().getColumn(column  ));
         	column++;	
@@ -172,19 +150,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
       	table.addFocusListener( listener);
     }
     
-    private List<ReservationTableColumn> loadColumns() throws RaplaException, RaplaContextException
-    {
-        List<ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>();
-        final Preferences preferences = getClientFacade().getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences, getI18n());
-        final Collection<TableColumnConfig> columns = config.getColumns("events");
-        for ( final TableColumnConfig column: columns)
-        {
-            final RaplaLocale raplaLocale = getRaplaLocale();
-            reservationColumnPlugins.add( new MyReservatitonTableColumn(column, raplaLocale));
-        }
-        return reservationColumnPlugins;
-    }
+
     
     private final class CopyListener implements ActionListener {
         boolean cut;

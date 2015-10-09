@@ -1,23 +1,27 @@
 package org.rapla.plugin.eventtimecalculator;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class EventTimeCalculatorFactory extends RaplaComponent  
+public class EventTimeCalculatorFactory
 {
 
+	private final ClientFacade facade;
+	private final Logger logger;
 	@Inject
-    public EventTimeCalculatorFactory(RaplaContext context)
+    public EventTimeCalculatorFactory(ClientFacade facade, Logger logger)
 	{
-    	super( context);
-
+		this.facade = facade;
+		this.logger = logger;
 	}
 
     public  EventTimeModel getEventTimeModel ()
@@ -25,7 +29,7 @@ public class EventTimeCalculatorFactory extends RaplaComponent
 		Configuration configuration = null;
 		try
 		{
-			configuration = getQuery().getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+			configuration = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
 		}
 		catch (RaplaException e)
 		{
@@ -36,13 +40,13 @@ public class EventTimeCalculatorFactory extends RaplaComponent
         {
         	RaplaConfiguration raplaConfig;
 			try {
-				raplaConfig = getQuery().getPreferences().getEntry(EventTimeCalculatorPlugin.USER_CONFIG);
+				raplaConfig = facade.getPreferences().getEntry(EventTimeCalculatorPlugin.USER_CONFIG);
 				if ( raplaConfig != null)
 	        	{
 	        		configuration = raplaConfig;
 	        	}
 			} catch (RaplaException e) {
-				getLogger().warn(e.getMessage());
+				logger.warn(e.getMessage());
 			}
         
         }

@@ -13,7 +13,6 @@ import javax.swing.table.TableColumn;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 
 public class ReservationTableModel extends DefaultTableModel
 {
@@ -22,15 +21,15 @@ public class ReservationTableModel extends DefaultTableModel
     Reservation[] reservations = new Reservation[] {};
     Locale locale;
     I18nBundle i18n;
-    Map<Integer,ReservationTableColumn> columns = new LinkedHashMap<Integer, ReservationTableColumn>();
+    Map<Integer,RaplaTableColumn<Reservation,TableColumn>> columns = new LinkedHashMap<Integer, RaplaTableColumn<Reservation,TableColumn>>();
     
     //String[] columns;
-    public ReservationTableModel(Locale locale, I18nBundle i18n, Collection<? extends ReservationTableColumn> reservationColumnPlugins) {
+    public ReservationTableModel(Locale locale, I18nBundle i18n, Collection<RaplaTableColumn<Reservation,TableColumn>> reservationColumnPlugins) {
         this.locale = locale;
         this.i18n = i18n;
         List<String> columnNames = new ArrayList<String>(); 
         int column = 0;
-        for (ReservationTableColumn col: reservationColumnPlugins)
+        for (RaplaTableColumn<Reservation,TableColumn> col: reservationColumnPlugins)
         {
         	columnNames.add( col.getColumnName());
         	columns.put( column, col);

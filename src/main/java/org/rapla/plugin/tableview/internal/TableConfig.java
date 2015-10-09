@@ -20,8 +20,6 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
@@ -32,9 +30,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
-import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 public class TableConfig
 {
@@ -501,33 +496,37 @@ public class TableConfig
         column.remove(columnConfig);
     }
     
-    public static List<RaplaTableColumn<Reservation, TableColumn>> loadReservationColumns(final ClientFacade clientFacade, final RaplaResources i18n,
-            final RaplaLocale raplaLocale, final Set<ReservationTableColumn> reservationTablePluginColumns) throws RaplaException, RaplaContextException
+    public static <T> List<RaplaTableColumn<T, TableColumn>> loadColumns(final ClientFacade clientFacade, final RaplaResources i18n,
+            final RaplaLocale raplaLocale, String configName) throws RaplaException, RaplaContextException
     {
-        List<RaplaTableColumn<Reservation, TableColumn>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<Reservation, TableColumn>>();
+        List<RaplaTableColumn<T, TableColumn>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<T, TableColumn>>();
         final Preferences preferences = clientFacade.getSystemPreferences();
         TableConfig config = TableConfig.read(preferences, i18n);
-        final Collection<TableColumnConfig> columns = config.getColumns("events");
+        final Collection<TableColumnConfig> columns = config.getColumns(configName);
         for (final TableColumnConfig column : columns)
         {
-            reservationColumnPlugins.add(new MyReservatitonTableColumn(column, raplaLocale));
+            reservationColumnPlugins.add(new MyTableColumn(column, raplaLocale));
         }
-        reservationColumnPlugins.addAll(reservationTablePluginColumns);
         return reservationColumnPlugins;
     }
 
-    public static List<RaplaTableColumn<AppointmentBlock, TableColumn>> loadAppointmentColumns(final ClientFacade clientFacade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Set<AppointmentTableColumn> appointmentTablePluginColumns ) throws RaplaException, RaplaContextException
+    static public class MyTableColumn<T> extends AbstractTableColumn<T>
     {
-        List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = new ArrayList<RaplaTableColumn<AppointmentBlock, TableColumn>>();
-        final Preferences preferences = clientFacade.getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences, i18n);
-        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
-        for ( final TableColumnConfig column: columns)
+        public MyTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
         {
-            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
+            super( column, raplaLocale);
         }
-        columnPlugins.addAll( appointmentTablePluginColumns);
-        return columnPlugins;
+
+        public Object getValue(T object)
+        {
+            return format(object);
+        }
+
+        public String getHtmlValue(T object)
+        {
+            Object value = getValue(object);
+            return formatHtml(value);
+        }
     }
 
 }

@@ -28,26 +28,23 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage extends TableViewPage<Reservation, TableColumn>
 {
-    private final Set<ReservationTableColumn> columnSet;
     private final ClientFacade clientFacade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
 
     @Inject
-    public ReservationTableViewPage(RaplaLocale raplaLocale, Set<ReservationTableColumn> columnSet, ClientFacade clientFacade, RaplaResources i18n)
+    public ReservationTableViewPage(RaplaLocale raplaLocale,  ClientFacade clientFacade, RaplaResources i18n)
     {
         super(raplaLocale);
         this.raplaLocale = raplaLocale;
         this.clientFacade = clientFacade;
         this.i18n = i18n;
-        this.columnSet = columnSet;
     }
 
     String getCalendarHTML() throws RaplaException
@@ -55,7 +52,7 @@ public class ReservationTableViewPage extends TableViewPage<Reservation, TableCo
         final Date startDate = model.getStartDate();
         final Date endDate = model.getEndDate();
         final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));
-        List<RaplaTableColumn<Reservation, TableColumn>> columPluigns = TableConfig.loadReservationColumns(clientFacade, i18n, raplaLocale, columnSet);
+        List<RaplaTableColumn<Reservation, TableColumn>> columPluigns = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "events");
         return getCalendarHTML(columPluigns, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);
     }
 

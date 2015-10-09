@@ -39,8 +39,6 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 
 @Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
@@ -48,15 +46,11 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 {
     public static final String PLUGIN_ID = "csv";
 	JMenuItem exportEntry;
-	private final Set<AppointmentTableColumn> appointmentTableColumns;
-	private final Set<ReservationTableColumn> reservationTableColumns;
 
 	@Inject
-	public CSVExportMenu(RaplaContext context, Set<AppointmentTableColumn> appointmentTableColumns, Set<ReservationTableColumn> reservationTableColumns)
+	public CSVExportMenu(RaplaContext context)
     {
         super( context );
-		this.appointmentTableColumns = appointmentTableColumns;
-		this.reservationTableColumns = reservationTableColumns;
 		exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon( getIcon("icon.export") );
         exportEntry.addActionListener(this);
@@ -93,12 +87,12 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) TableConfig.loadReservationColumns(getClientFacade(), getI18n(), getRaplaLocale(), reservationTableColumns);
+	    	columns = TableConfig.loadColumns(getClientFacade(), getI18n(), getRaplaLocale(),"events");
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) TableConfig.loadAppointmentColumns(getClientFacade(), getI18n(), getRaplaLocale(), appointmentTableColumns);
+	    	columns = TableConfig.loadColumns(getClientFacade(), getI18n(), getRaplaLocale(), "appointments");
 		    objects.addAll( model.getBlocks());
 	    }
 	    for (RaplaTableColumn column: columns)

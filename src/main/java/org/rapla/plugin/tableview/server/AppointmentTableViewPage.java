@@ -26,22 +26,19 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
 public class AppointmentTableViewPage  extends TableViewPage<AppointmentBlock,TableColumn>
 {
-    private final Set<AppointmentTableColumn> columnSet;
     private final ClientFacade clientFacade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
 
-    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, Set<AppointmentTableColumn> columnSet, ClientFacade clientFacade, RaplaResources i18n)
+    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n)
     {
         super(raplaLocale);
-        this.columnSet = columnSet;
         this.clientFacade = clientFacade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
@@ -49,7 +46,7 @@ public class AppointmentTableViewPage  extends TableViewPage<AppointmentBlock,Ta
 
     public String getCalendarHTML() throws RaplaException
     {
-        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = TableConfig.loadAppointmentColumns(clientFacade, i18n, raplaLocale, columnSet);
+        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "appointments");
         final List<AppointmentBlock> blocks = model.getBlocks();
         return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }

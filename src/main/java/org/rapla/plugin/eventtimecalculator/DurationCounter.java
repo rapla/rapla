@@ -21,25 +21,22 @@ import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
 import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
-import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
-import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
-/*
+
+
 @ExtensionRepeatable({
     @Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID),
     @Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 })
-*/
-public final class DurationCounter extends RaplaComponent implements ReservationSummaryExtension, AppointmentSummaryExtension
+public final class DurationCounter  implements ReservationSummaryExtension, AppointmentSummaryExtension
 {
     EventTimeCalculatorFactory factory;
     protected final EventTimeCalculatorResources i18n;
 
 
     @Inject
-    public DurationCounter(RaplaContext context,EventTimeCalculatorResources i18n) throws RaplaException {
-        super(context);
+    public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n) throws RaplaException {
         this.i18n = i18n;
-        factory = context.lookup(EventTimeCalculatorFactory.class);
+        this.factory = factory;
     }
 
     public void init(final JTable table, JPanel summaryRow) {
