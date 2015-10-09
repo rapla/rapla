@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.Locale;
 
 import org.rapla.RaplaTestCase;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
@@ -24,6 +26,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.plugin.periodcopy.CopyPluginMenu;
+import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest extends RaplaTestCase {
@@ -70,7 +73,9 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         }
         assertNotNull( "Period not found ", sourcePeriod );
         assertNotNull( "Period not found ", destPeriod );
-        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext() );
+        BundleManager bundleManager= new ServerBundleManager();
+        PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
+        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n );
         Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
         assertNotNull(findReservationWithName(original, "power planting"));
 
