@@ -102,14 +102,15 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         titleField.setText(title);
 	}
 	
-	 protected void updateCheck() 
-	 {
-			boolean htmlEnabled = checkbox.isSelected() && checkbox.isEnabled();
-            titleField.setEnabled( htmlEnabled);
-            showNavField.setEnabled( htmlEnabled);
-            saveSelectedDateField.setEnabled( htmlEnabled);
-            statusHtml.setEnabled( htmlEnabled);
-	}
+    protected void updateCheck()
+    {
+        boolean htmlEnabled = checkbox.isSelected() && checkbox.isEnabled();
+        titleField.setEnabled(htmlEnabled);
+        showNavField.setEnabled(htmlEnabled);
+        saveSelectedDateField.setEnabled(htmlEnabled);
+        statusHtml.setEnabled(htmlEnabled);
+        onlyAllocationInfoField.setEnabled(htmlEnabled);
+    }
 	 
 	JPanel createStatus( final JTextField urlLabel)  
 	{
