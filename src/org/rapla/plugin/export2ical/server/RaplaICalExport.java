@@ -27,11 +27,14 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.RaplaConnectException;
 
 public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
 {
@@ -86,7 +89,12 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
     	return out.toString();
     }
 
-    public ICalExport createService(RemoteSession remoteSession) {
+    public ICalExport createService(RemoteSession remoteSession) throws RaplaContextException {
+        if ( !remoteSession.isAuthentified())
+        {
+            RaplaSecurityException ex = new RaplaSecurityException("User not authentified for ical export");
+            throw new RaplaContextException(ex.getMessage(), ex);
+        }
         return RaplaICalExport.this;
     }
 }
