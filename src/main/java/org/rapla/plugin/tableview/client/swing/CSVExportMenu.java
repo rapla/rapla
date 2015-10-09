@@ -39,16 +39,15 @@ import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 
-@Extension(provides = ExportMenuExtension.class, id = TableViewPlugin.PLUGIN_ID)
+@Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener
 {
+    public static final String PLUGIN_ID = "csv";
 	JMenuItem exportEntry;
-	String idString = "csv";
 	private final Set<AppointmentTableColumn> appointmentTableColumns;
 	private final Set<ReservationTableColumn> reservationTableColumns;
 
@@ -74,7 +73,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	 
     
 	public String getId() {
-		return idString;
+		return PLUGIN_ID;
 	}
 
 	public JMenuItem getMenuElement() {
