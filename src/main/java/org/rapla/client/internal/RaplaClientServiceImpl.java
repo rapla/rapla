@@ -226,9 +226,11 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         } else {
             addContainerProvidedComponent(IOInterface.class, DefaultIO.class);
         }
+        // provide rapla resource for old context lookup
+        this.i18n = instanciate(RaplaResources.class, 0);
+        addContainerProvidedComponentInstance(RaplaResources.class, i18n);
         //Add this service to the container
         addContainerProvidedComponentInstance(ClientService.class, this);
-        this.i18n = getContext().lookup(RaplaResources.class );
         frameControllerList = inject(FrameControllerList.class);
     }
 
