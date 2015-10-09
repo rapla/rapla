@@ -19,7 +19,11 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.JMenuItem;
@@ -27,20 +31,19 @@ import javax.swing.SwingUtilities;
 
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.gui.RaplaGUIComponent;
 import org.rapla.gui.toolkit.DialogUI;
-import org.rapla.gui.toolkit.IdentifiableMenuEntry;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 import org.rapla.plugin.tableview.extensionpoints.AppointmentTableColumn;
 import org.rapla.plugin.tableview.extensionpoints.ReservationTableColumn;
+import org.rapla.plugin.tableview.internal.TableConfig;
+
 @Extension(provides = ExportMenuExtension.class, id = TableViewPlugin.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener
 {
@@ -68,7 +71,8 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
              showException( ex, getMainComponent() );
          }
      }
-	
+	 
+    
 	public String getId() {
 		return idString;
 	}
@@ -86,16 +90,16 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	{
 	    // generates a text file from all filtered events;
 	    StringBuffer buf = new StringBuffer();
-	    Set< ? extends RaplaTableColumn<?,?>> columns;
+	    Collection< ? extends RaplaTableColumn<?,?>> columns;
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = reservationTableColumns;
+	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) TableConfig.loadReservationColumns(getClientFacade(), getI18n(), getRaplaLocale(), reservationTableColumns);
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	    	columns = (Set<? extends RaplaTableColumn<?, ?>>) appointmentTableColumns;
+	    	columns = (Collection<? extends RaplaTableColumn<?, ?>>) TableConfig.loadAppointmentColumns(getClientFacade(), getI18n(), getRaplaLocale(), appointmentTableColumns);
 		    objects.addAll( model.getBlocks());
 	    }
 	    for (RaplaTableColumn column: columns)
