@@ -18,7 +18,6 @@ import org.rapla.client.ClientServiceContainer;
 import org.rapla.client.RaplaClientExtensionPoints;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.Container;
 import org.rapla.framework.PluginDescriptor;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gui.AnnotationEditExtension;
@@ -51,8 +50,5 @@ public class TableViewPlugin  implements PluginDescriptor<ClientServiceContainer
         container.addContainerProvidedComponent(TableViewExtensionPoints.RESERVATION_TABLE_SUMMARY, EventCounter.class);
 		container.addContainerProvidedComponent(TableViewExtensionPoints.APPOINTMENT_TABLE_SUMMARY, AppointmentCounter.class);
     }
-
-	
-
 }
 

@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Locale;
 import java.util.StringTokenizer;
 
 import javax.swing.BoxLayout;
@@ -38,17 +37,19 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ConfigTools.RaplaReaderImpl;
 import org.rapla.gui.MenuContext;
 import org.rapla.gui.MenuFactory;
 import org.rapla.gui.RaplaGUIComponent;
@@ -125,7 +126,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
        	
-       	List<ReservationTableColumn> reservationColumnPlugins = loadColumns();
+       	List<RaplaTableColumn<Reservation>> reservationColumnPlugins = TableConfig.loadColumns(getContainer(), "events", TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
        	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnPlugins );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
@@ -164,25 +165,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
       	table.getSelectionModel().addListSelectionListener( listener);
       	table.addFocusListener( listener);
     }
-
-    private List<ReservationTableColumn> loadColumns() throws RaplaException, RaplaContextException
-    {
-        List<ReservationTableColumn> reservationColumnPlugins = new ArrayList<ReservationTableColumn>();
-       	final Preferences preferences = getClientFacade().getSystemPreferences();
-       	TableConfig config = TableConfig.read( preferences, getI18n());
-       	final Collection<TableColumnConfig> columns = config.getColumns("events");
-       	for ( final TableColumnConfig column: columns)
-       	{
-           	final RaplaLocale raplaLocale = getRaplaLocale();
-            reservationColumnPlugins.add( new MyReservatitonTableColumn(column, raplaLocale));
-       	}
-       	final Collection<ReservationTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
-       	for ( ReservationTableColumn column:lookupServicesFor)
-       	{
-       	    reservationColumnPlugins.add( column);
-       	}
-        return reservationColumnPlugins;
-    }
+    
     
     private final class CopyListener implements ActionListener {
         boolean cut;

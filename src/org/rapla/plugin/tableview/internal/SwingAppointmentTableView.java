@@ -63,6 +63,7 @@ import org.rapla.gui.toolkit.RaplaPopupMenu;
 import org.rapla.plugin.abstractcalendar.IntervalChooserPanel;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.tableview.AppointmentTableColumn;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewExtensionPoints;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
@@ -125,12 +126,12 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         this.model = model;
         
-        List<AppointmentTableColumn> columnPlugins = loadAppointmentColumns();
+        List<RaplaTableColumn<AppointmentBlock>> columnPlugins = TableConfig.loadColumns(getContainer(), "appointments", TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
        	
        	appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
         sorter =  SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;
-        for (AppointmentTableColumn col: columnPlugins)
+        for (RaplaTableColumn<AppointmentBlock> col: columnPlugins)
         {
         	col.init(table.getColumnModel().getColumn(column  ));
         	column++;	
@@ -166,25 +167,6 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
  		
         });
-    }
-
-    private List<AppointmentTableColumn> loadAppointmentColumns() throws RaplaException, RaplaContextException
-    {
-        List<AppointmentTableColumn> columnPlugins = new ArrayList<AppointmentTableColumn>();
-        final Preferences preferences = getClientFacade().getSystemPreferences();
-        TableConfig config = TableConfig.read( preferences, getI18n());
-        final Collection<TableColumnConfig> columns = config.getColumns("appointments");
-        for ( final TableColumnConfig column: columns)
-        {
-            final RaplaLocale raplaLocale = getRaplaLocale();
-            columnPlugins.add( new MyAppoitmentTableColumn(column, raplaLocale));
-        }
-        final Collection<AppointmentTableColumn> lookupServicesFor = getContainer().lookupServicesFor(TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
-        for ( AppointmentTableColumn column:lookupServicesFor)
-        {
-            columnPlugins.add( column);
-        }
-        return columnPlugins;
     }
 
 	protected void update(CalendarModel model) throws RaplaException 

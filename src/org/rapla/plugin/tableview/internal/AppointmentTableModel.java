@@ -11,7 +11,7 @@ import javax.swing.table.DefaultTableModel;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.plugin.tableview.AppointmentTableColumn;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 
 public class AppointmentTableModel extends DefaultTableModel
 {
@@ -20,15 +20,15 @@ public class AppointmentTableModel extends DefaultTableModel
     List<AppointmentBlock> appointments= new ArrayList<AppointmentBlock>();
     Locale locale;
     I18nBundle i18n;
-    Map<Integer,AppointmentTableColumn> columns = new LinkedHashMap<Integer, AppointmentTableColumn>();
+    Map<Integer,RaplaTableColumn<AppointmentBlock>> columns = new LinkedHashMap<Integer, RaplaTableColumn<AppointmentBlock>>();
     
     //String[] columns;
-    public AppointmentTableModel(Locale locale, I18nBundle i18n, Collection<? extends AppointmentTableColumn> columnPlugins) {
+    public AppointmentTableModel(Locale locale, I18nBundle i18n, Collection<RaplaTableColumn<AppointmentBlock>> columnPlugins) {
         this.locale = locale;
         this.i18n = i18n;
         List<String> columnNames = new ArrayList<String>(); 
         int column = 0;
-        for (AppointmentTableColumn col: columnPlugins)
+        for (RaplaTableColumn<AppointmentBlock> col: columnPlugins)
         {
         	columnNames.add( col.getColumnName());
         	columns.put( column, col);
@@ -60,12 +60,12 @@ public class AppointmentTableModel extends DefaultTableModel
     public Object getValueAt( int rowIndex, int columnIndex )
     {
         AppointmentBlock event = getAppointmentAt(rowIndex);
-        AppointmentTableColumn tableColumn = columns.get( columnIndex);
+        RaplaTableColumn<AppointmentBlock> tableColumn = columns.get( columnIndex);
         return tableColumn.getValue(event);
     }
 
     public Class<?> getColumnClass(int columnIndex) {
-    	AppointmentTableColumn tableColumn = columns.get( columnIndex);
+        RaplaTableColumn<AppointmentBlock> tableColumn = columns.get( columnIndex);
         return tableColumn.getColumnClass();
     }
 

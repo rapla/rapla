@@ -19,11 +19,17 @@ import org.rapla.entities.Named;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
+import org.rapla.framework.Container;
 import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 
 public class TableConfig
 {
@@ -273,6 +279,25 @@ public class TableConfig
 
     }
 
+    static final class MyTableColumn<T> extends AbstractTableColumn<T> implements  RaplaTableColumn<T>
+    {
+        public MyTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
+        {
+           super( column, raplaLocale);
+        }
+        
+        public Object getValue(T reservation)
+        {
+            return format(reservation);
+        }
+        
+        public String getHtmlValue(T object)
+        {
+            Object value = getValue(object);
+            return formatHtml(value);
+        }
+    }
+
     public void addColumn(TableColumnConfig config)
     {
         this.column.add(config);
@@ -488,5 +513,26 @@ public class TableConfig
     public void removeColumn(TableColumnConfig columnConfig)
     {
         column.remove(columnConfig);
+    }
+
+    public static <T> List<RaplaTableColumn<T>> loadColumns(Container container, final String viewKey,
+            final Class<? extends RaplaTableColumn<T>> extensionPoint) throws RaplaException, RaplaContextException
+    {
+        List<RaplaTableColumn<T>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<T>>();
+        final RaplaContext context = container.getContext();
+        final Preferences preferences = context.lookup(ClientFacade.class).getSystemPreferences();
+        TableConfig config = read( preferences, context.lookup(RaplaComponent.RAPLA_RESOURCES));
+        final Collection<TableColumnConfig> columns = config.getColumns(viewKey);
+        for ( final TableColumnConfig column: columns)
+        {
+            final RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
+            reservationColumnPlugins.add( new MyTableColumn<T>(column, raplaLocale));
+        }
+        final Collection<? extends RaplaTableColumn<T>> lookupServicesFor = container.lookupServicesFor(extensionPoint);
+        for (RaplaTableColumn<T>  column:lookupServicesFor)
+        {
+            reservationColumnPlugins.add( column);
+        }
+        return reservationColumnPlugins;
     }
 }
