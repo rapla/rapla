@@ -369,6 +369,7 @@
 						<phase>prepare-package</phase>
 						<configuration>
 							<tasks>
+								<mkdir dir="${webapp.dir}/webclient"/>
 								<path id="dist.contents">
 									<fileset dir="${webapp.dir}/webclient">
 										<include name="*.jar" />
