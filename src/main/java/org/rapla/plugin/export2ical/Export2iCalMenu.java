@@ -6,10 +6,12 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
+import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -18,21 +20,23 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.IdentifiableMenuEntry;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
-public class Export2iCalMenu extends RaplaGUIComponent implements IdentifiableMenuEntry, ActionListener{
+@Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
+public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
 
 	String id = "export_file_text";
 	JMenuItem item;
 	ICalExport exportService;
 	final Export2iCalResources i18nIcal;
 
+	@Inject
 	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal){
 		super(sm);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
-		item = new JMenuItem(getString(id));
+		item = new JMenuItem(i18nIcal.getString(id));
 		item.setIcon(getIcon("icon.export"));
 		item.addActionListener(this);
 	}

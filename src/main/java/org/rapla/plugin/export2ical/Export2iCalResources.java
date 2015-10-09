@@ -7,8 +7,11 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
-@Extension(provides = I18nBundle.class, id = Export2iCalPlugin.PLUGIN_ID) public class Export2iCalResources extends AbstractBundle
+@Extension(provides = I18nBundle.class, id = Export2iCalPlugin.PLUGIN_ID) 
+@Singleton
+public class Export2iCalResources extends AbstractBundle
 {
     public static final String BUNDLENAME = Export2iCalPlugin.PLUGIN_ID + ".Export2iCalResources";
 

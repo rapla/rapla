@@ -12,9 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.export2ical.server;
 
-import net.fortuna.ical4j.data.CalendarOutputter;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ValidationException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import javax.inject.Inject;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
@@ -28,11 +33,9 @@ import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
+import net.fortuna.ical4j.data.CalendarOutputter;
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ValidationException;
 
 @DefaultImplementation(of = ICalExport.class, context = InjectionContext.server)
 public class RaplaICalExport implements ICalExport
@@ -41,6 +44,7 @@ public class RaplaICalExport implements ICalExport
     RemoteSession session;
     Export2iCalConverter iCalConverter;
 
+    @Inject
     public RaplaICalExport(  ClientFacade facade, RemoteSession session, Export2iCalConverter iCalConverter)
     {
         this.facade = facade;
@@ -87,7 +91,7 @@ public class RaplaICalExport implements ICalExport
     @Override
 	public String export( String[] appointmentIds) throws RaplaException
     {
-        if (session.isAuthentified())
+        if (!session.isAuthentified())
         {
             throw new RaplaSecurityException("Not authentified");
         }
