@@ -73,9 +73,9 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     PeriodCopyResources periodCopyI18n;
     
     @SuppressWarnings("unchecked")
-	public CopyDialog(RaplaContext sm) throws RaplaException {
+	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n) throws RaplaException {
         super(sm);
-        periodCopyI18n = sm.lookup( PeriodCopyResources.class);
+        this.periodCopyI18n = periodCopyI18n;
         locale = getRaplaLocale();
         sourceBegin = createRaplaCalendar();
         sourceEnd = createRaplaCalendar();
