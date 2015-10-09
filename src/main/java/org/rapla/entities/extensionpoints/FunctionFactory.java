@@ -5,13 +5,13 @@ import java.util.List;
 
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
-import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
+import org.rapla.entities.dynamictype.internal.ParseContext;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
 @ExtensionPoint(context=InjectionContext.all, id="org.rapla.entities.Function")
 public interface FunctionFactory {
-    Function createFunction(List<Function> args) throws IllegalAnnotationException;
+    Function createFunction(String functionName, List<Function> args) throws IllegalAnnotationException;
 
     static public abstract class Function
     {

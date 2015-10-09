@@ -8,6 +8,6 @@ import org.rapla.gui.EditField;
 
 public interface AnnotationEdit
 {
-    Collection<? extends EditField> createEditField(Annotatable annotatable);
+    Collection<? extends EditField> createEditFields(Annotatable annotatable);
     void mapTo(EditField field,Annotatable annotatable) throws RaplaException;
 }

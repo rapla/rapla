@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.Preferences;
@@ -25,8 +26,8 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-@Extension(provides= AnnotationEditAttributeExtension.class, id="tableColumn")
-public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension{
+@Extension(provides= AnnotationEditTypeExtension.class, id="tableColumn")
+public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension {
 
     
     @Inject
@@ -36,7 +37,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         
         if (!( annotatable instanceof DynamicType))
         {

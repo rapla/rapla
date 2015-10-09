@@ -24,7 +24,7 @@ import org.rapla.gui.internal.edit.fields.ListField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id="sorting")
-public class SortingAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class SortingAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
     private final String annotationName = AttributeAnnotations.KEY_SORTING;
@@ -36,7 +36,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
             return Collections.emptyList();

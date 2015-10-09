@@ -19,7 +19,7 @@ import org.rapla.gui.internal.edit.fields.LongField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id="expectedrows")
-public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
     protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
     protected Long DEFAULT_VALUE = new Long(1);
@@ -30,7 +30,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof Attribute))
         {
             return Collections.emptyList();

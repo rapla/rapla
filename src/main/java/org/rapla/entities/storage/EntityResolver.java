@@ -15,7 +15,7 @@ package org.rapla.entities.storage;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
-
+import org.rapla.entities.extensionpoints.FunctionFactory;
 
 /** resolves the id to a proper reference to the object.
     @see org.rapla.entities.storage.internal.ReferenceHandler
@@ -36,6 +36,7 @@ public interface EntityResolver
     
     public DynamicType getDynamicType(String key);
 
+    FunctionFactory getFunctionFactory(String functionName);
 }
 
 

@@ -11,10 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -35,6 +32,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -85,7 +83,7 @@ public class LocalCacheTest extends RaplaTestCase {
     }
 
     public void testAllocatable() throws Exception {
-        LocalCache cache = new LocalCache();
+        LocalCache cache = new LocalCache(new HashMap<String,FunctionFactory>());
 
         DynamicTypeImpl type = createDynamicType();
         type.setResolver( cache);

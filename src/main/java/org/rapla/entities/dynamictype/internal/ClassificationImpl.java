@@ -199,7 +199,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 //        {
 //            namePlaning = new TextCache();
 //        }
-//        return namePlaning.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
+//        return namePlaning.getNamespace(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
 //    }
 	
 

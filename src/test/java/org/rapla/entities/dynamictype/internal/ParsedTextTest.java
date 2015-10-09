@@ -1,21 +1,17 @@
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
+import junit.framework.TestCase;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.storage.LocalCache;
 
-import junit.framework.TestCase;
+import java.util.*;
 
 public class ParsedTextTest extends TestCase
 {
@@ -28,7 +24,8 @@ public class ParsedTextTest extends TestCase
     protected void setUp() throws Exception
     {
 
-        LocalCache cache = new LocalCache();
+        final Map<String, FunctionFactory> functionFactoryMap = createFactoryMap();
+        LocalCache cache = new LocalCache(functionFactoryMap);
         CategoryImpl c1 = new CategoryImpl();
         c1.setKey("c1");
         c1.getName().setName("de", "Hallo");
@@ -70,6 +67,13 @@ public class ParsedTextTest extends TestCase
         
         type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{a1}");
         cache.put(type);
+    }
+
+    private Map<String, FunctionFactory> createFactoryMap()
+    {
+        Map<String,FunctionFactory> map = new HashMap<String,FunctionFactory>();
+        map.put(StandardFunctions.NAMESPACE,new StandardFunctions());
+        return map;
     }
 
     public void testCategoryAnnotation() throws IllegalAnnotationException

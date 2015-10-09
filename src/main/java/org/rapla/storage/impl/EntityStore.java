@@ -12,19 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
@@ -35,6 +36,7 @@ public class EntityStore implements EntityResolver {
     EntityResolver parent;
     
     public EntityStore(EntityResolver parent,Category superCategory) {
+        Assert.notNull( parent);
         this.parent = parent;
         this.superCategory = (CategoryImpl) superCategory;
     }
@@ -68,13 +70,18 @@ public class EntityStore implements EntityResolver {
     public DynamicType getDynamicType(String key)
     {
         DynamicType type =  dynamicTypes.get( key);
-        if ( type == null && parent != null) 
+        if ( type == null )
         {
             type = parent.getDynamicType( key);
         }
         return type;
     }
-    
+
+    @Override public FunctionFactory getFunctionFactory(String functionName)
+    {
+        return parent.getFunctionFactory( functionName);
+    }
+
     public Collection<Entity>getList() {
         return entities.values();
     }
@@ -126,13 +133,7 @@ public class EntityStore implements EntityResolver {
             T casted = (T) superCategory;
             return casted;
         }
-      
-        if (parent != null)
-        {
-            return tryResolveParent(id, entityClass);
-            
-        }
-        return null;
+        return tryResolveParent(id, entityClass);
     }
 
     private <T extends Entity> boolean isCategoryClass(Class<T> entityClass) {

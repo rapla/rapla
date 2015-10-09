@@ -35,7 +35,7 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
         Annotatable annotatable = objectList.get(0);
         for (AnnotationEdit annot : annotationExtensions)
         {
-            final Collection<? extends EditField> annotationFields = annot.createEditField(annotatable);
+            final Collection<? extends EditField> annotationFields = annot.createEditFields(annotatable);
             fieldMap.put(annot, annotationFields);
             for (EditField field : annotationFields)
             {

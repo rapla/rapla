@@ -36,6 +36,7 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
@@ -58,13 +59,15 @@ public class LocalCache implements EntityResolver
     Map<String,ReservationImpl> reservations;
     
     private String clientUserId;
-    public LocalCache() {
+    Map<String,FunctionFactory> functionFactoryMap;
+    public LocalCache(Map<String,FunctionFactory> functionFactoryMap) {
         entities = new HashMap<String,Entity>();
         // top-level-entities
         reservations = new LinkedHashMap<String,ReservationImpl>();
         users = new LinkedHashMap<String,UserImpl>();
         resources = new LinkedHashMap<String,AllocatableImpl>();
         dynamicTypes = new LinkedHashMap<String,DynamicTypeImpl>();
+        this.functionFactoryMap = functionFactoryMap;
         initSuperCategory();
     }
     
@@ -290,6 +293,15 @@ public class LocalCache implements EntityResolver
                 return dt;
         }
         return null;
+    }
+
+    @Override public FunctionFactory getFunctionFactory(String functionName)
+    {
+        if ( functionFactoryMap == null)
+        {
+            return null;
+        }
+        return functionFactoryMap.get( functionName);
     }
 
     public List<Entity> getVisibleEntities(final User user) {

@@ -13,35 +13,10 @@
 
 package org.rapla.facade.internal;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.Named;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -55,23 +30,19 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.ParseContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
-import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Variable;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.extensionpoints.FunctionFactory.Function;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarNotFoundExeption;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.*;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.UpdateResult;
+
+import java.util.*;
+
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 public class CalendarModelImpl implements CalendarSelectionModel
 {
@@ -101,11 +72,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
-    public CalendarModelImpl(RaplaContext context, User user, ClientFacade facade) throws RaplaException 
-    {
-        this( context.lookup(RaplaLocale.class).getLocale(), user, facade);
-    }
-    
     public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
         this.locale = locale;
         m_facade = facade;
@@ -592,14 +558,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Deprecated 
     class CalendarModelParseContext implements ParseContext
     {
-        @Override
-        public Map<String, FunctionFactory> getFunctionFactories()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-        
-        public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
+        public FunctionFactory.Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
             if ( variableName.equals("allocatables"))
             {
                 return new Variable(variableName)
@@ -639,7 +598,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             return null;
         }
-        
+
+        @Override public FunctionFactory getFunctionFactory(String functionName)
+        {
+            return m_facade.getOperator().getFunctionFactory( functionName );
+        }
+
     }
 
     public TimeInterval getTimeIntervall()
@@ -677,7 +641,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                     Object obj = list.iterator().next();
                     if (!( obj instanceof DynamicType))
                     {
-                        types = getI18n().format("allocation_view",getName( obj ),dateString);
+                        types = getI18n().format("allocation_view",getNamespace( obj ),dateString);
                     }
                 }
 

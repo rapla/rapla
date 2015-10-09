@@ -49,7 +49,6 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -89,6 +88,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
@@ -279,8 +279,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	    }
     }
 	
-	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler) {
-		super( logger, i18n,raplaLocale);
+	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap) {
+		super( logger, i18n,raplaLocale, functionFactoryMap);
 		this.scheduler = scheduler; 
 		        //context.lookupDeprecated( CommandScheduler.class);
 		
@@ -2298,7 +2298,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //						User user = ((Ownable) reference).getOwner();
 //						if (user != null && !alloc.canReadOnlyInformation(user))
 //						{
-//							throw new DependencyException( "User " + user.getUsername() + " refers to " + getName(alloc) + ". Read permission is required.", Collections.singleton( getDependentName(reference)));
+//							throw new DependencyException( "User " + user.getUsername() + " refers to " + getNamespace(alloc) + ". Read permission is required.", Collections.singleton( getDependentName(reference)));
 //						}
 //					}
 //				}
@@ -2768,7 +2768,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void createDefaultSystem(LocalCache cache) throws RaplaException
 	{
-    	EntityStore store = new EntityStore( null, cache.getSuperCategory() );
+    	EntityStore store = new EntityStore( cache, cache.getSuperCategory() );
 		
 		Date now = getCurrentTimestamp();
 		

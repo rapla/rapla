@@ -20,7 +20,7 @@ import org.rapla.inject.Extension;
 
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="exporteventname")
-public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT;
     protected String DEFAULT_VALUE = "";
@@ -31,7 +31,7 @@ public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements 
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
             return Collections.emptyList();

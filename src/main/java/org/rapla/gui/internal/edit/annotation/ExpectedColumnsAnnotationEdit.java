@@ -10,7 +10,7 @@ import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id="expectedcolums")
-public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit implements AnnotationEdit
+public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit implements AnnotationEditAttributeExtension
 {
     
     @Inject

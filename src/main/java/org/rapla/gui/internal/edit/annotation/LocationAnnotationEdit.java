@@ -18,7 +18,7 @@ import org.rapla.gui.internal.edit.fields.BooleanField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="location")
-public class LocationAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class LocationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
 
     private final String annotationName = DynamicTypeAnnotations.KEY_LOCATION;
@@ -29,7 +29,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
             return Collections.emptyList();

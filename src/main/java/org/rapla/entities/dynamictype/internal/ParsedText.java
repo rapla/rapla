@@ -3,37 +3,18 @@
  */
 package org.rapla.entities.dynamictype.internal;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.MultiLanguageNamed;
-import org.rapla.entities.Named;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ConstraintIds;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.extensionpoints.FunctionFactory.Function;
+
+import java.io.Serializable;
+import java.util.*;
 
 /** 
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
@@ -387,11 +368,6 @@ public class ParsedText implements Serializable
             this.context = parent;
         }
         
-        @Override
-        public Map<String, FunctionFactory> getFunctionFactories()
-        {
-            return context.getFunctionFactories();
-        }
 
         @Override
         public Function resolveVariableFunction(final String variableName) throws IllegalAnnotationException
@@ -412,6 +388,11 @@ public class ParsedText implements Serializable
             {
                 return null;
             }
+        }
+
+        @Override public FunctionFactory getFunctionFactory(String functionName)
+        {
+            return context.getFunctionFactory( functionName );
         }
     }
 
@@ -507,11 +488,24 @@ public class ParsedText implements Serializable
             }
 
         }
-        final Map<String,FunctionFactory> functionFactoryMap = context.getFunctionFactories();
-        final FunctionFactory functionFactory = functionFactoryMap.get(functionName);
+        String[] split = functionName.split(":");
+
+        String namespace;
+        String name;
+        if ( split.length>1)
+        {
+            namespace = split[0];
+            name = split[1];
+        }
+        else
+        {
+            namespace = StandardFunctions.NAMESPACE;
+            name = split[0];
+        }
+        final FunctionFactory functionFactory = context.getFunctionFactory(namespace);
         if (functionFactory != null)
         {
-            return functionFactory.createFunction( args);
+            return functionFactory.createFunction( name,args);
         }
         else
         {
@@ -1045,13 +1039,6 @@ public class ParsedText implements Serializable
         }
 
         return object.toString();
-    }
-
-    public interface ParseContext
-    {
-        Function resolveVariableFunction(String variableName) throws IllegalAnnotationException;
-
-        Map<String, FunctionFactory> getFunctionFactories();
     }
 
     final static public class EvalContext implements Cloneable

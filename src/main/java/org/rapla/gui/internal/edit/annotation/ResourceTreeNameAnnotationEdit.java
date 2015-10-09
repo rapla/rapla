@@ -19,7 +19,7 @@ import org.rapla.gui.internal.edit.fields.TextField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="resourcetree")
-public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
     protected String DEFAULT_VALUE = new String();
@@ -30,7 +30,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
             return Collections.emptyList();

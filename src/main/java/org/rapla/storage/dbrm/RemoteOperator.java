@@ -54,6 +54,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
@@ -100,15 +101,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     ConnectInfo connectInfo;
     RemoteConnectionInfo connectionInfo;
 	
-    public RemoteOperator(RaplaContext context,Logger logger, @SuppressWarnings("unused") Configuration config,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage) throws RaplaContextException
-    {
-        this( logger, context.lookup( RaplaResources.class),context.lookup( RaplaLocale.class), context.lookup( CommandScheduler.class),
-                remoteAuthentificationService, remoteStorage, new RemoteConnectionInfo());
-    }
-    
     @Inject
-    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
-        super(  logger, i18n,locale );
+    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,Map<String, FunctionFactory> functionFactoryMap,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo) {
+        super(  logger, i18n,locale, functionFactoryMap);
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
     	commandQueue = scheduler;

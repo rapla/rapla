@@ -11,49 +11,25 @@
   | Definition as published by the Open Source Initiative (OSI).             |
   *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.Entity;
-import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.UniqueKeyException;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.*;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
-import org.rapla.entities.dynamictype.internal.ParsedText.ParseContext;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.extensionpoints.FunctionFactory.Function;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.*;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
@@ -307,7 +283,10 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             return;
         }
         ParsedText parsedText = new ParsedText(annotation);
-        parsedText.init(parseContext);
+        if ( resolver != null)
+        {
+            parsedText.init(parseContext);
+        }
         annotations.put(key,parsedText);
     }
 
@@ -643,14 +622,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			this.type = (DynamicTypeImpl)type;
 		}
 		
-		@Override
-		public Map<String, FunctionFactory> getFunctionFactories()
-		{
-		    // TODO Auto-generated method stub
-		    return null;
-		}
-		
-		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
+		public FunctionFactory.Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
 		    if ( !variableName.contains(":"))
 		    {
 		        Attribute attribute = type.getAttribute(variableName);
@@ -690,8 +662,15 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             }
 	        return null;
 		}
-		
-		class AttributeFunction extends ParsedText.Variable
+
+        @Override public FunctionFactory getFunctionFactory(String functionName)
+        {
+            final EntityResolver resolver = type.getResolver();
+            final FunctionFactory functionFactory = resolver.getFunctionFactory(functionName);
+            return functionFactory;
+        }
+
+        class AttributeFunction extends ParsedText.Variable
 		{
 			Object id;
             private boolean shortForm;

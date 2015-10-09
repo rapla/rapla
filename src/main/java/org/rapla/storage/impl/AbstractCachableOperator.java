@@ -48,6 +48,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
@@ -86,16 +87,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected RaplaResources i18n;
 	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
-	
-	public AbstractCachableOperator( Logger logger, RaplaResources i18n, RaplaLocale raplaLocale)  {
+	protected final Map<String,FunctionFactory> functionFactoryMap;
+
+
+	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap)  {
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		this.i18n = i18n;
-//		raplaLocale = context.lookupDeprecated(RaplaLocale.class);
+		this.functionFactoryMap = functionFactoryMap;
+		//		raplaLocale = context.lookupDeprecated(RaplaLocale.class);
 //		i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
-		cache = new LocalCache();
+		cache = new LocalCache(functionFactoryMap);
 	}
 
 	public Logger getLogger() {
@@ -730,5 +734,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 
 		return result;
+	}
+
+	@Override public FunctionFactory getFunctionFactory(String functionName)
+	{
+		final FunctionFactory functionFactory = functionFactoryMap.get(functionName);
+		return functionFactory;
 	}
 }

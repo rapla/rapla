@@ -140,13 +140,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	String templateId;
 	
-	public static FacadeImpl create(RaplaContext context, StorageOperator operator, Logger logger) throws RaplaException
-	{
-	    RaplaResources i18n = context.lookup(RaplaResources.class);
-	    CommandScheduler notifyQueue = context.lookup( CommandScheduler.class );
-	    return new FacadeImpl( operator, i18n, notifyQueue,logger);
-	}
-	
 	@Inject
 	public FacadeImpl(StorageOperator operator, RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
 	    

@@ -44,6 +44,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -84,8 +85,8 @@ public class DBOperator extends LocalAbstractCachableOperator
     
     Provider<ImportExportManager> importExportManager;
     @Inject
-    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Provider<ImportExportManager> importExportManager, DataSource dataSource) {
-        super(  logger, i18n, locale, scheduler);
+    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Map<String,FunctionFactory> functionFactoryMap,Provider<ImportExportManager> importExportManager, DataSource dataSource) {
+        super(  logger, i18n, locale, scheduler, functionFactoryMap);
         lookup = dataSource;
         this.importExportManager = importExportManager;
 //        String backupFile = config.getChild("backup").getValue("");
@@ -385,7 +386,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
             }
-            LocalCache cache =new LocalCache();
+            LocalCache cache =new LocalCache(functionFactoryMap);
             cache.clearAll();
             addInternalTypes(cache);
             loadOldData(c, cache );

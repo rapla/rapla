@@ -1,7 +1,5 @@
 package org.rapla;
 
-import java.util.Date;
-
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -9,6 +7,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
@@ -17,6 +16,10 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteStorage;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CommunicatorTest extends ServletTestBase
 {
@@ -128,7 +131,8 @@ public class CommunicatorTest extends ServletTestBase
 			ConsoleLogger logger = new ConsoleLogger();
 			RaplaResources i18n = context.lookup(RaplaResources.class);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);
-            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, remoteAuthentificationService, remoteStorage, connectionInfo );
+            Map<String,FunctionFactory> functionFactoryMap = new HashMap<String,FunctionFactory>();
+            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, functionFactoryMap,remoteAuthentificationService, remoteStorage, connectionInfo );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

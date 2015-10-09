@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
@@ -47,6 +48,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
@@ -109,10 +111,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private final String encoding;
     protected boolean isConnected = false;
     final boolean includeIds= false;
+
     @Inject
-    public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
+    public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,Map<String,FunctionFactory> functionFactoryMap,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
     {
-        super(  logger, i18n, raplaLocale, scheduler );
+        super(  logger, i18n, raplaLocale, scheduler, functionFactoryMap );
         //StartupEnvironment env =  context.lookupDeprecated( StartupEnvironment.class );
 
 //        URL contextRootURL = env.getContextRootURL();

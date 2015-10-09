@@ -22,7 +22,7 @@ import org.rapla.gui.internal.edit.fields.ListField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="conflictcreation")
-public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEdit
+public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
 
     private final String annotationName = DynamicTypeAnnotations.KEY_CONFLICTS;
@@ -33,7 +33,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable) {
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
         if (!( annotatable instanceof DynamicType))
         {
             return Collections.emptyList();
