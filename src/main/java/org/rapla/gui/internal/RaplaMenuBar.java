@@ -106,7 +106,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             addPluginExtensions(adminMenuExt, adminMenu);
         }
         addPluginExtensions(importMenuExt, importMenu);
-        addPluginExtensions(editMenuExt, exportMenu);
+        addPluginExtensions(exportMenuExt, exportMenu);
         addPluginExtensions(helpMenuExt, extraMenu);
         addPluginExtensions(viewMenuExt, viewMenu);
         addPluginExtensions(editMenuExt, editMenu);
