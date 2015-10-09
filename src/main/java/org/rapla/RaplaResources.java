@@ -40,6 +40,16 @@ public class RaplaResources extends AbstractBundle {
 
     // add custom format methods
 
+    // custom format for the calendarweek
+    public String calendarweek(Date startDate) {
+        String format = getString("calendarweek.abbreviation");
+        int week = DateTools.getWeekInYear(startDate, getLocale());
+        String result = format.replace("{0}", "" + week);
+        // old format also works
+        result = result.replace("{0,date,w}", "" + week);
+        return result;
+    }
+
     // custom format method for formating the number of week in a period
     public String periodFormatWeek(int weeknumber, String periodName)
     {
@@ -51,13 +61,5 @@ public class RaplaResources extends AbstractBundle {
         String signed = getString("yes");
         return format("info.text",signed,javaversion );
     }
-    // custom format for the calendarweek
-    public String calendarweek(Date startDate) {
-        String format = getString("calendarweek.abbreviation");
-        int week = DateTools.getWeekInYear(startDate, getLocale());
-        String result = format.replace("{0}", "" + week);
-        // old format also works
-        result = result.replace("{0,date,w}", "" + week);
-        return result;
-    }
+
 }

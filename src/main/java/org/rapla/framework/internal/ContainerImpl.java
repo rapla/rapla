@@ -569,7 +569,7 @@ public class ContainerImpl implements Disposable
     protected void initialize() throws Exception
     {
         // Discover and register the plugins for Rapla
-        RaplaResources i18n = myLookup(RaplaResources.class, 0);
+        RaplaResources i18n = instanciate(RaplaResources.class, 0);
         String version = i18n.getString("rapla.version");
         logger.info("Rapla.Version=" + version);
         version = i18n.getString("rapla.build");
@@ -634,7 +634,7 @@ public class ContainerImpl implements Disposable
     /** Instantiates a class and passes the config, logger and the parent context to the object if needed by the constructor.
      * This concept is taken form pico container.*/
 
-    @SuppressWarnings({ "rawtypes", "unchecked" }) private Object instanciate(Class componentClass, int depth, final Object... additionalParamObject)
+    @SuppressWarnings({ "rawtypes", "unchecked" }) protected <T> T instanciate(Class<T> componentClass, int depth, final Object... additionalParamObject)
             throws Exception
     {
         depth++;
@@ -651,7 +651,7 @@ public class ContainerImpl implements Disposable
             Object singleton = singletonMap.get(componentClassName);
             if (singleton != null)
             {
-                return singleton;
+                return (T) singleton;
             }
             else
             {
@@ -665,7 +665,7 @@ public class ContainerImpl implements Disposable
                         if (object != null)
                         {
                             result.release();
-                            return object;
+                            return (T) object;
                         }
                     }
                 }
@@ -689,7 +689,7 @@ public class ContainerImpl implements Disposable
             {
                 singletonMap.put(componentClassName, component);
             }
-            return component;
+            return (T) component;
         }
         catch (IllegalStateException e)
         {
