@@ -7,6 +7,8 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
+import java.util.Locale;
+import java.util.MissingResourceException;
 
 @Extension(provides = I18nBundle.class, id = EventTimeCalculatorPlugin.PLUGIN_ID) public class EventTimeCalculatorResources extends AbstractBundle
 {
@@ -20,6 +22,11 @@ import javax.inject.Inject;
     public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key)
     {
         return super.getString(key);
+    }
+
+    public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key, Locale locale)
+    {
+        return super.getString(key, locale);
     }
 
     public String format(@PropertyKey(resourceBundle = BUNDLENAME) String key, Object... obj)

@@ -46,11 +46,14 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 {
     public static final String PLUGIN_ID = "csv";
 	JMenuItem exportEntry;
+	private final TableConfig.TableConfigLoader tableConfigLoader;
+
 
 	@Inject
-	public CSVExportMenu(RaplaContext context)
+	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader)
     {
         super( context );
+		this.tableConfigLoader = tableConfigLoader;
 		exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon( getIcon("icon.export") );
         exportEntry.addActionListener(this);
@@ -87,12 +90,12 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = TableConfig.loadColumns(getClientFacade(), getI18n(), getRaplaLocale(),"events");
+	    	columns = tableConfigLoader.loadColumns("events");
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	    	columns = TableConfig.loadColumns(getClientFacade(), getI18n(), getRaplaLocale(), "appointments");
+	    	columns = tableConfigLoader.loadColumns( "appointments");
 		    objects.addAll( model.getBlocks());
 	    }
 	    for (RaplaTableColumn column: columns)

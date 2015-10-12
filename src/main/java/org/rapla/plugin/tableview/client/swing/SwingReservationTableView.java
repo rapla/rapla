@@ -48,6 +48,8 @@ import java.util.List;
 @Extension(id="ReservationTableView", provides=SwingCalendarView.class)
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {
+    private final TableConfig.TableConfigLoader tableConfigLoader;
+
     ReservationTableModel reservationTableModel;
 
     JTable table;
@@ -62,9 +64,10 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-             final boolean editable) throws RaplaException
+            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader) throws RaplaException
     {
         super( context );
+        this.tableConfigLoader = tableConfigLoader;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -107,11 +110,9 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
 
-        final ClientFacade clientFacade = getClientFacade();
-        final RaplaLocale raplaLocale = getRaplaLocale();
+        List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = tableConfigLoader.loadColumns("events");
         final RaplaResources i18n = getI18n();
-        List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "events");
-       	reservationTableModel = new ReservationTableModel( getLocale(), i18n, reservationColumnConfigured );
+        reservationTableModel = new ReservationTableModel( getLocale(), i18n, reservationColumnConfigured );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
 

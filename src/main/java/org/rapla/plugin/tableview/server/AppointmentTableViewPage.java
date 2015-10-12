@@ -29,24 +29,20 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
-public class AppointmentTableViewPage  extends TableViewPage<AppointmentBlock,TableColumn>
+@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
+        extends TableViewPage<AppointmentBlock, TableColumn>
 {
-    private final ClientFacade clientFacade;
-    private final RaplaResources i18n;
-    private final RaplaLocale raplaLocale;
+    private final TableConfig.TableConfigLoader tableConfigLoader;
 
-    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n)
+    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
         super(raplaLocale);
-        this.clientFacade = clientFacade;
-        this.i18n = i18n;
-        this.raplaLocale = raplaLocale;
+        this.tableConfigLoader = tableConfigLoader;
     }
 
     public String getCalendarHTML() throws RaplaException
     {
-        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "appointments");
+        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments");
         final List<AppointmentBlock> blocks = model.getBlocks();
         return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }

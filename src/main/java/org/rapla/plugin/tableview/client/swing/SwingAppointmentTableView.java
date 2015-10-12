@@ -86,12 +86,14 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     private JComponent container;
     final Set<ObjectMenuFactory> objectMenuFactories;
+    private final TableConfig.TableConfigLoader tableConfigLoader;
 
     public SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable) throws RaplaException
+            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader) throws RaplaException
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
+        this.tableConfigLoader = tableConfigLoader;
         cutListener.setCut(true);
         table = new JTable()
         {
@@ -135,7 +137,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         final ClientFacade clientFacade = getClientFacade();
         final RaplaLocale raplaLocale = getRaplaLocale();
         final RaplaResources i18n = getI18n();
-        List<RaplaTableColumn<AppointmentBlock,TableColumn>> columnPluginsConfigured = TableConfig.loadColumns(clientFacade, i18n, raplaLocale, "appointments");
+        List<RaplaTableColumn<AppointmentBlock,TableColumn>> columnPluginsConfigured = tableConfigLoader.loadColumns("appointments");
         appointmentTableModel = new AppointmentTableModel(getLocale(), getI18n(), columnPluginsConfigured);
         sorter = SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;

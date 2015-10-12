@@ -1041,6 +1041,10 @@ public class ContainerImpl implements Disposable
 
         Set<String> interfaces = new TreeSet<String>();
         final Collection<URL> resources = find(folder);
+        if (resources.isEmpty())
+        {
+            getLogger().error("Service list " + folder + " not found or empty.");
+        }
         for (URL url : resources)
         {
             final InputStream modules = url.openStream();

@@ -27,23 +27,27 @@ import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+import org.rapla.plugin.tableview.internal.TableConfig;
 
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewFactory extends RaplaComponent implements SwingViewFactory
 {
     private final Set<ReservationSummaryExtension> reservationSummaryExtensions;
+    private final TableConfig.TableConfigLoader tableConfigLoader;
     @Inject
-    public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions)
+    public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
+            TableConfig.TableConfigLoader tableConfigLoader)
     {
         super( context );
         this.reservationSummaryExtensions = reservationSummaryExtensions;
+        this.tableConfigLoader = tableConfigLoader;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader);
     }
 
     public String getViewId()

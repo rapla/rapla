@@ -1,50 +1,33 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.awt.BorderLayout;
-import java.awt.LayoutManager;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.gui.DefaultPluginOption;
+import org.rapla.framework.*;
+import org.rapla.framework.logger.Logger;
 import org.rapla.gui.internal.edit.fields.MultiLanguageField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.*;
+import java.util.List;
+import java.util.Map.Entry;
+
 /**
  *
  */
-@Extension(provides = PluginOptionPanel.class,id=TableViewPlugin.PLUGIN_ID)
-public class TableviewOption extends DefaultPluginOption {
-
+@Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel
+{
     private final JPanel list = new JPanel();
     private final List<TableColumnConfig> tablerows = new ArrayList<TableColumnConfig>();
     private final List<TableRow> rows = new ArrayList<TableRow>();
@@ -53,13 +36,49 @@ public class TableviewOption extends DefaultPluginOption {
     private JComboBox typeSelection;
     private Sorting sorting;
 
-    @Inject
-    public TableviewOption(RaplaContext sm) {
-        super(sm);
+    private final RaplaContext context;
+    private final RaplaResources i18n;
+    private final Logger logger;
+    private final RaplaLocale raplaLocale;
+    private Preferences preferences;
+    private final TableConfig.TableConfigLoader tableConfigLoader;
+
+    @Inject public TableviewOption(RaplaContext context, RaplaResources i18n, Logger logger, RaplaLocale raplaLocale,
+            TableConfig.TableConfigLoader tableConfigLoader)
+    {
+        this.context = context;
+        this.i18n = i18n;
+        this.logger = logger;
+        this.raplaLocale = raplaLocale;
+        this.tableConfigLoader = tableConfigLoader;
     }
 
-    @Override
-    protected JPanel createPanel() throws RaplaException {
+    public void setPreferences(Preferences preferences)
+    {
+        this.preferences = preferences;
+    }
+
+    /** commits the changes in the option Dialog.*/
+    public void commit() throws RaplaException
+    {
+        tablerows.clear();
+        TypedComponentRole<RaplaConfiguration> configEntry = TableViewPlugin.CONFIG;
+        final RaplaConfiguration newConfig = TableConfig.print(tableConfig);
+        preferences.putEntry(configEntry, newConfig);
+    }
+
+    /** called when the option Panel is selected for displaying.*/
+    public void show() throws RaplaException
+    {
+        createPanel();
+        this.tableConfig = tableConfigLoader.read(preferences, true);
+        tablerows.clear();
+        tablerows.addAll(this.tableConfig.getAllColumns());
+        initRows();
+    }
+
+    private void createPanel()
+    {
         main = new JPanel();
         LayoutManager layout = new BoxLayout(main, BoxLayout.Y_AXIS);
         main.setLayout(layout);
@@ -80,11 +99,13 @@ public class TableviewOption extends DefaultPluginOption {
         {// Ordering definitionr
             JPanel containerForOrderingAndValueDefinition = new JPanel(new BorderLayout());
             typeSelection = new JComboBox();
-            typeSelection.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            typeSelection.addActionListener(new ActionListener()
+            {
+                @Override public void actionPerformed(ActionEvent e)
+                {
                     final TypeSelection selectedType = (TypeSelection) typeSelection.getSelectedItem();
-                    if (selectedType != null) {
+                    if (selectedType != null)
+                    {
                         sorting.init(selectedType.key);
                     }
                 }
@@ -99,25 +120,29 @@ public class TableviewOption extends DefaultPluginOption {
             deviderPanel.add(new JLabel("Definition of column ordering for each table:"));
             main.add(wrapperOrdering);
         }
+    }
+
+    public JComponent getComponent()
+    {
         return main;
     }
 
-    protected void initRows() {
+    protected void initRows()
+    {
         rows.clear();
-        for (TableColumnConfig slot : tablerows) {
-            TableRow row = new TableRow(slot, getContext());
+        for (TableColumnConfig slot : tablerows)
+        {
+            TableRow row = new TableRow(slot, context);
             rows.add(row);
         }
-        for ( Entry<String, ViewDefinition>  entry :tableConfig.getViewMap().entrySet())
+        for (Entry<String, ViewDefinition> entry : tableConfig.getViewMap().entrySet())
         {
             final String key = entry.getKey();
             final ViewDefinition value = entry.getValue();
-            final String name = value.getName( getLocale());
+            final String name = value.getName(raplaLocale.getLocale());
             typeSelection.addItem(new TypeSelection(key, name));
         }
-    }
 
-    protected void update() {
         tablerows.clear();
         tablerows.addAll(mapToRows());
         list.removeAll();
@@ -132,7 +157,8 @@ public class TableviewOption extends DefaultPluginOption {
         list.add(new JLabel("Row Name"), "0,0");
         list.add(new JLabel("Value Type"), "2,0");
         int i = 0;
-        for (TableRow row : rows) {
+        for (TableRow row : rows)
+        {
             tableLayout.insertRow(++i, TableLayout.MINIMUM);
             list.add(row.nameField.getComponent(), "0," + i);
             list.add(row.typeField, "2," + i);
@@ -144,62 +170,37 @@ public class TableviewOption extends DefaultPluginOption {
         sorting.init(((TypeSelection) typeSelection.getSelectedItem()).key);
     }
 
-    protected void addChildren(DefaultConfiguration newConfig) {
+    protected void addChildren(DefaultConfiguration newConfig)
+    {
         final RaplaConfiguration raplaConfig = TableConfig.print(tableConfig);
         newConfig.add(raplaConfig);
     }
 
-    protected List<TableColumnConfig> mapToRows() {
+    protected List<TableColumnConfig> mapToRows()
+    {
         List<TableColumnConfig> newRows = new ArrayList<TableColumnConfig>();
 
-        for (TableColumnConfig column : tableConfig.getAllColumns()) {
+        for (TableColumnConfig column : tableConfig.getAllColumns())
+        {
             newRows.add(column);
         }
         return newRows;
     }
 
-    @Override
-    protected Configuration getConfig() throws RaplaException {
-        TableConfig config = TableConfig.read(preferences, getI18n(), getRaplaLocale());
-        final RaplaConfiguration configuration = TableConfig.print( config);
-        return configuration;
-    }
-
-    protected void readConfig(Configuration config) {
-        try {
-            this.tableConfig = TableConfig.read((RaplaConfiguration) config);
-            tablerows.clear();
-            tablerows.addAll(this.tableConfig.getAllColumns());
-            initRows();
-            update();
-        } catch (ConfigurationException ex) {
-            getLogger().error("Error loading configuration for tableview plugin: " + ex.getMessage(), ex);
-        }
-    }
-
-    public void show() throws RaplaException {
-        super.show();
-    }
-
-    public void commit() throws RaplaException {
-        tablerows.clear();
-        writePluginConfig(false);
-        TypedComponentRole<RaplaConfiguration> configEntry = TableViewPlugin.CONFIG;
-        final RaplaConfiguration newConfig = TableConfig.print(tableConfig);
-        preferences.putEntry( configEntry,newConfig);
-    }
-
-    public String getName(Locale locale) {
+    public String getName(Locale locale)
+    {
         return "Tableview Plugin";
 
     }
 
-    private class TableRow {
+    static private class TableRow
+    {
 
         private final JTextField typeField = new JTextField();
         private final MultiLanguageField nameField;
 
-        private TableRow(TableColumnConfig slot, RaplaContext context) {
+        private TableRow(TableColumnConfig slot, RaplaContext context)
+        {
             nameField = new MultiLanguageField(context);
             typeField.setText(slot.getType());
             typeField.setEditable(false);
@@ -208,40 +209,45 @@ public class TableviewOption extends DefaultPluginOption {
 
     }
 
-    private static class TypeSelection {
+    private static class TypeSelection
+    {
 
         private final String key;
         private final String name;
 
-        public TypeSelection(String key, String name) {
+        public TypeSelection(String key, String name)
+        {
             this.key = key;
             this.name = name;
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString()
+        {
             return name;
         }
 
     }
 
-    private static class SortingRow extends JLabel {
+    private static class SortingRow extends JLabel
+    {
 
         private final TableColumnConfig columnConfig;
 
-        private SortingRow(TableColumnConfig column, Locale locale) {
+        private SortingRow(TableColumnConfig column, Locale locale)
+        {
             super(column.getName().getName(locale.getLanguage()));
             this.columnConfig = column;
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString()
+        {
             return getText();
         }
 
     }
 
-    private class Sorting extends JPanel {
+    private class Sorting extends JPanel
+    {
 
         private final RaplaArrowButton moveUpButton = new RaplaArrowButton('^', 25);
         private final RaplaArrowButton moveDownButton = new RaplaArrowButton('v', 25);
@@ -251,50 +257,58 @@ public class TableviewOption extends DefaultPluginOption {
         private final List<SortingRow> rows = new ArrayList<SortingRow>();
         private final JComboBox allSortingRows = new JComboBox();
 
-        public Sorting() {
+        public Sorting()
+        {
             super();
-//            final GridLayout layout = new GridLayout(2, 1);
+            //            final GridLayout layout = new GridLayout(2, 1);
             final BorderLayout layout = new BorderLayout();
             setLayout(layout);
             final JPanel header = new JPanel();
             header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
             add(header, BorderLayout.NORTH);
             header.add(moveUpButton, BorderLayout.WEST);
-            moveUpButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            moveUpButton.addActionListener(new ActionListener()
+            {
+                @Override public void actionPerformed(ActionEvent e)
+                {
                     sort(true);
                 }
             });
             header.add(moveDownButton, BorderLayout.EAST);
-            moveDownButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            moveDownButton.addActionListener(new ActionListener()
+            {
+                @Override public void actionPerformed(ActionEvent e)
+                {
                     sort(false);
                 }
             });
             header.add(allSortingRows);
-            final JButton addButton = new JButton(getString("insert"));
-            addButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            final JButton addButton = new JButton(i18n.getString("insert"));
+            addButton.addActionListener(new ActionListener()
+            {
+                @Override public void actionPerformed(ActionEvent e)
+                {
                     final SortingRow selectedItem = (SortingRow) allSortingRows.getSelectedItem();
-                    if (selectedItem != null) {
+                    if (selectedItem != null)
+                    {
                         tableConfig.getOrCreateView(selectedTable).addColumn(selectedItem.columnConfig);
                         init(selectedTable);
-                        list.setSelectedIndex(listModel.getSize()-1);
+                        list.setSelectedIndex(listModel.getSize() - 1);
                     }
                 }
             });
             header.add(addButton);
-            final JButton deleteButton = new JButton(getString("delete"));
-            deleteButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            final JButton deleteButton = new JButton(i18n.getString("delete"));
+            deleteButton.addActionListener(new ActionListener()
+            {
+                @Override public void actionPerformed(ActionEvent e)
+                {
                     final int[] selectedIndices = list.getSelectedIndices();
-                    if (selectedIndices != null) {
+                    if (selectedIndices != null)
+                    {
                         List<TableColumnConfig> toRemove = new ArrayList<TableColumnConfig>();
-                        for (int i = selectedIndices.length - 1; i >= 0; i--) {
+                        for (int i = selectedIndices.length - 1; i >= 0; i--)
+                        {
                             int index = selectedIndices[i];
                             final SortingRow row = (SortingRow) listModel.remove(index);
                             toRemove.add(row.columnConfig);
@@ -317,14 +331,17 @@ public class TableviewOption extends DefaultPluginOption {
             add(containerForAllRows, BorderLayout.CENTER);
         }
 
-        private void init(String selectedTable) {
+        private void init(String selectedTable)
+        {
             this.selectedTable = selectedTable;
             final Collection<TableColumnConfig> columns = tableConfig.getColumns(selectedTable);
             final Locale locale = getLocale();
             listModel.removeAllElements();
             rows.clear();
-            if (columns != null) {
-                for (TableColumnConfig column : columns) {
+            if (columns != null)
+            {
+                for (TableColumnConfig column : columns)
+                {
                     final SortingRow newRow = new SortingRow(column, locale);
                     listModel.addElement(newRow);
                     rows.add(newRow);
@@ -332,7 +349,8 @@ public class TableviewOption extends DefaultPluginOption {
             }
             allSortingRows.removeAllItems();
             final Set<TableColumnConfig> allColumns = tableConfig.getAllColumns();
-            for (TableColumnConfig column : allColumns) {
+            for (TableColumnConfig column : allColumns)
+            {
                 allSortingRows.addItem(new SortingRow(column, locale));
             }
             allSortingRows.validate();
@@ -343,24 +361,34 @@ public class TableviewOption extends DefaultPluginOption {
             repaint();
         }
 
-        private void sort(boolean moveUpwards) {
-            if (rows.size() > 0) {
+        private void sort(boolean moveUpwards)
+        {
+            if (rows.size() > 0)
+            {
                 // sort
                 final int[] selectedIndices = list.getSelectedIndices();
-                if (selectedIndices != null) {
-                    if (moveUpwards) {
-                        for (int i = 0; i < selectedIndices.length; i++) {
+                if (selectedIndices != null)
+                {
+                    if (moveUpwards)
+                    {
+                        for (int i = 0; i < selectedIndices.length; i++)
+                        {
                             final int indexToPullUp = selectedIndices[i];
-                            if (indexToPullUp > 0) {
+                            if (indexToPullUp > 0)
+                            {
                                 final SortingRow row = rows.remove(indexToPullUp);
                                 final int index = Math.max(0, indexToPullUp - 1);
                                 rows.add(index, row);
                             }
                         }
-                    } else {
-                        for (int i = selectedIndices.length - 1; i >= 0; i--) {
+                    }
+                    else
+                    {
+                        for (int i = selectedIndices.length - 1; i >= 0; i--)
+                        {
                             final int indexToPullDown = selectedIndices[i];
-                            if (indexToPullDown < list.getModel().getSize()) {
+                            if (indexToPullDown < list.getModel().getSize())
+                            {
                                 final SortingRow row = rows.remove(indexToPullDown);
                                 final int newIndex = Math.max(0, Math.min(rows.size(), indexToPullDown + 1));
                                 rows.add(newIndex, row);
@@ -374,13 +402,15 @@ public class TableviewOption extends DefaultPluginOption {
                         view.removeColumn(columnConfig);
                     }
                     // write again
-                    for (SortingRow row : rows) {
+                    for (SortingRow row : rows)
+                    {
                         view.addColumn(row.columnConfig);
                     }
                     init(selectedTable);
                     // select the new ones
                     final int[] newSelectedIndices = new int[selectedIndices.length];
-                    for (int i = 0; i < selectedIndices.length; i++) {
+                    for (int i = 0; i < selectedIndices.length; i++)
+                    {
                         int selectedIndice = selectedIndices[i];
                         int newSelectedIndex = Math.max(0, Math.min(listModel.size() - 1, selectedIndice + (moveUpwards ? -1 : +1)));
                         newSelectedIndices[i] = newSelectedIndex;

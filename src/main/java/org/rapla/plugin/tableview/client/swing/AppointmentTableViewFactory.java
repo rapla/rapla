@@ -26,28 +26,31 @@ import org.rapla.gui.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
+import org.rapla.plugin.tableview.internal.TableConfig;
 
 import java.util.Set;
 
-@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
-public class AppointmentTableViewFactory extends RaplaComponent implements SwingViewFactory
+@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewFactory extends RaplaComponent
+        implements SwingViewFactory
 {
     private final Set<AppointmentSummaryExtension> appointmentSummaryExtensions;
     private final Set<ObjectMenuFactory> objectMenuFactories;
-    @Inject
-    public AppointmentTableViewFactory(RaplaContext context,
-            Set<AppointmentSummaryExtension> appointmentSummaryExtensions, Set<ObjectMenuFactory> objectMenuFactories)
+    private final TableConfig.TableConfigLoader tableConfigLoader;
+
+    @Inject public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
+            Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader)
     {
-        super( context );
+        super(context);
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
         this.objectMenuFactories = objectMenuFactories;
+        this.tableConfigLoader = tableConfigLoader;
     }
 
-    public final static String TABLE_VIEW =  "table_appointments";
+    public final static String TABLE_VIEW = "table_appointments";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingAppointmentTableView( context, model, appointmentSummaryExtensions, objectMenuFactories,editable);
+        return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader);
     }
 
     public String getViewId()
@@ -61,15 +64,18 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     }
 
     Icon icon;
+
     public Icon getIcon()
     {
-        if ( icon == null) {
+        if (icon == null)
+        {
             icon = RaplaImages.getIcon("/org/rapla/plugin/tableview/images/table.png");
         }
         return icon;
     }
 
-    public String getMenuSortKey() {
+    public String getMenuSortKey()
+    {
         return "0";
     }
 

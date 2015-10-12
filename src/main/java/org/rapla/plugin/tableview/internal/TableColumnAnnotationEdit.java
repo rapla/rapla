@@ -29,16 +29,18 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 @Extension(provides= AnnotationEditTypeExtension.class, id="tableColumn")
 public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension {
 
-    
+
+    private final TableConfig.TableConfigLoader tableConfigLoader;
     @Inject
-    public TableColumnAnnotationEdit(RaplaContext context) throws Exception {
+    public TableColumnAnnotationEdit(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader) throws Exception {
         super(context);
+        this.tableConfigLoader = tableConfigLoader;
         
     }
 
     @Override
-    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
-        
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable)
+    {
         if (!( annotatable instanceof DynamicType))
         {
             return Collections.emptyList();
@@ -56,7 +58,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         try
         {
             final Preferences preferences = getClientFacade().getSystemPreferences();
-            config = TableConfig.read( preferences, getI18n());
+            config = tableConfigLoader.read(preferences,false);
         }
         catch (Exception ex)
         {
