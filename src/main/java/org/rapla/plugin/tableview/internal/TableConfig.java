@@ -1,19 +1,5 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.swing.table.TableColumn;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.MultiLanguageName;
@@ -22,14 +8,12 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.*;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
+
+import javax.swing.table.TableColumn;
+import java.util.*;
 
 public class TableConfig
 {
@@ -505,28 +489,11 @@ public class TableConfig
         final Collection<TableColumnConfig> columns = config.getColumns(configName);
         for (final TableColumnConfig column : columns)
         {
-            reservationColumnPlugins.add(new MyTableColumn(column, raplaLocale));
+            reservationColumnPlugins.add(new RaplaTableColumnImpl(column, raplaLocale));
         }
         return reservationColumnPlugins;
     }
 
-    static public class MyTableColumn<T> extends AbstractTableColumn<T>
-    {
-        public MyTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
-        {
-            super( column, raplaLocale);
-        }
 
-        public Object getValue(T object)
-        {
-            return format(object);
-        }
-
-        public String getHtmlValue(T object)
-        {
-            Object value = getValue(object);
-            return formatHtml(value);
-        }
-    }
 
 }

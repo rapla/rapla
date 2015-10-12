@@ -25,8 +25,6 @@ public class TableViewPlugin
     public static final String BLOCKS_SORTING_STRING_OPTION = PLUGIN_ID+".blocks.sortingstring";
 
     public final static boolean ENABLE_BY_DEFAULT = true;
-    public static final String APPOINTMENT_TABLE_COLUMN = "appointment_column";
-    public static final String EVENT_TABLE_COLUMN = "event_column";
     public static final String RESERVATION_SUMMARY = "event_summary";
     public static final String APPOINTMENT_SUMMARY = "appointment_summary";
     public static final String COLUMN_ANNOTATION = "tablecolumn_";

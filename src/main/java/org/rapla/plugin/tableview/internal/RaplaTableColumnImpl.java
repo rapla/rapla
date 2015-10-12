@@ -21,12 +21,12 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-public abstract class AbstractTableColumn<T> implements RaplaTableColumn<T, TableColumn>
+public class RaplaTableColumnImpl<T> implements RaplaTableColumn<T, TableColumn>
 {
     private final TableColumnConfig column;
     RaplaLocale raplaLocale;
 
-    protected AbstractTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
+    protected RaplaTableColumnImpl(TableColumnConfig column, RaplaLocale raplaLocale)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
@@ -50,11 +50,16 @@ public abstract class AbstractTableColumn<T> implements RaplaTableColumn<T, Tabl
         return name.getName(locale);
     }
 
-    @Override
-    abstract public Object getValue(T object);
-    
-    @Override
-    abstract public String getHtmlValue(T object);
+    public Object getValue(T object)
+    {
+        return format(object);
+    }
+
+    public String getHtmlValue(T object)
+    {
+        Object value = getValue(object);
+        return formatHtml(value);
+    }
     
 
     protected Object format(Object object) 
