@@ -52,7 +52,7 @@ public class DurationFunctions implements FunctionFactory
 
         }
 
-        @Override public Long eval(ParsedText.EvalContext context)
+        @Override public String eval(ParsedText.EvalContext context)
         {
             final Object obj;
             if ( arg != null)
@@ -64,7 +64,8 @@ public class DurationFunctions implements FunctionFactory
                 obj = context.getFirstContextObject();
             }
             final long l = calcDuration(obj);
-            return l;
+            String result = eventTimeModel.format( l);
+            return result;
         }
 
         private long calcDuration(Object obj)

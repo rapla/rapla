@@ -29,7 +29,7 @@ public class EventtimeCalculatorColumnDefinitionExtension implements TableColumn
         column.setName(name);
         column.setKey(DurationFunctions.NAMESPACE +":duration");
         column.setDefaultValue("{p->" + DurationFunctions.NAMESPACE + ":duration(p)}");
-        column.setType("integer");
+        column.setType("string");
         for (String lang:languages)
         {
             Locale locale = new Locale( lang);
