@@ -9,25 +9,27 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 @Singleton
 public class EventTimeCalculatorFactory
 {
 
-	private final ClientFacade facade;
+	private final Provider<ClientFacade> facadeProvider;
 	private final Logger logger;
 	@Inject
-    public EventTimeCalculatorFactory(ClientFacade facade, Logger logger)
+    public EventTimeCalculatorFactory(Provider<ClientFacade> facade, Logger logger)
 	{
-		this.facade = facade;
+		this.facadeProvider = facade;
 		this.logger = logger;
 	}
 
     public  EventTimeModel getEventTimeModel ()
 	{
 		Configuration configuration = null;
-		try
+		final ClientFacade facade = facadeProvider.get();
+        try
 		{
 			configuration = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
 		}
