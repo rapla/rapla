@@ -45,7 +45,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.ParsedText;
-import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
+import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;

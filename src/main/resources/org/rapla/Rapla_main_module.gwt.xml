@@ -7,13 +7,25 @@
 	<!-- Specify the paths for translatable code -->
 	<source path='components/util' />
 	<source path='entities'>
+		<!--
 	    <exclude name='**/server/**' />
+	    -->
     </source>
+	<source path='entities/configuration' />
+	<source path='entities/configuration/internal' />
+	<source path='entities/dynamictype' />
+	<source path='entities/dynamictype/internal' />
+	<source path='entities/domain' />
+	<source path='entities/internal' />
+	<source path='entities/domain/internal' />
 	<source path='entities/storage' />
+	<source path='entities/extensionpoints' />
 	<source path='entities/storage/internal' />
 	<source path='components/i18n'>
 		<exclude name='LanguagePropertyFilesGenerator.java' />
+		<!--
 	    <exclude name='**/server/**' />
+	    -->
 	</source>
 	<source path='components/xmlbundle'>
    	    <exclude name='**/server/**' />
@@ -26,7 +38,7 @@
 	<source path='client'>
 		<exclude name='**/swing/**' />
 	</source>
-	<source path='' includes='RaplaResources.java'/>
+	<source path=''/>
 	<source path='components/xmlbundle/impl' />
 	<!--
 	<source path='gui' />
@@ -57,17 +69,12 @@
 	<source path='facade/internal' />
 	<source path='storage/dbrm' />
 	<source path='storage/impl' />
-	<source path='storage/xml' />
 	<source path='storage' />
 	<source path='' includes="RaplaResources.java" />
 	<source path='' includes="ConnectInfo.java" />
 	<source path='' includes="RaplaDefaultResources.java" />
 	<source path='' includes="AppointmentFormaterImpl.java" />
-	<source path='client/gwt' includes='**.java' />
-	<!--
-	<source path='client/gwt' includes="MainInjector.java"/>
-	<source path='client/gwt' includes="Bootstrap.java"/>
--->
+
 	<inherits name="Gwt_jre"/>
 
 	<inherits name='com.google.gwt.user.User'/>
@@ -81,12 +88,7 @@
 	<inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>
 	<inherits name='org.gwtbootstrap3.extras.datetimepicker.DateTimePicker'/>
 	<inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>
-	<!--
-
-	-->
-<!-- 	<super-source path="../../../gwt-src/jre"/> -->
 	<!-- Specify the paths for translatable code -->
 	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
 	<inherits name='org.rapla.inject.inject'/>
-
 </module>

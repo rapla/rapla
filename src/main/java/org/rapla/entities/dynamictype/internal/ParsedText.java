@@ -11,7 +11,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.extensionpoints.FunctionFactory.Function;
+import org.rapla.entities.extensionpoints.Function;
 
 import java.io.Serializable;
 import java.util.*;
@@ -1030,7 +1030,7 @@ public class ParsedText implements Serializable
         else if (object instanceof MultiLanguageNamed)
         {
             MultiLanguageNamed raplaObject = (MultiLanguageNamed) object;
-            final String format = raplaObject.getName().getName(locale.getLanguage());
+            final String format = raplaObject.getName().getName(DateTools.getLang(locale));
             return format;
         }
         else if (object instanceof Named)
@@ -1041,100 +1041,6 @@ public class ParsedText implements Serializable
         return object.toString();
     }
 
-    final static public class EvalContext implements Cloneable
-    {
-        private int callStackDepth;
-        private Locale locale;
-        private String annotationName;
-        private List<?> contextObjects;
-        private EvalContext parent;
-
-        public EvalContext(Locale locale, String annotationName, List contextObjects)
-        {
-            this(locale, annotationName, contextObjects, 0);
-        }
-
-        private EvalContext(Locale locale, String annotationName, List contextObjects, int callStackDepth)
-        {
-            this.locale = locale;
-            this.callStackDepth = callStackDepth;
-            this.annotationName = annotationName;
-            this.contextObjects = contextObjects;
-        }
-
-        public EvalContext(List<Object> contextObjects, EvalContext parent)
-        {
-            this.locale = parent.locale;
-            this.callStackDepth = parent.callStackDepth + 1;
-            this.annotationName = parent.annotationName;
-            this.contextObjects = contextObjects;
-            this.parent = parent;
-        }
-
-        EvalContext getParent()
-        {
-            return parent;
-        }
-
-        public EvalContext clone(Locale locale)
-        {
-            EvalContext clone;
-            try
-            {
-                clone = (EvalContext) super.clone();
-            }
-            catch (CloneNotSupportedException e)
-            {
-                throw new IllegalStateException(e);
-            }
-            clone.contextObjects = contextObjects;
-            clone.locale = locale;
-            clone.callStackDepth = callStackDepth;
-            return clone;
-        }
-
-        
-
-        public Object getContextObject(int pos)
-        {
-            if (pos < contextObjects.size())
-            {
-                return contextObjects.get(pos);
-            }
-            return null;
-        }
-
-        public List<?> getContextObjects()
-        {
-            return contextObjects;
-        }
-
-        public Object getFirstContextObject()
-        {
-            if (contextObjects.size() > 0)
-            {
-                return contextObjects.get(0);
-            }
-            return null;
-        }
-
-        public String getAnnotationName()
-        {
-            return annotationName;
-        }
-
-        public int getCallStackDepth()
-        {
-            return callStackDepth;
-        }
-
-        public Locale getLocale()
-        {
-            return locale;
-        }
-
-    }
-    
     @Override
     public String toString()
     {

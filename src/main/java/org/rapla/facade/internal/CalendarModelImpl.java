@@ -32,8 +32,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ParseContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
-import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
+import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText.Variable;
+import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.facade.*;
@@ -558,7 +559,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Deprecated 
     class CalendarModelParseContext implements ParseContext
     {
-        public FunctionFactory.Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
+        public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
             if ( variableName.equals("allocatables"))
             {
                 return new Variable(variableName)

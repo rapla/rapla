@@ -65,7 +65,7 @@ public class MultiLanguageName implements java.io.Serializable {
         String lang;
         if (locale != null)
         {
-            lang = locale.getLanguage();
+            lang = getNameFromLocale(locale);
         }
         else
         {

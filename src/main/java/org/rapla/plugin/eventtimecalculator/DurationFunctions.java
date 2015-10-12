@@ -4,7 +4,8 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.entities.dynamictype.internal.EvalContext;
+import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.inject.Extension;
 
@@ -52,7 +53,7 @@ public class DurationFunctions implements FunctionFactory
 
         }
 
-        @Override public String eval(ParsedText.EvalContext context)
+        @Override public String eval(EvalContext context)
         {
             final Object obj;
             if ( arg != null)

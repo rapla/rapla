@@ -21,7 +21,7 @@ import org.rapla.entities.*;
 import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.*;
-import org.rapla.entities.dynamictype.internal.ParsedText.EvalContext;
+import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
@@ -622,7 +622,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 			this.type = (DynamicTypeImpl)type;
 		}
 		
-		public FunctionFactory.Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
+		public Function resolveVariableFunction(String variableName) throws IllegalAnnotationException {
 		    if ( !variableName.contains(":"))
 		    {
 		        Attribute attribute = type.getAttribute(variableName);
