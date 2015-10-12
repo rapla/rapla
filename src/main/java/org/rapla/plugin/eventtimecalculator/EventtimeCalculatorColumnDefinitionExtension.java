@@ -28,7 +28,7 @@ public class EventtimeCalculatorColumnDefinitionExtension implements TableColumn
         MultiLanguageName name = new MultiLanguageName();
         column.setName(name);
         column.setKey(DurationFunctions.NAMESPACE +":duration");
-        column.setDefaultValue("p->" + DurationFunctions.NAMESPACE + ":duration(p)");
+        column.setDefaultValue("{p->" + DurationFunctions.NAMESPACE + ":duration(p)}");
         column.setType("integer");
         for (String lang:languages)
         {
