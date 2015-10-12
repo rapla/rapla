@@ -20,9 +20,9 @@ import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.SwingCalendarView;
+import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.gui.images.RaplaImages;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.inject.Extension;
 
 import java.util.Set;

@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.rapla.entities.Annotatable;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.EditField;
+import org.rapla.client.swing.EditField;
 
 public interface AnnotationEdit
 {

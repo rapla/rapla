@@ -1,9 +1,9 @@
 package org.rapla.client.extensionpoints;
 
+import org.rapla.client.ReservationEdit;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.ReservationEdit;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

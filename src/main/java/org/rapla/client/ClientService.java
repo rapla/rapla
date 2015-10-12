@@ -20,8 +20,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.gui.toolkit.RaplaFrame;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 
 /** This service starts and manages the rapla-gui-client.
  */
@@ -29,7 +29,7 @@ public interface ClientService
 {
     public static TypedComponentRole<Map<Object,Object>> SESSION_MAP = new TypedComponentRole<Map<Object,Object>>("org.rapla.SessionMap");
     public static TypedComponentRole<RaplaFrame> MAIN_COMPONENT = new TypedComponentRole<RaplaFrame>("org.rapla.MainComponent");
-    public static TypedComponentRole<RaplaWidget> WELCOME_FIELD = new TypedComponentRole<RaplaWidget>("org.rapla.gui.WelcomeField");
+    public static TypedComponentRole<RaplaWidget> WELCOME_FIELD = new TypedComponentRole<RaplaWidget>("org.rapla.client.swing.gui.WelcomeField");
     
     
     void addRaplaClientListener(RaplaClientListener listener);

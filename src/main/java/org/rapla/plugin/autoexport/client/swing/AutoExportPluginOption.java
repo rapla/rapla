@@ -13,7 +13,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.DefaultPluginOption;
+import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;

@@ -1,7 +1,7 @@
 package org.rapla.client.gwt;
 
-import org.rapla.client.gui.menu.data.Point;
-import org.rapla.gui.PopupContext;
+import org.rapla.client.menu.data.Point;
+import org.rapla.client.PopupContext;
 
 /**
  * Created by Christopher on 03.09.2015.

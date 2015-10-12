@@ -40,10 +40,10 @@ import org.rapla.facade.QueryModule;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.internal.common.PeriodChooser;
-import org.rapla.gui.toolkit.RaplaButton;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.common.PeriodChooser;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 
 public class DateChooserPanel extends RaplaGUIComponent
     implements

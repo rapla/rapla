@@ -9,7 +9,6 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageName;
@@ -18,10 +17,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.AnnotationEditExtension;
-import org.rapla.gui.EditField;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.internal.edit.fields.TextField;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;

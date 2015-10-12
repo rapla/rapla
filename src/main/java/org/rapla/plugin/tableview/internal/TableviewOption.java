@@ -8,7 +8,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;

@@ -18,12 +18,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 
 import org.rapla.RaplaClient;
-import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;

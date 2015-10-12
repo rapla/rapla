@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import org.omg.CORBA.FREE_MEM;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -20,13 +19,12 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.FrameControllerList;
-import org.rapla.gui.toolkit.RaplaFrame;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.RaplaFrame;
 
 import javax.inject.Inject;
 import javax.swing.*;

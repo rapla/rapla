@@ -1,6 +1,6 @@
 package org.rapla.client.extensionpoints;
 
-import org.rapla.gui.OptionPanel;
+import org.rapla.client.swing.OptionPanel;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

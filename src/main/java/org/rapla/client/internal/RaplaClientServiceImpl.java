@@ -17,8 +17,8 @@ import org.rapla.ConnectInfo;
 import org.rapla.RaplaClient;
 import org.rapla.RaplaResources;
 import org.rapla.client.*;
-import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.extensionpoints.ClientExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -34,13 +34,11 @@ import org.rapla.facade.*;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.*;
-import org.rapla.gui.images.RaplaImages;
-import org.rapla.gui.internal.*;
-import org.rapla.gui.internal.common.InternMenus;
-import org.rapla.gui.internal.edit.annotation.*;
-import org.rapla.gui.internal.view.LicenseInfoUI;
-import org.rapla.gui.toolkit.*;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.*;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.internal.view.LicenseInfoUI;
+import org.rapla.client.swing.toolkit.*;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
@@ -600,7 +598,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg,context,logger);
+                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, context, logger);
                         }
                     } 
                     catch (RaplaException ex) 

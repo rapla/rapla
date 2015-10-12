@@ -60,7 +60,7 @@ public class PreferencesTest extends RaplaTestCase {
         Preferences clone  = modificationMod.edit(preferences);
         //Allocatable allocatable = queryMod.getAllocatables()[0];
         //Configuration config = queryMod.createReference((RaplaType)allocatable);
-        //clone.putEntry("org.rapla.gui.weekview", config);
+        //clone.putEntry("org.rapla.client.swing.gui.weekview", config);
         modificationMod.store(clone);
         //assertEquals(allocatable, queryMod.resolve(config));
         updateMod.refresh();

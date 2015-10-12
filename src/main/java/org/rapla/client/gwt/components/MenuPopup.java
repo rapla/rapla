@@ -2,9 +2,9 @@ package org.rapla.client.gwt.components;
 
 import java.util.List;
 
-import org.rapla.client.gui.menu.data.MenuCallback;
-import org.rapla.client.gui.menu.data.MenuEntry;
-import org.rapla.client.gui.menu.data.Point;
+import org.rapla.client.menu.data.MenuCallback;
+import org.rapla.client.menu.data.MenuEntry;
+import org.rapla.client.menu.data.Point;
 
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.user.client.ui.MenuBar;

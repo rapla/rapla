@@ -27,15 +27,12 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.storage.RemoteLocaleService;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 final public class CountryChooser implements RaplaWidget
 {

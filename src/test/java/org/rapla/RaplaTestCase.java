@@ -18,7 +18,6 @@ import java.net.URL;
 
 import junit.framework.TestCase;
 
-import org.rapla.client.ClientService;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -28,7 +27,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.toolkit.ErrorDialog;
+import org.rapla.client.swing.toolkit.ErrorDialog;
 
 public abstract class RaplaTestCase extends TestCase {
     protected RaplaClientServiceImpl raplaContainer;

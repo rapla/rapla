@@ -6,7 +6,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.PublishExtension;
+import org.rapla.client.swing.PublishExtension;
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.inject.Extension;

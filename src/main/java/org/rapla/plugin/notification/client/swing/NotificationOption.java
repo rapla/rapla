@@ -28,11 +28,9 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.OptionPanel;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.internal.TreeAllocatableSelection;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.TreeAllocatableSelection;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 

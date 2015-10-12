@@ -19,9 +19,9 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.gui.PublishExtension;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.RaplaButton;
+import org.rapla.client.swing.PublishExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 

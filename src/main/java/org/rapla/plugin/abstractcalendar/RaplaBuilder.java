@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
@@ -72,8 +71,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.internal.view.AppointmentInfoUI;
-import org.rapla.gui.toolkit.RaplaColors;
+import org.rapla.client.swing.internal.view.AppointmentInfoUI;
+import org.rapla.client.swing.toolkit.RaplaColors;
 
 public abstract class RaplaBuilder 
     implements

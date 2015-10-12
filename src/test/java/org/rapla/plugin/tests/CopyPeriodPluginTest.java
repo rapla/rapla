@@ -25,7 +25,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.plugin.periodcopy.CopyPluginMenu;
+import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
 /** listens for allocation changes */

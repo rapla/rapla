@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.gwtbootstrap3.client.ui.html.Div;
-import org.rapla.client.gui.menu.gwt.context.ContextCreator;
-import org.rapla.client.plugin.weekview.HTMLDaySlot;
-import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.RowSlot;
-import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.Slot;
-import org.rapla.client.plugin.weekview.HTMLWeekViewPresenter.SpanAndMinute;
+import org.rapla.client.menu.gwt.ContextCreator;
+import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.Slot;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.SpanAndMinute;
 import org.rapla.components.calendarview.Block;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gui.PopupContext;
+import org.rapla.client.PopupContext;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 import com.google.gwt.core.client.Scheduler;

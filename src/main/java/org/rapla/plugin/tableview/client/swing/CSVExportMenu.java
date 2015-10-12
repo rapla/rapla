@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.JMenuItem;
@@ -35,8 +34,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.DialogUI;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;

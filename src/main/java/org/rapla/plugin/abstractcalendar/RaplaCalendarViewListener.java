@@ -10,6 +10,8 @@ import java.util.*;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
+import org.rapla.client.ReservationEdit;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.util.TimeInterval;
@@ -22,17 +24,16 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.gui.MenuContext;
-import org.rapla.gui.MenuFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.ReservationEdit;
-import org.rapla.gui.internal.action.AppointmentAction;
-import org.rapla.gui.internal.common.RaplaClipboard;
-import org.rapla.gui.toolkit.MenuInterface;
-import org.rapla.gui.toolkit.RaplaMenu;
-import org.rapla.gui.toolkit.RaplaMenuItem;
-import org.rapla.gui.toolkit.RaplaPopupMenu;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.action.AppointmentAction;
+import org.rapla.client.swing.toolkit.MenuInterface;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaPopupMenu;
+import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {

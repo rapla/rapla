@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.PopupContext;
+import org.rapla.client.PopupContext;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

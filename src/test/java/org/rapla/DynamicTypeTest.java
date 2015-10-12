@@ -26,7 +26,7 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
-import org.rapla.gui.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 
 
 public class DynamicTypeTest extends RaplaTestCase {
