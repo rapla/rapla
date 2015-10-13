@@ -562,14 +562,16 @@ public class TableConfig
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
         private final Set<TableColumnDefinitionExtension> extensions;
+        private final RaplaTableColumnFactory tableColumnCreator;
 
         @Inject public TableConfigLoader(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale,
-                Set<TableColumnDefinitionExtension> extensions)
+                Set<TableColumnDefinitionExtension> extensions, RaplaTableColumnFactory tableColumnCreator)
         {
             this.clientFacade = clientFacade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.extensions = extensions;
+            this.tableColumnCreator = tableColumnCreator;
         }
 
         public <T, C> List<RaplaTableColumn<T, C>> loadColumns(String configName) throws RaplaException
@@ -580,7 +582,7 @@ public class TableConfig
             final Collection<TableColumnConfig> columns = config.getColumns(configName);
             for (final TableColumnConfig column : columns)
             {
-                reservationColumnPlugins.add(new RaplaTableColumnImpl(column, raplaLocale));
+                reservationColumnPlugins.add(tableColumnCreator.createColumn(column, raplaLocale));
             }
             return reservationColumnPlugins;
         }
