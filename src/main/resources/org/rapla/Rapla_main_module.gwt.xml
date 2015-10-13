@@ -7,25 +7,19 @@
 	<!-- Specify the paths for translatable code -->
 	<source path='components/util' />
 	<source path='entities'>
-		<!--
 	    <exclude name='**/server/**' />
-	    -->
     </source>
 	<source path='entities/configuration' />
-	<source path='entities/configuration/internal' />
 	<source path='entities/dynamictype' />
-	<source path='entities/dynamictype/internal' />
 	<source path='entities/domain' />
 	<source path='entities/internal' />
-	<source path='entities/domain/internal' />
 	<source path='entities/storage' />
 	<source path='entities/extensionpoints' />
-	<source path='entities/storage/internal' />
 	<source path='components/i18n'>
-		<exclude name='LanguagePropertyFilesGenerator.java' />
 		<!--
-	    <exclude name='**/server/**' />
+		<exclude name='LanguagePropertyFilesGenerator.java' />
 	    -->
+	    <exclude name='**/server/**' />
 	</source>
 	<source path='components/xmlbundle'>
    	    <exclude name='**/server/**' />
@@ -38,16 +32,7 @@
 	<source path='client'>
 		<exclude name='**/swing/**' />
 	</source>
-	<source path=''/>
 	<source path='components/xmlbundle/impl' />
-	<!--
-	<source path='gui' />
-	<source path='gui/toolkit' />
-	<source path='gui/internal/view' />
-	<source path='gui/internal/edit' />
-	<source path='gui/internal/edit/reservation' />
-	<source path='gui/internal/common' />
-	-->
     <source path='framework/internal' includes="AbstractRaplaLocale.java" />
     <source path='framework' includes="SimpleProvider.java" />
     <source path='framework' includes="RaplaException.java" />
@@ -66,9 +51,6 @@
 	<source path='framework/logger' includes="Logger.java" />
 	<source path='framework/logger/internal' includes="RaplaJDKLoggingAdapterWithoutClassnameSupport.java" />
 	<source path='facade' />
-	<source path='facade/internal' />
-	<source path='storage/dbrm' />
-	<source path='storage/impl' />
 	<source path='storage' />
 	<source path='' includes="RaplaResources.java" />
 	<source path='' includes="ConnectInfo.java" />
