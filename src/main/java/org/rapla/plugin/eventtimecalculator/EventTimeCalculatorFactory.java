@@ -18,11 +18,13 @@ public class EventTimeCalculatorFactory
 
 	private final Provider<ClientFacade> facadeProvider;
 	private final Logger logger;
+    private final EventTimeCalculatorResources eventTimeI18n;
 	@Inject
-    public EventTimeCalculatorFactory(Provider<ClientFacade> facade, Logger logger)
+    public EventTimeCalculatorFactory(Provider<ClientFacade> facade, Logger logger, final EventTimeCalculatorResources eventTimeI18n)
 	{
 		this.facadeProvider = facade;
 		this.logger = logger;
+        this.eventTimeI18n = eventTimeI18n;
 	}
 
     public  EventTimeModel getEventTimeModel ()
@@ -52,7 +54,7 @@ public class EventTimeCalculatorFactory
 			}
         
         }
-        EventTimeModel m = new EventTimeModel(configuration);
+        EventTimeModel m = new EventTimeModel(configuration, eventTimeI18n);
         return m;
     }
 

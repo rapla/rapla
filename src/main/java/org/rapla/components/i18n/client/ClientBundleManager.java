@@ -35,16 +35,7 @@ public class ClientBundleManager implements BundleManager
             localePackage = locale1.get();
             String language = localePackage.getLanguage();
             String country = localePackage.getCountry();
-
-            locale = Locale.getDefault();
-            StringBuilder sb = new StringBuilder(language);
-            if(country != null && !country.isEmpty())
-            {
-                sb.append("_");
-                sb.append(country);
-            }
-            String localeString = sb.toString();
-            change(locale, localeString);
+            locale = newLocale(language, country);
         }
         catch (Exception e)
         {
@@ -117,5 +108,19 @@ public class ClientBundleManager implements BundleManager
             return id;
         };
     }-*/ ;
+
+    public Locale newLocale(String language, String country)
+    {
+        Locale locale = Locale.getDefault();
+        StringBuilder sb = new StringBuilder(language);
+        if(country != null && !country.isEmpty())
+        {
+            sb.append("_");
+            sb.append(country);
+        }
+        String localeString = sb.toString();
+        change(locale, localeString);
+        return locale;
+    }
 
 }

@@ -34,8 +34,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
+import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.internal.edit.DeleteUndo;
 import org.rapla.client.swing.toolkit.DialogUI;
 
 public class RaplaObjectAction extends RaplaAction {

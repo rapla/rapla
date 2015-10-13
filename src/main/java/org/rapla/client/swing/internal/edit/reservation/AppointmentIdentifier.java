@@ -18,8 +18,8 @@ import java.awt.Insets;
 
 import javax.swing.JLabel;
 
+import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.RaplaColors;
 
 /** A label with a background-color corresponding to the index
     of the appointment.

@@ -13,7 +13,7 @@ import java.util.TimeZone;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
-    private final BundleManager bundleManager;
+    protected final BundleManager bundleManager;
 
     protected AbstractRaplaLocale(BundleManager bundleManager){
         this.bundleManager=bundleManager;

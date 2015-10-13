@@ -2,6 +2,8 @@ package org.rapla.client.swing.toolkit;
 
 import java.awt.Color;
 
+import org.rapla.client.internal.RaplaColors;
+
 public class AWTColorUtil {
 
  	final static public Color getAppointmentColor(int nr)

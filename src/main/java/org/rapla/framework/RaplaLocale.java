@@ -121,4 +121,6 @@ public interface RaplaLocale
 
     String formatHour(int i);
 
+    Locale newLocale(String language, String country);
+
 }
