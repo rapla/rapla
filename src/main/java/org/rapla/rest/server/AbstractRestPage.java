@@ -40,7 +40,10 @@ public abstract class AbstractRestPage
             Collection<String> typeNames) throws RaplaException
     {
         ClassificationFilter[] filters = null;
-        if (simpleFilter != null || typeNames == null)
+        if (simpleFilter == null && typeNames == null)
+        {
+            return null;
+        }
         {
             DynamicType[] types = getQuery().getDynamicTypes(null);
             List<ClassificationFilter> filterList = new ArrayList<ClassificationFilter>();
