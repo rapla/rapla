@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +80,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
     
     @Override
-    protected String getTooltip(Reservation reservation) {
+    public String getTooltip(Reservation reservation) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( reservation, buf );
         insertClassificationTitle( reservation, buf );
@@ -89,7 +89,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
     
     @Override
-    protected String createHTMLAndFillLinks(Reservation reservation,LinkController controller) {
+    public String createHTMLAndFillLinks(Reservation reservation,LinkController controller) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( reservation, buf );
         insertClassificationTitle( reservation, buf );

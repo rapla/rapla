@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.client.ClientBundleManager;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 
@@ -14,6 +15,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import javax.ws.rs.client.ClientBuilder;
 
 @DefaultImplementation(of = RaplaLocale.class, context = InjectionContext.gwt)
 public class GwtRaplaLocale extends AbstractRaplaLocale {
@@ -63,5 +65,13 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
         final String format = formatter.format(date, timezoneG);
         return format;
     }
+    
+    @Override
+    public Locale newLocale(String language, String country)
+    {
+        return ((ClientBundleManager)bundleManager).newLocale(language, country);
+    }
+    
+    
 
 }

@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -69,7 +69,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     }
     
     @Override
-    protected String createHTMLAndFillLinks(Allocatable allocatable,LinkController controller) {
+    public String createHTMLAndFillLinks(Allocatable allocatable,LinkController controller) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( allocatable, buf );
         insertClassificationTitle( allocatable, buf );

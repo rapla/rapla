@@ -1,4 +1,4 @@
-package org.rapla.client.swing.internal.edit;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;

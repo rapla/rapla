@@ -3,9 +3,12 @@ package org.rapla.plugin.tableview.internal;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import junit.framework.TestCase;
+
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.ConfigurationException;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
@@ -100,7 +103,7 @@ public class TableConfigTest extends TestCase
         final Transport fromXml = (Transport) unmarshaller.unmarshal(new ByteArrayInputStream(out.toByteArray()));
         
         final RaplaConfiguration raplaConfig = TableConfig.print( fromXml.config);
-        final TableConfig test = TableConfig.read(raplaConfig);
+        final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));
         final String json2 = gson.toJson(test);
         //System.out.println(json2);
         assertEquals(json, json2);

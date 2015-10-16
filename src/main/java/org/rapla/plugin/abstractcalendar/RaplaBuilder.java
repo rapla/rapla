@@ -71,8 +71,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.internal.view.AppointmentInfoUI;
-import org.rapla.client.swing.toolkit.RaplaColors;
+import org.rapla.client.internal.AppointmentInfoUI;
+import org.rapla.client.internal.RaplaColors;
 
 public abstract class RaplaBuilder 
     implements

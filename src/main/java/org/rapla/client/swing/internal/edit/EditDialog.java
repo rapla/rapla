@@ -26,6 +26,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import org.rapla.client.ReservationController;
+import org.rapla.client.internal.SaveUndo;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;

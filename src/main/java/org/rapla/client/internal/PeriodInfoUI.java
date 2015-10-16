@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,12 +21,12 @@ import org.rapla.entities.domain.Period;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 
-class PeriodInfoUI extends HTMLInfo<Period> {
+public class PeriodInfoUI extends HTMLInfo<Period> {
     public PeriodInfoUI(RaplaContext sm) {
         super(sm);
     }
 
-    protected String createHTMLAndFillLinks(Period period,LinkController controller) {
+    public String createHTMLAndFillLinks(Period period,LinkController controller) {
         Collection<Row> att = new ArrayList<Row>();
         RaplaLocale loc = getRaplaLocale();
 
@@ -56,7 +56,7 @@ class PeriodInfoUI extends HTMLInfo<Period> {
         return createTable(att, false);
     }
     
-    protected String getTooltip(Period object) {
+    public String getTooltip(Period object) {
         return createHTMLAndFillLinks( object, null);
     }
 

@@ -21,9 +21,9 @@ import java.util.MissingResourceException;
 
 public class AbstractBundle implements I18nBundle
 {
-    String className;
-    BundleManager bundleManager;
-    String packageId;
+    protected String className;
+    protected final BundleManager bundleManager;
+    protected final String packageId;
 
     public AbstractBundle(String packageId,BundleManager localeLoader)
     {

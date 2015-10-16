@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -180,10 +180,10 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         return buf.toString();
     }
     
-    abstract protected String createHTMLAndFillLinks(T object,LinkController controller) throws RaplaException ;
+    abstract public String createHTMLAndFillLinks(T object,LinkController controller) throws RaplaException ;
     
     
-    protected String getTitle(T object) {
+    public String getTitle(T object) {
         StringBuffer buf = new StringBuffer();
         buf.append(getI18n().getString("view"));
         if ( object instanceof RaplaObject)
@@ -208,7 +208,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         }
         return buf.toString();
     }
-    protected String getTooltip(T object) {
+    public String getTooltip(T object) {
         if (object instanceof Named)
             return ((Named) object).getName(getI18n().getLocale());
         return null;

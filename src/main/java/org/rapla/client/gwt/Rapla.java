@@ -5,7 +5,6 @@ import org.rapla.inject.client.RaplaGinModules;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.ui.RootPanel;
 
 public class Rapla implements EntryPoint {
 

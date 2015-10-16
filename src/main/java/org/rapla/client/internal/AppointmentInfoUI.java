@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 
 import javax.inject.Inject;
@@ -60,7 +60,7 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
        buf.append("</div>");
    }
 
-	protected String createHTMLAndFillLinks(Appointment appointment,
+    public String createHTMLAndFillLinks(Appointment appointment,
 			LinkController controller) throws RaplaException {
 		Reservation reservation = appointment.getReservation();
 		return parent.createHTMLAndFillLinks(reservation, controller);

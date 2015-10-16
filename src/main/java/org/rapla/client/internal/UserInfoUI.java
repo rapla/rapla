@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +21,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-class UserInfoUI extends HTMLInfo<User> {
+public class UserInfoUI extends HTMLInfo<User> {
 	ClassificationInfoUI<Allocatable> classificationInfo;
     public UserInfoUI(RaplaContext sm) {
         super(sm);
@@ -29,7 +29,7 @@ class UserInfoUI extends HTMLInfo<User> {
     }
 
     @Override
-    protected String createHTMLAndFillLinks(User user,LinkController controller) {
+    public String createHTMLAndFillLinks(User user,LinkController controller) {
         StringBuffer buf = new StringBuffer();
         if (user.isAdmin()) {
             highlight(getString("admin"),buf);

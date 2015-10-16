@@ -3,6 +3,9 @@ package org.rapla.entities.dynamictype.internal;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import javax.inject.Inject;
+
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
@@ -25,6 +28,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.rest.GwtIncompatible;
 
@@ -32,6 +36,9 @@ import org.rapla.rest.GwtIncompatible;
 public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
+    
+    @Inject
+    private RaplaLocale raplaLocale;
 
     @Override public Function createFunction(String functionName, List<Function> args) throws IllegalAnnotationException
     {
@@ -48,7 +55,7 @@ public class StandardFunctions implements FunctionFactory
             case AppointmentsFunction.ID: return new AppointmentsFunction(args);
             case AttributeFunction.ID: return new AttributeFunction(args);
             case KeyFunction.ID: return new KeyFunction(args);
-            case NameFunction.ID: return new NameFunction(args);
+            case NameFunction.ID: return new NameFunction(args, raplaLocale);
             case ConcatFunction.ID: return new ConcatFunction(args);
             case EqualsFunction.ID: return new EqualsFunction(args);
             case FilterFunction.ID: return new FilterFunction(args);
@@ -434,7 +441,9 @@ public class StandardFunctions implements FunctionFactory
                 {
                     result.addAll(event.getSortedAppointments());
                 }
-                result.sort(new AppointmentStartComparator());
+                final Appointment[] resultArray = result.toArray(new Appointment[result.size()]);
+                Arrays.sort(resultArray, new AppointmentStartComparator());
+                result = Arrays.asList(resultArray);
                 return result;
             }
 
@@ -603,10 +612,12 @@ public class StandardFunctions implements FunctionFactory
         public static final String ID = "name";
         Function objectFunction;
         Function languageFunction;
+        private final RaplaLocale raplaLocale;
 
-        public NameFunction(List<Function> args) throws IllegalAnnotationException
+        public NameFunction(List<Function> args, final RaplaLocale raplaLocale) throws IllegalAnnotationException
         {
             super(ID, args);
+            this.raplaLocale = raplaLocale;
             assertArgs(0, 2);
             if (args.size() > 0)
             {
@@ -652,10 +663,10 @@ public class StandardFunctions implements FunctionFactory
                 if (languageFunction != null)
                 {
                     String language = ParsedText.evalToString(languageFunction.eval(context), context);
-                    if (language != null && language != locale.getLanguage())
+                    if (language != null && language != DateTools.getLang(locale))
                     {
-                        final String country = context.getLocale().getCountry();
-                        locale = new Locale(language, country);
+                        final String country = DateTools.getCountry(locale);
+                        locale = raplaLocale.newLocale(language, country);
                         context = context.clone(locale);
                     }
                 }

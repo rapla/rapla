@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,12 +22,12 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 
-class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
+public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
     public DynamicTypeInfoUI(RaplaContext sm) {
         super(sm);
     }
 
-    protected String createHTMLAndFillLinks(DynamicType object,LinkController controller){
+    public String createHTMLAndFillLinks(DynamicType object,LinkController controller){
         DynamicType dynamicType = object;
         StringBuffer buf = new StringBuffer();
         insertModificationRow( object, buf );
@@ -48,7 +48,7 @@ class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
         return buf.toString();
     }
     
-    protected String getTooltip(DynamicType object) {
+    public String getTooltip(DynamicType object) {
         if ( this.isAdmin()) {
             return createHTMLAndFillLinks( object, null);
         } else {

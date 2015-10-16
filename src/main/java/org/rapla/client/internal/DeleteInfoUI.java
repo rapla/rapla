@@ -1,3 +1,4 @@
+
 /*--------------------------------------------------------------------------*
  | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
@@ -10,18 +11,47 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
-import org.rapla.entities.Category;
 import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 
-class CategoryInfoUI extends HTMLInfo<Category> {
-    public CategoryInfoUI(RaplaContext sm){
+public class DeleteInfoUI extends HTMLInfo<Object[]> {
+    public DeleteInfoUI(RaplaContext sm) {
         super(sm);
     }
 
-    protected String createHTMLAndFillLinks(Category category,LinkController controller) throws RaplaException{
-        return category.getName( getRaplaLocale().getLocale());
+    public String createHTMLAndFillLinks(Object[] deletables,LinkController controller) {
+        StringBuffer buf = new StringBuffer();
+        buf.append(getString("delete.question"));
+        buf.append("<br>");
+        for (int i = 0; i<deletables.length; i++) {
+            buf.append((i + 1));
+            buf.append(") ");
+            final Object deletable = deletables[i];
+            controller.createLink( deletable, getName( deletable ), buf);
+            buf.append("<br>");
+        }
+        return buf.toString();
     }
+    
+    @Override
+    public String getTitle(Object[] deletables){
+        return getString("delete.title");
+    }
+
+   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

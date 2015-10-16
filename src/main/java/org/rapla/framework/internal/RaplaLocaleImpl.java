@@ -12,20 +12,21 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.util.DateTools;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.DateTools;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of= RaplaLocale.class, context = {InjectionContext.swing,InjectionContext.server} )
 @Singleton
@@ -90,6 +91,11 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return charsetForHtml;
     }
 
+    @Override
+    public Locale newLocale(String language, String country)
+    {
+        return new Locale(language, country != null ? country : "");
+    }
 
 }
 

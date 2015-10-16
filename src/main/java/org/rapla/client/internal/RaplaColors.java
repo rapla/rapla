@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.toolkit;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -131,7 +131,7 @@ final public class RaplaColors {
 
     }
 
-    static int decode(String value) {
+    public static int decode(String value) {
         int result = 0;
         int basis = 1;
         for ( int i=value.length()-1;i>=0;i --) {

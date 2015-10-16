@@ -23,10 +23,12 @@ public class EventTimeModel {
     protected int durationOfBreak;
     protected int timeUnit;
     protected String timeFormat;
+    private final EventTimeCalculatorResources i18n;
 
-    public EventTimeModel()
+    public EventTimeModel(EventTimeCalculatorResources i18n)
     {
-    	timeUnit = EventTimeCalculatorPlugin.DEFAULT_timeUnit;
+    	this.i18n = i18n;
+        timeUnit = EventTimeCalculatorPlugin.DEFAULT_timeUnit;
     	timeFormat = EventTimeCalculatorPlugin.DEFAULT_timeFormat;
     	timeTillBreak = EventTimeCalculatorPlugin.DEFAULT_intervalNumber;
     	durationOfBreak = EventTimeCalculatorPlugin.DEFAULT_breakNumber;
@@ -55,18 +57,19 @@ public class EventTimeModel {
 	public void setTimeFormat(String timeFormat) {
 		this.timeFormat = timeFormat;
 	}
-	public EventTimeModel(Configuration configuration) {
+	public EventTimeModel(Configuration configuration, EventTimeCalculatorResources i18n) {
     	timeTillBreak = configuration.getChild(EventTimeCalculatorPlugin.INTERVAL_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_intervalNumber);
         durationOfBreak= configuration.getChild(EventTimeCalculatorPlugin.BREAK_NUMBER).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_breakNumber);
         timeUnit= configuration.getChild(EventTimeCalculatorPlugin.TIME_UNIT).getValueAsInteger(EventTimeCalculatorPlugin.DEFAULT_timeUnit);
         timeFormat= configuration.getChild(EventTimeCalculatorPlugin.TIME_FORMAT).getValue(EventTimeCalculatorPlugin.DEFAULT_timeFormat);
+        this.i18n = i18n;
 	}
     
 	public String format(long duration) {
         if (duration < 0 || timeUnit == 0) {
             return "";
         }
-        return MessageFormat.format(timeFormat, duration / timeUnit, duration % timeUnit);
+        return i18n.formatTime(timeFormat, duration / timeUnit, duration % timeUnit);
     }
 	
     public long calcDuration(long minutes) 

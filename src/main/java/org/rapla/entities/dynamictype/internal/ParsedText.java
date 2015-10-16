@@ -560,13 +560,25 @@ public class ParsedText implements Serializable
         if (values.size() == 1)
         {
             final Object multiSelectConstraint = attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-            final boolean multiselect = multiSelectConstraint != null && Boolean.getBoolean(multiSelectConstraint.toString());
+            final boolean multiselect = multiSelectConstraint != null && parseBoolean(multiSelectConstraint);
             if (!multiselect)
             {
                 return result.iterator().next();
             }
         }
         return result;
+    }
+
+    private static boolean parseBoolean(final Object multiSelectConstraint)
+    {
+        try
+        {
+            return Boolean.parseBoolean(multiSelectConstraint.toString());
+        }
+        catch(Exception e)
+        {
+            return false;
+        }
     }
 
     public static class CategoryProxy implements Category

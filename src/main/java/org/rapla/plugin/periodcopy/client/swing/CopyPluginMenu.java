@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import javax.swing.JMenuItem;
 
 import org.rapla.client.extensionpoints.EditMenuExtension;
+import org.rapla.client.internal.SaveUndo;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
@@ -33,7 +34,6 @@ import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.SaveUndo;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;

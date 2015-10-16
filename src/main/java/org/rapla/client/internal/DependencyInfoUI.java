@@ -11,35 +11,45 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
+import java.util.Iterator;
+
+import org.rapla.entities.DependencyException;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.storage.StorageOperator;
 
-class DeleteInfoUI extends HTMLInfo<Object[]> {
-    public DeleteInfoUI(RaplaContext sm) {
+class DependencyInfoUI extends HTMLInfo<DependencyException> {
+    public DependencyInfoUI(RaplaContext sm){
         super(sm);
     }
 
-    protected String createHTMLAndFillLinks(Object[] deletables,LinkController controller) {
+    @Override
+    public String createHTMLAndFillLinks(DependencyException ex,LinkController controller) throws RaplaException{
         StringBuffer buf = new StringBuffer();
-        buf.append(getString("delete.question"));
+        buf.append(getString("error.dependencies")+":");
         buf.append("<br>");
-        for (int i = 0; i<deletables.length; i++) {
-            buf.append((i + 1));
+        Iterator<String> it = ex.getDependencies().iterator();
+        int i = 0;
+        while (it.hasNext()) {
+            Object obj = it.next();
+            buf.append((++i));
             buf.append(") ");
-            final Object deletable = deletables[i];
-            controller.createLink( deletable, getName( deletable ), buf);
+            buf.append( obj );
             buf.append("<br>");
+            if (i >= StorageOperator.MAX_DEPENDENCY && it.hasNext()) { //BJO
+                buf.append("...  more"); //BJO
+                break;
+            }
         }
         return buf.toString();
     }
     
     @Override
-    protected String getTitle(Object[] deletables){
-        return getString("delete.title");
+    public String getTitle(DependencyException ex) {
+        return getString("info") + ": " + getString("error.dependencies");
     }
-
-   
 }
 
 

@@ -11,7 +11,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -99,7 +99,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     }
     
     @Override
-    protected String getTooltip(Classifiable classifiable) {
+    public String getTooltip(Classifiable classifiable) {
         StringBuffer buf = new StringBuffer();
         Collection<Row> att = new ArrayList<Row>();
         att.addAll(getClassificationAttributes(classifiable, false,null));
@@ -108,7 +108,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     }
 
     @Override
-    protected String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller) {
+    public String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller) {
         StringBuffer buf = new StringBuffer();
         insertClassification( classifiable, buf );
         return buf.toString();

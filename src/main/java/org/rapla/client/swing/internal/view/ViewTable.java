@@ -25,14 +25,16 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.rapla.components.util.Assert;
-import org.rapla.entities.RaplaObject;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
+import org.rapla.client.internal.HTMLInfo;
+import org.rapla.client.internal.LinkController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.util.Assert;
+import org.rapla.entities.RaplaObject;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 /**Information of the entity-classes displayed in an HTML-Component */
 public class ViewTable<T> extends RaplaGUIComponent

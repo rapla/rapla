@@ -10,9 +10,9 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.view;
+package org.rapla.client.internal;
 
-interface LinkController
+public interface LinkController
 {
     void createLink(Object object,String link,StringBuffer buf);
     String createLink(Object object,String link);

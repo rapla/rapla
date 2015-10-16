@@ -4,8 +4,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
-import javax.swing.table.TableColumn;
-
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
@@ -19,15 +17,15 @@ import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.client.swing.DateCellRenderer;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-public class RaplaTableColumnImpl<T> implements RaplaTableColumn<T, TableColumn>
+public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn<T, C>
 {
-    private final TableColumnConfig column;
-    RaplaLocale raplaLocale;
 
-    protected RaplaTableColumnImpl(TableColumnConfig column, RaplaLocale raplaLocale)
+    protected final TableColumnConfig column;
+    protected RaplaLocale raplaLocale;
+
+    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
@@ -39,11 +37,10 @@ public class RaplaTableColumnImpl<T> implements RaplaTableColumn<T, TableColumn>
     }
 
     protected RaplaLocale getRaplaLocale()
-    { 
+    {
         return raplaLocale;
     }
 
-    @Override
     public String getColumnName()
     {
         final MultiLanguageName name = column.getName();
@@ -61,44 +58,43 @@ public class RaplaTableColumnImpl<T> implements RaplaTableColumn<T, TableColumn>
         Object value = getValue(object);
         return formatHtml(value);
     }
-    
 
-    protected Object format(Object object) 
+    protected Object format(Object object)
     {
         final Locale locale = getLocale();
         final String annotationName = getAnnotationName();
         final EvalContext context = new EvalContext(locale, annotationName, Collections.singletonList(object));
-        final Classification classification = ParsedText.guessClassification( object);
+        final Classification classification = ParsedText.guessClassification(object);
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
-        ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName);
-        if ( parsedAnnotation == null)
+        ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
+        if (parsedAnnotation == null)
         {
             final String defaultValue = column.getDefaultValue();
-            parsedAnnotation = new ParsedText( defaultValue );
+            parsedAnnotation = new ParsedText(defaultValue);
             final DynamicTypeParseContext parseContext = type.getParseContext();
             try
             {
-                parsedAnnotation.init( parseContext);
+                parsedAnnotation.init(parseContext);
             }
-            catch ( IllegalAnnotationException ex)
+            catch (IllegalAnnotationException ex)
             {
                 return null;
             }
         }
-        String format = parsedAnnotation.formatName( context);
-        if ( isDate() || isDatetime())
+        String format = parsedAnnotation.formatName(context);
+        if (isDate() || isDatetime())
         {
             java.util.Date date;
             try
             {
-                if ( isDatetime())
+                if (isDatetime())
                 {
-                    date = SerializableDateTimeFormat.INSTANCE.parseTimestamp( format );
+                    date = SerializableDateTimeFormat.INSTANCE.parseTimestamp(format);
                 }
                 else
                 {
                     boolean fillDate = false;
-                    date = SerializableDateTimeFormat.INSTANCE.parseDate( format, fillDate);
+                    date = SerializableDateTimeFormat.INSTANCE.parseDate(format, fillDate);
                 }
                 return date;
             }
@@ -112,79 +108,60 @@ public class RaplaTableColumnImpl<T> implements RaplaTableColumn<T, TableColumn>
 
     protected String getAnnotationName()
     {
-        return TableViewPlugin.COLUMN_ANNOTATION +column.getKey();
+        return TableViewPlugin.COLUMN_ANNOTATION + column.getKey();
     }
 
-    @Override
-    public void init(TableColumn column)
-    {
-        if ( isDate())
-        {
-            column.setCellRenderer( new DateCellRenderer( getRaplaLocale()));
-            column.setMaxWidth( 130 );
-            column.setPreferredWidth( 130 );
-        }
-        else if ( isDatetime())
-        {
-            column.setCellRenderer( new DateCellRenderer( getRaplaLocale()));
-            column.setMaxWidth( 175 );
-            column.setPreferredWidth( 175 );
-        }
-        // TODO Auto-generated method stub
-    }
-
-    @Override
     public Class<?> getColumnClass()
     {
-        if ( isDate() || isDatetime())
+        if (isDate() || isDatetime())
         {
             return Date.class;
         }
         return String.class;
     }
 
-    private boolean isDatetime()
+    protected boolean isDatetime()
     {
         String type = column.getType();
         final boolean isDate = type.equals("datetime");
         return isDate;
     }
 
-    private boolean isDate()
+    protected boolean isDate()
     {
         String type = column.getType();
         final boolean isDate = type.equals("date");
         return isDate;
     }
 
-
     protected String formatHtml(Object value)
     {
-        if ( value == null)
+        if (value == null)
         {
             return "";
         }
-        if ( isDate() || isDatetime())
+        if (isDate() || isDatetime())
         {
             RaplaLocale raplaLocale = getRaplaLocale();
-            if ( !(value instanceof Date))
+            if (!(value instanceof Date))
             {
-                value = "invalid date";                                    
+                value = "invalid date";
             }
             else
             {
                 Date date = (Date) value;
-                if ( isDatetime())
+                if (isDatetime())
                 {
-                    value =  raplaLocale.formatDateLong(date) + " " + raplaLocale.formatTime( date);
+                    value = raplaLocale.formatDateLong(date) + " " + raplaLocale.formatTime(date);
                 }
-                else 
+                else
                 {
-                    value =  raplaLocale.formatDateLong(date);
+                    value = raplaLocale.formatDateLong(date);
                 }
-                    
+
             }
         }
         return XMLWriter.encode(value.toString());
     }
+
 }

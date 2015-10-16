@@ -1,10 +1,13 @@
 package org.rapla.plugin.eventtimecalculator;
 
+import org.rapla.components.i18n.server.ServerBundleManager;
+
 import junit.framework.TestCase;
 
 public class EventTimeModelTest extends TestCase {
 
-	EventTimeModel model = new EventTimeModel();
+	EventTimeCalculatorResources i18n = new EventTimeCalculatorResources(new ServerBundleManager());
+    EventTimeModel model = new EventTimeModel(i18n);
 	{
 		model.setDurationOfBreak(15);
 		model.setTimeUnit( 45 );
