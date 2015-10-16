@@ -52,7 +52,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionPoint;
@@ -625,8 +624,8 @@ public class ContainerImpl implements Disposable
                 return true;
             }
         }
-        //boolean assignableFrom = type.isAssignableFrom( RemoteJsonService.class );
-        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom(type);
+        boolean assignableFrom = type.isAnnotationPresent( RemoteJsonMethod.class );
+//        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom(type);
         return assignableFrom;
         //return type.isAnnotationPresent(WebService.class);
     }

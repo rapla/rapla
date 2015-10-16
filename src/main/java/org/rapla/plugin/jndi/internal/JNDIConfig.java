@@ -4,10 +4,9 @@ import javax.jws.WebService;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 
 @WebService
-public interface JNDIConfig extends RemoteJsonService
+public interface JNDIConfig 
 {
     public void test(DefaultConfiguration config,String username,String password) throws RaplaException;
     public DefaultConfiguration getConfig() throws RaplaException;

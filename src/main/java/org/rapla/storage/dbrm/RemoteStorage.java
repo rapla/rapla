@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.jws.WebParam;
-import javax.jws.WebService;
 
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -25,13 +24,12 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.gwtjsonrpc.common.ResultType;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
 
 @RemoteJsonMethod
-public interface RemoteStorage extends RemoteJsonService {
+public interface RemoteStorage {
 	final String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
     
 	@ResultType(String.class)

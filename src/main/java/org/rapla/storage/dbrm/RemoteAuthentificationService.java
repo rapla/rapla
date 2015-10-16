@@ -12,21 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import java.util.Map;
-import java.util.Set;
-
 import javax.jws.WebParam;
-import javax.jws.WebService;
 
-import org.rapla.components.i18n.LocalePackage;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 import org.rapla.gwtjsonrpc.common.ResultType;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 
 @RemoteJsonMethod
-public interface RemoteAuthentificationService extends RemoteJsonService
+public interface RemoteAuthentificationService
 {
 	@ResultType(LoginTokens.class)
 	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);

@@ -1,14 +1,11 @@
 package org.rapla.plugin.mail;
 
-import javax.jws.WebService;
-
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.gwtjsonrpc.common.RemoteJsonService;
 
 @RemoteJsonMethod
-public interface MailConfigService extends RemoteJsonService
+public interface MailConfigService 
 {
 	boolean isExternalConfigEnabled() throws RaplaException;
 	void testMail( DefaultConfiguration config,String defaultSender) throws RaplaException;
