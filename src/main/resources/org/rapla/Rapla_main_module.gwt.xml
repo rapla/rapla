@@ -9,12 +9,6 @@
 	<source path='entities'>
 	    <exclude name='**/server/**' />
     </source>
-	<source path='entities/configuration' />
-	<source path='entities/dynamictype' />
-	<source path='entities/domain' />
-	<source path='entities/internal' />
-	<source path='entities/storage' />
-	<source path='entities/extensionpoints' />
 	<source path='components/i18n'>
 		<!--
 		<exclude name='LanguagePropertyFilesGenerator.java' />
@@ -46,6 +40,7 @@
     <source path='framework' includes="Disposable.java" />
     <source path='framework' includes="RaplaSynchronizationException.java" />
     <source path='framework' includes="Container.java" />
+    <source path='framework' includes="DefaultConfiguration_JsonSerializer.java" />
     <source path='framework/internal' includes="RaplaLocaleImpl.java" />
     <source path='framework/internal' includes="ContainerImpl.java" />
 	<source path='framework/logger' includes="Logger.java" />
