@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import javax.jws.WebParam;
-
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.ResultType;
 import org.rapla.gwtjsonrpc.common.VoidResult;
+
+import javax.jws.WebParam;
 
 @RemoteJsonMethod
 public interface RemoteAuthentificationService

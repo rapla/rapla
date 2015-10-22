@@ -24,6 +24,17 @@ public final class GwtCommandScheduler implements CommandScheduler
         this.gwtLogger = gwtLogger;
     }
 
+    @Override public void execute(final Runnable command)
+    {
+        schedule(new Command()
+        {
+            @Override public void execute() throws Exception
+            {
+                command.run();
+            }
+        }, 0);
+    }
+
     @Override
     public Cancelable schedule(final Command command, long delay, final long period)
     {

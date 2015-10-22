@@ -308,19 +308,6 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 }
             }
             
-            class AuthenticationException extends RaplaException
-            {
-
-                public AuthenticationException(String text) {
-                    super(text);
-                }
-
-                /**
-                 * 
-                 */
-                private static final long serialVersionUID = 1L;
-                
-            }
 
             protected Object getResult(final Method method, JsonObject resultMessage) throws RaplaException {
                 JsonElement resultElement = resultMessage.get("result");
@@ -419,7 +406,7 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
         return element;
     }
     
-    class ReconnectInfo
+    static class ReconnectInfo
     {
         Class service;
         Method method;
@@ -435,10 +422,25 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
         reconnectInfo.args = args;
     }
 
+    static class AuthenticationException extends RaplaException
+    {
 
-	
+        public AuthenticationException()
+        {
+            super("authentication failed");
+        }
+        public AuthenticationException(String text)
+        {
+            super(text);
+        }
 
-//    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
+    }
+
+
+
+
+
+    //    private void addParams(Appendable writer, Map<String,String> args ) throws IOException
 //    {
 //    	writer.append( "v="+URLEncoder.encode(clientVersion,"utf-8"));
 //        for (Iterator<String> it = args.keySet().iterator();it.hasNext();)

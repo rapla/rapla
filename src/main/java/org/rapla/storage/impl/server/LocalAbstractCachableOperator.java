@@ -41,13 +41,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
-import org.rapla.components.util.Cancelable;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.components.util.Tools;
+import org.rapla.components.util.*;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
@@ -2801,7 +2795,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,"resource", groupsCategory);
 		setName(resourceType.getName(), "resource");
 		add(store, resourceType);
-		
+		Assert.isTrue(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(resourceType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)));
+
+
 		DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON,"person", groupsCategory);
 		setName(personType.getName(), "person");
 		add(store, personType);
@@ -2830,7 +2826,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		AllocatableImpl allocatable = new AllocatableImpl(now, now);
 		allocatable.setResolver( this);
         DynamicType dynamicType = cache.getDynamicType("resource");
-        Classification classification = dynamicType.newClassification();
+		Classification classification = dynamicType.newClassification();
         allocatable.setClassification(classification);
         PermissionContainer.Util.copyPermissions(dynamicType, allocatable);
         setNew(allocatable);
@@ -2838,6 +2834,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         allocatable.setOwner( user);
         
         cache.put( allocatable);
+		final DynamicType type = allocatable.getClassification().getType();
 	}
     
     private void add(EntityStore list, DynamicTypeImpl type) {
@@ -2866,6 +2863,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	
 	private DynamicTypeImpl newDynamicType(String classificationType, String key,Category userGroups) throws RaplaException {
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl();
+		dynamicType.setResolver( this);
 		dynamicType.setAnnotation("classification-type", classificationType);
 		dynamicType.setKey(key);
 		setNew(dynamicType);
@@ -2887,7 +2885,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
             addDefaultResourcePermissions(dynamicType);
 		}
-		dynamicType.setResolver( this);
 		return dynamicType;
 	}
 

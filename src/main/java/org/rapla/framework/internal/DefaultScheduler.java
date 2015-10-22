@@ -56,6 +56,11 @@ public class DefaultScheduler implements CommandScheduler, Disposable
 		this.executor = executor;
 	}
 
+	public void execute(Runnable task)
+	{
+	   schedule(task, 0 );
+	}
+
 	public Cancelable schedule(Command command, long delay) 
 	{
 		Runnable task = createTask(command);

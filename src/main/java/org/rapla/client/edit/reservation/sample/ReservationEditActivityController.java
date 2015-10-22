@@ -23,10 +23,18 @@ import org.rapla.storage.StorageOperator;
 @Singleton
 public class ReservationEditActivityController  implements ActivityPresenter
 {
-    @Inject private Provider<ReservationPresenter> presenterProvider;
-    @Inject private ClientFacade facade;
-    @Inject private Logger logger;
+    final private Provider<ReservationPresenter> presenterProvider;
+    final private ClientFacade facade;
+    final private Logger logger;
     private final Map<String, ReservationPresenter> opendPresenter = new HashMap<>();
+
+    @Inject
+    public ReservationEditActivityController(Provider<ReservationPresenter> presenterProvider, ClientFacade facade, Logger logger)
+    {
+        this.presenterProvider = presenterProvider;
+        this.facade = facade;
+        this.logger = logger;
+    }
 
     @Override @SuppressWarnings("rawtypes") public boolean startActivity(ActivityManager.Activity activity)
     {

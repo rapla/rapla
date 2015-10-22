@@ -13,12 +13,12 @@
 
 package org.rapla.components.util;
 
-
+import java.util.concurrent.Executor;
 
 /** Creates a new thread that successively executes the queued command objects
  *  @see Command
  */
-public interface CommandScheduler  
+public interface CommandScheduler extends Executor
 {
 	public Cancelable schedule(Command command, long delay);
 	public Cancelable schedule(Command command, long delay, long period);
