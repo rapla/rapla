@@ -1,6 +1,9 @@
 package org.rapla.entities.dynamictype.internal;
 
 import junit.framework.TestCase;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.I18nLocaleFormats;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -8,6 +11,8 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.storage.LocalCache;
 
 import java.util.*;
@@ -71,7 +76,9 @@ public class ParsedTextTest extends TestCase
     private Map<String, FunctionFactory> createFactoryMap()
     {
         Map<String,FunctionFactory> map = new HashMap<String,FunctionFactory>();
-        map.put(StandardFunctions.NAMESPACE,new StandardFunctions());
+        BundleManager manager = new ServerBundleManager();
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(manager);
+        map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
         return map;
     }
 

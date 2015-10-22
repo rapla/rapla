@@ -10,8 +10,8 @@ import org.rapla.entities.*;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.dynamictype.*;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.extensionpoints.Function;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -93,9 +93,16 @@ public class ParsedText implements Serializable
 
     public String getExternalRepresentation(ParseContext context)
     {
-        if (nonVariablesList == null)
+        if (nonVariablesList == null )
         {
-            return first;
+            if ( formatString != null)
+            {
+                return formatString;
+            }
+            else
+            {
+                return "";
+            }
         }
 
         StringBuffer buf = new StringBuffer();

@@ -37,8 +37,13 @@ public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
     
-    @Inject
     private RaplaLocale raplaLocale;
+
+    @Inject
+    public StandardFunctions(RaplaLocale raplaLocale)
+    {
+        this.raplaLocale = raplaLocale;
+    }
 
     @Override public Function createFunction(String functionName, List<Function> args) throws IllegalAnnotationException
     {
