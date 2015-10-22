@@ -62,7 +62,7 @@ public class RemoteServiceCallerImpl implements RemoteServiceCaller
             {
                 if (message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
                 {
-                          throw new BasicRaplaHTTPConnector.AuthenticationException(message);
+                    return new BasicRaplaHTTPConnector.AuthenticationException(message);
                 }
                 RaplaException ex = new RaplaExceptionDeserializer().deserializeException(classname, message.toString(), params);
 
