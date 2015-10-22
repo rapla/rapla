@@ -125,7 +125,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		// creating an URL to the path of the picture
-		URL url = LoginDialog.class.getResource("/org/rapla/gui/images/tafel.png");
+		URL url = LoginDialog.class.getResource("/org/rapla/client/swing/gui/images/tafel.png");
 		// getting it as image object
 		image = toolkit.createImage(url);
 		
