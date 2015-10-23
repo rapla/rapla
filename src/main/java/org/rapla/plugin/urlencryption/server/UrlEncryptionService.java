@@ -2,6 +2,7 @@ package org.rapla.plugin.urlencryption.server;
 
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.BadPaddingException;
@@ -59,7 +60,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws RaplaException
      */
     @Inject
-    public UrlEncryptionService(ClientFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException, InvalidKeyException {
+    public UrlEncryptionService(ClientFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException {//, InvalidKeyException {
         this.logger = logger;
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
@@ -81,13 +82,17 @@ public class UrlEncryptionService implements UrlEncryption {
 		{
 		    keyEntry = keyStore.getRootKeyBase64();
 		}
-
+		try
 		{
 			this.encryptionKey = this.base64.decode(keyEntry);
             if (this.encryptionKey == null || this.encryptionKey.equals(""))
             	throw new InvalidKeyException("Empty key string found!");
 
             this.initializeCiphers(this.encryptionKey);
+		}
+		catch(KeyException e)
+		{
+		    throw new RaplaException(e.getMessage(), e);
 		}
     }
 

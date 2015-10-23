@@ -27,43 +27,30 @@ import com.google.web.bindery.event.shared.EventBus;
 public class Application<W> implements ApplicationView.Presenter
 {
 
-    @Inject
-    Logger logger;
-
-    @Inject
-    BundleManager bundleManager;
-    @Inject
-    ClientFacade facade;
-    //    @Inject
-    //    private Provider<ReservationController> controller;
-    @Inject
-    private Provider<ActivityManager> activityManager;
-    private ApplicationView<W> mainView;
+    private final Logger logger;
+    private final BundleManager bundleManager;
+    private final ClientFacade facade;
+    private final Provider<ActivityManager> activityManager;
+    private final ApplicationView<W> mainView;
+    private final Map<String, PlacePresenter> placePresenters;
+    private final Map<String, ActivityPresenter> activityPresenters;
     private PlacePresenter actualPlacePresenter;
-    private Map<String, PlacePresenter> placePresenters;
-    private Map<String, ActivityPresenter> activityPresenters;
 
     private final EventBus eventBus;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
-    public Application(ApplicationView mainView, EventBus eventBus)
+    public Application(ApplicationView mainView, EventBus eventBus, Map<String, ActivityPresenter> activityPresenters, Map<String, PlacePresenter> placePresenters, Logger logger, BundleManager bundleManager, ClientFacade facade, Provider<ActivityManager> activityManager)
     {
         this.mainView = mainView;
+        this.activityManager = activityManager;
+        this.bundleManager = bundleManager;
+        this.facade = facade;
+        this.logger = logger;
         this.eventBus = eventBus;
-        mainView.setPresenter(this);
-    }
-
-    @Inject
-    private void setActivities(Map<String, ActivityPresenter> activityPresenters)
-    {
         this.activityPresenters = activityPresenters;
-    }
-
-    @Inject
-    private void setPlaces(Map<String, PlacePresenter> placePresenters)
-    {
         this.placePresenters = placePresenters;
+        mainView.setPresenter(this);
     }
 
     public void start()

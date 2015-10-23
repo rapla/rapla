@@ -3,6 +3,7 @@ package org.rapla.server.servletpages;
 import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +16,12 @@ import java.io.PrintWriter;
 public class RaplaStorePage implements RaplaPageExtension
 {
 
+    @Inject
+    public RaplaStorePage()
+    {
+        // TODO Auto-generated constructor stub
+    }
+    
     public void generatePage(
         ServletContext context,
         HttpServletRequest request,

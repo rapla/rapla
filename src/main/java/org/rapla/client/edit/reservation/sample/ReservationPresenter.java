@@ -27,23 +27,27 @@ public class ReservationPresenter implements ReservationController, Presenter
 {
     public static final String EDIT_ACTIVITY_ID = "edit";
 
-    @Inject private ClientFacade facade;
-    @Inject private Logger logger;
-    @Inject private RaplaLocale raplaLocale;
+    private final ClientFacade facade;
+    private final Logger logger;
+    private final RaplaLocale raplaLocale;
+    private final EventBus eventBus;
+    private final ReservationView<?> view;
 
-    @Inject private EventBus eventBus;
-
-    private ReservationView<?> view;
     private Reservation editReservation;
-    Appointment selectedAppointment;
+    private Appointment selectedAppointment;
     private boolean isNew;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public ReservationPresenter(ReservationView view)
+    @Inject
+    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView<?> view)
     {
+        this.facade = facade;
+        this.logger = logger;
+        this.raplaLocale = raplaLocale;
+        this.eventBus = eventBus;
         this.view = view;
         view.setPresenter(this);
     }
-    
+
     @Override
     public boolean isVisible()
     {

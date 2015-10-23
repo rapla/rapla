@@ -55,7 +55,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     private RaplaResources i18n;
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
-    @Inject
     public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
         this.facade = facade;

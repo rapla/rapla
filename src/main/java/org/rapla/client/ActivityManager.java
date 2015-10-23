@@ -25,7 +25,6 @@ public abstract class ActivityManager implements PlaceChangedEventHandler, Start
     protected final Set<Activity> activities = new LinkedHashSet<Activity>();
     protected final Logger logger;
 
-    @Inject
     public ActivityManager(@SuppressWarnings("rawtypes") Application application, EventBus eventBus, Logger logger)
     {
         this.application = application;

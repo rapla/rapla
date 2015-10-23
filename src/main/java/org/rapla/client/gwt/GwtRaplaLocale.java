@@ -25,7 +25,7 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
 	com.google.gwt.i18n.shared.TimeZone timezoneG = com.google.gwt.i18n.client.TimeZone.createTimeZone(GMT_STRING);
 
 	@Inject
-	protected GwtRaplaLocale(BundleManager bundleManager) {
+	public GwtRaplaLocale(BundleManager bundleManager) {
 		super(bundleManager);
 	}
 

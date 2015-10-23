@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Collection;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,6 +18,10 @@ import javax.servlet.http.HttpServletResponse;
 @Extension(provides = RaplaPageExtension.class,id="raplaapplet")
 public class RaplaAppletPageGenerator implements RaplaPageExtension
 {
+    @Inject
+    public RaplaAppletPageGenerator()
+    {
+    }
 
     private String getLibsApplet(ServletContext context) throws java.io.IOException {
         StringBuffer buf = new StringBuffer();

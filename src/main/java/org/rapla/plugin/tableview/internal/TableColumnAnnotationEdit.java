@@ -10,6 +10,9 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.Preferences;
@@ -17,9 +20,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
@@ -30,7 +30,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
 
     private final TableConfig.TableConfigLoader tableConfigLoader;
     @Inject
-    public TableColumnAnnotationEdit(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader) throws Exception {
+    public TableColumnAnnotationEdit(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader) {
         super(context);
         this.tableConfigLoader = tableConfigLoader;
         

@@ -127,7 +127,6 @@ public abstract class RaplaBuilder
 //	
 //    }
 //	
-	@Inject
 	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );

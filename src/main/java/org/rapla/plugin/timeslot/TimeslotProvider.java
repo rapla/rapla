@@ -14,6 +14,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
 @Singleton
@@ -22,10 +23,17 @@ public class TimeslotProvider extends RaplaComponent {
 	private ArrayList<Timeslot> timeslots;
 
 	@Inject
-	public TimeslotProvider(RaplaContext context, Configuration config) throws  ParseDateException
+	public TimeslotProvider(RaplaContext context, Configuration config) throws RaplaException // ParseDateException
 	{
 		super(context);
-		update(config);
+		try
+		{
+		    update(config);
+		}
+		catch(ParseDateException e)
+		{
+		    throw new RaplaException(e.getMessage(), e);
+		}
 //		timeslots.clear();
 //		timeslots.add(new Timeslot("1. Stunde", 7*60 + 45));
 //		timeslots.add(new Timeslot("- Pause (5m)", 8*60 + 30));

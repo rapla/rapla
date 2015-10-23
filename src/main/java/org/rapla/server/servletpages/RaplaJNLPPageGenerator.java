@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +28,7 @@ import org.rapla.server.extensionpoints.RaplaPageExtension;
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
 public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageExtension{
     
+    @Inject
     public RaplaJNLPPageGenerator( RaplaContext context )
     {
         super( context);

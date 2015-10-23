@@ -23,12 +23,17 @@ import com.google.gwt.user.client.Window;
 public class Bootstrap
 {
 
+    private final Provider<Application> application;
+    private final ClientFacade facade;
+    private final Logger logger;
+
     @Inject
-    private Provider<Application> application;
-    @Inject
-    private ClientFacade facade;
-    @Inject
-    private Logger logger;
+    public Bootstrap(Provider<Application> application, ClientFacade facade, Logger logger)
+    {
+        this.application = application;
+        this.facade = facade;
+        this.logger = logger;
+    }
 
     public void load()
     {

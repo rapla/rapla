@@ -25,7 +25,7 @@ public class ClientBundleManager implements BundleManager
     Locale locale;
 
     @Inject
-    protected ClientBundleManager( RemoteLocaleService remoteLocaleService)
+    public ClientBundleManager( RemoteLocaleService remoteLocaleService)
     {
         try
         {

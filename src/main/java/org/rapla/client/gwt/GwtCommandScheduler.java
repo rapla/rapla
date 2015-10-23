@@ -19,7 +19,8 @@ public final class GwtCommandScheduler implements CommandScheduler
 {
     private final Logger gwtLogger;
 
-    @Inject GwtCommandScheduler(Logger gwtLogger)
+    @Inject
+    public GwtCommandScheduler(Logger gwtLogger)
     {
         this.gwtLogger = gwtLogger;
     }

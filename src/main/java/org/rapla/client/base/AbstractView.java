@@ -8,8 +8,8 @@ public abstract class AbstractView<P> implements View<P> {
 
     private P presenter;
     @Inject
-    private RaplaLocale locale;
-
+    protected RaplaLocale locale;
+    
     @Override
     public void setPresenter(P presenter) {
         this.presenter = presenter;

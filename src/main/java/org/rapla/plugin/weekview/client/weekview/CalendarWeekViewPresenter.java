@@ -38,41 +38,34 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
 {
     public static final String WEEK_VIEW = "week";
 
-    private CalendarWeekView<W> view;
-    @Inject ReservationController reservationController;
+    private final CalendarWeekView<W> view;
+    private final ReservationController reservationController;
 
-    @Inject
-    private Logger logger;
-    @Inject
-    private EventBus eventBus;
-    @Inject
-    private CalendarSelectionModel model;
-
-    @Inject
-    private ClientFacade facade;
-
-    @Inject
-    private HTMLRaplaBuilder builder;
-
-    @Inject
-    private RaplaLocale raplaLocale;
-
-    @Inject
-    private RaplaResources i18n;
-
-    @Inject
-    private MenuPresenter presenter;
-
-    //    @Inject
-    //    private MenuFactory menuFactory;
-    //    @Inject
-    //    private MenuView menuView;
+    private final Logger logger;
+    private final EventBus eventBus;
+    private final CalendarSelectionModel model;
+    private final ClientFacade facade;
+    private final HTMLRaplaBuilder builder;
+    private final RaplaLocale raplaLocale;
+    private final RaplaResources i18n;
+    private final MenuPresenter presenter;
 
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarWeekViewPresenter(CalendarWeekView view)
+    public CalendarWeekViewPresenter(CalendarWeekView<W> view, ReservationController reservationController, Logger logger, EventBus eventBus,
+            CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, MenuPresenter presenter)
     {
-        this.view = (CalendarWeekView<W>) view;
+        super();
+        this.view = view;
+        this.reservationController = reservationController;
+        this.logger = logger;
+        this.eventBus = eventBus;
+        this.model = model;
+        this.facade = facade;
+        this.builder = builder;
+        this.raplaLocale = raplaLocale;
+        this.i18n = i18n;
+        this.presenter = presenter;
         this.view.setPresenter(this);
     }
 

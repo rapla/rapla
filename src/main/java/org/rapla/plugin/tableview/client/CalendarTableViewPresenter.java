@@ -25,21 +25,21 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<
 
     public static final String TABLE_VIEW = "table";
     private final CalendarTableView<W> view;
-    @Inject
-    private Logger logger;
-    @Inject
-    private EventBus eventBus;
-    @Inject
-    private CalendarSelectionModel model;
-
+    private final Logger logger;
+    private final EventBus eventBus;
+    private final CalendarSelectionModel model;
+    
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarTableViewPresenter(@SuppressWarnings("rawtypes") CalendarTableView view)
+    public CalendarTableViewPresenter(CalendarTableView<W> view, Logger logger, EventBus eventBus, CalendarSelectionModel model)
     {
         this.view = view;
+        this.logger = logger;
+        this.eventBus = eventBus;
+        this.model = model;
         this.view.setPresenter(this);
     }
-
+    
     @Override
     public boolean isEnabled()
     {
