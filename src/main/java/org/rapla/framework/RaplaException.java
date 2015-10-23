@@ -15,7 +15,7 @@ package org.rapla.framework;
 
 
 /** the base-class for all Rapla specific Exceptions */
-public class RaplaException extends Exception {
+public class RaplaException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     
     public RaplaException(String text)  {
