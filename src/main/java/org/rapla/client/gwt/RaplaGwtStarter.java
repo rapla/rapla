@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.rapla.client.gwt.view.RaplaPopups;
@@ -27,9 +28,10 @@ public class RaplaGwtStarter
 {
     public static final String LOGIN_COOKIE = "raplaLoginToken";
 
-    Provider<Bootstrap> bootstrapProvider;
+    Bootstrap bootstrapProvider;
 
-    public RaplaGwtStarter(Provider<Bootstrap> bootstrapProvider)
+    @Inject
+    public RaplaGwtStarter(Bootstrap bootstrapProvider)
     {
         this.bootstrapProvider = bootstrapProvider;
     }
@@ -89,8 +91,7 @@ public class RaplaGwtStarter
                 @Override
                 public boolean execute()
                 {
-                    Bootstrap bootstrap = bootstrapProvider.get();
-                    bootstrap.load();
+                    bootstrapProvider.load();
                     return false;
                 }
             }, 100);

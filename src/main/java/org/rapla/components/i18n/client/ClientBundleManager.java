@@ -4,6 +4,9 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.gwtbootstrap3.client.ui.form.validator.MessageFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
@@ -12,10 +15,6 @@ import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.RemoteLocaleService;
-
-import com.google.inject.Inject;
-
-import javax.inject.Singleton;
 
 @DefaultImplementation(of=BundleManager.class,context= InjectionContext.gwt)
 @Singleton

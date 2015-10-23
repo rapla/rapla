@@ -68,4 +68,5 @@
 	<!-- Specify the paths for translatable code -->
 	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
 	<inherits name='org.rapla.inject.inject'/>
+    <source path='dagger'/>
 </module>
