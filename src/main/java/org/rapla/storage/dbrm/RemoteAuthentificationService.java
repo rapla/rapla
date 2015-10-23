@@ -22,23 +22,17 @@ import javax.jws.WebParam;
 @RemoteJsonMethod
 public interface RemoteAuthentificationService
 {
-	@ResultType(LoginTokens.class)
 	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
 	
 	/** same as login but passes the login info into a LoginCredentials Object*/
-	@ResultType(LoginTokens.class)
     FutureResult<LoginTokens> auth(@WebParam(name="credentials") LoginCredentials credentials);
 	
-	@ResultType(VoidResult.class)
 	FutureResult<VoidResult> logout();
 	
-	@ResultType(String.class)
     FutureResult<String> getRefreshToken();
 	
-	@ResultType(String.class)
     FutureResult<String> regenerateRefreshToken();
-	
-	@ResultType(LoginTokens.class)
+
     FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
 
 }
