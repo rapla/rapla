@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
@@ -64,7 +65,7 @@ import org.rapla.inject.Extension;
 */
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.User")
-class UserEditUI  extends AbstractEditUI<User> {
+public class UserEditUI  extends AbstractEditUI<User> {
     TextField usernameField;
     PersonSelectField personSelect;
     TextField nameField;
@@ -75,6 +76,7 @@ class UserEditUI  extends AbstractEditUI<User> {
      * @param context
      * @throws RaplaException
      */
+    @Inject
     public UserEditUI(RaplaContext context) throws RaplaException {
         super(context);
         List<EditField> fields = new ArrayList<EditField>();

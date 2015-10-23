@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
@@ -77,6 +78,7 @@ public class CategoryEditUI extends RaplaGUIComponent
     Listener listener = new Listener();
     TreeCellRenderer iconRenderer;
 
+    @Inject
     public CategoryEditUI(RaplaContext context)  {
         super( context);
         detailPanel = new CategoryDetail(context);

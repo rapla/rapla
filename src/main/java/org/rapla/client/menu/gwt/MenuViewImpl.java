@@ -17,9 +17,16 @@ import org.rapla.inject.InjectionContext;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 @DefaultImplementation(of =MenuView.class, context = InjectionContext.gwt)
 public class MenuViewImpl extends AbstractView<MenuView.Presenter> implements MenuView<IsWidget>
 {
+    
+    @Inject
+    public MenuViewImpl()
+    {
+    }
 
     @Override
     public void showException(RaplaException ex)
