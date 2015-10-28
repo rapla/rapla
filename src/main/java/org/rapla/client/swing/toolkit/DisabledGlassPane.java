@@ -6,6 +6,8 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
 
+import org.rapla.client.swing.images.RaplaImages;
+
 /*
  *  Simple implementation of a Glass Pane that will capture and ignore all
  *  events as well paint the glass pane to give the frame a "disabled" look.
@@ -27,13 +29,14 @@ public class DisabledGlassPane extends JComponent
         Color base = UIManager.getColor("inactiveCaptionBorder");
         Color background = new Color(base.getRed(), base.getGreen(), base.getBlue(), 128);
         setBackground( background );
+        final ImageIcon icon = RaplaImages.getIcon("/org/rapla/client/swing/gui/images/rapla-loader.gif");
         setLayout( new GridBagLayout() );
-
         //  Add a message label to the glass pane
 
         add(message, new GridBagConstraints());
         message.setOpaque(true);
         message.setBorder(MESSAGE_BORDER);
+        message.setIcon(icon);
 
         //  Disable Mouse, Key and Focus events for the glass pane
 
@@ -88,16 +91,17 @@ public class DisabledGlassPane extends JComponent
      *
      *  A message can be displayed and it will be centered on the frame.
      */
-    public void activate(String text)
+    public void activate()
     {
-        if  (text != null && text.length() > 0)
-        {
+        String text = "";
+//        if  (text != null && text.length() > 0)
+//        {
             message.setVisible( true );
             message.setText( text );
             message.setForeground( getForeground() );
-        }
-        else
-            message.setVisible( false );
+//        }
+//        else
+//            message.setVisible( false );
 
         setVisible( true );
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
