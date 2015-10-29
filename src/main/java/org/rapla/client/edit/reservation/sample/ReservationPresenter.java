@@ -6,9 +6,9 @@ import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.StopActivityEvent;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -36,11 +36,13 @@ public class ReservationPresenter implements ReservationController, Presenter
     private Reservation editReservation;
     private Appointment selectedAppointment;
     private boolean isNew;
+    private final PermissionController permissionController;
 
     @Inject
-    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
+    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view, PermissionController permissionController)
     {
         this.facade = facade;
+        this.permissionController = permissionController;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.eventBus = eventBus;
@@ -152,7 +154,7 @@ public class ReservationPresenter implements ReservationController, Presenter
             final User user = facade.getUser();
             for (DynamicType type : types)
             {
-                if (PermissionContainer.Util.canCreate(type, user))
+                if (permissionController.canCreate(type, user))
                 {
                     creatableTypes.add(type);
                 }

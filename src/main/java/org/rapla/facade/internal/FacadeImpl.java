@@ -143,18 +143,27 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
     private final PermissionController permissionController;
 	
 	@Inject
-	public FacadeImpl(StorageOperator operator, RaplaResources i18n, CommandScheduler notifyQueue, Logger logger, PermissionController permissionController) {
+	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger, PermissionController permissionController) {
 	    
-		this.operator = operator;
 		this.logger = logger;
 		this.i18n = i18n;
         this.notifyQueue = notifyQueue;
         this.permissionController = permissionController;
 		locale = i18n.getLocale();
-		operator.addStorageUpdateListener(this);
+
 	}
-	
-	public Logger getLogger() 
+
+    public void setOperator(StorageOperator operator)
+    {
+        if (this.operator != null)
+        {
+            this.operator.removeStorageUpdateListener( this );
+        }
+        operator.addStorageUpdateListener(this);
+        this.operator = operator;
+    }
+
+    public Logger getLogger()
 	{
         return logger;
     }

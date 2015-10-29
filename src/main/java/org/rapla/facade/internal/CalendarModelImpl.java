@@ -26,6 +26,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -62,7 +63,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Date selectedDate;
     Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
     String title;
-    ClientFacade m_facade;
+    ClientFacade facade;
     String selectedView;
     //RaplaContext context;
     //RaplaLocale raplaLocale;
@@ -80,32 +81,34 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
+    PermissionController permissionController;
     @Inject
-    public CalendarModelImpl(ClientFacade facade, RaplaLocale locale)
+    public CalendarModelImpl(ClientFacade facade, RaplaLocale locale,  PermissionController permissionController)
     {
-        this(locale.getLocale(), facade.getUser(), facade);
+        this(locale.getLocale(), facade.getUser(), facade,permissionController);
         load( null);
     }
 
-    public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
+    public CalendarModelImpl(Locale locale, User user, ClientFacade facade,PermissionController permissionController) throws RaplaException {
         this.locale = locale;
-        m_facade = facade;
-        if ( user == null && m_facade.isSessionActive()) {
-            user = m_facade.getUser();
+        this.facade = facade;
+        this.permissionController = permissionController;
+        if ( user == null && this.facade.isSessionActive()) {
+            user = this.facade.getUser();
         }
-        Date today = m_facade.today();
-        setSelectedDate( today);
-        setStartDate( today);
-        setEndDate( DateTools.addYear(getStartDate()));
-        DynamicType[] types = m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        Date today = this.facade.today();
+        setSelectedDate(today);
+        setStartDate(today);
+        setEndDate(DateTools.addYear(getStartDate()));
+        DynamicType[] types = this.facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         if ( types.length == 0 ) {
-            types = m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+            types = this.facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
         }
         setSelectedObjects( types.length > 0 ? Collections.singletonList( types[0]) : Collections.emptyList());
         setViewId( DEFAULT_VIEW);
         this.user = user;
         if ( user != null && !user.isAdmin()) {
-            boolean selected = m_facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
+            boolean selected = this.facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
             optionMap.put( CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
         }
         optionMap.put( CalendarModel.SAVE_SELECTED_DATE, "false");
@@ -176,7 +179,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             defaultResourceTypes = true;
             DynamicType type =null;
             {
-                DynamicType[] dynamicTypes = m_facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+                DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
                 if ( dynamicTypes.length > 0)
                 {
                     type = dynamicTypes[0];
@@ -184,7 +187,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             if ( type == null)
             {
-                DynamicType[] dynamicTypes = m_facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+                DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
                 if ( dynamicTypes.length > 0)
                 {
                     type = dynamicTypes[0];
@@ -224,14 +227,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         else
         {
-            setSelectedDate( m_facade.today());
+            setSelectedDate(facade.today());
         }
         if ( config.getStartDate() != null) {
             setStartDate( config.getStartDate() );
         }
         else
         {
-            setStartDate( m_facade.today());
+            setStartDate(facade.today());
         }
         if ( config.getEndDate() != null && (saveDate == null || saveDate.equals("true"))) {
             setEndDate( config.getEndDate() );
@@ -252,7 +255,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             if ( getOption( CalendarModel.ONLY_MY_EVENTS) == null && currentUser.isAdmin())
             {
-                boolean selected = m_facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
+                boolean selected = facade.getSystemPreferences().getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
                 setOption( CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
                 selectedObjects.remove( currentUser);
             }
@@ -300,7 +303,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         boolean switchTemplate =  ((UpdateResult)evt).isSwitchTemplateMode();
         if  (switchTemplate)
         {
-            boolean changeToTemplate= m_facade.getTemplate() != null;
+            boolean changeToTemplate= facade.getTemplate() != null;
             if (changeToTemplate)
             {
                 beforeTemplateConf = createConfiguration();
@@ -439,11 +442,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
 
         DynamicType[] allEventTypes;
-        allEventTypes = m_facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+        allEventTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         if (allEventTypes.length > eventTypes && eventFilter != null) {
             defaultEventTypes = false;
         }
-        final DynamicType[] allTypes = m_facade.getDynamicTypes(null);
+        final DynamicType[] allTypes = facade.getDynamicTypes(null);
         final int allResourceTypes = allTypes.length - allEventTypes.length;
         if (allResourceTypes > resourceTypes && allocatableFilter != null) {
             defaultResourceTypes = false;
@@ -463,7 +466,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         
         CalendarModelConfigurationImpl calendarModelConfigurationImpl = new CalendarModelConfigurationImpl(selectedIds, idTypeList,resourceRootSelected,filterArray, defaultResourceTypes, defaultEventTypes, title, startDate, endDate, selectedDate, view, optionMap);
-        calendarModelConfigurationImpl.setResolver( m_facade.getOperator());
+        calendarModelConfigurationImpl.setResolver(facade.getOperator());
         return calendarModelConfigurationImpl;
     }
 
@@ -616,7 +619,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
         @Override public FunctionFactory getFunctionFactory(String functionName)
         {
-            return m_facade.getOperator().getFunctionFactory( functionName );
+            return facade.getOperator().getFunctionFactory( functionName );
         }
 
     }
@@ -687,7 +690,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private Collection<Allocatable> getFilteredAllocatables() throws RaplaException {
         Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
         // TODO should be replaced with getAllocatables(allocatableFilter.values();
-        for ( Allocatable allocatable :m_facade.getAllocatables())
+        for ( Allocatable allocatable : facade.getAllocatables())
         {
             if ( isInFilterAndCanRead(allocatable)) {
                 list.add( allocatable);
@@ -698,7 +701,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private boolean isInFilterAndCanRead(Allocatable allocatable)
     {
-        return isInFilter( allocatable) && (user == null || allocatable.canRead(user));
+        return isInFilter( allocatable) && (user == null || permissionController.canRead(allocatable,user));
     }
     
     private boolean isInFilter( Allocatable classifiable) {
@@ -801,7 +804,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if ( isDefaultEventTypes() /*|| isTemplateModus()*/)
         {
             filter = new ArrayList<ClassificationFilter>();
-            for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
+            for (DynamicType type : facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
             {
                 filter.add( type.newClassificationFilter());
             }
@@ -814,7 +817,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     protected boolean isTemplateModus() {
-        return m_facade.getTemplate() != null;
+        return facade.getTemplate() != null;
     }
 
     @Override
@@ -823,11 +826,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if ( isDefaultResourceTypes() /*|| isTemplateModus()*/)
         {
             filter = new ArrayList<ClassificationFilter>();
-            for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
+            for (DynamicType type : facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
             {
                 filter.add( type.newClassificationFilter());
             }
-            for (DynamicType type :m_facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
+            for (DynamicType type : facade.getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
             {
                 filter.add( type.newClassificationFilter());
             }
@@ -844,7 +847,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(locale, user, m_facade);
+            clone = new CalendarModelImpl(locale, user, facade,permissionController);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
             clone.setConfiguration( config, alternativOptions);
@@ -877,10 +880,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Collection<Conflict> conflicts = getSelectedConflicts();
         if ( conflicts.size() > 0)
         {
-            return m_facade.getReservations(conflicts);
+            return facade.getReservations(conflicts);
         }
         
-        Reservation[] reservationArray =m_facade.getReservations(allocatables, start, end);
+        Reservation[] reservationArray = facade.getReservations(allocatables, start, end);
         List<Reservation> asList = Arrays.asList( reservationArray );
         return restrictReservations(asList);
     }
@@ -1085,13 +1088,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public void save(final String filename) throws RaplaException,
             EntityNotFoundException {
         Preferences clone = createStorablePreferences(filename);
-        m_facade.store(clone);
+        facade.store(clone);
     }
 
     public Preferences createStorablePreferences(final String filename) throws RaplaException, EntityNotFoundException {
         final CalendarModelConfiguration conf = createConfiguration();
         
-        Preferences clone = m_facade.edit(m_facade.getPreferences(user));
+        Preferences clone = facade.edit(facade.getPreferences(user));
 
         if ( filename == null)
         {
@@ -1106,7 +1109,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             else
                 newMap = new TreeMap<String,CalendarModelConfiguration>( exportMap);
             newMap.put(filename, conf);
-            clone.putEntry( EXPORT_ENTRY, m_facade.newRaplaMap( newMap ));
+            clone.putEntry(EXPORT_ENTRY, facade.newRaplaMap(newMap));
         }
         return clone;
     }
@@ -1142,7 +1145,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         boolean createIfNotNull =false;
         
         {
-            final Preferences preferences = m_facade.getPreferences(user, createIfNotNull);
+            final Preferences preferences = facade.getPreferences(user, createIfNotNull);
             modelConfig = getModelConfig(filename, preferences);
         }
         if ( modelConfig == null && filename != null )
@@ -1238,7 +1241,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             selectedAllocatables = null;
         }
         Collection<Conflict> selectedConflicts = getSelectedConflicts();
-        List<Reservation> reservations = m_facade.getReservations( selectedConflicts);
+        List<Reservation> reservations = facade.getReservations( selectedConflicts);
         Map<Appointment,Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts,reservations);
         for ( Reservation event:getReservations())
         {
@@ -1306,7 +1309,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         else
         {
-            guessedType = m_facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
+            guessedType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
         }
         ClassificationFilter[] reservationFilter = getReservationFilter();
         DynamicType firstType = null;
