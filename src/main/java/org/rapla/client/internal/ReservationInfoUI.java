@@ -24,6 +24,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
@@ -65,7 +66,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         StringBuffer buf = new StringBuffer();
         for (int i = 0;i<allocatables.length;i++) {
             Allocatable allocatable = allocatables[i];
-            if ( user != null && !allocatable.canReadOnlyInformation(user))
+            if ( user != null && !PermissionContainer.Util.canReadOnlyInformation(allocatable, user))
                 continue;
             if (controller != null)
                 controller.createLink(allocatable,getName(allocatable),buf);

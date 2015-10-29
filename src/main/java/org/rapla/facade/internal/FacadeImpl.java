@@ -429,7 +429,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Allocatable allocatable = it.next();
 			if (workingUser == null || workingUser.isAdmin())
 				continue;
-			if (!allocatable.canRead(workingUser))
+			if (!PermissionContainer.Util.canRead(allocatable, workingUser))
 				it.remove();
 		}
 		return objects;
@@ -487,7 +487,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Allocatable[] all = getAllocatables(null);
 			User user = getUser();
 			for (int i = 0; i < all.length; i++) {
-				if (all[i].canModify(user)) {
+				if (PermissionContainer.Util.canModify(all[i], user)) {
 					return true;
 				}
 			}

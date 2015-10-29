@@ -24,6 +24,7 @@ import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Classification;
@@ -684,7 +685,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private boolean isInFilterAndCanRead(Allocatable allocatable)
     {
-        return isInFilter( allocatable) && (user == null || allocatable.canRead(user));
+        return isInFilter( allocatable) && (user == null || PermissionContainer.Util.canRead(allocatable, user));
     }
     
     private boolean isInFilter( Allocatable classifiable) {

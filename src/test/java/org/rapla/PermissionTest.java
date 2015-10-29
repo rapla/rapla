@@ -20,6 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
@@ -172,22 +173,22 @@ public class PermissionTest extends ServletTestBase {
         User user = testFacade.getUser();
         Allocatable a = getTestResource();
         assertNotNull( a );
-        assertTrue( a.canRead( user ) );
-        assertTrue( !a.canModify( user ) );
-        assertTrue( !a.canCreateConflicts( user ) );
-        assertTrue( !a.canAllocate( user, null, null, testFacade.today()));
+        assertTrue( PermissionContainer.Util.canRead( a, user ) );
+        assertTrue( !PermissionContainer.Util.canModify(a, user ) );
+        assertTrue( !PermissionContainer.Util.canCreateConflicts( a, user ) );
+        assertTrue( !PermissionContainer.Util.canAllocate( a, user, null, null, testFacade.today()));
     }
 
     private void clientAllocatePermissions() throws Exception {
         Allocatable allocatable = getTestResource();
         User user = testFacade.getUser();
         assertNotNull( allocatable );
-        assertTrue( allocatable.canRead( user ) );
+        assertTrue( PermissionContainer.Util.canRead( allocatable, user ) );
         Date start1 = DateTools.addDay(testFacade.today());
         Date end1 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
         Date start2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 1);
         Date end2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 3);
-        assertTrue( allocatable.canAllocate( user, null, null, testFacade.today() ) );
+        assertTrue( PermissionContainer.Util.canAllocate( allocatable, user, null, null, testFacade.today() ) );
 
         Reservation r1 = testFacade.newReservation();
         r1.getClassification().setValue("name","R1");

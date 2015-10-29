@@ -29,6 +29,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -457,7 +458,7 @@ public class ServerTest extends ServletTestBase {
 		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
-		assertTrue(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertTrue(PermissionContainer.Util.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
 		testResource.removePermission(testResource.getPermissionList().iterator().next());
 		Permission newPermission = testResource.newPermission();
@@ -465,12 +466,12 @@ public class ServerTest extends ServletTestBase {
 				"my-group"));
 		newPermission.setAccessLevel(Permission.READ);
 		testResource.addPermission(newPermission);
-		assertFalse(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertFalse(PermissionContainer.Util.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
-		assertTrue(testResource.canRead(facade2.getUser("monty")));
+		assertTrue(PermissionContainer.Util.canRead(testResource, facade2.getUser("monty")));
 		facade1.store(user);
 		facade2.refresh();
-		assertFalse(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertFalse(PermissionContainer.Util.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
 	}
 

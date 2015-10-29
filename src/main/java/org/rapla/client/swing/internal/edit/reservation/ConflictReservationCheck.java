@@ -27,6 +27,7 @@ import javax.swing.tree.TreeModel;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -109,7 +110,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         }
         for ( Allocatable allocatable:allocatables)
         {
-            if ( !allocatable.canCreateConflicts( user))
+            if ( !PermissionContainer.Util.canCreateConflicts( allocatable, user))
             {
                 return false;
             }

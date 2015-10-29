@@ -95,6 +95,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.AppointmentStartComparator;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -459,7 +460,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		Date today = getQuery().today();
 		for (Allocatable alloc:allocatables)
 		{
-			if (alloc.canAllocate(user, today))
+			if (PermissionContainer.Util.canAllocate(alloc, user, today))
 			{
 				rightsToAllocate.add( alloc );
 			}
@@ -1189,7 +1190,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		Date start = appointment.getStart();
 		Date end = appointment.getMaxEnd();
 		Date today = getQuery().today();
-		return allocatable.canAllocate(user, start, end, today);
+		return PermissionContainer.Util.canAllocate(allocatable, user, start, end, today);
 	}
 	
 	class AllocationRendering
@@ -2035,7 +2036,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		}
 		if (originalReservation == null || originalReservation.size() == 0) 
 		{
-			return allocatable.canAllocate(workingUser,	appointment.getStart(), appointment.getMaxEnd(),today);
+			return PermissionContainer.Util.canAllocate(allocatable, workingUser, appointment.getStart(), appointment.getMaxEnd(),today);
 		}
 		else
 		{

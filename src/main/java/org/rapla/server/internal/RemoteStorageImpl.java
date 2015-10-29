@@ -8,6 +8,7 @@ import org.rapla.entities.*;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -230,7 +231,7 @@ public class RemoteStorageImpl implements RemoteStorage
         }
         for (Allocatable allocatable : res.getAllocatables())
         {
-            if (allocatable.canRead(sessionUser))
+            if (PermissionContainer.Util.canRead(allocatable, sessionUser))
             {
                 return true;
             }

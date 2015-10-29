@@ -63,6 +63,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.entities.dynamictype.Attribute;
@@ -973,7 +974,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
-    				if ( !allocatable.canAllocate(user,  today))
+    				if ( !PermissionContainer.Util.canAllocate(allocatable, user,  today))
     				{
     					icon = forbiddenIcon;
     				}

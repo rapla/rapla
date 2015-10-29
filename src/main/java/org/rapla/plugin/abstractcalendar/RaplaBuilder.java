@@ -49,6 +49,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -756,7 +757,7 @@ public abstract class RaplaBuilder
 
         public boolean isVisible(Allocatable allocatable) {
             User user = buildContext.user;
-            if ( user != null && !allocatable.canReadOnlyInformation( user) ) {
+            if ( user != null && !PermissionContainer.Util.canReadOnlyInformation(allocatable, user) ) {
                 return false;
             }
             return matchingAllocatables.contains(allocatable);

@@ -338,7 +338,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
             else if (obj instanceof Allocatable)
             {
                 Allocatable alloc = (Allocatable) obj;
-                if (!alloc.canReadOnlyInformation(user))
+                if (!PermissionContainer.Util.canReadOnlyInformation(alloc, user))
                 {
                     clientStore = false;
                 }

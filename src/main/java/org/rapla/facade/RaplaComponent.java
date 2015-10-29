@@ -325,7 +325,7 @@ public class RaplaComponent
         try {
             User user = getUser();
 			Date today = getQuery().today();
-			return allocatables.canAllocate( user, start, end, today );
+			return PermissionContainer.Util.canAllocate(allocatables, user, start, end, today );
         } catch (RaplaException ex) {
             return false;
         }
@@ -353,7 +353,7 @@ public class RaplaComponent
         {
             return true;
         }
-        if (allocatable.canRead( user ))
+        if (PermissionContainer.Util.canRead(allocatable, user))
         {
             if (canModifyEvent(conflict.getReservation1(),user, resolver))
             {

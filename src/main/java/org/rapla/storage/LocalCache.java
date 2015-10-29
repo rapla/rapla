@@ -31,6 +31,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -311,7 +312,7 @@ public class LocalCache implements EntityResolver
         result.addAll(getUsers());
         for (Allocatable alloc: getAllocatables())
         {
-            if (user == null || user.isAdmin() || alloc.canReadOnlyInformation( user))
+            if (user == null || user.isAdmin() || PermissionContainer.Util.canReadOnlyInformation( alloc, user))
             {
                 result.add( alloc);
             }

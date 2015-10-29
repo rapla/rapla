@@ -298,7 +298,7 @@ public class SecurityManager
     /** for Thierry, we can make this configurable in the next version */
     private boolean canAllocateForOthers(Allocatable allocatable, User user) {
         // only admins, current behaviour
-        return allocatable.canModify( user);
+        return PermissionContainer.Util.canModify(allocatable, user);
         // everyone who can allocate the resource anytime
         //return allocatable.canAllocate( user, null, null, operator.today());
         // everyone
@@ -308,7 +308,7 @@ public class SecurityManager
     private void checkConflictsAllowed(User user, Allocatable allocatable, Conflict[] conflictsBefore, Conflict[] conflictsAfter) throws RaplaSecurityException {
         int nConflictsBefore = 0;
         int nConflictsAfter = 0;
-        if ( allocatable.canCreateConflicts( user ) ) {
+        if ( PermissionContainer.Util.canCreateConflicts( allocatable, user ) ) {
             return;
         }
         if ( conflictsBefore != null ) {
@@ -378,7 +378,7 @@ public class SecurityManager
                      && !r.hasAllocated( allocatable, appointment ) ) {
                     Date start = appointment.getStart();
                     Date end = appointment.getMaxEnd();
-                    if ( !allocatable.canAllocate( user, start, end, today ) ) {
+                    if ( !PermissionContainer.Util.canAllocate( allocatable, user, start, end, today ) ) {
                         String all = allocatable.getName( i18n.getLocale() );
                         String app = appointmentFormater.getSummary( appointment );
                         String error = i18n.format("warning.no_reserve_permission"
@@ -396,7 +396,7 @@ public class SecurityManager
 		if ( raplaType == Allocatable.TYPE)
 		{
 		    Allocatable allocatable = (Allocatable) entity;
-			if ( !allocatable.canReadOnlyInformation( user))
+			if ( !PermissionContainer.Util.canReadOnlyInformation( allocatable, user))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed",user, allocatable.getName( null)));
 			}

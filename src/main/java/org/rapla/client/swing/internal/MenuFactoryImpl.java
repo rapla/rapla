@@ -28,6 +28,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -163,7 +164,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
           Date start = getStartDate( model);
           Date end = getEndDate( model, start);
           for ( Allocatable alloc: selectedAllocatables) {
-              if (alloc.canAllocate( user, start, end, today))
+              if (PermissionContainer.Util.canAllocate( alloc, user, start, end, today))
                   canAllocate = true;
           }
           boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && canUserAllocateSomething( getUser()));
