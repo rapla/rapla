@@ -3,6 +3,8 @@ package org.rapla.entities.domain.permission.impl;
 import java.util.Collection;
 import java.util.Date;
 
+import javax.inject.Inject;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
@@ -16,6 +18,11 @@ import org.rapla.inject.Extension;
 @Extension(id = "org.rapla.entities.domain.permission.RaplaDefault", provides = PermissionExtension.class)
 public class RaplaDefaultPermissionImpl implements PermissionExtension
 {
+    
+    @Inject
+    public RaplaDefaultPermissionImpl()
+    {
+    }
 
     @Override
     public boolean hasAccess(PermissionContainer container, User user, AccessLevel accessLevel)
