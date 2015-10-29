@@ -329,12 +329,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
     public Object getValue(String key) {
-    	Attribute attribute = getAttribute( key );
+    	final Attribute attribute = getAttribute( key );
     	if ( attribute == null ) {
     		throw new NoSuchElementException("No attribute found for key " + key);
     	}
-
-    	return getValue(getAttribute(key));
+    	return getValue(attribute);
     }
 
     public void setValue(Attribute attribute,Object value) {
