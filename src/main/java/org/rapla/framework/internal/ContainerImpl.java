@@ -44,7 +44,6 @@ import javax.inject.Singleton;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.Configuration;
