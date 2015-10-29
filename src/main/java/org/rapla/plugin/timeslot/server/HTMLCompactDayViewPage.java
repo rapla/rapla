@@ -26,6 +26,7 @@ import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -47,9 +48,9 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 	private final TimeslotProvider timeslotProvider;
 	@Inject
 	public HTMLCompactDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
-			AppointmentFormater appointmentFormater, TimeslotProvider timeslotProvider)
+			AppointmentFormater appointmentFormater, TimeslotProvider timeslotProvider, PermissionController permissionController)
 	{
-		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+		super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
 		this.timeslotProvider = timeslotProvider;
 	}
 

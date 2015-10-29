@@ -23,6 +23,7 @@ import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
@@ -43,9 +44,9 @@ import javax.inject.Inject;
 public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 {
     @Inject
-    public HTMLWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public HTMLWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
     {
-        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
     }
 
     protected AbstractHTMLView createCalendarView() {

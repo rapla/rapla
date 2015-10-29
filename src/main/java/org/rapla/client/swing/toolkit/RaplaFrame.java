@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.JFrame;
+import javax.swing.JRootPane;
 
 import org.rapla.framework.RaplaException;
 
@@ -56,6 +57,8 @@ public class RaplaFrame extends JFrame
         }*/
         this.frameList = frameList;
         frameList.add(this);
+        final JRootPane rootPane2 = getRootPane();
+        rootPane2.setGlassPane(new DisabledGlassPane());
     }
 
     protected void processWindowEvent(WindowEvent e) {

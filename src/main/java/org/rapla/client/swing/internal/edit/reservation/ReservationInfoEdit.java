@@ -38,6 +38,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -72,6 +73,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     MyClassificationEditUI editUI;
     PermissionListField permissionField;
     
+    private final PermissionController permissionController;
     private Classification classification;
     private Classification lastClassification = null;
     private Classifiable classifiable;
@@ -100,6 +102,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         permissionField = new PermissionListField(context, "permissions");
         permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
         permissionField.setDefaultAccessLevel( Permission.READ );
+        permissionController = getService(PermissionController.class);
     }
 
     public JComponent getComponent() {
@@ -134,7 +137,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         User user = getUser();
         for ( DynamicType type: types)
         {
-            if (PermissionContainer.Util.canCreate(type, user))
+            if (permissionController.canCreate(type, user))
                 creatableTypes.add( type );
             
         }

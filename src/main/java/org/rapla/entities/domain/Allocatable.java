@@ -37,32 +37,12 @@ public interface Allocatable extends EntityPermissionContainer<Allocatable>,Name
     /** Static empty dummy Array. Mainly for using the toArray() method of the collection interface */
     Allocatable[] ALLOCATABLE_ARRAY = new Allocatable[0];
 
-
-    /** returns if the user has the permission to allocate the resource in the given
-        time. It returns <code>true</code> if for at least one permission calling
-        <code>permission.covers()</code> 
-        and <code>permission.affectsUser</code> yields <code>true</code>.
-    */
-    boolean canAllocate( User user, Date start, Date end, Date today );
-   
-    /** returns if the user has the permission to allocate the resource in at a time in the future without specifying the exact time  */
-    boolean canAllocate(User user, Date today);
-
     /** @deprecated use getPermissionList instead */
     @Deprecated
     Permission[] getPermissions();
     
-    boolean canRead(User user);
-    
-    boolean canModify(User user);
-   
-    boolean canReadOnlyInformation(User user);
-    
     /** returns the interval in which the user can allocate the resource. Returns null if the user can't allocate the resource */
     TimeInterval getAllocateInterval( User user, Date today);
-
-    /** returns if the user has the permission to create a conflict for the resource.*/
-    boolean canCreateConflicts( User user );
 
     /** same as  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(allocatable.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
      */

@@ -49,8 +49,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -110,6 +112,7 @@ public abstract class RaplaBuilder
 	final private RaplaResources i18n;
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
+    final private PermissionController permissionController;
 	
 //	public RaplaBuilder(RaplaContext context)  {
 //	    try
@@ -127,7 +130,8 @@ public abstract class RaplaBuilder
 //	
 //    }
 //	
-	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
+	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
+        this.permissionController = permissionController;
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );
         this.raplaLocale = raplaLocale;
@@ -502,7 +506,7 @@ public abstract class RaplaBuilder
         ArrayList<Block> blocks = new ArrayList<Block>();
         {
             //long time = System.currentTimeMillis();
-            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
+            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater, permissionController);
         	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
             Assert.notNull(preparedBlocks, "call prepareBuild first");
             for (AppointmentBlock block:preparedBlocks)
@@ -553,26 +557,26 @@ public abstract class RaplaBuilder
         }
       
         boolean isAnonymous = isAnonymous(buildContext.user, appointment);
-        RaplaBlockContext firstContext = new RaplaBlockContext( block, this, buildContext, null, isBlockSelected, isAnonymous );
+        RaplaBlockContext firstContext = new RaplaBlockContext( block, this, buildContext, null, isBlockSelected, isAnonymous, permissionController );
         List<Allocatable> selectedAllocatables = firstContext.getSelectedAllocatables();
         if ( !splitByAllocatables || selectedAllocatables.size() < 2) {
             return new RaplaBlockContext[] { firstContext };
         }
         RaplaBlockContext[] context = new RaplaBlockContext[ selectedAllocatables.size() ];
         for ( int i= 0;i<context.length;i ++) {
-            context[i] = new RaplaBlockContext( block, this, buildContext, selectedAllocatables.get( i ), isBlockSelected, isAnonymous);
+            context[i] = new RaplaBlockContext( block, this, buildContext, selectedAllocatables.get( i ), isBlockSelected, isAnonymous, permissionController);
         }
         return context;
     }
 
 	protected boolean isAnonymous(User user,Appointment appointment) {
 		EntityResolver entityResolver = getEntityResolver();
-        return !RaplaComponent.canRead(appointment, user, entityResolver);
+        return !RaplaComponent.canRead(appointment, user, entityResolver, permissionController);
 	}
 
     private boolean isMovable(Reservation reservation) {
         EntityResolver entityResolver = getEntityResolver();
-        return selectedReservations.contains( reservation ) && RaplaComponent.canModify(reservation, editingUser, entityResolver);
+        return selectedReservations.contains( reservation ) && RaplaComponent.canModify(reservation, editingUser, entityResolver, permissionController);
     }
 
     public boolean isConflictsSelected() {
@@ -694,10 +698,12 @@ public abstract class RaplaBuilder
         BuildContext buildContext;
         boolean isBlockSelected;
         boolean isAnonymous;
+        private PermissionController permissionController;
 
-        public RaplaBlockContext(AppointmentBlock appointmentBlock,RaplaBuilder builder,BuildContext buildContext, Allocatable selectedAllocatable, boolean isBlockSelected, boolean isAnonymous) {
+        public RaplaBlockContext(AppointmentBlock appointmentBlock,RaplaBuilder builder,BuildContext buildContext, Allocatable selectedAllocatable, boolean isBlockSelected, boolean isAnonymous, PermissionController permissionController) {
             this.buildContext = buildContext;
             this.isAnonymous = isAnonymous;
+            this.permissionController = permissionController;
             if ( appointmentBlock instanceof SplittedBlock)
             {
             	this.appointmentBlock = ((SplittedBlock)appointmentBlock).getOriginal();
@@ -756,7 +762,7 @@ public abstract class RaplaBuilder
 
         public boolean isVisible(Allocatable allocatable) {
             User user = buildContext.user;
-            if ( user != null && !allocatable.canReadOnlyInformation( user) ) {
+            if ( user != null && !permissionController.canReadOnlyInformation(allocatable, user) ) {
                 return false;
             }
             return matchingAllocatables.contains(allocatable);

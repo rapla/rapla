@@ -23,6 +23,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
@@ -42,12 +43,12 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     protected boolean onlyAllocationInfo;
     
     public HTMLRaplaBuilder(RaplaContext context) throws RaplaContextException {
-        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaResources.class), context.lookup(Logger.class),context.lookup( AppointmentFormater.class));
+        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaResources.class), context.lookup(Logger.class),context.lookup( AppointmentFormater.class), context.lookup(PermissionController.class));
     }
 
     @Inject
-    public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
-        super(raplaLocale, clientFacade, i18n, logger, appointmentFormater);
+    public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
+        super(raplaLocale, clientFacade, i18n, logger, appointmentFormater, permissionController);
     }
 
     

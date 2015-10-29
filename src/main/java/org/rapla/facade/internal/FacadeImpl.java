@@ -62,6 +62,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -105,1136 +106,996 @@ import org.rapla.storage.UpdateResult;
  * DB-Subsystem.
  * <p>
  * Sample configuration 1:
- *
+ * 
  * <pre>
  *    &lt;facade id="facade">
  *       &lt;store>file&lt;/store>
  *    &lt;/facade>
  * </pre>
- *
+ * 
  * </p>
  * <p>
  * The store entry contains the id of a storage-component. Storage-Components
  * are all components that implement the {@link StorageOperator} interface.
  * </p>
  */
-@Singleton @DefaultImplementation(of = ClientFacade.class, context = InjectionContext.all) public class FacadeImpl
-        implements ClientFacade, StorageUpdateListener
-{
-    protected CommandScheduler notifyQueue;
-    private String workingUserId = null;
-    private StorageOperator operator;
-    private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
-    private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
-    private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
-    private I18nBundle i18n;
-    private PeriodModelImpl periodModel;
-    //	private ConflictFinder conflictFinder;
-    private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
-    public CommandHistory commandHistory = new CommandHistory();
+@Singleton
+@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.all)
+public class FacadeImpl implements ClientFacade,StorageUpdateListener {
+	protected CommandScheduler notifyQueue;
+	private String workingUserId = null;
+	private StorageOperator operator;
+	private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
+	private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
+	private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
+	private I18nBundle i18n;
+	private PeriodModelImpl periodModel;
+//	private ConflictFinder conflictFinder;
+	private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
+	public CommandHistory commandHistory = new CommandHistory();
 
-    Locale locale;
-    //RaplaContext context;
+	Locale locale;
+	//RaplaContext context;
 
-    Logger logger;
-
-    String templateId;
-
-    @Inject public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger)
-    {
-
-        this.logger = logger;
-        this.i18n = i18n;
+	Logger logger;
+	
+	String templateId;
+    private final PermissionController permissionController;
+	
+	@Inject
+	public FacadeImpl(StorageOperator operator, RaplaResources i18n, CommandScheduler notifyQueue, Logger logger, PermissionController permissionController) {
+	    
+		this.operator = operator;
+		this.logger = logger;
+		this.i18n = i18n;
         this.notifyQueue = notifyQueue;
-        locale = i18n.getLocale();
-
-    }
-
-    public Logger getLogger()
-    {
+        this.permissionController = permissionController;
+		locale = i18n.getLocale();
+		operator.addStorageUpdateListener(this);
+	}
+	
+	public Logger getLogger() 
+	{
         return logger;
     }
+	
+	public StorageOperator getOperator() {
+		return operator;
+	}
+	
+	// Implementation of StorageUpdateListener.
+	/**
+	 * This method is called by the storage-operator, when stored objects have
+	 * changed.
+	 * 
+	 * <strong>Caution:</strong> You must not lock the storage operator during
+	 * processing of this call, because it could have been locked by the store
+	 * method, causing deadlocks
+	 */
+	public void objectsUpdated(UpdateResult evt) {
+		if (getLogger().isDebugEnabled())
+			getLogger().debug("Objects updated");
 
-    public StorageOperator getOperator()
-    {
-        return operator;
-    }
-
-    public void setOperator(StorageOperator operator)
-    {
-        if (this.operator != null)
-        {
-            operator.removeStorageUpdateListener(this);
-        }
-        this.operator = operator;
-        operator.addStorageUpdateListener(this);
-    }
-
-    // Implementation of StorageUpdateListener.
-
-    /**
-     * This method is called by the storage-operator, when stored objects have
-     * changed.
-     *
-     * <strong>Caution:</strong> You must not lock the storage operator during
-     * processing of this call, because it could have been locked by the store
-     * method, causing deadlocks
-     */
-    public void objectsUpdated(UpdateResult evt)
-    {
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Objects updated");
-
-        cacheValidString = null;
-        cachedReservations = null;
-        if (workingUserId != null)
-        {
-            if (evt.isModified(User.TYPE))
-            {
-                if (operator.tryResolve(workingUserId, User.class) == null)
-                {
-                    EntityNotFoundException ex = new EntityNotFoundException("User for id " + workingUserId + " not found. Maybe it was removed.");
+    	cacheValidString = null;
+		cachedReservations = null;
+    	if (workingUserId != null)
+		{
+			if ( evt.isModified( User.TYPE))
+			{
+			    if (operator.tryResolve( workingUserId, User.class) == null)
+			    {
+			        EntityNotFoundException ex = new EntityNotFoundException("User for id " + workingUserId + " not found. Maybe it was removed.");
                     fireUpdateError(ex);
-                }
-            }
-        }
+			    }
+			}
+		}
+				
+		fireUpdateEvent(evt);
+	}
 
-        fireUpdateEvent(evt);
-    }
+	public void updateError(RaplaException ex) {
+		getLogger().error(ex.getMessage(), ex);
+		fireUpdateError(ex);
+	}
 
-    public void updateError(RaplaException ex)
-    {
-        getLogger().error(ex.getMessage(), ex);
-        fireUpdateError(ex);
-    }
+	public void storageDisconnected(String message) {
+		fireStorageDisconnected(message);
+	}
 
-    public void storageDisconnected(String message)
-    {
-        fireStorageDisconnected(message);
-    }
+	/******************************
+	 * Update-module *
+	 ******************************/
+	public boolean isClientForServer() {
+		return operator.supportsActiveMonitoring();
+	}
 
-    /******************************
-     * Update-module *
-     ******************************/
-    public boolean isClientForServer()
-    {
-        return operator.supportsActiveMonitoring();
-    }
+	public void refresh() throws RaplaException {
+		if (operator.supportsActiveMonitoring()) {
+			operator.refresh();
+		}
+	}
 
-    public void refresh() throws RaplaException
-    {
-        if (operator.supportsActiveMonitoring())
-        {
-            operator.refresh();
-        }
-    }
+	void setName(MultiLanguageName name, String to)
+	{
+		String currentLang = i18n.getLang();
+		name.setName("en", to);
+		try
+		{
+			// try to find a translation in the current locale
+			String translation = i18n.getString( to);
+			name.setName(currentLang, translation);
+		}
+		catch (Exception ex)
+		{
+			// go on, if non is found
+		}
+	}
+	
+	public void addModificationListener(ModificationListener listener) {
+		modificatonListenerList.add(listener);
+	}
 
-    void setName(MultiLanguageName name, String to)
-    {
-        String currentLang = i18n.getLang();
-        name.setName("en", to);
-        try
-        {
-            // try to find a translation in the current locale
-            String translation = i18n.getString(to);
-            name.setName(currentLang, translation);
-        }
-        catch (Exception ex)
-        {
-            // go on, if non is found
-        }
-    }
+	public void addDirectModificationListener(ModificationListener listener) 
+	{
+		directListenerList.add(listener);
+	}
+	
+	public void removeModificationListener(ModificationListener listener) {
+		directListenerList.remove(listener);
+		modificatonListenerList.remove(listener);
+	}
 
-    public void addModificationListener(ModificationListener listener)
-    {
-        modificatonListenerList.add(listener);
-    }
+	private Collection<ModificationListener> getModificationListeners() {
+		if (modificatonListenerList.size() == 0)
+		{
+			return Collections.emptyList();
+		}
+		synchronized (this) {
+			Collection<ModificationListener> list = new ArrayList<ModificationListener>(3);
+			if (periodModel != null) {
+				list.add(periodModel);
+			}
+			Iterator<ModificationListener> it = modificatonListenerList.iterator();
+			while (it.hasNext()) {
+				ModificationListener listener =  it.next();
+				list.add(listener);
+			}
+			return list;
+		}
+	}
 
-    public void addDirectModificationListener(ModificationListener listener)
-    {
-        directListenerList.add(listener);
-    }
+	public void addAllocationChangedListener(AllocationChangeListener listener) {
+		if ( operator.supportsActiveMonitoring())
+		{
+			throw new IllegalStateException("You can't add an allocation listener to a client facade because reservation objects are not updated");
+		}
+		allocationListenerList.add(listener);
+	}
 
-    public void removeModificationListener(ModificationListener listener)
-    {
-        directListenerList.remove(listener);
-        modificatonListenerList.remove(listener);
-    }
+	public void removeAllocationChangedListener(AllocationChangeListener listener) {
+		allocationListenerList.remove(listener);
+	}
 
-    private Collection<ModificationListener> getModificationListeners()
-    {
-        if (modificatonListenerList.size() == 0)
-        {
-            return Collections.emptyList();
-        }
-        synchronized (this)
-        {
-            Collection<ModificationListener> list = new ArrayList<ModificationListener>(3);
-            if (periodModel != null)
+	private Collection<AllocationChangeListener> getAllocationChangeListeners() {
+		if (allocationListenerList.size() == 0)
+		{
+			return Collections.emptyList();
+		}
+		synchronized (this) {
+			Collection<AllocationChangeListener> list = new ArrayList<AllocationChangeListener>( 3);
+			Iterator<AllocationChangeListener> it = allocationListenerList.iterator();
+			while (it.hasNext()) {
+				AllocationChangeListener listener = it.next();
+				list.add(listener);
+			}
+			return list;
+		}
+	}
+	
+	public AllocationChangeEvent[] createAllocationChangeEvents(UpdateResult evt) {
+		Logger logger = getLogger().getChildLogger("trigger.allocation");
+		List<AllocationChangeEvent> triggerEvents = AllocationChangeFinder.getTriggerEvents(evt, logger);
+		return triggerEvents.toArray( new AllocationChangeEvent[0]);
+	}
+
+	public void addUpdateErrorListener(UpdateErrorListener listener) {
+		errorListenerList.add(listener);
+	}
+
+	public void removeUpdateErrorListener(UpdateErrorListener listener) {
+		errorListenerList.remove(listener);
+	}
+
+	public UpdateErrorListener[] getUpdateErrorListeners() {
+		return errorListenerList.toArray(new UpdateErrorListener[] {});
+	}
+
+	protected void fireUpdateError(RaplaException ex) {
+		UpdateErrorListener[] listeners = getUpdateErrorListeners();
+		for (int i = 0; i < listeners.length; i++) {
+			listeners[i].updateError(ex);
+		}
+	}
+
+	protected void fireStorageDisconnected(String message) {
+		UpdateErrorListener[] listeners = getUpdateErrorListeners();
+		for (int i = 0; i < listeners.length; i++) {
+			listeners[i].disconnected(message);
+		}
+	}
+
+	final class UpdateCommandAllocation implements Runnable, Command {
+		Collection<AllocationChangeListener> listenerList;
+		AllocationChangeEvent[] allocationChangeEvents;
+
+		public UpdateCommandAllocation(Collection<AllocationChangeListener> allocationChangeListeners, UpdateResult evt) {
+			this.listenerList= new ArrayList<AllocationChangeListener>(allocationChangeListeners);
+			if ( allocationChangeListeners.size() > 0)
+			{
+				allocationChangeEvents = createAllocationChangeEvents(evt);
+			}
+		}
+
+		public void execute() {
+			run();
+		}
+
+		public void run() {
+			for (AllocationChangeListener listener: listenerList) 
+			{
+				try {
+					if (isAborting())
+						return;
+					if (getLogger().isDebugEnabled())
+						getLogger().debug("Notifying " + listener);
+					if (allocationChangeEvents.length > 0) {
+						listener.changed(allocationChangeEvents);
+					}
+				} catch (Exception ex) {
+					getLogger().error("update-exception", ex);
+				}
+			}
+		}
+	}
+	
+	final class UpdateCommandModification implements Runnable, Command {
+		ModificationListener listenerList;
+		ModificationEvent modificationEvent;
+
+		public UpdateCommandModification(ModificationListener modificationListeners, UpdateResult evt) {
+			this.listenerList = modificationListeners;
+			this.modificationEvent = evt;
+		}
+
+		public void execute() {
+			run();
+		}
+
+		public void run() {
+			//]for (ModificationListener listener: listenerList)
+		    ModificationListener listener = listenerList;
+			{
+				
+				try {
+					if (isAborting())
+						return;
+					if (getLogger().isDebugEnabled())
+						getLogger().debug("Notifying " + listener);
+					listener.dataChanged(modificationEvent);
+				} catch (Exception ex) {
+					getLogger().error("update-exception", ex);
+				}
+			}
+		}
+
+	}	/**
+	 * fires update event asynchronous.
+	 */
+	protected void fireUpdateEvent(UpdateResult evt) {
+		if (periodModel != null) {
+			try {
+				periodModel.update();
+			} catch (RaplaException e) {
+				getLogger().error("Can't update Period Model", e);
+			}
+		}
+		{
+			Collection<ModificationListener> modificationListeners = directListenerList;
+			for (ModificationListener mod:modificationListeners)
+			{
+			//if (modificationListeners.size() > 0 ) {
+			   
+				new UpdateCommandModification(mod,evt).execute(); 
+			}
+		}
+		{
+			Collection<ModificationListener> modificationListeners = getModificationListeners();
+            for (ModificationListener mod:modificationListeners)
             {
-                list.add(periodModel);
-            }
-            Iterator<ModificationListener> it = modificatonListenerList.iterator();
-            while (it.hasNext())
-            {
-                ModificationListener listener = it.next();
-                list.add(listener);
-            }
-            return list;
-        }
-    }
+				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt),0);
+			}
+			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
+			if (allocationChangeListeners.size() > 0) {
+				notifyQueue.schedule(new UpdateCommandAllocation(allocationChangeListeners, evt),0);
+			}
+		}
+	}
 
-    public void addAllocationChangedListener(AllocationChangeListener listener)
-    {
-        if (operator.supportsActiveMonitoring())
-        {
-            throw new IllegalStateException("You can't add an allocation listener to a client facade because reservation objects are not updated");
-        }
-        allocationListenerList.add(listener);
-    }
-
-    public void removeAllocationChangedListener(AllocationChangeListener listener)
-    {
-        allocationListenerList.remove(listener);
-    }
-
-    private Collection<AllocationChangeListener> getAllocationChangeListeners()
-    {
-        if (allocationListenerList.size() == 0)
-        {
-            return Collections.emptyList();
-        }
-        synchronized (this)
-        {
-            Collection<AllocationChangeListener> list = new ArrayList<AllocationChangeListener>(3);
-            Iterator<AllocationChangeListener> it = allocationListenerList.iterator();
-            while (it.hasNext())
-            {
-                AllocationChangeListener listener = it.next();
-                list.add(listener);
-            }
-            return list;
-        }
-    }
-
-    public AllocationChangeEvent[] createAllocationChangeEvents(UpdateResult evt)
-    {
-        Logger logger = getLogger().getChildLogger("trigger.allocation");
-        List<AllocationChangeEvent> triggerEvents = AllocationChangeFinder.getTriggerEvents(evt, logger);
-        return triggerEvents.toArray(new AllocationChangeEvent[0]);
-    }
-
-    public void addUpdateErrorListener(UpdateErrorListener listener)
-    {
-        errorListenerList.add(listener);
-    }
-
-    public void removeUpdateErrorListener(UpdateErrorListener listener)
-    {
-        errorListenerList.remove(listener);
-    }
-
-    public UpdateErrorListener[] getUpdateErrorListeners()
-    {
-        return errorListenerList.toArray(new UpdateErrorListener[] {});
-    }
-
-    protected void fireUpdateError(RaplaException ex)
-    {
-        UpdateErrorListener[] listeners = getUpdateErrorListeners();
-        for (int i = 0; i < listeners.length; i++)
-        {
-            listeners[i].updateError(ex);
-        }
-    }
-
-    protected void fireStorageDisconnected(String message)
-    {
-        UpdateErrorListener[] listeners = getUpdateErrorListeners();
-        for (int i = 0; i < listeners.length; i++)
-        {
-            listeners[i].disconnected(message);
-        }
-    }
-
-    final class UpdateCommandAllocation implements Runnable, Command
-    {
-        Collection<AllocationChangeListener> listenerList;
-        AllocationChangeEvent[] allocationChangeEvents;
-
-        public UpdateCommandAllocation(Collection<AllocationChangeListener> allocationChangeListeners, UpdateResult evt)
-        {
-            this.listenerList = new ArrayList<AllocationChangeListener>(allocationChangeListeners);
-            if (allocationChangeListeners.size() > 0)
-            {
-                allocationChangeEvents = createAllocationChangeEvents(evt);
-            }
-        }
-
-        public void execute()
-        {
-            run();
-        }
-
-        public void run()
-        {
-            for (AllocationChangeListener listener : listenerList)
-            {
-                try
-                {
-                    if (isAborting())
-                        return;
-                    if (getLogger().isDebugEnabled())
-                        getLogger().debug("Notifying " + listener);
-                    if (allocationChangeEvents.length > 0)
-                    {
-                        listener.changed(allocationChangeEvents);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    getLogger().error("update-exception", ex);
-                }
-            }
-        }
-    }
-
-    final class UpdateCommandModification implements Runnable, Command
-    {
-        ModificationListener listenerList;
-        ModificationEvent modificationEvent;
-
-        public UpdateCommandModification(ModificationListener modificationListeners, UpdateResult evt)
-        {
-            this.listenerList = modificationListeners;
-            this.modificationEvent = evt;
-        }
-
-        public void execute()
-        {
-            run();
-        }
-
-        public void run()
-        {
-            //]for (ModificationListener listener: listenerList)
-            ModificationListener listener = listenerList;
-            {
-
-                try
-                {
-                    if (isAborting())
-                        return;
-                    if (getLogger().isDebugEnabled())
-                        getLogger().debug("Notifying " + listener);
-                    listener.dataChanged(modificationEvent);
-                }
-                catch (Exception ex)
-                {
-                    getLogger().error("update-exception", ex);
-                }
-            }
-        }
-
-    }
-
-    /**
-     * fires update event asynchronous.
-     */
-    protected void fireUpdateEvent(UpdateResult evt)
-    {
-        if (periodModel != null)
-        {
-            try
-            {
-                periodModel.update();
-            }
-            catch (RaplaException e)
-            {
-                getLogger().error("Can't update Period Model", e);
-            }
-        }
-        {
-            Collection<ModificationListener> modificationListeners = directListenerList;
-            for (ModificationListener mod : modificationListeners)
-            {
-                //if (modificationListeners.size() > 0 ) {
-
-                new UpdateCommandModification(mod, evt).execute();
-            }
-        }
-        {
-            Collection<ModificationListener> modificationListeners = getModificationListeners();
-            for (ModificationListener mod : modificationListeners)
-            {
-                notifyQueue.scheduleSynchronized(mod, new UpdateCommandModification(mod, evt), 0);
-            }
-            Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
-            if (allocationChangeListeners.size() > 0)
-            {
-                notifyQueue.schedule(new UpdateCommandAllocation(allocationChangeListeners, evt), 0);
-            }
-        }
-    }
-
-    /******************************
-     * Query-module *
-     ******************************/
-    private Collection<Allocatable> getVisibleAllocatables(ClassificationFilter[] filters) throws RaplaException
-    {
+	/******************************
+	 * Query-module *
+	 ******************************/
+	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
         User workingUser = getWorkingUser();
-        Collection<Allocatable> objects = operator.getAllocatables(filters);
-        Iterator<Allocatable> it = objects.iterator();
-        while (it.hasNext())
-        {
-            Allocatable allocatable = it.next();
-            if (workingUser == null || workingUser.isAdmin())
-                continue;
-            if (!allocatable.canRead(workingUser))
-                it.remove();
-        }
-        return objects;
-    }
+		Collection<Allocatable> objects = operator.getAllocatables(filters);
+		Iterator<Allocatable> it = objects.iterator();
+		while (it.hasNext()) {
+			Allocatable allocatable = it.next();
+			if (workingUser == null || workingUser.isAdmin())
+				continue;
+			if (!permissionController.canRead(allocatable, workingUser))
+				it.remove();
+		}
+		return objects;
+	}
 
-    int queryCounter = 0;
-
-    public FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end,
-            ClassificationFilter[] reservationFilters)
-    {
+	int queryCounter = 0;
+	public FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
         final List<Allocatable> allocList;
-        Map<String, String> annotationQuery;
-        if (templateId != null)
-        {
-            user = null;
-            allocList = null;
-            Allocatable template = getTemplate();
-            if (template == null)
-            {
-                return new ResultImpl<Collection<Reservation>>(new RaplaException("Template for id " + templateId + " not found!"));
-            }
-            annotationQuery = new LinkedHashMap<String, String>();
-            annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-        }
-        else
-        {
-            annotationQuery = null;
-            if (allocatables != null)
-            {
-                if (allocatables.length == 0)
-                {
-                    List<Reservation> emptyList = Collections.emptyList();
+        Map<String,String> annotationQuery;
+		if ( templateId != null)
+		{
+		    user = null;
+		    allocList = null;
+			Allocatable template = getTemplate();
+			if ( template == null)
+			{
+			    return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
+			}
+			annotationQuery = new LinkedHashMap<String,String>();
+			annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
+		}
+		else
+		{
+		    annotationQuery = null;
+    		if (allocatables != null)
+    		{
+    			if ( allocatables.length == 0 )
+    			{
+    				List<Reservation> emptyList = Collections.emptyList();
                     return new ResultImpl<Collection<Reservation>>(emptyList);
-                }
-                allocList = Arrays.asList(allocatables);
-            }
-            else
-            {
-                allocList = Collections.emptyList();
-            }
-        }
-        FutureResult<Collection<Reservation>> query = operator.getReservations(user, allocList, start, end, reservationFilters, annotationQuery);
-        return query;
-    }
+    			}
+    			allocList = Arrays.asList( allocatables);
+    		}
+    		else
+    		{
+    			allocList = Collections.emptyList();
+    		}
+		}
+		FutureResult<Collection<Reservation>> query = operator.getReservations(user,allocList, start, end, reservationFilters,annotationQuery);
+		return query;
+	}
 
-    public Allocatable[] getAllocatables() throws RaplaException
-    {
-        return getAllocatables(null);
+	public Allocatable[] getAllocatables() throws RaplaException {
+		return getAllocatables(null);
+		
+		
+	}
 
-    }
+	public Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException {
+		return getVisibleAllocatables(filters).toArray(	Allocatable.ALLOCATABLE_ARRAY);
+	}
 
-    public Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException
-    {
-        return getVisibleAllocatables(filters).toArray(Allocatable.ALLOCATABLE_ARRAY);
-    }
+	public boolean canExchangeAllocatables(Reservation reservation) {
+		try {
+			Allocatable[] all = getAllocatables(null);
+			User user = getUser();
+			for (int i = 0; i < all.length; i++) {
+				if (permissionController.canModify(all[i], user)) {
+					return true;
+				}
+			}
+		} catch (RaplaException ex) {
+		}
+		return false;
+	}
 
-    public boolean canExchangeAllocatables(Reservation reservation)
-    {
-        try
-        {
-            Allocatable[] all = getAllocatables(null);
-            User user = getUser();
-            for (int i = 0; i < all.length; i++)
-            {
-                if (all[i].canModify(user))
-                {
-                    return true;
-                }
-            }
-        }
-        catch (RaplaException ex)
-        {
-        }
-        return false;
-    }
+	public Preferences getPreferences() throws RaplaException {
+		return getPreferences(getUser());
+	}
 
-    public Preferences getPreferences() throws RaplaException
-    {
-        return getPreferences(getUser());
-    }
-
-    public Preferences getSystemPreferences() throws RaplaException
-    {
+	public Preferences getSystemPreferences() throws RaplaException
+	{
         return operator.getPreferences(null, true);
-    }
+	}
+	
+	public Preferences getPreferences(User user) throws RaplaException {
+		return operator.getPreferences(user, true);
+	}
+	
+	public Preferences getPreferences(User user,boolean createIfNotNull) throws RaplaException {
+		return operator.getPreferences(user, createIfNotNull);
+	}
+	
+	public Category getSuperCategory() {
+	    return  operator.getSuperCategory();
+	}
 
-    public Preferences getPreferences(User user) throws RaplaException
-    {
-        return operator.getPreferences(user, true);
-    }
-
-    public Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException
-    {
-        return operator.getPreferences(user, createIfNotNull);
-    }
-
-    public Category getSuperCategory()
-    {
-        return operator.getSuperCategory();
-    }
-
-    public Category getUserGroupsCategory() throws RaplaException
-    {
-        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        if (userGroups == null)
-        {
-            throw new RaplaException("No category '" + Permission.GROUP_CATEGORY_KEY + "' available");
-        }
-        return userGroups;
-    }
-
-    public Collection<Allocatable> getTemplates() throws RaplaException
-    {
-        DynamicType dynamicType = getDynamicType(StorageOperator.RAPLA_TEMPLATE);
-        ClassificationFilter[] array = dynamicType.newClassificationFilter().toArray();
-        Collection<Allocatable> allocatables = operator.getAllocatables(array);
-        return allocatables;
-    }
-
-    public Collection<Reservation> getTemplateReservations(Allocatable template) throws RaplaException
-    {
-        User user = null;
-        Collection<Allocatable> allocList = null;
-        Date start = null;
-        Date end = null;
-        Map<String, String> annotationQuery = new LinkedHashMap<String, String>();
-        annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-        try
-        {
-            Collection<Reservation> result = operator.getReservations(user, allocList, start, end, null, annotationQuery).get();
+	public Category getUserGroupsCategory() throws RaplaException {
+		Category userGroups = getSuperCategory().getCategory(
+				Permission.GROUP_CATEGORY_KEY);
+		if (userGroups == null) {
+			throw new RaplaException("No category '"+ Permission.GROUP_CATEGORY_KEY + "' available");
+		}
+		return userGroups;
+	}
+	
+	public Collection<Allocatable> getTemplates() throws RaplaException
+	{
+	    DynamicType dynamicType = getDynamicType(StorageOperator.RAPLA_TEMPLATE);
+	    ClassificationFilter[] array = dynamicType.newClassificationFilter().toArray();
+	    Collection<Allocatable> allocatables = operator.getAllocatables( array);
+		return allocatables;
+	}
+	
+	public Collection<Reservation> getTemplateReservations(Allocatable template) throws RaplaException
+	{
+		User user = null;
+		Collection<Allocatable> allocList = null;
+		Date start = null;
+		Date end = null;
+		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
+		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
+        try {
+            Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery).get();
             return result;
-        }
-        catch (RaplaException e)
-        {
+        } catch (RaplaException e) {
             throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
         }
-        catch (Exception e)
-        {
-            throw new RaplaException(e.getMessage(), e);
-        }
-    }
-
-    public Reservation[] getReservations(User user, Date start, Date end, ClassificationFilter[] filters) throws RaplaException
-    {
-        try
-        {
-            Collection<Reservation> collection = getReservationsAsync(user, null, start, end, filters).get();
+	}
+	
+	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {
+        try {
+            Collection<Reservation> collection = getReservationsAsync(user, null,start, end, filters).get();
             return collection.toArray(Reservation.RESERVATION_ARRAY);
-        }
-        catch (RaplaException e)
-        {
+        } catch (RaplaException e) {
             throw e;
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
         }
-        catch (Exception e)
-        {
-            throw new RaplaException(e.getMessage(), e);
-        }
-    }
-
-    public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters)
-            throws RaplaException
-    {
-        try
-        {
-            Collection<Reservation> collection = getReservationsAsync(null, allocatables, start, end, reservationFilters).get();
+	}
+	
+	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
+        try {
+            Collection<Reservation> collection = getReservationsAsync(null, allocatables,start, end, reservationFilters).get();
             return collection.toArray(Reservation.RESERVATION_ARRAY);
-        }
-        catch (RaplaException e)
-        {
+        } catch (RaplaException e) {
             throw e;
-        }
-        catch (Exception e)
-        {
-            throw new RaplaException(e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RaplaException(e.getMessage(),e);
         }
     }
+	
+	private String cacheValidString;
+	private Reservation[] cachedReservations;
+	private boolean cachingEnabled = true;
+	public Reservation[] getReservations(Allocatable[] allocatables,Date start, Date end) throws RaplaException {
+		String cacheKey = createCacheKey( allocatables, start, end);
+		if ( cachingEnabled)
+		{
+        	if ( cacheValidString != null && cacheValidString.equals( cacheKey) && cachedReservations != null)
+        	{
+        		return cachedReservations;
+        	}
+		}
+    	Reservation[] reservationsForAllocatable = getReservationsForAllocatable(allocatables, start, end, null);
+    	if ( cachingEnabled)
+    	{
+    	    cachedReservations = reservationsForAllocatable;
+    	    cacheValidString = cacheKey;
+    	}
+		return reservationsForAllocatable;
+	}
+	
+	public void setCachingEnabled(boolean enable)
+	{
+	     this.cachingEnabled = enable;
+	}
+	
+	private String createCacheKey(Allocatable[] allocatables, Date start,
+			Date end) {
+		StringBuilder buf = new StringBuilder();
+		if ( allocatables != null)
+		{
+			for ( Allocatable alloc:allocatables)
+			{
+				buf.append(alloc.getId());
+				buf.append(";");
+			}
+		}
+		else
+		{
+			buf.append("all_reservations;");
+		}
+		if ( start != null)
+		{
+			buf.append(start.getTime() + ";");
+		}
+		if ( end != null)
+		{
+			buf.append(end.getTime() + ";");
+		}
+		return buf.toString();
+	}
 
-    private String cacheValidString;
-    private Reservation[] cachedReservations;
-    private boolean cachingEnabled = true;
+	public List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
+	{
+		Collection<String> ids = new ArrayList<String>();
+		for ( Conflict conflict:conflicts)
+		{
+			ids.add(conflict.getReservation1());
+			ids.add(conflict.getReservation2());
+		}
+		Collection<Entity> values = operator.getFromId( ids, true).values();
+		@SuppressWarnings("unchecked")
+		ArrayList<Reservation> converted = new ArrayList(values);
+		return converted;
+	}
 
-    public Reservation[] getReservations(Allocatable[] allocatables, Date start, Date end) throws RaplaException
-    {
-        String cacheKey = createCacheKey(allocatables, start, end);
-        if (cachingEnabled)
-        {
-            if (cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
-            {
-                return cachedReservations;
+
+	public Period[] getPeriods() throws RaplaException {
+		Period[] result = getPeriodModel().getAllPeriods();
+		return result;
+	}
+
+	public PeriodModel getPeriodModel() throws RaplaException {
+		if (periodModel == null) {
+			periodModel = new PeriodModelImpl(this);
+		}
+		return periodModel;
+	}
+
+	public DynamicType[] getDynamicTypes(String classificationType)
+			throws RaplaException {
+		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
+		Collection<DynamicType> collection = operator.getDynamicTypes();
+		for (DynamicType type: collection) {
+			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+			// ignore internal types for backward compatibility
+			if ((( DynamicTypeImpl)type).isInternal())
+			{
+				continue;
+			}
+			User workingUser = getWorkingUser();
+			if ( workingUser != null && !permissionController.canRead( type, workingUser))
+			{
+			    continue;
+			}
+			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
+				result.add(type);
+			}
+		}
+		return result.toArray(DynamicType.DYNAMICTYPE_ARRAY);
+	}
+
+	public DynamicType getDynamicType(String elementKey) throws RaplaException {
+		DynamicType dynamicType = operator.getDynamicType(elementKey);
+		if ( dynamicType == null)
+		{
+			throw new EntityNotFoundException("No dynamictype with elementKey "
+				+ elementKey);
+		}
+		return dynamicType;
+		
+	}
+
+	public User[] getUsers() throws RaplaException {
+		User[] result = operator.getUsers().toArray(User.USER_ARRAY);
+		return result;
+	}
+
+	public User getUser(String username) throws RaplaException {
+		User user = operator.getUser(username);
+		if (user == null)
+			throw new EntityNotFoundException("No User with username " + username);
+		return user;
+	}
+
+	  public Conflict[] getConflicts(Reservation reservation) throws RaplaException {
+	    	Date today = operator.today();
+	    	if ( RaplaComponent.isTemplate( reservation))
+	    	{
+	    		return Conflict.CONFLICT_ARRAY;
+	    	}
+	    	Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
+            Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
+            Collection<Reservation> ignoreList = Collections.singleton( reservation );
+            FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
+            Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
+            try {
+                allocatableBindings = allAllocatableBindings.get();
+            } catch (RaplaException e) {
+                throw (RaplaException) e;
+            }catch (Exception e) {
+                throw new RaplaException(e.getMessage(), e);
             }
-        }
-        Reservation[] reservationsForAllocatable = getReservationsForAllocatable(allocatables, start, end, null);
-        if (cachingEnabled)
-        {
-            cachedReservations = reservationsForAllocatable;
-            cacheValidString = cacheKey;
-        }
-        return reservationsForAllocatable;
-    }
+            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
+            for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
+			{
+				Allocatable allocatable= entry.getKey();
+				String annotation = allocatable.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
+				boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+				if ( holdBackConflicts)
+				{
+					continue;
+				}
+				Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
+				for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry: appointmentMap.entrySet())
+				{
+					Appointment appointment = appointmentEntry.getKey();
+					if ( reservation.hasAllocated( allocatable, appointment))
+					{
+						Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
+						if ( conflictionAppointments != null)
+						{
+							for ( Appointment conflictingAppointment: conflictionAppointments)
+							{
+								
+								Appointment appointment1 = appointment;
+								Appointment appointment2 = conflictingAppointment;
+								ConflictImpl.checkAndAddConflicts(conflictList, allocatable,appointment1, appointment2, today);
+							}
+						}
+					}
+				}
+			}
+            return conflictList.toArray(Conflict.CONFLICT_ARRAY);
 
-    public void setCachingEnabled(boolean enable)
-    {
-        this.cachingEnabled = enable;
-    }
+	  }
 
-    private String createCacheKey(Allocatable[] allocatables, Date start, Date end)
-    {
-        StringBuilder buf = new StringBuilder();
-        if (allocatables != null)
-        {
-            for (Allocatable alloc : allocatables)
-            {
-                buf.append(alloc.getId());
-                buf.append(";");
-            }
-        }
-        else
-        {
-            buf.append("all_reservations;");
-        }
-        if (start != null)
-        {
-            buf.append(start.getTime() + ";");
-        }
-        if (end != null)
-        {
-            buf.append(end.getTime() + ";");
-        }
-        return buf.toString();
-    }
-
-    public List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
-    {
-        Collection<String> ids = new ArrayList<String>();
-        for (Conflict conflict : conflicts)
-        {
-            ids.add(conflict.getReservation1());
-            ids.add(conflict.getReservation2());
-        }
-        Collection<Entity> values = operator.getFromId(ids, true).values();
-        @SuppressWarnings("unchecked") ArrayList<Reservation> converted = new ArrayList(values);
-        return converted;
-    }
-
-    public Period[] getPeriods() throws RaplaException
-    {
-        Period[] result = getPeriodModel().getAllPeriods();
-        return result;
-    }
-
-    public PeriodModel getPeriodModel() throws RaplaException
-    {
-        if (periodModel == null)
-        {
-            periodModel = new PeriodModelImpl(this);
-        }
-        return periodModel;
-    }
-
-    public DynamicType[] getDynamicTypes(String classificationType) throws RaplaException
-    {
-        ArrayList<DynamicType> result = new ArrayList<DynamicType>();
-        Collection<DynamicType> collection = operator.getDynamicTypes();
-        for (DynamicType type : collection)
-        {
-            String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-            // ignore internal types for backward compatibility
-            if (((DynamicTypeImpl) type).isInternal())
-            {
-                continue;
-            }
-            User workingUser = getWorkingUser();
-            if (workingUser != null && !PermissionContainer.Util.canRead(type, workingUser))
-            {
-                continue;
-            }
-            if (classificationType == null || classificationType.equals(classificationTypeAnno))
-            {
-                result.add(type);
-            }
-        }
-        return result.toArray(DynamicType.DYNAMICTYPE_ARRAY);
-    }
-
-    public DynamicType getDynamicType(String elementKey) throws RaplaException
-    {
-        DynamicType dynamicType = operator.getDynamicType(elementKey);
-        if (dynamicType == null)
-        {
-            throw new EntityNotFoundException("No dynamictype with elementKey " + elementKey);
-        }
-        return dynamicType;
-
-    }
-
-    public User[] getUsers() throws RaplaException
-    {
-        User[] result = operator.getUsers().toArray(User.USER_ARRAY);
-        return result;
-    }
-
-    public User getUser(String username) throws RaplaException
-    {
-        User user = operator.getUser(username);
-        if (user == null)
-            throw new EntityNotFoundException("No User with username " + username);
-        return user;
-    }
-
-    public Conflict[] getConflicts(Reservation reservation) throws RaplaException
-    {
-        Date today = operator.today();
-        if (RaplaComponent.isTemplate(reservation))
-        {
-            return Conflict.CONFLICT_ARRAY;
-        }
-        Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
-        Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
-        Collection<Reservation> ignoreList = Collections.singleton(reservation);
-        FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindings = operator
-                .getAllAllocatableBindings(allocatables, appointments, ignoreList);
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
-        try
-        {
-            allocatableBindings = allAllocatableBindings.get();
-        }
-        catch (RaplaException e)
-        {
-            throw (RaplaException) e;
-        }
-        catch (Exception e)
-        {
-            throw new RaplaException(e.getMessage(), e);
-        }
-        ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
-        for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet())
-        {
-            Allocatable allocatable = entry.getKey();
-            String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-            boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-            if (holdBackConflicts)
-            {
-                continue;
-            }
-            Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
-            for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry : appointmentMap.entrySet())
-            {
-                Appointment appointment = appointmentEntry.getKey();
-                if (reservation.hasAllocated(allocatable, appointment))
-                {
-                    Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
-                    if (conflictionAppointments != null)
-                    {
-                        for (Appointment conflictingAppointment : conflictionAppointments)
-                        {
-
-                            Appointment appointment1 = appointment;
-                            Appointment appointment2 = conflictingAppointment;
-                            ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment1, appointment2, today);
-                        }
-                    }
-                }
-            }
-        }
-        return conflictList.toArray(Conflict.CONFLICT_ARRAY);
-
-    }
-
-    public Conflict[] getConflicts() throws RaplaException
-    {
-        final User user;
+	public Conflict[] getConflicts() throws RaplaException {
+		final User user;
         User workingUser = getWorkingUser();
-        if (workingUser != null && !workingUser.isAdmin())
-        {
-            user = workingUser;
-        }
-        else
-        {
-            user = null;
-        }
-        Collection<Conflict> conflicts = operator.getConflicts(user);
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
-        }
+		if ( workingUser != null && !workingUser.isAdmin())
+		{
+			user = workingUser;
+		}
+		else
+		{
+			user = null;
+		}
+		Collection<Conflict> conflicts = operator.getConflicts(  user);
+		if (getLogger().isDebugEnabled())
+		{
+			getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
+		}
+	
+		return conflicts.toArray(new Conflict[] {});
+	}
+	
+//	public boolean canReadReservationsFromOthers(User user) {
+//		return hasGroupRights(user, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+//	}
 
-        return conflicts.toArray(new Conflict[] {});
-    }
+//	protected boolean hasGroupRights(User user, String groupKey) {
+//		if (user == null) {
+//		    User workingUser;
+//            try {
+//                workingUser = getWorkingUser();
+//            } catch (EntityNotFoundException e) {
+//                return false;
+//            }
+//			return workingUser == null || workingUser.isAdmin();
+//		}
+//		if (user.isAdmin()) {
+//			return true;
+//		}
+//		try {
+//			Category group = getUserGroupsCategory().getCategory(	groupKey);
+//			if ( group == null)
+//			{
+//				return true;
+//			}
+//			return user.belongsTo(group);
+//		} catch (Exception ex) {
+//			getLogger().error("Can't get permissions!", ex);
+//		}
+//		return false;
+//	}
+	
+	public boolean canCreateReservations(DynamicType type, User user) {
+	    boolean result = permissionController.canCreate(type, user);
+	    return result;
+		//return hasGroupRights(user, Permission.GROUP_CAN_CREATE_EVENTS);
+	}
 
-    //	public boolean canReadReservationsFromOthers(User user) {
-    //		return hasGroupRights(user, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-    //	}
-
-    //	protected boolean hasGroupRights(User user, String groupKey) {
-    //		if (user == null) {
-    //		    User workingUser;
-    //            try {
-    //                workingUser = getWorkingUser();
-    //            } catch (EntityNotFoundException e) {
-    //                return false;
-    //            }
-    //			return workingUser == null || workingUser.isAdmin();
-    //		}
-    //		if (user.isAdmin()) {
-    //			return true;
-    //		}
-    //		try {
-    //			Category group = getUserGroupsCategory().getCategory(	groupKey);
-    //			if ( group == null)
-    //			{
-    //				return true;
-    //			}
-    //			return user.belongsTo(group);
-    //		} catch (Exception ex) {
-    //			getLogger().error("Can't get permissions!", ex);
-    //		}
-    //		return false;
-    //	}
-
-    public boolean canCreateReservations(DynamicType type, User user)
-    {
-        boolean result = PermissionContainer.Util.canCreate(type, user);
-        return result;
-        //return hasGroupRights(user, Permission.GROUP_CAN_CREATE_EVENTS);
-    }
-
-    @Deprecated public Allocatable[] getAllocatableBindings(Appointment forAppointment) throws RaplaException
-    {
-        List<Allocatable> allocatableList = Arrays.asList(getAllocatables());
-        List<Allocatable> result = new ArrayList<Allocatable>();
-
-        FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatableList,
-                Collections.singletonList(forAppointment));
+	@Deprecated
+	public Allocatable[] getAllocatableBindings(Appointment forAppointment)	throws RaplaException {
+		List<Allocatable> allocatableList = Arrays.asList(getAllocatables());
+		List<Allocatable> result = new ArrayList<Allocatable>();
+		
+		FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = getAllocatableBindings( allocatableList, Collections.singletonList(forAppointment));
         Map<Allocatable, Collection<Appointment>> bindings;
-        try
-        {
+        try {
             bindings = allocatableBindings.get();
-        }
-        catch (RaplaException e)
-        {
+        } catch (RaplaException e) {
             throw (RaplaException) e;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new RaplaException(e.getMessage());
         }
-        for (Map.Entry<Allocatable, Collection<Appointment>> entry : bindings.entrySet())
-        {
-            Collection<Appointment> appointments = entry.getValue();
-            if (appointments.contains(forAppointment))
-            {
-                Allocatable alloc = entry.getKey();
-                result.add(alloc);
-            }
-        }
-        return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
+		for (Map.Entry<Allocatable, Collection<Appointment>> entry: bindings.entrySet())
+		{
+			Collection<Appointment> appointments = entry.getValue();
+			if ( appointments.contains( forAppointment))
+			{
+				Allocatable alloc = entry.getKey();
+				result.add( alloc);
+			}
+		}
+		return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
 
-    }
+	}
+	
+	public FutureResult<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
+		Collection<Reservation> ignoreList = new HashSet<Reservation>();
+		if ( appointments != null)
+		{
+			for (Appointment app: appointments)
+			{
+				Reservation r = app.getReservation();
+				if ( r != null)
+				{
+					ignoreList.add( r );
+				}
+			}
+		}
+		return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
+	}
+	
+	
+	public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
+		int worktimeStartMinutes = options.getWorktimeStartMinutes();
+		int worktimeEndMinutes = options.getWorktimeEndMinutes();
+		Integer[] excludeDays = options.getExcludeDays().toArray( new Integer[] {});
+		int rowsPerHour = options.getRowsPerHour();
+		Reservation reservation = appointment.getReservation();
+		Collection<Reservation> ignoreList;
+		if (reservation != null) 
+		{
+			ignoreList = Collections.singleton( reservation);
+		} 
+		else
+		{
+			ignoreList = Collections.emptyList();
+		}
+		return operator.getNextAllocatableDate(allocatables, appointment,ignoreList, worktimeStartMinutes, worktimeEndMinutes, excludeDays, rowsPerHour);
+	}
+	
+	/******************************
+	 * Login - Module *
+	 ******************************/
+	public User getUser() throws RaplaException {
+		if (this.workingUserId == null) {
+			throw new RaplaException("no user loged in");
+		}
+	    return operator.resolve( workingUserId, User.class);
+	}
 
-    public FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,
-            Collection<Appointment> appointments)
-    {
-        Collection<Reservation> ignoreList = new HashSet<Reservation>();
-        if (appointments != null)
-        {
-            for (Appointment app : appointments)
-            {
-                Reservation r = app.getReservation();
-                if (r != null)
-                {
-                    ignoreList.add(r);
-                }
-            }
-        }
-        return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
-    }
-
-    public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment, CalendarOptions options)
-    {
-        int worktimeStartMinutes = options.getWorktimeStartMinutes();
-        int worktimeEndMinutes = options.getWorktimeEndMinutes();
-        Integer[] excludeDays = options.getExcludeDays().toArray(new Integer[] {});
-        int rowsPerHour = options.getRowsPerHour();
-        Reservation reservation = appointment.getReservation();
-        Collection<Reservation> ignoreList;
-        if (reservation != null)
-        {
-            ignoreList = Collections.singleton(reservation);
-        }
-        else
-        {
-            ignoreList = Collections.emptyList();
-        }
-        return operator.getNextAllocatableDate(allocatables, appointment, ignoreList, worktimeStartMinutes, worktimeEndMinutes, excludeDays, rowsPerHour);
-    }
-
-    /******************************
-     * Login - Module *
-     ******************************/
-    public User getUser() throws RaplaException
-    {
-        if (this.workingUserId == null)
-        {
-            throw new RaplaException("no user loged in");
-        }
-        return operator.resolve(workingUserId, User.class);
-    }
-
-    /** unlike getUserFromRequest this can be null if working user not set*/
-    private User getWorkingUser() throws EntityNotFoundException
-    {
-        if (workingUserId == null)
+	/** unlike getUserFromRequest this can be null if working user not set*/
+    private User getWorkingUser() throws EntityNotFoundException {
+        if ( workingUserId == null)
         {
             return null;
         }
-        return operator.resolve(workingUserId, User.class);
+        return operator.resolve( workingUserId, User.class);
     }
 
-    public boolean login(String username, char[] password) throws RaplaException
-    {
-        return login(new ConnectInfo(username, password));
-    }
+   public boolean login(String username, char[] password)
+            throws RaplaException {
+       return login( new ConnectInfo(username, password));
+   }
+   
+   public boolean login(ConnectInfo connectInfo)
+			throws RaplaException {
+       User user = null;
+       try {
+           user = operator.connect( connectInfo);
+       } catch (RaplaSecurityException ex) {
+			return false;
+       } finally {
+			// Clear password
+//				for (int i = 0; i < password.length; i++)
+//					password[i] = 0;
+       }
+//       String username = connectInfo.getUsername();
+//       if  ( connectInfo.getConnectAs() != null)
+//       {
+//           username = connectInfo.getConnectAs();
+//       }
 
-    public boolean login(ConnectInfo connectInfo) throws RaplaException
-    {
-        User user = null;
-        try
-        {
-            user = operator.connect(connectInfo);
+       getLogger().info("Login " + user.getUsername());
+       this.workingUserId = user.getId();
+       return true;
+   }
+   
+   public FutureResult<VoidResult> load()
+   {
+       final FutureResult<User> connect = operator.connectAsync();
+       return new FutureResult<VoidResult>() {
+
+        @Override
+        public VoidResult get() throws Exception {
+            User user = connect.get();
+            workingUserId = user.getId();
+            return VoidResult.INSTANCE;
         }
-        catch (RaplaSecurityException ex)
-        {
-            return false;
-        }
-        finally
-        {
-            // Clear password
-            //				for (int i = 0; i < password.length; i++)
-            //					password[i] = 0;
-        }
-        //       String username = connectInfo.getUsername();
-        //       if  ( connectInfo.getConnectAs() != null)
-        //       {
-        //           username = connectInfo.getConnectAs();
-        //       }
 
-        getLogger().info("Login " + user.getUsername());
-        this.workingUserId = user.getId();
-        return true;
-    }
+        @Override
+        public void get(final AsyncCallback<VoidResult> callback) {
+            connect.get( new AsyncCallback<User>() {
 
-    public FutureResult<VoidResult> load()
-    {
-        final FutureResult<User> connect = operator.connectAsync();
-        return new FutureResult<VoidResult>()
-        {
+                @Override
+                public void onFailure(Throwable caught) {
+                    callback.onFailure(caught);
+                }
 
-            @Override public VoidResult get() throws Exception
-            {
-                User user = connect.get();
-                workingUserId = user.getId();
-                return VoidResult.INSTANCE;
-            }
-
-            @Override public void get(final AsyncCallback<VoidResult> callback)
-            {
-                connect.get(new AsyncCallback<User>()
+                @Override
+                public void onSuccess(User user) 
                 {
-
-                    @Override public void onFailure(Throwable caught)
-                    {
-                        callback.onFailure(caught);
-                    }
-
-                    @Override public void onSuccess(User user)
-                    {
-                        workingUserId = user.getId();
-                        callback.onSuccess(VoidResult.INSTANCE);
-                    }
-                });
-
-            }
-        };
-
-    }
-
-    public boolean canChangePassword()
-    {
-        try
-        {
-            return operator.canChangePassword();
+                    workingUserId = user.getId();
+                    callback.onSuccess( VoidResult.INSTANCE);
+                }
+            });
+            
         }
-        catch (RaplaException e)
-        {
+       };
+       
+   }
+
+   public boolean canChangePassword() {
+		try {
+			return operator.canChangePassword();
+        } catch (RaplaException e) {
             return false;
         }
-    }
+	}
 
-    public boolean isSessionActive()
-    {
-        return (this.workingUserId != null);
-    }
+	public boolean isSessionActive() {
+		return (this.workingUserId != null);
+	}
 
-    private boolean aborting;
+	private boolean aborting;
+	public void logout() throws RaplaException {
+		
+		if (this.workingUserId == null )
+			return;
+		getLogger().info("Logout " + workingUserId);
+		aborting = true;
+			
+		try
+		{
+			// now we can add it again
+			this.workingUserId = null;
+			// we need to remove the storage update listener, because the disconnect
+			// would trigger a restart otherwise
+			operator.removeStorageUpdateListener(this);
+			operator.disconnect();
+			operator.addStorageUpdateListener(this);
+		} 
+		finally
+		{
+			aborting = false;
+		}
+	}
+	
+	private boolean isAborting() {
+		return aborting || !operator.isConnected();
+	}
 
-    public void logout() throws RaplaException
-    {
+	public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException {
+		operator.changePassword( user, oldPassword, newPassword);
+	}
 
-        if (this.workingUserId == null)
-            return;
-        getLogger().info("Logout " + workingUserId);
-        aborting = true;
+	/******************************
+	 * Modification-module *
+	 ******************************/
+	public Allocatable getTemplate() 
+	{
+		if ( templateId != null)
+		{
+		    Allocatable template = operator.tryResolve( templateId, Allocatable.class);
+		    return template;
+		}
+		return null;
+	}
 
-        try
-        {
-            // now we can add it again
-            this.workingUserId = null;
-            // we need to remove the storage update listener, because the disconnect
-            // would trigger a restart otherwise
-            operator.removeStorageUpdateListener(this);
-            operator.disconnect();
-            operator.addStorageUpdateListener(this);
-        }
-        finally
-        {
-            aborting = false;
-        }
-    }
-
-    private boolean isAborting()
-    {
-        return aborting || !operator.isConnected();
-    }
-
-    public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
-    {
-        operator.changePassword(user, oldPassword, newPassword);
-    }
-
-    /******************************
-     * Modification-module *
-     ******************************/
-    public Allocatable getTemplate()
-    {
-        if (templateId != null)
-        {
-            Allocatable template = operator.tryResolve(templateId, Allocatable.class);
-            return template;
-        }
-        return null;
-    }
-
-    public void setTemplate(Allocatable template)
-    {
-        this.templateId = template != null ? template.getId() : null;
-        cachedReservations = null;
-        cacheValidString = null;
-        User workingUser;
-        try
-        {
+	public void setTemplate(Allocatable template) 
+	{
+		this.templateId = template != null ? template.getId() : null;
+		cachedReservations = null;
+		cacheValidString = null;
+		User workingUser;
+        try {
             workingUser = getWorkingUser();
-        }
-        catch (EntityNotFoundException e)
-        {
+        } catch (EntityNotFoundException e) {
             // system user as change initiator won't hurt 
             workingUser = null;
-            getLogger().error(e.getMessage(), e);
+            getLogger().error(e.getMessage(),e);
         }
-        UpdateResult updateResult = new UpdateResult(workingUser);
-        updateResult.setSwitchTemplateMode(true);
-        updateResult.setInvalidateInterval(new TimeInterval(null, null));
-        fireUpdateEvent(updateResult);
-    }
+		UpdateResult updateResult = new UpdateResult( workingUser);
+		updateResult.setSwitchTemplateMode(true);
+		updateResult.setInvalidateInterval( new TimeInterval(null, null));
+		fireUpdateEvent( updateResult);
+	}
 
-    @SuppressWarnings("unchecked") public <T> RaplaMap<T> newRaplaMap(Map<String, T> map)
-    {
-        RaplaMapImpl impl = new RaplaMapImpl(map);
-        impl.setResolver(operator);
+	@SuppressWarnings("unchecked")
+	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
+		RaplaMapImpl impl = new RaplaMapImpl(map);
+		impl.setResolver( operator );
         RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
         return raplaMap;
-    }
+	}
 
-    @SuppressWarnings("unchecked") public <T> RaplaMap<T> newRaplaMap(Collection<T> col)
-    {
-        RaplaMapImpl impl = new RaplaMapImpl(col);
-        impl.setResolver(operator);
-        RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
-        return raplaMap;
-    }
+	@SuppressWarnings("unchecked")
+	public <T> RaplaMap<T> newRaplaMap(Collection<T> col) {
+		RaplaMapImpl impl = new RaplaMapImpl(col);
+        impl.setResolver( operator );
+		RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
+		return raplaMap;
+	}
 
-    public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException
-    {
-        User user = getUser();
-        return newAppointment(startDate, endDate, user);
-    }
-
-    public Reservation newReservation() throws RaplaException
+	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {
+		User user = getUser();
+		return newAppointment(startDate, endDate, user);
+	}
+	
+	public Reservation newReservation() throws RaplaException 
     {
         Classification classification = getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
-        return newReservation(classification);
+		return newReservation( classification );
     }
-
-    public Reservation newReservation(Classification classification) throws RaplaException
+	
+	public Reservation newReservation(Classification classification) throws RaplaException 
     {
-        User user = getUser();
-        return newReservation(classification, user);
+		User user = getUser();
+        return newReservation( classification,user );
     }
-
-    public Reservation newReservation(Classification classification, User user) throws RaplaException
+	
+	public Reservation newReservation(Classification classification,User user) throws RaplaException 
     {
-        if (!canCreateReservations(classification.getType(), user))
+        if (!canCreateReservations( classification.getType(),user))
         {
             throw new RaplaException("User not allowed to create events");
         }
-        Date now = operator.getCurrentTimestamp();
-        ReservationImpl reservation = new ReservationImpl(now, now);
-
+    	Date now = operator.getCurrentTimestamp();
+        ReservationImpl reservation = new ReservationImpl(now ,now );
+        
         reservation.setClassification(classification);
         PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
         setNew(reservation, user);
-        if (templateId != null)
+        if ( templateId != null )
         {
-            setTemplateParams(reservation);
+            setTemplateParams(reservation );
         }
         return reservation;
     }
 
-    private void setTemplateParams(Reservation reservation) throws RaplaException
-    {
+    private void setTemplateParams(Reservation reservation) throws RaplaException {
         Allocatable template = getTemplate();
-        if (template == null)
+        if ( template == null)
         {
             throw new RaplaException("Template not found " + templateId);
         }
         reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
     }
 
-    public Allocatable newAllocatable(Classification classification) throws RaplaException
-    {
-        return newAllocatable(classification, getUser());
-    }
-
-    public Allocatable newAllocatable(Classification classification, User user) throws RaplaException
-    {
+    public Allocatable newAllocatable( Classification classification) throws RaplaException 
+	{
+		return newAllocatable(classification, getUser());
+	}
+	
+	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.setClassification(classification);
@@ -1243,621 +1104,563 @@ import org.rapla.storage.UpdateResult;
         return allocatable;
     }
 
-    private Classification newClassification(String classificationType) throws RaplaException
-    {
-        DynamicType[] dynamicTypes = getDynamicTypes(classificationType);
+	private Classification newClassification(String classificationType)
+			throws RaplaException {
+		DynamicType[] dynamicTypes = getDynamicTypes(classificationType);
         DynamicType dynamicType = dynamicTypes[0];
         Classification classification = dynamicType.newClassification();
-        return classification;
-    }
+		return classification;
+	}
 
-    public Appointment newAppointment(Date startDate, Date endDate, User user) throws RaplaException
-    {
+    public Appointment newAppointment(Date startDate, Date endDate, User user) throws RaplaException {
         AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
         setNew(appointment, user);
         return appointment;
     }
 
-    public Appointment newAppointment(Date startDate, Date endDate, RepeatingType repeatingType, int repeatingDuration) throws RaplaException
-    {
-        AppointmentImpl appointment = new AppointmentImpl(startDate, endDate, repeatingType, repeatingDuration);
-        User user = getUser();
-        setNew(appointment, user);
-        return appointment;
-    }
+	public Appointment newAppointment(Date startDate, Date endDate,	RepeatingType repeatingType, int repeatingDuration)	throws RaplaException {
+		AppointmentImpl appointment = new AppointmentImpl(startDate, endDate, repeatingType, repeatingDuration);
+		User user = getUser();
+		setNew(appointment, user);
+		return appointment;
+	}
 
-    public Allocatable newResource() throws RaplaException
-    {
-        User user = getUser();
-        Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        return newAllocatable(classification, user);
-    }
+	public Allocatable newResource() throws RaplaException {
+		User user = getUser();
+		Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+		return newAllocatable(classification, user);
+	}
 
-    public Allocatable newPerson() throws RaplaException
-    {
-        User user = getUser();
-        Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-        return newAllocatable(classification, user);
-    }
+	public Allocatable newPerson() throws RaplaException {
+		User user = getUser();
+		Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+		return newAllocatable(classification, user);
+	}
 
-    public Allocatable newPeriod() throws RaplaException
-    {
-        DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
-        Classification classification = periodType.newClassification();
-        classification.setValue("name", "");
-        Date today = today();
-        classification.setValue("start", DateTools.cutDate(today));
-        classification.setValue("end", DateTools.addDays(DateTools.fillDate(today), 7));
-        Allocatable period = newAllocatable(classification);
-        setNew(period);
-        return period;
-    }
+	public Allocatable newPeriod() throws RaplaException {
+		DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
+		Classification classification = periodType.newClassification();
+		classification.setValue("name", "");
+		Date today = today();
+		classification.setValue("start", DateTools.cutDate(today));
+		classification.setValue("end", DateTools.addDays(DateTools.fillDate(today),7));
+		Allocatable period = newAllocatable(classification);
+		setNew(period);
+		return period;
+	}
 
-    public Date today()
-    {
-        return operator.today();
-    }
+	public Date today() {
+		return operator.today();
+	}
 
-    public Category newCategory() throws RaplaException
-    {
-        Date now = operator.getCurrentTimestamp();
+	public Category newCategory() throws RaplaException {
+		Date now = operator.getCurrentTimestamp();
         CategoryImpl category = new CategoryImpl(now, now);
-        setNew(category);
-        return category;
-    }
+		setNew(category);
+		return category;
+	}
 
-    private Attribute createStringAttribute(String key, String name) throws RaplaException
-    {
-        Attribute attribute = newAttribute(AttributeType.STRING);
-        attribute.setKey(key);
-        setName(attribute.getName(), name);
-        return attribute;
-    }
+	private Attribute createStringAttribute(String key, String name) throws RaplaException {
+		Attribute attribute = newAttribute(AttributeType.STRING);
+		attribute.setKey(key);
+		setName(attribute.getName(), name);
+		return attribute;
+	}
 
-    public DynamicType newDynamicType(String classificationType) throws RaplaException
-    {
-        Date now = operator.getCurrentTimestamp();
-        DynamicTypeImpl dynamicType = new DynamicTypeImpl(now, now);
-        dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, classificationType);
-        dynamicType.setKey(createDynamicTypeKey(classificationType));
-        setNew(dynamicType);
-        if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-        {
-            dynamicType.addAttribute(createStringAttribute("name", "name"));
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{name}");
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, "automatic");
+	public DynamicType newDynamicType(String classificationType) throws RaplaException {
+		Date now = operator.getCurrentTimestamp();
+		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
+		dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, classificationType);
+		dynamicType.setKey(createDynamicTypeKey(classificationType));
+		setNew(dynamicType);
+		if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)) {
+			dynamicType.addAttribute(createStringAttribute("name", "name"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
+			addDefaultResourcePermissions(dynamicType);
+		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
+			dynamicType.addAttribute(createStringAttribute("name","eventname"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
+			addDefaultEventPermissions(dynamicType);
+		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
+			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
+			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
+			dynamicType.addAttribute(createStringAttribute("email", "email"));
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
+			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
             addDefaultResourcePermissions(dynamicType);
-        }
-        else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
-        {
-            dynamicType.addAttribute(createStringAttribute("name", "eventname"));
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{name}");
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-            addDefaultEventPermissions(dynamicType);
-        }
-        else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
-        {
-            dynamicType.addAttribute(createStringAttribute("surname", "surname"));
-            dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
-            dynamicType.addAttribute(createStringAttribute("email", "email"));
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
-            dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-            addDefaultResourcePermissions(dynamicType);
-        }
-        return dynamicType;
-    }
+		}
+		return dynamicType;
+	}
 
-    @SuppressWarnings("deprecation") private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException
-    {
+    @SuppressWarnings("deprecation")
+    private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException {
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.READ_TYPE);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
         }
         Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-        if (canReadEventsFromOthers != null)
+        if ( canReadEventsFromOthers != null)
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.READ);
-            permission.setGroup(canReadEventsFromOthers);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.READ);
+            permission.setGroup( canReadEventsFromOthers);
+            dynamicType.addPermission( permission);
         }
         Category canCreate = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_CREATE_EVENTS);
-        if (canCreate != null)
+        if ( canCreate != null)
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.CREATE);
-            permission.setGroup(canCreate);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.CREATE);
+            permission.setGroup( canCreate);
+            dynamicType.addPermission( permission);
         }
     }
 
-    private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) throws RaplaException
-    {
+    private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) throws RaplaException {
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.READ_TYPE);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.READ_TYPE);
+            dynamicType.addPermission( permission);
         }
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.ALLOCATE_CONFLICTS);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
+            dynamicType.addPermission( permission);
         }
-        @SuppressWarnings("deprecation") Category registerer = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-        if (registerer != null)
+        @SuppressWarnings("deprecation")
+        Category registerer = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
+        if ( registerer != null)
         {
             Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel(Permission.CREATE);
-            permission.setGroup(registerer);
-            dynamicType.addPermission(permission);
+            permission.setAccessLevel( Permission.CREATE);
+            permission.setGroup( registerer);
+            dynamicType.addPermission( permission);
         }
     }
 
-    public Attribute newAttribute(AttributeType attributeType) throws RaplaException
-    {
-        AttributeImpl attribute = new AttributeImpl(attributeType);
-        setNew(attribute);
-        return attribute;
+	public Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
+		AttributeImpl attribute = new AttributeImpl(attributeType);
+		setNew(attribute);
+		return attribute;
+	}
+
+	public User newUser() throws RaplaException {
+		Date now = operator.getCurrentTimestamp();
+		UserImpl user = new UserImpl( now, now);
+		setNew(user);
+		@SuppressWarnings("deprecation")
+        String[] defaultGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY};
+		for ( String groupKey: defaultGroups)
+		{
+			Category group = getUserGroupsCategory().getCategory( groupKey);
+			if (group != null) 
+			{
+				user.addGroup(group);
+			}
+		}
+		return user;
+	}
+	
+	public CalendarSelectionModel newCalendarModel(User user) throws RaplaException{
+	    User workingUser = getWorkingUser();
+        if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
+	    {
+	        throw new RaplaException("Can't create a calendar model for a different user.");
+	    }
+	    return new CalendarModelImpl( locale, user, this, permissionController);
     }
 
-    public User newUser() throws RaplaException
-    {
-        Date now = operator.getCurrentTimestamp();
-        UserImpl user = new UserImpl(now, now);
-        setNew(user);
-        @SuppressWarnings("deprecation") String[] defaultGroups = new String[] { Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,
-                Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY };
-        for (String groupKey : defaultGroups)
-        {
-            Category group = getUserGroupsCategory().getCategory(groupKey);
-            if (group != null)
-            {
-                user.addGroup(group);
-            }
-        }
-        return user;
-    }
+	private String createDynamicTypeKey(String classificationType)
+			throws RaplaException {
+		DynamicType[] dts = getDynamicTypes(classificationType);
+		int max = 1;
+		for (int i = 0; i < dts.length; i++) {
+			String key = dts[i].getKey();
+			int len = classificationType.length();
+			if (key.indexOf(classificationType) >= 0 && key.length() > len && Character.isDigit(key.charAt(len))) {
+				try {
+					int value = Integer.valueOf(key.substring(len)).intValue();
+					if (value >= max)
+						max = value + 1;
+				} catch (NumberFormatException ex) {
+				}
+			}
+		}
+		return classificationType + (max);
+	}
 
-    public CalendarSelectionModel newCalendarModel(User user) throws RaplaException
-    {
-        User workingUser = getWorkingUser();
-        if (workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
-        {
-            throw new RaplaException("Can't create a calendar model for a different user.");
-        }
-        return new CalendarModelImpl(locale, user, this);
-    }
+	private void setNew(Entity entity) throws RaplaException {
+		setNew(entity, null);
+	}
+	
+	private void setNew(Entity entity,User user) throws RaplaException {
+	    ArrayList<Entity> arrayList = new ArrayList<Entity>();
+	    arrayList.add( entity );
+	    setNew(arrayList, entity.getRaplaType(), user);
+	}
 
-    private String createDynamicTypeKey(String classificationType) throws RaplaException
-    {
-        DynamicType[] dts = getDynamicTypes(classificationType);
-        int max = 1;
-        for (int i = 0; i < dts.length; i++)
-        {
-            String key = dts[i].getKey();
-            int len = classificationType.length();
-            if (key.indexOf(classificationType) >= 0 && key.length() > len && Character.isDigit(key.charAt(len)))
-            {
-                try
-                {
-                    int value = Integer.valueOf(key.substring(len)).intValue();
-                    if (value >= max)
-                        max = value + 1;
-                }
-                catch (NumberFormatException ex)
-                {
-                }
-            }
-        }
-        return classificationType + (max);
-    }
 
-    private void setNew(Entity entity) throws RaplaException
-    {
-        setNew(entity, null);
-    }
+	private <T extends Entity> void setNew(Collection<T> entities, RaplaType raplaType,User user)
+			throws RaplaException {
 
-    private void setNew(Entity entity, User user) throws RaplaException
-    {
-        ArrayList<Entity> arrayList = new ArrayList<Entity>();
-        arrayList.add(entity);
-        setNew(arrayList, entity.getRaplaType(), user);
-    }
+		for ( T entity: entities)
+		{
+			if ((entity instanceof ParentEntity) && (((ParentEntity)entity).getSubEntities().iterator().hasNext()) && ! (entity instanceof Reservation) ) {
+				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
+			}
+		}
+		String[] ids = operator.createIdentifier(raplaType, entities.size());
+		int i = 0;
+		for ( T uncasted: entities)
+		{
+			String id = ids[i++];
+			SimpleEntity entity = (SimpleEntity) uncasted;
+			entity.setId(id);
+			entity.setResolver(operator);
+			if (getLogger() != null && getLogger().isDebugEnabled()) {
+				getLogger().debug("new " + entity.getId());
+			}
+	
+			if (entity instanceof Reservation) {
+				if (user == null)
+					throw new RaplaException("The reservation " + entity + " needs an owner but user specified is null ");
+			}
+			if ( entity instanceof Reservation || entity instanceof Allocatable)
+			{
+	             ((Ownable) entity).setOwner(user);
+			}
+		}
+	}
 
-    private <T extends Entity> void setNew(Collection<T> entities, RaplaType raplaType, User user) throws RaplaException
-    {
+	public void checkReservation(Reservation reservation) throws RaplaException {
+		if (reservation.getAppointments().length == 0) {
+			throw new RaplaException(i18n.getString("error.no_appointment"));
+		}
+	}
 
-        for (T entity : entities)
-        {
-            if ((entity instanceof ParentEntity) && (((ParentEntity) entity).getSubEntities().iterator().hasNext()) && !(entity instanceof Reservation))
-            {
-                throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
-            }
-        }
-        String[] ids = operator.createIdentifier(raplaType, entities.size());
-        int i = 0;
-        for (T uncasted : entities)
-        {
-            String id = ids[i++];
-            SimpleEntity entity = (SimpleEntity) uncasted;
-            entity.setId(id);
-            entity.setResolver(operator);
-            if (getLogger() != null && getLogger().isDebugEnabled())
-            {
-                getLogger().debug("new " + entity.getId());
-            }
+	public <T extends Entity> T edit(T obj) throws RaplaException {
+		if (obj == null)
+			throw new NullPointerException("Can't edit null objects");
+		Set<T> singleton = Collections.singleton( obj);
+		Collection<T> edit = edit(singleton);
+		T result = edit.iterator().next();
+		return result;
+	}
+	
+	public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
+	{
+		List<Entity> castedList = new ArrayList<Entity>();
+		for ( Entity entity:list)
+		{
+			castedList.add( entity);
+		}
+		User workingUser = getWorkingUser();
+		Collection<Entity> result = operator.editObjects(castedList,	workingUser);
+		List<T> castedResult = new ArrayList<T>();
+		for ( Entity entity:result)
+		{
+			@SuppressWarnings("unchecked")
+			T casted = (T) entity;
+			castedResult.add( casted);
+		}
+		return castedResult;
+	}
+	
+	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
+	    {
+	        List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
+	        Collections.sort( sortedReservations, new ReservationStartComparator(i18n.getLocale()));
+	        List<Reservation> copies = new ArrayList<Reservation>();
+	        Date firstStart = null;
+	        for (Reservation reservation: sortedReservations) {
+	            if ( firstStart == null )
+	            {
+	                firstStart = ReservationStartComparator.getStart( reservation);
+	            }
+	            Reservation copy = copy(reservation, beginn, firstStart, keepTime);
+	            copies.add( copy);
+	        }
+	        return copies;
+	    }
+	    
+	    public  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime) throws RaplaException {
+	        Reservation r =  clone( reservation);
+	        Appointment[] appointments = r.getAppointments();
+	    
+	        for ( Appointment app :appointments) {
+	            Repeating repeating = app.getRepeating();
+	            
+	            Date oldStart = app.getStart();
+	            Date newStart ;
+	            // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
+	            if ( keepTime)
+	            {
+	                long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
+	                Date destWithOffset = new Date(destStart.getTime() + offset );
+	                newStart = DateTools.toDateTime(  destWithOffset  , oldStart );
+	            }
+	            else
+	            {
+	                long offset = destStart.getTime() - firstStart.getTime();
+	                newStart = new Date(oldStart.getTime() + offset );
+	            }
+	            app.move( newStart) ;
+	            if (repeating != null)
+	            {
+	                Date[] exceptions = repeating.getExceptions();
+	                repeating.clearExceptions();
+	                for (Date exc: exceptions)
+	                {
+	                    long days = DateTools.countDays(oldStart, exc);
+	                    Date newDate = DateTools.addDays(newStart, days);
+	                    repeating.addException( newDate);
+	                }
+	                
+	                if ( !repeating.isFixedNumber())
+	                {
+	                    Date oldEnd = repeating.getEnd();
+	                    if ( oldEnd != null)
+	                    {
+	                        // If we don't have and ending destination, just make the repeating to the original length
+	                        long days = DateTools.countDays(oldStart, oldEnd);
+	                        Date end = DateTools.addDays(newStart, days);
+	                        repeating.setEnd( end);
+	                    }
+	                }       
+	            }
+	        }
+	        return r;
+	    }
 
-            if (entity instanceof Reservation)
-            {
-                if (user == null)
-                    throw new RaplaException("The reservation " + entity + " needs an owner but user specified is null ");
-            }
-            if (entity instanceof Reservation || entity instanceof Allocatable)
-            {
-                ((Ownable) entity).setOwner(user);
-            }
-        }
-    }
 
-    public void checkReservation(Reservation reservation) throws RaplaException
-    {
-        if (reservation.getAppointments().length == 0)
-        {
-            throw new RaplaException(i18n.getString("error.no_appointment"));
-        }
-    }
 
-    public <T extends Entity> T edit(T obj) throws RaplaException
-    {
-        if (obj == null)
-            throw new NullPointerException("Can't edit null objects");
-        Set<T> singleton = Collections.singleton(obj);
-        Collection<T> edit = edit(singleton);
-        T result = edit.iterator().next();
-        return result;
-    }
+	@SuppressWarnings("unchecked")
+	private <T extends Entity> T _clone(T obj) throws RaplaException {
+		T deepClone =  (T) obj.clone();
+		T clone = deepClone;
 
-    public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
-    {
-        List<Entity> castedList = new ArrayList<Entity>();
-        for (Entity entity : list)
-        {
-            castedList.add(entity);
-        }
-        User workingUser = getWorkingUser();
-        Collection<Entity> result = operator.editObjects(castedList, workingUser);
-        List<T> castedResult = new ArrayList<T>();
-        for (Entity entity : result)
-        {
-            @SuppressWarnings("unchecked") T casted = (T) entity;
-            castedResult.add(casted);
-        }
-        return castedResult;
-    }
-
-    public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException
-    {
-        List<Reservation> sortedReservations = new ArrayList<Reservation>(toCopy);
-        Collections.sort(sortedReservations, new ReservationStartComparator(i18n.getLocale()));
-        List<Reservation> copies = new ArrayList<Reservation>();
-        Date firstStart = null;
-        for (Reservation reservation : sortedReservations)
-        {
-            if (firstStart == null)
-            {
-                firstStart = ReservationStartComparator.getStart(reservation);
-            }
-            Reservation copy = copy(reservation, beginn, firstStart, keepTime);
-            copies.add(copy);
-        }
-        return copies;
-    }
-
-    public Reservation copy(Reservation reservation, Date destStart, Date firstStart, boolean keepTime) throws RaplaException
-    {
-        Reservation r = clone(reservation);
-        Appointment[] appointments = r.getAppointments();
-
-        for (Appointment app : appointments)
-        {
-            Repeating repeating = app.getRepeating();
-
-            Date oldStart = app.getStart();
-            Date newStart;
-            // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
-            if (keepTime)
-            {
-                long offset = DateTools.countDays(firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
-                Date destWithOffset = new Date(destStart.getTime() + offset);
-                newStart = DateTools.toDateTime(destWithOffset, oldStart);
-            }
-            else
-            {
-                long offset = destStart.getTime() - firstStart.getTime();
-                newStart = new Date(oldStart.getTime() + offset);
-            }
-            app.move(newStart);
-            if (repeating != null)
-            {
-                Date[] exceptions = repeating.getExceptions();
-                repeating.clearExceptions();
-                for (Date exc : exceptions)
-                {
-                    long days = DateTools.countDays(oldStart, exc);
-                    Date newDate = DateTools.addDays(newStart, days);
-                    repeating.addException(newDate);
-                }
-
-                if (!repeating.isFixedNumber())
-                {
-                    Date oldEnd = repeating.getEnd();
-                    if (oldEnd != null)
-                    {
-                        // If we don't have and ending destination, just make the repeating to the original length
-                        long days = DateTools.countDays(oldStart, oldEnd);
-                        Date end = DateTools.addDays(newStart, days);
-                        repeating.setEnd(end);
-                    }
-                }
-            }
-        }
-        return r;
-    }
-
-    @SuppressWarnings("unchecked") private <T extends Entity> T _clone(T obj) throws RaplaException
-    {
-        T deepClone = (T) obj.clone();
-        T clone = deepClone;
-
-        RaplaType raplaType = clone.getRaplaType();
-        if (raplaType == Appointment.TYPE)
-        {
-            // Hack for 1.6 compiler compatibility
-            Object temp = clone;
-            ((AppointmentImpl) temp).removeParent();
-        }
-        if (raplaType == Category.TYPE)
-        {
-            // Hack for 1.6 compiler compatibility
-            Object temp = clone;
-            ((CategoryImpl) temp).removeParent();
-        }
-        User workingUser = getWorkingUser();
+		RaplaType raplaType = clone.getRaplaType();
+		if (raplaType == Appointment.TYPE) {
+			// Hack for 1.6 compiler compatibility
+			Object temp = clone;
+			((AppointmentImpl) temp).removeParent();
+		}
+		if (raplaType == Category.TYPE) {
+			// Hack for 1.6 compiler compatibility
+			Object temp = clone;
+			((CategoryImpl) temp).removeParent();
+		}
+		User workingUser = getWorkingUser();
         setNew((Entity) clone, workingUser);
-        return clone;
-    }
+		return clone;
+	}
 
-    @SuppressWarnings("unchecked") public <T extends Entity> T clone(T obj) throws RaplaException
-    {
-        if (obj == null)
-            throw new NullPointerException("Can't clone null objects");
+	@SuppressWarnings("unchecked")
+	public <T extends Entity> T clone(T obj) throws RaplaException {
+		if (obj == null)
+			throw new NullPointerException("Can't clone null objects");
 
-        User workingUser = getWorkingUser();
-        T result;
-        RaplaType<T> raplaType = obj.getRaplaType();
-        // Hack for 1.6 compiler compatibility
-        if (((Object) raplaType) == Appointment.TYPE)
-        {
-            T _clone = _clone(obj);
-            // Hack for 1.6 compiler compatibility
-            Object temp = _clone;
-            ((AppointmentImpl) temp).setParent(null);
-            result = _clone;
-            // Hack for 1.6 compiler compatibility
-        }
-        else if (((Object) raplaType) == Reservation.TYPE)
-        {
-            // Hack for 1.6 compiler compatibility
-            Object temp = obj;
-            Reservation clonedReservation = cloneReservation((Reservation) temp);
-            // Hack for 1.6 compiler compatibility
-            Reservation r = clonedReservation;
-            if (workingUser != null)
-            {
-                r.setOwner(workingUser);
-            }
-            if (templateId != null)
-            {
-                setTemplateParams(r);
-            }
-            else
-            {
-                String originalTemplate = r.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
-                if (originalTemplate != null)
-                {
-                    r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
-                }
-                r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
-            }
-            // Hack for 1.6 compiler compatibility
-            Object r2 = r;
-            result = (T) r2;
+		User workingUser = getWorkingUser();
+		T result;
+		RaplaType<T> raplaType = obj.getRaplaType();
+		// Hack for 1.6 compiler compatibility
+		if (((Object)raplaType) == Appointment.TYPE ){
+			T _clone = _clone(obj);
+			// Hack for 1.6 compiler compatibility
+			Object temp = _clone;
+			((AppointmentImpl) temp).setParent(null);
+			result = _clone;
+		// Hack for 1.6 compiler compatibility
+		} else if (((Object)raplaType) == Reservation.TYPE) {
+			// Hack for 1.6 compiler compatibility
+			Object temp = obj;
+			Reservation clonedReservation = cloneReservation((Reservation) temp);
+			// Hack for 1.6 compiler compatibility
+			Reservation r = clonedReservation;
+			if ( workingUser != null)
+			{
+				r.setOwner( workingUser );
+			}
+			if ( templateId != null )
+			{
+				setTemplateParams(r );
+			}
+			else
+			{
+				String originalTemplate = r.getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE);
+				if (originalTemplate != null)
+				{
+					r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
+				}
+				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+			}
+			// Hack for 1.6 compiler compatibility
+			Object r2 =  r;
+			result = (T)r2;
+			
+		}
+		else
+		{
+			try {
+				T _clone = _clone(obj);
+				result = _clone;
+			} catch (ClassCastException ex) {
+				throw new RaplaException("This entity can't be cloned ", ex);
+			} finally {
+			}
+		}
+		if (result instanceof ModifiableTimestamp) {
+			Date now = operator.getCurrentTimestamp();
+			((ModifiableTimestamp) result).setLastChanged(now);
+			if (workingUser != null) {
+				((ModifiableTimestamp) result).setLastChangedBy(workingUser);
+			}
+		}
+		return result;
 
-        }
-        else
-        {
-            try
-            {
-                T _clone = _clone(obj);
-                result = _clone;
-            }
-            catch (ClassCastException ex)
-            {
-                throw new RaplaException("This entity can't be cloned ", ex);
-            }
-            finally
-            {
-            }
-        }
-        if (result instanceof ModifiableTimestamp)
-        {
-            Date now = operator.getCurrentTimestamp();
-            ((ModifiableTimestamp) result).setLastChanged(now);
-            if (workingUser != null)
-            {
-                ((ModifiableTimestamp) result).setLastChangedBy(workingUser);
-            }
-        }
-        return result;
+	}
 
-    }
+	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
+	 */
+	private Reservation cloneReservation(Reservation obj) throws RaplaException {
+	    User workingUser = getWorkingUser();
+		// first we do a reservation deep clone
+		Reservation clone =  obj.clone();
+		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
+		Allocatable[] allocatables = clone.getAllocatables();
 
-    /** Clones a reservation and sets new ids for all appointments and the reservation itsel
-     */
-    private Reservation cloneReservation(Reservation obj) throws RaplaException
-    {
-        User workingUser = getWorkingUser();
-        // first we do a reservation deep clone
-        Reservation clone = obj.clone();
-        HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
-        Allocatable[] allocatables = clone.getAllocatables();
+		for (Allocatable allocatable:allocatables) {
+			restrictions.put(allocatable, clone.getRestriction(allocatable));
+		}
 
-        for (Allocatable allocatable : allocatables)
-        {
-            restrictions.put(allocatable, clone.getRestriction(allocatable));
-        }
+		// then we set new ids for all appointments
+		Appointment[] clonedAppointments = clone.getAppointments();
+		setNew(Arrays.asList(clonedAppointments),Appointment.TYPE, workingUser);
+		
+		for (Appointment clonedAppointment:clonedAppointments) {
+			clone.removeAppointment(clonedAppointment);
+		}
 
-        // then we set new ids for all appointments
-        Appointment[] clonedAppointments = clone.getAppointments();
-        setNew(Arrays.asList(clonedAppointments), Appointment.TYPE, workingUser);
+		// and now a new id for the reservation
+		setNew( clone, workingUser);
+		for (Appointment clonedAppointment:clonedAppointments) {
+			clone.addAppointment(clonedAppointment);
+		}
 
-        for (Appointment clonedAppointment : clonedAppointments)
-        {
-            clone.removeAppointment(clonedAppointment);
-        }
+		for (Allocatable allocatable:allocatables) {
+			clone.addAllocatable( allocatable);
+			Appointment[] appointments = restrictions.get(allocatable);
+			if (appointments != null) {
+				clone.setRestriction(allocatable, appointments);
+			}
+		}
+		return clone;
+	}
 
-        // and now a new id for the reservation
-        setNew(clone, workingUser);
-        for (Appointment clonedAppointment : clonedAppointments)
-        {
-            clone.addAppointment(clonedAppointment);
-        }
+	public <T extends Entity> T getPersistant(T entity) throws RaplaException {
+		Set<T> persistantList = Collections.singleton( entity);
+		Map<T,T> map = getPersistant( persistantList);
+		T result = map.get( entity);
+		if ( result == null)
+		{
+			throw new EntityNotFoundException(	"There is no persistant version of " + entity);
+		}
+		return result;
+	}
+	
+	public <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException {
+		Map<Entity,Entity> result = operator.getPersistant(list);
+		LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
+		for ( Map.Entry<Entity,Entity> entry: result.entrySet())
+		{
+			@SuppressWarnings("unchecked")
+			T key = (T) entry.getKey();
+			@SuppressWarnings("unchecked")
+			T value = (T) entry.getValue();
+			castedResult.put( key, value);
+		}
+		return castedResult;
+	}
 
-        for (Allocatable allocatable : allocatables)
-        {
-            clone.addAllocatable(allocatable);
-            Appointment[] appointments = restrictions.get(allocatable);
-            if (appointments != null)
-            {
-                clone.setRestriction(allocatable, appointments);
-            }
-        }
-        return clone;
-    }
+	public void store(Entity<?> obj) throws RaplaException {
+		if (obj == null)
+			throw new NullPointerException("Can't store null objects");
+		storeObjects(new Entity[] { obj });
+	}
 
-    public <T extends Entity> T getPersistant(T entity) throws RaplaException
-    {
-        Set<T> persistantList = Collections.singleton(entity);
-        Map<T, T> map = getPersistant(persistantList);
-        T result = map.get(entity);
-        if (result == null)
-        {
-            throw new EntityNotFoundException("There is no persistant version of " + entity);
-        }
-        return result;
-    }
+	public void remove(Entity<?> obj) throws RaplaException {
+		if (obj == null)
+			throw new NullPointerException("Can't remove null objects");
+		removeObjects(new Entity[] { obj });
+	}
 
-    public <T extends Entity> Map<T, T> getPersistant(Collection<T> list) throws RaplaException
-    {
-        Map<Entity, Entity> result = operator.getPersistant(list);
-        LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
-        for (Map.Entry<Entity, Entity> entry : result.entrySet())
-        {
-            @SuppressWarnings("unchecked") T key = (T) entry.getKey();
-            @SuppressWarnings("unchecked") T value = (T) entry.getValue();
-            castedResult.put(key, value);
-        }
-        return castedResult;
-    }
+	public void storeObjects(Entity<?>[] obj) throws RaplaException {
+		storeAndRemove(obj, Entity.ENTITY_ARRAY);
+	}
 
-    public void store(Entity<?> obj) throws RaplaException
-    {
-        if (obj == null)
-            throw new NullPointerException("Can't store null objects");
-        storeObjects(new Entity[] { obj });
-    }
+	public void removeObjects(Entity<?>[] obj) throws RaplaException {
+		storeAndRemove(Entity.ENTITY_ARRAY, obj);
+	}
 
-    public void remove(Entity<?> obj) throws RaplaException
-    {
-        if (obj == null)
-            throw new NullPointerException("Can't remove null objects");
-        removeObjects(new Entity[] { obj });
-    }
+	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
+		if (storeObjects.length == 0 && removedObjects.length == 0)
+			return;
+		long time = System.currentTimeMillis();
+		for (int i = 0; i < storeObjects.length; i++) {
+			if (storeObjects[i] == null) {
+				throw new RaplaException("Stored Objects cant be null");
+			}
+			if (storeObjects[i].getRaplaType() == Reservation.TYPE) {
+				checkReservation((Reservation) storeObjects[i]);
+			}
+		}
 
-    public void storeObjects(Entity<?>[] obj) throws RaplaException
-    {
-        storeAndRemove(obj, Entity.ENTITY_ARRAY);
-    }
+		for (int i = 0; i < removedObjects.length; i++) {
+			if (removedObjects[i] == null) {
+				throw new RaplaException("Removed Objects cant be null");
+			}
+		}
 
-    public void removeObjects(Entity<?>[] obj) throws RaplaException
-    {
-        storeAndRemove(Entity.ENTITY_ARRAY, obj);
-    }
+		ArrayList<Entity>storeList = new ArrayList<Entity>();
+		ArrayList<Entity>removeList = new ArrayList<Entity>();
+		for (Entity toStore : storeObjects) {
+			storeList.add( toStore);
+		}
+		for (Entity<?> toRemove : removedObjects) {
+			removeList.add( toRemove);
+		}
+		User workingUser = getWorkingUser();
+		operator.storeAndRemove(storeList, removeList, workingUser);
+	
+		if (getLogger().isDebugEnabled())
+			getLogger().debug("Storing took " + (System.currentTimeMillis() - time)	+ " ms.");
+	}
 
-    public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException
-    {
-        if (storeObjects.length == 0 && removedObjects.length == 0)
-            return;
-        long time = System.currentTimeMillis();
-        for (int i = 0; i < storeObjects.length; i++)
-        {
-            if (storeObjects[i] == null)
-            {
-                throw new RaplaException("Stored Objects cant be null");
-            }
-            if (storeObjects[i].getRaplaType() == Reservation.TYPE)
-            {
-                checkReservation((Reservation) storeObjects[i]);
-            }
-        }
+	public CommandHistory getCommandHistory() 
+	{
+		return commandHistory;
+	}
 
-        for (int i = 0; i < removedObjects.length; i++)
-        {
-            if (removedObjects[i] == null)
-            {
-                throw new RaplaException("Removed Objects cant be null");
-            }
-        }
+	public void changeName(String title, String firstname, String surname) throws RaplaException
+	{
+		User user = getUser();
+		getOperator().changeName(user,title,firstname,surname);
+	}
 
-        ArrayList<Entity> storeList = new ArrayList<Entity>();
-        ArrayList<Entity> removeList = new ArrayList<Entity>();
-        for (Entity toStore : storeObjects)
-        {
-            storeList.add(toStore);
-        }
-        for (Entity<?> toRemove : removedObjects)
-        {
-            removeList.add(toRemove);
-        }
-        User workingUser = getWorkingUser();
-        operator.storeAndRemove(storeList, removeList, workingUser);
+	public void changeEmail(String newEmail)  throws RaplaException
+	{
+		User user = getUser();
+		getOperator().changeEmail(user, newEmail);
+	}
 
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
-    }
+	public void confirmEmail(String newEmail) throws RaplaException {
+		User user = getUser();
+		getOperator().confirmEmail(user, newEmail);
+	}
 
-    public CommandHistory getCommandHistory()
-    {
-        return commandHistory;
-    }
-
-    public void changeName(String title, String firstname, String surname) throws RaplaException
-    {
-        User user = getUser();
-        getOperator().changeName(user, title, firstname, surname);
-    }
-
-    public void changeEmail(String newEmail) throws RaplaException
-    {
-        User user = getUser();
-        getOperator().changeEmail(user, newEmail);
-    }
-
-    public void confirmEmail(String newEmail) throws RaplaException
-    {
-        User user = getUser();
-        getOperator().confirmEmail(user, newEmail);
-    }
+	
 
 }

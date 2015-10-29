@@ -26,6 +26,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumn;
@@ -57,6 +59,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -135,11 +138,11 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         final ClientFacade clientFacade = getClientFacade();
         final RaplaLocale raplaLocale = getRaplaLocale();
         final RaplaResources i18n = getI18n();
-        List<RaplaTableColumn<AppointmentBlock,TableColumn>> columnPluginsConfigured = tableConfigLoader.loadColumns("appointments");
+        List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPluginsConfigured = tableConfigLoader.loadColumns("appointments");
         appointmentTableModel = new AppointmentTableModel(getLocale(), getI18n(), columnPluginsConfigured);
         sorter = SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);
         int column = 0;
-        for (RaplaTableColumn<AppointmentBlock,TableColumn> col : columnPluginsConfigured)
+        for (RaplaTableColumn<AppointmentBlock, TableColumn> col : columnPluginsConfigured)
         {
             col.init(table.getColumnModel().getColumn(column));
             column++;
@@ -181,12 +184,48 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         });
     }
 
-
-
     protected void update(CalendarModel model) throws RaplaException
     {
-        List<AppointmentBlock> blocks = model.getBlocks();
-        appointmentTableModel.setAppointments(blocks);
+        SwingUtilities.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                final Component glassPane = SwingUtilities.getRootPane(container).getGlassPane();
+                final DisabledGlassPane disabledGlassPane;
+                if (glassPane instanceof DisabledGlassPane)
+                {
+                    disabledGlassPane = (DisabledGlassPane) glassPane;
+                }
+                else
+                {
+                    disabledGlassPane = new DisabledGlassPane();
+                    SwingUtilities.getRootPane(container).setGlassPane(disabledGlassPane);
+                }
+                disabledGlassPane.activate();
+            }
+        });
+        new SwingWorker<Void, Void>()
+        {
+            @Override
+            protected Void doInBackground() throws Exception
+            {
+//                Thread.sleep(4000);
+                final List<AppointmentBlock> blocks = model.getBlocks();
+                SwingUtilities.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        appointmentTableModel.setAppointments(blocks);
+                        final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
+                        glassPane.deactivate();
+                    }
+                });
+                return null;
+            }
+
+        }.execute();
     }
 
     public void update() throws RaplaException

@@ -24,8 +24,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
@@ -33,17 +35,20 @@ import org.rapla.framework.logger.Logger;
 
 public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
 
+    private final PermissionController permissionController;
     AppointmentFormater appointmentFormater;
     public ReservationInfoUI(RaplaContext sm) {
         super(sm);
+        permissionController = getService(PermissionController.class);
         appointmentFormater = getService(AppointmentFormater.class);
     }
 
     @Inject
-    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
     {
-        super(i18n, raplaLocale, facade, logger);
+        super(i18n, raplaLocale, facade, logger, permissionController);
         this.appointmentFormater = appointmentFormater;
+        this.permissionController = permissionController;
     }
 
     private void addRestriction(Reservation reservation, Allocatable allocatable, StringBuffer buf) {
@@ -65,7 +70,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         StringBuffer buf = new StringBuffer();
         for (int i = 0;i<allocatables.length;i++) {
             Allocatable allocatable = allocatables[i];
-            if ( user != null && !allocatable.canReadOnlyInformation(user))
+            if ( user != null && !permissionController.canReadOnlyInformation(allocatable, user))
                 continue;
             if (controller != null)
                 controller.createLink(allocatable,getName(allocatable),buf);

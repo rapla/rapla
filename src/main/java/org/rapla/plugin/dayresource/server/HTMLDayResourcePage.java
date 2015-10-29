@@ -8,6 +8,7 @@ import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -30,9 +31,9 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
 {
     @Inject
 	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
-			AppointmentFormater appointmentFormater)
+			AppointmentFormater appointmentFormater, PermissionController permissionController)
 	{
-		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+		super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
 	}
 
 	@Override

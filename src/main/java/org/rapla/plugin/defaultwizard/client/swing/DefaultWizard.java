@@ -19,6 +19,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -47,10 +48,11 @@ import java.util.List;
 public class DefaultWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener
 {
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
-
+	private final PermissionController permissionController;
     @Inject
 	public DefaultWizard(RaplaContext sm){
         super(sm);
+        permissionController = getService(PermissionController.class);
     }
     
     public String getId() {
@@ -65,7 +67,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
             User user = getUser();
 			for ( DynamicType type: types)
 			{
-                if (PermissionContainer.Util.canCreate( type, user))
+                if (permissionController.canCreate( type, user))
 			    {
 			        eventTypes.add( type );
 			    }

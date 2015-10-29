@@ -24,6 +24,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -83,7 +84,7 @@ public class LocalCacheTest extends RaplaTestCase {
     }
 
     public void testAllocatable() throws Exception {
-        LocalCache cache = new LocalCache(new HashMap<String,FunctionFactory>());
+        LocalCache cache = new LocalCache(new HashMap<String,FunctionFactory>(), DefaultPermissionControllerSupport.getController());
 
         DynamicTypeImpl type = createDynamicType();
         type.setResolver( cache);

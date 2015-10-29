@@ -29,6 +29,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
@@ -55,9 +56,9 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
     @Inject
     public MenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             CalendarSelectionModel model, ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
-            MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view)
+            MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view, PermissionController permissionController)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale, logger, permissionController);
         this.model = model;
         this.reservationController = reservationController;
         this.view = view;
@@ -464,7 +465,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             try
             {
                 User user = getUser();
-                boolean canRead = canRead(appointment, user, getEntityResolver());
+                boolean canRead = canRead(appointment, user, getEntityResolver(), permissionController);
                 enabled = canRead;
             }
             catch (RaplaException ex)

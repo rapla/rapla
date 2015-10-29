@@ -25,29 +25,33 @@ import javax.swing.JComponent;
 import javax.swing.JTree;
 import javax.swing.tree.TreeModel;
 
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.PopupContext;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.CalendarOptionsImpl;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 
 @Extension(provides = EventCheck.class,id="conflictcheck")
 public class ConflictReservationCheck extends RaplaGUIComponent implements EventCheck
 {
+    
+    private final PermissionController permissionController;
     @Inject
     public ConflictReservationCheck(RaplaContext context) {
         super(context);
+        permissionController = getService(PermissionController.class);
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -109,7 +113,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         }
         for ( Allocatable allocatable:allocatables)
         {
-            if ( !allocatable.canCreateConflicts( user))
+            if ( !permissionController.canCreateConflicts( allocatable, user))
             {
                 return false;
             }

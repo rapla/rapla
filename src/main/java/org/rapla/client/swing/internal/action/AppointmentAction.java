@@ -21,6 +21,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -156,7 +157,7 @@ public class AppointmentAction extends RaplaAction {
         try 
         {
         	User user = getUser();
-            boolean canRead = canRead(appointment, user, getEntityResolver());
+            boolean canRead = canRead(appointment, user, getEntityResolver(), permissionController);
             setEnabled( canRead);
         } 
         catch (RaplaException ex)

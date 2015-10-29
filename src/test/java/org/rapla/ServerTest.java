@@ -29,8 +29,11 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -447,7 +450,8 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeGroup() throws Exception {
-		User user = facade1.edit(facade1.getUser("monty"));
+	     final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+	    User user = facade1.edit(facade1.getUser("monty"));
 		Category[] groups = user.getGroupList().toArray( new Category[] {});
 		assertTrue("No groups found!", groups.length > 0);
 		Category myGroup = facade1.getUserGroupsCategory().getCategory(
@@ -457,7 +461,7 @@ public class ServerTest extends ServletTestBase {
 		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
-		assertTrue(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertTrue(permissionController.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
 		testResource.removePermission(testResource.getPermissionList().iterator().next());
 		Permission newPermission = testResource.newPermission();
@@ -465,12 +469,12 @@ public class ServerTest extends ServletTestBase {
 				"my-group"));
 		newPermission.setAccessLevel(Permission.READ);
 		testResource.addPermission(newPermission);
-		assertFalse(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertFalse(permissionController.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
-		assertTrue(testResource.canRead(facade2.getUser("monty")));
+		assertTrue(permissionController.canRead(testResource, facade2.getUser("monty")));
 		facade1.store(user);
 		facade2.refresh();
-		assertFalse(testResource.canAllocate(facade2.getUser("monty"), null,
+		assertFalse(permissionController.canAllocate(testResource, facade2.getUser("monty"), null,
 				null, null));
 	}
 
