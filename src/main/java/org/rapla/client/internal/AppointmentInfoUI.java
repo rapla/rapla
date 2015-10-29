@@ -19,6 +19,7 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -36,10 +37,10 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
     }
     
     @Inject
-    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
     {
-        super( i18n, raplaLocale, facade, logger);
-        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater);
+        super( i18n, raplaLocale, facade, logger, permissionController);
+        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater, permissionController);
         this.appointmentFormater = appointmentFormater;
     }
     

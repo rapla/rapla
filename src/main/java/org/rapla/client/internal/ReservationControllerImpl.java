@@ -28,6 +28,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -55,7 +56,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     private RaplaResources i18n;
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
+    private final PermissionController permissionController;
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -65,6 +67,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.appointmentFormater=appointmentFormater; 
         this.editProvider = editProvider;
         this.clipboard = clipboard;
+        this.permissionController = permissionController;
         facade.addModificationListener(this);
     }
     
@@ -649,7 +652,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         // copy info text to system clipboard
         {
 	        StringBuffer buf = new StringBuffer();
-	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(),getRaplaLocale(), getFacade(),logger,appointmentFormater);
+	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(),getRaplaLocale(), getFacade(),logger,appointmentFormater, permissionController);
 	    	boolean excludeAdditionalInfos = false;
 	    
 			List<Row> attributes = reservationInfoUI.getAttributes(sourceReservation, null, null, excludeAdditionalInfos);

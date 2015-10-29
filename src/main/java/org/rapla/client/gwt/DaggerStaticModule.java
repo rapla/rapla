@@ -13,6 +13,7 @@ import org.rapla.client.ApplicationView;
 import org.rapla.client.PlacePresenter;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
@@ -47,11 +48,11 @@ public class DaggerStaticModule
 
     @Provides
     @Singleton
-    public CalendarSelectionModel provideCalendar(ClientFacade facade, RaplaLocale raplaLocale) throws RaplaException
+    public CalendarSelectionModel provideCalendar(ClientFacade facade, RaplaLocale raplaLocale, PermissionController permissionController) throws RaplaException
     {
         Locale locale = raplaLocale.getLocale();
         User user = facade.getUser();
-        CalendarModelImpl result = new CalendarModelImpl(locale, user, facade);
+        CalendarModelImpl result = new CalendarModelImpl(locale, user, facade, permissionController);
         result.load(null);
         return result;
     }

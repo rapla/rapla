@@ -6,6 +6,7 @@ import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -29,9 +30,9 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
 
     @Inject
     public ReservationControllerGwtImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
+            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
     {
-        super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard);
+        super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
     }
 
 

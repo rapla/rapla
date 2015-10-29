@@ -159,39 +159,6 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 		return false;
     }
     
-    /* (non-Javadoc)
-     * @see org.rapla.entities.domain.Allocatable#canReadOnlyInformation(org.rapla.entities.User)
-     */
-    public boolean canReadOnlyInformation(User user) 
-    {
-        return Util.canReadOnlyInformation(this, user);
-    }
-
-    public boolean canRead(User user) 
-    {
-        return PermissionContainer.Util.canRead( this,user);
-    }
-    
-    public boolean canModify(User user) 
-    {
-        return PermissionContainer.Util.canModify(this,user);
-    }
-    
-    public boolean canAllocate( User user,Date today ) 
-    {
-        return Util.canAllocate(this, user, today);
-    }
-
-    public boolean canCreateConflicts(User user ) 
-    {
-        return Util.canCreateConflicts(this, user);
-    }
-
-    public boolean canAllocate( User user, Date start, Date end, Date today ) 
-    {
-        return Util.canAllocate(this, user, start, end, today);
-    }
-
     public void addPermission(Permission permission) {
         checkWritable();
         permissions.add((PermissionImpl)permission);

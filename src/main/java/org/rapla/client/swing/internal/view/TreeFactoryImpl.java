@@ -51,6 +51,9 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.InverseComparator;
@@ -63,9 +66,9 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -79,18 +82,17 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
 
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
+    private final PermissionController permissionController;
     @Inject
     public TreeFactoryImpl(RaplaContext sm) {
         super(sm);
+        permissionController = getService(PermissionController.class);
     }
    
     class DynamicTypeComperator  implements Comparator<DynamicType>
@@ -974,7 +976,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
-    				if ( !PermissionContainer.Util.canAllocate(allocatable, user,  today))
+    				if ( !permissionController.canAllocate(allocatable, user,  today))
     				{
     					icon = forbiddenIcon;
     				}

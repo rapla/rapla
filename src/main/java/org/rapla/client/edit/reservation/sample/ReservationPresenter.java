@@ -1,14 +1,19 @@
 package org.rapla.client.edit.reservation.sample;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+
+import javax.inject.Inject;
+
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.StopActivityEvent;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -18,10 +23,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import com.google.web.bindery.event.shared.EventBus;
 
 public class ReservationPresenter implements ReservationController, Presenter
 {
@@ -32,19 +34,22 @@ public class ReservationPresenter implements ReservationController, Presenter
     private final RaplaLocale raplaLocale;
     private final EventBus eventBus;
     private final ReservationView<?> view;
+    private final PermissionController permissionController;
 
     private Reservation editReservation;
     private Appointment selectedAppointment;
     private boolean isNew;
 
+
     @Inject
-    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView<?> view)
+    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView<?> view, final PermissionController permissionController)
     {
         this.facade = facade;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.eventBus = eventBus;
         this.view = view;
+        this.permissionController = permissionController;
         view.setPresenter(this);
     }
 
@@ -152,7 +157,7 @@ public class ReservationPresenter implements ReservationController, Presenter
             final User user = facade.getUser();
             for (DynamicType type : types)
             {
-                if (PermissionContainer.Util.canCreate(type, user))
+                if (permissionController.canCreate(type, user))
                 {
                     creatableTypes.add(type);
                 }

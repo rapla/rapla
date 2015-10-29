@@ -26,6 +26,7 @@ import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -76,12 +77,15 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
     private Logger logger;
     private ClientFacade facade;
 
+    private final PermissionController permissionController;
+
     @Inject public UpdateDataManagerImpl(Logger logger, ClientFacade facade, CachableStorageOperator operator, SecurityManager securityManager,
-            Provider<AuthenticationStore> authenticationStore) throws RaplaException
+            Provider<AuthenticationStore> authenticationStore, PermissionController permissionController) throws RaplaException
     {
         this.logger = logger;
         this.facade = facade;
         this.operator = operator;
+        this.permissionController = permissionController;
         this.operator.addStorageUpdateListener(this);
         this.security = securityManager;
 
@@ -338,7 +342,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
             else if (obj instanceof Allocatable)
             {
                 Allocatable alloc = (Allocatable) obj;
-                if (!PermissionContainer.Util.canReadOnlyInformation(alloc, user))
+                if (!permissionController.canReadOnlyInformation(alloc, user))
                 {
                     clientStore = false;
                 }
@@ -346,7 +350,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
             else if (obj instanceof Conflict)
             {
                 Conflict conflict = (Conflict) obj;
-                if (!RaplaComponent.canModify(conflict, user, operator))
+                if (!RaplaComponent.canModify(conflict, user, operator, permissionController))
                 {
                     clientStore = false;
                 }

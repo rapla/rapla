@@ -97,6 +97,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
@@ -184,13 +185,15 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
 	AppointmentFormater appointmentFormater;
 	final private Set<SwingViewFactory> swingViewFactories;
-
+	private final PermissionController permissionController;
+	
 	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories)
 	{
 		super(context);
 		this.swingViewFactories = swingViewFactories;
 		// Undo Command History
 		appointmentFormater = getService(AppointmentFormater.class);
+		permissionController = getService(PermissionController.class);
 		this.commandHistory = commandHistory;
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
@@ -460,7 +463,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		Date today = getQuery().today();
 		for (Allocatable alloc:allocatables)
 		{
-			if (PermissionContainer.Util.canAllocate(alloc, user, today))
+			if (permissionController.canAllocate(alloc, user, today))
 			{
 				rightsToAllocate.add( alloc );
 			}
@@ -1190,7 +1193,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		Date start = appointment.getStart();
 		Date end = appointment.getMaxEnd();
 		Date today = getQuery().today();
-		return PermissionContainer.Util.canAllocate(allocatable, user, start, end, today);
+		return permissionController.canAllocate(allocatable, user, start, end, today);
 	}
 	
 	class AllocationRendering
@@ -2036,13 +2039,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		}
 		if (originalReservation == null || originalReservation.size() == 0) 
 		{
-			return PermissionContainer.Util.canAllocate(allocatable, workingUser, appointment.getStart(), appointment.getMaxEnd(),today);
+			return permissionController.canAllocate(allocatable, workingUser, appointment.getStart(), appointment.getMaxEnd(),today);
 		}
 		else
 		{
 	        for (Reservation r:mutableReservations)
 	        {
-	            if (! Util.hasPermissionToAllocate(workingUser,	appointment, allocatable, r, today))
+	            if (!permissionController.hasPermissionToAllocate(workingUser, appointment, allocatable, r, today))
 	            {
 	                return false;
 	            }

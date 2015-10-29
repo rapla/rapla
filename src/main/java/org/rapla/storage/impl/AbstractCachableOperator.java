@@ -44,6 +44,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -90,7 +91,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected final Map<String,FunctionFactory> functionFactoryMap;
 
 
-	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap)  {
+	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, PermissionController permissionController)  {
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		this.i18n = i18n;
@@ -99,7 +100,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 //		i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
-		cache = new LocalCache(functionFactoryMap);
+		cache = new LocalCache(functionFactoryMap, permissionController);
 	}
 
 	public Logger getLogger() {

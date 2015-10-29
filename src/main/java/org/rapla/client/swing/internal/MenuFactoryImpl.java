@@ -30,6 +30,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -68,12 +69,14 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
     private final Set<ReservationWizardExtension> reservationWizards;
     private final Set<ObjectMenuFactory> objectMenuFactories;
+    private final PermissionController permissionController;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
+        this.permissionController = permissionController;
     }
 
 
@@ -164,7 +167,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
           Date start = getStartDate( model);
           Date end = getEndDate( model, start);
           for ( Allocatable alloc: selectedAllocatables) {
-              if (PermissionContainer.Util.canAllocate( alloc, user, start, end, today))
+              if (permissionController.canAllocate( alloc, user, start, end, today))
                   canAllocate = true;
           }
           boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && canUserAllocateSomething( getUser()));

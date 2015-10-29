@@ -72,6 +72,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -135,6 +136,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	private TimeZone systemTimeZone = TimeZone.getDefault();
 	private CommandScheduler scheduler;
 	private Cancelable cleanConflictsTask;
+    private PermissionController permissionController;
     
 	protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -273,10 +275,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	    }
     }
 	
-	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap) {
-		super( logger, i18n,raplaLocale, functionFactoryMap);
+	public LocalAbstractCachableOperator(Logger logger,  RaplaResources i18n,RaplaLocale raplaLocale,CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap, PermissionController permissionController) {
+		super( logger, i18n,raplaLocale, functionFactoryMap, permissionController);
 		this.scheduler = scheduler; 
 		        //context.lookupDeprecated( CommandScheduler.class);
+        this.permissionController = permissionController;
 		
 
 	}
@@ -917,7 +920,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		};
 		// The conflict map
 		Logger logger = getLogger();
-        conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, cache);
+        conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, cache, permissionController);
 		long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
 		long period = DateTools.MILLISECONDS_PER_HOUR;
 		Command cleanUpConflicts = new Command() {

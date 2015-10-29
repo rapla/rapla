@@ -5,6 +5,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -132,7 +133,7 @@ public class CommunicatorTest extends ServletTestBase
 			RaplaResources i18n = context.lookup(RaplaResources.class);
             CommandScheduler secheduler = context.lookup(CommandScheduler.class);
             Map<String,FunctionFactory> functionFactoryMap = new HashMap<String,FunctionFactory>();
-            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, functionFactoryMap,remoteAuthentificationService, remoteStorage, connectionInfo );
+            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, functionFactoryMap,remoteAuthentificationService, remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getController() );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
             System.out.println("Client " + i + " successfully subscribed");

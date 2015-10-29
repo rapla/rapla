@@ -22,6 +22,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.storage.RaplaSecurityException;
@@ -170,25 +172,27 @@ public class PermissionTest extends ServletTestBase {
     }
 
     private void clientReadPermissions() throws Exception {
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
         User user = testFacade.getUser();
         Allocatable a = getTestResource();
         assertNotNull( a );
-        assertTrue( PermissionContainer.Util.canRead( a, user ) );
-        assertTrue( !PermissionContainer.Util.canModify(a, user ) );
-        assertTrue( !PermissionContainer.Util.canCreateConflicts( a, user ) );
-        assertTrue( !PermissionContainer.Util.canAllocate( a, user, null, null, testFacade.today()));
+        assertTrue( permissionController.canRead( a, user ) );
+        assertTrue( !permissionController.canModify(a, user ) );
+        assertTrue( !permissionController.canCreateConflicts( a, user ) );
+        assertTrue( !permissionController.canAllocate( a, user, null, null, testFacade.today()));
     }
 
     private void clientAllocatePermissions() throws Exception {
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
         Allocatable allocatable = getTestResource();
         User user = testFacade.getUser();
         assertNotNull( allocatable );
-        assertTrue( PermissionContainer.Util.canRead( allocatable, user ) );
+        assertTrue( permissionController.canRead( allocatable, user ) );
         Date start1 = DateTools.addDay(testFacade.today());
         Date end1 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
         Date start2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 1);
         Date end2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 3);
-        assertTrue( PermissionContainer.Util.canAllocate( allocatable, user, null, null, testFacade.today() ) );
+        assertTrue( permissionController.canAllocate( allocatable, user, null, null, testFacade.today() ) );
 
         Reservation r1 = testFacade.newReservation();
         r1.getClassification().setValue("name","R1");

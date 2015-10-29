@@ -44,6 +44,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
@@ -84,9 +85,10 @@ public class DBOperator extends LocalAbstractCachableOperator
     private String connectionName;
     
     Provider<ImportExportManager> importExportManager;
+    private final PermissionController permissionController;
     @Inject
-    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Map<String,FunctionFactory> functionFactoryMap,Provider<ImportExportManager> importExportManager, DataSource dataSource) {
-        super(  logger, i18n, locale, scheduler, functionFactoryMap);
+    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Map<String,FunctionFactory> functionFactoryMap,Provider<ImportExportManager> importExportManager, DataSource dataSource, PermissionController permissionController) {
+        super(  logger, i18n, locale, scheduler, functionFactoryMap, permissionController);
         lookup = dataSource;
         this.importExportManager = importExportManager;
 //        String backupFile = config.getChild("backup").getValue("");
@@ -94,6 +96,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 //        	backupFileName = ContextTools.resolveContext( backupFile, context);
 //       
 //        backupEncoding = config.getChild( "encoding" ).getValue( "utf-8" );
+        this.permissionController = permissionController;
  
 //        datasourceName = config.getChild("datasource").getValue(null);
 //        // dont use datasource (we have to configure a driver )
@@ -386,7 +389,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
             }
-            LocalCache cache =new LocalCache(functionFactoryMap);
+            LocalCache cache =new LocalCache(functionFactoryMap, permissionController);
             cache.clearAll();
             addInternalTypes(cache);
             loadOldData(c, cache );

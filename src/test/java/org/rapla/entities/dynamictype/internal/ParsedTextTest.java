@@ -5,6 +5,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
@@ -29,7 +30,7 @@ public class ParsedTextTest extends TestCase
     {
 
         final Map<String, FunctionFactory> functionFactoryMap = createFactoryMap();
-        LocalCache cache = new LocalCache(functionFactoryMap);
+        LocalCache cache = new LocalCache(functionFactoryMap, DefaultPermissionControllerSupport.getController());
         CategoryImpl c1 = new CategoryImpl();
         c1.setKey("c1");
         c1.getName().setName("de", "Hallo");

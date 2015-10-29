@@ -62,6 +62,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -139,14 +140,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	Logger logger;
 	
 	String templateId;
+    private final PermissionController permissionController;
 	
 	@Inject
-	public FacadeImpl(StorageOperator operator, RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
+	public FacadeImpl(StorageOperator operator, RaplaResources i18n, CommandScheduler notifyQueue, Logger logger, PermissionController permissionController) {
 	    
 		this.operator = operator;
 		this.logger = logger;
 		this.i18n = i18n;
         this.notifyQueue = notifyQueue;
+        this.permissionController = permissionController;
 		locale = i18n.getLocale();
 		operator.addStorageUpdateListener(this);
 	}
@@ -429,7 +432,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Allocatable allocatable = it.next();
 			if (workingUser == null || workingUser.isAdmin())
 				continue;
-			if (!PermissionContainer.Util.canRead(allocatable, workingUser))
+			if (!permissionController.canRead(allocatable, workingUser))
 				it.remove();
 		}
 		return objects;
@@ -487,7 +490,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Allocatable[] all = getAllocatables(null);
 			User user = getUser();
 			for (int i = 0; i < all.length; i++) {
-				if (PermissionContainer.Util.canModify(all[i], user)) {
+				if (permissionController.canModify(all[i], user)) {
 					return true;
 				}
 			}
@@ -665,7 +668,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				continue;
 			}
 			User workingUser = getWorkingUser();
-			if ( workingUser != null && !PermissionContainer.Util.canRead( type, workingUser))
+			if ( workingUser != null && !permissionController.canRead( type, workingUser))
 			{
 			    continue;
 			}
@@ -802,7 +805,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //	}
 	
 	public boolean canCreateReservations(DynamicType type, User user) {
-	    boolean result = PermissionContainer.Util.canCreate(type, user);
+	    boolean result = permissionController.canCreate(type, user);
 	    return result;
 		//return hasGroupRights(user, Permission.GROUP_CAN_CREATE_EVENTS);
 	}
@@ -1267,7 +1270,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( locale, user, this);
+	    return new CalendarModelImpl( locale, user, this, permissionController);
     }
 
 	private String createDynamicTypeKey(String classificationType)

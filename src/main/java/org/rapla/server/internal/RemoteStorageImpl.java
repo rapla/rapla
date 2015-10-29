@@ -12,6 +12,7 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -53,9 +54,10 @@ public class RemoteStorageImpl implements RemoteStorage
     private final RaplaResources i18n;
     private final Provider<MailInterface> mailInterface;
     private final UpdateDataManager updateDataManager;
+    private final PermissionController permissionController;
 
     @Inject public RemoteStorageImpl(RemoteSession session, CachableStorageOperator operator, SecurityManager security, ShutdownService shutdownService,
-            Provider<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager)
+            Provider<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager, PermissionController permissionController)
     {
         this.session = session;
         this.updateDataManager = updateDataManager;
@@ -65,6 +67,7 @@ public class RemoteStorageImpl implements RemoteStorage
         this.shutdownService = shutdownService;
         this.mailInterface = mailInterface;
         this.i18n = i18n;
+        this.permissionController = permissionController;
     }
 
     public FutureResult<UpdateEvent> getResources()
@@ -205,7 +208,7 @@ public class RemoteStorageImpl implements RemoteStorage
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
     {
         ReservationImpl reservation = (ReservationImpl) entity;
-        boolean reservationVisible = RaplaComponent.canRead(reservation, sessionUser, operator);
+        boolean reservationVisible = RaplaComponent.canRead(reservation, sessionUser, operator, permissionController);
         // check if the user is allowed to read the reservation info
         if (!reservationVisible)
         {
@@ -231,7 +234,7 @@ public class RemoteStorageImpl implements RemoteStorage
         }
         for (Allocatable allocatable : res.getAllocatables())
         {
-            if (PermissionContainer.Util.canRead(allocatable, sessionUser))
+            if (permissionController.canRead(allocatable, sessionUser))
             {
                 return true;
             }

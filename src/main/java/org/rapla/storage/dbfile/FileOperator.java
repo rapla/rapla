@@ -44,6 +44,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -113,9 +114,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
     final boolean includeIds= false;
 
     @Inject
-    public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,Map<String,FunctionFactory> functionFactoryMap,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath) throws RaplaException
+    public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,Map<String,FunctionFactory> functionFactoryMap,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath, PermissionController permissionController) throws RaplaException
     {
-        super(  logger, i18n, raplaLocale, scheduler, functionFactoryMap );
+        super(  logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionController);
         //StartupEnvironment env =  context.lookupDeprecated( StartupEnvironment.class );
 
 //        URL contextRootURL = env.getContextRootURL();

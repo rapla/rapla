@@ -27,6 +27,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -73,10 +74,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType,ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
-
-    public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
+    private final PermissionController permissionController;
+    public CalendarModelImpl(Locale locale, User user, ClientFacade facade, PermissionController permissionController) throws RaplaException {
         this.locale = locale;
         m_facade = facade;
+        this.permissionController = permissionController;
         if ( user == null && m_facade.isSessionActive()) {
             user = m_facade.getUser();
         }
@@ -685,7 +687,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private boolean isInFilterAndCanRead(Allocatable allocatable)
     {
-        return isInFilter( allocatable) && (user == null || PermissionContainer.Util.canRead(allocatable, user));
+        return isInFilter( allocatable) && (user == null || permissionController.canRead(allocatable, user));
     }
     
     private boolean isInFilter( Allocatable classifiable) {
@@ -831,7 +833,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(locale, user, m_facade);
+            clone = new CalendarModelImpl(locale, user, m_facade, permissionController);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
             clone.setConfiguration( config, alternativOptions);

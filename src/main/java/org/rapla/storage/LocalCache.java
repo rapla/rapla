@@ -31,10 +31,10 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -61,7 +61,9 @@ public class LocalCache implements EntityResolver
     
     private String clientUserId;
     Map<String,FunctionFactory> functionFactoryMap;
-    public LocalCache(Map<String,FunctionFactory> functionFactoryMap) {
+    private final PermissionController permissionController;
+    public LocalCache(Map<String,FunctionFactory> functionFactoryMap, PermissionController permissionController) {
+        this.permissionController = permissionController;   
         entities = new HashMap<String,Entity>();
         // top-level-entities
         reservations = new LinkedHashMap<String,ReservationImpl>();
@@ -312,7 +314,7 @@ public class LocalCache implements EntityResolver
         result.addAll(getUsers());
         for (Allocatable alloc: getAllocatables())
         {
-            if (user == null || user.isAdmin() || PermissionContainer.Util.canReadOnlyInformation( alloc, user))
+            if (user == null || user.isAdmin() || permissionController.canReadOnlyInformation( alloc, user))
             {
                 result.add( alloc);
             }
@@ -407,8 +409,8 @@ public class LocalCache implements EntityResolver
         EntityResolver cache = this;
         if ( user != null)
         {
-            ((ConflictImpl)conflict).setAppointment1Editable( RaplaComponent.canModifyEvent(conflict.getReservation1(), user, cache));
-            ((ConflictImpl)conflict).setAppointment2Editable( RaplaComponent.canModifyEvent(conflict.getReservation2(), user, cache));
+            ((ConflictImpl)conflict).setAppointment1Editable( RaplaComponent.canModifyEvent(conflict.getReservation1(), user, cache, permissionController));
+            ((ConflictImpl)conflict).setAppointment2Editable( RaplaComponent.canModifyEvent(conflict.getReservation2(), user, cache, permissionController));
         }
     }
 

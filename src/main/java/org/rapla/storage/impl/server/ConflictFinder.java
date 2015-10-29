@@ -35,6 +35,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
@@ -52,10 +53,12 @@ class ConflictFinder {
     Logger logger;
     EntityResolver resolver;
     LocalCache cache;
-    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver, LocalCache cache)  {
+    private final PermissionController permissionController;
+    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver, LocalCache cache, PermissionController permissionController)  {
     	this.logger = logger;
     	this.cache = cache;
     	this.allocationMap = allocationMap;
+        this.permissionController = permissionController;
     	conflictMap = new HashMap<Allocatable, Set<Conflict>>();
     	long startTime = System.currentTimeMillis();
     	int conflictSize = 0;
@@ -488,7 +491,7 @@ class ConflictFinder {
 			{
 				for ( Conflict conflict: set)
 				{
-					if (RaplaComponent.canModify(conflict,user,resolver))
+					if (RaplaComponent.canModify(conflict,user,resolver, permissionController))
 					{
 					    cache.fillConflictDisableInformation(user, conflict);
                         conflictList.add(conflict);

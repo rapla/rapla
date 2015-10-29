@@ -44,6 +44,8 @@ import javax.inject.Singleton;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
@@ -89,6 +91,7 @@ public class ContainerImpl implements Disposable
             logger.warn("javax.jws.WebService class not found. Assuming Android env");
         }
         addContainerProvidedComponentInstance(Logger.class, logger);
+        addContainerProvidedComponent(PermissionController.class, PermissionController.class);
     }
 
     public <T> T inject(Class<T> component, Object... params) throws RaplaContextException

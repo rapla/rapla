@@ -21,6 +21,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
@@ -39,9 +40,12 @@ import org.rapla.storage.RaplaSecurityException;
 public class RaplaEventsRestPage extends AbstractRestPage 
 {
 
-	@Inject
-    public RaplaEventsRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger) throws RaplaException {
+	private final PermissionController permissionController;
+
+    @Inject
+    public RaplaEventsRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, PermissionController permissionController) throws RaplaException {
 		super(facade, serverContainer, logger, true);
+        this.permissionController = permissionController;
 	}
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
@@ -64,7 +68,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
         for ( Reservation r:reservations)
         {
             EntityResolver entityResolver = getEntityResolver();
-            if ( RaplaComponent.canRead(r, user, entityResolver ))
+            if ( RaplaComponent.canRead(r, user, entityResolver, permissionController))
             {
                 result.add((ReservationImpl) r);
             }
@@ -77,7 +81,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	public ReservationImpl get(@QueryParam("user") User user, @QueryParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        if (!RaplaComponent.canRead(event, user, getEntityResolver() ))
+        if (!RaplaComponent.canRead(event, user, getEntityResolver(), permissionController ))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -87,7 +91,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	@PUT
     public ReservationImpl update(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
     {
-        if (!RaplaComponent.canModify(event, user, getEntityResolver()))
+        if (!RaplaComponent.canModify(event, user, getEntityResolver(), permissionController))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

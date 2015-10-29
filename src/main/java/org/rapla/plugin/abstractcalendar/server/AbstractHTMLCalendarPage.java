@@ -37,6 +37,7 @@ import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
@@ -59,13 +60,15 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     final protected ClientFacade facade;
     final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
+    private final PermissionController permissionController;
 
-    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
+    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
         this.raplaResources = raplaResources;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.facade = facade;
         this.appointmentFormater = appointmentFormater;
+        this.permissionController = permissionController;
     }
 
     protected RaplaLocale getRaplaLocale()
@@ -80,7 +83,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     protected RaplaBuilder createBuilder() throws RaplaException {
-        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
+        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater, permissionController);
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
 		builder.setFromModel( model, startDate, endDate  );

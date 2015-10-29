@@ -19,11 +19,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -38,6 +36,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -57,14 +56,16 @@ public class SecurityManager
     final StorageOperator operator;
     final Logger logger;
     final ClientFacade facade;
+    private final PermissionController permissionController;
 
     @Inject
-    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
+    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade, PermissionController permissionController)
     {
         this.logger = logger;
         this.i18n = i18n;
         this.appointmentFormater = appointmentFormater;
         this.facade = facade;
+        this.permissionController = permissionController;
         operator = facade.getOperator();
     }
     
@@ -122,18 +123,18 @@ public class SecurityManager
         } 
         if ( permitted && entity instanceof Classifiable ){
             if ( original == null ) {
-                permitted = PermissionContainer.Util.canCreate((Classifiable)entity, user);
+                permitted = permissionController.canCreate((Classifiable)entity, user);
             } 
         }
         if ( !permitted && original != null && original instanceof PermissionContainer)
         {
             if ( admin)
             {
-                permitted = PermissionContainer.Util.canAdmin((PermissionContainer)original, user);
+                permitted = permissionController.canAdmin((PermissionContainer)original, user);
             }
             else
             {
-                permitted = PermissionContainer.Util.canModify((PermissionContainer)original, user);
+                permitted = permissionController.canModify((PermissionContainer)original, user);
             }
             
         }
@@ -143,14 +144,14 @@ public class SecurityManager
             Reservation originalReservation = operator.tryResolve(reservation.getId(), Reservation.class);
             if ( originalReservation != null)
             {
-            	permitted = PermissionContainer.Util.canModify(originalReservation, user);
+            	permitted = permissionController.canModify(originalReservation, user);
             }
         }
         
         if (!permitted && entity instanceof Conflict)
         {
             Conflict conflict = (Conflict) entity;
-            if (RaplaComponent.canModify(conflict, user, operator))
+            if (RaplaComponent.canModify(conflict, user, operator, permissionController))
             {
                 permitted = true;
             }
@@ -158,7 +159,7 @@ public class SecurityManager
 
         if (!permitted && entity instanceof Annotatable)
         {
-            permitted = RaplaComponent.canWriteTemplate(( Annotatable)entity, user, operator );
+            permitted = RaplaComponent.canWriteTemplate(( Annotatable)entity, user, operator, permissionController );
         }
         
         if (!permitted)
@@ -189,7 +190,7 @@ public class SecurityManager
             }
             if ( originalReservation == null)
             {
-                boolean canCreate = PermissionContainer.Util.canCreate(reservation, user);
+                boolean canCreate = permissionController.canCreate(reservation, user);
                 //Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
             	if (!canCreate)
             	{
@@ -298,7 +299,7 @@ public class SecurityManager
     /** for Thierry, we can make this configurable in the next version */
     private boolean canAllocateForOthers(Allocatable allocatable, User user) {
         // only admins, current behaviour
-        return PermissionContainer.Util.canModify(allocatable, user);
+        return permissionController.canModify(allocatable, user);
         // everyone who can allocate the resource anytime
         //return allocatable.canAllocate( user, null, null, operator.today());
         // everyone
@@ -308,7 +309,7 @@ public class SecurityManager
     private void checkConflictsAllowed(User user, Allocatable allocatable, Conflict[] conflictsBefore, Conflict[] conflictsAfter) throws RaplaSecurityException {
         int nConflictsBefore = 0;
         int nConflictsAfter = 0;
-        if ( PermissionContainer.Util.canCreateConflicts( allocatable, user ) ) {
+        if ( permissionController.canCreateConflicts( allocatable, user ) ) {
             return;
         }
         if ( conflictsBefore != null ) {
@@ -351,7 +352,7 @@ public class SecurityManager
                 Appointment appointment = appointments[j];
                 Date today = operator.today();
 				if ( r.hasAllocated( allocatable, appointment ) &&
-                     !Util.hasPermissionToAllocate( user, appointment, allocatable, original,today ) ) {
+                     !permissionController.hasPermissionToAllocate( user, appointment, allocatable, original,today ) ) {
                     String all = allocatable.getName( i18n.getLocale() );
                     String app = appointmentFormater.getSummary( appointment );
                     String error = i18n.format("warning.no_reserve_permission"
@@ -378,7 +379,7 @@ public class SecurityManager
                      && !r.hasAllocated( allocatable, appointment ) ) {
                     Date start = appointment.getStart();
                     Date end = appointment.getMaxEnd();
-                    if ( !PermissionContainer.Util.canAllocate( allocatable, user, start, end, today ) ) {
+                    if ( !permissionController.canAllocate( allocatable, user, start, end, today ) ) {
                         String all = allocatable.getName( i18n.getLocale() );
                         String app = appointmentFormater.getSummary( appointment );
                         String error = i18n.format("warning.no_reserve_permission"
@@ -396,7 +397,7 @@ public class SecurityManager
 		if ( raplaType == Allocatable.TYPE)
 		{
 		    Allocatable allocatable = (Allocatable) entity;
-			if ( !PermissionContainer.Util.canReadOnlyInformation( allocatable, user))
+			if ( !permissionController.canReadOnlyInformation( allocatable, user))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed",user, allocatable.getName( null)));
 			}
