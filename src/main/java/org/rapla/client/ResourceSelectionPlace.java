@@ -15,10 +15,10 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = PlacePresenter.class, id = ResourceSelectionPlace.PLACE_ID)
-public class ResourceSelectionPlace<W> implements Presenter, PlacePresenter
+public class ResourceSelectionPlace implements Presenter, PlacePresenter
 {
     public static final String PLACE_ID = "ResSel";
-    private final ResourceSelectionView<W> view;
+    private final ResourceSelectionView view;
     private final CalendarSelectionModel model;
     private final ClientFacade facade;
     private final Logger logger;

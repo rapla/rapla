@@ -20,18 +20,18 @@ import org.rapla.inject.Extension;
 import com.google.web.bindery.event.shared.EventBus;
 
 @Extension(provides = CalendarPlugin.class, id = CalendarTableViewPresenter.TABLE_VIEW)
-public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<W>
+public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
 {
 
     public static final String TABLE_VIEW = "table";
-    private final CalendarTableView<W> view;
+    private final CalendarTableView view;
     private final Logger logger;
     private final EventBus eventBus;
     private final CalendarSelectionModel model;
     
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarTableViewPresenter(CalendarTableView<W> view, Logger logger, EventBus eventBus, CalendarSelectionModel model)
+    public CalendarTableViewPresenter(CalendarTableView view, Logger logger, EventBus eventBus, CalendarSelectionModel model)
     {
         this.view = view;
         this.logger = logger;
@@ -65,7 +65,7 @@ public class CalendarTableViewPresenter<W> implements Presenter, CalendarPlugin<
     }
 
     @Override
-    public W provideContent()
+    public Object provideContent()
     {
         updateContent();
         return view.provideContent();

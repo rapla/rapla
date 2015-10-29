@@ -1,14 +1,6 @@
 package org.rapla.client;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.event.PlaceChangedEvent;
@@ -21,17 +13,21 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 @Singleton
-public class Application<W> implements ApplicationView.Presenter
+public class Application implements ApplicationView.Presenter
 {
 
     private final Logger logger;
     private final BundleManager bundleManager;
     private final ClientFacade facade;
-    private final Provider<ActivityManager> activityManager;
-    private final ApplicationView<W> mainView;
+    private final ActivityManager activityManager;
+    private final ApplicationView mainView;
     private final Map<String, PlacePresenter> placePresenters;
     private final Map<String, ActivityPresenter> activityPresenters;
     private PlacePresenter actualPlacePresenter;
@@ -40,7 +36,7 @@ public class Application<W> implements ApplicationView.Presenter
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
-    public Application(ApplicationView mainView, EventBus eventBus, Map<String, ActivityPresenter> activityPresenters, Map<String, PlacePresenter> placePresenters, Logger logger, BundleManager bundleManager, ClientFacade facade, Provider<ActivityManager> activityManager)
+    public Application(final ApplicationView mainView,EventBus eventBus, Map<String, ActivityPresenter> activityPresenters, Map<String, PlacePresenter> placePresenters, Logger logger, BundleManager bundleManager, ClientFacade facade, ActivityManager activityManager)
     {
         this.mainView = mainView;
         this.activityManager = activityManager;
@@ -49,7 +45,7 @@ public class Application<W> implements ApplicationView.Presenter
         this.logger = logger;
         this.eventBus = eventBus;
         this.activityPresenters = activityPresenters;
-        this.placePresenters = placePresenters;
+        this.placePresenters =placePresenters;
         mainView.setPresenter(this);
     }
 
@@ -57,8 +53,8 @@ public class Application<W> implements ApplicationView.Presenter
     {
         try
         {
-            ActivityManager am = activityManager.get();
-            am.init();
+            ActivityManager am = activityManager;
+            am.init( this);
             mainView.setLoggedInUser(facade.getUser().getName(bundleManager.getLocale()));
             mainView.updateMenu();
             // Test for the resources
@@ -88,13 +84,13 @@ public class Application<W> implements ApplicationView.Presenter
             final String placeId = place.getId();
             actualPlacePresenter = placePresenters.get(placeId);
             actualPlacePresenter.initForPlace(place);
-            mainView.updateContent((W) actualPlacePresenter.provideContent());
+            mainView.updateContent( actualPlacePresenter.provideContent());
         }
         else
         {
             actualPlacePresenter = findBestSuited();
             actualPlacePresenter.resetPlace();
-            mainView.updateContent((W) actualPlacePresenter.provideContent());
+            mainView.updateContent( actualPlacePresenter.provideContent());
         }
     }
 

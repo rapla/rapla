@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import org.rapla.client.ActivityManager;
 import org.rapla.client.Application;
@@ -25,9 +26,9 @@ import com.google.web.bindery.event.shared.EventBus;
 public class GwtActivityManagerImpl extends ActivityManager
 {
     @Inject
-    public GwtActivityManagerImpl(Application application, EventBus eventBus, Logger logger)
+    public GwtActivityManagerImpl( EventBus eventBus, Logger logger)
     {
-        super(application, eventBus, logger);
+        super( eventBus, logger);
         History.addValueChangeHandler(new ValueChangeHandler<String>()
         {
             @Override
@@ -35,7 +36,7 @@ public class GwtActivityManagerImpl extends ActivityManager
             {
                 try
                 {
-                    GwtActivityManagerImpl.this.init();
+                    GwtActivityManagerImpl.this.init(getApplication());
                 }
                 catch (RaplaException e)
                 {

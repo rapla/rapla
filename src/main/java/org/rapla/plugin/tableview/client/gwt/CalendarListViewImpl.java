@@ -11,6 +11,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.StartActivityEvent;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.client.CalendarTableView;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
@@ -39,11 +40,13 @@ public class CalendarListViewImpl extends AbstractView<CalendarTableView.Present
     private final Div content = new Div();
     private final TableElement table = Document.get().createTableElement();
     private final RaplaResources i18n;
+    RaplaLocale raplaLocale;
 
     @Inject
-    public CalendarListViewImpl(final EventBus eventBus, final RaplaResources i18n)
+    public CalendarListViewImpl(final EventBus eventBus, final RaplaResources i18n, RaplaLocale raplaLocale)
     {
         this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
         content.getElement().appendChild(table);
         content.addDomHandler(new ClickHandler()
         {
@@ -108,7 +111,10 @@ public class CalendarListViewImpl extends AbstractView<CalendarTableView.Present
                     tb.appendChild(tr);
                     final TableCellElement td = document.createTDElement();
                     tr.appendChild(td);
-                    td.setInnerText(reservation.getName(getRaplaLocale().getLocale()));
+                    final RaplaLocale raplaLocale = getRaplaLocale();
+                    final Locale locale = raplaLocale.getLocale();
+                    final String name = reservation.getName(locale);
+                    td.setInnerText(name);
                     {
                         final Allocatable[] allocatables = reservation.getPersons();
                         insertAllocatables(tr, allocatables);
@@ -146,5 +152,10 @@ public class CalendarListViewImpl extends AbstractView<CalendarTableView.Present
     public IsWidget provideContent()
     {
         return content;
+    }
+
+    public RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
     }
 }

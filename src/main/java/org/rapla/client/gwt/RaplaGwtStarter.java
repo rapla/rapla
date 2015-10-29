@@ -36,28 +36,7 @@ public class RaplaGwtStarter
         this.bootstrapProvider = bootstrapProvider;
     }
 
-    private void setProxy()
-    {
-        AbstractJsonProxy.setServiceEntryPointFactory(new EntryPointFactory()
-        {
-            @Override
-            public String getEntryPoint(String interfaceName, String relativePath)
-            {
-                String url = GWT.getModuleBaseURL() + "../rapla/json/" + (relativePath != null ? relativePath : interfaceName);
-                return url;
-            }
-        });
-        AbstractJsonProxy.setExceptionDeserializer(new ExceptionDeserializer()
-        {
-            @Override
-            public Exception deserialize(String exception, String message, List<String> parameter)
-            {
-                final RaplaExceptionDeserializer raplaExceptionDeserializer = new RaplaExceptionDeserializer();
-                final RaplaException deserializedException = raplaExceptionDeserializer.deserializeException(exception, message, parameter);
-                return deserializedException;
-            }
-        });
-    }
+
 
     private LoginTokens getValidToken()
     {
@@ -80,7 +59,6 @@ public class RaplaGwtStarter
 
     public void startApplication()
     {
-        setProxy();
         LoginTokens token = getValidToken();
         if (token != null)
         {

@@ -3,12 +3,21 @@ package org.rapla.storage.dbrm;
 import org.rapla.ConnectInfo;
 import org.rapla.inject.DefaultImplementation;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class RemoteConnectionInfo
 {
     String accessToken;
     String serverURL;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
+
+    @Inject
+    public RemoteConnectionInfo()
+    {}
+
     public void setStatusUpdater(StatusUpdater statusUpdater) {
         this.statusUpdater = statusUpdater;
     }

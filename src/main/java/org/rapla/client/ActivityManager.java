@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
@@ -20,14 +21,24 @@ import com.google.web.bindery.event.shared.EventBus;
 public abstract class ActivityManager implements PlaceChangedEventHandler, StartActivityEventHandler, StopActivityEventHandler
 {
 
-    private final Application<?> application;
     protected Place place;
     protected final Set<Activity> activities = new LinkedHashSet<Activity>();
     protected final Logger logger;
 
-    public ActivityManager(@SuppressWarnings("rawtypes") Application application, EventBus eventBus, Logger logger)
+    public Application getApplication()
+    {
+        return application;
+    }
+
+    public void setApplication(Application application)
     {
         this.application = application;
+    }
+
+    protected Application application;
+
+    public ActivityManager(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger)
+    {
         this.logger = logger;
         eventBus.addHandler(PlaceChangedEvent.TYPE, this);
         eventBus.addHandler(StartActivityEvent.TYPE, this);
@@ -40,7 +51,7 @@ public abstract class ActivityManager implements PlaceChangedEventHandler, Start
         Activity activity = new Activity(event.getId(), event.getInfo());
         activities.add(activity);
         updateHistroryEntry();
-        application.startActivity(activity);
+        getApplication().startActivity(activity);
     }
 
     @Override
@@ -56,19 +67,20 @@ public abstract class ActivityManager implements PlaceChangedEventHandler, Start
     {
         place = event.getNewPlace();
         updateHistroryEntry();
-        application.selectPlace(place);
+        getApplication().selectPlace(place);
     }
 
-    public final void init() throws RaplaException
+    public final void init(Application application) throws RaplaException
     {
+        setApplication( application);
         parsePlaceAndActivities();
-        application.selectPlace(place);
+        getApplication().selectPlace(place);
         if (!activities.isEmpty())
         {
             ArrayList<Activity> toRemove = new ArrayList<Activity>();
             for (Activity activity : activities)
             {
-                if (!application.startActivity(activity))
+                if (!getApplication().startActivity(activity))
                 {
                     toRemove.add(activity);
                 }
@@ -86,6 +98,8 @@ public abstract class ActivityManager implements PlaceChangedEventHandler, Start
     protected abstract void updateHistroryEntry();
 
     private static final String ACTIVITY_SEPARATOR = "=";
+
+
 
     public static class Activity
     {

@@ -137,15 +137,15 @@ public class TestContainerImpl
 
     public static class MyExtensionSetUserClass
     {
-        private final Set<MyExtensionPoint<Integer>> set;
+        //private final Set<MyExtensionPoint<Integer>> set;
         private final Set<Provider<MyExtensionPoint>> setProvider;
         private final Provider<Set<MyExtensionPoint<String>>> providerSet;
 
         @Inject
-        public MyExtensionSetUserClass(Set<MyExtensionPoint<Integer>> set, Set<Provider<MyExtensionPoint>> setProvider,
+        public MyExtensionSetUserClass(/*Set<MyExtensionPoint<Integer>> set,*/ Set<Provider<MyExtensionPoint>> setProvider,
                 Provider<Set<MyExtensionPoint<String>>> providerSet)
         {
-            this.set = set;
+            //this.set = set;
             this.setProvider = setProvider;
             this.providerSet = providerSet;
         }
@@ -153,9 +153,11 @@ public class TestContainerImpl
         public void doAll()
         {
             int i=0;
+            /*
             for (MyExtensionPoint<Integer> p : set){
                 p.doSomething(i++);
             }
+            */
             for (Provider<MyExtensionPoint> p : setProvider){
                 p.get().doSomething(i++);
             }
@@ -167,15 +169,15 @@ public class TestContainerImpl
 
     public static class MyExtensionMapUserClass
     {
-        private final Map<String, MyExtensionPoint<Integer>> set;
+        //private final Map<String, MyExtensionPoint<Integer>> set;
         private final Map<String, Provider<MyExtensionPoint>> setProvider;
         private final Provider<Map<String, MyExtensionPoint<String>>> providerSet;
 
         @Inject
-        public MyExtensionMapUserClass(Map<String, MyExtensionPoint<Integer>> set, Map<String, Provider<MyExtensionPoint>> setProvider,
+        public MyExtensionMapUserClass(/*Map<String, MyExtensionPoint<Integer>> set,*/ Map<String, Provider<MyExtensionPoint>> setProvider,
                 Provider<Map<String, MyExtensionPoint<String>>> providerSet)
         {
-            this.set = set;
+            //this.set = set;
             this.setProvider = setProvider;
             this.providerSet = providerSet;
         }
@@ -183,9 +185,11 @@ public class TestContainerImpl
         public void doAll()
         {
             int i=0;
+            /*
             for (MyExtensionPoint<Integer> p : set.values()){
                 p.doSomething(i++);
             }
+            */
             for (Provider<MyExtensionPoint> p : setProvider.values()){
                 p.get().doSomething(i++);
             }

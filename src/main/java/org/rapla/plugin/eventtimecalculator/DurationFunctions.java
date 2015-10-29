@@ -10,6 +10,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import java.util.Collection;
 import java.util.List;
 

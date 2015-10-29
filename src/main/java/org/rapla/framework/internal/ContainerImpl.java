@@ -1039,7 +1039,7 @@ public class ContainerImpl implements Disposable
         String folder = org.rapla.inject.generator.AnnotationInjectionProcessor.GWT_MODULE_LIST;
 
         Set<String> interfaces = new TreeSet<String>();
-        final Collection<URL> resources = find(folder);
+        Collection<URL> resources = find(folder);
         if (resources.isEmpty())
         {
             getLogger().error("Service list " + folder + " not found or empty.");
@@ -1133,7 +1133,7 @@ public class ContainerImpl implements Disposable
         // load all implementations or extensions from service list file
         Set<String> implemantations = new LinkedHashSet<String>();
         final String interfaceName = interfaceClass.getCanonicalName();
-        final Collection<URL> resources = find(folder + interfaceName);
+        Collection<URL> resources = find(folder + interfaceName);
         for (URL url : resources)
         {
             //final URL def = moduleDefinition.nextElement();

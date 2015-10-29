@@ -7,11 +7,17 @@ import org.rapla.client.menu.data.Point;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.PopupContext;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class ContextCreator
 {
+    @Inject
+    public ContextCreator()
+    {
+
+    }
     public PopupContext createContext(DomEvent<?> event)
     {
         final NativeEvent nativeEvent = event.getNativeEvent();

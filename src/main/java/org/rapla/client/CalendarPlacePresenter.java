@@ -1,17 +1,6 @@
 package org.rapla.client;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
@@ -29,28 +18,30 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.*;
+import java.util.Map.Entry;
 
 @Extension(provides = PlacePresenter.class, id = CalendarPlacePresenter.PLACE_ID)
-public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
+public class CalendarPlacePresenter implements Presenter, PlacePresenter
 {
     public static final String PLACE_ID = "cal";
     private static final String TODAY_DATE = "today";
 
-    private final CalendarPlaceView<W> view;
+    private final CalendarPlaceView view;
     private final ClientFacade facade;
     private final CalendarSelectionModel model;
     private final EventBus eventBus;
     private final RaplaResources i18n;
-    private Map<String, CalendarPlugin<W>> viewPluginPresenter;
-    private CalendarPlugin<W> selectedView;
+    private Map<String, CalendarPlugin> viewPluginPresenter;
+    private CalendarPlugin selectedView;
     private Logger logger;
     private String calendar;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
-            final Logger logger, final EventBus eventBus)
+            final Logger logger, final EventBus eventBus, Map<String, CalendarPlugin> views)
     {
         this.view = view;
         this.facade = facade;
@@ -59,6 +50,17 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         this.logger = logger;
         this.eventBus = eventBus;
         view.setPresenter(this);
+
+        viewPluginPresenter = new LinkedHashMap<String, CalendarPlugin>();
+        for (Entry<String, CalendarPlugin> entry : views.entrySet())
+        {
+            viewPluginPresenter.put(entry.getKey(), entry.getValue());
+        }
+        if (views.size() > 0)
+        {
+            selectView(null);
+        }
+
     }
 
     private void init()
@@ -66,7 +68,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         try
         {
             List<String> viewNames = new ArrayList<String>();
-            for (CalendarPlugin<W> plugin : viewPluginPresenter.values())
+            for (CalendarPlugin plugin : viewPluginPresenter.values())
             {
                 if (plugin.isEnabled())
                 {
@@ -189,7 +191,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     {
         if (selectedView == null)
             return "";
-        for (Entry<String, CalendarPlugin<W>> entry : viewPluginPresenter.entrySet())
+        for (Entry<String, CalendarPlugin> entry : viewPluginPresenter.entrySet())
         {
             if (entry.getValue() == selectedView)
             {
@@ -222,24 +224,20 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Inject
+    //@Inject
     public void setViews(Map<String, CalendarPlugin> views)
     {
-        viewPluginPresenter = new LinkedHashMap<String, CalendarPlugin<W>>();
-        for (Entry<String, CalendarPlugin> entry : views.entrySet())
-        {
-            viewPluginPresenter.put(entry.getKey(), entry.getValue());
-        }
-        if (views.size() > 0)
-        {
-            selectView(null);
-        }
+
     }
 
     @Override
     public void resetPlace()
     {
-        selectedView = viewPluginPresenter.values().iterator().next();
+        if ( viewPluginPresenter != null)
+        {
+            final Collection<CalendarPlugin> values = viewPluginPresenter.values();
+            selectedView = values.iterator().next();
+        }
     }
 
     @Override
@@ -308,7 +306,7 @@ public class CalendarPlacePresenter<W> implements Presenter, PlacePresenter
         }
     }
 
-    public W provideContent()
+    public Object provideContent()
     {
         init();
         return view.provideContent();

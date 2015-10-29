@@ -48,9 +48,9 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
         {
             if (localeString == null)
             {
-                final User validUser = session.getUser();
-                if (validUser != null)
+                if (session.isAuthentified())
                 {
+                    final User validUser = session.getUser();
                     final Preferences preferences = operator.getPreferences(validUser, true);
                     final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
                     if (entry != null)

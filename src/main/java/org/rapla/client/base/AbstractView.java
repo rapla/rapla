@@ -7,9 +7,7 @@ import org.rapla.framework.RaplaLocale;
 public abstract class AbstractView<P> implements View<P> {
 
     private P presenter;
-    @Inject
-    protected RaplaLocale locale;
-    
+
     @Override
     public void setPresenter(P presenter) {
         this.presenter = presenter;
@@ -19,8 +17,6 @@ public abstract class AbstractView<P> implements View<P> {
         return presenter;
     }
     
-    protected RaplaLocale getRaplaLocale() {
-        return locale;
-    }
+
     
 }

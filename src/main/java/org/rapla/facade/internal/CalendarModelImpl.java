@@ -39,12 +39,19 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.facade.*;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.UpdateResult;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.*;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
+@Singleton
+@DefaultImplementation(of=CalendarSelectionModel.class,context = InjectionContext.client)
 public class CalendarModelImpl implements CalendarSelectionModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
@@ -72,6 +79,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType,ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     Map<DynamicType,ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
+
+    @Inject
+    public CalendarModelImpl(ClientFacade facade, RaplaLocale locale)
+    {
+        this(locale.getLocale(), facade.getUser(), facade);
+        load( null);
+    }
 
     public CalendarModelImpl(Locale locale, User user, ClientFacade facade) throws RaplaException {
         this.locale = locale;

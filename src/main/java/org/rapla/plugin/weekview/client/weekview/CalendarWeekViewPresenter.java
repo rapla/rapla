@@ -34,11 +34,11 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import com.google.web.bindery.event.shared.EventBus;
 
 @Extension(provides = CalendarPlugin.class, id = CalendarWeekViewPresenter.WEEK_VIEW)
-public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W>
+public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 {
     public static final String WEEK_VIEW = "week";
 
-    private final CalendarWeekView<W> view;
+    private final CalendarWeekView view;
     private final ReservationController reservationController;
 
     private final Logger logger;
@@ -52,7 +52,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
 
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarWeekViewPresenter(CalendarWeekView<W> view, ReservationController reservationController, Logger logger, EventBus eventBus,
+    public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, EventBus eventBus,
             CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, MenuPresenter presenter)
     {
         super();
@@ -95,7 +95,7 @@ public class CalendarWeekViewPresenter<W> implements Presenter, CalendarPlugin<W
     }
 
     @Override
-    public W provideContent()
+    public Object provideContent()
     {
         return view.provideContent();
     }

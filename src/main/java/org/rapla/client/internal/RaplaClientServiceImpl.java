@@ -217,6 +217,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         addContainerProvidedComponentInstance( InternMenus.CALENDAR_SETTINGS, settingsMenu );
         addContainerProvidedComponentInstance( InternMenus.EXTRA_MENU_ROLE, helpMenu );
 
+        final StorageOperator storageOperator = getContext().lookup(StorageOperator.class);
+        ((FacadeImpl)getFacade()).setOperator( storageOperator);
         boolean webstartEnabled =getContext().lookup(StartupEnvironment.class).getStartupMode() == StartupEnvironment.WEBSTART;
 
         if (webstartEnabled) {

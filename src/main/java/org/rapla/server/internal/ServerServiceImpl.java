@@ -33,7 +33,9 @@ import javax.ws.rs.Path;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
@@ -162,6 +164,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         {
             throw new RaplaException("Unknown datasource " + selectedStorage);
         }
+        ((FacadeImpl)lookup(ClientFacade.class)).setOperator( operator);
         addContainerProvidedComponentInstance(StorageOperator.class, operator);
         addContainerProvidedComponentInstance(CachableStorageOperator.class, operator);
 

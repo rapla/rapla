@@ -19,25 +19,29 @@ import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 
 import com.google.gwt.user.client.Window;
+import org.rapla.storage.StorageOperator;
 
 public class Bootstrap
 {
 
     private final Provider<Application> application;
     private final ClientFacade facade;
+    private final StorageOperator operator;
     private final Logger logger;
 
     @Inject
-    public Bootstrap(Provider<Application> application, ClientFacade facade, Logger logger)
+    public Bootstrap(ClientFacade facade,StorageOperator operator,Provider<Application> application, Logger logger)
     {
         this.application = application;
+        this.operator = operator;
         this.facade = facade;
         this.logger = logger;
     }
 
     public void load()
     {
-        FacadeImpl facadeImpl = (FacadeImpl) facade;
+        final FacadeImpl facadeImpl = (FacadeImpl) facade;
+        ((FacadeImpl) facade).setOperator( operator);
         facadeImpl.setCachingEnabled(false);
         FutureResult<VoidResult> load = facadeImpl.load();
         logger.info("Loading resources");
@@ -51,7 +55,7 @@ public class Bootstrap
                 try
                 {
                     RaplaPopups.getProgressBar().setPercent(70);
-                    Collection<Allocatable> allocatables = Arrays.asList(facade.getAllocatables());
+                    Collection<Allocatable> allocatables = Arrays.asList(facadeImpl.getAllocatables());
                     logger.info("loaded " + allocatables.size() + " resources. Starting application");
                     application.get().start();
                 }

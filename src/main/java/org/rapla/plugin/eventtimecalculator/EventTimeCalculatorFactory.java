@@ -20,7 +20,7 @@ public class EventTimeCalculatorFactory
 	private final Logger logger;
     private final EventTimeCalculatorResources eventTimeI18n;
 	@Inject
-    public EventTimeCalculatorFactory(Provider<ClientFacade> facade, Logger logger, final EventTimeCalculatorResources eventTimeI18n)
+    public EventTimeCalculatorFactory(Provider<ClientFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
 	{
 		this.facadeProvider = facade;
 		this.logger = logger;

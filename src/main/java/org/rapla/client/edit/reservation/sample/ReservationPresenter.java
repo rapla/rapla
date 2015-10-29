@@ -31,14 +31,14 @@ public class ReservationPresenter implements ReservationController, Presenter
     private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final EventBus eventBus;
-    private final ReservationView<?> view;
+    private final ReservationView view;
 
     private Reservation editReservation;
     private Appointment selectedAppointment;
     private boolean isNew;
 
     @Inject
-    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView<?> view)
+    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
     {
         this.facade = facade;
         this.logger = logger;
