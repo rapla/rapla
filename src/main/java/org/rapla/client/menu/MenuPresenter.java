@@ -193,7 +193,6 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
                         @Override
                         public void run()
                         {
-                            CalendarSelectionModel model = getService(CalendarSelectionModel.class);
                             Date start = getStartDate(model);
                             boolean keepTime = !model.isMarkedIntervalTimeEnabled();
                             try
@@ -217,7 +216,6 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
                     @Override
                     public void run()
                     {
-                        CalendarSelectionModel model = getService(CalendarSelectionModel.class);
                         Date start = getStartDate(model);
                         boolean keepTime = !model.isMarkedIntervalTimeEnabled();
                         try

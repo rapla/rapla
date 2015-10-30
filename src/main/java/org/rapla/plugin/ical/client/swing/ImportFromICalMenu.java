@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -36,6 +37,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 
 import org.rapla.client.extensionpoints.ImportMenuExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.TreeAllocatableSelection;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.iolayer.FileContent;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -48,10 +52,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.TreeAllocatableSelection;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
@@ -70,12 +70,16 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 	String id = "ical";
 	ICalImport importService;
 	ImportFromICalResources i18n;
+    private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
+    private final IOInterface io;
 	@Inject
-	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources) throws RaplaContextException
+	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io) throws RaplaContextException
 	{
 		super(context);
 		this.importService = importService;
 		this.i18n = icalImportResources;
+        this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
+        this.io = io;
 		item = new JMenuItem(i18n.getString("ical.import"));
 		item.setIcon(getIcon("icon.import"));
 		item.addActionListener(this);
@@ -105,7 +109,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 	 * @throws RaplaException
 	 */
 	public void show() throws RaplaException {
-		final TreeAllocatableSelection resourceSelection = new TreeAllocatableSelection( getContext());
+		final TreeAllocatableSelection resourceSelection = treeAllocatableSelectionProvider.get();
 		JPanel container = new JPanel();
 		final JPanel superpanel = new JPanel();
 		superpanel.setLayout(new TableLayout(
@@ -218,7 +222,6 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 					dlg.getButton(0).setEnabled( bufferedICal != null );
 	                if (fileField.isEnabled()) {
 	                    final Frame frame = (Frame) SwingUtilities.getRoot(getMainComponent());
-	                    IOInterface io =  getService( IOInterface.class);
 	                    try {
 	                        FileContent file = io.openFile( frame, null, new String[] {".ics"});
 	                        if ( file != null) 
@@ -323,11 +326,6 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
         comboEventType.setRenderer(aRenderer);
         comboNameAttribute.setRenderer(aRenderer);
 	}
-
-
-    final protected TreeFactory getTreeFactory() {
-        return getService(TreeFactory.class);
-    }
 
     private class NamedListCellRenderer extends DefaultListCellRenderer {
 

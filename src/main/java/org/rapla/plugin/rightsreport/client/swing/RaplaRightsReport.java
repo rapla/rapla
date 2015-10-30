@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
@@ -64,8 +65,12 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 	JTextField filterTextField;
 	Collection<Object> notAllList = new HashSet<Object>();
 
-	public RaplaRightsReport(RaplaContext context) throws RaplaException {
+    private final TreeFactory treeFactory;
+
+	@Inject
+	public RaplaRightsReport(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
 		super(context);
+        this.treeFactory = treeFactory;
 
 		// creation of different panels
 		mainPanel = new JPanel();
@@ -97,7 +102,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 		// creation of the tree
 		selectionTreeTable = new RaplaTree();
 		selectionTreeTable.setMultiSelect( true);
-		selectionTreeTable.getTree().setCellRenderer(getTreeFactory().createRenderer());
+		selectionTreeTable.getTree().setCellRenderer(treeFactory.createRenderer());
 		selectionTreeTable.getTree().addTreeSelectionListener(this);
 		// including the tree in ScrollPane and adding this to the GUI
 		centerPanel.add(selectionTreeTable);
@@ -126,12 +131,6 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 		view = View.USERGROUPS;
 		filterTextField.setText("");
 		loadView();
-	}
-
-	// provides a TreeFactory -> interface for facade, provides the tree
-	// (groups/users)
-	private TreeFactory getTreeFactory() {
-		return getService(TreeFactory.class);
 	}
 
 	// change of the ComboBox -> new view has been chosen
@@ -269,11 +268,11 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 					// search all categories for the specified pattern and add
 					// them to the list
 					List<Category> categoriesToMatch  = searchCategoryName(rootCategory,pattern);
-					selectionModel = getTreeFactory().createModel(categoriesToMatch, false);
+					selectionModel = treeFactory.createModel(categoriesToMatch, false);
 					break;
 				case USERS:
 					User[] users  =searchUserName(pattern).toArray( User.USER_ARRAY);
-					selectionModel = getTreeFactory().createModelFlat(	users);
+					selectionModel = treeFactory.createModelFlat(	users);
 					// change the name of the root node in "user"
 					((DefaultMutableTreeNode) (selectionModel.getRoot())).setUserObject(getString("users"));
 					break;

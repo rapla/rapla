@@ -12,11 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot;
 
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.framework.TypedComponentRole;
+
 public class TimeslotPlugin
 {
     public final static String PLUGIN_ID = "org.rapla.plugin.timeslot";
 	public final static boolean ENABLE_BY_DEFAULT = false;
     public final static String DAY_TIMESLOT = "day_timeslot";
     public final static String WEEK_TIMESLOT = "week_timeslot";
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID + ".config");
 }
 

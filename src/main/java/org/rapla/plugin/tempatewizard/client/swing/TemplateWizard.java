@@ -49,9 +49,11 @@ import java.util.*;
 public class TemplateWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener, ModificationListener
 {
 	Collection<Allocatable> templateNames;
+    private final CalendarSelectionModel model;
 	@Inject
-    public TemplateWizard(RaplaContext context) throws RaplaException{
+    public TemplateWizard(RaplaContext context, CalendarSelectionModel model) throws RaplaException{
         super(context);
+        this.model = model;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -275,7 +277,6 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
                 return;
             }
             Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
-            CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 		    Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
 		    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
             boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 

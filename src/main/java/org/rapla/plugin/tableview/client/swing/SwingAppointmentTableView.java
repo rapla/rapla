@@ -89,12 +89,15 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     final Set<ObjectMenuFactory> objectMenuFactories;
     private final TableConfig.TableConfigLoader tableConfigLoader;
 
+    private final MenuFactory menuFactory;
+
     public SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader) throws RaplaException
+            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory) throws RaplaException
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
         this.tableConfigLoader = tableConfigLoader;
+        this.menuFactory = menuFactory;
         cutListener.setCut(true);
         table = new JTable()
         {
@@ -408,7 +411,6 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
         // add the new reservations wizards
         {
-            MenuFactory menuFactory = getService(MenuFactory.class);
             menuFactory.addReservationWizards(newMenu, menuContext, null);
         }
         //TODO add cut and copy for more then 1 block

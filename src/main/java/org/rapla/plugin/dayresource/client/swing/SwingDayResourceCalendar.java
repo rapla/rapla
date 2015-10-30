@@ -23,10 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
@@ -39,6 +42,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
@@ -49,9 +53,9 @@ import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
-    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories ) throws RaplaException
+    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider ) throws RaplaException
     {
-        super( sm, model, editable, objectMenuFactories );
+        super( sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider );
     }
     
   
@@ -139,7 +143,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories) {
+    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

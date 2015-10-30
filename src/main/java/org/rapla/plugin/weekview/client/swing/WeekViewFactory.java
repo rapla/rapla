@@ -12,18 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.client.swing;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.*;
 import java.util.Set;
 
@@ -31,16 +35,22 @@ import java.util.Set;
 public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
+    private final MenuFactory menuFactory;
+    private final RaplaResources resources;
+    private final Provider<DateRenderer> dateRendererProvider;
     @Inject
-    public WeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories)
+    public WeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider )
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
+        this.menuFactory = menuFactory;
+        this.resources = resources;
+        this.dateRendererProvider = dateRendererProvider;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingWeekCalendar( context, model, editable, objectMenuFactories);
+        return new SwingWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider);
     }
 
     public String getViewId()

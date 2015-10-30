@@ -57,6 +57,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     final JMenuItem redo;
     final JMenuItem undo;
     JMenuItem templateEdit;
+    private final EditController editController;
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -65,11 +66,15 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<ViewMenuExtension> viewMenuExt,
             Set<HelpMenuExtension> helpMenuExt,
             Set<ImportMenuExtension> importMenuExt,
-            Set<ExportMenuExtension> exportMenuExt
+            Set<ExportMenuExtension> exportMenuExt,
+            EditController editController,
+            CalendarSelectionModel model,
+            ClientService clientService
     )
             throws RaplaException
     {
         super(context);
+        this.editController = editController;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -125,13 +130,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
         JMenuItem printMenu = new JMenuItem(getString("print"));
         printMenu.setAction(new ActionWrapper(printAction));
         printAction.setEnabled(true);
-        CalendarSelectionModel model = getService(CalendarSelectionModel.class);
         printAction.setModel(model);
         systemMenu.add(printMenu);
 
         systemMenu.add(new JSeparator());
 
-        if (getService(ClientService.class).canSwitchBack())
+        if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
             switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null).setSwitchToUser()));
@@ -366,8 +370,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             {
                 try
                 {
-                    EditController editContrl = getService(EditController.class);
-                    editContrl.edit(preferences, createPopupContext(getMainComponent(), null));
+                    editController.edit(preferences, createPopupContext(getMainComponent(), null));
                 }
                 catch (RaplaException ex)
                 {

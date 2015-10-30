@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -55,9 +56,12 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     NotificationAction deleteAction;
     NotificationAction addAction;
     String addDialogTitle;
+    private final TreeFactory treeFactory;
 
-	public TreeAllocatableSelection(RaplaContext sm) {
+    @Inject
+	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory) {
         super( sm);
+        this.treeFactory = treeFactory;
         treeSelection = new RaplaTree();
         TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(Color.white,new Color(178, 178, 178)),getString("selection_resource"));
 		content.setBorder(border);
@@ -76,7 +80,6 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
         deleteButton.setAction(deleteAction);
         addButton.setAction(addAction);
         treeSelection.addChangeListener(this);
-        TreeFactory treeFactory = getTreeFactory();
         treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
         treeSelection.getTree().setModel( treeFactory.createClassifiableModel( Allocatable.ALLOCATABLE_ARRAY));
         addDialogTitle = getString( "add") ;
@@ -90,7 +93,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     }
 
     final private TreeFactory getTreeFactory() {
-        return  getService(TreeFactory.class);
+        return  treeFactory;
     }
 
     public void setAllocatables(Collection<Allocatable> list)  {

@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.JMenuItem;
 
 import org.rapla.client.extensionpoints.EditMenuExtension;
@@ -46,11 +47,13 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	String id = "copy_events";
 	final String label ;
     private final PeriodCopyResources i18n;
+    private final Provider<CopyDialog> copyDialogProvider;
 	@Inject
-    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n)  {
+    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider)  {
         super(sm);
         //menu.insert( new RaplaSeparator("info_end"));
         this.i18n = i18n;
+        this.copyDialogProvider = copyDialogProvider;
 
         label =i18n.getString(id) ;
 		item = new RaplaMenuItem(id);
@@ -81,7 +84,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     
     public void actionPerformed(ActionEvent evt) {
         try {
-            final CopyDialog useCase = new CopyDialog(getContext(), i18n);
+            final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
             final DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, useCase.getComponent(), buttons);
             dialog.setTitle( label);

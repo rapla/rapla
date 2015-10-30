@@ -29,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -56,8 +57,8 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 {
 	List<Timeslot> timeslots;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories);
+    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, null);
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException 
@@ -132,7 +133,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{

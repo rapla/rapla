@@ -43,10 +43,10 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     NotificationResources notificationI18n;
 
     @Inject
-    public NotificationOption(RaplaContext sm, NotificationResources notificationI18n) {
+    public NotificationOption(RaplaContext sm, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
         super( sm);
         this.notificationI18n = notificationI18n;
-        selection = new TreeAllocatableSelection(sm);
+        this.selection = selection;
         selection.setAddDialogTitle(notificationI18n.getString("subscribe_notification"));
         double[][] sizes = new double[][] {
                 {5,TableLayout.FILL,5}

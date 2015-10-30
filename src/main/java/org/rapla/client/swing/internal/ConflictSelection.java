@@ -71,12 +71,14 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 	JLabel summary = new JLabel();
 	Collection<Conflict> conflicts;
 	Listener listener = new Listener();
+    private final TreeFactory treeFactory;
 
 	 
-    public ConflictSelection(RaplaContext context,final MultiCalendarView view, final CalendarSelectionModel model) throws RaplaException {
+    public ConflictSelection(RaplaContext context,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory) throws RaplaException {
         super(context);
         this.model = model;
         this.view = view;
+        this.treeFactory = treeFactory;
         conflicts = new LinkedHashSet<Conflict>( Arrays.asList(getQuery().getConflicts( )));
         updateTree();
         final JTree navTree = treeSelection.getTree();
@@ -323,7 +325,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     }
     
     final protected TreeFactory getTreeFactory() {
-        return  getService(TreeFactory.class);
+        return  treeFactory;
     }
     
     private void showConflicts(Collection<Conflict> selectedConflicts) {

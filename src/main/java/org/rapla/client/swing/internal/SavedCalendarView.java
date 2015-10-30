@@ -4,7 +4,14 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -25,6 +32,13 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.internal.common.MultiCalendarView;
+import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -35,13 +49,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.internal.common.MultiCalendarView;
-import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
 import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
@@ -90,7 +97,6 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         public void actionPerformed() {
             try 
             {   
-				CalendarSelectionModel model = getService( CalendarSelectionModel.class);
 				FileEntry filename = getSelectedFile();
                 Component parentComponent = getMainComponent();
                 if ( filename.isDefault)

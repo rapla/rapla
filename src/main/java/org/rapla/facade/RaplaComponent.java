@@ -185,13 +185,6 @@ public class RaplaComponent
 
     }
     
-    /** @deprecated please request {@link AppointmentFormater} with {@link Inject}*/
-    @Deprecated
-    public AppointmentFormater getAppointmentFormater()
-    {
-        return getService( AppointmentFormater.class);
-    }
-
     final public boolean isModifyPreferencesAllowed() {
         try {
             User user = getUser();
@@ -712,7 +705,7 @@ public class RaplaComponent
         @throws IllegalStateException if GUIComponent wasn't serviced. No service method called
         @throws UnsupportedOperationException if service not available.
      */
-	protected <T> T getService(Class<T> role) {
+    protected <T> T getService(Class<T> role) {
         try {
             return getContext().lookup( role);
         } catch (RaplaContextException e) {

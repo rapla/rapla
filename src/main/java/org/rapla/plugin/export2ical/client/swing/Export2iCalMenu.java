@@ -33,12 +33,16 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	JMenuItem item;
 	ICalExport exportService;
 	final Export2iCalResources i18nIcal;
+    private final CalendarModel calendarModel;
+    private final IOInterface ioInterface;
 
 	@Inject
-	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal){
+	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface){
 		super(sm);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
+        this.calendarModel = calendarModel;
+        this.ioInterface = ioInterface;
 		item = new JMenuItem(i18nIcal.getString(id));
 		item.setIcon(getIcon("icon.export"));
 		item.addActionListener(this);
@@ -55,9 +59,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	public void actionPerformed(ActionEvent evt) {
 		getCalendarOptions();
 		try {
-			CalendarModel raplaCal = getService(CalendarModel.class);
-		    Reservation[] reservations = raplaCal.getReservations();
-		    Allocatable[] allocatables = raplaCal.getSelectedAllocatables();
+		    Reservation[] reservations = calendarModel.getReservations();
+		    Allocatable[] allocatables = calendarModel.getSelectedAllocatables();
 		    List<Appointment> appointments= RaplaBuilder.getAppointments( reservations, allocatables);
 		    String[] appointmentIds = new String[appointments.size()];
 		    for ( int i=0;i<appointmentIds.length;i++)
@@ -72,7 +75,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 		    }
 		    else
 		    {
-		        String nonEmptyTitle = raplaCal.getNonEmptyTitle();
+		        String nonEmptyTitle = calendarModel.getNonEmptyTitle();
 		        if ( nonEmptyTitle.length() == 0)
 		        {
 		            nonEmptyTitle = "rapla_calendar";
@@ -91,9 +94,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 
 	public void saveFile(byte[] content, String filename, String[] extensions) throws RaplaException {
 		final Frame frame = (Frame) SwingUtilities.getRoot(getMainComponent());
-		IOInterface io = getService(IOInterface.class);
 		try {
-			io.saveFile(frame, null, extensions, filename, content);
+			ioInterface.saveFile(frame, null, extensions, filename, content);
 		} catch (IOException e) {
 			throw new RaplaException("Can't export file!", e);
 		}

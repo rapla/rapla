@@ -19,9 +19,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
 
+import javax.inject.Provider;
 import javax.swing.JComponent;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRendererAdapter;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
@@ -35,15 +37,15 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 
 
 public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
-	public SwingMonthCalendar(RaplaContext context,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories) throws RaplaException {
-        super( context, settings, editable, objectMenuFactories);
+    public SwingMonthCalendar(RaplaContext context,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider) throws RaplaException {
+        super( context, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider);
     }
 
     public static Color DATE_NUMBER_COLOR_HIGHLIGHTED = Color.black;
@@ -52,7 +54,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
         boolean showScrollPane = editable;
         final DateRenderer dateRenderer;
     	final DateRendererAdapter dateRendererAdapter; 
-        dateRenderer = getService(DateRenderer.class);
+        dateRenderer = dateRendererProvider.get();
         dateRendererAdapter = new DateRendererAdapter(dateRenderer, getRaplaLocale().getTimeZone(), getRaplaLocale().getLocale());
 
         final WeekendHighlightRenderer weekdayRenderer = new WeekendHighlightRenderer();
@@ -115,7 +117,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories);
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory);
         listener.setKeepTime( true);
 		return listener;
     }

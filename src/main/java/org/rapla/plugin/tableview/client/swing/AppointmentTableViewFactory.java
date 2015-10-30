@@ -20,6 +20,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -36,21 +37,23 @@ import java.util.Set;
     private final Set<AppointmentSummaryExtension> appointmentSummaryExtensions;
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final TableConfig.TableConfigLoader tableConfigLoader;
+    private final MenuFactory menuFactory;
 
     @Inject public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader)
+            Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory)
     {
         super(context);
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
         this.objectMenuFactories = objectMenuFactories;
         this.tableConfigLoader = tableConfigLoader;
+        this.menuFactory = menuFactory;
     }
 
     public final static String TABLE_VIEW = "table_appointments";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader);
+        return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory);
     }
 
     public String getViewId()

@@ -20,6 +20,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -32,17 +33,19 @@ import java.util.Set;
 public class CompactDayViewFactory extends RaplaComponent implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
+    private final MenuFactory menuFactory;
 
     @Inject
-    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories)
+    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
+        this.menuFactory = menuFactory;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories);
+        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories, menuFactory);
     }
 
     public String getViewId()

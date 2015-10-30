@@ -90,9 +90,9 @@ import org.rapla.storage.StorageOperator;
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private final PermissionController permissionController;
     @Inject
-    public TreeFactoryImpl(RaplaContext sm) {
+    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController) {
         super(sm);
-        permissionController = getService(PermissionController.class);
+        this.permissionController = permissionController;
     }
    
     class DynamicTypeComperator  implements Comparator<DynamicType>

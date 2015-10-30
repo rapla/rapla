@@ -41,7 +41,9 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
@@ -70,7 +72,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final JPanel left;
     boolean listenersDisabled = false;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory) throws RaplaException {
         super(context);
 
         calendarContainer = new MultiCalendarView(context, model, this,factoryList);
@@ -90,7 +92,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model);
+        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)
@@ -134,7 +136,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         viewMenu.insertBeforeId( ownReservationsMenu, "show_tips" );
 
         resourceSelection.getTreeSelection().addChangeListener( treeListener);
-        conflictsView = new ConflictSelection(context, calendarContainer, model);
+        conflictsView = new ConflictSelection(context, calendarContainer, model, treeFactory);
         left = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.gridheight = 1;
@@ -230,27 +232,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		boolean isSelected = model.isOnlyCurrentUserSelected();
 		ownReservationsMenu.setIcon(isSelected ? getIcon("icon.checked") : getIcon("icon.unchecked"));
 		ownReservationsMenu.setSelected(isSelected);
-//        boolean canSeeEventsFromOthers = canSeeEventsFromOthers();
-//		ownReservationsMenu.setEnabled( canSeeEventsFromOthers);
-//        if ( !canSeeEventsFromOthers && !isSelected)
-//        {
-//        	model.setOption(CalendarModel.ONLY_MY_EVENTS, "true");
-//        }
 	}
-
-    
-//    private boolean canSeeEventsFromOthers() {
-//        try {
-//            Category category = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-//            if (category == null) {
-//                return true;
-//            }
-//            User user = getUserFromRequest();
-//            return user.isAdmin() || user.belongsTo(category);
-//        } catch (RaplaException ex) {
-//            return false;
-//        }
-//    }
 
     public void dataChanged(ModificationEvent evt) throws RaplaException {
     	listenersDisabled = true;

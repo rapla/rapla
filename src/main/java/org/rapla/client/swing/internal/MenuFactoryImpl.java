@@ -11,38 +11,27 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
 
+import org.rapla.client.PopupContext;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.action.DynamicTypeAction;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
@@ -53,9 +42,29 @@ import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
+@Singleton
 @DefaultImplementation(of=MenuFactory.class,context = InjectionContext.swing)
 public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 {
@@ -70,16 +79,16 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final Set<ReservationWizardExtension> reservationWizards;
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final PermissionController permissionController;
+    private final CalendarSelectionModel model;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = permissionController;
+        this.model = model;
     }
-
-
 
 
     /**
@@ -162,7 +171,6 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 		User user = getUser();
           Date today = getQuery().today();        
           boolean canAllocate = false;
-          CalendarSelectionModel model = getService(CalendarSelectionModel.class);
           Collection<Allocatable> selectedAllocatables = model.getMarkedAllocatables();
           Date start = getStartDate( model);
           Date end = getEndDate( model, start);

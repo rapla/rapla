@@ -29,13 +29,13 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
 import org.rapla.client.extensionpoints.ExportMenuExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -46,13 +46,16 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     public static final String PLUGIN_ID = "csv";
 	JMenuItem exportEntry;
 	private final TableConfig.TableConfigLoader tableConfigLoader;
-
+    private final CalendarSelectionModel model;
+    private final IOInterface io;
 
 	@Inject
-	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader)
+	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io)
     {
         super( context );
 		this.tableConfigLoader = tableConfigLoader;
+        this.model = model;
+        this.io = io;
 		exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon( getIcon("icon.export") );
         exportEntry.addActionListener(this);
@@ -60,7 +63,6 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	
 	 public void actionPerformed(ActionEvent evt) {
          try {
-         	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
              export( model);
          } catch (Exception ex) {
              showException( ex, getMainComponent() );
@@ -167,7 +169,6 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	
 	public boolean saveFile(byte[] content,String filename, String extension) throws RaplaException {
 		final Frame frame = (Frame) SwingUtilities.getRoot(getMainComponent());
-		IOInterface io =  getService( IOInterface.class);
 		try 
 		{
 			String file = io.saveFile( frame, null, new String[] {extension}, filename, content);

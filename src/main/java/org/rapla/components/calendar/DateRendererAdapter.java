@@ -13,10 +13,6 @@
 
 package org.rapla.components.calendar;
 
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;

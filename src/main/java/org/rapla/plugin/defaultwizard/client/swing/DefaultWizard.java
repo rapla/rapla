@@ -49,10 +49,12 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 {
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
 	private final PermissionController permissionController;
+    private final CalendarModel model;
     @Inject
-	public DefaultWizard(RaplaContext sm){
+	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model){
         super(sm);
-        permissionController = getService(PermissionController.class);
+        this.permissionController = permissionController;
+        this.model = model;
     }
     
     public String getId() {
@@ -122,7 +124,6 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 	public void actionPerformed(ActionEvent e) {
 		try
 		{
-			CalendarModel model = getService(CalendarModel.class);
 	    	Object source = e.getSource();
 			DynamicType type = typeMap.get(source);
 	    	if ( type == null)

@@ -72,12 +72,16 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     Listener listener = new Listener();
   
     protected FilterEditButton filterEdit;
+    private final TreeFactory treeFactory;
+    private final MenuFactory menuFactory;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory) throws RaplaException {
         super(context);
 
         this.model = model;
         this.view = view;
+        this.treeFactory = treeFactory;
+        this.menuFactory = menuFactory;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -136,7 +140,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     }
 
     final protected TreeFactory getTreeFactory() {
-        return getService(TreeFactory.class);
+        return treeFactory;
     }
 
     boolean treeListenersEnabled = true;
@@ -320,7 +324,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     }
 
     public MenuFactory getMenuFactory() {
-        return getService(MenuFactory.class);
+        return menuFactory;
     }
     
    

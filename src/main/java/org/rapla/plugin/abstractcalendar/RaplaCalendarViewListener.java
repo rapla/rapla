@@ -43,12 +43,14 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
 	protected JComponent calendarContainerComponent;
     CalendarModel model;
+    private final MenuFactory menuFactory;
     public RaplaCalendarViewListener(RaplaContext context, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories)  {
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory)  {
         super( context);
         this.model = model;
         this.calendarContainerComponent = calendarContainerComponent;
         this.objectMenuFactories = objectMenuFactories;
+        this.menuFactory = menuFactory;
     }
 
     protected CalendarModel getModel() 
@@ -85,7 +87,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 	        RaplaPopupMenu menu= new RaplaPopupMenu();
 	    	Object focusedObject = null;
 			MenuContext context = new MenuContext(getContext(), focusedObject);
-			getService(MenuFactory.class).addReservationWizards(menu, context, null);
+			menuFactory.addReservationWizards(menu, context, null);
 			
 		   
 	        if (canCreateReservation())

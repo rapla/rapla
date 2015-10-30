@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
@@ -51,7 +52,7 @@ import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
 /** sample UseCase that only displays the text of the configuration and
  all reservations of the user.*/
-class CopyDialog extends RaplaGUIComponent implements RaplaWidget
+public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 {
     @SuppressWarnings("unchecked")
 	JComboBox sourcePeriodChooser = new JComboBox(new String[] {"a", "b"});
@@ -72,11 +73,14 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     JPanel customDestPanel = new JPanel();
 
     PeriodCopyResources periodCopyI18n;
+    private final CalendarModel model;
     
     @SuppressWarnings("unchecked")
-	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n) throws RaplaException {
+    @Inject
+	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model) throws RaplaException {
         super(sm);
         this.periodCopyI18n = periodCopyI18n;
+        this.model = model;
         locale = getRaplaLocale();
         sourceBegin = createRaplaCalendar();
         sourceEnd = createRaplaCalendar();
@@ -264,7 +268,6 @@ class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 	}
 
 	public List<Reservation> getReservations() throws RaplaException {
-	    final CalendarModel model = getService( CalendarModel.class);
 	    Reservation[] reservations = model.getReservations( getSourceStart(), getSourceEnd() );
 	    List<Reservation> listModel = new ArrayList<Reservation>();
 	      

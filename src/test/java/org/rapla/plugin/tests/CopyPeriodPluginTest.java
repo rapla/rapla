@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 
+import javax.inject.Provider;
+
 import org.rapla.RaplaTestCase;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -25,8 +27,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
+import org.rapla.gwtjsonrpc.client.impl.ser.SimpleProvider;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
+import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
+import org.rapla.plugin.periodcopy.client.swing.CopyDialog_Factory;
+import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest extends RaplaTestCase {
@@ -75,7 +80,8 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         assertNotNull( "Period not found ", destPeriod );
         BundleManager bundleManager= new ServerBundleManager();
         PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
-        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n );
+        Provider<CopyDialog> copyDialogProvider = new SimpleProvider<CopyDialog>(new CopyDialog(getClientService().getContext(), i18n, model));
+        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n, copyDialogProvider);
         Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
         assertNotNull(findReservationWithName(original, "power planting"));
 

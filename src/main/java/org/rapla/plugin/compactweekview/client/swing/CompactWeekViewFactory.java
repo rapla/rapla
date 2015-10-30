@@ -13,6 +13,7 @@
 package org.rapla.plugin.compactweekview.client.swing;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.Icon;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -20,9 +21,11 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
@@ -33,16 +36,20 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
 {
 
     private final Set<ObjectMenuFactory> objectMenuFactories;
+    private final MenuFactory menuFactory;
+    private final Provider<DateRenderer> dateRendererProvider;
     @Inject
-    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories)
+    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
+        this.menuFactory = menuFactory;
+        this.dateRendererProvider = dateRendererProvider;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactWeekCalendar( context, model, editable, objectMenuFactories);
+        return new SwingCompactWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider);
     }
 
     public String getViewId()

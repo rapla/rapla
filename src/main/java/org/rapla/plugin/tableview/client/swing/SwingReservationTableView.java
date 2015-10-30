@@ -60,12 +60,15 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     CopyListener copyListener = new CopyListener();
     CopyListener cutListener = new CopyListener();
     
+    private final MenuFactory menuFactory;
+    
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader) throws RaplaException
+            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory) throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
+        this.menuFactory = menuFactory;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -294,7 +297,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         menuContext.setSelectedObjects( selectedEvents);
 
         // add the new reservations wizards
-        MenuFactory menuFactory = getService(MenuFactory.class);
         menuFactory.addReservationWizards( newMenu, menuContext, null);
         
         // add the edit methods

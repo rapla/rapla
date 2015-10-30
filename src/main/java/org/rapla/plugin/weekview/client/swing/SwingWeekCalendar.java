@@ -14,8 +14,19 @@
 
 package org.rapla.plugin.weekview.client.swing;
 
+import java.awt.Font;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
@@ -28,29 +39,25 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 
 
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
-	
-    public SwingWeekCalendar( RaplaContext context, CalendarModel model, boolean editable,Set<ObjectMenuFactory> objectMenuFactories ) throws RaplaException
+    
+    private final RaplaResources resources;
+
+    public SwingWeekCalendar(RaplaContext context, CalendarModel model, boolean editable, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
+            RaplaResources resources, final Provider<DateRenderer> dateRendererProvider) throws RaplaException
     {
-        super( context, model, editable, objectMenuFactories);
+        super( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider);
+        this.resources = resources;
     }
 
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
-    	final DateRenderer dateRenderer;
         final DateRendererAdapter dateRendererAdapter; 
-        dateRenderer = getService(DateRenderer.class);
+        DateRenderer dateRenderer = dateRendererProvider.get();
         dateRendererAdapter = new DateRendererAdapter(dateRenderer, getRaplaLocale().getTimeZone(), getRaplaLocale().getLocale());
 
     	final SwingWeekView wv = new SwingWeekView( showScrollPane ) {
@@ -84,7 +91,6 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void rebuild(Builder b) {
                 // update week
-                RaplaResources resources = getService(RaplaResources.class);
                 weekTitle.setText(resources.calendarweek( getStartDate()));
                 super.rebuild(b);
             }

@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.Icon;
 import javax.swing.MenuElement;
 
@@ -21,10 +22,12 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
     public static final String PLUGIN_ID = "report";
 	private RaplaMenuItem report;
 	final String name = getString("user") +"/"+ getString("groups") + " "+getString("report") ;
+    private final Provider<RaplaRightsReport> rightsReportProvider;
 
 	@Inject
-	public RightsReportMenu(RaplaContext context) {
+	public RightsReportMenu(RaplaContext context, Provider<RaplaRightsReport> rightsReportProvider) {
 		super(context);
+        this.rightsReportProvider = rightsReportProvider;
 		
 		report = new RaplaMenuItem("report");
 		report.getMenuElement().setText( name);
@@ -46,7 +49,7 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
     {
         try {
            
-        	RaplaRightsReport report = new RaplaRightsReport( getContext());
+        	RaplaRightsReport report = rightsReportProvider.get();
             DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, report.getComponent(), new String[] {getString("ok")});
             dialog.setTitle( name);
             dialog.setSize( 650, 550);

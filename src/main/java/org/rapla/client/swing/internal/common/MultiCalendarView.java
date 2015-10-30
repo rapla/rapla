@@ -360,6 +360,7 @@ public class MultiCalendarView extends RaplaGUIComponent
             		currentView = defaultView;
             		currentViewId = "ERROR_VIEW";
             	}
+            	currentView.update();
             	page.removeAll();
             	page.add( header, "0,0,f,f");
                 JComponent dateSelection = currentView.getDateSelection();

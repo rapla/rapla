@@ -11,6 +11,8 @@ import javax.inject.Singleton;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContext;
@@ -23,11 +25,12 @@ public class TimeslotProvider extends RaplaComponent {
 	private ArrayList<Timeslot> timeslots;
 
 	@Inject
-	public TimeslotProvider(RaplaContext context, Configuration config) throws RaplaException // ParseDateException
+	public TimeslotProvider(RaplaContext context, ClientFacade facade) throws RaplaException // ParseDateException
 	{
 		super(context);
 		try
 		{
+		    final RaplaConfiguration config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, null);
 		    update(config);
 		}
 		catch(ParseDateException e)

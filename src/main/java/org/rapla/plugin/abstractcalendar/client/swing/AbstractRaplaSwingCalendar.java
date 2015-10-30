@@ -24,8 +24,17 @@ import java.awt.Graphics2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import javax.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -33,8 +42,14 @@ import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.VisibleTimeInterval;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.ViewListener;
@@ -45,11 +60,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.plugin.abstractcalendar.*;
+import org.rapla.plugin.abstractcalendar.DateChooserPanel;
+import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
+import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     implements
@@ -65,11 +80,15 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     JLabel titleView;
     int units = 1;
     protected final Set<ObjectMenuFactory> objectMenuFactories;
+    protected final MenuFactory menuFactory;
+    protected final Provider<DateRenderer> dateRendererProvider;
 
-    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories) throws RaplaException {
+    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider) throws RaplaException {
         super( sm);
         this.model = model;
         this.objectMenuFactories = objectMenuFactories;
+        this.menuFactory = menuFactory;
+        this.dateRendererProvider = dateRendererProvider;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -104,7 +123,6 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         dateChooser = new DateChooserPanel(getContext(), model);
         dateChooser.addDateChangeListener(this);
         dateChooser.setIncrementSize( getIncrementSize() );
-        update();
     }
 
 	protected boolean isPrintContext() {
@@ -119,7 +137,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories);
+        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory);
     }
 
     public JComponent getDateSelection()   {
