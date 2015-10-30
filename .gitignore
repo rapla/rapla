@@ -24,3 +24,4 @@ bin/logback.xml
 bin/test.xconf
 bin/testdefault.xml
 rapla.iml
+*.iml
