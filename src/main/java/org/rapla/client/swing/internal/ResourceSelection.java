@@ -14,6 +14,7 @@
 package org.rapla.client.swing.internal;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -46,6 +47,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -55,6 +57,7 @@ import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -76,8 +79,9 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final TreeFactory treeFactory;
     private final MenuFactory menuFactory;
     private final EditController editController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
         super(context);
 
         this.model = model;
@@ -85,6 +89,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         this.treeFactory = treeFactory;
         this.menuFactory = menuFactory;
         this.editController = editController;
+        this.infoFactory = infoFactory;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -240,7 +245,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController);
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory);
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);

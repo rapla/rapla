@@ -12,17 +12,33 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.gui.edit.test;
+import java.awt.Component;
 import java.util.Collections;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.rapla.AppointmentFormaterImpl;
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.iolayer.DefaultIO;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 
@@ -38,7 +54,17 @@ public final class PermissionEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        TreeFactory treeFactory = new TreeFactoryImpl(clientService.getContext(), DefaultPermissionControllerSupport.getController());
+        final Logger logger = getLogger();
+        final RaplaContext context = clientService.getContext();
+        final ServerBundleManager bundleManager = new ServerBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
+        IOInterface ioInterface = new DefaultIO(logger);
+        PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+        ClientFacade facade = getFacade();
+        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger);
+        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory);
         PermissionListField editor = new PermissionListField(clientService.getContext(),treeFactory, "permissions");
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];
         Allocatable r = clientService.getFacade().edit( a );

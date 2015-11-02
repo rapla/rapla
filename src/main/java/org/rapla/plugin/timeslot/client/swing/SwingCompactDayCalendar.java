@@ -14,6 +14,7 @@
 
 package org.rapla.plugin.timeslot.client.swing;
 
+import java.awt.Component;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -32,7 +33,9 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -61,8 +64,8 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController);
+    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory);
         this.timeslotProvider = timeslotProvider;
     }
     
@@ -138,7 +141,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{

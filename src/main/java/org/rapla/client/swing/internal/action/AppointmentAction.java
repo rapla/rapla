@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
+import java.awt.Component;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -26,7 +27,9 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.PopupContext;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.toolkit.DialogUI;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -49,13 +52,15 @@ public class AppointmentAction extends RaplaAction {
 	private Collection<Allocatable> contextAllocatables;
 	private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
     
-	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController)
+	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
     {
         super( context);
         this.popupContext = popupContext;
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
+        this.infoFactory = infoFactory;
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -217,7 +222,7 @@ public class AppointmentAction extends RaplaAction {
 
     public void view() throws RaplaException {
         Appointment appointment = appointmentBlock.getAppointment();
-    	getInfoFactory().showInfoDialog(appointment.getReservation(), popupContext);
+    	infoFactory.showInfoDialog(appointment.getReservation(), popupContext);
     }
 
     public void edit() throws RaplaException {

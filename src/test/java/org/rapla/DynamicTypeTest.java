@@ -11,13 +11,19 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
+import java.awt.Component;
 import java.util.Date;
 
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.iolayer.DefaultIO;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -27,9 +33,15 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
 
 
 public class DynamicTypeTest extends RaplaTestCase {
@@ -144,11 +156,19 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	facade.store( type);
    	}
    	{
-   	        TreeFactory treeFactory = new TreeFactoryImpl(getClientService().getContext(), DefaultPermissionControllerSupport.getController());
+            final Logger logger = getLogger();
+            final ServerBundleManager bundleManager = new ServerBundleManager();
+            RaplaResources i18n = new RaplaResources(bundleManager);
+            RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+            AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
+            IOInterface ioInterface = new DefaultIO(logger);
+            final RaplaContext context = getClientService().getContext();
+            PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger);
+   	        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory);
 	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
-	    	RaplaContext context = getClientService().getContext();
 			boolean isResourceOnly = true;
 			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly);
 			ui.setFilter( model);

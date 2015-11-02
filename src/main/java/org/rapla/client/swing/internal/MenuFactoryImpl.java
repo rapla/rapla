@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -32,6 +33,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -40,6 +42,7 @@ import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -84,9 +87,10 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final CalendarSelectionModel model;
     private final ClientService service;
     private final EditController editController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
@@ -94,6 +98,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         this.model = model;
         this.service = service;
         this.editController = editController;
+        this.infoFactory = infoFactory;
     }
 
 
@@ -483,13 +488,13 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController);
+        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory);
         return action;
     }
 
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController);
+        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory);
         return action;
     }
 

@@ -12,16 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.client.swing;
 
+import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.client.ReservationController;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -38,22 +41,24 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MenuFactory menuFactory;
     private final ReservationController reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
     @Inject
     public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController )
+            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory )
     {
         super( context );
         this.reservationSummaryExtensions = reservationSummaryExtensions;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.reservationController = reservationController;
+        this.infoFactory = infoFactory;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController, infoFactory);
     }
 
     public String getViewId()

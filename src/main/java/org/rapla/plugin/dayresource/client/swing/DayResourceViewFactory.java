@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.dayresource.client.swing;
 
+import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -22,10 +23,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -43,8 +46,9 @@ public class DayResourceViewFactory  implements SwingViewFactory
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
     @Inject
-    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController )
+    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
     {
         this.i18n = i18n;
         this.objectMenuFactories = objectMenuFactories;
@@ -53,13 +57,14 @@ public class DayResourceViewFactory  implements SwingViewFactory
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
         this.reservationController = reservationController;
+        this.infoFactory = infoFactory;
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
+        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory);
     }
 
     public String getViewId()

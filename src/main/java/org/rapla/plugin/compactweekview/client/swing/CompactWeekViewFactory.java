@@ -24,14 +24,17 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
+import java.awt.Component;
 import java.util.Set;
 
 @Extension(provides = SwingViewFactory.class,id=CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
@@ -44,8 +47,9 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
     @Inject
-    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController)
+    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
@@ -54,11 +58,12 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
         this.reservationController = reservationController;
+        this.infoFactory = infoFactory;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
+        return new SwingCompactWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory);
     }
 
     public String getViewId()

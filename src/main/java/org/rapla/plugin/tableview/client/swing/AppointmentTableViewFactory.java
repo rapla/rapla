@@ -22,19 +22,22 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
 
+import java.awt.Component;
 import java.util.Set;
 
-@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewFactory extends RaplaComponent
-        implements SwingViewFactory
+@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
+public class AppointmentTableViewFactory extends RaplaComponent implements SwingViewFactory
 {
     private final Set<AppointmentSummaryExtension> appointmentSummaryExtensions;
     private final Set<ObjectMenuFactory> objectMenuFactories;
@@ -42,10 +45,12 @@ import java.util.Set;
     private final MenuFactory menuFactory;
     private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
-    @Inject public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
+    @Inject
+    public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController)
+            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
     {
         super(context);
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
@@ -54,13 +59,15 @@ import java.util.Set;
         this.menuFactory = menuFactory;
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
+        this.infoFactory = infoFactory;
     }
 
     public final static String TABLE_VIEW = "table_appointments";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory, calendarSelectionModel, reservationController);
+        return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
+                calendarSelectionModel, reservationController, infoFactory);
     }
 
     public String getViewId()
@@ -90,4 +97,3 @@ import java.util.Set;
     }
 
 }
-

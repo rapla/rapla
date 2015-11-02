@@ -49,6 +49,7 @@ import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.internal.ReservationControllerImpl;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
@@ -136,16 +137,22 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
     private final ReservationControllerImpl reservationController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
     @Inject
-    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater, PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory) throws RaplaException {
+    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories,
+            TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
+            PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
+            InfoFactory<Component, DialogUI> infoFactory) throws RaplaException
+    {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
+        this.infoFactory = infoFactory;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
         reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController);
         appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -623,7 +630,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     @Override
     public void delete() throws RaplaException {
         try {
-            DialogUI dlg = getInfoFactory().createDeleteDialog(new Object[] {mutableReservation}
+            DialogUI dlg = infoFactory.createDeleteDialog(new Object[] {mutableReservation}
                                                                ,new SwingPopupContext(frame, null));
             dlg.start();
             if (dlg.getSelectedIndex() == 0) {

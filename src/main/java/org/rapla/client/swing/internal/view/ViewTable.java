@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.net.URL;
@@ -27,8 +28,10 @@ import javax.swing.event.HyperlinkListener;
 
 import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.internal.LinkController;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.Assert;
@@ -61,9 +64,11 @@ public class ViewTable<T> extends RaplaGUIComponent
     Map<Integer,Object> linkMap;
     int linkId = 0;
     boolean packText = true;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
-    public ViewTable(RaplaContext sm) {
+    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory) {
         super( sm);
+        this.infoFactory = infoFactory;
         linkMap = new HashMap<Integer,Object>(7);
         htmlView.addHyperlinkListener(this);
         htmlView.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
@@ -87,7 +92,7 @@ public class ViewTable<T> extends RaplaGUIComponent
     {
         if ( object instanceof RaplaObject)
         {
-            final InfoFactoryImpl infoFactory = (InfoFactoryImpl)getInfoFactory();
+            final InfoFactoryImpl infoFactory = (InfoFactoryImpl)this.infoFactory;
             @SuppressWarnings("unchecked")
 			HTMLInfo<RaplaObject<T>> createView = infoFactory.createView((RaplaObject<T>)object);
 			@SuppressWarnings("unchecked")
@@ -164,9 +169,9 @@ public class ViewTable<T> extends RaplaGUIComponent
         		getLogger().debug("Hyperlink pressed: " + link);
         		Object object = linkMap.get(index);
         		Assert.notNull(object,"link was not found in linkMap");
-        		Assert.notNull(getInfoFactory());
+        		Assert.notNull(infoFactory);
         		try {
-        			getInfoFactory().showInfoDialog(object,new SwingPopupContext(htmlView,null));
+        			infoFactory.showInfoDialog(object,new SwingPopupContext(htmlView,null));
         		} catch (RaplaException ex) {
         			showException(ex,getComponent());
         		} // end of try-catch

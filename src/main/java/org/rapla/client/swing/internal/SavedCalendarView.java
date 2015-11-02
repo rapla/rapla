@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
@@ -32,6 +33,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.common.InternMenus;
@@ -136,7 +138,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             try 
             {
                 String[] objects = new String[] { getSelectedFile().name};
-                DialogUI dlg = getInfoFactory().createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
+                DialogUI dlg = infoFactory.createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
                 dlg.start();
                 if (dlg.getSelectedIndex() != 0)
                     return;
@@ -151,6 +153,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     final SaveAction saveAction;
     final PublishAction publishAction;
     final DeleteAction deleteAction;
+
+    private final InfoFactory<Component, DialogUI> infoFactory;
     
     class FileEntry implements Comparable<FileEntry>
     {
@@ -204,11 +208,11 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
     }
     
-    
     public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories) throws RaplaException {
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
         super(context);
         this.extensionFactories = extensionFactories;
+        this.infoFactory = infoFactory;
         // I18nBundle i18n = getI18n();
         saveAction = new SaveAction(context);
         publishAction = new PublishAction(context);

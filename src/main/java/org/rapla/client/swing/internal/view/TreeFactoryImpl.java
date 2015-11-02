@@ -51,8 +51,10 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -89,10 +91,12 @@ import org.rapla.storage.StorageOperator;
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private final PermissionController permissionController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
     @Inject
-    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController) {
+    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory) {
         super(sm);
         this.permissionController = permissionController;
+        this.infoFactory = infoFactory;
     }
    
     class DynamicTypeComperator  implements Comparator<DynamicType>
@@ -1293,7 +1297,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             if (value instanceof Conflict) {
                 return null;
             }
-            return getInfoFactory().getToolTip(value);
+            return infoFactory.getToolTip(value);
         }
     }
 

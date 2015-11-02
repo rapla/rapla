@@ -15,6 +15,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
@@ -66,7 +67,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController) throws RaplaException
+            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, final InfoFactory<Component, DialogUI> infoFactory)
+                    throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
@@ -82,7 +84,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                     return null;
                 int rowIndex = rowAtPoint( e.getPoint() );
                 Reservation reservation = reservationTableModel.getReservationAt( sorter.modelIndex( rowIndex ));
-                return getInfoFactory().getToolTip( reservation );
+                return infoFactory.getToolTip( reservation );
             }
         };
         

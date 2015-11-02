@@ -104,7 +104,8 @@ public class RaplaGUIComponent extends RaplaComponent
 	{
 	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    final ReservationController reservationController = getReservationController();
-	    return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController);
+	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
+        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory);
 	}
 	
 
@@ -311,7 +312,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return  getService( ClientService.SESSION_MAP);
     }
 
-    protected InfoFactory<Component, DialogUI> getInfoFactory() {
+    private InfoFactory<Component, DialogUI> getInfoFactory() {
         return getService( InfoFactory.class );
     }
     

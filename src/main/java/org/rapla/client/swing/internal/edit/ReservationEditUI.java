@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
@@ -41,6 +43,7 @@ import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
 import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -53,12 +56,12 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     AllocatableSelection allocatableSelection;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory) throws RaplaException {
+    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
         super(context);
         classificationField = new ClassificationField<Reservation>(context, treeFactory);
         permissionField = new PermissionListField(context,treeFactory,getString("permissions"));
 
-        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory)
+        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };

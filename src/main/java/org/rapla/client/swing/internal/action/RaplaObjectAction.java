@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,8 +20,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.client.PopupContext;
+import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.entities.Category;
@@ -58,15 +61,17 @@ public class RaplaObjectAction extends RaplaAction {
     protected RaplaType raplaType;
     private final PopupContext popupContext;
     protected final EditController editController;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 
-    public RaplaObjectAction(RaplaContext sm, EditController editController) {
-        this(sm, null, editController);
+    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory) {
+        this(sm, null, editController, infoFactory);
     }
 
-    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController)  {
+    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory)  {
         super( sm);
         this.editController = editController;
         this.popupContext = popupContext;
+        this.infoFactory = infoFactory;
     }
     
     protected PopupContext getPopupContext()
@@ -181,7 +186,7 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
     public void view() throws RaplaException {
-        getInfoFactory().showInfoDialog(object,popupContext);
+        infoFactory.showInfoDialog(object,popupContext);
     }
 
 
@@ -276,7 +281,7 @@ public class RaplaObjectAction extends RaplaAction {
         if (object == null)
             return;
         Entity<?>[] objects = new Entity[] {  object};
-        DialogUI dlg = getInfoFactory().createDeleteDialog( objects, popupContext);
+        DialogUI dlg = infoFactory.createDeleteDialog( objects, popupContext);
         dlg.start();
         if (dlg.getSelectedIndex() != 0)
             return;
@@ -288,7 +293,7 @@ public class RaplaObjectAction extends RaplaAction {
     {
         if (objectList == null || objectList.size() == 0)
             return;
-        DialogUI dlg = getInfoFactory().createDeleteDialog(objectList.toArray(), popupContext);
+        DialogUI dlg = infoFactory.createDeleteDialog(objectList.toArray(), popupContext);
         dlg.start();
         if (dlg.getSelectedIndex() != 0)
             return;

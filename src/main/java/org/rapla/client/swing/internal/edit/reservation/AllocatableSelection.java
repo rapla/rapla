@@ -110,6 +110,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -120,6 +121,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.CalendarAction;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -189,8 +191,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final TreeFactory treeFactory;
     private final CalendarModel model;
     private final MenuFactory menuFactory;
+    private final InfoFactory<Component, DialogUI> infoFactory;
 	
-	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory)
+	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory)
 	{
 		super(context);
 		this.swingViewFactories = swingViewFactories;
@@ -201,6 +204,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.model = originalModel;
         this.permissionController = permissionController;
         this.menuFactory = menuFactory;
+        this.infoFactory = infoFactory;
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
 		double tableSize[][] = { { pre, 12, pre, 3, fill, pre}, // Columns
@@ -1141,7 +1145,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		public String getToolTipText(JTable table, int row, int column)
 		{
 			Object value = table.getValueAt(row, column);
-			return getInfoFactory().getToolTip(value);
+			return infoFactory.getToolTip(value);
 		}
 	}
 	
