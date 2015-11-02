@@ -139,14 +139,10 @@ public class CalendarPrintDialog extends DialogUI
 
     };
 
-    public CalendarPrintDialog(RaplaContext context,Frame owner) throws RaplaException {
+    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface) throws RaplaException {
         super(context,owner);
-        init(context);
-    }
-    
-    private void init(RaplaContext context) throws RaplaException{
-		exportServiceList = new ExportServiceList( context);
-		images = context.lookup( RaplaImages.class);
+        exportServiceList = new ExportServiceList( context, printInterface);
+        images = context.lookup( RaplaImages.class);
     }
     
     public void init(boolean modal,final Map<String,SwingViewFactory> factoryMap,CalendarSelectionModel model,PageFormat format) throws Exception {

@@ -24,7 +24,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
@@ -37,11 +36,6 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
 
     private final PermissionController permissionController;
     AppointmentFormater appointmentFormater;
-    public ReservationInfoUI(RaplaContext sm) {
-        super(sm);
-        permissionController = getService(PermissionController.class);
-        appointmentFormater = getService(AppointmentFormater.class);
-    }
 
     @Inject
     public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)

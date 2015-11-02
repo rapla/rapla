@@ -16,7 +16,9 @@ import javax.inject.Inject;
 import javax.swing.Icon;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -26,6 +28,7 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
+import org.rapla.plugin.timeslot.TimeslotProvider;
 
 import java.util.Set;
 
@@ -34,18 +37,24 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
+    private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaClipboard clipboard;
+    private final TimeslotProvider timeslotProvider;
 
     @Inject
-    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory)
+    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
+        this.timeslotProvider = timeslotProvider;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories, menuFactory);
+        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider);
     }
 
     public String getViewId()

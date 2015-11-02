@@ -87,10 +87,10 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, CommandHistory commandHistory)
+	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, CommandHistory commandHistory)
 			throws RaplaException {
 		super(sm);
-        this.appointmentFormater = getService( AppointmentFormater.class);
+        this.appointmentFormater = appointmentFormater;
 
 		this.commandHistory = commandHistory;
         appointmentController = new AppointmentController(sm, commandHistory);

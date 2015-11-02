@@ -18,7 +18,9 @@ import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -39,21 +41,25 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
     private final MenuFactory menuFactory;
     private final Provider<DateRenderer> dateRendererProvider;
     private final RaplaResources resouces;
+    private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaClipboard clipboard;
 
     @Inject
-    public DayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resouces, Provider<DateRenderer> dateRendererProvider)
+    public DayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resouces, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.resouces = resouces;
         this.dateRendererProvider = dateRendererProvider;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
     }
 
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingDayCalendar( context, model, editable, objectMenuFactories, menuFactory, resouces, dateRendererProvider);
+        return new SwingDayCalendar( context, model, editable, objectMenuFactories, menuFactory, resouces, dateRendererProvider, calendarSelectionModel, clipboard);
     }
 
     public String getViewId()

@@ -42,6 +42,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -71,18 +72,20 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 	
 	GroupListField groupField;
 	JNDIConfig configService;
+    private final TreeFactory treeFactory;
 
     @Inject
-    public JNDIOption(RaplaContext sm,JNDIConfig config) {
+    public JNDIOption(RaplaContext sm,JNDIConfig config, TreeFactory treeFactory) {
         super(sm);
         this.configService = config;
+        this.treeFactory = treeFactory;
     }
 
     protected JPanel createPanel() throws RaplaException {
     	digest = newTextField();
     	connectionName = newTextField();
     	connectionPassword = new JPasswordField();
-    	groupField = new GroupListField( getContext());
+    	groupField = new GroupListField( getContext(), treeFactory);
     	JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout( new BorderLayout());
         passwordPanel.add( connectionPassword, BorderLayout.CENTER);

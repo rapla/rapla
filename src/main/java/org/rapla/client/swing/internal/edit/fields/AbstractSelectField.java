@@ -43,13 +43,13 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
-import org.rapla.components.util.Tools;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
+import org.rapla.components.util.Tools;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 
 public abstract class AbstractSelectField<T> extends AbstractEditField implements MultiEditField, SetGetField<T>, SetGetCollectionField<T>
@@ -64,17 +64,19 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     private boolean useNull = true;
     boolean multipleValues = false;
     boolean multipleSelectionPossible = false;
+    private final TreeFactory treeFactory;
   
     public RaplaButton getButton() {
         return selectButton;
     }
 
-    public AbstractSelectField(RaplaContext context){
-       this( context, null);
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory){
+       this( context, treeFactory, null);
     }
     
-    public AbstractSelectField(RaplaContext context, T defaultValue) {
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, T defaultValue) {
         super( context);
+        this.treeFactory = treeFactory;
         useDefault = defaultValue != null;
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
@@ -85,6 +87,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         panel.add( Box.createHorizontalStrut(10));
         panel.add( selectText);
         this.defaultValue = defaultValue;
+    }
+    
+    protected TreeFactory getTreeFactory()
+    {
+        return treeFactory;
     }
     
     public boolean isUseNull() 
@@ -149,11 +156,6 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             list = Collections.singletonList(object);
         }
         setValues(list);
-    }
-
-    final protected TreeFactory getTreeFactory() 
-    {
-        return getService(TreeFactory.class);
     }
 
     public void setValues(Collection<T> values) 
@@ -236,7 +238,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         	tree = new JTree();
         	tree.getSelectionModel().setSelectionMode( TreeSelectionModel.SINGLE_TREE_SELECTION );
         }
-        tree.setCellRenderer(getTreeFactory().createRenderer());
+        tree.setCellRenderer(treeFactory.createRenderer());
         //tree.setVisibleRowCount(15);
         tree.setRootVisible( false );
         tree.setShowsRootHandles(true);

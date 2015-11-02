@@ -14,7 +14,9 @@ package org.rapla.plugin.weekview.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -38,19 +40,23 @@ public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
     private final MenuFactory menuFactory;
     private final RaplaResources resources;
     private final Provider<DateRenderer> dateRendererProvider;
+    private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaClipboard clipboard;
     @Inject
-    public WeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider )
+    public WeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.resources = resources;
         this.dateRendererProvider = dateRendererProvider;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider);
+        return new SwingWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard);
     }
 
     public String getViewId()

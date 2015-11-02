@@ -20,7 +20,10 @@ import junit.framework.TestSuite;
 import org.rapla.client.ClientService;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 
 public final class PermissionEditTest extends GUITestCase
@@ -35,7 +38,8 @@ public final class PermissionEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        PermissionListField editor = new PermissionListField(clientService.getContext(),"permissions");
+        TreeFactory treeFactory = new TreeFactoryImpl(clientService.getContext(), DefaultPermissionControllerSupport.getController());
+        PermissionListField editor = new PermissionListField(clientService.getContext(),treeFactory, "permissions");
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];
         Allocatable r = clientService.getFacade().edit( a );
         Permission p1 = r.newPermission();

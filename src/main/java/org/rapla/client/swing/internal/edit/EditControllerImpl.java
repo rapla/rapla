@@ -230,7 +230,7 @@ public class EditControllerImpl<W> implements
     	Collection<T> toEdit = facade.edit(list);
     	if (toEdit.size() > 0) {
         	EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)createUI(toEdit.iterator().next());
-        	EditDialog<T> gui = new EditDialog<T>(context, ui);
+        	EditDialog<T> gui = new EditDialog<T>(context, ui, this);
             gui.start(toEdit, title, popupContext, createNew, callback);
         }
     }

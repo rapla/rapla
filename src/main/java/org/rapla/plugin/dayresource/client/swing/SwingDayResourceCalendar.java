@@ -28,6 +28,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
@@ -40,6 +41,7 @@ import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.RaplaResources;
@@ -53,9 +55,9 @@ import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
-    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider ) throws RaplaException
+    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,RaplaClipboard clipboard) throws RaplaException
     {
-        super( sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider );
+        super( sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard);
     }
     
   
@@ -143,7 +145,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory) {
+    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

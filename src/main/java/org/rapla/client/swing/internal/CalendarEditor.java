@@ -75,7 +75,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory) throws RaplaException {
         super(context);
 
-        calendarContainer = new MultiCalendarView(context, model, this,factoryList);
+        calendarContainer = new MultiCalendarView(context, model, this,treeFactory, factoryList);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 

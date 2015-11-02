@@ -32,6 +32,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.CategoryListField;
@@ -46,6 +47,7 @@ import org.rapla.client.swing.internal.edit.fields.TextField;
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
+    private final TreeFactory treeFactory;
 	
     public String getSelectedView()
     {
@@ -57,8 +59,9 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(RaplaContext sm) {
+    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory) {
 		super(sm);
+        this.treeFactory = treeFactory;
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -169,7 +172,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(context,  dynamicTypeConstraint);
+				 AllocatableSelectField allocField = new AllocatableSelectField(context, treeFactory, dynamicTypeConstraint);
 				 allocField.setFieldName(label);
 				 allocField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
 				 field = allocField;
@@ -183,7 +186,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(context, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(context, treeFactory, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
                 field = catField;

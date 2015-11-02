@@ -25,11 +25,13 @@ public class UserAction extends RaplaAction {
     public final int NEW = 1;
     public final int SWITCH_TO_USER = 3;
     int type = NEW;
-    private PopupContext popupContext;
+    private final PopupContext popupContext;
+    private final ClientService service;
 
-    public UserAction(RaplaContext sm,PopupContext popupContext) {
+    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service) {
         super(sm);
         this.popupContext = popupContext;
+        this.service = service;
     }
 
     public UserAction setNew() {
@@ -42,7 +44,6 @@ public class UserAction extends RaplaAction {
 
     public UserAction setSwitchToUser() {
         type = SWITCH_TO_USER;
-        ClientService service = getService( ClientService.class);
         if (service.canSwitchBack()) {
             putValue(NAME, getString("switch_back"));
         } else {
@@ -63,7 +64,6 @@ public class UserAction extends RaplaAction {
             if (type == NEW) {
                 setEnabled(isAdmin());
             } else if (type == SWITCH_TO_USER) {
-                ClientService service = getService(ClientService.class);
                 setEnabled(service.canSwitchBack() || (object != null && isAdmin() && !user.equals(object)));
             }
         } catch (RaplaException ex) {
@@ -76,7 +76,6 @@ public class UserAction extends RaplaAction {
     public void actionPerformed() {
         try {
             if (type == SWITCH_TO_USER) {
-                ClientService service = getService( ClientService.class);
             	if (service.canSwitchBack()) {
                     service.switchTo(null);
                     //putValue(NAME, getString("switch_to"));

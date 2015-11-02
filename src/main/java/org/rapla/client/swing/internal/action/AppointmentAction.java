@@ -47,11 +47,13 @@ public class AppointmentAction extends RaplaAction {
 	ReservationEdit reservationEdit;
 //    ReservationWizard wizard;
 	private Collection<Allocatable> contextAllocatables;
+	private final CalendarSelectionModel calendarSelectionModel;
     
-	public AppointmentAction(RaplaContext context,PopupContext popupContext)
+	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel)
     {
         super( context);
         this.popupContext = popupContext;
+        this.calendarSelectionModel = calendarSelectionModel;
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -232,9 +234,8 @@ public class AppointmentAction extends RaplaAction {
     private void paste(boolean asNewReservation) throws RaplaException {
         
 		ReservationController reservationController = getReservationController();
-		CalendarSelectionModel model = getService( CalendarSelectionModel.class);
-    	Date start = getStartDate(model);
-    	boolean keepTime = !model.isMarkedIntervalTimeEnabled();
+    	Date start = getStartDate(calendarSelectionModel);
+    	boolean keepTime = !calendarSelectionModel.isMarkedIntervalTimeEnabled();
     	reservationController.pasteAppointment(	start
                                                ,popupContext
                                                ,asNewReservation, keepTime);
@@ -242,9 +243,8 @@ public class AppointmentAction extends RaplaAction {
 
     private void addToReservation() throws RaplaException 
     {
-    	CalendarSelectionModel model = getService( CalendarSelectionModel.class);
-    	Date start = getStartDate(model);
-    	Date end = getEndDate(model, start);
+    	Date start = getStartDate(calendarSelectionModel);
+    	Date end = getEndDate(calendarSelectionModel, start);
     	reservationEdit.addAppointment(start,end);
     }
 

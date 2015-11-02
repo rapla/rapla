@@ -186,15 +186,21 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	AppointmentFormater appointmentFormater;
 	final private Set<SwingViewFactory> swingViewFactories;
 	private final PermissionController permissionController;
+    private final TreeFactory treeFactory;
+    private final CalendarModel model;
+    private final MenuFactory menuFactory;
 	
-	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories)
+	public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory)
 	{
 		super(context);
 		this.swingViewFactories = swingViewFactories;
+		this.appointmentFormater = appointmentFormater;
 		// Undo Command History
-		appointmentFormater = getService(AppointmentFormater.class);
-		permissionController = getService(PermissionController.class);
 		this.commandHistory = commandHistory;
+        this.treeFactory = treeFactory;
+        this.model = originalModel;
+        this.permissionController = permissionController;
+        this.menuFactory = menuFactory;
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
 		double tableSize[][] = { { pre, 12, pre, 3, fill, pre}, // Columns
@@ -217,10 +223,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		btnRemove.setEnabled(false);
 		btnCalendar2.setEnabled(false);
 		
-		addAction = new AllocatableAction("add");
-		removeAction = new AllocatableAction("remove");
-		calendarAction1 = new AllocatableAction("calendar1");
-		calendarAction2 = new AllocatableAction("calendar2");
+		addAction = new AllocatableAction("add", treeFactory);
+		removeAction = new AllocatableAction("remove", treeFactory);
+		calendarAction1 = new AllocatableAction("calendar1", treeFactory);
+		calendarAction2 = new AllocatableAction("calendar2", treeFactory);
 		
 		btnAdd.setAction(addAction);
 		btnRemove.setAction(removeAction);
@@ -273,9 +279,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		}
 		content.setDividerLocation(0.3);
 		
-		CalendarSelectionModel originalModel = getService(CalendarSelectionModel.class);
 		calendarModel =  originalModel.clone();
-		filter = new FilterEditButton( context, calendarModel, listener,true);
+		filter = new FilterEditButton( context, treeFactory, calendarModel, listener,true);
         leftPanel.add(filter.getButton(), "4,0,r,f");
 //		filterAction = new FilterAction(getContext(), getComponent(), null);
 //		filterAction.setFilter(calendarModel);
@@ -290,11 +295,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 	public void removeChangeListener(ChangeListener listener)
 	{
 		listenerList.remove(ChangeListener.class, listener);
-	}
-	
-	final private TreeFactory getTreeFactory()
-	{
-		return getService(TreeFactory.class);
 	}
 	
 	protected void fireAllocationsChanged()
@@ -493,8 +493,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		completeModel.setAllocatables(allocatableList);
 		updateBindings( null);
 		// Expand allocatableTree if only one DynamicType
-		final CalendarModel calendarModel = getService(CalendarModel.class);
-		Collection<?> selectedObjectsAndChildren = calendarModel.getSelectedObjects();
+		Collection<?> selectedObjectsAndChildren = model.getSelectedObjects();
 		expandObjects(selectedObjectsAndChildren, completeTable.getTree());
 		selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
 		expandObjects( getAllocated(), selectedTable.getTree());
@@ -519,7 +518,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		{
 			public void run()
 			{
-				selectObjects(calendarModel.getSelectedObjects(), completeTable.getTree());
+				selectObjects(model.getSelectedObjects(), completeTable.getTree());
 			}
 		});
 	}
@@ -785,7 +784,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			menuContext.setSelectedObjects(list);
 			RaplaMenu newMenu = new RaplaMenu("new");
 			newMenu.setText(getString("new"));
-			MenuFactory menuFactory = getService( MenuFactory.class);
 			((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null);
 
 			menuFactory.addObjectMenu(menu, menuContext, seperatorId);
@@ -1001,7 +999,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		{
 			this.allocatables = allocatables;
 			
-			treeModel = getTreeFactory().createClassifiableModel( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), useCategorizations);
+			treeModel = treeFactory.createClassifiableModel( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), useCategorizations);
 			DefaultMutableTreeNode root = (DefaultMutableTreeNode) getRoot();
 			int childCount = root.getChildCount();
 			int[] childIndices = new int[childCount];
@@ -2061,11 +2059,15 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		
 		String						command;
 
-		public AllocatableAction()
-		{}
-		AllocatableAction(String command)
+        private TreeFactory treeFactory;
+
+		public AllocatableAction(TreeFactory treeFactory)
+		{
+            this.treeFactory = treeFactory;}
+		AllocatableAction(String command, TreeFactory treeFactory)
 		{
 			this.command = command;
+            this.treeFactory = treeFactory;
 			if (command.equals("add"))
 			{
 				putValue(NAME, getString("add"));
@@ -2097,7 +2099,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			if (command.indexOf("calendar") >= 0)
 			{
 				JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
-				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, swingViewFactories);
+				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, treeFactory, swingViewFactories);
 				calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
 				Collection<Appointment> appointments = Arrays.asList( AllocatableSelection.this.appointments);
 				calendarAction.setStart(findFirstStart(appointments));

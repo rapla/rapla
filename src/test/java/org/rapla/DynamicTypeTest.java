@@ -17,6 +17,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -26,7 +27,9 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 
 
 public class DynamicTypeTest extends RaplaTestCase {
@@ -141,12 +144,13 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	facade.store( type);
    	}
    	{
+   	        TreeFactory treeFactory = new TreeFactoryImpl(getClientService().getContext(), DefaultPermissionControllerSupport.getController());
 	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 	    	RaplaContext context = getClientService().getContext();
 			boolean isResourceOnly = true;
-			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, isResourceOnly);
+			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

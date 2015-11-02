@@ -27,6 +27,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 
 
@@ -45,12 +46,12 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
      * @param context
      * @throws RaplaException
      */
-    public GroupListField(RaplaContext context) throws RaplaException {
+    public GroupListField(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
         super(context);
     	final Category rootCategory = getQuery().getUserGroupsCategory();
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(context, rootCategory );
+        newCategory = new CategorySelectField(context, treeFactory, rootCategory );
         newCategory.setUseNull( false);
         newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );

@@ -42,12 +42,11 @@ public class ExportServiceList extends RaplaGUIComponent  {
      * @param sm
      * @throws RaplaException
      */
-    public ExportServiceList(RaplaContext sm) throws RaplaException {
+    public ExportServiceList(RaplaContext sm, IOInterface printInterface) throws RaplaException {
         super(sm);
-        IOInterface printInterface =  getService( IOInterface.class);
         boolean applet =(getService(StartupEnvironment.class)).getStartupMode() == StartupEnvironment.APPLET;
         if (printInterface.supportsPostscriptExport() && !applet) {
-            PSExportService exportService = new PSExportService(getContext());
+            PSExportService exportService = new PSExportService(getContext(), printInterface);
             addService("psexport",exportService);
         }
     }

@@ -53,16 +53,18 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     boolean bSaving = false;
     EditComponent<T, JComponent> ui;
     private Collection<T> originals;
+    private final EditControllerImpl editController;
 
-    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui)
+    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController)
     {
         super(sm);
         this.ui = ui;
+        this.editController = (EditControllerImpl)editController;
     }
 
     final private EditControllerImpl getPrivateEditDialog()
     {
-        return (EditControllerImpl) getService(EditController.class);
+        return editController;
     }
 
     public void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditController.EditCallback<List<T>> callback)

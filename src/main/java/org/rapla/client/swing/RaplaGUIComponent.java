@@ -47,6 +47,7 @@ import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.DependencyException;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -101,7 +102,8 @@ public class RaplaGUIComponent extends RaplaComponent
 	@Deprecated 
 	public AppointmentAction createAppointmentAction(Component component, Point p)
 	{
-	    return new AppointmentAction(getContext(),createPopupContext(component, p));
+	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
+	    return new AppointmentAction(getContext(),createPopupContext(component, p), model);
 	}
 	
 

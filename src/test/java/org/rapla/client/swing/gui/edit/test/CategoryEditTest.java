@@ -20,6 +20,9 @@ import junit.framework.TestSuite;
 import org.rapla.client.ClientService;
 import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.internal.edit.CategoryEditUI;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 
 public final class CategoryEditTest extends GUITestCase
@@ -36,7 +39,8 @@ public final class CategoryEditTest extends GUITestCase
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
         RaplaContext context = null;
-        CategoryEditUI editor = new CategoryEditUI( context);
+        TreeFactory treeFactory = new TreeFactoryImpl(context, DefaultPermissionControllerSupport.getController());
+        CategoryEditUI editor = new CategoryEditUI( context, treeFactory);
         editor.setObjects( Collections.singletonList(clientService.getFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");

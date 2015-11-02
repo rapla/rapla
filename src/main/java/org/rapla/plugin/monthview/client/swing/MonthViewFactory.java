@@ -19,12 +19,14 @@ import javax.inject.Provider;
 import javax.swing.Icon;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -37,19 +39,23 @@ public class MonthViewFactory extends RaplaComponent implements SwingViewFactory
     private final Set<ObjectMenuFactory>objectMenuFactories;
     private final MenuFactory menuFactory;
     private final Provider<DateRenderer> dateRendererProvider;
+    private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaClipboard clipboard;
     @Inject
-    public MonthViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider)
+    public MonthViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
     }
 
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingMonthCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider);
+        return new SwingMonthCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard);
     }
 
     public String getViewId()

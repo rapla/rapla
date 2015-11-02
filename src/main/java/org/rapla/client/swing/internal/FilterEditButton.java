@@ -15,6 +15,7 @@ import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.toolkit.DialogUI;
 
@@ -24,7 +25,7 @@ public class FilterEditButton extends RaplaGUIComponent
     JWindow popup;
     ClassifiableFilterEdit ui;
         
-    public FilterEditButton(final RaplaContext context,final ClassifiableFilter filter, final ChangeListener listener, final boolean  isResourceSelection) 
+    public FilterEditButton(final RaplaContext context, final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final boolean  isResourceSelection) 
     {
         super(context);
         filterButton = new RaplaArrowButton('v');
@@ -46,7 +47,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     {
                         ui.removeChangeListener( listener);
                     }
-                    ui = new ClassifiableFilterEdit( context, isResourceSelection);
+                    ui = new ClassifiableFilterEdit( context, treeFactory, isResourceSelection);
                     if ( listener != null)
                     {
                     	ui.addChangeListener(listener);

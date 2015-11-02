@@ -59,6 +59,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
@@ -88,9 +89,11 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     final RaplaButton everythingButton = new RaplaButton(RaplaButton.SMALL);
     final RaplaButton  nothingButton = new RaplaButton(RaplaButton.SMALL);
+    final TreeFactory treeFactory;
     
-    public ClassifiableFilterEdit(RaplaContext context, boolean isResourceSelection)  {
+    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection)  {
         super( context);
+        this.treeFactory = treeFactory;
         content.setBackground(UIManager.getColor("List.background"));
         scrollPane = new JScrollPane(content
                                      ,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
@@ -234,7 +237,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
             checkBox.addActionListener(this);
             checkBox.setSelected( true );
             content.add( checkBox , "0," + (row + 1) + ",l,t");
-            filterEdit[i] = new ClassificationEdit(getContext(), scrollPane);
+            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, scrollPane);
             final ClassificationEdit edit = filterEdit[i];
             content.add( edit.getNewComponent() , "2," + (row + 1));
             content.add( edit.getRulesComponent() , "0," + (row + 2) + ",2,"+ (row + 2));
@@ -366,12 +369,14 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     JComboBox attributeSelector;
     JButton newLabel = new JButton();
     DynamicType type;
+    TreeFactory treeFactory;
     
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     JScrollPane pane;
     
-    ClassificationEdit(RaplaContext sm,JScrollPane pane){
+    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory,JScrollPane pane){
         super(sm );
+        this.treeFactory = treeFactory;
         this.pane = pane;
         ruleListPanel.setOpaque( false );
         ruleListPanel.setLayout(new BoxLayout(ruleListPanel,BoxLayout.Y_AXIS));
@@ -454,7 +459,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         Iterator<? extends ClassificationFilterRule> it = filter.ruleIterator();
         while (it.hasNext()) {
             ClassificationFilterRule rule = it.next();
-            RuleComponent ruleComponent = new RuleComponent( rule);
+            RuleComponent ruleComponent = new RuleComponent( rule, treeFactory);
             ruleList.add( ruleComponent );
         }
         update();
@@ -485,7 +490,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             RuleComponent ruleComponent = getComponent(att);
             final RuleRow row;
             if (ruleComponent == null) {
-                ruleComponent = new RuleComponent( att);
+                ruleComponent = new RuleComponent( att, treeFactory);
                 ruleList.add( ruleComponent );
             } 
             row = ruleComponent.addOr();
@@ -544,13 +549,15 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         private static final long serialVersionUID = 1L;
 
         Attribute attribute;
+        TreeFactory treeFactory;
         private final Listener listener = new Listener();
         List<RuleRow> ruleRows = new ArrayList<RuleRow>();
         List<RaplaButton> deleteButtons = new ArrayList<RaplaButton>();
         boolean isAndVisible;
         JLabel and;
 
-        RuleComponent(Attribute attribute) {
+        RuleComponent(Attribute attribute, TreeFactory treeFactory) {
+            this.treeFactory = treeFactory;
             Border outer = BorderFactory.createCompoundBorder(
                                                                BorderFactory.createEmptyBorder(5,20,0,3)
                                                                ,BorderFactory.createEtchedBorder()
@@ -563,8 +570,8 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             this.attribute = attribute;
         }
         
-        RuleComponent(ClassificationFilterRule rule){
-            this( rule.getAttribute());
+        RuleComponent(ClassificationFilterRule rule, TreeFactory treeFactory){
+            this( rule.getAttribute(), treeFactory);
             Assert.notNull(attribute);
             Object[] ruleValues = rule.getValues();
             String[] operators = rule.getOperators();
@@ -679,7 +686,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             deleteButton.setIcon(getIcon("icon.delete"));
             deleteButton.addActionListener(listener);
             deleteButtons.add(deleteButton);
-            RuleRow row = new RuleRow(attribute,operator,ruleValue);
+            RuleRow row = new RuleRow(treeFactory, attribute,operator,ruleValue);
             return row;
         }
 
@@ -705,6 +712,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         JComponent operatorComponent;
         AbstractEditField field;
         Attribute attribute;
+        TreeFactory treeFactory;
 
         public void stateChanged(ChangeEvent e) {
             fireFilterChanged();
@@ -714,7 +722,8 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             fireFilterChanged();
         }
         
-		RuleRow(Attribute attribute,String operator,Object ruleValue) {
+		RuleRow(TreeFactory treeFactory, Attribute attribute,String operator,Object ruleValue) {
+            this.treeFactory = treeFactory;
             this.attribute = attribute;
             this.ruleValue = ruleValue;
             ruleLabel = new JLabel();
@@ -799,7 +808,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             {
                 operatorComponent = new JLabel("");
                 DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-                AllocatableSelectField newField = new AllocatableSelectField(context, dynamicTypeConstraint);
+                AllocatableSelectField newField = new AllocatableSelectField(context, treeFactory, dynamicTypeConstraint);
                 field = newField;
                 test = newField;
                
@@ -810,7 +819,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 if (rootCategory.getDepth() > 2) {
                     Category defaultCategory = (Category) attribute.defaultValue();
-                    CategorySelectField newField = new CategorySelectField(context,rootCategory,defaultCategory);
+                    CategorySelectField newField = new CategorySelectField(context,treeFactory,rootCategory,defaultCategory);
 					field = newField;
 					test = newField;
                 } else {

@@ -34,6 +34,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -46,12 +47,14 @@ public class TemplateEdit extends RaplaGUIComponent
     AllocatableEditUI allocatableEdit;
     Collection<Allocatable> toStore = new LinkedHashSet<Allocatable>();
     Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
+    private final CalendarSelectionModel calendarSelectionModel;
     
     
-    public TemplateEdit(RaplaContext context) throws RaplaException {
+    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel) throws RaplaException {
         super(context);
+        this.calendarSelectionModel = calendarSelectionModel;
         I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context)
+        allocatableEdit = new AllocatableEditUI(context, treeFactory)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
@@ -239,7 +242,7 @@ public class TemplateEdit extends RaplaGUIComponent
                             }
                             if ( start != null)
                             {
-                                getService(CalendarSelectionModel.class).setSelectedDate( start);
+                                calendarSelectionModel.setSelectedDate( start);
                             }
                         }
                         getModification().setTemplate( selectedTemplate);

@@ -44,6 +44,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.internal.CalendarEditor;
@@ -106,13 +107,13 @@ public class MultiCalendarView extends RaplaGUIComponent
     FilterEditButton filter;
     CalendarEditor calendarEditor;
     
-    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor,final Set<SwingViewFactory> factoryList) throws RaplaException {
-    	this( context, model, factoryList, true);
+    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor,TreeFactory treeFactory,final Set<SwingViewFactory> factoryList) throws RaplaException {
+    	this( context, model, treeFactory, factoryList, true);
     	this.calendarEditor = calendarEditor;
     }
     
 
-	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
+	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
         super( context);
         this.factoryList = factoryList;
         this.editable = editable;
@@ -138,7 +139,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         addTypeChooser( ids );
         header.setLayout(new BorderLayout());
         header.add( viewChooser, BorderLayout.CENTER);
-        filter =new FilterEditButton(context,model, this, false);
+        filter =new FilterEditButton(context,treeFactory, model, this, false);
         final JPanel filterContainer = new JPanel();
         filterContainer.setLayout( new BorderLayout());
         filterContainer.add(filter.getButton(), BorderLayout.WEST);

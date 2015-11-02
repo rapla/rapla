@@ -35,6 +35,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -96,7 +97,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     Attribute attribute;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, Set<AnnotationEditAttributeExtension> attributeExtensionSet) throws RaplaException
+    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet) throws RaplaException
     {
         super( context );
         annotationEdit = new AnnotationEditUI(context, attributeExtensionSet);
@@ -109,9 +110,9 @@ public class AttributeDefaultConstraints extends AbstractEditField
         dynamicTypeSelect.setVector( typeList );
         rootCategory = getQuery().getSuperCategory();
 
-        categorySelect = new CategorySelectField(context,rootCategory);
+        categorySelect = new CategorySelectField(context, treeFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(context,rootCategory);
+        defaultSelectCategory = new CategorySelectField(context, treeFactory, rootCategory);
         defaultSelectText = new TextField(context);
         addCopyPaste( defaultSelectNumber.getNumberField());
         //addCopyPaste( expectedRows.getNumberField());

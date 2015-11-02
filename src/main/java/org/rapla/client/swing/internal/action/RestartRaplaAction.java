@@ -17,10 +17,13 @@ import org.rapla.client.swing.RaplaAction;
 
 
 public class RestartRaplaAction extends RaplaAction{
-    public RestartRaplaAction(RaplaContext sm)  
+    private final ClientService clientService;
+
+    public RestartRaplaAction(RaplaContext sm, ClientService clientService)  
     {
         super(sm);
-        boolean logoutAvailable = getService(ClientService.class).isLogoutAvailable();
+        this.clientService = clientService;
+        boolean logoutAvailable = clientService.isLogoutAvailable();
         String string = getString("restart_client");
         if (logoutAvailable)
         {
@@ -31,14 +34,14 @@ public class RestartRaplaAction extends RaplaAction{
     }
 
     public void actionPerformed() {
-        boolean logoutAvailable = getService(ClientService.class).isLogoutAvailable();
+        boolean logoutAvailable = clientService.isLogoutAvailable();
         if ( logoutAvailable)
         {
-            getService(ClientService.class).logout();
+            clientService.logout();
         }
         else
         {
-            getService(ClientService.class).restart();
+            clientService.restart();
         }
     }
 

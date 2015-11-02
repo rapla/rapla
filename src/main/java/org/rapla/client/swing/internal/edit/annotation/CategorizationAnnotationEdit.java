@@ -30,7 +30,7 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
     }
 
     @Override
-    public Collection<? extends EditField> createEditField(Annotatable annotatable)
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable)
     {
         if (!(annotatable instanceof Attribute))
         {

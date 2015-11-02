@@ -73,6 +73,7 @@ import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.gwtjsonrpc.common.ResultImpl;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -86,7 +87,10 @@ import org.rapla.storage.impl.EntityStore;
  * network.  It needs an server-process providing the StorageService
  * (usually this is the default rapla-server).
 */
-@DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client)
+@DefaultImplementationRepeatable({
+@DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client),
+@DefaultImplementation(of = RestartServer.class, context = InjectionContext.client),
+})
 @Singleton
 public class RemoteOperator  extends  AbstractCachableOperator implements  RestartServer,Disposable
 {

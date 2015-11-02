@@ -45,6 +45,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
@@ -94,7 +95,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     PermissionListField permissionField;
 
     @Inject
-    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions) throws RaplaException {
+    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory) throws RaplaException {
         super(context);
         annotationEdit = new AnnotationEditUI(context,annotationEditTypeExtensions);
         {
@@ -158,7 +159,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             }
         });
      
-        permissionField = new PermissionListField(context,getString("permissions"));
+        permissionField = new PermissionListField(context, treeFactory, getString("permissions"));
         editPanel.add(permissionField.getComponent(),"1,10,3,10");
         permissionField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));

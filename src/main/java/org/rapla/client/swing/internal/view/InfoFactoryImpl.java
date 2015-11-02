@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.swing.AbstractAction;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.internal.AllocatableInfoUI;
 import org.rapla.client.internal.AppointmentInfoUI;
@@ -49,9 +50,13 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
@@ -63,13 +68,15 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
 
 {
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
+    private final IOInterface ioInterface;
 
     @Inject
-    public InfoFactoryImpl(RaplaContext sm) {
+    public InfoFactoryImpl(RaplaContext sm, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
         super( sm);
+        this.ioInterface = ioInterface;
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(sm) );
-        views.put( Reservation.TYPE, new ReservationInfoUI(sm) );
-        views.put( Appointment.TYPE, new AppointmentInfoUI(sm, getService(AppointmentFormater.class)) );
+        views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
+        views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
         views.put( Allocatable.TYPE, new AllocatableInfoUI(sm) );
         views.put( User.TYPE, new UserInfoUI(sm) );
         views.put( Period.TYPE, new PeriodInfoUI(sm) );
@@ -167,8 +174,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
                 	//String htmlText = viewTable.htmlView.getText();
                 	//InfoSelection selection = new InfoSelection( htmlText, plainText );
                 	StringSelection selection = new StringSelection( plainText );
-                	IOInterface printTool = getService(IOInterface.class);
-                    printTool.setContents( selection, null);
+                	ioInterface.setContents( selection, null);
                 } catch (Exception ex) {
                     showException(ex, dlg);
                 }
@@ -179,11 +185,10 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
             
             public void actionPerformed(ActionEvent e) {
                 try {
-                    IOInterface printTool = getService(IOInterface.class);
                     HTMLView htmlView = viewTable.htmlView;
-					printTool.print(
+                    ioInterface.print(
                             new ComponentPrinter(htmlView, htmlView.getPreferredSize())
-                            , printTool.defaultPage()
+                            , ioInterface.defaultPage()
                             ,true
                     );
                 } catch (Exception ex) {

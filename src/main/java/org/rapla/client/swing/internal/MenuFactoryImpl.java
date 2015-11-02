@@ -27,6 +27,7 @@ import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
 
+import org.rapla.client.ClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
@@ -80,14 +81,16 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final PermissionController permissionController;
     private final CalendarSelectionModel model;
+    private final ClientService service;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = permissionController;
         this.model = model;
+        this.service = service;
     }
 
 
@@ -490,7 +493,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
 
     private UserAction newUserAction(PopupContext popupContext) {
-        UserAction action = new UserAction(getContext(),popupContext);
+        UserAction action = new UserAction(getContext(),popupContext, service);
         return action;
     }
 

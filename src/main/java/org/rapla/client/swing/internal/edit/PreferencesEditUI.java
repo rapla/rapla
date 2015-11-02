@@ -73,12 +73,14 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private final Set<Provider<UserOptionPanel>> userOptionPanel;
     private final Set<Provider<SystemOptionPanel>> systemOptionPanel;
     private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
+    private final TreeFactory treeFactory;
 
     /** called during initialization to create the info component */
     @Inject
-    public PreferencesEditUI(RaplaContext context, Set<Provider<UserOptionPanel>> userOptionPanel, Set<Provider<SystemOptionPanel>> systemOptionPanel,
+    public PreferencesEditUI(RaplaContext context, TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel, Set<Provider<SystemOptionPanel>> systemOptionPanel,
             Map<String, Provider<PluginOptionPanel>> pluginOptionPanel) {
         super(context);
+        this.treeFactory = treeFactory;
         this.userOptionPanel = userOptionPanel;
         this.systemOptionPanel = systemOptionPanel;
         this.pluginOptionPanel = pluginOptionPanel;
@@ -107,8 +109,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
         };
         content.setBorder(emptyLineBorder);
         jPanelContainer.add(content, BorderLayout.CENTER);
-        jPanelSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
-        jPanelSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
+        jPanelSelection.getTree().setCellRenderer(treeFactory.createRenderer());
+        jPanelSelection.setToolTipRenderer(treeFactory.createTreeToolTipRenderer());
         container.setPreferredSize(new Dimension(700, 550));
         content.setLeftComponent(jPanelSelection);
         content.setRightComponent(container);
@@ -118,10 +120,6 @@ public class PreferencesEditUI extends RaplaGUIComponent
         jPanelSelection.setBorder(selectionBorder);
         content.setResizeWeight(0.4);
         jPanelSelection.addChangeListener(this);
-    }
-
-    final private TreeFactory getTreeFactory() {
-        return getService(TreeFactory.class);
     }
 
 	protected Collection<OptionPanel> getPluginOptions() throws RaplaException {
@@ -195,12 +193,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
         if ( preferences.getOwner() == null) {
             messages.setText(getString("restart_options"));
         }
-        TreeFactory f = getTreeFactory();
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
         if ( preferences.getOwner() != null) {
             Collection<? extends Named> elements = getUserOptions();
             for (Named element:elements) {
-                root.add(  f.newNamedNode( element));
+                root.add(  treeFactory.newNamedNode( element));
             }
         } else {
             {
@@ -208,7 +205,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
                 DefaultMutableTreeNode adminRoot = new DefaultMutableTreeNode("admin-options");
                 for (Named element:elements) {
 
-                    adminRoot.add( f.newNamedNode( element));
+                    adminRoot.add( treeFactory.newNamedNode( element));
                 }
                 root.add( adminRoot );
             }
@@ -217,7 +214,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
                 DefaultMutableTreeNode pluginRoot = new DefaultMutableTreeNode("plugins");
                 for (Named element:elements)
                 {
-                    pluginRoot.add( f.newNamedNode( element));
+                    pluginRoot.add( treeFactory.newNamedNode( element));
                 }
                 root.add( pluginRoot );
             }

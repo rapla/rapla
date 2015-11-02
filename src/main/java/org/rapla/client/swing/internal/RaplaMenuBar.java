@@ -28,6 +28,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
@@ -37,6 +38,7 @@ import org.rapla.client.swing.internal.edit.TemplateEdit;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.storage.dbrm.RestartServer;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -58,6 +60,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
     final JMenuItem undo;
     JMenuItem templateEdit;
     private final EditController editController;
+    private final TreeFactory treeFactory;
+    private final CalendarSelectionModel calendarSelectionModel;
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -69,12 +73,16 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<ExportMenuExtension> exportMenuExt,
             EditController editController,
             CalendarSelectionModel model,
-            ClientService clientService
+            ClientService clientService,
+            TreeFactory treeFactory,
+            RestartServer restartServerService
     )
             throws RaplaException
     {
         super(context);
         this.editController = editController;
+        this.calendarSelectionModel = model;
+        this.treeFactory = treeFactory;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -138,7 +146,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null).setSwitchToUser()));
+            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService).setSwitchToUser()));
             adminMenu.add(switchBack);
         }
 
@@ -146,13 +154,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (server && isAdmin())
         {
             JMenuItem restartServer = new JMenuItem();
-            restartServer.setAction(new ActionWrapper(new RestartServerAction(getContext())));
+            restartServer.setAction(new ActionWrapper(new RestartServerAction(getContext(), restartServerService)));
             adminMenu.add(restartServer);
         }
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(getContext())));
+        restart.setAction(new ActionWrapper(new RestartRaplaAction(getContext(), clientService)));
         systemMenu.add(restart);
 
         systemMenu.setMnemonic('F');
@@ -312,7 +320,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = new TemplateEdit(getContext());
+                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel);
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }

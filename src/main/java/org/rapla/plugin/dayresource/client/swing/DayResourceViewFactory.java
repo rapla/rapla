@@ -20,12 +20,14 @@ import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
@@ -37,20 +39,24 @@ public class DayResourceViewFactory  implements SwingViewFactory
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
     private final Provider<DateRenderer> dateRendererProvider;
+    private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaClipboard clipboard;
     @Inject
-    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider )
+    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard )
     {
         this.i18n = i18n;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider);
+        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider, calendarSelectionModel, clipboard);
     }
 
     public String getViewId()

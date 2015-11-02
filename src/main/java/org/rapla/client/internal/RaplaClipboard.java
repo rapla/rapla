@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -28,7 +29,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
 
-
+@Singleton
 public class RaplaClipboard implements ModificationListener
 {
     private Appointment appointment;

@@ -42,6 +42,7 @@ import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -58,6 +59,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.abstractcalendar.DateChooserPanel;
@@ -82,13 +84,17 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final Set<ObjectMenuFactory> objectMenuFactories;
     protected final MenuFactory menuFactory;
     protected final Provider<DateRenderer> dateRendererProvider;
+    protected final CalendarSelectionModel calendarSelectionModel;
+    protected final RaplaClipboard clipboard;
 
-    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider) throws RaplaException {
+    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard) throws RaplaException {
         super( sm);
         this.model = model;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
+        this.calendarSelectionModel = calendarSelectionModel;
+        this.clipboard = clipboard;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -137,7 +143,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory);
+        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard);
     }
 
     public JComponent getDateSelection()   {

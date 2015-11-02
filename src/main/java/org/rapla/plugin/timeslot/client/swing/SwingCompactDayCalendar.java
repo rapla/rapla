@@ -28,7 +28,9 @@ import java.util.Set;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
@@ -43,22 +45,24 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.PopupContext;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
-import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
 public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 {
 	List<Timeslot> timeslots;
+    private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, null);
+    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard);
+        this.timeslotProvider = timeslotProvider;
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException 
@@ -133,7 +137,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{
@@ -291,7 +295,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     protected RaplaBuilder createBuilder() throws RaplaException 
     {
     	RaplaBuilder builder = super.createBuilder();
-    	timeslots = getService(TimeslotProvider.class).getTimeslots();
+    	timeslots = timeslotProvider.getTimeslots();
     	List<Integer> startTimes = new ArrayList<Integer>();
     	for (Timeslot slot:timeslots) {
     		 startTimes.add( slot.getMinuteOfDay());

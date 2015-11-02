@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
+import javax.inject.Provider;
 import javax.swing.SwingUtilities;
 
 import org.rapla.framework.RaplaContext;
@@ -20,12 +21,15 @@ import org.rapla.storage.dbrm.RestartServer;
 
 
 public class RestartServerAction extends RaplaAction {
+    private final RestartServer service;
+
     /**
      * @param sm
      * @throws RaplaException
      */
-    public RestartServerAction(RaplaContext sm) throws RaplaException {
+    public RestartServerAction(RaplaContext sm, final RestartServer service) throws RaplaException {
         super(sm);
+        this.service = service;
         putValue(NAME,getString("restart_server"));
         putValue(SMALL_ICON,getIcon("icon.restart"));
     }
@@ -34,7 +38,6 @@ public class RestartServerAction extends RaplaAction {
         SwingUtilities.invokeLater( new Runnable() {
             public void run() {
                 try {
-                	RestartServer service = getService( RestartServer.class);
 					service.restartServer();
                 } catch (RaplaException ex) {
                     getLogger().error("Error restarting ", ex);

@@ -78,9 +78,12 @@ public class CategoryEditUI extends RaplaGUIComponent
     Listener listener = new Listener();
     TreeCellRenderer iconRenderer;
 
+    private final TreeFactory treeFactory;
+
     @Inject
-    public CategoryEditUI(RaplaContext context)  {
+    public CategoryEditUI(RaplaContext context, TreeFactory treeFactory)  {
         super( context);
+        this.treeFactory = treeFactory;
         detailPanel = new CategoryDetail(context);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
@@ -102,7 +105,7 @@ public class CategoryEditUI extends RaplaGUIComponent
         removeButton.addActionListener(listener);
         moveUpButton.addActionListener( listener );
         moveDownButton.addActionListener( listener );
-        iconRenderer = getTreeFactory().createRenderer();
+        iconRenderer = treeFactory.createRenderer();
         treeEdit.getTree().setCellRenderer(  new TreeCellRenderer() {
             public Component getTreeCellRendererComponent(JTree tree
                     ,Object value
@@ -133,11 +136,6 @@ public class CategoryEditUI extends RaplaGUIComponent
         detailPanel.addChangeListener( listener );
         detailPanel.setEditKeys( editKeys );
     }
-
-    final private TreeFactory getTreeFactory() {
-        return getService(TreeFactory.class);
-    }
-
 
     class Listener implements ActionListener,ChangeListener {
         public void actionPerformed(ActionEvent evt) {
@@ -362,7 +360,7 @@ public class CategoryEditUI extends RaplaGUIComponent
     }
 
     private void updateModel()  {
-        model = getTreeFactory().createModel( rootCategory);
+        model = treeFactory.createModel( rootCategory);
         RaplaTree.exchangeTreeModel( model , treeEdit.getTree() );
     }
 

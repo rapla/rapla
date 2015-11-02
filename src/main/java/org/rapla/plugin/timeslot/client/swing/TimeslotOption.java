@@ -50,6 +50,7 @@ public class TimeslotOption extends DefaultPluginOption
 {
 	JPanel list = new JPanel();
 	List<Timeslot> timeslots;
+    private final TimeslotProvider timeslotProvider;
 	
     class TimeslotRow
     {
@@ -81,9 +82,10 @@ public class TimeslotOption extends DefaultPluginOption
     }
 
 	@Inject
-    public TimeslotOption(RaplaContext sm) 
+    public TimeslotOption(RaplaContext sm, TimeslotProvider timeslotProvider) 
     {
         super(sm);
+        this.timeslotProvider = timeslotProvider;
     }
 
     List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();
@@ -201,13 +203,10 @@ public class TimeslotOption extends DefaultPluginOption
     		newConfig.addChild( conf);
     	}
       	
-      	if ( getContext().has(TimeslotProvider.class))
-      	{
-	      	try {
-				getService(TimeslotProvider.class).update( newConfig);
-			} catch (ParseDateException e) {
-				getLogger().error(e.getMessage());
-			}
+      	try {
+			timeslotProvider.update(newConfig);
+		} catch (ParseDateException e) {
+			getLogger().error(e.getMessage());
       	}
     }
 

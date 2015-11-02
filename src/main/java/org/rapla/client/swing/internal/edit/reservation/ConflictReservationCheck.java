@@ -48,10 +48,12 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
 {
     
     private final PermissionController permissionController;
+    private final TreeFactory treeFactory;
     @Inject
-    public ConflictReservationCheck(RaplaContext context) {
+    public ConflictReservationCheck(RaplaContext context, PermissionController permissionController, TreeFactory treeFactory) {
         super(context);
-        permissionController = getService(PermissionController.class);
+        this.permissionController = permissionController;
+        this.treeFactory = treeFactory;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -122,7 +124,6 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
     }
 
     private JComponent getConflictPanel(Collection<Conflict> conflicts) throws RaplaException {
-    	TreeFactory treeFactory = getService(TreeFactory.class);
 		TreeModel treeModel = treeFactory.createConflictModel( conflicts);
     	RaplaTree treeSelection = new RaplaTree();
     	JTree tree = treeSelection.getTree();

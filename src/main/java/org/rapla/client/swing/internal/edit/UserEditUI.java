@@ -72,13 +72,15 @@ public class UserEditUI  extends AbstractEditUI<User> {
     TextField emailField;
     AdminBooleanField adminField;
     GroupListField groupField;
+    private final TreeFactory treeFactory;
     /**
      * @param context
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context) throws RaplaException {
+    public UserEditUI(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
         super(context);
+        this.treeFactory = treeFactory;
         List<EditField> fields = new ArrayList<EditField>();
         usernameField = new TextField(context,getString("username"));
         fields.add(usernameField);
@@ -90,7 +92,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(emailField);
         adminField = new AdminBooleanField(context,getString("admin"),getUser());
         fields.add(adminField);
-        groupField = new GroupListField(context);
+        groupField = new GroupListField(context, treeFactory);
         fields.add(groupField);
         setFields(fields);
     }
@@ -231,7 +233,6 @@ public class UserEditUI  extends AbstractEditUI<User> {
             final DialogUI dialog;
             RaplaTree treeSelection = new RaplaTree();
             treeSelection.setMultiSelect(true);
-            final TreeFactory treeFactory = getTreeFactory();
             treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
 
             final DynamicType[] personTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
@@ -305,13 +306,6 @@ public class UserEditUI  extends AbstractEditUI<User> {
 
     }
     
-    final private TreeFactory getTreeFactory() {
-        return getService(TreeFactory.class);
-    }
-
-    
- 
- 	
     @Override
     public void mapToObjects() throws RaplaException {
         if (objectList == null)

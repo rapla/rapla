@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -48,6 +49,8 @@ import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.internal.ReservationControllerImpl;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
@@ -56,8 +59,12 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
@@ -128,15 +135,17 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
+    private final Provider<ReservationController> reservationControllerProvider;
 
     @Inject
-    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories) throws RaplaException {
+    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater, PermissionController permissionController, Provider<ReservationController>  reservationControllerProvider, MenuFactory menuFactory) throws RaplaException {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
+        this.reservationControllerProvider = reservationControllerProvider;
         commandHistory = new CommandHistory();
-        reservationInfo = new ReservationInfoEdit(sm, commandHistory);
-        appointmentEdit = new AppointmentListEdit(sm, commandHistory);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories);
+        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController);
+        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, commandHistory);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -282,7 +291,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     }
 
     final private ReservationControllerImpl getPrivateReservationController() {
-        return (ReservationControllerImpl) getService(ReservationController.class);
+        return (ReservationControllerImpl) reservationControllerProvider.get();
     }
 
     

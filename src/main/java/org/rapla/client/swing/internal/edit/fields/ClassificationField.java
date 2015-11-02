@@ -42,6 +42,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -68,9 +69,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	
     boolean mainTabSelected = true;
     
-	public ClassificationField(RaplaContext context)  {
+	public ClassificationField(RaplaContext context, TreeFactory treeFactory)  {
 		super(context);
-		editUI = new ClassificationEditUI(context);
+		editUI = new ClassificationEditUI(context, treeFactory);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override

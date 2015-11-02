@@ -25,12 +25,17 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
 import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
@@ -48,13 +53,12 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     AllocatableSelection allocatableSelection;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories) throws RaplaException {
+    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Reservation>(context);
-        permissionField = new PermissionListField(context,getString("permissions"));
+        classificationField = new ClassificationField<Reservation>(context, treeFactory);
+        permissionField = new PermissionListField(context,treeFactory,getString("permissions"));
 
-        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories
-        )
+        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };
