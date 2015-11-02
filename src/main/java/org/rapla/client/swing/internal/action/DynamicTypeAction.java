@@ -11,15 +11,16 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
+import org.rapla.client.PopupContext;
+import org.rapla.client.swing.EditController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.PopupContext;
 
 public class DynamicTypeAction extends  RaplaObjectAction {
 	String classificationType;
-    public DynamicTypeAction(RaplaContext sm,PopupContext popupContext)  {
-        super(sm,popupContext);
+    public DynamicTypeAction(RaplaContext sm,PopupContext popupContext, EditController editController)  {
+        super(sm, popupContext, editController);
     }
 
     public DynamicTypeAction setNewClassificationType(String classificationType) {
@@ -30,7 +31,7 @@ public class DynamicTypeAction extends  RaplaObjectAction {
 
     protected void newEntity() throws RaplaException {
         DynamicType newDynamicType = getModification().newDynamicType(classificationType);
-        getEditController().edit(newDynamicType, getPopupContext());
+        editController.edit(newDynamicType, getPopupContext());
     }
 
 

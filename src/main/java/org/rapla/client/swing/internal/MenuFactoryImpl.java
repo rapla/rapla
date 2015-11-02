@@ -31,6 +31,7 @@ import org.rapla.client.ClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -82,15 +83,17 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final PermissionController permissionController;
     private final CalendarSelectionModel model;
     private final ClientService service;
+    private final EditController editController;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = permissionController;
         this.model = model;
         this.service = service;
+        this.editController = editController;
     }
 
 
@@ -480,20 +483,20 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(),popupContext);
+        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController);
         return action;
     }
 
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(),popupContext);
+        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController);
         return action;
     }
 
 
 
     private UserAction newUserAction(PopupContext popupContext) {
-        UserAction action = new UserAction(getContext(),popupContext, service);
+        UserAction action = new UserAction(getContext(),popupContext, service, editController);
         return action;
     }
 

@@ -146,7 +146,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService).setSwitchToUser()));
+            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController).setSwitchToUser()));
             adminMenu.add(switchBack);
         }
 

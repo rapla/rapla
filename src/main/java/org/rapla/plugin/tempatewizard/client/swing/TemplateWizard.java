@@ -50,10 +50,12 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 {
 	Collection<Allocatable> templateNames;
     private final CalendarSelectionModel model;
+    private final EditController editController;
 	@Inject
-    public TemplateWizard(RaplaContext context, CalendarSelectionModel model) throws RaplaException{
+    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController) throws RaplaException{
         super(context);
         this.model = model;
+        this.editController = editController;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -302,8 +304,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 			final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
 			String title = null;
 			EditController.EditCallback<List<Reservation>> callback = null;
-			getEditController().edit(list, title, popupContext, callback);
- 
+			editController.edit(list, title, popupContext, callback);
 		}
 		catch (RaplaException ex)
 		{

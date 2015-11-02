@@ -41,6 +41,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -72,7 +73,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final JPanel left;
     boolean listenersDisabled = false;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController) throws RaplaException {
         super(context);
 
         calendarContainer = new MultiCalendarView(context, model, this,treeFactory, factoryList);
@@ -92,7 +93,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory);
+        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)

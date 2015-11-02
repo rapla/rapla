@@ -18,6 +18,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.rapla.client.PopupContext;
+import org.rapla.client.internal.DeleteUndo;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -32,11 +37,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.PopupContext;
-import org.rapla.client.internal.DeleteUndo;
-import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.toolkit.DialogUI;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -57,13 +57,15 @@ public class RaplaObjectAction extends RaplaAction {
     List<Entity<?>> objectList;
     protected RaplaType raplaType;
     private final PopupContext popupContext;
+    protected final EditController editController;
 
-    public RaplaObjectAction(RaplaContext sm) {
-        this(sm,null);
+    public RaplaObjectAction(RaplaContext sm, EditController editController) {
+        this(sm, null, editController);
     }
 
-    public RaplaObjectAction(RaplaContext sm,PopupContext popupContext)  {
+    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController)  {
         super( sm);
+        this.editController = editController;
         this.popupContext = popupContext;
     }
     
@@ -259,15 +261,15 @@ public class RaplaObjectAction extends RaplaAction {
 	protected  void newEntity() throws RaplaException {
     	if ( Category.TYPE.is( raplaType )) {
         	Category category = (Category)object;
-			getEditController().editNew(category, popupContext );
+			editController.editNew(category, popupContext );
         } else {
 			Entity<? extends Entity> obj = newEntity(raplaType);
-	        getEditController().edit(obj, popupContext);
+	        editController.edit(obj, popupContext);
         }
     }
 
 	protected void edit() throws RaplaException {
-        getEditController().edit(object, popupContext);
+        editController.edit(object, popupContext);
     }
 
     protected void delete() throws RaplaException {
@@ -328,7 +330,7 @@ public class RaplaObjectAction extends RaplaAction {
         String title = null;
         List<Entity> list = new ArrayList<>(objectList);
         EditController.EditCallback<List<Entity>> callback = null;
-        getEditController().edit(list,title, popupContext, callback);
+        editController.edit(list,title, popupContext, callback);
  	}
 
 	public void setPerson(boolean b) {

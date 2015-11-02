@@ -325,10 +325,6 @@ public class RaplaGUIComponent extends RaplaComponent
         return getService( RaplaImages.class);
     }
     
-    public EditController getEditController() {
-        return  getService( EditController.class );
-    }
-
     private ReservationController getReservationController() {
         return getService( ReservationController.class );
     }

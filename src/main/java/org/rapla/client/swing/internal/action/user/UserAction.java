@@ -27,11 +27,13 @@ public class UserAction extends RaplaAction {
     int type = NEW;
     private final PopupContext popupContext;
     private final ClientService service;
+    private final EditController editController;
 
-    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service) {
+    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service, EditController editController) {
         super(sm);
         this.popupContext = popupContext;
         this.service = service;
+        this.editController = editController;
     }
 
     public UserAction setNew() {
@@ -87,7 +89,7 @@ public class UserAction extends RaplaAction {
                 User newUser = getModification().newUser();
                 // create new user dialog and show password dialog if user is created successfully
                 final String title = getString("user");
-                getEditController().edit(newUser, title,popupContext,new EditController.EditCallback<User>()
+                editController.edit(newUser, title,popupContext,new EditController.EditCallback<User>()
                     {
                             @Override public void onFailure(Throwable e)
                             {

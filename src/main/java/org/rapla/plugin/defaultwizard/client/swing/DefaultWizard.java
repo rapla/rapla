@@ -50,11 +50,13 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
 	private final PermissionController permissionController;
     private final CalendarModel model;
+    private final EditController editController;
     @Inject
-	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model){
+	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController){
         super(sm);
         this.permissionController = permissionController;
         this.model = model;
+        this.editController = editController;
     }
     
     public String getId() {
@@ -140,7 +142,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
             String title = null;
             final PopupContext swingPopupContext = new SwingPopupContext(getMainComponent(), null);
             EditController.EditCallback<List<Reservation>> callback = null;
-            getEditController().edit(list, title, swingPopupContext,callback);
+            editController.edit(list, title, swingPopupContext,callback);
 		}
 		catch (RaplaException ex)
 		{

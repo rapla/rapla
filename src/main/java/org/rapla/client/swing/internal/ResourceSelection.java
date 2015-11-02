@@ -45,6 +45,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -74,14 +75,16 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     protected FilterEditButton filterEdit;
     private final TreeFactory treeFactory;
     private final MenuFactory menuFactory;
+    private final EditController editController;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController) throws RaplaException {
         super(context);
 
         this.model = model;
         this.view = view;
         this.treeFactory = treeFactory;
         this.menuFactory = menuFactory;
+        this.editController = editController;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -237,7 +240,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null));
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController);
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);
