@@ -93,14 +93,17 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     private final CalendarSelectionModel calendarSelectionModel;
     private final MenuFactory menuFactory;
 
+    private final ReservationController reservationController;
+
     public SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel) throws RaplaException
+            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController) throws RaplaException
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.calendarSelectionModel = calendarSelectionModel;
+        this.reservationController = reservationController;
         cutListener.setCut(true);
         table = new JTable()
         {
@@ -307,7 +310,6 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                     Point p = null;
                     PopupContext popupContext = createPopupContext(table, p);
                     Collection<Allocatable> contextAllocatables = model.getMarkedAllocatables();
-                    ReservationController reservationController = getReservationController();
                     if (isCut())
                     {
                         reservationController.cutAppointment(appointmentBlock, popupContext, contextAllocatables);
@@ -387,7 +389,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 }
                 try
                 {
-                    getReservationController().edit(block);
+                    reservationController.edit(block);
                 }
                 catch (RaplaException ex)
                 {
@@ -465,18 +467,18 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         if (appointmentBlock != null)
         {
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController);
                 action.setDelete(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController);
                 action.setView(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
 
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController);
                 action.setEdit(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
@@ -484,7 +486,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         else if (selection != null && selection.size() > 0)
         {
-            AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel);
+            AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController);
             action.setDeleteSelection(selection);
             menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
         }

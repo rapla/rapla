@@ -10,6 +10,7 @@ import java.util.*;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.calendarview.Block;
@@ -46,9 +47,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final MenuFactory menuFactory;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
+    private final ReservationController reservationController;
 
     public RaplaCalendarViewListener(RaplaContext context, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController)
     {
         super(context);
         this.model = model;
@@ -57,6 +59,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.menuFactory = menuFactory;
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
+        this.reservationController = reservationController;
     }
 
     protected CalendarModel getModel()
@@ -110,7 +113,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
                 if (canUserAllocateSomething(getUser()))
                 {
-                    ReservationEdit[] editWindows = getReservationController().getEditWindows();
+                    ReservationEdit[] editWindows = reservationController.getEditWindows();
                     if (editWindows.length > 0)
                     {
                         RaplaMenu addItem = new RaplaMenu("add_to");
@@ -173,7 +176,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
             if (!canModify(b.getReservation()))
                 return;
             final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
-            getReservationController().edit(appointmentBlock);
+            reservationController.edit(appointmentBlock);
         }
         catch (RaplaException ex)
         {
@@ -193,7 +196,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         {
             long offset = newStart.getTime() - b.getStart().getTime();
             Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
-            getReservationController().moveAppointment(b.getAppointmentBlock(), newStartWithOffset, createPopupContext(calendarContainerComponent, p),
+            reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, createPopupContext(calendarContainerComponent, p),
                     keepTime);
         }
         catch (RaplaException ex)
@@ -217,7 +220,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         SwingRaplaBlock b = (SwingRaplaBlock) block;
         try
         {
-            getReservationController().resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, createPopupContext(calendarContainerComponent, p),
+            reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, createPopupContext(calendarContainerComponent, p),
                     keepTime);
         }
         catch (RaplaException ex)
@@ -302,7 +305,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel);
+        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController);
         menu.add(action);
         return action;
     }

@@ -54,11 +54,13 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     EditComponent<T, JComponent> ui;
     private Collection<T> originals;
     private final EditControllerImpl editController;
+    private final ReservationController reservationController;
 
-    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController)
+    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController)
     {
         super(sm);
         this.ui = ui;
+        this.reservationController = reservationController;
         this.editController = (EditControllerImpl)editController;
     }
 
@@ -110,7 +112,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 
         final AbortAction action = new AbortAction(callback);
         dlg.setAbortAction(action);
-        dlg.getButton(0).setAction(new SaveAction(callback));
+        dlg.getButton(0).setAction(new SaveAction(callback, reservationController));
         dlg.getButton(1).setAction(action);
         dlg.getButton(0).setIcon(getIcon("icon.save"));
         dlg.getButton(1).setIcon(getIcon("icon.cancel"));
@@ -169,9 +171,11 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     class SaveAction extends AbstractAction
     {
         private static final long serialVersionUID = 1L;
+        private final ReservationController reservationController;
 
-        public SaveAction(EditController.EditCallback<List<T>> callback)
+        public SaveAction(EditController.EditCallback<List<T>> callback, ReservationController reservationController)
         {
+            this.reservationController = reservationController;
         }
 
         public void actionPerformed(ActionEvent evt)
@@ -210,7 +214,6 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                     @SuppressWarnings("unchecked") Collection<Reservation> castToReservation = (Collection<Reservation>) saveObjects;
                     Component mainComponent = getMainComponent();
                     PopupContext popupContext = createPopupContext(mainComponent, null);
-                    ReservationController reservationController = getReservationController();
                     if (!reservationController.save(castToReservation, popupContext))
                     {
                         return;

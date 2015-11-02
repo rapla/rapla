@@ -27,6 +27,7 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -57,8 +58,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard);
+    public SwingCompactCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
         this.timeslotProvider = timeslotProvider;
     }
   
@@ -148,7 +149,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
    
     
      protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController) {
         	/** override to change the allocatable to the row that is selected */
             @Override
             public void selectionChanged(Date start,Date end) 

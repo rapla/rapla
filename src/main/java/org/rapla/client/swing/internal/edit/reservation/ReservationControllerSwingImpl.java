@@ -44,7 +44,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     
     @Inject
     public ReservationControllerSwingImpl(RaplaContext context,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images, PermissionController permissionController)
+            AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images, PermissionController permissionController)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
         this.infoFactory = infoFactory;

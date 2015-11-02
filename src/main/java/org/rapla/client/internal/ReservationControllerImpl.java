@@ -12,12 +12,28 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.EventCheck;
-import org.rapla.client.ReservationController;
 import org.rapla.client.internal.HTMLInfo.Row;
 import org.rapla.client.internal.RaplaClipboard.CopyType;
 import org.rapla.components.util.DateTools;
@@ -27,7 +43,12 @@ import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -37,10 +58,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.*;
-
 public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
     /** We store all open ReservationEditWindows with their reservationId
@@ -49,7 +66,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
      */
     Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
     AppointmentFormater appointmentFormater;
-    ReservationEditFactory editProvider;
+    Provider<ReservationEditFactory> editProvider;
     ClientFacade facade;
     private RaplaLocale raplaLocale;
     private Logger logger;
@@ -57,7 +74,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
     private final PermissionController permissionController;
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ReservationEditFactory editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -127,7 +144,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         if (c != null) {
             c.toFront();
         } else {
-            c = editProvider.create(reservation, appointmentBlock);
+            c = editProvider.get().create(reservation, appointmentBlock);
             // only is allowed to exchange allocations
         }
         return c;

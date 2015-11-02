@@ -25,6 +25,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -51,9 +52,9 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
     private final RaplaResources resources;
 
     public SwingWeekCalendar(RaplaContext context, CalendarModel model, boolean editable, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
-            RaplaResources resources, final Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard) throws RaplaException
+            RaplaResources resources, final Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController) throws RaplaException
     {
-        super( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard);
+        super( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
         this.resources = resources;
     }
 

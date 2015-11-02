@@ -1,5 +1,10 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
@@ -17,11 +22,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.util.Set;
-
 @DefaultImplementation(of= ReservationEditFactory.class,context = InjectionContext.swing)
 @Singleton
 public class ReservationEditFactoryImpl implements ReservationEditFactory
@@ -33,12 +33,12 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final CalendarSelectionModel calendarSelectionModel;
     private final AppointmentFormater appointmentFormater;
     private final PermissionController permissionController;
-    private final Provider<ReservationController> reservationControllerProvider;
+    private final ReservationController reservationController;
     private final MenuFactory menuFactory;
     @Inject
     public ReservationEditFactoryImpl(Set<AppointmentStatusFactory> list, RaplaContext context, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, Provider<ReservationController> reservationControllerProvider, MenuFactory menuFactory)
+            PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory)
     {
         this.list = list;
         this.context = context;
@@ -47,13 +47,13 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
         this.calendarSelectionModel = calendarSelectionModel;
         this.appointmentFormater = appointmentFormater;
         this.permissionController = permissionController;
-        this.reservationControllerProvider = reservationControllerProvider;
+        this.reservationController = reservationController;
         this.menuFactory = menuFactory;
     }
     
     public ReservationEdit create(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
-        ReservationEditImpl edit = new ReservationEditImpl(context, list, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, reservationControllerProvider, menuFactory);
+        ReservationEditImpl edit = new ReservationEditImpl(context, list, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, reservationController, menuFactory);
         edit.editReservation(reservation, appointmentBlock);
         return edit;
     }

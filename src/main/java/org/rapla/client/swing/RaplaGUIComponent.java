@@ -103,7 +103,8 @@ public class RaplaGUIComponent extends RaplaComponent
 	public AppointmentAction createAppointmentAction(Component component, Point p)
 	{
 	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
-	    return new AppointmentAction(getContext(),createPopupContext(component, p), model);
+	    final ReservationController reservationController = getReservationController();
+	    return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController);
 	}
 	
 
@@ -328,7 +329,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return  getService( EditController.class );
     }
 
-    protected ReservationController getReservationController() {
+    private ReservationController getReservationController() {
         return getService( ReservationController.class );
     }
 

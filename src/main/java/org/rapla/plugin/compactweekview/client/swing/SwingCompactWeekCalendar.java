@@ -29,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.client.PopupContext;
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -56,8 +57,8 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard);
+    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
@@ -108,7 +109,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 
     
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController) {
             
             @Override
             public void selectionChanged(Date start, Date end) {
@@ -172,7 +173,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 					 {
 						 AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
 						 PopupContext popupContext = createPopupContext(getMainComponent(),p);
-						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart,popupContext);
+						 reservationController.exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart,popupContext);
 					 }
 					 else
 					 {

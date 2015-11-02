@@ -30,7 +30,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.gwtjsonrpc.client.impl.ser.SimpleProvider;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
-import org.rapla.plugin.periodcopy.client.swing.CopyDialog_Factory;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
 
 /** listens for allocation changes */

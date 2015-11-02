@@ -48,12 +48,14 @@ public class AppointmentAction extends RaplaAction {
 //    ReservationWizard wizard;
 	private Collection<Allocatable> contextAllocatables;
 	private final CalendarSelectionModel calendarSelectionModel;
+    private final ReservationController reservationController;
     
-	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel)
+	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController)
     {
         super( context);
         this.popupContext = popupContext;
         this.calendarSelectionModel = calendarSelectionModel;
+        this.reservationController = reservationController;
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -199,6 +201,11 @@ public class AppointmentAction extends RaplaAction {
         } catch (RaplaException ex) {
             showError(ex,popupContext);
         } // end of try-catch
+    }
+    
+    protected ReservationController getReservationController()
+    {
+        return reservationController;
     }
 
     private void deleteSelection() throws RaplaException {

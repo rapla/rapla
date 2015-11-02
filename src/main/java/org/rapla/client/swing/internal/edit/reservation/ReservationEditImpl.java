@@ -135,16 +135,16 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
-    private final Provider<ReservationController> reservationControllerProvider;
+    private final ReservationControllerImpl reservationController;
 
     @Inject
-    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater, PermissionController permissionController, Provider<ReservationController>  reservationControllerProvider, MenuFactory menuFactory) throws RaplaException {
+    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater, PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory) throws RaplaException {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
-        this.reservationControllerProvider = reservationControllerProvider;
+        this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
         reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController);
-        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, commandHistory);
+        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory);
         allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
@@ -291,7 +291,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     }
 
     final private ReservationControllerImpl getPrivateReservationController() {
-        return (ReservationControllerImpl) reservationControllerProvider.get();
+        return reservationController;
     }
 
     

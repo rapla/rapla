@@ -29,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.client.PopupContext;
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -60,8 +61,8 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard);
+    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController);
         this.timeslotProvider = timeslotProvider;
     }
     
@@ -137,7 +138,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{
@@ -271,7 +272,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 					 {
 						 AppointmentBlock appointmentBlock= raplaBlock.getAppointmentBlock();
 						 PopupContext popupContext = createPopupContext(getMainComponent(),p);
-						 getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart, popupContext);
+						 reservationController.exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart, popupContext);
 					 }
 					 else
 					 {

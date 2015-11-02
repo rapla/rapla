@@ -19,6 +19,7 @@ import javax.inject.Provider;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -41,8 +42,9 @@ public class DayResourceViewFactory  implements SwingViewFactory
     private final Provider<DateRenderer> dateRendererProvider;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
+    private final ReservationController reservationController;
     @Inject
-    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard )
+    public DayResourceViewFactory(RaplaResources i18n, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController )
     {
         this.i18n = i18n;
         this.objectMenuFactories = objectMenuFactories;
@@ -50,13 +52,14 @@ public class DayResourceViewFactory  implements SwingViewFactory
         this.dateRendererProvider = dateRendererProvider;
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
+        this.reservationController = reservationController;
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider, calendarSelectionModel, clipboard);
+        return new SwingDayResourceCalendar( context, model, editable, objectMenuFactories, menuFactory, i18n, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
     }
 
     public String getViewId()

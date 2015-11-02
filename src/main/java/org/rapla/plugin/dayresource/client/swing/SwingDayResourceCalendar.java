@@ -46,6 +46,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.ReservationController;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -55,9 +56,9 @@ import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
-    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,RaplaClipboard clipboard) throws RaplaException
+    public SwingDayResourceCalendar( RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,RaplaClipboard clipboard, ReservationController reservationController) throws RaplaException
     {
-        super( sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard);
+        super( sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
     }
     
   
@@ -145,7 +146,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard) {
+    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()
@@ -185,7 +186,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
 					 {
 						 AppointmentBlock appointmentBlock= raplaBlock.getAppointmentBlock();
 						 PopupContext popupContext = createPopupContext(getMainComponent(),p);
-                         getReservationController().exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc,newStart, popupContext);
+                         reservationController.exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc,newStart, popupContext);
 					 }
 					 else
 					 {

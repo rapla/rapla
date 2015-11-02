@@ -15,6 +15,7 @@ package org.rapla.plugin.timeslot.client.swing;
 import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.facade.CalendarModel;
@@ -40,9 +41,10 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final TimeslotProvider timeslotProvider;
+    private final ReservationController reservationController;
 
     @Inject
-    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider)
+    public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController)
     {
         super( context );
         this.objectMenuFactories = objectMenuFactories;
@@ -50,11 +52,12 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
         this.timeslotProvider = timeslotProvider;
+        this.reservationController = reservationController;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider);
+        return new SwingCompactDayCalendar( context, model,editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider, reservationController);
     }
 
     public String getViewId()

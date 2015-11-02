@@ -17,6 +17,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
@@ -36,21 +37,23 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
     private final Set<ReservationSummaryExtension> reservationSummaryExtensions;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MenuFactory menuFactory;
+    private final ReservationController reservationController;
     @Inject
     public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory )
+            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController )
     {
         super( context );
         this.reservationSummaryExtensions = reservationSummaryExtensions;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
+        this.reservationController = reservationController;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController);
     }
 
     public String getViewId()

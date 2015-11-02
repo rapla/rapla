@@ -41,6 +41,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.MenuFactory;
@@ -86,8 +87,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final Provider<DateRenderer> dateRendererProvider;
     protected final CalendarSelectionModel calendarSelectionModel;
     protected final RaplaClipboard clipboard;
+    protected final ReservationController reservationController;
 
-    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard) throws RaplaException {
+    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController) throws RaplaException {
         super( sm);
         this.model = model;
         this.objectMenuFactories = objectMenuFactories;
@@ -95,6 +97,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         this.dateRendererProvider = dateRendererProvider;
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
+        this.reservationController = reservationController;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -143,7 +146,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard);
+        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController);
     }
 
     public JComponent getDateSelection()   {

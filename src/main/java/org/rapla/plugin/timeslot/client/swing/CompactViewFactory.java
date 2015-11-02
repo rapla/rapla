@@ -16,6 +16,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.swing.Icon;
 
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.facade.CalendarModel;
@@ -44,10 +45,11 @@ public class CompactViewFactory extends RaplaComponent implements SwingViewFacto
     private final Provider<DateRenderer> dateRendererProvider;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
+    private final ReservationController reservationController;
 
     @Inject
     public CompactViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider,
-            Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard)
+            Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -56,11 +58,12 @@ public class CompactViewFactory extends RaplaComponent implements SwingViewFacto
         this.dateRendererProvider = dateRendererProvider;
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
+        this.reservationController = reservationController;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactCalendar(context, model, editable, objectMenuFactories, menuFactory, timeslotProvider, dateRendererProvider, calendarSelectionModel, clipboard);
+        return new SwingCompactCalendar(context, model, editable, objectMenuFactories, menuFactory, timeslotProvider, dateRendererProvider, calendarSelectionModel, clipboard, reservationController);
     }
 
     public String getViewId()

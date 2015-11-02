@@ -57,6 +57,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.client.ReservationController;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -86,11 +87,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
+    private final ReservationController reservationController;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, CommandHistory commandHistory)
+	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory)
 			throws RaplaException {
 		super(sm);
         this.appointmentFormater = appointmentFormater;
+        this.reservationController = reservationController;
 
 		this.commandHistory = commandHistory;
         appointmentController = new AppointmentController(sm, commandHistory);
@@ -380,7 +383,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			final Appointment toClone = (Appointment)sortedModel.getElementAt( index);
              //= appointments[index];
 			// this allows each appointment as template
-			appointment = getReservationController().copyAppointment(toClone);
+			appointment = reservationController.copyAppointment(toClone);
 			Repeating repeating = appointment.getRepeating();
 			if (repeating != null) {
 				repeating.clearExceptions();
