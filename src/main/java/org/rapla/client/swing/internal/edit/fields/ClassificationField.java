@@ -46,6 +46,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
 import org.rapla.components.calendar.DateRenderer;
@@ -72,10 +73,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     boolean mainTabSelected = true;
     private final RaplaImages raplaImages;
     
-	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer)  {
+	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)  {
 		super(context);
         this.raplaImages = raplaImages;
-		editUI = new ClassificationEditUI(context, treeFactory, raplaImages, dateRenderer);
+		editUI = new ClassificationEditUI(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override

@@ -23,6 +23,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 public class PasswordChangeAction extends RaplaAction {
@@ -30,11 +31,13 @@ public class PasswordChangeAction extends RaplaAction {
     Object object;
     PopupContext popupContext;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
-    public PasswordChangeAction(RaplaContext context,PopupContext popupContext, RaplaImages raplaImages) {
+    public PasswordChangeAction(RaplaContext context,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super( context);
         this.popupContext = popupContext;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         putValue(NAME, getI18n().format("change.format",getString("password")));
     }
 
@@ -86,7 +89,7 @@ public class PasswordChangeAction extends RaplaAction {
         public void start() throws RaplaException
         {
             ui = new PasswordChangeUI(getContext(),showOld);
-            dlg = DialogUI.create(getContext(),popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
+            dlg = dialogUiFactory.create(popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
             dlg.getButton(0).setAction(this);

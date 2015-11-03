@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -63,6 +64,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 /** Default GUI for editing multiple appointments.*/
@@ -92,7 +94,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer)
+	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
 			throws RaplaException {
 		super(sm);
         this.appointmentFormater = appointmentFormater;
@@ -100,7 +102,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
-        appointmentController = new AppointmentController(sm, commandHistory, raplaImages, dateRenderer);
+        appointmentController = new AppointmentController(sm, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
         listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
         freeButtonNext.setText(getString("appointment.search_free"));
@@ -112,6 +114,11 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         listEdit.setColoredBackgroundEnabled(true);
         listEdit.setMoveButtonVisible(false);
         listEdit.getList().setCellRenderer(new AppointmentCellRenderer());
+    }
+	
+	public void setCommandHistory(CommandHistory commandHistory)
+    {
+        this.commandHistory = commandHistory;
     }
     
     public RaplaListEdit<Appointment> getListEdit()

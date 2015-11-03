@@ -37,6 +37,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
@@ -50,13 +51,15 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     private final PeriodCopyResources i18n;
     private final Provider<CopyDialog> copyDialogProvider;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 	@Inject
-    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages)  {
+    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
         super(sm);
         //menu.insert( new RaplaSeparator("info_end"));
         this.i18n = i18n;
         this.copyDialogProvider = copyDialogProvider;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
 
         label =i18n.getString(id) ;
 		item = new RaplaMenuItem(id);
@@ -89,7 +92,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
         try {
             final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
-            final DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, useCase.getComponent(), buttons);
+            final DialogUI dialog = dialogUiFactory.create( getMainComponent(),true, useCase.getComponent(), buttons);
             dialog.setTitle( label);
             dialog.setSize( 600, 500);
             dialog.getButton( 0).setIcon( raplaImages.getIconFromKey("icon.abort"));

@@ -57,6 +57,7 @@ import org.rapla.client.swing.internal.edit.TemplateEdit;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -90,6 +91,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -105,7 +107,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
             TreeFactory treeFactory,
             RestartServer restartServerService,
             RaplaImages raplaImages, 
-            DateRenderer dateRenderer
+            DateRenderer dateRenderer,
+            DialogUiFactory dialogUiFactory
     )
             throws RaplaException
     {
@@ -115,6 +118,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -178,7 +182,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController, raplaImages).setSwitchToUser()));
+            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController, raplaImages, dialogUiFactory).setSwitchToUser()));
             adminMenu.add(switchBack);
         }
 
@@ -352,7 +356,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages, dateRenderer);
+                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages, dateRenderer, dialogUiFactory);
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }
@@ -503,7 +507,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     String body = completeText.toString();
                     infoText.setBody(body);
                     final JScrollPane content = new JScrollPane(infoText);
-                    DialogUI dialog = DialogUI.create(getContext(), getMainComponent(), false, content, new String[] { getString("ok") });
+                    DialogUI dialog = dialogUiFactory.create(getMainComponent(), false, content, new String[] { getString("ok") });
                     dialog.setTitle(name);
                     dialog.setSize(780, 580);
                     dialog.startNoPack();
@@ -561,7 +565,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     // the following creates the dialog that pops up, when we click
                     // on the license entry within the help section of the menu bar
                     // we call the create Method of the DialogUI class and give it all necessary things
-                    DialogUI dialog = DialogUI.create(getContext(), getMainComponent(), true, new JScrollPane((Component) welcomeField.getComponent()),
+                    DialogUI dialog = dialogUiFactory.create(getMainComponent(), true, new JScrollPane((Component) welcomeField.getComponent()),
                             new String[] { getString("ok") });
                     // setting the dialog's title
                     dialog.setTitle(name);

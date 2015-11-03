@@ -15,6 +15,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 
 @Extension(id=RightsReportMenu.PLUGIN_ID, provides=AdminMenuExtension.class)
@@ -24,11 +25,13 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	private RaplaMenuItem report;
 	final String name = getString("user") +"/"+ getString("groups") + " "+getString("report") ;
     private final Provider<RaplaRightsReport> rightsReportProvider;
+    private final DialogUiFactory dialogUiFactory;
 
 	@Inject
-	public RightsReportMenu(RaplaContext context, Provider<RaplaRightsReport> rightsReportProvider, RaplaImages raplaImages) {
+	public RightsReportMenu(RaplaContext context, Provider<RaplaRightsReport> rightsReportProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
 		super(context);
         this.rightsReportProvider = rightsReportProvider;
+        this.dialogUiFactory = dialogUiFactory;
 		
 		report = new RaplaMenuItem("report");
 		report.getMenuElement().setText( name);
@@ -51,7 +54,7 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
         try {
            
         	RaplaRightsReport report = rightsReportProvider.get();
-            DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, report.getComponent(), new String[] {getString("ok")});
+            DialogUI dialog = dialogUiFactory.create( getMainComponent(),true, report.getComponent(), new String[] {getString("ok")});
             dialog.setTitle( name);
             dialog.setSize( 650, 550);
             report.show();

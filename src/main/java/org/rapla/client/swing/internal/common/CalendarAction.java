@@ -24,6 +24,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -39,14 +40,16 @@ public class CalendarAction extends RaplaAction {
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 
-    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, TreeFactory treeFactory, Set<SwingViewFactory> swingViewFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, TreeFactory treeFactory, Set<SwingViewFactory> swingViewFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
     {
         super( sm);
         this.treeFactory = treeFactory;
         this.swingViewFactory = swingViewFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
         putValue(NAME,getString("calendar"));
@@ -85,7 +88,7 @@ public class CalendarAction extends RaplaAction {
             model.setReservationFilter( null);
             frame.setTitle("Rapla "  + getString("calendar"));
 
-            MultiCalendarView cal = new MultiCalendarView(getContext(),model, treeFactory, raplaImages, dateRenderer, swingViewFactory, false);
+            MultiCalendarView cal = new MultiCalendarView(getContext(),model, treeFactory, raplaImages, dateRenderer, dialogUiFactory, swingViewFactory, false);
             frame.setContentPane(cal.getComponent());
             frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;

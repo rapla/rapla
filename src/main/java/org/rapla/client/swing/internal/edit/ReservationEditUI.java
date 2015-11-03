@@ -43,9 +43,11 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
 import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
+import org.rapla.client.swing.internal.edit.fields.PermissionField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -54,25 +56,25 @@ import org.rapla.inject.Extension;
 @Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Reservation")
 public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
-    PermissionListField permissionField;
+    PermissionListField permissionListField;
     AllocatableSelection allocatableSelection;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Reservation>(context, treeFactory, raplaImages, dateRenderer);
-        permissionField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"));
+        classificationField = new ClassificationField<Reservation>(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
+        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
 
-        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer)
+        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer, dialogUiFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };
         final JComponent holdBackConflictPanel = allocatableSelection.getComponent();
         holdBackConflictPanel.setPreferredSize( new Dimension(600, 200));
-        permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
-        permissionField.setDefaultAccessLevel( Permission.READ );
+        this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        this.permissionListField.setDefaultAccessLevel( Permission.READ );
 
-        final JComponent permissionPanel = permissionField.getComponent();
+        final JComponent permissionPanel = permissionListField.getComponent();
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
         editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
@@ -140,7 +142,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     public void mapToObjects() throws RaplaException {
         classificationField.mapTo( objectList);
-        permissionField.mapTo( objectList);
+        permissionListField.mapTo( objectList);
         if ( getName(objectList).length() == 0)
             throw new RaplaException(getString("error.no_name"));
 
@@ -148,7 +150,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
-        permissionField.mapFrom( objectList);
+        permissionListField.mapFrom( objectList);
         boolean canAdmin = true;
         for ( Reservation event:objectList)
         {
@@ -159,7 +161,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         }
         if ( canAdmin == false)
         {
-            permissionField.getComponent().setVisible( false );
+            permissionListField.getComponent().setVisible( false );
         }
         Collection<Reservation> originalReservation = Collections.emptyList();
         allocatableSelection.setReservation( objectList, originalReservation);

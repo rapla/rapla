@@ -40,6 +40,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.storage.StorageOperator;
 
 public class TemplateEdit extends RaplaGUIComponent 
@@ -51,18 +52,19 @@ public class TemplateEdit extends RaplaGUIComponent
     Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     
-    
-    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages, dateRenderer)
+        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
-                permissionField.setPermissionLevels(  Permission.READ,  Permission.EDIT);
+                permissionListField.setPermissionLevels(  Permission.READ,  Permission.EDIT);
                 classificationField.setScrollingAlwaysEnabled( false);
             }
             
@@ -197,8 +199,7 @@ public class TemplateEdit extends RaplaGUIComponent
             Collection<String> options = new ArrayList<String>();
             options.add( getString("apply") );
             options.add(getString("cancel"));
-            final DialogUI dlg = DialogUI.create(
-                    getContext(),
+            final DialogUI dlg = dialogUiFactory.create(
                     parentComponent,true,templateList.getComponent(),
                     options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));

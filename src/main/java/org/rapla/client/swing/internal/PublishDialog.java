@@ -38,6 +38,7 @@ import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 /**
  */
@@ -47,12 +48,14 @@ public class PublishDialog extends RaplaGUIComponent
 	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
 
-    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages) throws RaplaException
+    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super(sm);
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         if ( !isModifyPreferencesAllowed() ) {
         	this.extensionFactories = Collections.emptySet();
         }
@@ -131,8 +134,7 @@ public class PublishDialog extends RaplaGUIComponent
         
         updateAddress(filename, extensions);
         
-        final DialogUI dlg = DialogUI.create(
-                getContext(),
+        final DialogUI dlg = dialogUiFactory.create(
                                         parentComponent,false,panel,
                                        new String[] {
                                            getString("save")

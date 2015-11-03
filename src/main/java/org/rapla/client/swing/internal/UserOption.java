@@ -36,6 +36,7 @@ import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -64,10 +65,13 @@ public class UserOption extends RaplaGUIComponent
 	Preferences preferences;
 
     private final RaplaImages raplaImages;
+
+    private final DialogUiFactory dialogUiFactory;
 	@Inject
-    public UserOption(RaplaContext sm, RaplaImages raplaImages) {
+    public UserOption(RaplaContext sm, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(sm);
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     
@@ -101,7 +105,7 @@ public class UserOption extends RaplaGUIComponent
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null), raplaImages);
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null), raplaImages, dialogUiFactory);
         User user = getUser();
 		passwordChangeAction.changeObject(user);
         changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));
@@ -200,7 +204,7 @@ public class UserOption extends RaplaGUIComponent
 					inputSurname.setText( user.getName());
 					layout.setRows(1);
 				}
-				DialogUI dlg = DialogUI.create(getContext(),getComponent(),true,test,new String[] {getString("save"),getString("abort")});
+				DialogUI dlg = dialogUiFactory.create(getComponent(),true,test,new String[] {getString("save"),getString("abort")});
 				dlg.start();
 				if (dlg.getSelectedIndex() == 0)
 				{
@@ -247,7 +251,7 @@ public class UserOption extends RaplaGUIComponent
 			content.add(validate);
 			addCopyPaste(emailField);
 			addCopyPaste(codeField);
-			dlg = DialogUI.create(getContext(),getComponent(),true,content,new String[] {getString("save"),getString("abort")});
+			dlg = dialogUiFactory.create(getComponent(),true,content,new String[] {getString("save"),getString("abort")});
 			validate.setAction(new EmailChangeActionA(dlg));
 			validate.setEnabled(false);
 			dlg.setDefault(0);

@@ -17,11 +17,16 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -42,24 +47,13 @@ public class WizardDialog extends DialogUI {
         ,WizardPanel.FINISH
     };
 
-    public static WizardDialog createWizard(RaplaContext sm,Component owner,boolean modal) throws RaplaException {
-        WizardDialog dlg;
-        Component topLevel = getOwnerWindow(owner);
-        if (topLevel instanceof Dialog)
-            dlg = new WizardDialog(sm,(Dialog)topLevel);
-        else
-            dlg = new WizardDialog(sm,(Frame)topLevel);
-        dlg.init(modal);
-        return dlg;
+
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Dialog owner) throws RaplaException {
+        super(i18n, raplaImages, bundleManager, frameList,owner);
     }
 
-
-    protected WizardDialog(RaplaContext sm,Dialog owner) throws RaplaException {
-        super(sm,owner);
-    }
-
-    protected WizardDialog(RaplaContext sm,Frame owner) throws RaplaException {
-        super(sm,owner);
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Frame owner) throws RaplaException {
+        super(i18n, raplaImages, bundleManager, frameList,owner);
     }
 
     private void init(boolean modal) {
@@ -136,5 +130,34 @@ public class WizardDialog extends DialogUI {
         if (defaultAction.equals(WizardPanel.FINISH))
             setDefault(3);
     }
+    
+    @Singleton
+    public static class WizardDialogFactory
+    {
+        private final RaplaResources i18n;
+        private final RaplaImages raplaImages;
+        private final BundleManager bundleManager;
+        private final FrameControllerList frameList;
 
+        @Inject
+        public WizardDialogFactory(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList)
+        {
+            this.i18n = i18n;
+            this.raplaImages = raplaImages;
+            this.bundleManager = bundleManager;
+            this.frameList = frameList;
+        }
+
+        public WizardDialog createWizard(Component owner, boolean modal) throws RaplaException
+        {
+            WizardDialog dlg;
+            Component topLevel = getOwnerWindow(owner);
+            if (topLevel instanceof Dialog)
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager, frameList, (Dialog) topLevel);
+            else
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager, frameList, (Frame) topLevel);
+            dlg.init(modal);
+            return dlg;
+        }
+    }
 }

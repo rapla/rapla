@@ -24,6 +24,14 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.ClassificationField;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -32,13 +40,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
-import org.rapla.client.swing.internal.edit.fields.ClassificationField;
-import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -48,18 +49,18 @@ import org.rapla.inject.Extension;
 @Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Allocatable")
 public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     ClassificationField<Allocatable> classificationField;
-    PermissionListField permissionField;
+    PermissionListField permissionListField;
     BooleanField holdBackConflictsField;
     final JComponent holdBackConflictPanel;
 
     @Inject
-    public AllocatableEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    public AllocatableEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Allocatable>(context, treeFactory, raplaImages, dateRenderer);
-        permissionField = new PermissionListField(context,treeFactory, raplaImages, dateRenderer, getString("permissions"));
+        classificationField = new ClassificationField<Allocatable>(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
+        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
         
-        permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
-        final JComponent permissionPanel = permissionField.getComponent();
+        this.permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+        final JComponent permissionPanel = permissionListField.getComponent();
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
         holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
@@ -97,7 +98,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 
     public void mapToObjects() throws RaplaException {
         classificationField.mapTo( objectList);
-        permissionField.mapTo( objectList);
+        permissionListField.mapTo( objectList);
         if ( getName(objectList).length() == 0)
             throw new RaplaException(getString("error.no_name"));
         for ( Allocatable alloc:objectList)
@@ -118,7 +119,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
-        permissionField.mapFrom( objectList);
+        permissionListField.mapFrom( objectList);
         Set<Boolean> values = new HashSet<Boolean>();
         boolean canAdmin = true;
         boolean allPermissions = true;
@@ -143,15 +144,15 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         }
         if ( canAdmin == false)
         {
-            permissionField.getComponent().setVisible( false );
+            permissionListField.getComponent().setVisible( false );
         }
         if ( allPermissions)
         {
-            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         }
         else
         {
-            permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ );
+            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ );
         }
         if ( internal)
         {

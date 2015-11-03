@@ -38,6 +38,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
@@ -71,12 +72,14 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
     private final IOInterface ioInterface;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(RaplaContext sm, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, RaplaImages raplaImages) {
+    public InfoFactoryImpl(RaplaContext sm, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super( sm);
         this.ioInterface = ioInterface;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(sm) );
         views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
         views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
@@ -142,7 +145,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     {
        
         final ViewTable<T> viewTable = new ViewTable<T>(getContext(), this, ioInterface);
-        final DialogUI dlg = DialogUI.create(getContext(),popupContext
+        final DialogUI dlg = dialogUiFactory.create(popupContext
                                        ,false
                                        ,viewTable.getComponent()
                                        ,new String[] {
@@ -207,7 +210,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     public DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getContext(), this, ioInterface);
         DeleteInfoUI deleteView = new DeleteInfoUI(getContext());
-        DialogUI dlg = DialogUI.create(getContext(),popupContext
+        DialogUI dlg = dialogUiFactory.create(popupContext
                                        ,true
                                        ,viewTable.getComponent()
                                        ,new String[] {

@@ -20,6 +20,7 @@ import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 public class UserAction extends RaplaAction {
     Object object;
@@ -30,13 +31,15 @@ public class UserAction extends RaplaAction {
     private final ClientService service;
     private final EditController editController;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
-    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service, EditController editController, RaplaImages raplaImages) {
+    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(sm);
         this.popupContext = popupContext;
         this.service = service;
         this.editController = editController;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public UserAction setNew() {
@@ -128,7 +131,7 @@ public class UserAction extends RaplaAction {
     }
 
     public void changePassword(User user,boolean showOld) throws RaplaException{
-        new PasswordChangeAction(getContext(),popupContext, raplaImages).changePassword( user, showOld);
+        new PasswordChangeAction(getContext(),popupContext, raplaImages, dialogUiFactory).changePassword( user, showOld);
     }
 
 }

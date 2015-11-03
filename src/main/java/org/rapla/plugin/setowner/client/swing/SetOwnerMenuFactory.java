@@ -40,6 +40,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.Extension;
@@ -54,11 +55,13 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     TreeFactory treeFactory;
     RaplaGUIComponent old;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context, RaplaImages raplaImages)
+    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         this.setOwnerI18n = setOwnerI18n;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         old = new RaplaGUIComponent(context);
         this.i18n = i18n;
         this.facade = facade;
@@ -185,9 +188,8 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         treeSelection.exchangeTreeModel(new DefaultTreeModel(userRoot));
         treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
         treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-        dialog = DialogUI.create(
-                old.getContext()
-                ,old.getMainComponent()
+        dialog = dialogUiFactory.create(
+                old.getMainComponent()
                 ,true
                 ,treeSelection
                 ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});

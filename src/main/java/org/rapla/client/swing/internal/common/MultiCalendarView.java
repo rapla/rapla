@@ -49,6 +49,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.CalendarEditor;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -119,14 +120,14 @@ public class MultiCalendarView extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     
     public MultiCalendarView(RaplaContext context, CalendarSelectionModel model, CalendarEditor calendarEditor, TreeFactory treeFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, final Set<SwingViewFactory> factoryList) throws RaplaException
+            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList) throws RaplaException
     {
-    	this( context, model, treeFactory, raplaImages, dateRenderer, factoryList, true);
+    	this( context, model, treeFactory, raplaImages, dateRenderer, dialogUiFactory, factoryList, true);
     	this.calendarEditor = calendarEditor;
     }
     
 
-	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
+	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
         super( context);
         this.raplaImages = raplaImages;
         this.factoryList = factoryList;
@@ -153,7 +154,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         addTypeChooser( ids );
         header.setLayout(new BorderLayout());
         header.add( viewChooser, BorderLayout.CENTER);
-        filter = new FilterEditButton(context, treeFactory, model, this, raplaImages, dateRenderer, false);
+        filter = new FilterEditButton(context, treeFactory, model, this, raplaImages, dateRenderer, dialogUiFactory, false);
         final JPanel filterContainer = new JPanel();
         filterContainer.setLayout( new BorderLayout());
         filterContainer.add(filter.getButton(), BorderLayout.WEST);

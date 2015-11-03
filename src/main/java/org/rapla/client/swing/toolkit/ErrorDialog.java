@@ -29,15 +29,18 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 final public class ErrorDialog extends RaplaComponent {
     RaplaImages images;
+    private final DialogUiFactory dialogUiFactory;
     /**
      * @param context
      * @throws RaplaException
      */
-    public ErrorDialog(RaplaContext context) throws RaplaException {
+    public ErrorDialog(RaplaContext context, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
+        this.dialogUiFactory = dialogUiFactory;
         images = context.lookup( RaplaImages.class);
     }
 
@@ -167,7 +170,7 @@ final public class ErrorDialog extends RaplaComponent {
                 }
             }
 
-            DialogUI dlg = DialogUI.create(getContext(),owner,true,component, new String[] {getI18n().getString("ok")});
+            DialogUI dlg = dialogUiFactory.create(owner,true,component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
             dlg.setIcon(images.getIconFromKey("icon.error"));
             dlg.start();
@@ -179,7 +182,7 @@ final public class ErrorDialog extends RaplaComponent {
 
     private void showDialog(String title, String message,Component owner) {
         try {
-            DialogUI dlg = DialogUI.create(getContext(),owner,true,title,message);
+            DialogUI dlg = dialogUiFactory.create(owner,true,title,message);
             dlg.setIcon(images.getIconFromKey("icon.error"));
             dlg.start();
         } catch (Exception ex2) {
@@ -189,7 +192,7 @@ final public class ErrorDialog extends RaplaComponent {
 
     public void showWarningDialog(String title, String message,Component owner) {
         try {
-            DialogUI dlg = DialogUI.create(getContext(),owner,true,title,message);
+            DialogUI dlg = dialogUiFactory.create(owner,true,title,message);
             dlg.setIcon(images.getIconFromKey("icon.warning"));
             dlg.start();
         } catch (Exception ex2) {

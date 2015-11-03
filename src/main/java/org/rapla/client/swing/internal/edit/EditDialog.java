@@ -25,8 +25,17 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.internal.SaveUndo;
+import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -39,14 +48,6 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DisposingTool;
 
 public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable
 {
@@ -57,13 +58,15 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     private final EditControllerImpl editController;
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
-    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages)
+    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         super(sm);
         this.ui = ui;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         this.editController = (EditControllerImpl)editController;
     }
 
@@ -110,8 +113,8 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         panel.add(editComponent, BorderLayout.CENTER);
         editComponent.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
         boolean modal = false;
-        dlg = DialogUI
-                .create(getContext(), SwingPopupContext.extractParent(popupContext), modal, panel, new String[] { getString("save"), getString("cancel") });
+        dlg = dialogUiFactory
+                .create(SwingPopupContext.extractParent(popupContext), modal, panel, new String[] { getString("save"), getString("cancel") });
 
         final AbortAction action = new AbortAction(callback);
         dlg.setAbortAction(action);
@@ -164,7 +167,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         {
             getLogger().warn("Object has been changed outside.");
             final Component component = (Component) ui.getComponent();
-            DialogUI warning = DialogUI.create(getContext(), component, true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
+            DialogUI warning = dialogUiFactory.create(component, true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
             warning.start();
             getPrivateEditDialog().removeEditDialog(this);
             dlg.close();

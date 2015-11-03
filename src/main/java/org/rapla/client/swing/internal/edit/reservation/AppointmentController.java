@@ -80,6 +80,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.PeriodChooser;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.MonthChooser;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -124,12 +125,15 @@ public class AppointmentController extends RaplaGUIComponent
 
     private final DateRenderer dateRenderer;
 
-	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer)
+    private final DialogUiFactory dialogUiFactory;
+
+	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
 			throws RaplaException {
 		super(sm);
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
 		panel.setLayout(new BorderLayout());
 		panel.add(repeatingType, BorderLayout.NORTH);
 		repeatingType.setLayout(new BoxLayout(repeatingType, BoxLayout.X_AXIS));
@@ -1153,7 +1157,7 @@ public class AppointmentController extends RaplaGUIComponent
 			exceptionEditor.initialize();
 			exceptionEditor.mapFromAppointment();
 			exceptionEditor.getComponent().setBorder( BorderFactory.createEmptyBorder(5, 5, 5, 5));
-			exceptionDlg = DialogUI.create(getContext(), getComponent(), true,
+			exceptionDlg = dialogUiFactory.create(getComponent(), true,
 					exceptionEditor.getComponent(),
 					new String[] { getString("close") });
 			exceptionDlg.setTitle(getString("appointment.exceptions"));

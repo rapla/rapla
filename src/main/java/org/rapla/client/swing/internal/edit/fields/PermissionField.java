@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -36,6 +37,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
@@ -69,7 +71,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    @Inject
+	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super( context);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
@@ -97,7 +100,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(getContext(), treeFactory, raplaImages, rootCategory);
+                CategorySelectField field= new CategorySelectField(getContext(), treeFactory, raplaImages, dialogUiFactory, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {

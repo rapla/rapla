@@ -50,6 +50,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
@@ -80,11 +81,11 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
         this.raplaImages = raplaImages;
 
-        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, dateRenderer, factoryList);
+        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, dateRenderer, dialogUiFactory, factoryList);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 
@@ -101,7 +102,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateRenderer);
+        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)
@@ -207,7 +208,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JPanel jp = new JPanel();
         jp.setLayout( new BorderLayout());
         
-        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection, model, extensionFactories, infoFactory, raplaImages);
+        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection, model, extensionFactories, infoFactory, raplaImages, dialogUiFactory);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
         templatePanel.setVisible( false);
         jp.add( templatePanel, BorderLayout.WEST );

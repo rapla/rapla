@@ -30,6 +30,19 @@ import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.common.NamedListCellRenderer;
+import org.rapla.client.swing.internal.edit.ClassificationEditUI;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.edit.fields.SetGetField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.EmptyLineBorder;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaListComboBox;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
@@ -49,18 +62,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.internal.edit.ClassificationEditUI;
-import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.client.swing.internal.edit.fields.SetGetField;
-import org.rapla.client.swing.toolkit.EmptyLineBorder;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaListComboBox;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 /**
    Gui for editing the {@link Classification} of a reservation. Same as
    {@link org.rapla.client.swing.internal.edit.ClassificationEditUI}. It will only layout the
@@ -74,7 +75,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 {
     JPanel content = new JPanel();
     MyClassificationEditUI editUI;
-    PermissionListField permissionField;
+    PermissionListField permissionListField;
     
     private final PermissionController permissionController;
     private Classification classification;
@@ -98,20 +99,20 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
 
-    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory, TreeFactory treeFactory, PermissionController permissionController, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException  
+    public ReservationInfoEdit(RaplaContext context, TreeFactory treeFactory, PermissionController permissionController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException  
     {
         super( context);
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         typeSelector = new RaplaListComboBox( context );
         this.commandHistory = commandHistory;
-        editUI = new MyClassificationEditUI(context, treeFactory, raplaImages);
-        permissionField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, "permissions");
-        permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
-        permissionField.setDefaultAccessLevel( Permission.READ );
+        editUI = new MyClassificationEditUI(context, treeFactory, raplaImages, dialogUiFactory);
+        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, "permissions", dialogUiFactory);
+        this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        this.permissionListField.setDefaultAccessLevel( Permission.READ );
         this.permissionController = permissionController;
     }
-
+    
     public JComponent getComponent() {
         return content;
     }
@@ -177,13 +178,13 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         header.setPreferredSize( new Dimension(600, Math.max(dim.height, dim3.height)));
         content.add( header,BorderLayout.NORTH);
         content.add( editUI.getComponent(),BorderLayout.CENTER);
-        content.add( permissionField.getComponent(), BorderLayout.SOUTH);
+        content.add( permissionListField.getComponent(), BorderLayout.SOUTH);
         updatePermissionFieldVisiblity();
         //tabSelector.setVisible( hasSecondTab( classification ) || selectedView == TabSelected.Info);
         editUI.setObjects( Collections.singletonList(classification ));
-        permissionField.mapFrom( Collections.singletonList((Reservation) classifiable ));
+        permissionListField.mapFrom( Collections.singletonList((Reservation) classifiable ));
         
-        permissionField.addChangeListener( this);
+        permissionListField.addChangeListener( this);
         editUI.getComponent().validate();
         typeSelector.addActionListener( this );
         tabSelector.addActionListener( this );
@@ -195,7 +196,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     private void updatePermissionFieldVisiblity() {
         boolean canAdmin = canAdmin((Reservation)classifiable);
-        permissionField.getComponent().setVisible( selectedView == TabSelected.Info && canAdmin);
+        permissionListField.getComponent().setVisible( selectedView == TabSelected.Info && canAdmin);
     }
 
     private String getInfoButton() {
@@ -261,7 +262,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
     
     public void stateChanged(ChangeEvent evt) {
-        if ( evt.getSource() != permissionField)
+        if ( evt.getSource() != permissionListField)
         {
             return;
         }
@@ -269,7 +270,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         try {
             PermissionContainer permissionContainer = (PermissionContainer)classifiable;
             Collection<Permission> oldPermissions = permissionContainer.getPermissionList();
-            Collection<Permission> newPermissions = permissionField.getPermissionList();
+            Collection<Permission> newPermissions = permissionListField.getPermissionList();
             if ( PermissionContainer.Util.differs( oldPermissions, newPermissions)) {
                 UndoPermissionChange permissionChange = new UndoPermissionChange(oldPermissions, newPermissions);
                 commandHistory.storeAndExecute(permissionChange);   
@@ -385,8 +386,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
-        public MyClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
-            super(sm, treeFactory, raplaImages, dateRenderer);
+        public MyClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+            super(sm, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
         }
 
         public int getHeight()
@@ -646,7 +647,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 	        
 	        classifiable.setClassification(classification);
 	        editUI.setObjects(Collections.singletonList(classification));
-	        permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+	        permissionListField.getComponent().setVisible( selectedView == TabSelected.Info);
 	        //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
 	        editUI.layout();
 	        editUI.getComponent().invalidate();
@@ -706,9 +707,9 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 }
                 else
                 {
-                    permissionField.mapFrom( Collections.singletonList( permissionContainer));
+                    permissionListField.mapFrom( Collections.singletonList( permissionContainer));
                 }
-                permissionField.getComponent().setVisible( selectedView == TabSelected.Info);
+                permissionListField.getComponent().setVisible( selectedView == TabSelected.Info);
                 
                 
                 //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);

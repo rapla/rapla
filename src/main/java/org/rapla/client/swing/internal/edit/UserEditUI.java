@@ -50,6 +50,7 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.Extension;
@@ -75,15 +76,17 @@ public class UserEditUI  extends AbstractEditUI<User> {
     GroupListField groupField;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     /**
      * @param context
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
+    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         List<EditField> fields = new ArrayList<EditField>();
         usernameField = new TextField(context,getString("username"));
         fields.add(usernameField);
@@ -95,7 +98,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(emailField);
         adminField = new AdminBooleanField(context,getString("admin"),getUser());
         fields.add(adminField);
-        groupField = new GroupListField(context, treeFactory, raplaImages);
+        groupField = new GroupListField(context, treeFactory, raplaImages, dialogUiFactory);
         fields.add(groupField);
         setFields(fields);
     }
@@ -269,9 +272,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             
            
-            dialog = DialogUI.create(
-                    getContext()
-                    ,getComponent()
+            dialog = dialogUiFactory.create(
+                    getComponent()
                     ,true
                     ,treeSelection
                     ,new String[] { getString("apply"),getString("cancel")});

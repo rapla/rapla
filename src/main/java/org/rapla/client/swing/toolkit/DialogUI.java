@@ -24,6 +24,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -71,7 +73,6 @@ public class DialogUI extends JDialog
     private ServerBundleManager localeSelector;
     private RaplaResources i18n;
 
-    private RaplaContext context = null;
     private ButtonListener buttonListener = new ButtonListener();
     private boolean m_modal;
 
@@ -99,14 +100,14 @@ public class DialogUI extends JDialog
         return new String[] {"OK"};
     }
 
-    public DialogUI(RaplaContext sm, Dialog parent) throws RaplaException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaException {
         super( parent );
-        service( sm );
+        service( i18n, images, bundleManager, frameList );
     }
 
-    public DialogUI(RaplaContext sm, Frame parent) throws RaplaException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Frame parent) throws RaplaException {
         super( parent );
-        service( sm );
+        service( i18n, images, bundleManager, frameList );
     }
 
     /** @see #getInvisibleSharedFrame */
@@ -130,39 +131,6 @@ public class DialogUI extends JDialog
             FrameControllerList.centerWindowOnScreen(invisibleSharedFrame);
         }
         return invisibleSharedFrame;
-    }
-
-    public static DialogUI create(RaplaContext context,PopupContext popupContext,boolean modal,JComponent content,String[] options) throws RaplaException {
-        return create(context, SwingPopupContext.extractParent(popupContext), modal, content, options);
-    }
-    
-    public static DialogUI create(RaplaContext context,Component owner,boolean modal,JComponent content,String[] options) throws RaplaException {
-        DialogUI dlg;
-        Component topLevel = getOwnerWindow(owner);
-        if ( topLevel instanceof Dialog)
-            dlg = new DialogUI(context,(Dialog)topLevel);
-        else
-            dlg = new DialogUI(context,(Frame)topLevel);
-
-        dlg.parent = owner;
-        dlg.init(modal,content,options);
-        return dlg;
-    }
-
-
-    public static DialogUI create(RaplaContext context,Component owner,boolean modal,String title,String text,String[] options) throws RaplaException {
-        DialogUI dlg= create(context,owner,modal,new JPanel(),options);
-        dlg.createMessagePanel(text);
-        dlg.setTitle(title);
-        return dlg;
-    }
-
-
-
-    public static DialogUI create(RaplaContext context,Component owner,boolean modal,String title,String text) throws RaplaException {
-        DialogUI dlg = create(context,owner,modal,title,text,getDefaultOptions());
-        dlg.useDefaultOptions = true;
-        return dlg;
     }
 
     public RaplaButton getButton(int index) {
@@ -256,11 +224,9 @@ public class DialogUI extends JDialog
     }
 
 
-    private void service(RaplaContext context) throws RaplaException {
-        this.context = context;
-    	i18n = context.lookup(RaplaResources.class);
-    	RaplaImages images = context.lookup(RaplaImages.class); 
-    	if (useDefaultOptions) {
+    private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList) throws RaplaException {
+        this.i18n = i18n;
+        if (useDefaultOptions) {
     		if (buttons.length > 1) {
     			getButton(0).setText(i18n.getString("ok"));
     			getButton(1).setIcon(images.getIconFromKey("icon.abort"));
@@ -269,18 +235,14 @@ public class DialogUI extends JDialog
     			getButton(0).setText(i18n.getString("ok"));
     		}
     	}
-    	localeSelector =(ServerBundleManager) context.lookup( BundleManager.class);
+    	localeSelector = (ServerBundleManager) bundleManager;
     	localeSelector.addLocaleChangeListener(this);
-    	frameList =  context.lookup(FrameControllerList.class);
+    	this.frameList = frameList;
     	frameList.add(this);
     }
 
     protected I18nBundle getI18n() {
         return i18n;
-    }
-
-    protected RaplaContext getContext() {
-        return context;
     }
 
     /** the default implementation does nothing. Override this method
@@ -405,6 +367,58 @@ public class DialogUI extends JDialog
         panel.add(jContainer);
         jContainer.add(label,BorderLayout.NORTH);
         panel.add(textView);
+    }
+    
+    @Singleton
+    public static class DialogUiFactory
+    {
+        private final RaplaResources i18n;
+        private final RaplaImages images;
+        private final BundleManager bundleManager;
+        private final FrameControllerList frameList;
+
+        @Inject
+        public DialogUiFactory(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList)
+        {
+            this.i18n = i18n;
+            this.images = images;
+            this.bundleManager = bundleManager;
+            this.frameList = frameList;
+        }
+
+        public DialogUI create(Component owner, boolean modal, JComponent content, String[] options) throws RaplaException
+        {
+            DialogUI dlg;
+            Component topLevel = getOwnerWindow(owner);
+            if (topLevel instanceof Dialog)
+                dlg = new DialogUI(i18n, images, bundleManager, frameList, (Dialog) topLevel);
+            else
+                dlg = new DialogUI(i18n, images, bundleManager, frameList, (Frame) topLevel);
+
+            dlg.parent = owner;
+            dlg.init(modal, content, options);
+            return dlg;
+        }
+
+        public DialogUI create(PopupContext popupContext, boolean modal, JComponent content, String[] options) throws RaplaException
+        {
+            return create(SwingPopupContext.extractParent(popupContext), modal, content, options);
+        }
+
+        public DialogUI create(Component owner, boolean modal, String title, String text, String[] options) throws RaplaException
+        {
+            DialogUI dlg = create(owner, modal, new JPanel(), options);
+            dlg.createMessagePanel(text);
+            dlg.setTitle(title);
+            return dlg;
+        }
+
+        public DialogUI create(Component owner, boolean modal, String title, String text) throws RaplaException
+        {
+            DialogUI dlg = create(owner, modal, title, text, getDefaultOptions());
+            dlg.useDefaultOptions = true;
+            return dlg;
+        }
     }
 
 }

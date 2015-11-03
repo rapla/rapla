@@ -39,6 +39,7 @@ import org.rapla.client.swing.internal.*;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.view.LicenseInfoUI;
 import org.rapla.client.swing.toolkit.*;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
@@ -553,7 +554,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         try {
         	final RaplaContext context = getContext();
 			final Logger logger = getLogger();
-			
+			final DialogUiFactory dialogUiFactory = inject(DialogUiFactory.class);
             final LanguageChooser languageChooser = inject(LanguageChooser.class);
             
             final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent(), frameControllerList);
@@ -600,13 +601,13 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, context, logger);
+                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, context, logger, dialogUiFactory);
                         }
                     } 
                     catch (RaplaException ex) 
                     {
                         dlg.resetPassword();
-                        RaplaGUIComponent.showException(ex, dlg, context, logger);
+                        RaplaGUIComponent.showException(ex, dlg, context, logger, dialogUiFactory);
                     }
                     if ( success) {
                         dlg.close();
@@ -614,7 +615,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         try {
                             beginRaplaSession();
                         } catch (Throwable ex) {
-                        	RaplaGUIComponent.showException(ex, null, context, logger);
+                        	RaplaGUIComponent.showException(ex, null, context, logger, dialogUiFactory);
                             fireClientAborted();
                         }
                     } // end of else
@@ -664,7 +665,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 					String title = i18n.getString("restart_client");
 					try {
 					    Component owner = frameControllerList.getMainWindow();
-						DialogUI dialog = DialogUI.create(getContext(), owner, modal, title, message);
+                        final DialogUiFactory dialogUiFactory = m_context.lookup(DialogUiFactory.class);
+                        DialogUI dialog = dialogUiFactory.create(owner, modal, title, message);
 						Action action = new AbstractAction() {
 							private static final long serialVersionUID = 1L;
 

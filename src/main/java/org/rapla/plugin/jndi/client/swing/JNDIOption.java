@@ -47,6 +47,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
@@ -75,20 +76,22 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 	JNDIConfig configService;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public JNDIOption(RaplaContext sm,JNDIConfig config, TreeFactory treeFactory, RaplaImages raplaImages) {
+    public JNDIOption(RaplaContext sm,JNDIConfig config, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(sm);
         this.configService = config;
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     protected JPanel createPanel() throws RaplaException {
     	digest = newTextField();
     	connectionName = newTextField();
     	connectionPassword = new JPasswordField();
-    	groupField = new GroupListField( getContext(), treeFactory, raplaImages);
+    	groupField = new GroupListField( getContext(), treeFactory, raplaImages, dialogUiFactory);
     	JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout( new BorderLayout());
         passwordPanel.add( connectionPassword, BorderLayout.CENTER);
@@ -148,7 +151,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                     String password ="";
                     {
                         PasswordEnterUI testUser = new PasswordEnterUI(getContext());
-                        DialogUI dialog =DialogUI.create( getContext(), getComponent(), true,testUser.getComponent(),new String[] {"test","abort"});
+                        DialogUI dialog =dialogUiFactory.create( getComponent(), true,testUser.getComponent(),new String[] {"test","abort"});
                         dialog.setTitle("Please enter valid user!");
                         dialog.start();
                         username = testUser.getUsername();
@@ -161,7 +164,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                     }
                     configService.test(conf,username,password);
                     {
-                        DialogUI dialog =DialogUI.create( getContext(), getComponent(), true, "JNDI","JNDI Authentification successfull");
+                        DialogUI dialog = dialogUiFactory.create( getComponent(), true, "JNDI","JNDI Authentification successfull");
                         dialog.start(); 
                     }
                 } 

@@ -46,6 +46,7 @@ import org.rapla.client.swing.internal.edit.fields.ListField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 
 public class AttributeDefaultConstraints extends AbstractEditField
@@ -97,14 +98,16 @@ public class AttributeDefaultConstraints extends AbstractEditField
     Category rootCategory;
     AnnotationEditUI annotationEdit;
     Attribute attribute;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
+    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super( context );
+        this.dialogUiFactory = dialogUiFactory;
         annotationEdit = new AnnotationEditUI(context, attributeExtensionSet);
         key = new TextField(context);
-        name = new MultiLanguageField(context, raplaImages);
+        name = new MultiLanguageField(context, raplaImages, dialogUiFactory);
         Collection<DynamicType> typeList = new ArrayList<DynamicType>(
                 Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)));
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
@@ -112,9 +115,9 @@ public class AttributeDefaultConstraints extends AbstractEditField
         dynamicTypeSelect.setVector( typeList );
         rootCategory = getQuery().getSuperCategory();
 
-        categorySelect = new CategorySelectField(context, treeFactory, raplaImages, rootCategory);
+        categorySelect = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(context, treeFactory, raplaImages, rootCategory);
+        defaultSelectCategory = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         defaultSelectText = new TextField(context);
         addCopyPaste( defaultSelectNumber.getNumberField());
         //addCopyPaste( expectedRows.getNumberField());
@@ -393,8 +396,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
         {
             dialog.close();
         }
-        dialog = DialogUI.create(context
-                ,getComponent()
+        dialog = dialogUiFactory.create(
+                getComponent()
                 ,modal
                 ,annotationEdit.getComponent()
                 ,new String[] { getString("close")});

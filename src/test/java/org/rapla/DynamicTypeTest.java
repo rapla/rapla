@@ -45,6 +45,8 @@ import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 public class DynamicTypeTest extends RaplaTestCase {
@@ -168,14 +170,16 @@ public class DynamicTypeTest extends RaplaTestCase {
             final RaplaContext context = getClientService().getContext();
             PermissionController permissionController = DefaultPermissionControllerSupport.getController();
             final RaplaImages raplaImages = new RaplaImages(logger);
-            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages);
+            FrameControllerList frameList = new FrameControllerList(logger);
+            DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
+            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
 	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
 	        DateRenderer dateRenderer = new RaplaDateRenderer(context);
-			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateRenderer);
+			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateRenderer, dialogUiFactory);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

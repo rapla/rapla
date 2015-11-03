@@ -95,6 +95,7 @@ import org.rapla.client.swing.internal.common.CalendarAction;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -194,10 +195,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 	
     public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController,
-            MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+            MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
 	{
 		super(context);
 		this.swingViewFactories = swingViewFactories;
@@ -211,6 +213,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
 		double tableSize[][] = { { pre, 12, pre, 3, fill, pre}, // Columns
@@ -290,7 +293,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 		content.setDividerLocation(0.3);
 		
 		calendarModel =  originalModel.clone();
-        filter = new FilterEditButton(context, treeFactory, calendarModel, listener, raplaImages, dateRenderer, true);
+        filter = new FilterEditButton(context, treeFactory, calendarModel, listener, raplaImages, dateRenderer, dialogUiFactory, true);
         leftPanel.add(filter.getButton(), "4,0,r,f");
 //		filterAction = new FilterAction(getContext(), getComponent(), null);
 //		filterAction.setFilter(calendarModel);
@@ -2071,6 +2074,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         private TreeFactory treeFactory;
 
+
 		public AllocatableAction(TreeFactory treeFactory)
 		{
             this.treeFactory = treeFactory;}
@@ -2109,7 +2113,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			if (command.indexOf("calendar") >= 0)
 			{
 				JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
-				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, treeFactory, swingViewFactories, raplaImages, dateRenderer);
+				CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, treeFactory, swingViewFactories, raplaImages, dateRenderer, dialogUiFactory);
 				calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
 				Collection<Appointment> appointments = Arrays.asList( AllocatableSelection.this.appointments);
 				calendarAction.setStart(findFirstStart(appointments));

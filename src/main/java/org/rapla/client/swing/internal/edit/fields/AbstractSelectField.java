@@ -46,6 +46,7 @@ import javax.swing.tree.TreeSelectionModel;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
 import org.rapla.components.util.Tools;
@@ -66,18 +67,20 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     boolean multipleValues = false;
     boolean multipleSelectionPossible = false;
     private final TreeFactory treeFactory;
+    private final DialogUiFactory dialogUiFactory;
   
     public RaplaButton getButton() {
         return selectButton;
     }
 
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages){
-       this( context, treeFactory, raplaImages, null);
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+       this( context, treeFactory, raplaImages, dialogUiFactory, null);
     }
     
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, T defaultValue) {
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, T defaultValue) {
         super( context);
         this.treeFactory = treeFactory;
+        this.dialogUiFactory = dialogUiFactory;
         useDefault = defaultValue != null;
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
@@ -280,8 +283,8 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             });
         }
 
-        dialog = DialogUI.create(getContext()
-        		                 ,parent
+        dialog = dialogUiFactory.create(
+        		                 parent
                                  ,true
                                  ,panel
                                  ,new String[] { getString("apply"),getString("cancel")});

@@ -41,6 +41,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.TreeAllocatableSelection;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.FileContent;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -74,8 +75,9 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages) throws RaplaContextException
+	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
 	{
 		super(context);
 		this.importService = importService;
@@ -83,6 +85,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
         this.io = io;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
 		item = new JMenuItem(i18n.getString("ical.import"));
 		item.setIcon(raplaImages.getIconFromKey("icon.import"));
 		item.addActionListener(this);
@@ -194,7 +197,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		container.add( warning, BorderLayout.NORTH);
 		container.add( superpanel, BorderLayout.CENTER);
 		
-		final DialogUI dlg = DialogUI.create(getContext(),
+		final DialogUI dlg = dialogUiFactory.create(
                 getMainComponent(), false, container, new String[] { getString("import"), getString("cancel") });
 		
         final ActionListener radioListener = new ActionListener() {
@@ -311,7 +314,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 					{
 						text+=".";
 					}
-					DialogUI okDlg = DialogUI.create(getContext(), getMainComponent(), false,  title, text);
+					DialogUI okDlg = dialogUiFactory.create(getMainComponent(), false,  title, text);
 					okDlg.start();
 				} catch (Exception e1) {
 					showException(e1, getMainComponent());

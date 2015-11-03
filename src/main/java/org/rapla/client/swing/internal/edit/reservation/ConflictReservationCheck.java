@@ -33,6 +33,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -51,12 +52,14 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
     private final PermissionController permissionController;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-    public ConflictReservationCheck(RaplaContext context, PermissionController permissionController, TreeFactory treeFactory, RaplaImages raplaImages) {
+    public ConflictReservationCheck(RaplaContext context, PermissionController permissionController, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(context);
         this.permissionController = permissionController;
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -82,9 +85,8 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
             return true;
         }
         JComponent content = getConflictPanel(conflictList);
-        DialogUI dialog = DialogUI.create(
-                getContext()
-                ,((SwingPopupContext)sourceComponent).getParent()
+        DialogUI dialog = dialogUiFactory.create(
+                ((SwingPopupContext)sourceComponent).getParent()
                     ,true
                     ,content
                     ,new String[] {

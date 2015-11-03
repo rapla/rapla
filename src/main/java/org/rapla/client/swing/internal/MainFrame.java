@@ -29,6 +29,13 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
 import org.rapla.client.ClientService;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ModificationEvent;
@@ -36,12 +43,6 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaFrame;
 
 
 
@@ -56,12 +57,14 @@ public class MainFrame extends RaplaGUIComponent
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
     private final FrameControllerList frameControllerList;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList) throws RaplaException {
+    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(sm);
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
         this.frameControllerList = frameControllerList;
+        this.dialogUiFactory = dialogUiFactory;
         frame =  getService( ClientService.MAIN_COMPONENT );
         String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
@@ -237,8 +240,8 @@ public class MainFrame extends RaplaGUIComponent
 
     protected boolean shouldExit() {
 		try {
-	        DialogUI dlg = DialogUI.create(getContext()
-				                           ,frame.getRootPane()
+	        DialogUI dlg = dialogUiFactory.create(
+				                           frame.getRootPane()
 				                           ,true
 				                           ,getString("exit.title")
 				                           ,getString("exit.question")

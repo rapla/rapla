@@ -60,6 +60,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
@@ -98,7 +99,8 @@ public class RaplaGUIComponent extends RaplaComponent
 	public void showException(Throwable ex,Component owner) {
 	    RaplaContext context = getContext();
 		Logger logger = getLogger();
-		showException(ex, owner, context, logger);
+		DialogUiFactory dialogUiFactory = getService(DialogUiFactory.class);
+        showException(ex, owner, context, logger, dialogUiFactory );
 	}
 	
 	/**
@@ -133,7 +135,7 @@ public class RaplaGUIComponent extends RaplaComponent
 
 	
 	static public void showException(Throwable ex, Component owner,
-			RaplaContext context, Logger logger) {
+			RaplaContext context, Logger logger, DialogUiFactory dialogUiFactory) {
 		if ( ex instanceof RaplaConnectException)
 	    {
 	        String message = ex.getMessage();
@@ -150,7 +152,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	            return;
 	        }
 	        try {
-	            ErrorDialog dialog = new ErrorDialog(context);
+	            ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
 	            dialog.showWarningDialog( message, owner);
 	        } catch (RaplaException e) {
 	    	} catch (Throwable e) {
@@ -159,7 +161,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	        return;
 	    }
 	    try {
-	        ErrorDialog dialog = new ErrorDialog(context);
+	        ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
 	        if (ex instanceof DependencyException) {
 	            dialog.showWarningDialog( getHTML( (DependencyException)ex ), owner);
 	        }
@@ -206,12 +208,13 @@ public class RaplaGUIComponent extends RaplaComponent
     public void showWarning(String warning,Component owner) {
         RaplaContext context = getContext();
     	Logger logger = getLogger();
-		showWarning(warning, owner, context, logger);
+    	final DialogUiFactory dialogUiFactory = getService(DialogUiFactory.class);
+		showWarning(warning, owner, context, logger, dialogUiFactory);
     }
 
-	public static void showWarning(String warning, Component owner,	RaplaContext context, Logger logger) {
+	public static void showWarning(String warning, Component owner,	RaplaContext context, Logger logger, DialogUiFactory dialogUiFactory) {
 		try {
-			ErrorDialog dialog = new ErrorDialog(context);
+			ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
             dialog.showWarningDialog(warning,owner);
         } catch (RaplaException ex2) {
         	logger.error(ex2.getMessage(),ex2);

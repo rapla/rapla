@@ -15,6 +15,7 @@ package org.rapla.client.swing.internal.print;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
@@ -26,9 +27,11 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.ErrorDialog;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 
+import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -139,18 +142,24 @@ public class CalendarPrintDialog extends DialogUI
 
     };
 
-    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface, RaplaImages raplaImages) throws RaplaException {
-        super(context,owner);
-        exportServiceList = new ExportServiceList( context, printInterface, raplaImages);
-        images = context.lookup( RaplaImages.class);
+    private RaplaContext context;
+
+    private final DialogUiFactory dialogUiFactory;
+
+    @Inject
+    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super(i18n, raplaImages, bundleManager, frameList, owner);
+        this.context = context;
+        this.i18n = i18n;
+        this.printTool = printInterface;
+        this.dialogUiFactory = dialogUiFactory;
+        exportServiceList = new ExportServiceList( context, printInterface, raplaImages, dialogUiFactory);
+        images = raplaImages;
     }
     
     public void init(boolean modal,final Map<String,SwingViewFactory> factoryMap,CalendarSelectionModel model,PageFormat format) throws Exception {
         super.init(modal,new JPanel(),new String[] {"print","format","print_to_file","cancel"});
         this.model = model;
-        RaplaContext context = getContext();
-        printTool = context.lookup(IOInterface.class);
-        i18n =  context.lookup(RaplaResources.class);
 
         m_format = format;
         if (m_format == null) {
@@ -390,9 +399,8 @@ public class CalendarPrintDialog extends DialogUI
     
     protected boolean confirmPrint(Component topLevel) {
 		try {
-			DialogUI dlg = DialogUI.create(
-                    		 getContext()
-                    		,topLevel
+			DialogUI dlg = dialogUiFactory.create(
+                    		topLevel
                             ,true
                             ,i18n.getString("print")
                             ,i18n.getString("file_saved")
@@ -411,7 +419,7 @@ public class CalendarPrintDialog extends DialogUI
     public void showException(Exception ex) {
         ErrorDialog dialog;
         try {
-            dialog = new ErrorDialog(getContext());
+            dialog = new ErrorDialog(context, dialogUiFactory);
             dialog.showExceptionDialog(ex,this);
         } catch (RaplaException e) {
         }

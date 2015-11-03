@@ -60,6 +60,7 @@ import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -84,7 +85,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
 
         this.model = model;
@@ -105,7 +106,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         content.add(buttonsPanel, BorderLayout.NORTH);
         
         buttonsPanel.setLayout( new BorderLayout());
-        filterEdit = new FilterEditButton(context, treeFactory, model, listener, raplaImages, dateRenderer, true);
+        filterEdit = new FilterEditButton(context, treeFactory, model, listener, raplaImages, dateRenderer, dialogUiFactory, true);
         buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
         
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());

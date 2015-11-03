@@ -12,7 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
@@ -27,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -46,14 +50,24 @@ import javax.swing.event.ChangeListener;
 import javax.swing.plaf.ActionMapUIResource;
 
 import org.rapla.client.AppointmentListener;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.EmptyLineBorder;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
@@ -63,7 +77,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
@@ -72,10 +85,6 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.extensionpoints.AppointmentStatusFactory;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.*;
 
 final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
 {
@@ -141,22 +150,24 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final ReservationControllerImpl reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
     public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
-        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController, raplaImages, dateRenderer);
-        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer);
+        this.reservationInfo = new ReservationInfoEdit(sm, treeFactory, permissionController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
+        this.appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -323,9 +334,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         if (bDeleting)
             return;
         getLogger().debug("Reservation has been deleted.");
-        DialogUI dlg = DialogUI.create(
-                getContext()
-                ,mainContent
+        DialogUI dlg = dialogUiFactory.create(
+                mainContent
                 ,true
                 ,getString("warning")
                 ,getString("warning.reservation.delete")
@@ -339,9 +349,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         if (bSaving)
             return;
         getLogger().debug("Reservation has been changed.");
-        DialogUI dlg = DialogUI.create(
-                getContext()
-                ,mainContent
+        DialogUI dlg = dialogUiFactory.create(
+                mainContent
                 ,true
                 ,getString("warning")
                 ,getString("warning.reservation.update")
@@ -580,9 +589,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             return true;
 
 		try {
-        DialogUI dlg = DialogUI.create(
-                    getContext()
-                        ,mainContent
+        DialogUI dlg = dialogUiFactory.create(
+                        mainContent
                             ,true
                             ,getString("confirm-close.title")
                             ,getString("confirm-close.question")

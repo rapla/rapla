@@ -41,6 +41,7 @@ import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
@@ -93,7 +94,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
             putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
-            publishDialog = new PublishDialog(getContext(), extensionFactories, raplaImages);
+            publishDialog = new PublishDialog(getContext(), extensionFactories, raplaImages, dialogUiFactory);
             
         }
 
@@ -158,6 +159,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     private final InfoFactory<Component, DialogUI> infoFactory;
 
     private final RaplaImages raplaImages;
+
+    private final DialogUiFactory dialogUiFactory;
     
     class FileEntry implements Comparable<FileEntry>
     {
@@ -212,11 +215,12 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     }
     
     public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
         this.extensionFactories = extensionFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         // I18nBundle i18n = getI18n();
         saveAction = new SaveAction(context);
         publishAction = new PublishAction(context);
@@ -542,8 +546,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 
         });
         
-        final DialogUI dlg = DialogUI.create(
-                getContext(),
+        final DialogUI dlg = dialogUiFactory.create(
                                         parentComponent,true,panel,
                                        new String[] {
                                            getString("save")

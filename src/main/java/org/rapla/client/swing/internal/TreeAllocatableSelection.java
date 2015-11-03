@@ -46,6 +46,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 
 public class TreeAllocatableSelection extends RaplaGUIComponent implements ChangeListener {
@@ -59,12 +60,14 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     String addDialogTitle;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
+	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super( sm);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         treeSelection = new RaplaTree();
         TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(Color.white,new Color(178, 178, 178)),getString("selection_resource"));
 		content.setBorder(border);
@@ -188,9 +191,8 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
             treeSelection.exchangeTreeModel(getTreeFactory().createClassifiableModel(getQuery().getAllocatables(),true));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-            dialog = DialogUI.create(
-                    getContext()
-                    ,getComponent()
+            dialog = dialogUiFactory.create(
+                    getComponent()
                     ,true
                     ,treeSelection
                     ,new String[] { getString("add"),getString("cancel")});

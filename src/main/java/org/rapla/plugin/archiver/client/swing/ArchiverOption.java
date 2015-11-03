@@ -34,6 +34,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
@@ -54,12 +55,14 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     Logger logger;
     RaplaContext context;
     RestartServer restartServer;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public ArchiverOption( Logger logger,ArchiverService archiver, RaplaContext context, RestartServer restartServer){
+    public ArchiverOption( Logger logger,ArchiverService archiver, RaplaContext context, RestartServer restartServer, DialogUiFactory dialogUiFactory){
         this.archiver = archiver;
         this.logger = logger;
         this.restartServer = restartServer;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
 
@@ -210,7 +213,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 				else if (source == restoreButton)
 				{
 					boolean modal = true;
-					DialogUI dialog = DialogUI.create(context, content,modal,"Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
+					DialogUI dialog = dialogUiFactory.create(content,modal,"Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
 					dialog.setDefault( 1);
 					dialog.start();
 					

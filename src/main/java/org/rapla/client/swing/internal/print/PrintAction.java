@@ -11,33 +11,32 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.print;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.print.PageFormat;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.SwingUtilities;
 
+import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
-import org.rapla.client.swing.RaplaAction;
 
 
 public class PrintAction extends RaplaAction {
     CalendarSelectionModel model;
     PageFormat m_pageFormat;
     final Map<String,SwingViewFactory> factoryMap;
-    private final IOInterface printInterface;
-    private final RaplaImages raplaImages;
+    private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
     @Inject
-    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, IOInterface printInterface, RaplaImages raplaImages) {
+    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider) {
         super( sm);
         this.factoryMap = factoryMap;
-        this.printInterface = printInterface;
-        this.raplaImages = raplaImages;
+        this.calendarPringDialogProvider = calendarPringDialogProvider;
         setEnabled(false);
         putValue(NAME,getString("print"));
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.print"));
@@ -58,7 +57,7 @@ public class PrintAction extends RaplaAction {
         Component parent = getMainComponent();
         try {
             boolean modal = true;
-            CalendarPrintDialog dialog = new CalendarPrintDialog(getContext(),(Frame)parent, printInterface, raplaImages);
+            CalendarPrintDialog dialog = calendarPringDialogProvider.get();
 
             dialog.init(modal,factoryMap,model,m_pageFormat);
             final Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();

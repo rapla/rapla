@@ -53,6 +53,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.Extension;
@@ -82,10 +83,10 @@ public class CategoryEditUI extends RaplaGUIComponent
     private final TreeFactory treeFactory;
 
     @Inject
-    public CategoryEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages)  {
+    public CategoryEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
         super( context);
         this.treeFactory = treeFactory;
-        detailPanel = new CategoryDetail(context, raplaImages);
+        detailPanel = new CategoryDetail(context, raplaImages, dialogUiFactory);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
         treeEdit.setListDimension( new Dimension( 250,100 ) );
@@ -426,10 +427,10 @@ class CategoryDetail extends RaplaGUIComponent
 	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
 
-    public CategoryDetail(RaplaContext context, RaplaImages raplaImages) 
+    public CategoryDetail(RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) 
     {
         super( context);
-        name = new MultiLanguageField(context, raplaImages);
+        name = new MultiLanguageField(context, raplaImages, dialogUiFactory);
         key = new TextField(context);
         colorTextField = new TextField(context);
         colorTextField.setColorPanel( true );

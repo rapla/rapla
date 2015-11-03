@@ -33,6 +33,7 @@ import javax.swing.table.DefaultTableModel;
 
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.framework.RaplaContext;
@@ -46,16 +47,18 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     MultiLanguageEditorDialog editorDialog;
 
     String[] availableLanguages;
+    private final DialogUiFactory dialogUiFactory;
 
-    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, String fieldName) 
+    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, String fieldName) 
     {
-        this(context, raplaImages);
+        this(context, raplaImages, dialogUiFactory);
         setFieldName(fieldName);
     }
 
-    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages) 
+    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) 
     {
         super( context);
+        this.dialogUiFactory = dialogUiFactory;
         textField = new TextField(context, "name");
         availableLanguages = getRaplaLocale().getAvailableLanguages().toArray(new String[0]);
         panel.setLayout( new BorderLayout() );
@@ -148,7 +151,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         }
 
         public void show() throws RaplaException {
-            DialogUI dlg = DialogUI.create(getContext(),owner,true,comp,new String[] { getString("ok"),getString("cancel")});
+            DialogUI dlg = dialogUiFactory.create(owner,true,comp,new String[] { getString("ok"),getString("cancel")});
             dlg.setTitle(getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
             if (table.getRowCount() > 0 ) {

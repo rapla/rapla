@@ -32,6 +32,7 @@ import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
@@ -50,15 +51,17 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     private final CalendarSelectionModel model;
     private final IOInterface io;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
 	@Inject
-	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages)
+	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         super( context );
 		this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
 		exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon( raplaImages.getIconFromKey("icon.export") );
         exportEntry.addActionListener(this);
@@ -148,9 +151,8 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	
 	 protected boolean exportFinished(Component topLevel) {
 			try {
-				DialogUI dlg = DialogUI.create(
-	                    		 getContext()
-	                    		,topLevel
+				DialogUI dlg = dialogUiFactory.create(
+	                    		topLevel
 	                            ,true
 	                            ,getString("export")
 	                            ,getString("file_saved")

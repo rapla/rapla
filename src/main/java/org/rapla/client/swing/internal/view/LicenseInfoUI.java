@@ -20,6 +20,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -37,10 +38,12 @@ final public class LicenseInfoUI
 {
     JScrollPane scrollPane;
     HTMLView license;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public LicenseInfoUI(RaplaContext context) throws RaplaException  {
+    public LicenseInfoUI(RaplaContext context, DialogUiFactory dialogUiFactory) throws RaplaException  {
         super( context);
+        this.dialogUiFactory = dialogUiFactory;
         license = new HTMLView();
         license.addHyperlinkListener(this);
         scrollPane= new JScrollPane(license);
@@ -74,7 +77,7 @@ final public class LicenseInfoUI
     public void viewLicense(Component owner,boolean modal,String link) {
         try {
             LicenseUI license =  new LicenseUI( getContext());
-            DialogUI dialog = DialogUI.create(getContext(),owner,modal,license.getComponent(), new String[] {getString("ok")} );
+            DialogUI dialog = dialogUiFactory.create(owner,modal,license.getComponent(), new String[] {getString("ok")} );
             dialog.setTitle(getString("licensedialog.title"));
             dialog.setSize(600,400);
             if (link.equals("warranty")) {

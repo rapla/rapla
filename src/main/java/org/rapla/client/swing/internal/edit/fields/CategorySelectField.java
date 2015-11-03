@@ -16,6 +16,7 @@ import javax.swing.tree.TreeModel;
 
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.Category;
 import org.rapla.framework.RaplaContext;
 
@@ -24,13 +25,13 @@ public class CategorySelectField extends AbstractSelectField<Category>
 {
     Category rootCategory;
 
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages,Category rootCategory){
-       this( context, treeFactory, raplaImages, rootCategory, null);
+    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory){
+       this( context, treeFactory, raplaImages, dialogUiFactory, rootCategory, null);
     }
     
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, Category rootCategory, Category defaultCategory)
+    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory, Category defaultCategory)
     {
-        super( context, treeFactory,raplaImages, defaultCategory);
+        super( context, treeFactory,raplaImages, dialogUiFactory, defaultCategory);
         this.rootCategory = rootCategory;
     }
     

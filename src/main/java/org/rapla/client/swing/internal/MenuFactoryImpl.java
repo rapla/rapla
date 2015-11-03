@@ -44,6 +44,7 @@ import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -90,9 +91,10 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final EditController editController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
+    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(sm);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
@@ -102,6 +104,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         this.editController = editController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
 
@@ -443,7 +446,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
         menu.insertAfterId( new RaplaSeparator("sep1"), afterId);
         menu.insertAfterId( new RaplaSeparator("sep2"), afterId);
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),popupContext, raplaImages);
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),popupContext, raplaImages, dialogUiFactory);
         passwordChangeAction.changeObject( obj );
         menu.insertAfterId( new JMenuItem( new ActionWrapper(passwordChangeAction) ), "sep2");
 
@@ -504,7 +507,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
 
     private UserAction newUserAction(PopupContext popupContext) {
-        UserAction action = new UserAction(getContext(),popupContext, service, editController, raplaImages);
+        UserAction action = new UserAction(getContext(),popupContext, service, editController, raplaImages, dialogUiFactory);
         return action;
     }
 

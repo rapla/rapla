@@ -45,6 +45,7 @@ import org.rapla.client.swing.internal.edit.fields.MultiEditField;
 import org.rapla.client.swing.internal.edit.fields.SetGetCollectionField;
 import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
@@ -52,6 +53,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 	
     public String getSelectedView()
     {
@@ -63,11 +65,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) {
+    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) {
 		super(sm);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -178,7 +181,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(context, treeFactory, raplaImages, dynamicTypeConstraint);
+				 AllocatableSelectField allocField = new AllocatableSelectField(context, treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
 				 allocField.setFieldName(label);
 				 allocField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
 				 field = allocField;
@@ -192,7 +195,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(context, treeFactory, raplaImages, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
                 field = catField;

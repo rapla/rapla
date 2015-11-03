@@ -10,6 +10,7 @@ import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
@@ -44,9 +45,10 @@ import java.util.Map.Entry;
     private Preferences preferences;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject public TableviewOption(RaplaContext context, RaplaResources i18n, Logger logger, RaplaLocale raplaLocale,
-            TableConfig.TableConfigLoader tableConfigLoader, RaplaImages raplaImages)
+            TableConfig.TableConfigLoader tableConfigLoader, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         this.context = context;
         this.i18n = i18n;
@@ -54,6 +56,7 @@ import java.util.Map.Entry;
         this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public void setPreferences(Preferences preferences)
@@ -135,7 +138,7 @@ import java.util.Map.Entry;
         rows.clear();
         for (TableColumnConfig slot : tablerows)
         {
-            TableRow row = new TableRow(slot, context, raplaImages);
+            TableRow row = new TableRow(slot, context, raplaImages, dialogUiFactory);
             rows.add(row);
         }
         for (Entry<String, ViewDefinition> entry : tableConfig.getViewMap().entrySet())
@@ -202,9 +205,9 @@ import java.util.Map.Entry;
         private final JTextField typeField = new JTextField();
         private final MultiLanguageField nameField;
 
-        private TableRow(TableColumnConfig slot, RaplaContext context, RaplaImages raplaImages)
+        private TableRow(TableColumnConfig slot, RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
         {
-            nameField = new MultiLanguageField(context, raplaImages);
+            nameField = new MultiLanguageField(context, raplaImages, dialogUiFactory);
             typeField.setText(slot.getType());
             typeField.setEditable(false);
             nameField.setValue(slot.getName());

@@ -18,9 +18,12 @@ import java.util.Locale;
 
 import javax.inject.Provider;
 
+import org.rapla.RaplaResources;
 import org.rapla.RaplaTestCase;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
@@ -87,7 +90,10 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         Provider<CopyDialog> copyDialogProvider = new SimpleProvider<CopyDialog>(new CopyDialog(getClientService().getContext(), i18n, model, dateRenderer));
         final Logger logger = getLogger();
         final RaplaImages raplaImages = new RaplaImages(logger);
-        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n, copyDialogProvider, raplaImages);
+        FrameControllerList frameList = new FrameControllerList(logger);
+        RaplaResources raplaResources = new RaplaResources(bundleManager);
+        DialogUiFactory dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList );
+        CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
         Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
         assertNotNull(findReservationWithName(original, "power planting"));
 

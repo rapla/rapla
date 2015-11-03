@@ -37,6 +37,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.PopupContext;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -54,10 +55,11 @@ public class EditControllerImpl<W> implements
 	private final ClientFacade facade;
 	private final RaplaContext context;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
 	@Inject
 	public EditControllerImpl(Map<String,Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
-			RaplaContext context, RaplaImages raplaImages)
+			RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
 	{
 		this.editUiProviders = editUiProviders;
 		this.reservationController = controller;
@@ -65,6 +67,7 @@ public class EditControllerImpl<W> implements
 		this.facade = facade;
 		this.context = context;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
 	}
 
 	@Override
@@ -233,7 +236,7 @@ public class EditControllerImpl<W> implements
     	Collection<T> toEdit = facade.edit(list);
     	if (toEdit.size() > 0) {
         	EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)createUI(toEdit.iterator().next());
-        	EditDialog<T> gui = new EditDialog<T>(context, ui, this, reservationController, raplaImages);
+        	EditDialog<T> gui = new EditDialog<T>(context, ui, this, reservationController, raplaImages, dialogUiFactory);
             gui.start(toEdit, title, popupContext, createNew, callback);
         }
     }

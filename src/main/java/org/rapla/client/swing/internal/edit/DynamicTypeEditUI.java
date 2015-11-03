@@ -30,6 +30,17 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
+import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
@@ -44,16 +55,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
-import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.client.swing.internal.edit.fields.TextField;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
 
 
@@ -94,11 +95,13 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     //boolean isEventType;
     AnnotationEditUI annotationEdit;
     DialogUI dialog;
-    PermissionListField permissionField;
+    PermissionListField permissionListField;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
+    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, final DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
+        this.dialogUiFactory = dialogUiFactory;
         annotationEdit = new AnnotationEditUI(context,annotationEditTypeExtensions);
         {
         	@SuppressWarnings("unchecked")
@@ -106,7 +109,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         	colorChooser = jComboBox;
         }
       
-        name = new MultiLanguageField(context,raplaImages, "name");
+        name = new MultiLanguageField(context,raplaImages, dialogUiFactory, "name");
         elementKey = new TextField(context,"elementKey");
         this.attributeEdit = attributeEdit;
         nameLabel.setText(getString("dynamictype.name") + ":");
@@ -161,9 +164,9 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             }
         });
      
-        permissionField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"));
-        editPanel.add(permissionField.getComponent(),"1,10,3,10");
-        permissionField.setUserSelectVisible( false );
+        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
+        editPanel.add(this.permissionListField.getComponent(),"1,10,3,10");
+        this.permissionListField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
         float newSize = (float) (annotationDescription.getFont().getSize() * 0.8);
         annotationDescription.setFont(annotationDescription.getFont().deriveFont( newSize));
@@ -208,7 +211,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                                 colorChooser.setSelectedIndex(2);
                                 return;
                             }
-                            DialogUI ui = DialogUI.create(getContext(), getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            DialogUI ui = dialogUiFactory.create(getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
                             ui.start();
                             if (ui.getSelectedIndex() == 0)
                             {
@@ -222,7 +225,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                         }
                         else
                         {
-        					DialogUI ui = DialogUI.create(getContext(), getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+        					DialogUI ui = dialogUiFactory.create(getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
     						ui.start();
     						if (ui.getSelectedIndex() == 0)
     						{
@@ -261,7 +264,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
 		dynamicType.getName().setTo( newName);
         dynamicType.setKey(elementKey.getValue());
         attributeEdit.confirmEdits();
-        permissionField.mapTo( Collections.singletonList( dynamicType));
+        permissionListField.mapTo( Collections.singletonList( dynamicType));
         DynamicTypeImpl.validate(dynamicType, getI18n());
         setAnnotations();
     }
@@ -330,8 +333,8 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         {
             dialog.close();
         }
-        dialog = DialogUI.create(context
-                ,getComponent()
+        dialog = dialogUiFactory.create(
+                getComponent()
                 ,modal
                 ,annotationEdit.getComponent()
                 ,new String[] { getString("close")});
@@ -372,11 +375,11 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         String annotation = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if ( annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
         {
-            permissionField.setPermissionLevels(Permission.DENIED,Permission.READ_TYPE, Permission.CREATE,Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
-            permissionField.setDefaultAccessLevel( Permission.READ );
+            permissionListField.setPermissionLevels(Permission.DENIED,Permission.READ_TYPE, Permission.CREATE,Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+            permissionListField.setDefaultAccessLevel( Permission.READ );
         }
 
-        permissionField.mapFrom( Collections.singletonList(dynamicType));
+        permissionListField.mapFrom( Collections.singletonList(dynamicType));
 //        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 //		isEventType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 //		isResourceType = classificationType != null && classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);

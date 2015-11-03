@@ -20,6 +20,13 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.client.PopupContext;
+import org.rapla.client.extensionpoints.EventCheck;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -27,12 +34,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.extensionpoints.EventCheck;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
 
 @Extension(provides = EventCheck.class,id="defaultcheck")
@@ -41,12 +42,14 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
     AppointmentFormater appointmentFormater;
     CalendarModel model;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model, RaplaImages raplaImages) {
+    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(context);
         this.appointmentFormater = appointmentFormater;
         this.model = model;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -118,9 +121,8 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
             }
             
             if (  warningPanel.getComponentCount() > 0) {
-                DialogUI dialog = DialogUI.create(
-                        getContext()
-                        ,((SwingPopupContext)sourceComponent).getParent()
+                DialogUI dialog = dialogUiFactory.create(
+                        ((SwingPopupContext)sourceComponent).getParent()
                         ,true
                         ,warningPanel
                         ,new String[] {
