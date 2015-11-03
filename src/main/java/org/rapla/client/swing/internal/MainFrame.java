@@ -40,6 +40,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 
 
@@ -54,11 +55,13 @@ public class MainFrame extends RaplaGUIComponent
     CalendarEditor cal;
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
+    private final FrameControllerList frameControllerList;
     @Inject
-    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages) throws RaplaException {
+    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList) throws RaplaException {
         super(sm);
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
+        this.frameControllerList = frameControllerList;
         frame =  getService( ClientService.MAIN_COMPONENT );
         String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
@@ -87,7 +90,7 @@ public class MainFrame extends RaplaGUIComponent
         cal.start();
         frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
         frame.setVisible(true);
-        getFrameList().setMainWindow(frame);
+        frameControllerList.setMainWindow(frame);
     }
 
     private JPanel getContentPane() {

@@ -76,11 +76,6 @@ public class RaplaGUIComponent extends RaplaComponent
         super(context);
     }
 
-    /** lookupDeprecated FrameControllerList from the context */
-    final protected FrameControllerList getFrameList() {
-        return getService(FrameControllerList.class);
-    }
-
     public void showException(Throwable ex,PopupContext popupContext) {
         showException(ex, SwingPopupContext.extractParent(popupContext));
     }
@@ -221,7 +216,7 @@ public class RaplaGUIComponent extends RaplaComponent
     }
 
     /** lookupDeprecated DateRenderer from the serviceManager */
-    final protected DateRenderer getDateRenderer() {
+    final private DateRenderer getDateRenderer() {
         return  getService(DateRenderer.class);
     }
 
