@@ -24,8 +24,13 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -51,6 +56,11 @@ implements
         super(context);
     }
     
+    public AbstractEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController)
+    {
+        super(facade, i18n, raplaLocale, logger, permissionController);
+    }
+
     public void addChangeListener(ChangeListener listener) {
         listenerList.add(listener);
     }

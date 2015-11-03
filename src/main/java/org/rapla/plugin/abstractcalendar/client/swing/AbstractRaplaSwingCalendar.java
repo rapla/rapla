@@ -52,6 +52,7 @@ import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -93,10 +94,11 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final ReservationController reservationController;
     protected final InfoFactory<Component, DialogUI> infoFactory;
     protected final RaplaImages raplaImages;
+    protected final DialogUiFactory dialogUiFactory;
 
     public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
                     throws RaplaException
     {
         super( sm);
@@ -109,6 +111,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -157,7 +160,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages);
+        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory);
     }
 
     public JComponent getDateSelection()   {
@@ -171,7 +174,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
             // model.setSelectedDate( date );
             update();
         } catch (RaplaException ex) {
-            showException(ex, view.getComponent());
+            showException(ex, view.getComponent(), dialogUiFactory);
         }
     }
 

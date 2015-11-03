@@ -37,6 +37,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
 import org.rapla.components.calendar.DateRendererAdapter;
@@ -61,8 +62,8 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer);
+    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
@@ -113,7 +114,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 
     
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages) {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory) {
             
             @Override
             public void selectionChanged(Date start, Date end) {
@@ -186,7 +187,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 					 
 				 } 
 				 catch (RaplaException ex) {
-					showException(ex, getMainComponent());
+					showException(ex, getMainComponent(), dialogUiFactory);
 				}
 			
 			 }

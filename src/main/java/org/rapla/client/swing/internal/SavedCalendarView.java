@@ -113,7 +113,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 }
             }
             catch (RaplaException ex) {
-                showException( ex, getMainComponent());
+                showException( ex, getMainComponent(), dialogUiFactory);
             }
         }
         
@@ -147,7 +147,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 delete();
             }
             catch (RaplaException ex) {
-                showException( ex, getMainComponent());
+                showException( ex, getMainComponent(), dialogUiFactory);
             }
         }
     }
@@ -294,7 +294,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         	changeSelection();
         }
         catch (RaplaException ex) {
-            showException( ex, getMainComponent());
+            showException( ex, getMainComponent(), dialogUiFactory);
         }
     }
     
@@ -538,7 +538,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                         if( entry != null)
                         	saveSelectedDateField.setSelected(entry.equals("true"));
                     } catch (RaplaException ex) {
-                           showException( ex, getMainComponent());
+                           showException( ex, getMainComponent(), dialogUiFactory);
                     }
                 }
               
@@ -628,7 +628,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 }
                 catch (RaplaException ex) 
                 {
-                    showException( ex, parentComponent);
+                    showException( ex, parentComponent, dialogUiFactory);
                 }
                 
             }
@@ -652,7 +652,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         });
         dlg.start();
         } catch (RaplaException ex) {
-            showException( ex, parentComponent);
+            showException( ex, parentComponent, dialogUiFactory);
         }
     }
     

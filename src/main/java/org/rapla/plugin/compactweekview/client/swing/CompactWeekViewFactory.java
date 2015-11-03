@@ -30,6 +30,7 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
@@ -50,12 +51,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
     public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, 
-            DateRenderer dateRenderer)
+            DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -67,12 +69,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactWeekCalendar(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
     }
 
     public String getViewId()

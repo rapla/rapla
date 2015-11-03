@@ -26,13 +26,11 @@ import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 
-import org.rapla.components.util.IOUtil;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.internal.ConfigTools;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.util.IOUtil;
+import org.rapla.framework.internal.ConfigTools;
 
-public class LicenseUI extends RaplaGUIComponent
+public class LicenseUI 
     implements
         RaplaWidget
 {
@@ -44,8 +42,7 @@ public class LicenseUI extends RaplaGUIComponent
     JScrollPane jScrollPane = new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                                               JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-    public LicenseUI(RaplaContext sm) {
-        super( sm);
+    public LicenseUI() {
         panel.setOpaque(true);
         panel.setLayout(borderLayout1);
         panel.add(jScrollPane,BorderLayout.CENTER);

@@ -31,6 +31,12 @@ import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.common.NamedListCellRenderer;
+import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -45,10 +51,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
 /** sample UseCase that only displays the text of the configuration and
@@ -78,7 +80,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     
     @SuppressWarnings("unchecked")
     @Inject
-	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer) throws RaplaException {
+	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory) throws RaplaException {
         super(sm);
         this.periodCopyI18n = periodCopyI18n;
         this.model = model;
@@ -89,14 +91,14 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         
         
         Period[] periods = getQuery().getPeriods();
-        singleChooser = new BooleanField(sm, "singleChooser");
+        singleChooser = booleanFieldFactory.create("singleChooser");
         singleChooser.addChangeListener( new ChangeListener() {
 			
 			public void stateChanged(ChangeEvent e) {
 				try {
 					updateReservations();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent());
+					showException(ex, getComponent(), dialogUiFactory);
 				}
 			}
 		});
@@ -181,7 +183,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 				try {
 					updateReservations();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent());
+					showException(ex, getComponent(), dialogUiFactory);
 				}
 			}
 		};

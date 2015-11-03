@@ -27,6 +27,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -64,17 +65,19 @@ public class RaplaObjectAction extends RaplaAction {
     protected final EditController editController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
-    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
-        this(sm, null, editController, infoFactory, raplaImages);
+    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        this(sm, null, editController, infoFactory, raplaImages, dialogUiFactory);
     }
 
-    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)  {
+    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
         super( sm);
         this.editController = editController;
         this.popupContext = popupContext;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
     
     protected PopupContext getPopupContext()
@@ -184,7 +187,7 @@ public class RaplaObjectAction extends RaplaAction {
             case VIEW: view();break;
             }
         } catch (RaplaException ex) {
-            showException(ex,popupContext);
+            showException(ex,popupContext, dialogUiFactory);
         } // end of try-catch
     }
 

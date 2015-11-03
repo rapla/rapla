@@ -56,11 +56,11 @@ import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
+import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
+import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
@@ -68,7 +68,6 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -76,11 +75,8 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
@@ -106,7 +102,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 			try {
 				commandHistory.undo();
 			} catch (Exception ex) {
-				showException(ex, getMainComponent());
+				showException(ex, getMainComponent(), dialogUiFactory);
 			}
 		}
 	};
@@ -117,7 +113,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 			try {
 				commandHistory.redo();
 			} catch (Exception ex) {
-				showException(ex, getMainComponent());
+				showException(ex, getMainComponent(), dialogUiFactory);
 			}
 		}
 	};
@@ -153,10 +149,10 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories,
-            TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
+    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController,
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
+            ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
+            AllocatableSelectionFactory allocatableSelectionFactory) throws RaplaException
     {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
@@ -165,9 +161,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         this.dialogUiFactory = dialogUiFactory;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
-        this.reservationInfo = new ReservationInfoEdit(sm, treeFactory, permissionController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
-        this.appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
+        this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
+        this.appointmentEdit = appointmentListEditFactory.create(commandHistory);
+        allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -362,7 +358,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             this.original = newReservation;
             setReservation(getModification().edit(newReservation) , null);
         } catch (RaplaException ex) {
-            showException(ex,frame);
+            showException(ex,frame, dialogUiFactory);
         }
     }
 
@@ -573,7 +569,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                         closeWindow();
                 }
             } catch (RaplaException ex) {
-                showException(ex, new SwingPopupContext(null, null));
+                showException(ex, new SwingPopupContext(null, null), dialogUiFactory);
             }
         }
 
@@ -627,7 +623,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                 setSaved(true);
             }
         } catch (RaplaException ex) {
-            showException(ex, frame);
+            showException(ex, frame, dialogUiFactory);
         } finally {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             if (bSaved)

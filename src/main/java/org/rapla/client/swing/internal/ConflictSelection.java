@@ -55,6 +55,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -72,13 +73,15 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 	Collection<Conflict> conflicts;
 	Listener listener = new Listener();
     private final TreeFactory treeFactory;
+    private final DialogUiFactory dialogUiFactory;
 
 	 
-    public ConflictSelection(RaplaContext context,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory) throws RaplaException {
+    public ConflictSelection(RaplaContext context,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
         this.model = model;
         this.view = view;
         this.treeFactory = treeFactory;
+        this.dialogUiFactory = dialogUiFactory;
         conflicts = new LinkedHashSet<Conflict>( Arrays.asList(getQuery().getConflicts( )));
         updateTree();
         final JTree navTree = treeSelection.getTree();
@@ -152,7 +155,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                         CommandHistory commanHistory = getModification().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
-                        showException(ex, getComponent());
+                        showException(ex, getComponent(), dialogUiFactory);
                     }
                 }
 
@@ -168,7 +171,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                         CommandHistory commanHistory = getModification().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
-                        showException(ex, getComponent());
+                        showException(ex, getComponent(), dialogUiFactory);
                     }
                     
                 }
@@ -180,7 +183,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 
             menu.show(component, p.x, p.y);
         } catch (Exception ex) {
-            showException(ex, getComponent());
+            showException(ex, getComponent(), dialogUiFactory);
         }
     }
     

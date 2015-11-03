@@ -113,7 +113,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
             	copy( reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments );
             }
          } catch (Exception ex) {
-            showException( ex, getMainComponent() );
+            showException( ex, getMainComponent(), dialogUiFactory );
         }
     }
     

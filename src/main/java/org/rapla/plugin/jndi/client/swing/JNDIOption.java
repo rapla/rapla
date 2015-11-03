@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -32,6 +33,12 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.internal.edit.fields.GroupListField;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -41,13 +48,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.internal.edit.fields.GroupListField;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
@@ -74,24 +74,24 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 	
 	GroupListField groupField;
 	JNDIConfig configService;
-    private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final Provider<GroupListField> groupListFieldProvider;
+    private final RaplaResources raplaResources;
 
     @Inject
-    public JNDIOption(RaplaContext sm,JNDIConfig config, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public JNDIOption(RaplaContext sm, RaplaResources raplaResources, JNDIConfig config, DialogUiFactory dialogUiFactory, Provider<GroupListField>groupListFieldProvider) {
         super(sm);
+        this.raplaResources = raplaResources;
         this.configService = config;
-        this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.groupListFieldProvider = groupListFieldProvider;
     }
 
     protected JPanel createPanel() throws RaplaException {
     	digest = newTextField();
     	connectionName = newTextField();
     	connectionPassword = new JPasswordField();
-    	groupField = new GroupListField( getContext(), treeFactory, raplaImages, dialogUiFactory);
+    	groupField = groupListFieldProvider.get();
     	JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout( new BorderLayout());
         passwordPanel.add( connectionPassword, BorderLayout.CENTER);
@@ -150,7 +150,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                     String username = "admin";
                     String password ="";
                     {
-                        PasswordEnterUI testUser = new PasswordEnterUI(getContext());
+                        PasswordEnterUI testUser = new PasswordEnterUI(raplaResources);
                         DialogUI dialog =dialogUiFactory.create( getComponent(), true,testUser.getComponent(),new String[] {"test","abort"});
                         dialog.setTitle("Please enter valid user!");
                         dialog.start();
@@ -174,7 +174,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                 }
                 catch (Exception ex)
                 {
-                    showException(ex, getComponent());
+                    showException(ex, getComponent(), dialogUiFactory);
                 }
             }
     	    
@@ -234,7 +234,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
         } 
         catch (RaplaException ex)
         {
-            showException(ex, getComponent());
+            showException(ex, getComponent(), dialogUiFactory);
             this.config = config;
         }
     	readAttribute("digest", digest);

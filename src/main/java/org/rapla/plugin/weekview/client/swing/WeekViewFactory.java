@@ -29,6 +29,7 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -51,11 +52,12 @@ public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
+    private final DialogUiFactory dialogUiFactory;
 
     @Inject
     public WeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resources,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -68,12 +70,13 @@ public class WeekViewFactory extends RaplaComponent implements SwingViewFactory
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingWeekCalendar(context, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel,
-                clipboard, reservationController, infoFactory, raplaImages, dateRenderer);
+                clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
     }
 
     public String getViewId()

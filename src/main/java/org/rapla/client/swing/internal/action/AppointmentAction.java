@@ -16,21 +16,21 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.client.PopupContext;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -55,8 +55,9 @@ public class AppointmentAction extends RaplaAction {
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     
-	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         super( context);
         this.popupContext = popupContext;
@@ -64,6 +65,7 @@ public class AppointmentAction extends RaplaAction {
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -207,7 +209,7 @@ public class AppointmentAction extends RaplaAction {
             case DELETE_SELECTION: deleteSelection();break;
             }
         } catch (RaplaException ex) {
-            showError(ex,popupContext);
+            showError(ex,popupContext, dialogUiFactory);
         } // end of try-catch
     }
     

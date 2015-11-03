@@ -15,20 +15,17 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.framework.RaplaContext;
 
 
 public class CalendarAction extends RaplaAction {
@@ -36,19 +33,13 @@ public class CalendarAction extends RaplaAction {
     List<?> objects;
     Component parent;
     Date start;
-    private final Set<SwingViewFactory> swingViewFactory;
-    private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
+    private final MultiCalendarViewFactory multiCalendarViewFactory;
     private final DialogUiFactory dialogUiFactory;
 
-    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, TreeFactory treeFactory, Set<SwingViewFactory> swingViewFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory)
     {
         super( sm);
-        this.treeFactory = treeFactory;
-        this.swingViewFactory = swingViewFactory;
-        this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
+        this.multiCalendarViewFactory = multiCalendarViewFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
@@ -88,7 +79,7 @@ public class CalendarAction extends RaplaAction {
             model.setReservationFilter( null);
             frame.setTitle("Rapla "  + getString("calendar"));
 
-            MultiCalendarView cal = new MultiCalendarView(getContext(),model, treeFactory, raplaImages, dateRenderer, dialogUiFactory, swingViewFactory, false);
+            MultiCalendarView cal = multiCalendarViewFactory.create(false);
             frame.setContentPane(cal.getComponent());
             frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;
@@ -96,7 +87,7 @@ public class CalendarAction extends RaplaAction {
             frame.setVisible(true);
             cal.getSelectedCalendar().scrollToStart();
         } catch (Exception ex) {
-            showException(ex, parent);
+            showException(ex, parent, dialogUiFactory);
         }
     }
 }

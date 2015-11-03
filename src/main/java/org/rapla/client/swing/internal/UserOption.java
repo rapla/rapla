@@ -218,7 +218,7 @@ public class UserOption extends RaplaGUIComponent
 			} 
 			catch (RaplaException ex) 
 			{
-				showException( ex, getMainComponent());
+				showException( ex, getMainComponent(), dialogUiFactory);
 			}
 		}
 	}
@@ -262,7 +262,7 @@ public class UserOption extends RaplaGUIComponent
 			}
 			catch (RaplaException ex) 
 			{
-				showException( ex, getMainComponent());
+				showException( ex, getMainComponent(), dialogUiFactory);
 			}
 			
 		}
@@ -301,7 +301,7 @@ public class UserOption extends RaplaGUIComponent
 					}
 					
 				} catch (RaplaException ex) {
-					showException(ex, getMainComponent());
+					showException(ex, getMainComponent(), dialogUiFactory);
 				}
 			}
 			 
@@ -332,7 +332,7 @@ public class UserOption extends RaplaGUIComponent
 			            code.setEnabled(true);
 					} 
 					catch (Exception ex) {
-						showException(ex, getMainComponent());
+						showException(ex, getMainComponent(), dialogUiFactory);
 					}
 				}
 				 

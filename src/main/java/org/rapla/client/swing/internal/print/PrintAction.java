@@ -23,6 +23,7 @@ import javax.swing.SwingUtilities;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 
@@ -32,11 +33,13 @@ public class PrintAction extends RaplaAction {
     PageFormat m_pageFormat;
     final Map<String,SwingViewFactory> factoryMap;
     private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider) {
+    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactory dialogUiFactory) {
         super( sm);
         this.factoryMap = factoryMap;
         this.calendarPringDialogProvider = calendarPringDialogProvider;
+        this.dialogUiFactory = dialogUiFactory;
         setEnabled(false);
         putValue(NAME,getString("print"));
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.print"));
@@ -82,7 +85,7 @@ public class PrintAction extends RaplaAction {
             dialog.startNoPack();
             
         } catch (Exception ex) {
-            showException(ex, parent);
+            showException(ex, parent, dialogUiFactory);
         }
     }
 }

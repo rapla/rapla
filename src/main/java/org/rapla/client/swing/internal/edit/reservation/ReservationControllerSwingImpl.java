@@ -116,7 +116,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     @Override
     protected void showException(Exception ex, PopupContext sourceComponent)
     {
-        wrapper.showError(ex, sourceComponent);
+        wrapper.showError(ex, sourceComponent, dialogUiFactory);
     }
 
 

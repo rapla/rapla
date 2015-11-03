@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -32,7 +34,28 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultTreeModel;
 
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.action.RaplaObjectAction;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.internal.common.MultiCalendarView;
+import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.PopupEvent;
+import org.rapla.client.swing.toolkit.PopupListener;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaPopupMenu;
+import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
@@ -47,26 +70,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.action.RaplaObjectAction;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.internal.common.MultiCalendarView;
-import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.PopupEvent;
-import org.rapla.client.swing.toolkit.PopupListener;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget {
     protected JPanel content = new JPanel();
@@ -84,8 +87,9 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final EditController editController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(context);
 
         this.model = model;
@@ -95,6 +99,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         this.editController = editController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -106,7 +111,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         content.add(buttonsPanel, BorderLayout.NORTH);
         
         buttonsPanel.setLayout( new BorderLayout());
-        filterEdit = new FilterEditButton(context, treeFactory, model, listener, raplaImages, dateRenderer, dialogUiFactory, true);
+        filterEdit = new FilterEditButton(context, treeFactory, model, listener, raplaImages, dateFieldFactory, booleanFieldFactory, dialogUiFactory, true);
         buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
         
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
@@ -228,7 +233,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
             menu.show(component, p.x, p.y);
         } catch (RaplaException ex) {
-            showException(ex, getComponent());
+            showException(ex, getComponent(), dialogUiFactory);
         }
     }
     
@@ -250,7 +255,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory, raplaImages);
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory, raplaImages, dialogUiFactory);
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);
@@ -278,7 +283,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             		updateChange();
             	}
             } catch (Exception ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
         }
         
@@ -291,7 +296,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 				}
 				updateMenu();
 			} catch (Exception ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
 		}
 
@@ -340,5 +345,41 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         return menuFactory;
     }
     
+    @Singleton
+    public static class ResourceSelectionFactory
+    {
+        private final RaplaContext context;
+        private final CalendarSelectionModel model;
+        private final TreeFactory treeFactory;
+        private final MenuFactory menuFactory;
+        private final EditController editController;
+        private final InfoFactory<Component, DialogUI> infoFactory;
+        private final RaplaImages raplaImages;
+        private final DateFieldFactory dateFieldFactory;
+        private final DialogUiFactory dialogUiFactory;
+        private final BooleanFieldFactory booleanFieldFactory;
+
+        @Inject
+        public ResourceSelectionFactory(RaplaContext context, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory,
+                EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
+                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)
+        {
+            this.context = context;
+            this.model = model;
+            this.treeFactory = treeFactory;
+            this.menuFactory = menuFactory;
+            this.editController = editController;
+            this.infoFactory = infoFactory;
+            this.raplaImages = raplaImages;
+            this.dateFieldFactory = dateFieldFactory;
+            this.dialogUiFactory = dialogUiFactory;
+            this.booleanFieldFactory = booleanFieldFactory;
+        }
+
+        public ResourceSelection create(MultiCalendarView view)
+        {
+            return new ResourceSelection(context, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
+        }
+    }
    
 }

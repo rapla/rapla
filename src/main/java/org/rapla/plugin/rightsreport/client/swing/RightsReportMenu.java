@@ -60,7 +60,7 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
             report.show();
             dialog.startNoPack();
         } catch (RaplaException ex) {
-            showException( ex, getMainComponent());
+            showException( ex, getMainComponent(), dialogUiFactory);
         }
     }
 

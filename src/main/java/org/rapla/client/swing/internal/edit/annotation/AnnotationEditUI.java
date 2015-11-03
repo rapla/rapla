@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.entities.Annotatable;
 import org.rapla.framework.RaplaContext;

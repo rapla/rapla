@@ -34,13 +34,18 @@ import javax.swing.tree.TreePath;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
@@ -82,7 +87,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController) throws RaplaException {
         super(context);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
@@ -96,17 +101,17 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(nameField);
         emailField = new TextField(context,getString("email"));
         fields.add(emailField);
-        adminField = new AdminBooleanField(context,getString("admin"),getUser());
+        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, permissionController,getString("admin"),getUser());
         fields.add(adminField);
-        groupField = new GroupListField(context, treeFactory, raplaImages, dialogUiFactory);
-        fields.add(groupField);
+        this.groupField = groupField;
+        fields.add(this.groupField);
         setFields(fields);
     }
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
         User user;
-        public AdminBooleanField(RaplaContext sm, String fieldName, User user)  {
-            super(sm, fieldName);
+        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, String fieldName, User user)  {
+            super(facade, i18n, raplaLocale, logger, permissionController, fieldName);
             this.user = user;
         }
         
@@ -124,7 +129,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
 				} 
 	        	catch (RaplaException ex) 
 				{
-	        		showException(ex, getComponent());
+	        		showException(ex, getComponent(), dialogUiFactory);
 				}
 			}  
 	        return;
@@ -212,7 +217,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 try {
                     showAddDialog();
                 } catch (RaplaException ex) {
-                    showException(ex,newButton);
+                    showException(ex,newButton, dialogUiFactory);
                 }
             }
             
@@ -226,7 +231,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
 	                emailField.setValue( user.getEmail());
 	                updateButton();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent());
+					showException(ex, getComponent(), dialogUiFactory);
 				}
             }
                

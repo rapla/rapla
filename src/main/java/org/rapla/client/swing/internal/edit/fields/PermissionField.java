@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -37,6 +38,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
@@ -71,8 +73,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-    @Inject
-	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory) throws RaplaException {
         super( context);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
@@ -128,7 +129,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         startSelection.setModel( createSelectionModel() );
         startSelection.setSelectedIndex( 0 );
 
-        startDate = new DateField(context, dateRenderer);
+        startDate = dateFieldFactory.create();
         reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
 
         minAdvance = new LongField(context,new Long(0) );
@@ -139,7 +140,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         endSelection.setModel( createSelectionModel() );
         endSelection.setSelectedIndex( 0 );
 
-        endDate = new DateField(context, dateRenderer);
+        endDate = dateFieldFactory.create();
         reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
 
         maxAdvance = new LongField(context, new Long(1) );
@@ -394,6 +395,32 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     public void setEventType(boolean eventType) {
         this.eventType = eventType;
+    }
+    
+    @Singleton
+    public static class PermissionFieldFactory
+    {
+        private final RaplaContext context;
+        private final TreeFactory treeFactory;
+        private final RaplaImages raplaImages;
+        private final DialogUiFactory dialogUiFactory;
+        private final DateFieldFactory dateFieldFactory;
+
+        @Inject
+        public PermissionFieldFactory(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
+                DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory)
+        {
+            this.context = context;
+            this.treeFactory = treeFactory;
+            this.raplaImages = raplaImages;
+            this.dialogUiFactory = dialogUiFactory;
+            this.dateFieldFactory = dateFieldFactory;
+        }
+
+        public PermissionField create()
+        {
+            return new PermissionField(context, treeFactory, raplaImages, dialogUiFactory, dateFieldFactory);
+        }
     }
 
 }

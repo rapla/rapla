@@ -15,15 +15,15 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 
-import org.rapla.components.util.Tools;
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.util.Tools;
+import org.rapla.entities.User;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 
 public class PasswordChangeAction extends RaplaAction {
@@ -65,7 +65,7 @@ public class PasswordChangeAction extends RaplaAction {
                 return;
             changePassword((User) object, !getUser().isAdmin());
         } catch (RaplaException ex) {
-            showException(ex, popupContext);
+            showException(ex, popupContext, dialogUiFactory);
         }
     }
 
@@ -107,7 +107,7 @@ public class PasswordChangeAction extends RaplaAction {
                 getUserModule().changePassword(user , oldPassword, p1);
                 dlg.close();
             } catch (RaplaException ex) {
-                showException(ex,dlg);
+                showException(ex,dlg, dialogUiFactory);
             }
         }
     }

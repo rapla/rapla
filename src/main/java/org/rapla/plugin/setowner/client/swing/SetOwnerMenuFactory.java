@@ -157,7 +157,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                 }
                 catch (RaplaException ex )
                 {
-                    old.showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()));
+                    old.showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()), dialogUiFactory);
                 } 
             }
          });

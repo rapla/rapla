@@ -17,16 +17,30 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.ClassificationField;
+import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
+import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
+import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
@@ -35,19 +49,6 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.edit.fields.ClassificationField;
-import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
-import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
-import org.rapla.client.swing.internal.edit.fields.PermissionField;
-import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -60,12 +61,17 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     AllocatableSelection allocatableSelection;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public ReservationEditUI(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
+            PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+            DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
+            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException
+    {
         super(context);
-        classificationField = new ClassificationField<Reservation>(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
-        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
+        classificationField = classificationFieldFactory.create();
+        this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
-        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer, dialogUiFactory)
+        allocatableSelection = new AllocatableSelection(context, false, new CommandHistory(), treeFactory, originalModel, appointmentFormater,
+                permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory, booleanFieldFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };

@@ -25,16 +25,17 @@ import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.EmptyLineBorder;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
-import org.rapla.client.swing.toolkit.EmptyLineBorder;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 public class AttributeEdit extends RaplaGUIComponent
     implements
@@ -47,11 +48,12 @@ public class AttributeEdit extends RaplaGUIComponent
 
     Listener listener = new Listener();
     DefaultListModel model = new DefaultListModel();
+    private final DialogUiFactory dialogUiFactory;
 
 
 
     @Inject
-    public AttributeEdit(RaplaContext context, AttributeDefaultConstraints constraintPanel, RaplaImages raplaImages) throws RaplaException {
+    public AttributeEdit(RaplaContext context, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
         super( context);
 
         // 1.
@@ -66,7 +68,8 @@ public class AttributeEdit extends RaplaGUIComponent
 
 
         this.constraintPanel = constraintPanel;
-        listEdit = new RaplaListEdit<Attribute>( getI18n(), raplaImages, constraintPanel.getComponent(), listener );
+        this.dialogUiFactory = dialogUiFactory;
+        listEdit = raplaListEditFactory.create( getI18n(), constraintPanel.getComponent(), listener );
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );
@@ -126,7 +129,7 @@ public class AttributeEdit extends RaplaGUIComponent
                 }
 
             } catch (RaplaException ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
         }
         public void stateChanged(ChangeEvent e) {
@@ -134,7 +137,7 @@ public class AttributeEdit extends RaplaGUIComponent
                 confirmEdits();
                 fireContentChanged();
             } catch (RaplaException ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
         }
     }

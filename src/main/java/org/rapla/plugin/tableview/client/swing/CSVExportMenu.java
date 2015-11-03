@@ -71,7 +71,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
          try {
              export( model);
          } catch (Exception ex) {
-             showException( ex, getMainComponent() );
+             showException( ex, getMainComponent(), dialogUiFactory );
          }
      }
 	 

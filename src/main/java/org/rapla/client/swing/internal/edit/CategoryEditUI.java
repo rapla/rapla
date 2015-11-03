@@ -82,10 +82,13 @@ public class CategoryEditUI extends RaplaGUIComponent
 
     private final TreeFactory treeFactory;
 
+    private final DialogUiFactory dialogUiFactory;
+
     @Inject
     public CategoryEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
         super( context);
         this.treeFactory = treeFactory;
+        this.dialogUiFactory = dialogUiFactory;
         detailPanel = new CategoryDetail(context, raplaImages, dialogUiFactory);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
@@ -157,14 +160,14 @@ public class CategoryEditUI extends RaplaGUIComponent
                     detailPanel.mapFrom( category );
                 }
             } catch (RaplaException ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
         }
         public void stateChanged(ChangeEvent e) {
             try {
                 confirmEdits();
             } catch (RaplaException ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
         }
     }

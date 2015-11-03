@@ -555,6 +555,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         	final RaplaContext context = getContext();
 			final Logger logger = getLogger();
 			final DialogUiFactory dialogUiFactory = inject(DialogUiFactory.class);
+			final RaplaImages raplaImages = inject(RaplaImages.class);
             final LanguageChooser languageChooser = inject(LanguageChooser.class);
             
             final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent(), frameControllerList);
@@ -601,13 +602,13 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, context, logger, dialogUiFactory);
+                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, i18n, raplaImages, logger, dialogUiFactory);
                         }
                     } 
                     catch (RaplaException ex) 
                     {
                         dlg.resetPassword();
-                        RaplaGUIComponent.showException(ex, dlg, context, logger, dialogUiFactory);
+                        RaplaGUIComponent.showException(ex, dlg, i18n, raplaImages, logger, dialogUiFactory);
                     }
                     if ( success) {
                         dlg.close();
@@ -615,7 +616,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         try {
                             beginRaplaSession();
                         } catch (Throwable ex) {
-                        	RaplaGUIComponent.showException(ex, null, context, logger, dialogUiFactory);
+                        	RaplaGUIComponent.showException(ex, null, i18n, raplaImages, logger, dialogUiFactory);
                             fireClientAborted();
                         }
                     } // end of else

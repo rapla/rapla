@@ -26,7 +26,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.inject.Provider;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -36,6 +37,10 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.internal.edit.RaplaListEdit;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
+import org.rapla.client.swing.internal.edit.fields.PermissionField.PermissionFieldFactory;
+import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -43,12 +48,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.RaplaListEdit;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.EmptyLineBorder;
-import org.rapla.components.calendar.DateRenderer;
 /**
  *  @author Christopher Kohlhaas
  */
@@ -66,12 +65,12 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	Permission.AccessLevel defaultAccessLevel = null;
 	
 	List<Permission> notAllList = new ArrayList<Permission>();
-	public PermissionListField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, String fieldName, DialogUiFactory dialogUiFactory) throws RaplaException {
+	public PermissionListField(RaplaContext context, String fieldName, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory) throws RaplaException {
 		super(context);
-		this.permissionField = new PermissionField(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
+		this.permissionField = permissionFieldFactory.create();
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
-		listEdit = new RaplaListEdit<Permission>(getI18n(), raplaImages, permissionField.getComponent(), listener);
+		listEdit = raplaListEditFactory.create(getI18n(), permissionField.getComponent(), listener);
 		jPanel.add(listEdit.getComponent(), BorderLayout.CENTER);
 		
 		jPanel.setBorder(BorderFactory.createTitledBorder(new EmptyLineBorder(), getString("permissions")));
@@ -346,6 +345,29 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	public Permission.AccessLevel getDefaultAccessLevel() 
 	{
         return defaultAccessLevel;
+    }
+	
+    @Singleton
+    public static class PermissionListFieldFactory
+    {
+
+        private final RaplaContext context;
+        private final RaplaListEditFactory raplaListEditFactory;
+        private final PermissionFieldFactory permissionFieldFactory;
+
+        @Inject
+        public PermissionListFieldFactory(RaplaContext context, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory)
+        {
+            super();
+            this.context = context;
+            this.raplaListEditFactory = raplaListEditFactory;
+            this.permissionFieldFactory = permissionFieldFactory;
+        }
+
+        public PermissionListField create(final String fieldName)
+        {
+            return new PermissionListField(context, fieldName, raplaListEditFactory, permissionFieldFactory);
+        }
     }
 	
 }

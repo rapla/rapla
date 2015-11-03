@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -258,8 +260,6 @@ final public class RaplaListEdit<T> implements
              
                 }
             }
-
-
         });
     }
     
@@ -488,7 +488,24 @@ final public class RaplaListEdit<T> implements
         return ((DefaultListModel)list.getModel()).indexOf( a);    
     }
     
+    @Singleton
+    public static class RaplaListEditFactory
+    {
 
+        private final RaplaImages images;
+
+        @Inject
+        public RaplaListEditFactory(RaplaImages images)
+        {
+            super();
+            this.images = images;
+        }
+
+        public RaplaListEdit create(I18nBundle i18n, JComponent detailContent, ActionListener callback)
+        {
+            return new RaplaListEdit(i18n, images, detailContent, callback);
+        }
+    }
 	
 }
 

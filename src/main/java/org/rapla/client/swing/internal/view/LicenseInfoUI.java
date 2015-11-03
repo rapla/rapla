@@ -23,6 +23,7 @@ import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -39,11 +40,13 @@ final public class LicenseInfoUI
     JScrollPane scrollPane;
     HTMLView license;
     private final DialogUiFactory dialogUiFactory;
+    private final Provider<LicenseUI> licenseUiProvider;
 
     @Inject
-    public LicenseInfoUI(RaplaContext context, DialogUiFactory dialogUiFactory) throws RaplaException  {
+    public LicenseInfoUI(RaplaContext context, DialogUiFactory dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
         super( context);
         this.dialogUiFactory = dialogUiFactory;
+        this.licenseUiProvider = licenseUiProvider;
         license = new HTMLView();
         license.addHyperlinkListener(this);
         scrollPane= new JScrollPane(license);
@@ -76,7 +79,7 @@ final public class LicenseInfoUI
 
     public void viewLicense(Component owner,boolean modal,String link) {
         try {
-            LicenseUI license =  new LicenseUI( getContext());
+            LicenseUI license =  licenseUiProvider.get();
             DialogUI dialog = dialogUiFactory.create(owner,modal,license.getComponent(), new String[] {getString("ok")} );
             dialog.setTitle(getString("licensedialog.title"));
             dialog.setSize(600,400);
@@ -90,7 +93,7 @@ final public class LicenseInfoUI
                 license.showTop();
             }
         } catch (Exception ex) {
-            showException(ex,owner);
+            showException(ex,owner, dialogUiFactory);
         }
     }
 

@@ -13,7 +13,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client.swing;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.swing.MenuElement;
+
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.MenuScroller;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.EntityNotFoundException;
@@ -26,23 +53,9 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.MenuScroller;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.text.Collator;
-import java.util.*;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
@@ -53,12 +66,14 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     private final CalendarSelectionModel model;
     private final EditController editController;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 	@Inject
-    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages) throws RaplaException{
+    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException{
         super(context);
         this.model = model;
         this.editController = editController;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -278,7 +293,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
             reservations = getQuery().getTemplateReservations(template);
             if (reservations.size() == 0)
             {
-                showException(new EntityNotFoundException("Template " + template + " is empty. Please create events in template first."), getMainComponent());
+                showException(new EntityNotFoundException("Template " + template + " is empty. Please create events in template first."), getMainComponent(), dialogUiFactory);
                 return;
             }
             Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
@@ -311,7 +326,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		}
 		catch (RaplaException ex)
 		{
-			showException( ex, getMainComponent());
+			showException( ex, getMainComponent(), dialogUiFactory);
 		}
     }
 	

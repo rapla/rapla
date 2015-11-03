@@ -25,13 +25,12 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
+import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -53,17 +52,18 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     BooleanField holdBackConflictsField;
     final JComponent holdBackConflictPanel;
 
+    @SuppressWarnings("unchecked")
     @Inject
-    public AllocatableEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public AllocatableEditUI(RaplaContext context, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Allocatable>(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory);
-        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
+        classificationField = classificationFieldFactory.create();
+        this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
         
         this.permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         final JComponent permissionPanel = permissionListField.getComponent();
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
-        holdBackConflictsField = new BooleanField(context,getString("holdbackconflicts"));
+        holdBackConflictsField = booleanFieldFactory.create(getString("holdbackconflicts"));
         holdBackConflictPanel = new JPanel();
         holdBackConflictPanel.setLayout( new BorderLayout());
         holdBackConflictPanel.add(new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);

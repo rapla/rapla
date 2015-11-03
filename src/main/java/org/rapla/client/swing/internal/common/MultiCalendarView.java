@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListCellRenderer;
@@ -49,12 +51,13 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.CalendarEditor;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
@@ -118,18 +121,20 @@ public class MultiCalendarView extends RaplaGUIComponent
     FilterEditButton filter;
     CalendarEditor calendarEditor;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     
     public MultiCalendarView(RaplaContext context, CalendarSelectionModel model, CalendarEditor calendarEditor, TreeFactory treeFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList) throws RaplaException
+            RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, final Set<SwingViewFactory> factoryList) throws RaplaException
     {
-    	this( context, model, treeFactory, raplaImages, dateRenderer, dialogUiFactory, factoryList, true);
+    	this( context, model, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, factoryList, true);
     	this.calendarEditor = calendarEditor;
     }
     
 
-	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
+	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
         super( context);
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
         this.editable = editable;
         this.model = model;
@@ -154,7 +159,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         addTypeChooser( ids );
         header.setLayout(new BorderLayout());
         header.add( viewChooser, BorderLayout.CENTER);
-        filter = new FilterEditButton(context, treeFactory, model, this, raplaImages, dateRenderer, dialogUiFactory, false);
+        filter = new FilterEditButton(context, treeFactory, model, this, raplaImages, dateFieldFactory, booleanFieldFactory, dialogUiFactory, false);
         final JPanel filterContainer = new JPanel();
         filterContainer.setLayout( new BorderLayout());
         filterContainer.add(filter.getButton(), BorderLayout.WEST);
@@ -187,7 +192,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                 try {
                     selectView( viewId );
                 } catch (RaplaException ex) {
-                    showException(ex, page);
+                    showException(ex, page, dialogUiFactory);
                 }
             }
         }
@@ -231,7 +236,7 @@ public class MultiCalendarView extends RaplaGUIComponent
             	update(null);
             }
         } catch (Exception ex) {
-            showException(ex, getComponent());
+            showException(ex, getComponent(), dialogUiFactory);
         }
     }
     private void addMenu( CalendarSelectionModel model, String[] ids, RaplaMenu view )
@@ -267,7 +272,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                     try {
                         selectView( viewId );
                     } catch (RaplaException ex) {
-                        showException(ex, page);
+                        showException(ex, page, dialogUiFactory);
                     }
         		}
    
@@ -428,8 +433,42 @@ public class MultiCalendarView extends RaplaGUIComponent
         return page;
     }
 
+    @Singleton
+    public static class MultiCalendarViewFactory {
+        
+        private final RaplaContext context;
+        private final CalendarSelectionModel model;
+        private final TreeFactory treeFactory;
+        private final RaplaImages raplaImages;
+        private final DateFieldFactory dateFieldFactory;
+        private final DialogUiFactory dialogUiFactory;
+        private final Set<SwingViewFactory> factoryList;
+        private final BooleanFieldFactory booleanFieldFactory;
 
+        @Inject
+        public MultiCalendarViewFactory(RaplaContext context, CalendarSelectionModel model, TreeFactory treeFactory,
+                RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList, BooleanFieldFactory booleanFieldFactory)
+        {
+            this.context = context;
+            this.model = model;
+            this.treeFactory = treeFactory;
+            this.raplaImages = raplaImages;
+            this.dateFieldFactory = dateFieldFactory;
+            this.dialogUiFactory = dialogUiFactory;
+            this.factoryList = factoryList;
+            this.booleanFieldFactory = booleanFieldFactory;
+        }
+ 
+        public MultiCalendarView create(boolean editable)
+        {
+            return new MultiCalendarView(context, model, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, factoryList, editable);
+        }
 
+        public MultiCalendarView create(CalendarEditor calendarEditor)
+        {
+            return new MultiCalendarView(context, model, calendarEditor, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, factoryList);
+        }
+    }
 
 
 }

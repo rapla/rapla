@@ -19,6 +19,7 @@ import java.awt.print.Printable;
 import java.util.Collection;
 import java.util.HashMap;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -46,6 +47,7 @@ public class ExportServiceList extends RaplaGUIComponent  {
      * @param sm
      * @throws RaplaException
      */
+    @Inject
     public ExportServiceList(RaplaContext sm, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(sm);
         this.raplaImages = raplaImages;

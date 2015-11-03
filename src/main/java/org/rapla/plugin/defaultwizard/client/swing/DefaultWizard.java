@@ -31,6 +31,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
@@ -53,13 +54,15 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     private final CalendarModel model;
     private final EditController editController;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
     @Inject
-	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages){
+	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
         super(sm);
         this.permissionController = permissionController;
         this.model = model;
         this.editController = editController;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
     
     public String getId() {
@@ -149,7 +152,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		}
 		catch (RaplaException ex)
 		{
-			showException( ex, getMainComponent());
+			showException( ex, getMainComponent(), dialogUiFactory);
 		}
     }
 

@@ -245,7 +245,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
             }
             catch (RaplaException ex)
             {
-                showException(ex, dlg);
+                showException(ex, dlg, dialogUiFactory);
             }
         }
     }

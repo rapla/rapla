@@ -19,29 +19,44 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
 
+import javax.inject.Inject;
 import javax.swing.DefaultListModel;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 
-final public class ErrorDialog extends RaplaComponent {
+final public class ErrorDialog {
     RaplaImages images;
     private final DialogUiFactory dialogUiFactory;
+    private final I18nBundle i18n;
+    private final Logger logger;
     /**
      * @param context
      * @throws RaplaException
      */
-    public ErrorDialog(RaplaContext context, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(context);
+    @Inject
+    public ErrorDialog(Logger logger, I18nBundle i18n, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+        this.logger = logger;
+        this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
-        images = context.lookup( RaplaImages.class);
+        images = raplaImages;
+    }
+    
+    protected I18nBundle getI18n()
+    {
+        return i18n;
+    }
+    
+    protected Logger getLogger()
+    {
+        return logger;
     }
 
     public static final int WARNING_MESSAGE = 1;

@@ -20,6 +20,19 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
+import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
+import org.rapla.client.swing.internal.edit.fields.ListField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -36,18 +49,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
-import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
-import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
-import org.rapla.client.swing.internal.edit.fields.ListField;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
-import org.rapla.client.swing.internal.edit.fields.TextField;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.RaplaButton;
 
 public class AttributeDefaultConstraints extends AbstractEditField
     implements ActionListener
@@ -101,7 +102,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
+    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException
     {
         super( context );
         this.dialogUiFactory = dialogUiFactory;
@@ -123,11 +124,11 @@ public class AttributeDefaultConstraints extends AbstractEditField
         //addCopyPaste( expectedRows.getNumberField());
         //addCopyPaste( expectedColumns.getNumberField());
 
-        defaultSelectBoolean = new BooleanField(context);
+        defaultSelectBoolean = booleanFieldFactory.create();
         defaultSelectDate = createRaplaCalendar(dateRenderer);
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
-        multiSelect = new BooleanField(context);
+        multiSelect = booleanFieldFactory.create();
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]
@@ -166,7 +167,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
                 try {
                     showAnnotationDialog();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent());
+                    showException(ex, getComponent(), dialogUiFactory);
                 }
 
             }
@@ -427,7 +428,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         try {
             update();
         } catch (RaplaException ex) {
-            showException(ex, getComponent());
+            showException(ex, getComponent(), dialogUiFactory);
         }
     }
 

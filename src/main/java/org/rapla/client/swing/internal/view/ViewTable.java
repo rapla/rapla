@@ -32,6 +32,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
@@ -67,11 +68,13 @@ public class ViewTable<T> extends RaplaGUIComponent
     boolean packText = true;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final IOInterface ioInterface;
+    private final DialogUiFactory dialogUiFactory;
 
-    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface) {
+    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface, DialogUiFactory dialogUiFactory) {
         super( sm);
         this.infoFactory = infoFactory;
         this.ioInterface = ioInterface;
+        this.dialogUiFactory = dialogUiFactory;
         linkMap = new HashMap<Integer,Object>(7);
         htmlView.addHyperlinkListener(this);
         htmlView.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
@@ -176,7 +179,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         		try {
         			infoFactory.showInfoDialog(object,new SwingPopupContext(htmlView,null));
         		} catch (RaplaException ex) {
-        			showException(ex,getComponent());
+        			showException(ex,getComponent(), dialogUiFactory);
         		} // end of try-catch
         	}
         	catch ( NumberFormatException ex)
@@ -187,7 +190,7 @@ public class ViewTable<T> extends RaplaGUIComponent
 				} 
         		catch (Exception e1) 
         		{
-        			showException(ex,getComponent());
+        			showException(ex,getComponent(), dialogUiFactory);
         		}	
         	}
         }

@@ -42,6 +42,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.action.AppointmentAction;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
@@ -56,13 +62,6 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.AppointmentAction;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
@@ -88,19 +87,17 @@ public class RaplaGUIComponent extends RaplaComponent
 
 
 
-    public void showException(Throwable ex,PopupContext popupContext) {
-        showException(ex, SwingPopupContext.extractParent(popupContext));
+    public void showException(Throwable ex,PopupContext popupContext, DialogUiFactory dialogUiFactory) {
+        showException(ex, SwingPopupContext.extractParent(popupContext), dialogUiFactory);
     }
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.
     @param owner the exception that should be displayed. Can be null, but providing
     a parent-component will lead to a more appropriate display.
 	*/
-	public void showException(Throwable ex,Component owner) {
-	    RaplaContext context = getContext();
+	public void showException(Throwable ex,Component owner, DialogUiFactory dialogUiFactory) {
 		Logger logger = getLogger();
-		DialogUiFactory dialogUiFactory = getService(DialogUiFactory.class);
-        showException(ex, owner, context, logger, dialogUiFactory );
+        showException(ex, owner, getI18n(), getImages(), logger, dialogUiFactory );
 	}
 	
 	/**
@@ -108,23 +105,23 @@ public class RaplaGUIComponent extends RaplaComponent
 	 * 
 	 */
 	@Deprecated 
-	public AppointmentAction createAppointmentAction(Component component, Point p)
+	public AppointmentAction createAppointmentAction(Component component, Point p, DialogUiFactory dialogUiFactory)
 	{
 	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    final ReservationController reservationController = getReservationController();
 	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
         final RaplaImages raplaImages = getService(RaplaImages.class);
-        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages);
+        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory);
 	}
 	
 
-	public void showError(Exception ex,PopupContext context) {
+	public void showError(Exception ex,PopupContext context, DialogUiFactory dialogUiFactory) {
 	    Component owner= null;
 	    if ( context instanceof SwingPopupContext)
 	    {
 	        owner = ((SwingPopupContext) context).getParent();
 	    }
-	    showException(ex, owner);
+	    showException(ex, owner, dialogUiFactory);
 	}
 
 	
@@ -135,7 +132,7 @@ public class RaplaGUIComponent extends RaplaComponent
 
 	
 	static public void showException(Throwable ex, Component owner,
-			RaplaContext context, Logger logger, DialogUiFactory dialogUiFactory) {
+			RaplaResources i18n, RaplaImages raplaImages, Logger logger, DialogUiFactory dialogUiFactory) {
 		if ( ex instanceof RaplaConnectException)
 	    {
 	        String message = ex.getMessage();
@@ -152,7 +149,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	            return;
 	        }
 	        try {
-	            ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
+	            ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, dialogUiFactory);
 	            dialog.showWarningDialog( message, owner);
 	        } catch (RaplaException e) {
 	    	} catch (Throwable e) {
@@ -161,7 +158,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	        return;
 	    }
 	    try {
-	        ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
+            ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, dialogUiFactory);
 	        if (ex instanceof DependencyException) {
 	            dialog.showWarningDialog( getHTML( (DependencyException)ex ), owner);
 	        }
@@ -206,15 +203,14 @@ public class RaplaGUIComponent extends RaplaComponent
 
 	 /** Creates a new ErrorDialog with the specified owner and displays the waring */
     public void showWarning(String warning,Component owner) {
-        RaplaContext context = getContext();
     	Logger logger = getLogger();
     	final DialogUiFactory dialogUiFactory = getService(DialogUiFactory.class);
-		showWarning(warning, owner, context, logger, dialogUiFactory);
+		showWarning(warning, owner,getI18n(), getImages(), logger, dialogUiFactory);
     }
 
-	public static void showWarning(String warning, Component owner,	RaplaContext context, Logger logger, DialogUiFactory dialogUiFactory) {
+	public static void showWarning(String warning, Component owner,	RaplaResources i18n, RaplaImages raplaImages, Logger logger, DialogUiFactory dialogUiFactory) {
 		try {
-			ErrorDialog dialog = new ErrorDialog(context, dialogUiFactory);
+            ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, dialogUiFactory);
             dialog.showWarningDialog(warning,owner);
         } catch (RaplaException ex2) {
         	logger.error(ex2.getMessage(),ex2);

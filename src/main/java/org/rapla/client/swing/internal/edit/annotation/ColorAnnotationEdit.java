@@ -15,6 +15,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id="colorannotation")
@@ -22,10 +23,12 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
 {
 
     private final String annotationName = AttributeAnnotations.KEY_COLOR;
+    private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
-    public ColorAnnotationEdit(RaplaContext context) {
+    public ColorAnnotationEdit(RaplaContext context, BooleanFieldFactory booleanFieldFactory) {
         super(context);
+        this.booleanFieldFactory = booleanFieldFactory;
     }
 
     @Override
@@ -41,7 +44,7 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(),getString(annotationName));
+        BooleanField field = booleanFieldFactory.create(getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( annotation.equalsIgnoreCase("true"));

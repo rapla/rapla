@@ -124,7 +124,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             try {
                 showDialog(selectButton);
             } catch (RaplaException ex) {
-                showException(ex,selectButton);
+                showException(ex,selectButton, dialogUiFactory);
             }
         }
     }

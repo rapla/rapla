@@ -16,10 +16,17 @@ package org.rapla.client.swing.gui.edit.test;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
 
@@ -37,8 +44,14 @@ public final class AttributeEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        RaplaImages raplaImages = new RaplaImages(getLogger());
-        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaImages );
+        final Logger logger = getLogger();
+        RaplaImages raplaImages = new RaplaImages(logger);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
+        BundleManager bundleManager = new ServerBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
+        FrameControllerList frameList = new FrameControllerList(logger);
+        DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList);
+        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaListEditFactory, dialogUiFactory);
         editor.setDynamicType(clientService.getFacade().getDynamicTypes(null)[0]);
         testComponent(editor.getComponent(),500,500);
         getLogger().info("Attribute edit started");
@@ -46,8 +59,14 @@ public final class AttributeEditTest extends GUITestCase
 
     public void testNew() throws Exception {
         ClientService clientService = getClientService();
-        RaplaImages raplaImages = new RaplaImages(getLogger());
-        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaImages);
+        final Logger logger = getLogger();
+        RaplaImages raplaImages = new RaplaImages(logger);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
+        BundleManager bundleManager = new ServerBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
+        FrameControllerList frameList = new FrameControllerList(logger);
+        DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList);
+        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaListEditFactory, dialogUiFactory);
         DynamicType type =  clientService.getFacade().edit(clientService.getFacade().getDynamicTypes(null)[0]);
         Attribute attribute = type.getAttributes()[0];
         editor.setDynamicType(type);

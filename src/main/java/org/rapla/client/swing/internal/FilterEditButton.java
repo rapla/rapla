@@ -11,16 +11,17 @@ import javax.swing.JComponent;
 import javax.swing.JWindow;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.facade.ClassifiableFilter;
-import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.facade.ClassifiableFilter;
+import org.rapla.framework.RaplaContext;
 
 public class FilterEditButton extends RaplaGUIComponent
 {
@@ -28,7 +29,7 @@ public class FilterEditButton extends RaplaGUIComponent
     JWindow popup;
     ClassifiableFilterEdit ui;
         
-    public FilterEditButton(final RaplaContext context, final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages, final DateRenderer dateRenderer, final DialogUiFactory dialogUiFactory, final boolean isResourceSelection) 
+    public FilterEditButton(final RaplaContext context, final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages, final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory, final boolean isResourceSelection) 
     {
         super(context);
         filterButton = new RaplaArrowButton('v');
@@ -50,7 +51,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     {
                         ui.removeChangeListener( listener);
                     }
-                    ui = new ClassifiableFilterEdit( context, treeFactory, isResourceSelection, raplaImages, dateRenderer, dialogUiFactory);
+                    ui = new ClassifiableFilterEdit( context, treeFactory, isResourceSelection, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
                     if ( listener != null)
                     {
                     	ui.addChangeListener(listener);
@@ -79,7 +80,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     popup.setVisible(true);
                     filterButton.setChar('^');
                 } catch (Exception ex) {
-                    showException(ex, getMainComponent());
+                    showException(ex, getMainComponent(), dialogUiFactory);
                 }
             }
             

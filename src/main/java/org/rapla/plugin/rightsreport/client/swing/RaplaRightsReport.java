@@ -38,6 +38,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 
 
@@ -67,10 +68,13 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 
     private final TreeFactory treeFactory;
 
+    private final DialogUiFactory dialogUiFactory;
+
 	@Inject
-	public RaplaRightsReport(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
+	public RaplaRightsReport(RaplaContext context, TreeFactory treeFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
 		super(context);
         this.treeFactory = treeFactory;
+        this.dialogUiFactory = dialogUiFactory;
 
 		// creation of different panels
 		mainPanel = new JPanel();
@@ -193,7 +197,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 			}
 			assignedElementsList.setModel(assignedElementsListModel);
 		} catch (RaplaException ex) {
-			showException(ex, getMainComponent());
+			showException(ex, getMainComponent(), dialogUiFactory);
 		}
 	}
 	
@@ -280,7 +284,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 				selectionTreeTable.getTree().setModel(selectionModel);
 				assignedElementsListModel.clear();
 			} catch (RaplaException ex) {
-				showException(ex, getMainComponent());
+				showException(ex, getMainComponent(), dialogUiFactory);
 			}
 	}
 

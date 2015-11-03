@@ -22,7 +22,6 @@ import java.awt.event.ActionListener;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -35,23 +34,20 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.action.SaveableToggleAction;
+import org.rapla.client.swing.internal.ResourceSelection.ResourceSelectionFactory;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
+import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -81,11 +77,12 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory) throws RaplaException {
         super(context);
         this.raplaImages = raplaImages;
 
-        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, dateRenderer, dialogUiFactory, factoryList);
+        calendarContainer = multiCalendarViewFactory.create(this);
+        resourceSelection = resourceSelectionFactory.create(calendarContainer);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 
@@ -102,7 +99,6 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)
@@ -133,7 +129,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 	   				calendarContainer.update(modificationEvt);
 	   				conflictsView.dataChanged( modificationEvt);
 		    	} catch (Exception ex) {
-                   showException(ex, getComponent());
+                   showException(ex, getComponent(), dialogUiFactory);
 		    	}
 
 			}
@@ -146,7 +142,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         viewMenu.insertBeforeId( ownReservationsMenu, "show_tips" );
 
         resourceSelection.getTreeSelection().addChangeListener( treeListener);
-        conflictsView = new ConflictSelection(context, calendarContainer, model, treeFactory);
+        conflictsView = new ConflictSelection(context, calendarContainer, model, treeFactory, dialogUiFactory);
         left = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.gridheight = 1;

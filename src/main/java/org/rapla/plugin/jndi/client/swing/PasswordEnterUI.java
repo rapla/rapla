@@ -20,12 +20,11 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-import org.rapla.framework.RaplaContext;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 
 
-public class PasswordEnterUI extends RaplaGUIComponent
+public class PasswordEnterUI 
     implements
     RaplaWidget
 {
@@ -40,8 +39,7 @@ public class PasswordEnterUI extends RaplaGUIComponent
     JPasswordField tf2 = new JPasswordField(10);
 
     
-    public PasswordEnterUI(RaplaContext sm) {
-        super( sm);
+    public PasswordEnterUI(RaplaResources i18n) {
         panel.setLayout(gridLayout1);
         gridLayout1.setRows( 2);
         gridLayout1.setColumns(2);
@@ -51,8 +49,8 @@ public class PasswordEnterUI extends RaplaGUIComponent
         panel.add(tf1);
         panel.add(label2);
         panel.add(tf2);
-        label1.setText(getString("username") + ":");
-        label2.setText(getString("password") + ":");
+        label1.setText(i18n.getString("username") + ":");
+        label2.setText(i18n.getString("password") + ":");
     }
 
     public JComponent getComponent() {

@@ -15,13 +15,24 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
+import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
@@ -34,13 +45,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
-import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.storage.StorageOperator;
 
 public class TemplateEdit extends RaplaGUIComponent 
@@ -54,13 +58,13 @@ public class TemplateEdit extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     
-    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public TemplateEdit(RaplaContext context, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(context);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory)
+        allocatableEdit = new AllocatableEditUI(context, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
@@ -105,11 +109,11 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
 
                 } catch (RaplaException ex) {
-                    showException(ex, templateList.getComponent());
+                    showException(ex, templateList.getComponent(), dialogUiFactory);
                 }
             }
         };
-        templateList = new RaplaListEdit<Allocatable>(i18n, raplaImages, allocatableEdit.getComponent(), callback);
+        templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback);
         templateList.setNameProvider( new NameProvider<Allocatable>()
                 {
 
@@ -254,7 +258,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
                     catch (RaplaException ex)
                     {
-                        showException( ex, getMainComponent());
+                        showException( ex, getMainComponent(), dialogUiFactory);
                     }
                     dlg.close();
                 }
@@ -272,7 +276,7 @@ public class TemplateEdit extends RaplaGUIComponent
             dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.confirm"));
             dlg.start();
         } catch (RaplaException ex) {
-            showException( ex, parentComponent);
+            showException( ex, parentComponent, dialogUiFactory);
         }
     }
 
@@ -288,7 +292,38 @@ public class TemplateEdit extends RaplaGUIComponent
         templateList.getList().setModel( sortedModel );
     }
     
-   
-    
- 
+    @Singleton
+    public static class TemplateEditFactory
+    {
+        private final RaplaContext context;
+        private final CalendarSelectionModel calendarSelectionModel;
+        private final RaplaImages raplaImages;
+        private final DialogUiFactory dialogUiFactory;
+        private final ClassificationFieldFactory classificationFieldFactory;
+        private final PermissionListFieldFactory permissionListFieldFactory;
+        private final RaplaListEditFactory raplaListEditFactory;
+        private final BooleanFieldFactory booleanFieldFactory;
+
+        @Inject
+        public TemplateEditFactory(RaplaContext context, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages,
+                DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
+                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory)
+        {
+            this.context = context;
+            this.calendarSelectionModel = calendarSelectionModel;
+            this.raplaImages = raplaImages;
+            this.dialogUiFactory = dialogUiFactory;
+            this.classificationFieldFactory = classificationFieldFactory;
+            this.permissionListFieldFactory = permissionListFieldFactory;
+            this.raplaListEditFactory = raplaListEditFactory;
+            this.booleanFieldFactory = booleanFieldFactory;
+        }
+
+        public TemplateEdit create()
+        {
+            return new TemplateEdit(context, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory, permissionListFieldFactory,
+                    raplaListEditFactory, booleanFieldFactory);
+        }
+    }
+
 }

@@ -15,6 +15,7 @@ import org.rapla.client.swing.AnnotationEditExtension;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.inject.Extension;
 
 @Extension(provides = AnnotationEditAttributeExtension.class, id = "categorization")
@@ -22,11 +23,13 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
 {
 
     final String annotationName = AttributeAnnotations.KEY_CATEGORIZATION;
+    private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
-    public CategorizationAnnotationEdit(RaplaContext context)
+    public CategorizationAnnotationEdit(RaplaContext context, BooleanFieldFactory booleanFieldFactory)
     {
         super(context);
+        this.booleanFieldFactory = booleanFieldFactory;
     }
 
     @Override
@@ -38,7 +41,7 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
         }
         Attribute attribute = (Attribute) annotatable;
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(), getString(annotationName));
+        BooleanField field = booleanFieldFactory.create(getString(annotationName));
         if (annotation != null)
         {
             field.setValue(annotation.equalsIgnoreCase("true"));

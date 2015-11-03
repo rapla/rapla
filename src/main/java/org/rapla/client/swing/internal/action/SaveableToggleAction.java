@@ -16,16 +16,19 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 public class SaveableToggleAction extends RaplaAction {
 	
    TypedComponentRole<Boolean> configEntry;
    String name;
+    private final DialogUiFactory dialogUiFactory;
    
-   public SaveableToggleAction(RaplaContext context,String name,TypedComponentRole<Boolean> configEntry)  
+   public SaveableToggleAction(RaplaContext context,String name,TypedComponentRole<Boolean> configEntry, DialogUiFactory dialogUiFactory)  
    {
         super( context );
         this.name = name;
+        this.dialogUiFactory = dialogUiFactory;
         putValue( NAME, getString( name));
         this.configEntry = configEntry;
         //putValue(SMALL_ICON,getIcon("icon.unchecked"));
@@ -45,7 +48,7 @@ public class SaveableToggleAction extends RaplaAction {
  	                prefs.putEntry( configEntry, newSelected);
  	                getModification().store( prefs);
  	            } catch (Exception ex) {
- 	                showException(  ex, new SwingPopupContext(null, null) );
+ 	                showException(  ex, new SwingPopupContext(null, null), dialogUiFactory );
  	                return;
  	            }
  	   }

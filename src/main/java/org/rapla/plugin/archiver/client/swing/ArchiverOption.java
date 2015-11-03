@@ -228,7 +228,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 		catch (RaplaException ex)
 		{
             RaplaGUIComponent gui = new RaplaGUIComponent(context);
-			gui.showException(ex, gui.getMainComponent());
+			gui.showException(ex, gui.getMainComponent(), dialogUiFactory);
 		}
 	}
 

@@ -19,8 +19,13 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
 
 /** Base class for most rapla edit fields. Provides some mapping
     functionality such as reflection invocation of getters/setters.
@@ -38,6 +43,11 @@ public abstract class AbstractEditField extends RaplaGUIComponent
         super(context);
     }
     
+    public AbstractEditField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController)
+    {
+        super(facade, i18n, raplaLocale, logger, permissionController);
+    }
+
     public void addChangeListener(ChangeListener listener) {
         listenerList.add(listener);
     }

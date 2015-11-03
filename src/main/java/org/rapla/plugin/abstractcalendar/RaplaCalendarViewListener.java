@@ -33,6 +33,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -53,9 +54,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 
     public RaplaCalendarViewListener(RaplaContext context, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         super(context);
         this.model = model;
@@ -67,6 +69,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
     protected CalendarModel getModel()
@@ -155,7 +158,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, calendarContainerComponent);
+            showException(ex, calendarContainerComponent, dialogUiFactory);
         }
 
     }
@@ -187,7 +190,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView());
+            showException(ex, b.getView(), dialogUiFactory);
         }
     }
 
@@ -208,7 +211,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView());
+            showException(ex, b.getView(), dialogUiFactory);
         }
     }
 
@@ -232,7 +235,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView());
+            showException(ex, b.getView(), dialogUiFactory);
         }
     }
 
@@ -312,7 +315,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages);
+        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
         menu.add(action);
         return action;
     }

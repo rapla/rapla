@@ -39,18 +39,24 @@ import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.Extension;
 
@@ -74,16 +80,21 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private final Set<Provider<SystemOptionPanel>> systemOptionPanel;
     private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
     private final TreeFactory treeFactory;
+    private final DialogUiFactory dialogUiFactory;
 
-    /** called during initialization to create the info component */
+    /** called during initialization to create the info component 
+     */
     @Inject
-    public PreferencesEditUI(RaplaContext context, TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel, Set<Provider<SystemOptionPanel>> systemOptionPanel,
-            Map<String, Provider<PluginOptionPanel>> pluginOptionPanel) {
-        super(context);
+    public PreferencesEditUI(RaplaContext context, TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel,
+            Set<Provider<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
+            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DialogUiFactory dialogUiFactory)
+    {
+        super(facade, i18n, raplaLocale, logger, permissionController);
         this.treeFactory = treeFactory;
         this.userOptionPanel = userOptionPanel;
         this.systemOptionPanel = systemOptionPanel;
         this.pluginOptionPanel = pluginOptionPanel;
+        this.dialogUiFactory = dialogUiFactory;
         jPanelContainer.setLayout(new BorderLayout());
         jPanelContainer.add(messages, BorderLayout.SOUTH);
         messages.setForeground(Color.red);
@@ -243,7 +254,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
             lastOptionPanel = optionPanel;
             setOptionPanel( lastOptionPanel );
         } catch (Exception ex) {
-            showException(ex,getComponent());
+            showException(ex,getComponent(), dialogUiFactory);
         }
     }
 

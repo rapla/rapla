@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -93,6 +94,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     AppointmentFormater appointmentFormater;
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
+    private final DialogUiFactory dialogUiFactory;
 	@SuppressWarnings("unchecked")
 	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
 			throws RaplaException {
@@ -102,6 +104,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         appointmentController = new AppointmentController(sm, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
         listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
@@ -254,7 +257,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 					NewAppointment 	command = new NewAppointment(appointment);
 					commandHistory.storeAndExecute(command);
 				} catch (RaplaException ex) {
-					showException(ex, getMainComponent());
+					showException(ex, getMainComponent(), dialogUiFactory);
 				}
 			} 
 			else if (evt.getActionCommand().equals("split")) 
@@ -506,7 +509,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				}
 				return true;
 			} catch (RaplaException ex) {
-				showException(ex, getComponent());
+				showException(ex, getComponent(), dialogUiFactory);
 				return false;
 			}
 		}
@@ -583,7 +586,35 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 	}
 
-	
+    @Singleton
+    public static class AppointmentListEditFactory
+    {
+
+        private final RaplaContext sm;
+        private final AppointmentFormater appointmentFormater;
+        private final ReservationController reservationController;
+        private final RaplaImages raplaImages;
+        private final DateRenderer dateRenderer;
+        private final DialogUiFactory dialogUiFactory;
+
+        @Inject
+        public AppointmentListEditFactory(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController,
+                RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+        {
+            super();
+            this.sm = sm;
+            this.appointmentFormater = appointmentFormater;
+            this.reservationController = reservationController;
+            this.raplaImages = raplaImages;
+            this.dateRenderer = dateRenderer;
+            this.dialogUiFactory = dialogUiFactory;
+        }
+
+        public AppointmentListEdit create(CommandHistory commandHistory)
+        {
+            return new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
+        }
+	}
 
 	
 }

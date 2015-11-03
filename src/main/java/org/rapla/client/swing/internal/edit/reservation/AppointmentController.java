@@ -836,7 +836,7 @@ public class AppointmentController extends RaplaGUIComponent
 				try {
 					showExceptionDlg();
 				} catch (RaplaException ex) {
-					showException(ex, content);
+					showException(ex, content, dialogUiFactory);
 				}
 				return;
 			}
@@ -1499,7 +1499,7 @@ public class AppointmentController extends RaplaGUIComponent
 		} 
 		catch (Exception ex)
 		{
-			showException( ex, getMainComponent());
+			showException( ex, getMainComponent(), dialogUiFactory);
 		}
 	}
 

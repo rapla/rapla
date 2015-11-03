@@ -178,7 +178,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
                     showAddDialog();
                 }
             } catch (Exception ex) {
-                showException(ex,getComponent());
+                showException(ex,getComponent(), dialogUiFactory);
             }
         }
 

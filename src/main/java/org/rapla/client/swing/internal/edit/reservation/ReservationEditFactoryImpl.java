@@ -11,18 +11,14 @@ import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
+import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
+import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -34,43 +30,35 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
 {
     private final Set<AppointmentStatusFactory> list;
     private final RaplaContext context;
-    private final Set<SwingViewFactory> swingViewFactories;
-    private final TreeFactory treeFactory;
-    private final CalendarSelectionModel calendarSelectionModel;
-    private final AppointmentFormater appointmentFormater;
-    private final PermissionController permissionController;
     private final ReservationController reservationController;
-    private final MenuFactory menuFactory;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final ReservationInfoEditFactory reservationInfoEditFactory;
+    private final AppointmentListEditFactory appointmentListEditFactory;
+    private final AllocatableSelectionFactory allocatableSelectionFactory;
 
     @Inject
-    public ReservationEditFactoryImpl(Set<AppointmentStatusFactory> list, RaplaContext context, Set<SwingViewFactory> swingViewFactories,
-            TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+    public ReservationEditFactoryImpl(Set<AppointmentStatusFactory> list, RaplaContext context, ReservationController reservationController,
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
+            ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
+            AllocatableSelectionFactory allocatableSelectionFactory)
     {
         this.list = list;
         this.context = context;
-        this.swingViewFactories = swingViewFactories;
-        this.treeFactory = treeFactory;
-        this.calendarSelectionModel = calendarSelectionModel;
-        this.appointmentFormater = appointmentFormater;
-        this.permissionController = permissionController;
         this.reservationController = reservationController;
-        this.menuFactory = menuFactory;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
+        this.reservationInfoEditFactory = reservationInfoEditFactory;
+        this.appointmentListEditFactory = appointmentListEditFactory;
+        this.allocatableSelectionFactory = allocatableSelectionFactory;
     }
 
     public ReservationEdit create(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
-        ReservationEditImpl edit = new ReservationEditImpl(context, list, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater,
-                permissionController, reservationController, menuFactory, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
+        ReservationEditImpl edit = new ReservationEditImpl(context, list, reservationController, infoFactory, raplaImages, dialogUiFactory,
+                reservationInfoEditFactory, appointmentListEditFactory, allocatableSelectionFactory);
         edit.editReservation(reservation, appointmentBlock);
         return edit;
     }

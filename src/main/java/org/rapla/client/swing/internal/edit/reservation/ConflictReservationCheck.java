@@ -104,7 +104,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
             try {
                 return true;
             } catch (Exception ex) {
-                showException(ex,(Component)sourceComponent);
+                showException(ex,(Component)sourceComponent, dialogUiFactory);
                 return false;
             }
         }

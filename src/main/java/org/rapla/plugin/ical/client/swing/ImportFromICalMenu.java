@@ -103,7 +103,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
         try {
         	show();
         } catch (Exception ex) {
-            showException(ex, getMainComponent());
+            showException(ex, getMainComponent(), dialogUiFactory);
         }
     }
 
@@ -251,7 +251,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 	                    } catch (IOException ex) {
 	                        bufferedICal = null;
 	                        dlg.getButton(0).setEnabled( false );
-	                        showException(ex, getMainComponent());
+	                        showException(ex, getMainComponent(), dialogUiFactory);
 	                    }
 	             
 	                }
@@ -317,7 +317,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 					DialogUI okDlg = dialogUiFactory.create(getMainComponent(), false,  title, text);
 					okDlg.start();
 				} catch (Exception e1) {
-					showException(e1, getMainComponent());
+					showException(e1, getMainComponent(), dialogUiFactory);
 				}
 
 			}

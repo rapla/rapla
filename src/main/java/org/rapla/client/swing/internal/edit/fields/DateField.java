@@ -19,15 +19,21 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.Date;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
-import org.rapla.framework.RaplaContext;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class DateField extends AbstractEditField implements DateChangeListener, FocusListener, SetGetField<Date> ,MultiEditField{
     RaplaCalendar field;
@@ -36,12 +42,13 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    public DateField(RaplaContext context, DateRenderer dateRenderer,String fieldName) {
-        this( context, dateRenderer);
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DateRenderer dateRenderer,String fieldName) {
+        this( facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
         setFieldName(fieldName);
     }
-    public DateField(RaplaContext context, DateRenderer dateRenderer) {
-        super( context);
+    
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DateRenderer dateRenderer) {
+        super( facade, i18n, raplaLocale, logger, permissionController);
         panel = new JPanel();
         field = createRaplaCalendar(dateRenderer);
         panel.setLayout(new BorderLayout());
@@ -105,6 +112,39 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 		multipleValuesLabel.setText(TextField.getOutputForMultipleValues());
         multipleValuesLabel.setFont(multipleValuesLabel.getFont().deriveFont(Font.ITALIC));
         field.setDate( null);
+	}
+	
+	@Singleton
+	public static class DateFieldFactory 
+	{
+	    private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final PermissionController permissionController;
+        private final DateRenderer dateRenderer;
+	    @Inject
+        public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController,
+                DateRenderer dateRenderer)
+        {
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.permissionController = permissionController;
+            this.dateRenderer = dateRenderer;
+
+        }
+
+	    public DateField create(String fieldName)
+	    {
+	        return new DateField(facade, i18n, raplaLocale, logger, permissionController, dateRenderer, fieldName);
+	    }
+	    
+	    public DateField create()
+	    {
+	        return new DateField(facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
+	    }
 	}
 }
 

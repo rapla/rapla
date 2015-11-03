@@ -37,6 +37,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -99,10 +100,10 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, final DialogUiFactory dialogUiFactory) throws RaplaException {
+    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactory dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory) throws RaplaException {
         super(context);
         this.dialogUiFactory = dialogUiFactory;
-        annotationEdit = new AnnotationEditUI(context,annotationEditTypeExtensions);
+        annotationEdit = new AnnotationEditUI(context, annotationExtensions);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
@@ -158,13 +159,13 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     showAnnotationDialog();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent());
+                    showException(ex, getComponent(), dialogUiFactory);
                 }
                 
             }
         });
      
-        this.permissionListField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"), dialogUiFactory);
+        this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
         editPanel.add(this.permissionListField.getComponent(),"1,10,3,10");
         this.permissionListField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
@@ -176,7 +177,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     updateAnnotations();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent());
+                    showException(ex, getComponent(), dialogUiFactory);
                 }
             }
 
@@ -237,7 +238,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     						}
                         }
     				} catch (RaplaException ex) {
-						showException(ex, getMainComponent());
+						showException(ex, getMainComponent(), dialogUiFactory);
 					}
     				
     			}
@@ -347,7 +348,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                     annotationEdit.mapTo(asList);
                 } catch (Exception e1) {
                     getLogger().error(e1.getMessage(), e1);
-                    showException( e1, getMainComponent());
+                    showException( e1, getMainComponent(), dialogUiFactory);
                 }
                 dialog.close();
             }

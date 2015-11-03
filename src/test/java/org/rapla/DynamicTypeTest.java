@@ -42,6 +42,8 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -179,7 +181,9 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
 	        DateRenderer dateRenderer = new RaplaDateRenderer(context);
-			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateRenderer, dialogUiFactory);
+            DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
+            BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, i18n, raplaLocale, logger, permissionController);
+            ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

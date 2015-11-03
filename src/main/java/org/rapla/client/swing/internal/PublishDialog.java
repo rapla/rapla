@@ -158,7 +158,7 @@ public class PublishDialog extends RaplaGUIComponent
                 } 
                 catch (RaplaException ex) 
                 {
-                    showException( ex, parentComponent);
+                    showException( ex, parentComponent, dialogUiFactory);
                 }
             }
         });

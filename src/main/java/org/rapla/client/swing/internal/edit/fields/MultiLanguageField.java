@@ -92,7 +92,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         try {
 			editorDialog.show();
 		} catch (RaplaException ex) {
-			showException( ex, getComponent());
+			showException( ex, getComponent(), dialogUiFactory);
 		}
     }
 

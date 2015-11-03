@@ -46,7 +46,6 @@ import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
@@ -54,6 +53,7 @@ import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
+import org.rapla.client.swing.internal.edit.TemplateEdit.TemplateEditFactory;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -65,7 +65,6 @@ import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
@@ -87,11 +86,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
     final JMenuItem undo;
     JMenuItem templateEdit;
     private final EditController editController;
-    private final TreeFactory treeFactory;
-    private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final TemplateEditFactory templateEditFactory;
+
+
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -104,21 +103,19 @@ public class RaplaMenuBar extends RaplaGUIComponent
             EditController editController,
             CalendarSelectionModel model,
             ClientService clientService,
-            TreeFactory treeFactory,
             RestartServer restartServerService,
             RaplaImages raplaImages, 
-            DateRenderer dateRenderer,
-            DialogUiFactory dialogUiFactory
+            DialogUiFactory dialogUiFactory,
+            TemplateEditFactory templateEditFactory
+
     )
             throws RaplaException
     {
         super(context);
         this.editController = editController;
-        this.calendarSelectionModel = model;
-        this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
+        this.templateEditFactory = templateEditFactory;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -246,21 +243,21 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         {
-            SaveableToggleAction action = new SaveableToggleAction(context, "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY);
+            SaveableToggleAction action = new SaveableToggleAction(context, "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
             SaveableToggleAction action = new SaveableToggleAction(context, CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
-                    CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY);
+                    CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
             SaveableToggleAction action = new SaveableToggleAction(context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
-                    CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
+                    CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
         }
@@ -356,13 +353,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages, dateRenderer, dialogUiFactory);
+                        TemplateEdit edit = templateEditFactory.create();
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }
                     catch (Exception ex)
                     {
-                        showException(ex, getMainComponent());
+                        showException(ex, getMainComponent(), dialogUiFactory);
                     }
                 }
             }
@@ -383,7 +380,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (Exception ex)
                 {
-                    showException(ex, getMainComponent());
+                    showException(ex, getMainComponent(), dialogUiFactory);
                 }
             }
         }
@@ -418,7 +415,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent());
+                    showException(ex, getMainComponent(), dialogUiFactory);
                 }
             }
 
@@ -523,7 +520,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent());
+                    showException(ex, getMainComponent(), dialogUiFactory);
                 }
             }
 
@@ -576,7 +573,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent());
+                    showException(ex, getMainComponent(), dialogUiFactory);
                 }
             }
         };

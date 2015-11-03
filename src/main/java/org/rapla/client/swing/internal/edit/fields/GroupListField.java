@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -44,12 +45,16 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
     JList list = new JList();
     Set<Category> notAllList = new HashSet<Category>();
+
+    private final DialogUiFactory dialogUiFactory;
     /**
      * @param context
      * @throws RaplaException
      */
+    @Inject
     public GroupListField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(context);
+        this.dialogUiFactory = dialogUiFactory;
     	final Category rootCategory = getQuery().getUserGroupsCategory();
         if ( rootCategory == null )
             return;
@@ -194,7 +199,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
             	newCategory.setValue( null );
                 newCategory.showDialog(newButton);
             } catch (RaplaException ex) {
-                showException(ex,newButton);
+                showException(ex,newButton, dialogUiFactory);
             }
         }
         if ( evt.getSource() ==  removeButton)

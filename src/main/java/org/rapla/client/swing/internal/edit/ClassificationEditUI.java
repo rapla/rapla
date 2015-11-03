@@ -21,7 +21,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.CategoryListField;
+import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField;
+import org.rapla.client.swing.internal.edit.fields.MultiEditField;
+import org.rapla.client.swing.internal.edit.fields.SetGetCollectionField;
+import org.rapla.client.swing.internal.edit.fields.SetGetField;
+import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.Attribute;
@@ -32,28 +46,15 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
-import org.rapla.client.swing.internal.edit.fields.CategoryListField;
-import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
-import org.rapla.client.swing.internal.edit.fields.DateField;
-import org.rapla.client.swing.internal.edit.fields.LongField;
-import org.rapla.client.swing.internal.edit.fields.MultiEditField;
-import org.rapla.client.swing.internal.edit.fields.SetGetCollectionField;
-import org.rapla.client.swing.internal.edit.fields.SetGetField;
-import org.rapla.client.swing.internal.edit.fields.TextField;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final DateFieldFactory dateFieldFactory;
+    private final BooleanFieldFactory booleanFieldFactory;
 	
     public String getSelectedView()
     {
@@ -65,12 +66,13 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) {
+    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory) {
 		super(sm);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
+        this.dateFieldFactory = dateFieldFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.booleanFieldFactory = booleanFieldFactory;
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -174,9 +176,9 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.INT)) {
 			field = new LongField(context, label);
 		} else if (type.equals(AttributeType.DATE)) {
-			field = new DateField(context, dateRenderer, label);
+			field = dateFieldFactory.create(label);
 		} else if (type.equals(AttributeType.BOOLEAN)) {
-			field = new BooleanField(context, label);
+			field = booleanFieldFactory.create(label);
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);

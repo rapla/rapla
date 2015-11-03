@@ -34,6 +34,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
@@ -62,10 +63,10 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
 {
     public SwingDayResourceCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,
-            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
+            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super(sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer);
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory);
     }    
   
    
@@ -152,7 +153,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages) {
+    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()
@@ -201,7 +202,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
 					 
 				 } 
 				 catch (RaplaException ex) {
-					showException(ex, getMainComponent());
+					showException(ex, getMainComponent(), dialogUiFactory);
 				}
 			
 			 }

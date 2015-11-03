@@ -19,6 +19,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
@@ -26,7 +28,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class BooleanField extends AbstractEditField implements ActionListener, FocusListener, MultiEditField, SetGetField<Boolean>
@@ -40,15 +46,15 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-    public BooleanField(RaplaContext context,String fieldName) 
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, String fieldName) 
     {
-        this(context);
+        this(facade, i18n, raplaLocale, logger, permissionController);
         setFieldName( fieldName );
     }
 
-    public BooleanField(RaplaContext context) 
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController) 
     {
-        super( context);
+        super(facade, i18n, raplaLocale, logger, permissionController);
         field1.setOpaque( false );
         field2.setOpaque( false );
         panel.setOpaque( false );
@@ -130,4 +136,36 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 	public boolean hasMultipleValues() {
 		return multipleValues;
 	}
+	
+    @Singleton
+    public static class BooleanFieldFactory
+    {
+
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final PermissionController permissionController;
+
+        @Inject
+        public BooleanFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController)
+        {
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.permissionController = permissionController;
+        }
+
+        public BooleanField create()
+        {
+            return new BooleanField(facade, i18n, raplaLocale, logger, permissionController);
+        }
+
+        public BooleanField create(String fieldName)
+        {
+            return new BooleanField(facade, i18n, raplaLocale, logger, permissionController, fieldName);
+        }
+
+    }
 }

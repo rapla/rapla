@@ -104,7 +104,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     }
 
     public <T> Component createInfoComponent( T object ) throws RaplaException {
-        ViewTable<T> viewTable = new ViewTable<T>(getContext(), this, ioInterface);
+        ViewTable<T> viewTable = new ViewTable<T>(getContext(), this, ioInterface, dialogUiFactory);
         viewTable.updateInfo( object );
         return viewTable.getComponent();
     }
@@ -144,7 +144,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
         throws RaplaException
     {
        
-        final ViewTable<T> viewTable = new ViewTable<T>(getContext(), this, ioInterface);
+        final ViewTable<T> viewTable = new ViewTable<T>(getContext(), this, ioInterface, dialogUiFactory);
         final DialogUI dlg = dialogUiFactory.create(popupContext
                                        ,false
                                        ,viewTable.getComponent()
@@ -182,7 +182,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
                 	StringSelection selection = new StringSelection( plainText );
                 	ioInterface.setContents( selection, null);
                 } catch (Exception ex) {
-                    showException(ex, dlg);
+                    showException(ex, dlg, dialogUiFactory);
                 }
             }
         });
@@ -198,7 +198,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
                             ,true
                     );
                 } catch (Exception ex) {
-                    showException(ex, dlg);
+                    showException(ex, dlg, dialogUiFactory);
                 }
             }
         });
@@ -208,7 +208,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
      * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.Component)
      */
     public DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
-        ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getContext(), this, ioInterface);
+        ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getContext(), this, ioInterface, dialogUiFactory);
         DeleteInfoUI deleteView = new DeleteInfoUI(getContext());
         DialogUI dlg = dialogUiFactory.create(popupContext
                                        ,true

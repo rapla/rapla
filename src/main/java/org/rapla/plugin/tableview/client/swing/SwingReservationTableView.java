@@ -17,6 +17,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
@@ -67,17 +68,20 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     private final ReservationController reservationController;
 
     private final RaplaImages raplaImages;
+
+    private final DialogUiFactory dialogUiFactory;
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
             final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser) throws RaplaException
+            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
+        this.dialogUiFactory = dialogUiFactory;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -148,7 +152,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 try {
                     update(  );
                 } catch (RaplaException ex ){
-                    showException( ex, getComponent());
+                    showException( ex, getComponent(), dialogUiFactory);
                 }
             }
         });
@@ -179,7 +183,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	                reservationController.copyReservations(selectedEvents, markedAllocatables);
 	            }
             } catch (RaplaException ex) {
-                showException(ex, getComponent());
+                showException(ex, getComponent(), dialogUiFactory);
             }
 	        copy(table, evt);            
 		}
@@ -270,7 +274,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 			newMenu.setEnabled(enableNewMenu);
 			editMenu.setEnabled(canUserAllocateSomething(getUser()));
 		} catch (RaplaException ex) {
-			showException (ex,getComponent());
+			showException (ex,getComponent(), dialogUiFactory);
 		}
 	}
     
@@ -356,7 +360,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	            newMenu.setEnabled(enableNewMenu);
             	menu.show( table, p.x, p.y);
             } catch (RaplaException ex) {
-            	showException (ex,getComponent());
+            	showException (ex,getComponent(), dialogUiFactory);
             }
         }
 
@@ -385,7 +389,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 try {
                     reservationController.edit( reservation );
                 } catch (RaplaException ex) {
-                    showException (ex,getComponent());
+                    showException (ex,getComponent(), dialogUiFactory);
                 }
             }
         }

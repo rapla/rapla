@@ -20,6 +20,7 @@ import org.rapla.framework.*;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.MailConfigService;
@@ -51,11 +52,13 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	Preferences preferences;
 	MailConfigService configService;
 	Configuration config;
+    private final DialogUiFactory dialogUiFactory;
 	@Inject
-    public MailOption(RaplaContext sm,MailConfigService mailConfigService)   
+    public MailOption(RaplaContext sm,MailConfigService mailConfigService, DialogUiFactory dialogUiFactory)   
     {
         super(sm);
         this.configService = mailConfigService;
+        this.dialogUiFactory = dialogUiFactory;
     }
 
 	@Override public void setPreferences(Preferences preferences)
@@ -202,13 +205,13 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 					catch (UnsupportedOperationException ex)
 					{
 				          JComponent component = getComponent();
-				          showException( new RaplaException(getString("restart_options")), component);
+				          showException( new RaplaException(getString("restart_options")), component, dialogUiFactory);
 					}
     			}
 				catch (RaplaException ex )
 				{
 					JComponent component = getComponent();
-					showException( ex, component);
+					showException( ex, component, dialogUiFactory);
 				
 				
 //				} catch (ConfigurationException ex) {

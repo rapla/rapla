@@ -6,14 +6,15 @@ import java.util.Collections;
 import javax.inject.Inject;
 
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="location")
@@ -21,10 +22,12 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
 {
 
     private final String annotationName = DynamicTypeAnnotations.KEY_LOCATION;
+    private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
-    public LocationAnnotationEdit(RaplaContext context) {
+    public LocationAnnotationEdit(RaplaContext context, BooleanFieldFactory booleanFieldFactory) {
         super(context);
+        this.booleanFieldFactory = booleanFieldFactory;
     }
 
     @Override
@@ -42,7 +45,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = new BooleanField(getContext(),getString("is_location"));
+        BooleanField field = booleanFieldFactory.create(getString("is_location"));
         if ( annotation != null)
         {
             field.setValue( annotation.equalsIgnoreCase("true"));

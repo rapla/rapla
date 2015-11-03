@@ -52,16 +52,17 @@ import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.CategoryListField;
 import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
 import org.rapla.client.swing.internal.edit.fields.DateField;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField;
 import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -94,15 +95,17 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     final RaplaButton  nothingButton = new RaplaButton(RaplaButton.SMALL);
     final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final DateFieldFactory dateFieldFactory;
+    private final BooleanFieldFactory booleanFieldFactory;
     
-    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)  {
+    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)  {
         super( context);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
+        this.dateFieldFactory = dateFieldFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.booleanFieldFactory = booleanFieldFactory;
         content.setBackground(UIManager.getColor("List.background"));
         scrollPane = new JScrollPane(content
                                      ,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
@@ -209,7 +212,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
                         	} 
                         	catch (RaplaException ex) 
                         	{
-		                        showException(ex, getComponent());
+		                        showException(ex, getComponent(), dialogUiFactory);
                         	} 
                         	finally
                         	{
@@ -246,7 +249,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
             checkBox.addActionListener(this);
             checkBox.setSelected( true );
             content.add( checkBox , "0," + (row + 1) + ",l,t");
-            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, raplaImages, dateRenderer, dialogUiFactory, scrollPane);
+            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, raplaImages, dialogUiFactory, scrollPane, dateFieldFactory, booleanFieldFactory);
             final ClassificationEdit edit = filterEdit[i];
             content.add( edit.getNewComponent() , "2," + (row + 1));
             content.add( edit.getRulesComponent() , "0," + (row + 2) + ",2,"+ (row + 2));
@@ -383,16 +386,18 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     JScrollPane pane;
     private final RaplaImages raplaImages;
-    private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final DateFieldFactory dateFieldFactory;
+    private final BooleanFieldFactory booleanFieldFactory;
     
-    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,JScrollPane pane){
+    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,JScrollPane pane, DateFieldFactory dateFieldFactory, BooleanFieldFactory booleanFieldFactory){
         super(sm );
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
-        this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
         this.pane = pane;
+        this.dateFieldFactory = dateFieldFactory;
+        this.booleanFieldFactory = booleanFieldFactory;
         ruleListPanel.setOpaque( false );
         ruleListPanel.setLayout(new BoxLayout(ruleListPanel,BoxLayout.Y_AXIS));
         newPanel.setOpaque( false );
@@ -878,7 +883,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.DATE))
             {
-                DateField newField = new DateField(context, dateRenderer);
+                DateField newField = dateFieldFactory.create();
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")
@@ -894,7 +899,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             else if (type.equals(AttributeType.BOOLEAN))
             {
                 operatorComponent = new JLabel("");
-                BooleanField newField = new BooleanField(context);
+                BooleanField newField = booleanFieldFactory.create();
 				field = newField;
 				test = newField;
                 ruleValue = new Boolean(false);

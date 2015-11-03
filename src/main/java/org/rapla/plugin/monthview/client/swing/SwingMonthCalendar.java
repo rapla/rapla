@@ -30,6 +30,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRendererAdapter;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
@@ -53,11 +54,11 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
     public SwingMonthCalendar(RaplaContext context, CalendarModel settings, boolean editable, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
                     throws RaplaException
     {
         super(context, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer);
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory);
     }
 
     public static Color DATE_NUMBER_COLOR_HIGHLIGHTED = Color.black;
@@ -129,7 +130,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages);
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory);
         listener.setKeepTime( true);
 		return listener;
     }

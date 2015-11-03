@@ -494,13 +494,13 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory, raplaImages);
+        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
         return action;
     }
 
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory, raplaImages);
+        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
         return action;
     }
 

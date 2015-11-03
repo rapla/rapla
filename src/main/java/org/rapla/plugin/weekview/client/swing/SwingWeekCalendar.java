@@ -33,6 +33,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
@@ -57,10 +58,10 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 
     public SwingWeekCalendar(RaplaContext context, CalendarModel model, boolean editable, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             RaplaResources resources, final Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,
-            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
+            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer);
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory);
         this.resources = resources;
     }
 
