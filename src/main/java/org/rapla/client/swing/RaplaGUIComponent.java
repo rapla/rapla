@@ -390,7 +390,7 @@ public class RaplaGUIComponent extends RaplaComponent
     public static KeyStroke CUT_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_X,ActionEvent.CTRL_MASK,false);
     public static KeyStroke PASTE_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_V,ActionEvent.CTRL_MASK,false);
   
-    protected IOInterface getIOService() 
+    private IOInterface getIOService() 
     {
         try {
             return getService( IOInterface.class);

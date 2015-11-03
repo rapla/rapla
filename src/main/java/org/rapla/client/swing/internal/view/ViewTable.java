@@ -34,6 +34,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.RaplaObject;
 import org.rapla.framework.RaplaContext;
@@ -65,10 +66,12 @@ public class ViewTable<T> extends RaplaGUIComponent
     int linkId = 0;
     boolean packText = true;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final IOInterface ioInterface;
 
-    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory) {
+    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface) {
         super( sm);
         this.infoFactory = infoFactory;
+        this.ioInterface = ioInterface;
         linkMap = new HashMap<Integer,Object>(7);
         htmlView.addHyperlinkListener(this);
         htmlView.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
@@ -180,7 +183,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         	{
         		try 
         		{
-					getIOService().openUrl(new URL(link));
+					ioInterface.openUrl(new URL(link));
 				} 
         		catch (Exception e1) 
         		{
