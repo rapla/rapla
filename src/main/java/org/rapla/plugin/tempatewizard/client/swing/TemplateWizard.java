@@ -116,7 +116,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		{
 			Allocatable template = templateNames.iterator().next();
 			RaplaMenuItem item = new TemplateMenuItem( getId(), template);
-            item.setEnabled( canAllocate() && canCreateReservation);
+            item.setEnabled( canAllocate(model) && canCreateReservation);
 			final String templateName = template.getName(getLocale());
 			item.setText( getI18n().format("new_reservation.format", templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
@@ -126,7 +126,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( canAllocate() && canCreateReservation);
+			item.setEnabled( canAllocate(model) && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			@SuppressWarnings("unchecked")

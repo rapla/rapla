@@ -18,8 +18,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import javax.inject.Inject;
-
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -277,12 +275,10 @@ public class RaplaComponent
         }
     }
 
-    protected boolean canAllocate() 
+    protected boolean canAllocate(CalendarModel model) 
 	{
-		CalendarSelectionModel model = getService( CalendarSelectionModel.class);
-    	
 		//Date start, Date end,
-		Collection<Allocatable> allocatables = getService(CalendarSelectionModel.class).getMarkedAllocatables();
+		Collection<Allocatable> allocatables = model.getMarkedAllocatables();
 		boolean canAllocate = true;
 		Date start = getStartDate( model); 
 		Date end = getEndDate( model, start); 

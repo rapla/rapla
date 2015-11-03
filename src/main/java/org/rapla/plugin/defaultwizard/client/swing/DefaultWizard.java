@@ -88,7 +88,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         if ( eventTypes.size() == 1)
 		{
 		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( canAllocate() && canCreateReservation);
+            item.setEnabled( canAllocate(model) && canCreateReservation);
             DynamicType type = eventTypes.get(0);
             String name = type.getName( getLocale());
             if ( newEventText.endsWith( name))
@@ -108,7 +108,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( canAllocate() && canCreateReservation);
+			item.setEnabled( canAllocate(model) && canCreateReservation);
 			item.setText(newEventText);
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)

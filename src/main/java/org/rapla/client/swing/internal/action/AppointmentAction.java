@@ -75,7 +75,7 @@ public class AppointmentAction extends RaplaAction {
         String value = name2.trim().length() > 0 ? "'" + name2 + "'" : getString("new_reservation");
 		putValue(NAME, value);
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
-        boolean canAllocate = canAllocate();
+        boolean canAllocate = canAllocate(calendarSelectionModel);
         setEnabled( canAllocate);
         return this;
     }
