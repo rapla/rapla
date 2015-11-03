@@ -22,6 +22,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -98,7 +99,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     Attribute attribute;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages) throws RaplaException
+    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
     {
         super( context );
         annotationEdit = new AnnotationEditUI(context, attributeExtensionSet);
@@ -120,7 +121,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         //addCopyPaste( expectedColumns.getNumberField());
 
         defaultSelectBoolean = new BooleanField(context);
-        defaultSelectDate = createRaplaCalendar();
+        defaultSelectDate = createRaplaCalendar(dateRenderer);
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
         multiSelect = new BooleanField(context);

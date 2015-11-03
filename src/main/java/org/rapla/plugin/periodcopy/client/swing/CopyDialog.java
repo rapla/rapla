@@ -33,6 +33,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Appointment;
@@ -77,14 +78,14 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     
     @SuppressWarnings("unchecked")
     @Inject
-	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model) throws RaplaException {
+	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer) throws RaplaException {
         super(sm);
         this.periodCopyI18n = periodCopyI18n;
         this.model = model;
         locale = getRaplaLocale();
-        sourceBegin = createRaplaCalendar();
-        sourceEnd = createRaplaCalendar();
-        destBegin = createRaplaCalendar();
+        sourceBegin = createRaplaCalendar(dateRenderer);
+        sourceEnd = createRaplaCalendar(dateRenderer);
+        destBegin = createRaplaCalendar(dateRenderer);
         
         
         Period[] periods = getQuery().getPeriods();

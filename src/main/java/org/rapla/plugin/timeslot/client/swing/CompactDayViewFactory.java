@@ -29,6 +29,7 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
@@ -47,11 +48,12 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
     @Inject
     public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -62,12 +64,13 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactDayCalendar(context, model, editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider,
-                reservationController, infoFactory, raplaImages);
+                reservationController, infoFactory, raplaImages, dateRenderer);
     }
 
     public String getViewId()

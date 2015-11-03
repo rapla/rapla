@@ -11,6 +11,7 @@ import javax.swing.JComponent;
 import javax.swing.JWindow;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaContext;
@@ -26,7 +27,7 @@ public class FilterEditButton extends RaplaGUIComponent
     JWindow popup;
     ClassifiableFilterEdit ui;
         
-    public FilterEditButton(final RaplaContext context, final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages, final boolean  isResourceSelection) 
+    public FilterEditButton(final RaplaContext context, final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages, final DateRenderer dateRenderer, final boolean  isResourceSelection) 
     {
         super(context);
         filterButton = new RaplaArrowButton('v');
@@ -48,7 +49,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     {
                         ui.removeChangeListener( listener);
                     }
-                    ui = new ClassifiableFilterEdit( context, treeFactory, isResourceSelection, raplaImages);
+                    ui = new ClassifiableFilterEdit( context, treeFactory, isResourceSelection, raplaImages, dateRenderer);
                     if ( listener != null)
                     {
                     	ui.addChangeListener(listener);

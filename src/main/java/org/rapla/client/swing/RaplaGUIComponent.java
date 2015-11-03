@@ -38,6 +38,7 @@ import javax.swing.KeyStroke;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -47,10 +48,13 @@ import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.DependencyException;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -75,6 +79,13 @@ public class RaplaGUIComponent extends RaplaComponent
     public RaplaGUIComponent(RaplaContext context)  {
         super(context);
     }
+    
+    public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController)
+    {
+        super(facade, i18n, raplaLocale, logger, permissionController);
+    }
+
+
 
     public void showException(Throwable ex,PopupContext popupContext) {
         showException(ex, SwingPopupContext.extractParent(popupContext));
@@ -208,9 +219,9 @@ public class RaplaGUIComponent extends RaplaComponent
 	}
 
 
-    public RaplaCalendar createRaplaCalendar() {
+    public RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer) {
         RaplaCalendar cal = new RaplaCalendar( getI18n().getLocale(),getRaplaLocale().getTimeZone());
-        cal.setDateRenderer(getDateRenderer());
+        cal.setDateRenderer(dateRenderer);
         addCopyPaste(cal.getDateField());
         return cal;
     }

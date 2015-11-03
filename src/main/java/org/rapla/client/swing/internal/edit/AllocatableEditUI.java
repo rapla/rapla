@@ -38,6 +38,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -52,10 +53,10 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     final JComponent holdBackConflictPanel;
 
     @Inject
-    public AllocatableEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
+    public AllocatableEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Allocatable>(context, treeFactory, raplaImages);
-        permissionField = new PermissionListField(context,treeFactory, raplaImages, getString("permissions"));
+        classificationField = new ClassificationField<Allocatable>(context, treeFactory, raplaImages, dateRenderer);
+        permissionField = new PermissionListField(context,treeFactory, raplaImages, dateRenderer, getString("permissions"));
         
         permissionField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         final JComponent permissionPanel = permissionField.getComponent();

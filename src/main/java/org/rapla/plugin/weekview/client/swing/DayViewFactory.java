@@ -50,11 +50,12 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
     @Inject
     public DayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resouces,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -66,12 +67,13 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingDayCalendar(context, model, editable, objectMenuFactories, menuFactory, resouces, dateRendererProvider, calendarSelectionModel,
-                clipboard, reservationController, infoFactory, raplaImages);
+                clipboard, reservationController, infoFactory, raplaImages, dateRenderer);
     }
 
     public String getViewId()

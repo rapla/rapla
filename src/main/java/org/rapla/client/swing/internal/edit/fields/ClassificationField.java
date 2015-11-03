@@ -48,6 +48,7 @@ import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
+import org.rapla.components.calendar.DateRenderer;
 
 /****************************************************************
  * This is the base-class for all Classification-Panels         *
@@ -71,10 +72,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     boolean mainTabSelected = true;
     private final RaplaImages raplaImages;
     
-	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages)  {
+	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer)  {
 		super(context);
         this.raplaImages = raplaImages;
-		editUI = new ClassificationEditUI(context, treeFactory, raplaImages);
+		editUI = new ClassificationEditUI(context, treeFactory, raplaImages, dateRenderer);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override

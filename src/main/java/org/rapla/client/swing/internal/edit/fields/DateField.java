@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.framework.RaplaContext;
 
@@ -35,14 +36,14 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    public DateField(RaplaContext context,String fieldName) {
-        this( context);
+    public DateField(RaplaContext context, DateRenderer dateRenderer,String fieldName) {
+        this( context, dateRenderer);
         setFieldName(fieldName);
     }
-    public DateField(RaplaContext context) {
+    public DateField(RaplaContext context, DateRenderer dateRenderer) {
         super( context);
         panel = new JPanel();
-        field = createRaplaCalendar();
+        field = createRaplaCalendar(dateRenderer);
         panel.setLayout(new BorderLayout());
         panel.add(field,BorderLayout.WEST);
         panel.add( multipleValuesLabel, BorderLayout.CENTER);

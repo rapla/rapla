@@ -44,19 +44,6 @@ import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.Assert;
-import org.rapla.entities.Category;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.ClassificationFilterRule;
-import org.rapla.entities.dynamictype.ConstraintIds;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClassifiableFilter;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -73,6 +60,20 @@ import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.Assert;
+import org.rapla.entities.Category;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.ClassificationFilterRule;
+import org.rapla.entities.dynamictype.ConstraintIds;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClassifiableFilter;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 
 public class ClassifiableFilterEdit extends RaplaGUIComponent
@@ -92,11 +93,13 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     final RaplaButton  nothingButton = new RaplaButton(RaplaButton.SMALL);
     final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
     
-    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages)  {
+    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateRenderer dateRenderer)  {
         super( context);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
         content.setBackground(UIManager.getColor("List.background"));
         scrollPane = new JScrollPane(content
                                      ,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
@@ -240,7 +243,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
             checkBox.addActionListener(this);
             checkBox.setSelected( true );
             content.add( checkBox , "0," + (row + 1) + ",l,t");
-            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, raplaImages, scrollPane);
+            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, raplaImages, dateRenderer, scrollPane);
             final ClassificationEdit edit = filterEdit[i];
             content.add( edit.getNewComponent() , "2," + (row + 1));
             content.add( edit.getRulesComponent() , "0," + (row + 2) + ",2,"+ (row + 2));
@@ -377,11 +380,13 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     JScrollPane pane;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
     
-    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory, RaplaImages raplaImages,JScrollPane pane){
+    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer,JScrollPane pane){
         super(sm );
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
         this.pane = pane;
         ruleListPanel.setOpaque( false );
         ruleListPanel.setLayout(new BoxLayout(ruleListPanel,BoxLayout.Y_AXIS));
@@ -868,7 +873,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.DATE))
             {
-                DateField newField = new DateField(context);
+                DateField newField = new DateField(context, dateRenderer);
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")

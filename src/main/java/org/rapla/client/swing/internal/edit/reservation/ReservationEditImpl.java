@@ -54,6 +54,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -145,7 +146,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException
     {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
@@ -153,9 +154,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         this.raplaImages = raplaImages;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
-        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController, raplaImages);
-        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages);
+        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController, raplaImages, dateRenderer);
+        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dateRenderer);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());

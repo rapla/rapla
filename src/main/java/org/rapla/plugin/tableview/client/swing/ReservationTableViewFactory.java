@@ -30,6 +30,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
+import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -43,9 +44,10 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final IntervalChooserPanel dateChooser;
     @Inject
     public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages )
+            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser )
     {
         super( context );
         this.reservationSummaryExtensions = reservationSummaryExtensions;
@@ -54,13 +56,14 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateChooser = dateChooser;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController, infoFactory, raplaImages);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController, infoFactory, raplaImages, dateChooser);
     }
 
     public String getViewId()

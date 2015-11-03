@@ -49,11 +49,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
     @Inject
     public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, 
+            DateRenderer dateRenderer)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -64,12 +66,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactWeekCalendar(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages);
+                reservationController, infoFactory, raplaImages, dateRenderer);
     }
 
     public String getViewId()

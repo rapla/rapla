@@ -30,6 +30,7 @@ import javax.swing.border.TitledBorder;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.layout.TableLayout;
@@ -64,14 +65,14 @@ public class DateChooserPanel extends RaplaGUIComponent
     
     JButton todayButton= new RaplaButton(getString("today"), RaplaButton.SMALL);
     
-    public DateChooserPanel(RaplaContext sm, CalendarModel model) throws RaplaException {
+    public DateChooserPanel(RaplaContext sm, CalendarModel model, DateRenderer dateRenderer) throws RaplaException {
         super( sm );
         this.model = model;
         prevButton.setSize(30, 20);
         nextButton.setSize(30, 20);
         
         periodChooser = new PeriodChooser(getContext(),PeriodChooser.START_ONLY);
-        dateSelection = createRaplaCalendar();
+        dateSelection = createRaplaCalendar(dateRenderer);
 
         //prevButton.setText("<");
         //nextButton.setText(">");

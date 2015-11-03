@@ -55,6 +55,7 @@ import javax.swing.event.ListSelectionListener;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.calendar.RaplaTime;
@@ -121,11 +122,14 @@ public class AppointmentController extends RaplaGUIComponent
 
     private final RaplaImages raplaImages;
 
-	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages)
+    private final DateRenderer dateRenderer;
+
+	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer)
 			throws RaplaException {
 		super(sm);
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
 		panel.setLayout(new BorderLayout());
 		panel.add(repeatingType, BorderLayout.NORTH);
 		repeatingType.setLayout(new BoxLayout(repeatingType, BoxLayout.X_AXIS));
@@ -331,8 +335,8 @@ public class AppointmentController extends RaplaGUIComponent
 		}
 
 		public void initialize() {
-			startDate = createRaplaCalendar();
-			endDate = createRaplaCalendar();
+			startDate = createRaplaCalendar(dateRenderer);
+			endDate = createRaplaCalendar(dateRenderer);
 			startTime = createRaplaTime();
 			endTime = createRaplaTime();
 			content.add(startLabel, "0,0,r,f");
@@ -719,12 +723,12 @@ public class AppointmentController extends RaplaGUIComponent
 			// start-date (with period-box)
 			startDatePeriod.addActionListener(this);
 			startDateLabel.setText(getString("repeating.start_date"));
-			startDate = createRaplaCalendar();
+			startDate = createRaplaCalendar(dateRenderer);
 			startDate.addDateChangeListener(this);
 
 			// end-date (with period-box)/n-times/forever
 			endDatePeriod.addActionListener(this);
-			endDate = createRaplaCalendar();
+			endDate = createRaplaCalendar(dateRenderer);
 			endDate.addDateChangeListener(this);
 
 			@SuppressWarnings("unchecked")
@@ -1194,7 +1198,7 @@ public class AppointmentController extends RaplaGUIComponent
 			addButton.setIcon(raplaImages.getIconFromKey("icon.arrow_right"));
 			removeButton.setText(getString("remove"));
 			removeButton.setIcon(raplaImages.getIconFromKey("icon.arrow_left"));
-			exceptionDate = createRaplaCalendar();
+			exceptionDate = createRaplaCalendar(dateRenderer);
 			/*
 			 * this.add(new JLabel(getString("appointment.exception.general") +
 			 * " "),"0,1"); this.add(new JScrollPane(generalExceptions

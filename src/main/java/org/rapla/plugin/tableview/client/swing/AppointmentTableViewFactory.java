@@ -29,6 +29,7 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
+import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -47,12 +48,13 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final IntervalChooserPanel dateChooser;
 
     @Inject
     public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
-            RaplaImages raplaImages)
+            RaplaImages raplaImages, IntervalChooserPanel dateChooser)
     {
         super(context);
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
@@ -63,6 +65,7 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateChooser = dateChooser;
     }
 
     public final static String TABLE_VIEW = "table_appointments";
@@ -70,7 +73,7 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
-                calendarSelectionModel, reservationController, infoFactory, raplaImages);
+                calendarSelectionModel, reservationController, infoFactory, raplaImages, dateChooser);
     }
 
     public String getViewId()

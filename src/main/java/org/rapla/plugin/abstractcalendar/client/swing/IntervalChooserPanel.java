@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -30,6 +31,7 @@ import javax.swing.border.TitledBorder;
 
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.layout.TableLayout;
@@ -80,7 +82,8 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     Listener listener = new Listener();
     JPanel periodPanel;
 
-    public IntervalChooserPanel(RaplaContext sm, CalendarModel model) throws RaplaException
+    @Inject
+    public IntervalChooserPanel(RaplaContext sm, CalendarModel model, DateRenderer dateRenderer) throws RaplaException
     {
         super(sm);
         this.model = model;
@@ -88,8 +91,8 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         periodChooser = new PeriodChooser(getContext(), PeriodChooser.START_AND_END);
         periodChooser.setWeekOfPeriodVisible(false);
 
-        startDateSelection = createRaplaCalendar();
-        endDateSelection = createRaplaCalendar();
+        startDateSelection = createRaplaCalendar(dateRenderer);
+        endDateSelection = createRaplaCalendar(dateRenderer);
         //prevButton.setText("<");
         //nextButton.setText(">");
         double pre = TableLayout.PREFERRED;

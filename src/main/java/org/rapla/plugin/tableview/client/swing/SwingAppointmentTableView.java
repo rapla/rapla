@@ -33,8 +33,26 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumn;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.VisibleTimeInterval;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.action.AppointmentAction;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DisabledGlassPane;
+import org.rapla.client.swing.toolkit.MenuInterface;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
@@ -50,26 +68,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.AppointmentAction;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DisabledGlassPane;
-import org.rapla.client.swing.toolkit.MenuInterface;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
@@ -103,7 +103,9 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     private final RaplaImages raplaImages;
 
     public SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException
+            final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
+            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            RaplaImages raplaImages, IntervalChooserPanel dateChooser) throws RaplaException
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -173,7 +175,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         table.registerKeyboardAction(copyListener, getString("copy"), COPY_STROKE, JComponent.WHEN_FOCUSED);
         table.registerKeyboardAction(cutListener, getString("cut"), CUT_STROKE, JComponent.WHEN_FOCUSED);
 
-        dateChooser = new IntervalChooserPanel(context, model);
+        this.dateChooser = dateChooser;
         dateChooser.addDateChangeListener(new DateChangeListener()
         {
             public void dateChanged(DateChangeEvent evt)

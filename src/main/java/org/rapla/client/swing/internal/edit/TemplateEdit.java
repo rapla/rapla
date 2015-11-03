@@ -21,6 +21,7 @@ import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
@@ -52,12 +53,12 @@ public class TemplateEdit extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     
     
-    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages) throws RaplaException {
+    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
         super(context);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages)
+        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages, dateRenderer)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();

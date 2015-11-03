@@ -94,7 +94,11 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final InfoFactory<Component, DialogUI> infoFactory;
     protected final RaplaImages raplaImages;
 
-    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory , RaplaImages raplaImages) throws RaplaException {
+    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
+            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+                    throws RaplaException
+    {
         super( sm);
         this.model = model;
         this.objectMenuFactories = objectMenuFactories;
@@ -136,7 +140,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
             container.add( view.getComponent(), BorderLayout.CENTER);
         }
 
-        dateChooser = new DateChooserPanel(getContext(), model);
+        dateChooser = new DateChooserPanel(getContext(), model, dateRenderer);
         dateChooser.addDateChangeListener(this);
         dateChooser.setIncrementSize( getIncrementSize() );
     }

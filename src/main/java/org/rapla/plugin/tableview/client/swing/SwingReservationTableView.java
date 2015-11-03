@@ -70,8 +70,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
-                    throws RaplaException
+            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
+            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser) throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
@@ -141,7 +141,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     	table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
     	table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
     	
-        dateChooser = new IntervalChooserPanel( context, model);
+        this.dateChooser = dateChooser;
         dateChooser.addDateChangeListener( new DateChangeListener() {
             public void dateChanged( DateChangeEvent evt )
             {

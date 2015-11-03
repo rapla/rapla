@@ -30,6 +30,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
@@ -96,7 +97,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     PermissionListField permissionField;
 
     @Inject
-    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
+    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationEditTypeExtensions, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
         super(context);
         annotationEdit = new AnnotationEditUI(context,annotationEditTypeExtensions);
         {
@@ -160,7 +161,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             }
         });
      
-        permissionField = new PermissionListField(context, treeFactory, raplaImages, getString("permissions"));
+        permissionField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, getString("permissions"));
         editPanel.add(permissionField.getComponent(),"1,10,3,10");
         permissionField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));

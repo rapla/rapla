@@ -16,6 +16,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
@@ -41,12 +42,13 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final MenuFactory menuFactory;
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
     @Inject
     public ReservationEditFactoryImpl(Set<AppointmentStatusFactory> list, RaplaContext context, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
     {
         this.list = list;
         this.context = context;
@@ -59,12 +61,13 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
         this.menuFactory = menuFactory;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
     }
 
     public ReservationEdit create(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
         ReservationEditImpl edit = new ReservationEditImpl(context, list, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater,
-                permissionController, reservationController, menuFactory, infoFactory, raplaImages);
+                permissionController, reservationController, menuFactory, infoFactory, raplaImages, dateRenderer);
         edit.editReservation(reservation, appointmentBlock);
         return edit;
     }

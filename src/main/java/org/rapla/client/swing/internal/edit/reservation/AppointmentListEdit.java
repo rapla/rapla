@@ -42,6 +42,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.undo.CommandHistory;
@@ -91,7 +92,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages)
+	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer)
 			throws RaplaException {
 		super(sm);
         this.appointmentFormater = appointmentFormater;
@@ -99,7 +100,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
-        appointmentController = new AppointmentController(sm, commandHistory, raplaImages);
+        appointmentController = new AppointmentController(sm, commandHistory, raplaImages, dateRenderer);
         listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
         freeButtonNext.setText(getString("appointment.search_free"));

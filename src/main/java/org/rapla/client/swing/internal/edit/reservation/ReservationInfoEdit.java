@@ -30,6 +30,7 @@ import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
@@ -95,15 +96,17 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     
     TabSelected selectedView = TabSelected.Main;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
-    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory, TreeFactory treeFactory, PermissionController permissionController, RaplaImages raplaImages) throws RaplaException  
+    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory, TreeFactory treeFactory, PermissionController permissionController, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException  
     {
         super( context);
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
         typeSelector = new RaplaListComboBox( context );
         this.commandHistory = commandHistory;
         editUI = new MyClassificationEditUI(context, treeFactory, raplaImages);
-        permissionField = new PermissionListField(context, treeFactory, raplaImages, "permissions");
+        permissionField = new PermissionListField(context, treeFactory, raplaImages, dateRenderer, "permissions");
         permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
         permissionField.setDefaultAccessLevel( Permission.READ );
         this.permissionController = permissionController;
@@ -383,7 +386,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
         public MyClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
-            super(sm, treeFactory, raplaImages);
+            super(sm, treeFactory, raplaImages, dateRenderer);
         }
 
         public int getHeight()

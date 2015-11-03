@@ -36,6 +36,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
@@ -68,7 +69,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
+	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
         super( context);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
@@ -124,7 +125,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         startSelection.setModel( createSelectionModel() );
         startSelection.setSelectedIndex( 0 );
 
-        startDate = new DateField(context);
+        startDate = new DateField(context, dateRenderer);
         reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
 
         minAdvance = new LongField(context,new Long(0) );
@@ -135,7 +136,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         endSelection.setModel( createSelectionModel() );
         endSelection.setSelectedIndex( 0 );
 
-        endDate = new DateField(context);
+        endDate = new DateField(context, dateRenderer);
         reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
 
         maxAdvance = new LongField(context, new Long(1) );

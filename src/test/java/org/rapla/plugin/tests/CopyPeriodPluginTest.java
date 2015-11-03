@@ -20,6 +20,8 @@ import javax.inject.Provider;
 
 import org.rapla.RaplaTestCase;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.RaplaDateRenderer;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.domain.Allocatable;
@@ -81,7 +83,8 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         assertNotNull( "Period not found ", destPeriod );
         BundleManager bundleManager= new ServerBundleManager();
         PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
-        Provider<CopyDialog> copyDialogProvider = new SimpleProvider<CopyDialog>(new CopyDialog(getClientService().getContext(), i18n, model));
+        DateRenderer dateRenderer = new RaplaDateRenderer(getContext());
+        Provider<CopyDialog> copyDialogProvider = new SimpleProvider<CopyDialog>(new CopyDialog(getClientService().getContext(), i18n, model, dateRenderer));
         final Logger logger = getLogger();
         final RaplaImages raplaImages = new RaplaImages(logger);
         CopyPluginMenu init = new CopyPluginMenu( getClientService().getContext(), i18n, copyDialogProvider, raplaImages);

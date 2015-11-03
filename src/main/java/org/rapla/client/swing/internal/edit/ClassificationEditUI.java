@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.Attribute;
@@ -50,6 +51,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 	
     public String getSelectedView()
     {
@@ -61,10 +63,11 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
+    public ClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer) {
 		super(sm);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -168,7 +171,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.INT)) {
 			field = new LongField(context, label);
 		} else if (type.equals(AttributeType.DATE)) {
-			field = new DateField(context, label);
+			field = new DateField(context, dateRenderer, label);
 		} else if (type.equals(AttributeType.BOOLEAN)) {
 			field = new BooleanField(context, label);
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {

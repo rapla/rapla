@@ -64,6 +64,7 @@ import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
@@ -88,6 +89,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final TreeFactory treeFactory;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaImages raplaImages;
+    private final DateRenderer dateRenderer;
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -102,7 +104,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
             ClientService clientService,
             TreeFactory treeFactory,
             RestartServer restartServerService,
-            RaplaImages raplaImages
+            RaplaImages raplaImages, 
+            DateRenderer dateRenderer
     )
             throws RaplaException
     {
@@ -111,6 +114,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.calendarSelectionModel = model;
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
+        this.dateRenderer = dateRenderer;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -348,7 +352,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages);
+                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages, dateRenderer);
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }

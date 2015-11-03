@@ -37,6 +37,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -65,8 +66,13 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages);
+    public SwingCompactDayCalendar(RaplaContext sm, CalendarModel settings, boolean editable, Set<ObjectMenuFactory> objectMenuFactories,
+            MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer)
+                    throws RaplaException
+    {
+        super(sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory,
+                raplaImages, dateRenderer);
         this.timeslotProvider = timeslotProvider;
     }
     

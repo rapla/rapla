@@ -50,6 +50,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -79,11 +80,11 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer) throws RaplaException {
         super(context);
         this.raplaImages = raplaImages;
 
-        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, factoryList);
+        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, dateRenderer, factoryList);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 
@@ -100,7 +101,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages);
+        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateRenderer);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)

@@ -14,6 +14,7 @@ package org.rapla;
 import java.awt.Component;
 import java.util.Date;
 
+import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
@@ -39,6 +40,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
@@ -172,7 +174,8 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
-			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages);
+	        DateRenderer dateRenderer = new RaplaDateRenderer(context);
+			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateRenderer);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();
