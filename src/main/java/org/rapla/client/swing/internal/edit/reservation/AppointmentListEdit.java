@@ -100,7 +100,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
         appointmentController = new AppointmentController(sm, commandHistory, raplaImages);
-        listEdit = new RaplaListEdit<Appointment>(getI18n(),getImages(),appointmentController.getComponent(), listener);
+        listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
         freeButtonNext.setText(getString("appointment.search_free"));
         freeButtonNext.addActionListener( listener );

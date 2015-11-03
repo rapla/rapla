@@ -85,7 +85,7 @@ public class MainFrame extends RaplaGUIComponent
         //dataChanged(null);
         setStatus();
         cal.start();
-        frame.setIconImage(getImages().getIconFromKey("icon.rapla_small").getImage());
+        frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
         frame.setVisible(true);
         getFrameList().setMainWindow(frame);
     }

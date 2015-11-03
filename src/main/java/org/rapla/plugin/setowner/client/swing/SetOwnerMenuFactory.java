@@ -37,6 +37,7 @@ import org.rapla.client.swing.MenuContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -52,10 +53,12 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     ClientFacade facade;
     TreeFactory treeFactory;
     RaplaGUIComponent old;
+    private final RaplaImages raplaImages;
     @Inject
-    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context)
+    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context, RaplaImages raplaImages)
     {
         this.setOwnerI18n = setOwnerI18n;
+        this.raplaImages = raplaImages;
         old = new RaplaGUIComponent(context);
         this.i18n = i18n;
         this.facade = facade;
@@ -127,7 +130,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         // create the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("SETOWNER");
         setOwnerItem.setText(setOwnerI18n.getString("changeowner"));
-        ImageIcon icon = old.getImages().getIconFromKey( "icon.tree.persons");
+        ImageIcon icon = raplaImages.getIconFromKey( "icon.tree.persons");
         setOwnerItem.setIcon(icon);
         setOwnerItem.addActionListener( new ActionListener()
         {

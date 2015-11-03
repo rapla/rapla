@@ -106,7 +106,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
             }
         };
-        templateList = new RaplaListEdit<Allocatable>(i18n, getImages(),allocatableEdit.getComponent(), callback);
+        templateList = new RaplaListEdit<Allocatable>(i18n, raplaImages, allocatableEdit.getComponent(), callback);
         templateList.setNameProvider( new NameProvider<Allocatable>()
                 {
 

@@ -68,7 +68,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 		permissionField = new PermissionField(context, treeFactory, raplaImages);
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
-		listEdit = new RaplaListEdit<Permission>(getI18n(), getImages(),permissionField.getComponent(),	listener);
+		listEdit = new RaplaListEdit<Permission>(getI18n(), raplaImages, permissionField.getComponent(), listener);
 		jPanel.add(listEdit.getComponent(), BorderLayout.CENTER);
 		
 		jPanel.setBorder(BorderFactory.createTitledBorder(new EmptyLineBorder(), getString("permissions")));

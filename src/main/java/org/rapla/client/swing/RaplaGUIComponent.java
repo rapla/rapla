@@ -322,7 +322,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return getImages().getIconFromKey( key);
     }
     
-    final public RaplaImages getImages()
+    final private RaplaImages getImages()
     {
         return getService( RaplaImages.class);
     }

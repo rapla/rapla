@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
@@ -38,14 +39,16 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
      final JCheckBox onlyAllocationInfoField;
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
+	 private final RaplaImages raplaImages;
 
 
-	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaResources raplaResources) throws RaplaContextException
+	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaResources raplaResources, RaplaImages raplaImages) throws RaplaContextException
 	 {
 		super(context);
 		this.autoExportI18n = autoExportI18n ;
 		 i18n = raplaResources;
     	this.model = model;
+        this.raplaImages = raplaImages;
     	
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED  }}));
@@ -136,7 +139,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		copyButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		copyButton.setFocusable(false);
 		copyButton.setRolloverEnabled(false);
-		ImageIcon icon = getImages().getIconFromKey( "icon.copy");
+		ImageIcon icon = raplaImages.getIconFromKey( "icon.copy");
 		copyButton.setIcon(icon);
 		copyButton.setToolTipText(i18n.getString("copy_to_clipboard"));
 		copyButton.addActionListener(new ActionListener() {

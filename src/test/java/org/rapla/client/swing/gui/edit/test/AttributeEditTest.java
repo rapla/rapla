@@ -21,6 +21,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.images.RaplaImages;
 
 public final class AttributeEditTest extends GUITestCase
 {
@@ -36,7 +37,8 @@ public final class AttributeEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        AttributeEdit editor = new AttributeEdit(getContext(), null);
+        RaplaImages raplaImages = new RaplaImages(getLogger());
+        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaImages );
         editor.setDynamicType(clientService.getFacade().getDynamicTypes(null)[0]);
         testComponent(editor.getComponent(),500,500);
         getLogger().info("Attribute edit started");
@@ -44,7 +46,8 @@ public final class AttributeEditTest extends GUITestCase
 
     public void testNew() throws Exception {
         ClientService clientService = getClientService();
-        AttributeEdit editor = new AttributeEdit(getContext(), null);
+        RaplaImages raplaImages = new RaplaImages(getLogger());
+        AttributeEdit editor = new AttributeEdit(getContext(), null, raplaImages);
         DynamicType type =  clientService.getFacade().edit(clientService.getFacade().getDynamicTypes(null)[0]);
         Attribute attribute = type.getAttributes()[0];
         editor.setDynamicType(type);
