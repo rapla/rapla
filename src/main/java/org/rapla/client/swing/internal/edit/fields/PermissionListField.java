@@ -43,6 +43,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
 /**
@@ -62,9 +63,9 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	Permission.AccessLevel defaultAccessLevel = null;
 	
 	List<Permission> notAllList = new ArrayList<Permission>();
-	public PermissionListField(RaplaContext context, TreeFactory treeFactory, String fieldName) throws RaplaException {
+	public PermissionListField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, String fieldName) throws RaplaException {
 		super(context);
-		permissionField = new PermissionField(context, treeFactory);
+		permissionField = new PermissionField(context, treeFactory, raplaImages);
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
 		listEdit = new RaplaListEdit<Permission>(getI18n(), getImages(),permissionField.getComponent(),	listener);

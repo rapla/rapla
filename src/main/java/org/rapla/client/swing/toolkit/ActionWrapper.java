@@ -3,6 +3,7 @@ package org.rapla.client.swing.toolkit;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeListener;
 
+import javax.swing.AbstractButton;
 import javax.swing.JMenuItem;
 
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -34,11 +35,14 @@ public class ActionWrapper implements javax.swing.Action
         delegate.actionPerformed();
         if(delegate instanceof SaveableToggleAction)
         {
-            final JMenuItem component = (JMenuItem) event.getSource();
-            final boolean newSelected = !component.isSelected();
-            component.setSelected(newSelected);
-            javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
-            component.setIcon(newSelected ? images.getIconFromKey("icon.checked") : images.getIconFromKey("icon.unchecked"));
+            if(event.getSource() instanceof JMenuItem)
+            {
+                final JMenuItem component = (JMenuItem) event.getSource();
+                final boolean newSelected = !component.isSelected();
+                component.setSelected(newSelected);
+                javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+                component.setIcon(newSelected ? images.getIconFromKey("icon.checked") : images.getIconFromKey("icon.unchecked"));
+            }
         }
     }
 

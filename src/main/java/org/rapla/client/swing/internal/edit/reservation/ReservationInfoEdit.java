@@ -51,6 +51,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
@@ -93,14 +94,16 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
     
     TabSelected selectedView = TabSelected.Main;
+    private final RaplaImages raplaImages;
 
-    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory, TreeFactory treeFactory, PermissionController permissionController) throws RaplaException  
+    public ReservationInfoEdit(RaplaContext context, CommandHistory commandHistory, TreeFactory treeFactory, PermissionController permissionController, RaplaImages raplaImages) throws RaplaException  
     {
         super( context);
+        this.raplaImages = raplaImages;
         typeSelector = new RaplaListComboBox( context );
         this.commandHistory = commandHistory;
-        editUI = new MyClassificationEditUI(context, treeFactory);
-        permissionField = new PermissionListField(context, treeFactory, "permissions");
+        editUI = new MyClassificationEditUI(context, treeFactory, raplaImages);
+        permissionField = new PermissionListField(context, treeFactory, raplaImages, "permissions");
         permissionField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
         permissionField.setDefaultAccessLevel( Permission.READ );
         this.permissionController = permissionController;
@@ -338,7 +341,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                         );
                 tabSelector.setIcon( tabSelected ?
                         null
-                        : getIcon("icon.list")
+                        : raplaImages.getIconFromKey("icon.list")
                         );
                 
             }
@@ -354,7 +357,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 //                        );
 //                tabSelector.setIcon( tabSelected ?
 //                        null
-//                        : getIcon("icon.list")
+//                        : raplaImages.getIconFromKey("icon.list")
 //                        );
 //            }
 
@@ -379,8 +382,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
-        public MyClassificationEditUI(RaplaContext sm, TreeFactory treeFactory) {
-            super(sm, treeFactory);
+        public MyClassificationEditUI(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
+            super(sm, treeFactory, raplaImages);
         }
 
         public int getHeight()

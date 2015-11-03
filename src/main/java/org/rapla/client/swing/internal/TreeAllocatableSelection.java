@@ -44,6 +44,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaTree;
 
@@ -57,11 +58,13 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     NotificationAction addAction;
     String addDialogTitle;
     private final TreeFactory treeFactory;
+    private final RaplaImages raplaImages;
 
     @Inject
-	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory) {
+	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages) {
         super( sm);
         this.treeFactory = treeFactory;
+        this.raplaImages = raplaImages;
         treeSelection = new RaplaTree();
         TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(Color.white,new Color(178, 178, 178)),getString("selection_resource"));
 		content.setBorder(border);
@@ -136,7 +139,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setDelete() {
             putValue(NAME,getString("delete"));
-            putValue(SMALL_ICON,getIcon("icon.delete"));
+            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
             setEnabled(false);
             type = DELETE;
             return this;
@@ -144,7 +147,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setAdd() {
             putValue(NAME,getString("add"));
-            putValue(SMALL_ICON,getIcon("icon.new"));
+            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.new"));
             type = ADD;
             return this;
         }

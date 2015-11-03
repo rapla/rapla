@@ -12,9 +12,58 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
+import javax.swing.SwingUtilities;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
-import org.rapla.client.extensionpoints.*;
+import org.rapla.client.extensionpoints.AdminMenuExtension;
+import org.rapla.client.extensionpoints.EditMenuExtension;
+import org.rapla.client.extensionpoints.ExportMenuExtension;
+import org.rapla.client.extensionpoints.HelpMenuExtension;
+import org.rapla.client.extensionpoints.ImportMenuExtension;
+import org.rapla.client.extensionpoints.ViewMenuExtension;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.action.RestartRaplaAction;
+import org.rapla.client.swing.internal.action.RestartServerAction;
+import org.rapla.client.swing.internal.action.SaveableToggleAction;
+import org.rapla.client.swing.internal.action.user.UserAction;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.internal.edit.TemplateEdit;
+import org.rapla.client.swing.internal.print.PrintAction;
+import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.HTMLView;
+import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
+import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaSeparator;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
@@ -26,32 +75,8 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ConfigTools;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.action.RestartRaplaAction;
-import org.rapla.client.swing.internal.action.RestartServerAction;
-import org.rapla.client.swing.internal.action.SaveableToggleAction;
-import org.rapla.client.swing.internal.action.user.UserAction;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.internal.edit.TemplateEdit;
-import org.rapla.client.swing.internal.print.PrintAction;
-import org.rapla.client.swing.toolkit.*;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.dbrm.RestartServer;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Set;
 
 public class RaplaMenuBar extends RaplaGUIComponent
 {
@@ -62,6 +87,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final EditController editController;
     private final TreeFactory treeFactory;
     private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaImages raplaImages;
 
     @Inject public RaplaMenuBar(RaplaContext context,
             PrintAction printAction,
@@ -75,7 +101,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
             CalendarSelectionModel model,
             ClientService clientService,
             TreeFactory treeFactory,
-            RestartServer restartServerService
+            RestartServer restartServerService,
+            RaplaImages raplaImages
     )
             throws RaplaException
     {
@@ -83,6 +110,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.editController = editController;
         this.calendarSelectionModel = model;
         this.treeFactory = treeFactory;
+        this.raplaImages = raplaImages;
         RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
         systemMenu.setText(getString("file"));
 
@@ -146,7 +174,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController).setSwitchToUser()));
+            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController, raplaImages).setSwitchToUser()));
             adminMenu.add(switchBack);
         }
 
@@ -154,13 +182,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (server && isAdmin())
         {
             JMenuItem restartServer = new JMenuItem();
-            restartServer.setAction(new ActionWrapper(new RestartServerAction(getContext(), restartServerService)));
+            restartServer.setAction(new ActionWrapper(new RestartServerAction(getContext(), restartServerService, raplaImages)));
             adminMenu.add(restartServer);
         }
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(getContext(), clientService)));
+        restart.setAction(new ActionWrapper(new RestartRaplaAction(getContext(), clientService, raplaImages)));
         systemMenu.add(restart);
 
         systemMenu.setMnemonic('F');
@@ -173,12 +201,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
         redo = new JMenuItem(getString("redo"));
         undo = new JMenuItem(getString("undo"));
         undo.setToolTipText(getString("undo"));
-        undo.setIcon(getIcon("icon.undo"));
+        undo.setIcon(raplaImages.getIconFromKey("icon.undo"));
         redo.addActionListener(listener);
         undo.addActionListener(listener);
 
         redo.setToolTipText(getString("redo"));
-        redo.setIcon(getIcon("icon.redo"));
+        redo.setIcon(raplaImages.getIconFromKey("icon.redo"));
         getModification().getCommandHistory().addCommandHistoryChangedListener(listener);
 
         undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ActionEvent.CTRL_MASK));
@@ -264,12 +292,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (selected)
         {
             menu.setSelected(true);
-            menu.setIcon(getIcon("icon.checked"));
+            menu.setIcon(raplaImages.getIconFromKey("icon.checked"));
         }
         else
         {
             menu.setSelected(false);
-            menu.setIcon(getIcon("icon.unchecked"));
+            menu.setIcon(raplaImages.getIconFromKey("icon.unchecked"));
         }
         return menu;
     }
@@ -320,7 +348,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel);
+                        TemplateEdit edit = new TemplateEdit(getContext(), treeFactory, calendarSelectionModel, raplaImages);
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }
@@ -387,7 +415,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             }
 
         };
-        action.putValue(Action.SMALL_ICON, getIcon("icon.options"));
+        action.putValue(Action.SMALL_ICON, raplaImages.getIconFromKey("icon.options"));
         action.putValue(Action.NAME, getString("options"));
         return action;
     }
@@ -395,7 +423,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private Action createInfoAction()
     {
         final String name = getString("info");
-        final Icon icon = getIcon("icon.info_small");
+        final Icon icon = raplaImages.getIconFromKey("icon.info_small");
 
         AbstractAction action = new AbstractAction()
         {
@@ -506,7 +534,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private Action createLicenseAction()
     {
         final String name = getString("licensedialog.title");
-        final Icon icon = getIcon("icon.info_small");
+        final Icon icon = raplaImages.getIconFromKey("icon.info_small");
 
         // overwrite the cass AbstractAction to design our own
         AbstractAction action = new AbstractAction()

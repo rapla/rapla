@@ -31,11 +31,12 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.RaplaButton;
 
 public class MultiLanguageField extends AbstractEditField implements ChangeListener, ActionListener,CellEditorListener, SetGetField<MultiLanguageName> {
     JPanel panel = new JPanel();
@@ -46,13 +47,13 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
     String[] availableLanguages;
 
-    public MultiLanguageField(RaplaContext context, String fieldName) 
+    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, String fieldName) 
     {
-        this(context);
+        this(context, raplaImages);
         setFieldName(fieldName);
     }
 
-    public MultiLanguageField(RaplaContext context) 
+    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages) 
     {
         super( context);
         textField = new TextField(context, "name");
@@ -61,7 +62,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         panel.add( textField.getComponent(), BorderLayout.CENTER );
         panel.add( button, BorderLayout.EAST );
         button.addActionListener( this );
-        button.setIcon( getIcon("icon.language-select") );
+        button.setIcon( raplaImages.getIconFromKey("icon.language-select") );
         textField.addChangeListener( this );
     }
 

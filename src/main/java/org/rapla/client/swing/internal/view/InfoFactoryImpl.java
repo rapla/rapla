@@ -35,6 +35,7 @@ import org.rapla.client.internal.ReservationInfoUI;
 import org.rapla.client.internal.UserInfoUI;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
@@ -69,11 +70,13 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
 {
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
     private final IOInterface ioInterface;
+    private final RaplaImages raplaImages;
 
     @Inject
-    public InfoFactoryImpl(RaplaContext sm, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+    public InfoFactoryImpl(RaplaContext sm, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, RaplaImages raplaImages) {
         super( sm);
         this.ioInterface = ioInterface;
+        this.raplaImages = raplaImages;
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(sm) );
         views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
         views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
@@ -211,9 +214,9 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
                                            getString( "delete.ok" )
                                            ,getString( "delete.abort" )
                                        });
-        dlg.setIcon( getIcon("icon.warning") );
-        dlg.getButton( 0).setIcon(getIcon("icon.delete") );
-        dlg.getButton( 1).setIcon(getIcon("icon.abort") );
+        dlg.setIcon( raplaImages.getIconFromKey("icon.warning") );
+        dlg.getButton( 0).setIcon(raplaImages.getIconFromKey("icon.delete") );
+        dlg.getButton( 1).setIcon(raplaImages.getIconFromKey("icon.abort") );
         dlg.setDefault(1);
         viewTable.updateInfo( deletables, deleteView );
         dlg.setTitle( viewTable.getDialogTitle() );

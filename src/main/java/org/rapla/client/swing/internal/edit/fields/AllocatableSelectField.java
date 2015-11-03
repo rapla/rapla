@@ -18,6 +18,7 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -28,8 +29,8 @@ import org.rapla.framework.RaplaException;
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {
 	DynamicType dynamicTypeConstraint;
-    public AllocatableSelectField(RaplaContext context, TreeFactory treeFactory, DynamicType dynamicTypeConstraint){
-       super( context, treeFactory);
+    public AllocatableSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DynamicType dynamicTypeConstraint){
+       super( context, treeFactory, raplaImages);
        this.dynamicTypeConstraint = dynamicTypeConstraint;
     }
     

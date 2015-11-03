@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
@@ -35,16 +36,18 @@ public class CalendarAction extends RaplaAction {
     Date start;
     private final Set<SwingViewFactory> swingViewFactory;
     private final TreeFactory treeFactory;
+    private final RaplaImages raplaImages;
 
-    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, TreeFactory treeFactory, Set<SwingViewFactory> swingViewFactory)
+    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, TreeFactory treeFactory, Set<SwingViewFactory> swingViewFactory, RaplaImages raplaImages)
     {
         super( sm);
         this.treeFactory = treeFactory;
         this.swingViewFactory = swingViewFactory;
+        this.raplaImages = raplaImages;
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
         putValue(NAME,getString("calendar"));
-        putValue(SMALL_ICON,getIcon("icon.calendar"));
+        putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.calendar"));
     }
 
 
@@ -79,7 +82,7 @@ public class CalendarAction extends RaplaAction {
             model.setReservationFilter( null);
             frame.setTitle("Rapla "  + getString("calendar"));
 
-            MultiCalendarView cal = new MultiCalendarView(getContext(),model, treeFactory, swingViewFactory, false);
+            MultiCalendarView cal = new MultiCalendarView(getContext(),model, treeFactory, raplaImages, swingViewFactory, false);
             frame.setContentPane(cal.getComponent());
             frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;

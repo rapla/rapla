@@ -35,6 +35,7 @@ import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
@@ -48,12 +49,14 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	final String label ;
     private final PeriodCopyResources i18n;
     private final Provider<CopyDialog> copyDialogProvider;
+    private final RaplaImages raplaImages;
 	@Inject
-    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider)  {
+    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages)  {
         super(sm);
         //menu.insert( new RaplaSeparator("info_end"));
         this.i18n = i18n;
         this.copyDialogProvider = copyDialogProvider;
+        this.raplaImages = raplaImages;
 
         label =i18n.getString(id) ;
 		item = new RaplaMenuItem(id);
@@ -61,7 +64,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 //      ResourceBundle bundle = ResourceBundle.getBundle( "org.rapla.plugin.periodcopy.PeriodCopy");
        
         item.setText( label );
-        item.setIcon( getIcon("icon.copy") );
+        item.setIcon( raplaImages.getIconFromKey("icon.copy") );
         item.addActionListener(this);
     }
 
@@ -89,8 +92,8 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
             final DialogUI dialog = DialogUI.create( getContext(),getMainComponent(),true, useCase.getComponent(), buttons);
             dialog.setTitle( label);
             dialog.setSize( 600, 500);
-            dialog.getButton( 0).setIcon( getIcon("icon.abort"));
-            dialog.getButton( 1).setIcon( getIcon("icon.copy"));
+            dialog.getButton( 0).setIcon( raplaImages.getIconFromKey("icon.abort"));
+            dialog.getButton( 1).setIcon( raplaImages.getIconFromKey("icon.copy"));
             
 //            ActionListener listener = new ActionListener() {
 //                public void actionPerformed(ActionEvent arg0) {

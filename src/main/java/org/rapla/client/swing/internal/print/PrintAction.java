@@ -19,6 +19,7 @@ import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
@@ -30,14 +31,16 @@ public class PrintAction extends RaplaAction {
     PageFormat m_pageFormat;
     final Map<String,SwingViewFactory> factoryMap;
     private final IOInterface printInterface;
+    private final RaplaImages raplaImages;
     @Inject
-    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, IOInterface printInterface) {
+    public PrintAction(RaplaContext sm, Map<String, SwingViewFactory> factoryMap, IOInterface printInterface, RaplaImages raplaImages) {
         super( sm);
         this.factoryMap = factoryMap;
         this.printInterface = printInterface;
+        this.raplaImages = raplaImages;
         setEnabled(false);
         putValue(NAME,getString("print"));
-        putValue(SMALL_ICON, getIcon("icon.print"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.print"));
     }
 
     public void setModel(CalendarSelectionModel settings) {
@@ -55,7 +58,7 @@ public class PrintAction extends RaplaAction {
         Component parent = getMainComponent();
         try {
             boolean modal = true;
-            CalendarPrintDialog dialog = new CalendarPrintDialog(getContext(),(Frame)parent, printInterface);
+            CalendarPrintDialog dialog = new CalendarPrintDialog(getContext(),(Frame)parent, printInterface, raplaImages);
 
             dialog.init(modal,factoryMap,model,m_pageFormat);
             final Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();

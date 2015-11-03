@@ -14,12 +14,13 @@ package org.rapla.client.swing.internal.action;
 import org.rapla.client.ClientService;
 import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.images.RaplaImages;
 
 
 public class RestartRaplaAction extends RaplaAction{
     private final ClientService clientService;
 
-    public RestartRaplaAction(RaplaContext sm, ClientService clientService)  
+    public RestartRaplaAction(RaplaContext sm, ClientService clientService, RaplaImages raplaImages)  
     {
         super(sm);
         this.clientService = clientService;
@@ -30,7 +31,7 @@ public class RestartRaplaAction extends RaplaAction{
         	string = getString("logout") +" / " + string;
         }
         putValue(NAME,string);
-        putValue(SMALL_ICON,getIcon("icon.restart"));
+        putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.restart"));
     }
 
     public void actionPerformed() {

@@ -35,6 +35,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
@@ -67,7 +68,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
+	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
         super( context);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
@@ -95,7 +96,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(getContext(), treeFactory, rootCategory);
+                CategorySelectField field= new CategorySelectField(getContext(), treeFactory, raplaImages, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {

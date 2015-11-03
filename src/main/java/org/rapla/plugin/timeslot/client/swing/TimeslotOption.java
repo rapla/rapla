@@ -38,6 +38,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
@@ -51,6 +52,7 @@ public class TimeslotOption extends DefaultPluginOption
 	JPanel list = new JPanel();
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
+    private final RaplaImages raplaImages;
 	
     class TimeslotRow
     {
@@ -68,7 +70,7 @@ public class TimeslotOption extends DefaultPluginOption
 			RaplaLocale raplaLocale = getRaplaLocale();
 			raplatime = new RaplaTime(raplaLocale.getLocale(),raplaLocale.getTimeZone());
 			raplatime.setTime(hour, minute);
-			delete.setIcon(getIcon("icon.remove"));
+			delete.setIcon(raplaImages.getIconFromKey("icon.remove"));
 			delete.addActionListener(new ActionListener() {
 				
 				public void actionPerformed(ActionEvent arg0) {
@@ -82,10 +84,11 @@ public class TimeslotOption extends DefaultPluginOption
     }
 
 	@Inject
-    public TimeslotOption(RaplaContext sm, TimeslotProvider timeslotProvider) 
+    public TimeslotOption(RaplaContext sm, TimeslotProvider timeslotProvider, RaplaImages raplaImages) 
     {
         super(sm);
         this.timeslotProvider = timeslotProvider;
+        this.raplaImages = raplaImages;
     }
 
     List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();
@@ -101,10 +104,10 @@ public class TimeslotOption extends DefaultPluginOption
         JPanel header = new JPanel();
         RaplaButton reset = new RaplaButton(RaplaButton.SMALL);
     	RaplaButton resetButton = reset;
-		resetButton.setIcon(getIcon("icon.remove"));
+		resetButton.setIcon(raplaImages.getIconFromKey("icon.remove"));
 		resetButton.setText(getString("reset"));
 		RaplaButton newButton = new RaplaButton(RaplaButton.SMALL);
-		newButton.setIcon(getIcon("icon.new"));
+		newButton.setIcon(raplaImages.getIconFromKey("icon.new"));
 		newButton.setText(getString("new"));
 		
 		header.add( newButton);

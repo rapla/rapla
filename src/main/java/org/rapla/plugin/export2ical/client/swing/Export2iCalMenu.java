@@ -20,6 +20,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
@@ -37,14 +38,14 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
     private final IOInterface ioInterface;
 
 	@Inject
-	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface){
+	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface, RaplaImages raplaImages){
 		super(sm);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
         this.calendarModel = calendarModel;
         this.ioInterface = ioInterface;
 		item = new JMenuItem(i18nIcal.getString(id));
-		item.setIcon(getIcon("icon.export"));
+		item.setIcon(raplaImages.getIconFromKey("icon.export"));
 		item.addActionListener(this);
 	}
 	

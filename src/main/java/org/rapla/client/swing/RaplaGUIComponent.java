@@ -105,7 +105,8 @@ public class RaplaGUIComponent extends RaplaComponent
 	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    final ReservationController reservationController = getReservationController();
 	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
-        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory);
+        final RaplaImages raplaImages = getService(RaplaImages.class);
+        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages);
 	}
 	
 
@@ -317,7 +318,7 @@ public class RaplaGUIComponent extends RaplaComponent
     }
     
     /** calls getI18n().getIcon(key) */
-    final public ImageIcon getIcon(String key) {
+    final private ImageIcon getIcon(String key) {
         return getImages().getIconFromKey( key);
     }
     

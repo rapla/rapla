@@ -36,6 +36,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -97,12 +98,12 @@ public class AttributeDefaultConstraints extends AbstractEditField
     Attribute attribute;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet) throws RaplaException
+    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages) throws RaplaException
     {
         super( context );
         annotationEdit = new AnnotationEditUI(context, attributeExtensionSet);
         key = new TextField(context);
-        name = new MultiLanguageField(context);
+        name = new MultiLanguageField(context, raplaImages);
         Collection<DynamicType> typeList = new ArrayList<DynamicType>(
                 Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)));
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
@@ -110,9 +111,9 @@ public class AttributeDefaultConstraints extends AbstractEditField
         dynamicTypeSelect.setVector( typeList );
         rootCategory = getQuery().getSuperCategory();
 
-        categorySelect = new CategorySelectField(context, treeFactory, rootCategory);
+        categorySelect = new CategorySelectField(context, treeFactory, raplaImages, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(context, treeFactory, rootCategory);
+        defaultSelectCategory = new CategorySelectField(context, treeFactory, raplaImages, rootCategory);
         defaultSelectText = new TextField(context);
         addCopyPaste( defaultSelectNumber.getNumberField());
         //addCopyPaste( expectedRows.getNumberField());

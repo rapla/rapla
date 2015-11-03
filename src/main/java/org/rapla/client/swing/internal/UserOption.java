@@ -30,6 +30,12 @@ import javax.swing.JTextField;
 
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
+import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -40,11 +46,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
-import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.Extension;
 
 @Extension(provides = UserOptionPanel.class,id="userOption")
@@ -61,9 +62,12 @@ public class UserOption extends RaplaGUIComponent
 	LanguageChooser languageChooser; 		
 	
 	Preferences preferences;
+
+    private final RaplaImages raplaImages;
 	@Inject
-    public UserOption(RaplaContext sm) {
+    public UserOption(RaplaContext sm, RaplaImages raplaImages) {
         super(sm);
+        this.raplaImages = raplaImages;
     }
 
     
@@ -97,7 +101,7 @@ public class UserOption extends RaplaGUIComponent
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null));
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null), raplaImages);
         User user = getUser();
 		passwordChangeAction.changeObject(user);
         changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));

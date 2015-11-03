@@ -17,6 +17,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 
@@ -26,10 +27,12 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 	CalendarSelectionModel model;
 	final JCheckBox checkbox;
     final JTextField icalURL;
+    private final RaplaImages raplaImages;
 	 
-	public IcalPublishExtension(RaplaContext context, CalendarSelectionModel model) {
+	public IcalPublishExtension(RaplaContext context, CalendarSelectionModel model, RaplaImages raplaImages) {
 		super(context);
 		this.model = model;
+        this.raplaImages = raplaImages;
 
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED       }}));
@@ -78,7 +81,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
         copyButton.setBorder(BorderFactory.createEmptyBorder(2,2,2,2));
         copyButton.setFocusable(false);
         copyButton.setRolloverEnabled(false);
-        copyButton.setIcon(getIcon("icon.copy"));
+        copyButton.setIcon(raplaImages.getIconFromKey("icon.copy"));
         copyButton.setToolTipText(getString("copy_to_clipboard"));
         copyButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {

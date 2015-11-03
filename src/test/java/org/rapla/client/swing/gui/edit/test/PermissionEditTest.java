@@ -41,6 +41,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.images.RaplaImages;
 
 public final class PermissionEditTest extends GUITestCase
 {
@@ -63,9 +64,10 @@ public final class PermissionEditTest extends GUITestCase
         IOInterface ioInterface = new DefaultIO(logger);
         PermissionController permissionController = DefaultPermissionControllerSupport.getController();
         ClientFacade facade = getFacade();
-        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger);
-        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory);
-        PermissionListField editor = new PermissionListField(clientService.getContext(),treeFactory, "permissions");
+        final RaplaImages raplaImages = new RaplaImages(logger);
+        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages);
+        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
+        PermissionListField editor = new PermissionListField(clientService.getContext(),treeFactory,raplaImages,"permissions");
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];
         Allocatable r = clientService.getFacade().edit( a );
         Permission p1 = r.newPermission();

@@ -52,6 +52,7 @@ import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
@@ -80,8 +81,9 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final MenuFactory menuFactory;
     private final EditController editController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
+	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
 
         this.model = model;
@@ -90,6 +92,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         this.menuFactory = menuFactory;
         this.editController = editController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -101,7 +104,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         content.add(buttonsPanel, BorderLayout.NORTH);
         
         buttonsPanel.setLayout( new BorderLayout());
-        filterEdit = new FilterEditButton(context, treeFactory, model, listener,true);
+        filterEdit = new FilterEditButton(context, treeFactory, model, listener, raplaImages, true);
         buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
         
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
@@ -245,7 +248,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory);
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory, raplaImages);
                 if (editAction.canModify( focusedObject))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);

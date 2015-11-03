@@ -43,6 +43,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -68,10 +69,12 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	RaplaButton tabSelector;
 	
     boolean mainTabSelected = true;
+    private final RaplaImages raplaImages;
     
-	public ClassificationField(RaplaContext context, TreeFactory treeFactory)  {
+	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages)  {
 		super(context);
-		editUI = new ClassificationEditUI(context, treeFactory);
+        this.raplaImages = raplaImages;
+		editUI = new ClassificationEditUI(context, treeFactory, raplaImages);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override
@@ -226,7 +229,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
                 );
         tabSelector.setIcon( mainTabSelected ?
                 null
-                : getIcon("icon.list")
+                : raplaImages.getIconFromKey("icon.list")
                 );
     }
 

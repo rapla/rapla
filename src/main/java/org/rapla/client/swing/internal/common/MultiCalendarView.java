@@ -19,7 +19,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -32,6 +40,19 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.VisibleTimeInterval;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.CalendarEditor;
+import org.rapla.client.swing.internal.FilterEditButton;
+import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
@@ -42,18 +63,6 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.client.swing.internal.CalendarEditor;
-import org.rapla.client.swing.internal.FilterEditButton;
-import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
-import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 
 public class MultiCalendarView extends RaplaGUIComponent
@@ -106,15 +115,17 @@ public class MultiCalendarView extends RaplaGUIComponent
     boolean listenersEnabled = true;
     FilterEditButton filter;
     CalendarEditor calendarEditor;
+    private final RaplaImages raplaImages;
     
-    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor,TreeFactory treeFactory,final Set<SwingViewFactory> factoryList) throws RaplaException {
-    	this( context, model, treeFactory, factoryList, true);
+    public MultiCalendarView(RaplaContext context,CalendarSelectionModel model, CalendarEditor calendarEditor,TreeFactory treeFactory, RaplaImages raplaImages,final Set<SwingViewFactory> factoryList) throws RaplaException {
+    	this( context, model, treeFactory, raplaImages, factoryList, true);
     	this.calendarEditor = calendarEditor;
     }
     
 
-	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
+	public MultiCalendarView(RaplaContext context,CalendarSelectionModel model,TreeFactory treeFactory, RaplaImages raplaImages, final Set<SwingViewFactory> factoryList, boolean editable) throws RaplaException {
         super( context);
+        this.raplaImages = raplaImages;
         this.factoryList = factoryList;
         this.editable = editable;
         this.model = model;
@@ -139,7 +150,7 @@ public class MultiCalendarView extends RaplaGUIComponent
         addTypeChooser( ids );
         header.setLayout(new BorderLayout());
         header.add( viewChooser, BorderLayout.CENTER);
-        filter =new FilterEditButton(context,treeFactory, model, this, false);
+        filter = new FilterEditButton(context, treeFactory, model, this, raplaImages, false);
         final JPanel filterContainer = new JPanel();
         filterContainer.setLayout( new BorderLayout());
         filterContainer.add(filter.getButton(), BorderLayout.WEST);
@@ -231,11 +242,11 @@ public class MultiCalendarView extends RaplaGUIComponent
             RaplaMenuItem viewItem = new RaplaMenuItem( id);
             if ( id.equals( model.getViewId()))
             {
-                viewItem.setIcon( getIcon("icon.radio"));
+                viewItem.setIcon( raplaImages.getIconFromKey("icon.radio"));
              }  
             else
              {  
-                 viewItem.setIcon( getIcon("icon.empty"));
+                 viewItem.setIcon( raplaImages.getIconFromKey("icon.empty"));
              }
         	 group.add( viewItem );
              SwingViewFactory factory = findFactory( id );
@@ -280,10 +291,10 @@ public class MultiCalendarView extends RaplaGUIComponent
             	for ( Iterator<RaplaMenuItem> it = viewMenuItems.values().iterator();it.hasNext();) 
                 {
                     RaplaMenuItem item =  it.next();
-                    item.setIcon( getIcon("icon.empty"));
+                    item.setIcon( raplaImages.getIconFromKey("icon.empty"));
                 }
                 RaplaMenuItem item = viewMenuItems.get( viewId );
-                item.setIcon( getIcon("icon.radio"));
+                item.setIcon( raplaImages.getIconFromKey("icon.radio"));
             }
         	for(ChangeListener listener:listeners)
         	{

@@ -25,6 +25,7 @@ import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -62,16 +63,18 @@ public class RaplaObjectAction extends RaplaAction {
     private final PopupContext popupContext;
     protected final EditController editController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
-    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory) {
-        this(sm, null, editController, infoFactory);
+    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
+        this(sm, null, editController, infoFactory, raplaImages);
     }
 
-    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory)  {
+    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)  {
         super( sm);
         this.editController = editController;
         this.popupContext = popupContext;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
     
     protected PopupContext getPopupContext()
@@ -83,7 +86,7 @@ public class RaplaObjectAction extends RaplaAction {
         this.raplaType = raplaType;
         this.type = NEW;
         putValue(NAME, getString("new"));
-        putValue(SMALL_ICON, getIcon("icon.new"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
         update();
         return this;
     }
@@ -91,7 +94,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setDelete(Entity<?> object) {
         this.type = DELETE;
         putValue(NAME, getString("delete"));
-        putValue(SMALL_ICON, getIcon("icon.delete"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.delete"));
         changeObject(object);
         return this;
     }
@@ -99,7 +102,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setDeleteSelection(Collection<Entity<?>> selection) {
         this.type = DELETE_SELECTION;
         putValue(NAME, getString("delete_selection"));
-        putValue(SMALL_ICON, getIcon("icon.delete"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.delete"));
         this.objectList = new ArrayList<Entity<?>>(selection);
         update();
         return this;
@@ -108,7 +111,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setView(Entity<?> object) {
         this.type = VIEW;
         putValue(NAME, getString("view"));
-        putValue(SMALL_ICON, getIcon("icon.help"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.help"));
         changeObject(object);
         return this;
     }
@@ -116,7 +119,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setEdit(Entity<?> object) {
         this.type = EDIT;
         putValue(NAME, getString("edit"));
-        putValue(SMALL_ICON, getIcon("icon.edit"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
         changeObject(object);
         return this;
     }
@@ -126,7 +129,7 @@ public class RaplaObjectAction extends RaplaAction {
  	public RaplaObjectAction setEditSelection(Collection<Entity<?>> selection) {
  		this.type = EDIT_SELECTION;
  		putValue(NAME, getString("edit"));
- 		putValue(SMALL_ICON, getIcon("icon.edit"));
+ 		putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
  		this.objectList = new ArrayList<Entity<?>>(selection);
         update();
  		return this;

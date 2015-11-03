@@ -3,6 +3,7 @@ package org.rapla.plugin.tableview.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.swing.*;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
@@ -64,16 +65,19 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     private final MenuFactory menuFactory;
 
     private final ReservationController reservationController;
+
+    private final RaplaImages raplaImages;
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, final InfoFactory<Component, DialogUI> infoFactory)
+            final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
                     throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.reservationController = reservationController;
+        this.raplaImages = raplaImages;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -309,14 +313,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 final JMenuItem copyItem = new JMenuItem();
             	copyItem.addActionListener( cutListener);
             	copyItem.setText(getString("cut"));
-            	copyItem.setIcon(  getIcon("icon.cut"));
+            	copyItem.setIcon(  raplaImages.getIconFromKey("icon.cut"));
             	editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
             }
             {
                 final JMenuItem copyItem = new JMenuItem();
                 copyItem.addActionListener( copyListener);
                 copyItem.setText(getString("copy"));
-                copyItem.setIcon(  getIcon("icon.copy"));
+                copyItem.setIcon(  raplaImages.getIconFromKey("icon.copy"));
                 editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
             }
 

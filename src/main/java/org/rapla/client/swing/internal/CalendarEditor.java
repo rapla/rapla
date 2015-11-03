@@ -41,6 +41,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
@@ -76,11 +77,13 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final JToolBar templatePanel;
     final JPanel left;
     boolean listenersDisabled = false;
+    private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
+    public CalendarEditor(RaplaContext context,CalendarSelectionModel model,final Set<SwingViewFactory> factoryList,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
+        this.raplaImages = raplaImages;
 
-        calendarContainer = new MultiCalendarView(context, model, this,treeFactory, factoryList);
+        calendarContainer = new MultiCalendarView(context, model, this, treeFactory, raplaImages, factoryList);
         calendarContainer.addValueChangeListener(new ChangeListener()
         {
 
@@ -97,7 +100,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
         	
         });
-        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory);
+        resourceSelection = new ResourceSelection(context, calendarContainer, model, treeFactory, menuFactory, editController, infoFactory, raplaImages);
         final ChangeListener treeListener = new ChangeListener() {
 	          public void stateChanged(ChangeEvent e) {
 	        	  if ( listenersDisabled)
@@ -134,7 +137,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 			}
 		});
         ownReservationsMenu.setText( getString("only_own_reservations"));
-        ownReservationsMenu.setIcon( getIcon("icon.unchecked"));
+        ownReservationsMenu.setIcon( raplaImages.getIconFromKey("icon.unchecked"));
         updateOwnReservationsSelected();
 
 
@@ -160,7 +163,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         
         
         max.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
-        tree.setIcon( getIcon("icon.tree"));
+        tree.setIcon( raplaImages.getIconFromKey("icon.tree"));
         JButton min = new RaplaButton(RaplaButton.SMALL);
         ActionListener minmaxAction = new ActionListener() 
         {
@@ -169,11 +172,11 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 				savedViews.closeFilter();
 				int index = viewMenu.getIndexOfEntryWithId(SHOW_SELECTION_MENU_ENTRY);
 				JMenuItem component = (JMenuItem)viewMenu.getMenuComponent( index);
-				((SaveableToggleAction)component.getAction()).actionPerformed();
+				component.getAction().actionPerformed(e);
 				final boolean newSelected = !component.isSelected();
 				component.setSelected(newSelected);
 			    javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
-			    component.setIcon(newSelected ? getIcon("icon.checked"):getIcon("icon.unchecked"));
+			    component.setIcon(newSelected ? raplaImages.getIconFromKey("icon.checked"):raplaImages.getIconFromKey("icon.unchecked"));
 			}
 		};
 		min.addActionListener( minmaxAction);
@@ -183,7 +186,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         templatePanel = new JToolBar(JToolBar.VERTICAL);
         templatePanel.setFloatable( false);
         final JButton exitTemplateEdit  = new JButton();
-        //exitTemplateEdit.setIcon(getIcon("icon.close"));
+        //exitTemplateEdit.setIcon(raplaImages.getIconFromKey("icon.close"));
         exitTemplateEdit.setText(getString("close-template"));
         templatePanel.add( exitTemplateEdit);
         exitTemplateEdit.addActionListener( new ActionListener() {
@@ -203,7 +206,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JPanel jp = new JPanel();
         jp.setLayout( new BorderLayout());
         
-        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection, model, extensionFactories, infoFactory);
+        savedViews = new SavedCalendarView(context, calendarContainer, resourceSelection, model, extensionFactories, infoFactory, raplaImages);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
         templatePanel.setVisible( false);
         jp.add( templatePanel, BorderLayout.WEST );
@@ -235,7 +238,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 	{
 		final CalendarSelectionModel model = resourceSelection.getModel();
 		boolean isSelected = model.isOnlyCurrentUserSelected();
-		ownReservationsMenu.setIcon(isSelected ? getIcon("icon.checked") : getIcon("icon.unchecked"));
+		ownReservationsMenu.setIcon(isSelected ? raplaImages.getIconFromKey("icon.checked") : raplaImages.getIconFromKey("icon.unchecked"));
 		ownReservationsMenu.setSelected(isSelected);
 	}
 

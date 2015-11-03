@@ -58,6 +58,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.ReservationController;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -88,15 +89,17 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
     private final ReservationController reservationController;
+    private final RaplaImages raplaImages;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory)
+	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages)
 			throws RaplaException {
 		super(sm);
         this.appointmentFormater = appointmentFormater;
         this.reservationController = reservationController;
 
 		this.commandHistory = commandHistory;
-        appointmentController = new AppointmentController(sm, commandHistory);
+        this.raplaImages = raplaImages;
+        appointmentController = new AppointmentController(sm, commandHistory, raplaImages);
         listEdit = new RaplaListEdit<Appointment>(getI18n(),getImages(),appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
         freeButtonNext.setText(getString("appointment.search_free"));
@@ -208,7 +211,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             JLabel label1 = new JLabel(appointmentFormater.getSummary(appointment));
             content.add( label1 );
             if (appointment.getRepeating() != null) {
-                label1.setIcon( getIcon("icon.repeating") );
+                label1.setIcon( raplaImages.getIconFromKey("icon.repeating") );
                 Repeating r = appointment.getRepeating();
                 List<Period> periods = getPeriodModel().getPeriodsFor(appointment.getStart());
                 String repeatingString = appointmentFormater.getSummary(r,periods);
@@ -217,7 +220,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
                     content.add(new JLabel( appointmentFormater.getExceptionSummary( r ) ) );
                 }
             } else {
-                label1.setIcon( getIcon("icon.single") );
+                label1.setIcon( raplaImages.getIconFromKey("icon.single") );
             }
         }
     }

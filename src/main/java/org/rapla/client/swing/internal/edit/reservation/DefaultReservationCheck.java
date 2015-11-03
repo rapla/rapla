@@ -30,6 +30,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.inject.Extension;
@@ -39,11 +40,13 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
 {
     AppointmentFormater appointmentFormater;
     CalendarModel model;
+    private final RaplaImages raplaImages;
     @Inject
-    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model) {
+    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model, RaplaImages raplaImages) {
         super(context);
         this.appointmentFormater = appointmentFormater;
         this.model = model;
+        this.raplaImages = raplaImages;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -126,10 +129,10 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                 }
                 );
                 dialog.setTitle( getString("warning"));
-                dialog.setIcon(getIcon("icon.warning"));
+                dialog.setIcon(raplaImages.getIconFromKey("icon.warning"));
                 dialog.setDefault(1);
-                dialog.getButton(0).setIcon(getIcon("icon.save"));
-                dialog.getButton(1).setIcon(getIcon("icon.cancel"));
+                dialog.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
+                dialog.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
                 dialog.start();
                 if (dialog.getSelectedIndex() == 0)
                 {

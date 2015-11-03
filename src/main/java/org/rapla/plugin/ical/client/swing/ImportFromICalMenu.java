@@ -38,6 +38,7 @@ import javax.swing.border.BevelBorder;
 
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.TreeAllocatableSelection;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.iolayer.FileContent;
@@ -72,16 +73,18 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 	ImportFromICalResources i18n;
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
+    private final RaplaImages raplaImages;
 	@Inject
-	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io) throws RaplaContextException
+	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages) throws RaplaContextException
 	{
 		super(context);
 		this.importService = importService;
 		this.i18n = icalImportResources;
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
         this.io = io;
+        this.raplaImages = raplaImages;
 		item = new JMenuItem(i18n.getString("ical.import"));
-		item.setIcon(getIcon("icon.import"));
+		item.setIcon(raplaImages.getIconFromKey("icon.import"));
 		item.addActionListener(this);
 	}
 	
@@ -259,8 +262,8 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		dlg.setTitle(title);
 		dlg.setSize(new Dimension(850, 100));
 		// dlg.setResizable(false);
-		dlg.getButton(0).setIcon(getIcon("icon.import"));
-		dlg.getButton(1).setIcon(getIcon("icon.cancel"));
+		dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.import"));
+		dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
 
 		dlg.getButton(0).setAction(new AbstractAction() {
 			private static final long serialVersionUID = 1L;

@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 
 
@@ -28,10 +29,12 @@ public class PasswordChangeAction extends RaplaAction {
     
     Object object;
     PopupContext popupContext;
+    private final RaplaImages raplaImages;
 
-    public PasswordChangeAction(RaplaContext context,PopupContext popupContext) {
+    public PasswordChangeAction(RaplaContext context,PopupContext popupContext, RaplaImages raplaImages) {
         super( context);
         this.popupContext = popupContext;
+        this.raplaImages = raplaImages;
         putValue(NAME, getI18n().format("change.format",getString("password")));
     }
 
@@ -87,7 +90,7 @@ public class PasswordChangeAction extends RaplaAction {
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
             dlg.getButton(0).setAction(this);
-            dlg.getButton(1).setIcon(getIcon("icon.cancel"));
+            dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
             dlg.start();
         }
 

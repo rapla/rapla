@@ -17,6 +17,7 @@ import javax.swing.SwingUtilities;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.storage.dbrm.RestartServer;
 
 
@@ -27,11 +28,11 @@ public class RestartServerAction extends RaplaAction {
      * @param sm
      * @throws RaplaException
      */
-    public RestartServerAction(RaplaContext sm, final RestartServer service) throws RaplaException {
+    public RestartServerAction(RaplaContext sm, final RestartServer service, RaplaImages raplaImages) throws RaplaException {
         super(sm);
         this.service = service;
         putValue(NAME,getString("restart_server"));
-        putValue(SMALL_ICON,getIcon("icon.restart"));
+        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.restart"));
     }
     
     public void actionPerformed() {

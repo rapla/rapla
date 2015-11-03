@@ -38,6 +38,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
@@ -164,13 +165,14 @@ public class DynamicTypeTest extends RaplaTestCase {
             IOInterface ioInterface = new DefaultIO(logger);
             final RaplaContext context = getClientService().getContext();
             PermissionController permissionController = DefaultPermissionControllerSupport.getController();
-            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger);
-   	        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory);
+            final RaplaImages raplaImages = new RaplaImages(logger);
+            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages);
+   	        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
 	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
-			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly);
+			ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

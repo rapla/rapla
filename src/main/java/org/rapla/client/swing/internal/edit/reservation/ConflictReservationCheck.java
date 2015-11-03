@@ -29,6 +29,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -49,11 +50,13 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
     
     private final PermissionController permissionController;
     private final TreeFactory treeFactory;
+    private final RaplaImages raplaImages;
     @Inject
-    public ConflictReservationCheck(RaplaContext context, PermissionController permissionController, TreeFactory treeFactory) {
+    public ConflictReservationCheck(RaplaContext context, PermissionController permissionController, TreeFactory treeFactory, RaplaImages raplaImages) {
         super(context);
         this.permissionController = permissionController;
         this.treeFactory = treeFactory;
+        this.raplaImages = raplaImages;
     }
 
     public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
@@ -90,9 +93,9 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
                     }
         );
         dialog.setDefault(1);
-        dialog.setIcon(getIcon("icon.big_folder_conflicts"));
-        dialog.getButton(0).setIcon(getIcon("icon.save"));
-        dialog.getButton(1).setIcon(getIcon("icon.cancel"));
+        dialog.setIcon(raplaImages.getIconFromKey("icon.big_folder_conflicts"));
+        dialog.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
+        dialog.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
         dialog.setTitle(getString("warning.conflict"));
         dialog.start();
         if (dialog.getSelectedIndex()  == 0) {

@@ -39,6 +39,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.images.RaplaImages;
 
 public final class CategoryEditTest extends GUITestCase
 {
@@ -62,9 +63,10 @@ public final class CategoryEditTest extends GUITestCase
         IOInterface ioInterface = new DefaultIO(logger);
         PermissionController permissionController = DefaultPermissionControllerSupport.getController();
         ClientFacade facade = getFacade();
-        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger);
-        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory);
-        CategoryEditUI editor = new CategoryEditUI( context, treeFactory);
+        RaplaImages raplaImages = new RaplaImages(logger);
+        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages);
+        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
+        CategoryEditUI editor = new CategoryEditUI( context, treeFactory, raplaImages);
         editor.setObjects( Collections.singletonList(clientService.getFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");

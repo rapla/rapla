@@ -37,7 +37,7 @@ import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 import java.awt.Component;
 import java.util.Set;
 
-@Extension(provides = SwingViewFactory.class,id=CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
+@Extension(provides = SwingViewFactory.class, id = CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
 public class CompactWeekViewFactory extends RaplaComponent implements SwingViewFactory
 {
 
@@ -48,10 +48,14 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
+
     @Inject
-    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
+    public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
+            Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
     {
-        super( context );
+        super(context);
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
@@ -59,11 +63,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
         this.clipboard = clipboard;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingCompactWeekCalendar( context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory);
+        return new SwingCompactWeekCalendar(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+                reservationController, infoFactory, raplaImages);
     }
 
     public String getViewId()
@@ -77,18 +83,19 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     }
 
     Icon icon;
+
     public Icon getIcon()
     {
-        if ( icon == null) {
+        if (icon == null)
+        {
             icon = RaplaImages.getIcon("/org/rapla/plugin/compactweekview/images/week_compact.png");
         }
         return icon;
     }
 
-    public String getMenuSortKey() {
+    public String getMenuSortKey()
+    {
         return "B1";
     }
 
-
 }
-

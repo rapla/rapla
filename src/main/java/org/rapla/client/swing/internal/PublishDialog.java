@@ -36,6 +36,7 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 
 /**
@@ -45,11 +46,13 @@ public class PublishDialog extends RaplaGUIComponent
 {
 	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
+    private final RaplaImages raplaImages;
 
 
-    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories) throws RaplaException
+    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages) throws RaplaException
     {
         super(sm);
+        this.raplaImages = raplaImages;
         if ( !isModifyPreferencesAllowed() ) {
         	this.extensionFactories = Collections.emptySet();
         }
@@ -136,8 +139,8 @@ public class PublishDialog extends RaplaGUIComponent
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("publish"));
-        dlg.getButton(0).setIcon(getIcon("icon.save"));
-        dlg.getButton(1).setIcon(getIcon("icon.cancel"));
+        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
+        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
         dlg.getButton(0).setAction( new AbstractAction() {
             private static final long serialVersionUID = 1L;
 

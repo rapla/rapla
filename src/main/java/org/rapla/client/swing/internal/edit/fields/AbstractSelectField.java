@@ -44,6 +44,7 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
@@ -70,18 +71,18 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory){
-       this( context, treeFactory, null);
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages){
+       this( context, treeFactory, raplaImages, null);
     }
     
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, T defaultValue) {
+    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, T defaultValue) {
         super( context);
         this.treeFactory = treeFactory;
         useDefault = defaultValue != null;
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
         selectButton.setText(getString("select"));
-        selectButton.setIcon(getIcon("icon.tree"));
+        selectButton.setIcon(raplaImages.getIconFromKey("icon.tree"));
         panel.setLayout( new BoxLayout(panel, BoxLayout.X_AXIS));
         panel.add( selectButton);
         panel.add( Box.createHorizontalStrut(10));

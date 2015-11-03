@@ -8,6 +8,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -42,15 +43,17 @@ import java.util.Map.Entry;
     private final RaplaLocale raplaLocale;
     private Preferences preferences;
     private final TableConfig.TableConfigLoader tableConfigLoader;
+    private final RaplaImages raplaImages;
 
     @Inject public TableviewOption(RaplaContext context, RaplaResources i18n, Logger logger, RaplaLocale raplaLocale,
-            TableConfig.TableConfigLoader tableConfigLoader)
+            TableConfig.TableConfigLoader tableConfigLoader, RaplaImages raplaImages)
     {
         this.context = context;
         this.i18n = i18n;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
+        this.raplaImages = raplaImages;
     }
 
     public void setPreferences(Preferences preferences)
@@ -132,7 +135,7 @@ import java.util.Map.Entry;
         rows.clear();
         for (TableColumnConfig slot : tablerows)
         {
-            TableRow row = new TableRow(slot, context);
+            TableRow row = new TableRow(slot, context, raplaImages);
             rows.add(row);
         }
         for (Entry<String, ViewDefinition> entry : tableConfig.getViewMap().entrySet())
@@ -199,9 +202,9 @@ import java.util.Map.Entry;
         private final JTextField typeField = new JTextField();
         private final MultiLanguageField nameField;
 
-        private TableRow(TableColumnConfig slot, RaplaContext context)
+        private TableRow(TableColumnConfig slot, RaplaContext context, RaplaImages raplaImages)
         {
-            nameField = new MultiLanguageField(context);
+            nameField = new MultiLanguageField(context, raplaImages);
             typeField.setText(slot.getType());
             typeField.setEditable(false);
             nameField.setValue(slot.getName());

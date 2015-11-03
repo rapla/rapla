@@ -42,9 +42,10 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
     private final MenuFactory menuFactory;
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
     @Inject
     public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory )
+            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages )
     {
         super( context );
         this.reservationSummaryExtensions = reservationSummaryExtensions;
@@ -52,13 +53,14 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
         this.menuFactory = menuFactory;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
 
     public final static String TABLE_VIEW =  "table";
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController, infoFactory);
+        return new SwingReservationTableView( context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController, infoFactory, raplaImages);
     }
 
     public String getViewId()

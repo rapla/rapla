@@ -54,6 +54,7 @@ import javax.swing.tree.TreeSelectionModel;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.components.util.Assert;
@@ -92,11 +93,42 @@ import org.rapla.storage.StorageOperator;
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private final PermissionController permissionController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
+    
+    Icon bigFolderUsers;
+    Icon bigFolderPeriods;
+    Icon bigFolderResourcesFiltered;
+    Icon bigFolderResourcesUnfiltered; 
+    Icon bigFolderEvents;
+    Icon bigFolderCategories;
+    Icon bigFolderConflicts;
+    Icon defaultIcon;
+    Icon personIcon;
+    Icon folderClosedIcon;
+    Icon folderOpenIcon;
+    Icon forbiddenIcon;
+    Font normalFont = UIManager.getFont("Tree.font");
+    Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
+    
     @Inject
-    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory) {
+    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
         super(sm);
         this.permissionController = permissionController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
+        bigFolderUsers = raplaImages.getIconFromKey("icon.big_folder_users");
+        bigFolderPeriods = raplaImages.getIconFromKey("icon.big_folder_periods");
+        bigFolderResourcesFiltered = raplaImages.getIconFromKey("icon.big_folder_resources_filtered");
+        bigFolderResourcesUnfiltered = raplaImages.getIconFromKey("icon.big_folder_resources");
+        bigFolderEvents = raplaImages.getIconFromKey("icon.big_folder_events");
+        bigFolderCategories = raplaImages.getIconFromKey("icon.big_folder_categories");
+        bigFolderConflicts = raplaImages.getIconFromKey("icon.big_folder_conflicts");
+        defaultIcon = raplaImages.getIconFromKey("icon.tree.default");
+        personIcon = raplaImages.getIconFromKey("icon.tree.persons");
+        folderClosedIcon =raplaImages.getIconFromKey("icon.folder");
+        folderOpenIcon = raplaImages.getIconFromKey("icon.folder");
+        forbiddenIcon = raplaImages.getIconFromKey("icon.no_perm");
+        
     }
    
     class DynamicTypeComperator  implements Comparator<DynamicType>
@@ -944,23 +976,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 	    }
 		
     }
-    
-   
-
-    Icon bigFolderUsers = getIcon("icon.big_folder_users");
-    Icon bigFolderPeriods = getIcon("icon.big_folder_periods");
-    Icon bigFolderResourcesFiltered = getIcon("icon.big_folder_resources_filtered");
-    Icon bigFolderResourcesUnfiltered = getIcon("icon.big_folder_resources");
-    Icon bigFolderEvents = getIcon("icon.big_folder_events");
-    Icon bigFolderCategories = getIcon("icon.big_folder_categories");
-    Icon bigFolderConflicts = getIcon("icon.big_folder_conflicts");
-    Icon defaultIcon = getIcon("icon.tree.default");
-    Icon personIcon = getIcon("icon.tree.persons");
-    Icon folderClosedIcon =getIcon("icon.folder");
-    Icon folderOpenIcon = getIcon("icon.folder");
-    Icon forbiddenIcon = getIcon("icon.no_perm");
-    Font normalFont = UIManager.getFont("Tree.font");
-    Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
     
     class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         private static final long serialVersionUID = 1L;

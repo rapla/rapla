@@ -36,6 +36,7 @@ import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
@@ -75,7 +76,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             final String name = getString("save") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,getIcon("icon.save"));
+            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.save"));
         }
 
         public void actionPerformed() {
@@ -91,8 +92,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             final String name = getString("publish") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,getIcon("icon.export"));
-            publishDialog = new PublishDialog(getContext(), extensionFactories);
+            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
+            publishDialog = new PublishDialog(getContext(), extensionFactories, raplaImages);
             
         }
 
@@ -130,7 +131,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             final String name = getString("delete");
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,getIcon("icon.delete"));
+            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
             
         }
 
@@ -155,6 +156,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     final DeleteAction deleteAction;
 
     private final InfoFactory<Component, DialogUI> infoFactory;
+
+    private final RaplaImages raplaImages;
     
     class FileEntry implements Comparable<FileEntry>
     {
@@ -209,10 +212,11 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     }
     
     public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
         this.extensionFactories = extensionFactories;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
         // I18nBundle i18n = getI18n();
         saveAction = new SaveAction(context);
         publishAction = new PublishAction(context);
@@ -546,8 +550,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("save") + " " +getString("calendar_settings"));
-        dlg.getButton(0).setIcon(getIcon("icon.save"));
-        dlg.getButton(1).setIcon(getIcon("icon.cancel"));
+        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
+        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
         dlg.getButton(0).setAction( new AbstractAction() {
             private static final long serialVersionUID = 1L;
 

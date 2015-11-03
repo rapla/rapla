@@ -53,6 +53,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -138,21 +139,23 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
     private final ReservationControllerImpl reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
     @Inject
     public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, Set<SwingViewFactory> swingViewFactories,
             TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, ReservationController reservationController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory) throws RaplaException
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException
     {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
-        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController);
-        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory);
-        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory);
+        reservationInfo = new ReservationInfoEdit(sm, commandHistory, treeFactory, permissionController, raplaImages);
+        appointmentEdit = new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages);
+        allocatableEdit = new AllocatableSelection(sm,true, commandHistory, swingViewFactories, treeFactory, calendarSelectionModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
         //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
@@ -228,7 +231,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.addDetailListener(listener);
         frame.addVetoableChangeListener(listener);
 
-        frame.setIconImage( getIcon("icon.edit_window_small").getImage());
+        frame.setIconImage( raplaImages.getIconFromKey("icon.edit_window_small").getImage());
         
         JPanel contentPane = (JPanel) frame.getContentPane();
         contentPane.setLayout(new BorderLayout());
@@ -253,23 +256,23 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         allocatableEdit.getComponent().setBorder(border3);
         
         saveButton.setText(getString("save"));
-        saveButton.setIcon(getIcon("icon.save"));
+        saveButton.setIcon(raplaImages.getIconFromKey("icon.save"));
         
         saveButtonTop.setText(getString("save"));
         saveButtonTop.setMnemonic(KeyEvent.VK_S);
-        saveButtonTop.setIcon(getIcon("icon.save"));
+        saveButtonTop.setIcon(raplaImages.getIconFromKey("icon.save"));
         
         deleteButton.setText(getString("delete"));
-        deleteButton.setIcon(getIcon("icon.delete"));
+        deleteButton.setIcon(raplaImages.getIconFromKey("icon.delete"));
         
         closeButton.setText(getString("abort"));
-        closeButton.setIcon(getIcon("icon.abort"));
+        closeButton.setIcon(raplaImages.getIconFromKey("icon.abort"));
 
         vor.setToolTipText(getString("redo"));
-        vor.setIcon(getIcon("icon.redo"));
+        vor.setIcon(raplaImages.getIconFromKey("icon.redo"));
         
         back.setToolTipText(getString("undo"));
-        back.setIcon(getIcon("icon.undo"));
+        back.setIcon(raplaImages.getIconFromKey("icon.undo"));
     }
 
 	protected void setAccelerator(JButton button, Action yourAction,
@@ -326,7 +329,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                 ,getString("warning")
                 ,getString("warning.reservation.delete")
         );
-        dlg.setIcon(getIcon("icon.warning"));
+        dlg.setIcon(raplaImages.getIconFromKey("icon.warning"));
         dlg.start();
         closeWindow();
     }
@@ -344,7 +347,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         );
         commandHistory.clear();
         try {
-            dlg.setIcon(getIcon("icon.warning"));
+            dlg.setIcon(raplaImages.getIconFromKey("icon.warning"));
             dlg.start();
             this.original = newReservation;
             setReservation(getModification().edit(newReservation) , null);
@@ -587,7 +590,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                                 ,getString("back")
                             }
                             );
-			dlg.setIcon(getIcon("icon.question"));
+			dlg.setIcon(raplaImages.getIconFromKey("icon.question"));
             dlg.setDefault(1);
             dlg.start();
             return (dlg.getSelectedIndex() == 0) ;

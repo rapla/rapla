@@ -37,6 +37,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -52,10 +53,12 @@ public class MainFrame extends RaplaGUIComponent
     Listener listener = new Listener();
     CalendarEditor cal;
     JLabel statusBar = new JLabel("");
+    private final RaplaImages raplaImages;
     @Inject
-    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor) throws RaplaException {
+    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages) throws RaplaException {
         super(sm);
         this.menuBar = raplaMenuBar;
+        this.raplaImages = raplaImages;
         frame =  getService( ClientService.MAIN_COMPONENT );
         String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
@@ -241,9 +244,9 @@ public class MainFrame extends RaplaGUIComponent
 				                               ,getString("exit.abort")
 				                           }
 				                           );
-			dlg.setIcon(getIcon("icon.question"));
+			dlg.setIcon(raplaImages.getIconFromKey("icon.question"));
 	        //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-	        dlg.getButton(0).setIcon(getIcon("icon.abort"));
+	        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.abort"));
 	        dlg.setDefault(1);
 	        dlg.start();
         return (dlg.getSelectedIndex() == 0);

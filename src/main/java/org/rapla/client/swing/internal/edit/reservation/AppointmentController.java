@@ -76,6 +76,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.PeriodChooser;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.MonthChooser;
@@ -118,10 +119,13 @@ public class AppointmentController extends RaplaGUIComponent
 	
 	Date selectedEditDate = null;
 
-	public AppointmentController(RaplaContext sm, CommandHistory commandHistory)
+    private final RaplaImages raplaImages;
+
+	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages)
 			throws RaplaException {
 		super(sm);
 		this.commandHistory = commandHistory;
+        this.raplaImages = raplaImages;
 		panel.setLayout(new BorderLayout());
 		panel.add(repeatingType, BorderLayout.NORTH);
 		repeatingType.setLayout(new BoxLayout(repeatingType, BoxLayout.X_AXIS));
@@ -1187,9 +1191,9 @@ public class AppointmentController extends RaplaGUIComponent
 
 		public void initialize() {
 			addButton.setText(getString("add"));
-			addButton.setIcon(getIcon("icon.arrow_right"));
+			addButton.setIcon(raplaImages.getIconFromKey("icon.arrow_right"));
 			removeButton.setText(getString("remove"));
-			removeButton.setIcon(getIcon("icon.arrow_left"));
+			removeButton.setIcon(raplaImages.getIconFromKey("icon.arrow_left"));
 			exceptionDate = createRaplaCalendar();
 			/*
 			 * this.add(new JLabel(getString("appointment.exception.general") +

@@ -28,6 +28,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -51,11 +52,13 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 	Collection<Allocatable> templateNames;
     private final CalendarSelectionModel model;
     private final EditController editController;
+    private final RaplaImages raplaImages;
 	@Inject
-    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController) throws RaplaException{
+    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages) throws RaplaException{
         super(context);
         this.model = model;
         this.editController = editController;
+        this.raplaImages = raplaImages;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -116,7 +119,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
             item.setEnabled( canAllocate() && canCreateReservation);
 			final String templateName = template.getName(getLocale());
 			item.setText( getI18n().format("new_reservation.format", templateName));
-            item.setIcon(getIcon("icon.new"));
+            item.setIcon(raplaImages.getIconFromKey("icon.new"));
             item.addActionListener( this);
 			element = item;
 		}
@@ -125,7 +128,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 			RaplaMenu item = new RaplaMenu( getId());
 			item.setEnabled( canAllocate() && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
-			item.setIcon( getIcon("icon.new"));
+			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			@SuppressWarnings("unchecked")
             Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(getRaplaLocale().getLocale());
 			Map<String,Collection<Allocatable>> templateMap = new HashMap<String,Collection<Allocatable>>();
@@ -168,7 +171,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 				for ( String subMenuName: merged.keySet())
 				{
 					RaplaMenu subMenu = new RaplaMenu( getId());
-					item.setIcon( getIcon("icon.new"));
+					item.setIcon( raplaImages.getIconFromKey("icon.new"));
 					subMenu.setText( subMenuName);
 					Set<String> set = merged.get( subMenuName);
 					int maxItems = 20;

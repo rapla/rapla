@@ -15,6 +15,7 @@ package org.rapla.client.swing.internal.edit.fields;
 import javax.swing.tree.TreeModel;
 
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.Category;
 import org.rapla.framework.RaplaContext;
 
@@ -23,12 +24,13 @@ public class CategorySelectField extends AbstractSelectField<Category>
 {
     Category rootCategory;
 
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory,Category rootCategory){
-       this( context, treeFactory, rootCategory, null);
+    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages,Category rootCategory){
+       this( context, treeFactory, raplaImages, rootCategory, null);
     }
     
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory,Category rootCategory, Category defaultCategory) {
-        super( context, treeFactory, defaultCategory);
+    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, Category rootCategory, Category defaultCategory)
+    {
+        super( context, treeFactory,raplaImages, defaultCategory);
         this.rootCategory = rootCategory;
     }
     

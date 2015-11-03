@@ -29,6 +29,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -51,12 +52,14 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 	private final PermissionController permissionController;
     private final CalendarModel model;
     private final EditController editController;
+    private final RaplaImages raplaImages;
     @Inject
-	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController){
+	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages){
         super(sm);
         this.permissionController = permissionController;
         this.model = model;
         this.editController = editController;
+        this.raplaImages = raplaImages;
     }
     
     public String getId() {
@@ -96,7 +99,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
             {
                 item.setText(newEventText + " " + name);
             }
-            item.setIcon( getIcon("icon.new"));
+            item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			item.addActionListener( this);
 			
             typeMap.put( item, type);
@@ -107,7 +110,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 			RaplaMenu item = new RaplaMenu( getId());
 			item.setEnabled( canAllocate() && canCreateReservation);
 			item.setText(newEventText);
-			item.setIcon( getIcon("icon.new"));
+			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)
 			{
 				RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());

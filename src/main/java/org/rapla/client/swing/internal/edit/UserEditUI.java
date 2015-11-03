@@ -44,6 +44,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
@@ -73,14 +74,16 @@ public class UserEditUI  extends AbstractEditUI<User> {
     AdminBooleanField adminField;
     GroupListField groupField;
     private final TreeFactory treeFactory;
+    private final RaplaImages raplaImages;
     /**
      * @param context
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
+    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
         this.treeFactory = treeFactory;
+        this.raplaImages = raplaImages;
         List<EditField> fields = new ArrayList<EditField>();
         usernameField = new TextField(context,getString("username"));
         fields.add(usernameField);
@@ -92,7 +95,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(emailField);
         adminField = new AdminBooleanField(context,getString("admin"),getUser());
         fields.add(adminField);
-        groupField = new GroupListField(context, treeFactory);
+        groupField = new GroupListField(context, treeFactory, raplaImages);
         fields.add(groupField);
         setFields(fields);
     }
@@ -169,9 +172,9 @@ public class UserEditUI  extends AbstractEditUI<User> {
             newButton.addActionListener( this );
             removeButton.addActionListener( this );
             removeButton.setText( getString("remove") );
-            removeButton.setIcon( getIcon( "icon.remove" ) );
+            removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
             newButton.setText( getString("bind_with_person") );
-            newButton.setIcon( getIcon( "icon.new" ) );
+            newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
 
         }
 

@@ -12,6 +12,7 @@ import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.inject.Extension;
@@ -25,13 +26,13 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
     private final Provider<RaplaRightsReport> rightsReportProvider;
 
 	@Inject
-	public RightsReportMenu(RaplaContext context, Provider<RaplaRightsReport> rightsReportProvider) {
+	public RightsReportMenu(RaplaContext context, Provider<RaplaRightsReport> rightsReportProvider, RaplaImages raplaImages) {
 		super(context);
         this.rightsReportProvider = rightsReportProvider;
 		
 		report = new RaplaMenuItem("report");
 		report.getMenuElement().setText( name);
-		final Icon icon = getIcon("icon.info_small");
+		final Icon icon = raplaImages.getIconFromKey("icon.info_small");
 		report.getMenuElement().setIcon( icon);
 		report.addActionListener( this);
 	}

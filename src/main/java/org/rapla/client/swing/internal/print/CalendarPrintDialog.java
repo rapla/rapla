@@ -139,9 +139,9 @@ public class CalendarPrintDialog extends DialogUI
 
     };
 
-    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface) throws RaplaException {
+    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface, RaplaImages raplaImages) throws RaplaException {
         super(context,owner);
-        exportServiceList = new ExportServiceList( context, printInterface);
+        exportServiceList = new ExportServiceList( context, printInterface, raplaImages);
         images = context.lookup( RaplaImages.class);
     }
     

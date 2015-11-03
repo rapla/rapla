@@ -43,6 +43,7 @@ import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DisposingTool;
@@ -55,12 +56,14 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     private Collection<T> originals;
     private final EditControllerImpl editController;
     private final ReservationController reservationController;
+    private final RaplaImages raplaImages;
 
-    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController)
+    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages)
     {
         super(sm);
         this.ui = ui;
         this.reservationController = reservationController;
+        this.raplaImages = raplaImages;
         this.editController = (EditControllerImpl)editController;
     }
 
@@ -114,8 +117,8 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         dlg.setAbortAction(action);
         dlg.getButton(0).setAction(new SaveAction(callback, reservationController));
         dlg.getButton(1).setAction(action);
-        dlg.getButton(0).setIcon(getIcon("icon.save"));
-        dlg.getButton(1).setIcon(getIcon("icon.cancel"));
+        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
+        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
         dlg.setTitle(getI18n().format("edit.format", title));
         getUpdateModule().addModificationListener(this);
         dlg.addWindowListener(new DisposingTool(this));

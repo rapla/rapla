@@ -46,11 +46,13 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
     @Inject
     public AppointmentTableViewFactory(RaplaContext context, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
+            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            RaplaImages raplaImages)
     {
         super(context);
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
@@ -60,6 +62,7 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
 
     public final static String TABLE_VIEW = "table_appointments";
@@ -67,7 +70,7 @@ public class AppointmentTableViewFactory extends RaplaComponent implements Swing
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingAppointmentTableView(context, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
-                calendarSelectionModel, reservationController, infoFactory);
+                calendarSelectionModel, reservationController, infoFactory, raplaImages);
     }
 
     public String getViewId()

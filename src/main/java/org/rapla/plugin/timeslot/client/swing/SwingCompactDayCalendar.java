@@ -35,6 +35,7 @@ import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
@@ -64,8 +65,8 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory);
+    public SwingCompactDayCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
+        super( sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages);
         this.timeslotProvider = timeslotProvider;
     }
     
@@ -141,7 +142,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,raplaImages) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{

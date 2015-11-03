@@ -49,6 +49,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
@@ -81,10 +82,10 @@ public class CategoryEditUI extends RaplaGUIComponent
     private final TreeFactory treeFactory;
 
     @Inject
-    public CategoryEditUI(RaplaContext context, TreeFactory treeFactory)  {
+    public CategoryEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages)  {
         super( context);
         this.treeFactory = treeFactory;
-        detailPanel = new CategoryDetail(context);
+        detailPanel = new CategoryDetail(context, raplaImages);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
         treeEdit.setListDimension( new Dimension( 250,100 ) );
@@ -127,11 +128,11 @@ public class CategoryEditUI extends RaplaGUIComponent
             }
         });
         newButton.setText( getString("new_category") );
-        newButton.setIcon( getIcon("icon.new"));
+        newButton.setIcon( raplaImages.getIconFromKey("icon.new"));
         newSubButton.setText( getString("new_sub-category") );
-        newSubButton.setIcon( getIcon("icon.new") );
+        newSubButton.setIcon( raplaImages.getIconFromKey("icon.new") );
         removeButton.setText( getString("delete") );
-        removeButton.setIcon( getIcon("icon.delete") );
+        removeButton.setIcon( raplaImages.getIconFromKey("icon.delete") );
 
         detailPanel.addChangeListener( listener );
         detailPanel.setEditKeys( editKeys );
@@ -425,10 +426,10 @@ class CategoryDetail extends RaplaGUIComponent
 	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
 
-    public CategoryDetail(RaplaContext context) 
+    public CategoryDetail(RaplaContext context, RaplaImages raplaImages) 
     {
         super( context);
-        name = new MultiLanguageField(context);
+        name = new MultiLanguageField(context, raplaImages);
         key = new TextField(context);
         colorTextField = new TextField(context);
         colorTextField.setColorPanel( true );

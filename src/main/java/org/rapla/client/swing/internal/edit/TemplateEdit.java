@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -48,13 +49,15 @@ public class TemplateEdit extends RaplaGUIComponent
     Collection<Allocatable> toStore = new LinkedHashSet<Allocatable>();
     Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
     private final CalendarSelectionModel calendarSelectionModel;
+    private final RaplaImages raplaImages;
     
     
-    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel) throws RaplaException {
+    public TemplateEdit(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages) throws RaplaException {
         super(context);
         this.calendarSelectionModel = calendarSelectionModel;
+        this.raplaImages = raplaImages;
         I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context, treeFactory)
+        allocatableEdit = new AllocatableEditUI(context, treeFactory, raplaImages)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
@@ -198,7 +201,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     parentComponent,true,templateList.getComponent(),
                     options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
-            dlg.getButton(options.size() - 1).setIcon(getIcon("icon.cancel"));
+            dlg.getButton(options.size() - 1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
 
             final AbstractAction action = new AbstractAction() {
                 private static final long serialVersionUID = 1L;
@@ -264,7 +267,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
             });
             dlg.getButton(0).setAction( action);
-            dlg.getButton(0).setIcon(getIcon("icon.confirm"));
+            dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.confirm"));
             dlg.start();
         } catch (RaplaException ex) {
             showException( ex, parentComponent);

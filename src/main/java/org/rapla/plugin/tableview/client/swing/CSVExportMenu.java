@@ -30,6 +30,7 @@ import javax.swing.SwingUtilities;
 
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
@@ -48,16 +49,18 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	private final TableConfig.TableConfigLoader tableConfigLoader;
     private final CalendarSelectionModel model;
     private final IOInterface io;
+    private final RaplaImages raplaImages;
 
 	@Inject
-	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io)
+	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages)
     {
         super( context );
 		this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;
+        this.raplaImages = raplaImages;
 		exportEntry = new JMenuItem(getString("csv.export"));
-        exportEntry.setIcon( getIcon("icon.export") );
+        exportEntry.setIcon( raplaImages.getIconFromKey("icon.export") );
         exportEntry.addActionListener(this);
     }
 	
@@ -153,7 +156,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	                            ,getString("file_saved")
 	                            ,new String[] { getString("ok")}
 	                            );
-				dlg.setIcon(getIcon("icon.export"));
+				dlg.setIcon(raplaImages.getIconFromKey("icon.export"));
 	            dlg.setDefault(0);
 	            dlg.start();
 	            return (dlg.getSelectedIndex() == 0);

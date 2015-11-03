@@ -46,11 +46,12 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
     private final TimeslotProvider timeslotProvider;
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
     @Inject
     public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -60,12 +61,13 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
         this.timeslotProvider = timeslotProvider;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactDayCalendar(context, model, editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider,
-                reservationController, infoFactory);
+                reservationController, infoFactory, raplaImages);
     }
 
     public String getViewId()

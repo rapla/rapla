@@ -28,6 +28,7 @@ import org.rapla.entities.User;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
 
 
@@ -46,12 +47,12 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
      * @param context
      * @throws RaplaException
      */
-    public GroupListField(RaplaContext context, TreeFactory treeFactory) throws RaplaException {
+    public GroupListField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
     	final Category rootCategory = getQuery().getUserGroupsCategory();
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(context, treeFactory, rootCategory );
+        newCategory = new CategorySelectField(context, treeFactory, raplaImages, rootCategory );
         newCategory.setUseNull( false);
         newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );
@@ -64,8 +65,8 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         panel.add( jScrollPane, BorderLayout.CENTER );
         newButton.setText( getString( "group" ) + " " + getString( "add" ) );
         removeButton.setText( getString( "group" ) + " " + getString( "remove" ) );
-        newButton.setIcon( getIcon( "icon.new" ) );
-        removeButton.setIcon( getIcon( "icon.remove" ) );
+        newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
+        removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
         newCategory.addChangeListener( this );
         newButton.addActionListener( this );
         removeButton.addActionListener( this );

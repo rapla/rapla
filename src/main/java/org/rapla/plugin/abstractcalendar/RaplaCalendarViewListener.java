@@ -30,6 +30,7 @@ import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.MenuInterface;
@@ -51,9 +52,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
     private final InfoFactory<Component, DialogUI> infoFactory;
+    private final RaplaImages raplaImages;
 
     public RaplaCalendarViewListener(RaplaContext context, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages)
     {
         super(context);
         this.model = model;
@@ -64,6 +66,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.clipboard = clipboard;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
+        this.raplaImages = raplaImages;
     }
 
     protected CalendarModel getModel()
@@ -309,7 +312,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory);
+        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages);
         menu.add(action);
         return action;
     }

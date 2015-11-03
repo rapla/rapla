@@ -25,6 +25,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
@@ -56,12 +57,12 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     AllocatableSelection allocatableSelection;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory) throws RaplaException {
+    public ReservationEditUI(RaplaContext context, Set<SwingViewFactory>swingViewFactories, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) throws RaplaException {
         super(context);
-        classificationField = new ClassificationField<Reservation>(context, treeFactory);
-        permissionField = new PermissionListField(context,treeFactory,getString("permissions"));
+        classificationField = new ClassificationField<Reservation>(context, treeFactory, raplaImages);
+        permissionField = new PermissionListField(context, treeFactory, raplaImages, getString("permissions"));
 
-        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory)
+        allocatableSelection = new AllocatableSelection( context, false, new CommandHistory(), swingViewFactories, treeFactory, originalModel, appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages)
         {
             public boolean isRestrictionVisible() {return false;}
         };
