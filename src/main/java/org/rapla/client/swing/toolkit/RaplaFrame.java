@@ -50,7 +50,7 @@ public class RaplaFrame extends JFrame
             AWTAdapterFactory.getFactory();
         if (fact != null) {
             fact.createFocusAdapter( this ).ignoreFocusComponents(new FocusTester() {
-                    public boolean accept(Component component) {
+                    public boolean accept(ServerComponent component) {
                         return !(component instanceof HTMLView) ;
                     }
                 });

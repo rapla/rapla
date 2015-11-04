@@ -18,11 +18,12 @@ import org.rapla.gwtjsonrpc.common.ResultType;
 import org.rapla.gwtjsonrpc.common.VoidResult;
 
 import javax.jws.WebParam;
+import javax.ws.rs.Path;
 
 @RemoteJsonMethod
 public interface RemoteAuthentificationService
 {
-	FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
+    FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
 	
 	/** same as login but passes the login info into a LoginCredentials Object*/
     FutureResult<LoginTokens> auth(@WebParam(name="credentials") LoginCredentials credentials);

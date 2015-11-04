@@ -3,51 +3,82 @@ package org.rapla.server.internal;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.inject.server.RequestScoped;
 import org.rapla.server.RemoteSession;
 
-/** Implementation of RemoteStorage as a RemoteService
- * @see org.rapla.storage.dbrm.RemoteStorage
- */
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+
+@RequestScoped
+@DefaultImplementation(of=RemoteSession.class,context = InjectionContext.server)
 public class RemoteSessionImpl implements RemoteSession {
-    /**
-     *
-     */
-    User user;
-    Logger logger;
-   // private String accessToken;
-    
-    public RemoteSessionImpl(Logger logger, User user) {
+    private User user;
+    final private Logger logger;
+
+    public RemoteSessionImpl(Logger logger, User user)
+    {
         this.logger = logger;
         this.user = user;
     }
 
-    public Logger getLogger() {
-    	return logger;
+    @Inject
+    public RemoteSessionImpl(Logger logger, TokenHandler tokenHandler, RaplaAuthentificationService service, HttpServletRequest request )
+    {
+        this.logger = logger;
+        String token = request.getHeader("Authorization");
+        if (token != null)
+        {
+            String bearerStr = "bearer";
+            int bearer = token.toLowerCase().indexOf(bearerStr);
+            if (bearer >= 0)
+            {
+                token = token.substring(bearer + bearerStr.length()).trim();
+            }
+        }
+        else
+        {
+            token = request.getParameter("access_token");
+        }
+        User user = null;
+        if (token == null)
+        {
+            String username = request.getParameter("username");
+            String password = request.getParameter("password");
+            if (username != null && password != null)
+            {
+                user = service.getUserWithPassword(username, password);
+            }
+        }
+        if (user == null)
+        {
+            user = tokenHandler.getUserWithAccessToken(token);
+        }
+        this.user = user;
     }
 
-    @Override
-    public User getUser() throws RaplaContextException {
-    	if (user == null)
-    	    throw new RaplaContextException("No user found in session.");
-    	return user;
+
+    public Logger getLogger()
+    {
+        return logger;
     }
-    @Override
-    public boolean isAuthentified() {
+
+    public User getUser() throws RaplaContextException
+    {
+        if (user == null)
+            throw new RaplaContextException("No user found in session.");
+        return user;
+    }
+
+    public boolean isAuthentified()
+    {
         return user != null;
     }
 
-//    public void setAccessToken( String token)
-//    {
-//        this.accessToken = token;
-//    }
-//    
-//    @Override
-//    public String getAccessToken() {
-//        return accessToken;
-//    }
-
-    public void logout() {
-    	user = null;
+    public void logout()
+    {
+        user = null;
     }
 
 

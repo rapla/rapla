@@ -1,12 +1,22 @@
 package org.rapla.framework.logger;
 
 import javax.inject.Provider;
+import javax.inject.Singleton;
 
 import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
-public class RaplaBootstrapLogger {
+@DefaultImplementation(of=Logger.class,context = InjectionContext.server)
+@Singleton
+public class RaplaBootstrapLogger implements Provider<Logger> {
 
-    public static Logger createRaplaLogger() 
+    @Override public Logger get()
+    {
+        return createRaplaLogger();
+    }
+
+    public static Logger createRaplaLogger()
     {
         Logger logger;
         try {

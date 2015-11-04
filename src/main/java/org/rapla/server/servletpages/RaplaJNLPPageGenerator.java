@@ -3,6 +3,19 @@
  */
 package org.rapla.server.servletpages;
 
+import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
+
+import javax.inject.Inject;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -11,27 +24,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.IOUtil;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
-
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
-public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageExtension{
-    
+public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
+
+    private final ClientFacade facade;
+    private final RaplaResources i18n;
+
     @Inject
-    public RaplaJNLPPageGenerator( RaplaContext context )
+    public RaplaJNLPPageGenerator( ClientFacade facade,RaplaResources i18n )
     {
-        super( context);
+        this.facade = facade;
+        this.i18n = i18n;
     }
 
     private String getCodebase( HttpServletRequest request)  {
@@ -121,11 +124,11 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageE
         response.addDateHeader("Expires", currentTimeMillis + DateTools.MILLISECONDS_PER_MINUTE);
         response.addDateHeader("Date", currentTimeMillis);
         response.setHeader("Cache-Control", "no-cache");
-        final String defaultTitle = getI18n().getString("rapla.title");
+        final String defaultTitle = i18n.getString("rapla.title");
         String menuName;
         try
         {
-            menuName= getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
+            menuName= facade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, defaultTitle);
         }
         catch (RaplaException e) {
             menuName = defaultTitle;

@@ -62,7 +62,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
        ImportExportManager conv =  context.lookup(ImportExportManager.class);
        conv.doExport();
        {
-           CachableStorageOperator operator = getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+           CachableStorageOperator operator = getRapladb();
            operator.connect();
            operator.getVisibleEntities( null );
            Thread.sleep( 1000 );
@@ -77,16 +77,26 @@ public class SQLOperatorRemoteTest extends ServerTest {
 //       }
    }
 
-   /** exposes a bug in the 0.12.1 Version of Rapla */
+    private CachableStorageOperator getRapladb()
+    {
+        return null;//getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+    }
+
+    private ClientFacade getSqlFacade()
+    {
+        return null;//getContainer().lookupDeprecated(ClientFacade.class, "sql-facade");
+    }
+
+    /** exposes a bug in the 0.12.1 Version of Rapla */
    public void testAttributeChange() throws Exception {
-       ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, "sql-facade");
+       ClientFacade facade = getSqlFacade();
        facade.login("admin","".toCharArray());
        // change Type
        changeEventType( facade );
        facade.logout();
        
        // We need to disconnect the operator
-       CachableStorageOperator operator = getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+       CachableStorageOperator operator = getRapladb();
        operator.disconnect();
        operator.connect();
        testTypeIds();
@@ -97,7 +107,8 @@ public class SQLOperatorRemoteTest extends ServerTest {
        
    }
 
-   @Override
+
+    @Override
    protected void initTestData() throws Exception {
 	   super.initTestData();
 	   
@@ -114,7 +125,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
    
    private void testTypeIds() throws RaplaException, SQLException
    {
-       CachableStorageOperator operator = getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+       CachableStorageOperator operator = getRapladb();
        Connection connection = ((DBOperator)operator).createConnection();
        String sql  ="SELECT * from DYNAMIC_TYPE";
        try 
@@ -141,7 +152,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
 
 
    public void testNewAttribute() throws Exception {
-       ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, "sql-facade");
+       ClientFacade facade = getSqlFacade();
        facade.login("homer","duffs".toCharArray());
        // change Type
        DynamicType roomType = facade.edit( facade.getDynamicType("room") );
@@ -163,7 +174,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
        facade.logout();
 
        // We need to disconnect the operator
-       CachableStorageOperator operator = getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+       CachableStorageOperator operator = getRapladb();
        operator.disconnect();
         // The error shows when connect again
        operator.connect();
@@ -192,7 +203,7 @@ public class SQLOperatorRemoteTest extends ServerTest {
    
    public void tearDown() throws Exception {
        // nochmal ueberpruefen ob die Daten auch wirklich eingelesen werden koennen. This could not be the case
-       	CachableStorageOperator operator = getContainer().lookupDeprecated(CachableStorageOperator.class, "rapladb");
+       	CachableStorageOperator operator = getRapladb();
        	operator.disconnect();
        	Thread.sleep( 200 );
        	operator.connect();

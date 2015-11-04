@@ -30,10 +30,10 @@ public class CommunicatorTest extends ServletTestBase
         super( name );
     }
 
-  
+    ClientFacade facade = null;
+
     public void testLargeform() throws Exception
     {
-        ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         StringBuffer buf = new StringBuffer();
@@ -50,7 +50,6 @@ public class CommunicatorTest extends ServletTestBase
     
     public void testClient() throws Exception
     {
-       ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
        boolean success = facade.login("admin","test".toCharArray());
        assertFalse( "Login should fail",success ); 
        facade.login("homer","duffs".toCharArray());
@@ -91,7 +90,6 @@ public class CommunicatorTest extends ServletTestBase
 
     public void testUmlaute() throws Exception
     {
-        ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         String typeName = alloc.getClassification().getType().getKey();

@@ -424,7 +424,7 @@ public abstract class AbstractBlockField extends JTextField {
 
     /** returns true if the text can be split into blocks. */
     abstract public boolean blocksValid();
-    /** The number of blocks for this Component.  */
+    /** The number of blocks for this ServerComponent.  */
     abstract protected int blockCount();
     /** This method will be called, when the user has pressed the up/down
      * arrows on a selected block.

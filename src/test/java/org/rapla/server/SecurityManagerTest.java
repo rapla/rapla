@@ -29,10 +29,9 @@ public class SecurityManagerTest extends ServletTestBase {
 	{
 		super.setUp();
 		// start the server
-		getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
 
 		// start the client service
-		facade1 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
+		facade1 = null;//getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
 		locale = Locale.getDefault();
 	}
 

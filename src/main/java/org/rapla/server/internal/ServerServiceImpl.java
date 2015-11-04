@@ -12,24 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
-import javax.ws.rs.Path;
-
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -40,52 +24,45 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.rest.server.RaplaRestApiWrapper;
 import org.rapla.server.RemoteSession;
-import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.server.internal.dagger.WebMethodProvider;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.dbfile.FileOperator;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
-import org.rapla.storage.dbsql.DBOperator;
-import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.sql.DataSource;
+import java.util.*;
 
 
-public class ServerServiceImpl extends ContainerImpl implements StorageUpdateListener, ServerService, ShutdownService, ServerServiceContainer
+public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer
 {
-    protected CachableStorageOperator operator;
+    final protected CachableStorageOperator operator;
+    final private WebMethodProvider methodProvider;
 
+    final Logger logger;
 
-    ShutdownService shutdownService;
-
-
+    private final Map<String,RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
 
-    RemoteSessionImpl adminSession;
+    final Set<ServletRequestPreprocessor> requestPreProcessors;
 
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors() throws RaplaContextException
     {
-        return lookupServicesFor(ServletRequestPreprocessor.class, 0);
+        return requestPreProcessors;
     }
 
     public static class ServerContainerContext
@@ -93,6 +70,8 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         DataSource dbDatasource;
         String fileDatasource;
         Object mailSession;
+        boolean isDbDatasource;
+        ShutdownService shutdownService;
 
         public String getFileDatasource()
         {
@@ -108,70 +87,38 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         {
             return dbDatasource;
         }
+
+        public boolean isDbDatasource() { return isDbDatasource;}
+
+        public ShutdownService getShutdownService()
+        {
+            return shutdownService;
+        }
     }
 
-    public ServerServiceImpl(Logger logger, ServerContainerContext containerContext, String selectedStorage) throws Exception
+    public WebMethodProvider getMethodProvider()
     {
-        super(logger, new SimpleProvider<RemoteServiceCaller>());
-        ((SimpleProvider<RemoteServiceCaller>) remoteServiceCaller).setValue(new RemoteServiceCaller()
-        {
+        return methodProvider;
+    }
 
-            @Override public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException
-            {
-                RemoteSession remoteSession = adminSession;
-                T service = getInstance(a, remoteSession);
-                return service;
-            }
-        });
+    public Logger getLogger()
+    {
+        return logger;
+    }
 
-        if (containerContext.fileDatasource != null)
-        {
-            addContainerProvidedComponentInstance(ServerService.ENV_RAPLAFILE, containerContext.fileDatasource);
-            addContainerProvidedComponent(FileOperator.class, FileOperator.class);
-        }
-        if ( selectedStorage == null)
-        {
-            addContainerProvidedComponentInstance(ServerService.ENV_RAPLAFILE, "data/data.xml");
-            addContainerProvidedComponent(FileOperator.class, FileOperator.class);
-        }
-        if (containerContext.dbDatasource != null)
-        {
-            addContainerProvidedComponentInstance(DataSource.class, containerContext.dbDatasource);
-            addContainerProvidedComponent(DBOperator.class, DBOperator.class);
-        }
-        if (containerContext.fileDatasource != null && containerContext.dbDatasource != null)
-        {
-            addContainerProvidedComponent(ImportExportManager.class, ImportExportManagerImpl.class);
-        }
-        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
-        if (containerContext.mailSession != null)
-        {
-            externalMailSession.setValue(containerContext.getMailSession());
-        }
-        addContainerProvidedComponentInstance(ServerService.ENV_RAPLAMAIL, externalMailSession);
-        loadFromServiceList();
-        initialize();
-        //addContainerProvidedComponent(TimeZoneConverter.class, TimeZoneConverterImpl.class);
-        if (selectedStorage == null || "raplafile".equals( selectedStorage ))
-        {
-            operator = lookup(FileOperator.class);
-        }
-        else if (selectedStorage.equals("rapladb"))
-        {
-            operator = lookup(DBOperator.class);
-        }
-        else
-        {
-            throw new RaplaException("Unknown datasource " + selectedStorage);
-        }
-        ((FacadeImpl)lookup(ClientFacade.class)).setOperator( operator);
-        addContainerProvidedComponentInstance(StorageOperator.class, operator);
-        addContainerProvidedComponentInstance(CachableStorageOperator.class, operator);
-
-        addContainerProvidedComponentInstance(ServerServiceContainer.class, this);
-        addContainerProvidedComponentInstance(ShutdownService.class, this);
-
-
+    @Inject
+    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap,WebMethodProvider methodProvider)
+    {
+        this.logger = logger;
+        this.methodProvider = methodProvider;
+        //webMethods.setList( );
+//        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
+//        if (containerContext.mailSession != null)
+//        {
+//            externalMailSession.setValue(containerContext.getMailSession());
+//        }
+        this.operator = operator;
+        ((FacadeImpl)facade).setOperator( operator);
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
@@ -196,8 +143,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
             }
         }
         String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
-        RaplaLocale raplaLocale = lookup(RaplaLocale.class);
-        TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
+        //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
         try
         {
             TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
@@ -207,7 +153,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 // FIXME create VTimezones for GMT+1-12 and GMT-1-12 
                 // if ( timezoneId.startsWith("GMT") )
                 String fallback = "Etc/GMT";
-                getLogger().error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);
+                logger.error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);
                 timeZone = registry.getTimeZone(fallback);
                 if (timeZone == null)
                 {
@@ -226,12 +172,12 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         }
         catch (Exception rc)
         {
-            getLogger().error(
-                    "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
+            logger.error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
 
         {// Rest Pages
-            // Scan for services 
+            // Scan for services
+            /**
             try
             {
                 final String name = "META-INF/services/" + Path.class.getCanonicalName();
@@ -255,46 +201,40 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                     {
                         final Class<?> restPageClass = Class.forName(restPage);
                         final String restUri = restPageClass.getAnnotation(Path.class).value();
-                        final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(this, getLogger(), restPageClass);
+                        final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(this, logger, restPageClass);
                         addContainerProvidedComponentInstance(RaplaPageExtension.class, restWrapper, restUri);
                     }
                     catch (Exception e)
                     {
-                        logger.error(restPage + " could not be used as REST page: " + e.getMessage(), e);
+                        getLogger().error(restPage + " could not be used as REST page: " + e.getMessage(), e);
                     }
                 }
             }
             catch (Exception e)
             {
-                logger.error("Rest pages not available due to " + e.getMessage(), e);
+                getLogger().error("Rest pages not available due to " + e.getMessage(), e);
             }
+             */
         }
         
-        User user = getFirstAdmin(operator);
-        adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
+        //User user = getFirstAdmin(operator);
+        //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
+        //addContainerProvidedComponentInstance(RemoteSession.class, adminSession);
         //initializePlugins(preferences, ServerServiceContainer.class);
         // start server provides
-        final Set<ServerExtension> serverExtensions = lookupServicesFor(ServerExtension.class, 0);
-        for (ServerExtension extension : serverExtensions)
+        this.requestPreProcessors = requestPreProcessors.get();
+
+        this.pageMap = pageMap.get();
+
+        for (ServerExtension extension : serverExtensions.get())
         {
             extension.start();
         }
     }
 
-    @Override protected boolean isSupported(InjectionContext... contexts)
-    {
-        return InjectionContext.isInjectableOnServer(contexts);
-    }
-
     public void setPasswordCheckDisabled(boolean passwordCheckDisabled)
     {
         this.passwordCheckDisabled = passwordCheckDisabled;
-    }
-
-    public <T> T getRemoteMethod(Class<T> a, RemoteSessionImpl standaloneSession) throws RaplaContextException
-    {
-        T service = getInstance(a, standaloneSession);
-        return service;
     }
 
     public String getFirstAdmin() throws RaplaException
@@ -324,20 +264,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         return null;
     }
 
-    @Override
-    public <T> T createWebservice(Class<T> role, HttpServletRequest request) throws RaplaException
-    {
-        RemoteSession remoteSession = getRemoteSession(request);
-        T service = getInstance(role, remoteSession);
-        return service;
-    }
-
-    @Override
-    public boolean hasWebservice(String interfaceName)
-    {
-        return super.hasRole( interfaceName);
-    }
-
 
     public RaplaPageGenerator getWebpage(String page)
     {
@@ -345,7 +271,7 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
         {
             String lowerCase = page.toLowerCase();
             @SuppressWarnings("deprecation")
-            RaplaPageGenerator factory = lookupDeprecated(RaplaPageExtension.class, lowerCase);
+            RaplaPageGenerator factory = pageMap.get(lowerCase);
             return factory;
         }
         catch (RaplaContextException ex)
@@ -407,7 +333,6 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
     public void dispose()
     {
         stop();
-        super.dispose();
     }
 
     public StorageOperator getOperator()
@@ -427,68 +352,5 @@ public class ServerServiceImpl extends ContainerImpl implements StorageUpdateLis
                 getLogger().error(e.getMessage());
         }
     }
-
-    public void setShutdownService(ShutdownService shutdownService)
-    {
-        this.shutdownService = shutdownService;
-    }
-
-    public void shutdown(boolean restart)
-    {
-        if (shutdownService != null)
-        {
-            shutdownService.shutdown(restart);
-        }
-        else
-        {
-            getLogger().error("Shutdown service not set");
-        }
-    }
-
-    public RemoteSession getRemoteSession(HttpServletRequest request) throws RaplaException
-    {
-        User user = getUser(request);
-        Logger childLogger = getLogger().getChildLogger(user != null ? user.getUsername() : "anonymous");
-        RemoteSessionImpl remoteSession = new RemoteSessionImpl(childLogger, user);
-        return remoteSession;
-    }
-
-
-    public User getUser(HttpServletRequest request) throws RaplaException
-    {
-        String token = request.getHeader("Authorization");
-        if (token != null)
-        {
-            String bearerStr = "bearer";
-            int bearer = token.toLowerCase().indexOf(bearerStr);
-            if (bearer >= 0)
-            {
-                token = token.substring(bearer + bearerStr.length()).trim();
-            }
-        }
-        else
-        {
-            token = request.getParameter("access_token");
-        }
-        User user = null;
-        if (token == null)
-        {
-            String username = request.getParameter("username");
-            String password = request.getParameter("password");
-            if (username != null && password != null)
-            {
-                RemoteAuthentificationService service = lookup(RemoteAuthentificationService.class);
-                // TODO remove HACK
-                user = ((RemoteAuthentificationServiceImpl)service).getUserWithPassword(username, password);
-            }
-        }
-        if (user == null)
-        {
-            user = lookup(TokenHandler.class).getUserWithAccessToken(token);
-        }
-        return user;
-    }
-
-
 
 }

@@ -13,6 +13,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
+import org.rapla.server.internal.dagger.DaggerServerCreator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
@@ -24,7 +25,7 @@ public class ServerStarter
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
-    String env_rapladatasource;
+
     public ServerStarter(Logger logger, RaplaJNDIContext jndi)
     {
         this.logger = logger;
@@ -32,23 +33,7 @@ public class ServerStarter
 
         ServerContainerContext backendContext = createBackendContext(logger, jndi);
         this.backendContext = backendContext;
-        env_rapladatasource = jndi.lookupEnvString( "rapladatasource", true);
-        if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
-        {
-            if ( backendContext.dbDatasource != null)
-            {
-                env_rapladatasource = "rapladb";
-            }
-            else if ( backendContext.fileDatasource != null)
-            {
-                env_rapladatasource = "raplafile";
-            }
-            else
-            {
-                logger.warn("Neither file nor database setup configured.");
-            }
-            logger.info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb=" + backendContext.dbDatasource + " env_raplafile="+ backendContext.fileDatasource);
-        }
+
     }
 
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) {
@@ -79,6 +64,25 @@ public class ServerStarter
         backendContext.fileDatasource = env_raplafile;
         backendContext.dbDatasource = env_rapladb;
         backendContext.mailSession = env_raplamail;
+
+        String env_rapladatasource = jndi.lookupEnvString( "rapladatasource", true);
+        if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
+        {
+            if ( backendContext.dbDatasource != null)
+            {
+                env_rapladatasource = "rapladb";
+            }
+            else if ( backendContext.fileDatasource != null)
+            {
+                env_rapladatasource = "raplafile";
+            }
+            else
+            {
+                logger.warn("Neither file nor database setup configured.");
+            }
+            logger.info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb=" + backendContext.dbDatasource + " env_raplafile="+ backendContext.fileDatasource);
+        }
+        backendContext.isDbDatasource =env_rapladatasource != null && env_rapladatasource.equalsIgnoreCase("rapladb");
         return backendContext;
     }
     
@@ -95,15 +99,16 @@ public class ServerStarter
 
         try
         {
-            server = new ServerServiceImpl(  logger, backendContext, env_rapladatasource );
+            if ( shutdownCommand != null)
+            {
+                backendContext.shutdownService = new ShutdownServiceImpl();
+            }
+            server = DaggerServerCreator.create(logger, backendContext);
             //final RaplaContext context = raplaContainer.getContext();
             final Logger logger = server.getLogger(); 
             {
                 logger.info("Rapla server started");
-                if ( shutdownCommand != null)
-                {
-                    server.setShutdownService( new ShutdownServiceImpl());
-                }
+
             }
             processors = server.getServletRequestPreprocessors();
             return server;

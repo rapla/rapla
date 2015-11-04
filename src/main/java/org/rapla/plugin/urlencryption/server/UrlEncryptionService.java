@@ -11,6 +11,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
@@ -38,6 +39,7 @@ import org.rapla.storage.RaplaSecurityException;
  * @author Jonas Kohlbrenner
  */
 @DefaultImplementation(of=UrlEncryption.class,context = InjectionContext.server)
+@Singleton
 public class UrlEncryptionService implements UrlEncryption {
     @Deprecated
 	private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<String>("org.rapla.plugin.urlencryption.urlEncKey");

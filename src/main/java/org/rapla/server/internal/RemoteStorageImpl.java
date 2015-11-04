@@ -66,7 +66,7 @@ public class RemoteStorageImpl implements RemoteStorage
     private final SecurityManager security;
     private final ShutdownService shutdownService;
 
-    private final Provider<AuthenticationStore> authenticationStore;
+    private final Set<AuthenticationStore> authenticationStore;
 
     private final RaplaResources i18n;
     private final Provider<MailInterface> mailInterface;
@@ -74,7 +74,7 @@ public class RemoteStorageImpl implements RemoteStorage
     private final PermissionController permissionController;
 
     @Inject public RemoteStorageImpl(RemoteSession session, CachableStorageOperator operator, SecurityManager security, ShutdownService shutdownService,
-            Provider<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager, PermissionController permissionController)
+            Set<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager, PermissionController permissionController)
     {
         this.session = session;
         this.updateDataManager = updateDataManager;
@@ -335,16 +335,7 @@ public class RemoteStorageImpl implements RemoteStorage
 
             if (!sessionUser.isAdmin())
             {
-                AuthenticationStore authenticationStore2;
-                try
-                {
-                    authenticationStore2 = authenticationStore.get();
-                }
-                catch (Exception ex)
-                {
-                    authenticationStore2 = null;
-                }
-                if (authenticationStore2 != null)
+                if ( authenticationStore != null && authenticationStore.size() > 0 )
                 {
                     throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin.");
                 }

@@ -21,6 +21,7 @@ import org.slf4j.spi.LocationAwareLogger;
 
 
 @SuppressWarnings("restriction")
+
 public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger> {
     static final public int TRACE_INT = 00;
     static final public int DEBUG_INT = 10;

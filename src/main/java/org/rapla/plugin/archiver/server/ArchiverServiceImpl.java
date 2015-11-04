@@ -56,12 +56,18 @@ public class ArchiverServiceImpl  implements ArchiverService
 	}
 	
 	public boolean isExportEnabled() throws RaplaException {
-		StorageOperator operator = clientFacade.getOperator();
-		boolean enabled =  operator instanceof DBOperator;
-		return enabled;
+        final ClientFacade clientFacade = this.clientFacade;
+        return isExportEnabled(clientFacade);
 	}
 
-	public void backupNow() throws RaplaException {
+    static boolean isExportEnabled(ClientFacade clientFacade)
+    {
+        StorageOperator operator = clientFacade.getOperator();
+        boolean enabled =  operator instanceof DBOperator;
+        return enabled;
+    }
+
+    public void backupNow() throws RaplaException {
 		checkAccess();
 		if (!isExportEnabled())
 		{
@@ -83,7 +89,14 @@ public class ArchiverServiceImpl  implements ArchiverService
 
 	public void delete(Integer removeOlderInDays) throws RaplaException {
 		checkAccess();
-		Date endDate = new Date(clientFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
+        final ClientFacade clientFacade = this.clientFacade;
+        final Logger logger = this.logger;
+        delete(removeOlderInDays, clientFacade, logger);
+	}
+
+    static public void delete(Integer removeOlderInDays, ClientFacade clientFacade, Logger logger)
+    {
+        Date endDate = new Date(clientFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
         Reservation[] events = clientFacade.getReservations((User) null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
         List<Reservation> toRemove = new ArrayList<Reservation>();
         for ( int i=0;i< events.length;i++)
@@ -104,11 +117,12 @@ public class ArchiverServiceImpl  implements ArchiverService
                 int blockSize = Math.min( eventsToRemove.length- i, STEP_SIZE);
                 Reservation[] eventBlock = new Reservation[blockSize];
                 System.arraycopy( eventsToRemove,i, eventBlock,0, blockSize);
-                clientFacade.removeObjects( eventBlock);
+                clientFacade.removeObjects(eventBlock);
             }
         }
-	}
-	private boolean isOlderThan( Reservation event, Date maxAllowedDate )
+    }
+
+    static private boolean isOlderThan( Reservation event, Date maxAllowedDate )
 	{
         Appointment[] appointments = event.getAppointments();
         for ( int i=0;i<appointments.length;i++)

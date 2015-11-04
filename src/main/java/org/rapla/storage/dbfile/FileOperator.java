@@ -103,7 +103,6 @@ import org.xml.sax.XMLReader;
  @see AbstractCachableOperator
  @see org.rapla.storage.StorageOperator
  */
-@Singleton
 final public class FileOperator extends LocalAbstractCachableOperator
 {
  	private File storageFile;
@@ -113,7 +112,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
     protected boolean isConnected = false;
     final boolean includeIds= false;
 
-    @Inject
     public FileOperator( Logger logger,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,Map<String,FunctionFactory> functionFactoryMap,@Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath, PermissionController permissionController) throws RaplaException
     {
         super(  logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionController);

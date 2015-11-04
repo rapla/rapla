@@ -26,22 +26,13 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 /**  Imports the content of on store into another.
  Export does an import with source and destination exchanged.
-<p>Configuration:</p>
-<pre>
-  <importexport id="importexport" activation="request">
-    <source>raplafile</source>
-    <dest>rapladb</dest>
-  </importexport>
-</pre>
 */
-@DefaultImplementation(of= ImportExportManager.class,context = InjectionContext.server)
 public class ImportExportManagerImpl implements ImportExportManager {
     CachableStorageOperator source;
     CachableStorageOperator dest;
     Logger logger;
     
-    @Inject
-    public ImportExportManagerImpl(Logger logger,FileOperator source,DBOperator dest) 
+    public ImportExportManagerImpl(Logger logger,FileOperator source,DBOperator dest)
     {
         this.logger =  logger;
         this.source = source;

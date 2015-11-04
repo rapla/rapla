@@ -73,10 +73,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
 	public RaplaClientServiceImpl(StartupEnvironment env) throws Exception {
         super( env);
     }
-	
-	public RaplaClientServiceImpl(StartupEnvironment env, Provider<RemoteServiceCaller> caller) throws Exception {
-        super(  env, caller);
-    }
 
     public static void setLookandFeel() {
     	if ( lookAndFeelSet )
@@ -124,27 +120,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         super.initialize();
         m_context = new RaplaDefaultContext()
         {
-
-            @Override public boolean has(Class<?> componentRole)
-            {
-                boolean has = super.has(componentRole);
-                if (!has && isWebservice(componentRole))
-                {
-                    return true;
-                }
-                return has;
-            }
-
-            @Override public <T> T lookup(Class<T> componentRole) throws RaplaContextException
-            {
-                if (isWebservice(componentRole))
-                {
-                    T proxy = (T) remoteServiceCaller.get().getRemoteMethod(componentRole);
-                    return proxy;
-                }
-                return super.lookup(componentRole);
-            }
-
             @Override protected Object lookup(String role) throws RaplaContextException
             {
                 return lookupPrivateWithNull(role, 0);

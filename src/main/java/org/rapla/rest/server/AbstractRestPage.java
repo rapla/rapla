@@ -1,10 +1,5 @@
 package org.rapla.rest.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -16,24 +11,26 @@ import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.server.JsonServlet;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.StorageOperator;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractRestPage 
 {
 
     protected StorageOperator operator;
     protected JsonServlet servlet;
-    protected final ServerServiceContainer serverContainer;
     private boolean authentificationRequired;
     protected ClientFacade facade;
 
-    public AbstractRestPage(ClientFacade facade, ServerServiceContainer serverContainer, Logger logger, boolean authentificationRequired) throws RaplaException
+    public AbstractRestPage(ClientFacade facade, Logger logger, boolean authentificationRequired) throws RaplaException
     {
         this.authentificationRequired = authentificationRequired;
         this.facade = facade;
         operator = facade.getOperator();
-        this.serverContainer = serverContainer;
     }
 
     public ClassificationFilter[] getClassificationFilter(Map<String, String> simpleFilter, Collection<String> selectedClassificationTypes,
